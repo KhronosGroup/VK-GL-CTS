@@ -1,0 +1,94 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_storage_buffer_storage_class
+
+[compute shader spirv]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %out_var %in_var %gid_var %priv_var
+OpExecutionMode %main LocalSize 4 4 1
+
+OpDecorate %uint_rta ArrayStride 4
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+OpDecorate %priv_var NonWritable
+
+OpDecorate %gid_var BuiltIn GlobalInvocationId
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%uint = OpTypeInt 32 0
+%uint3 = OpTypeVector %uint 3
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
+%uint_5 = OpConstant %uint 5
+%uint_6 = OpConstant %uint 6
+%uint_7 = OpConstant %uint 7
+%uint_8 = OpConstant %uint 8
+%uint_9 = OpConstant %uint 9
+%uint_10 = OpConstant %uint 10
+%uint_11 = OpConstant %uint 11
+%uint_12 = OpConstant %uint 12
+%uint_13 = OpConstant %uint 13
+%uint_14 = OpConstant %uint 14
+%uint_15 = OpConstant %uint 15
+%uint_array_4 = OpTypeArray %uint %uint_4
+%array_array_4 = OpTypeArray %uint_array_4 %uint_4
+
+%const_array_r_0 = OpConstantComposite %uint_array_4 %uint_15 %uint_14 %uint_13 %uint_12
+%const_array_r_1 = OpConstantComposite %uint_array_4 %uint_11 %uint_10 %uint_9 %uint_8
+%const_array_r_2 = OpConstantComposite %uint_array_4 %uint_7 %uint_6 %uint_5 %uint_4
+%const_array_r_3 = OpConstantComposite %uint_array_4 %uint_3 %uint_2 %uint_1 %uint_0
+%const_array_r = OpConstantComposite %array_array_4 %const_array_r_0 %const_array_r_1 %const_array_r_2 %const_array_r_3
+
+%ptr_array_array_private = OpTypePointer Private %array_array_4
+%ptr_priv_uint = OpTypePointer Private %uint
+%uint_rta = OpTypeRuntimeArray %uint
+%struct = OpTypeStruct %uint_rta
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%out_var = OpVariable %ptr_ssbo_struct StorageBuffer
+%in_var = OpVariable %ptr_ssbo_struct StorageBuffer
+%ptr_ssbo_uint = OpTypePointer StorageBuffer %uint
+%ptr_input_uint3 = OpTypePointer Input %uint3
+%gid_var = OpVariable %ptr_input_uint3 Input
+%priv_var = OpVariable %ptr_array_array_private Private %const_array_r
+
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gid = OpLoad %uint3 %gid_var
+%gid_x = OpCompositeExtract %uint %gid 0
+%gid_y = OpCompositeExtract %uint %gid 1
+%x_modifier = OpIMul %uint %gid_x %uint_4
+%idx = OpIAdd %uint %x_modifier %gid_y
+%in_gep = OpAccessChain %ptr_ssbo_uint %in_var %uint_0 %idx
+%ld1 = OpLoad %uint %in_gep
+%v_gep = OpAccessChain %ptr_priv_uint %priv_var %gid_x %gid_y
+%ld2 = OpLoad %uint %v_gep
+%add = OpIAdd %uint %ld1 %ld2
+%out_gep = OpAccessChain %ptr_ssbo_uint %out_var %uint_0 %idx
+OpStore %out_gep %add
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+ssbo 0:1 64
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uint 0:1 0   == 16 16 16 16
+probe ssbo uint 0:1 16  == 16 16 16 16
+probe ssbo uint 0:1 32  == 16 16 16 16
+probe ssbo uint 0:1 48  == 16 16 16 16
+
+

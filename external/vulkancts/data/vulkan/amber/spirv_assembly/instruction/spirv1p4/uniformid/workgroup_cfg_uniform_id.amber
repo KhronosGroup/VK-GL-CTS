@@ -1,0 +1,75 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_storage_buffer_storage_class
+
+[compute shader spirv]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %gid_var %in_var %out_var
+OpExecutionMode %main LocalSize 8 1 1
+
+OpDecorate %gid_var BuiltIn GlobalInvocationId
+
+OpDecorate %int_rta ArrayStride 4
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+OpDecorateId %cmp UniformId %workgroup
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_10 = OpConstant %int 10
+%int_100 = OpConstant %int 100
+%int_50 = OpConstant %int 50
+%workgroup = OpConstant %int 2
+%int3 = OpTypeVector %int 3
+
+%int_rta = OpTypeRuntimeArray %int
+%struct = OpTypeStruct %int_rta
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%in_var = OpVariable %ptr_ssbo_struct StorageBuffer
+%out_var = OpVariable %ptr_ssbo_struct StorageBuffer
+
+%ptr_input_int3 = OpTypePointer Input %int3
+%gid_var = OpVariable %ptr_input_int3 Input
+
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gid = OpLoad %int3 %gid_var
+%gid_x = OpCompositeExtract %int %gid 0
+%in_gep = OpAccessChain %ptr_ssbo_int %in_var %int_0 %gid_x
+%ld = OpLoad %int %in_gep
+%cmp = OpULessThan %bool %ld %int_10
+OpSelectionMerge %merge None
+OpBranchConditional %cmp %then %else
+
+%then = OpLabel
+%then_gep = OpAccessChain %ptr_ssbo_int %out_var %int_0 %gid_x
+OpStore %then_gep %int_100
+OpBranch %merge
+
+%else = OpLabel
+%else_gep = OpAccessChain %ptr_ssbo_int %out_var %int_0 %gid_x
+OpStore %else_gep %int_50
+OpBranch %merge
+
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0 0 1 2 3 4 5 6 7 10 11 12 13 14 15 16 17
+ssbo 0:1 64
+
+compute entrypoint main
+compute 2 1 1
+
+probe ssbo uint 0:1 0 == 100 100 100 100 100 100 100 100 50 50 50 50 50 50 50 50

@@ -1,0 +1,139 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; Tests use of private variables holding SSBO pointers and pointer comparisons.
+
+; Two iterators are each stored in Private variables: one moves forward, one
+; moves backward. In each iteration an OpPtrEqual comparison is written.
+; Iterators are then moved forward (or backward respectively) one index.
+
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var %forward_var %backward_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %int_rta ArrayStride 4
+OpDecorate %in_struct Block
+OpMemberDecorate %in_struct 0 Offset 0
+OpMemberDecorate %in_struct 1 Offset 4
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+OpDecorate %ptr_ssbo_int ArrayStride 4
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_n1 = OpConstant %int -1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+
+%int_rta = OpTypeRuntimeArray %int
+%in_struct = OpTypeStruct %int %int_rta
+%ptr_ssbo_in_struct = OpTypePointer StorageBuffer %in_struct
+%in_var = OpVariable %ptr_ssbo_in_struct StorageBuffer
+
+%out_struct = OpTypeStruct %int_rta
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%ptr_ptr = OpTypePointer Private %ptr_ssbo_int
+%forward_var = OpVariable %ptr_ptr Private
+%backward_var = OpVariable %ptr_ptr Private
+
+%ptr_ssbo_n = OpTypePointer StorageBuffer %int
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%n_gep = OpAccessChain %ptr_ssbo_n %in_var %int_0
+%n = OpLoad %int %n_gep
+%first_gep = OpAccessChain %ptr_ssbo_int %in_var %int_1 %int_0
+OpStore %forward_var %first_gep
+%last_gep = OpPtrAccessChain %ptr_ssbo_int %first_gep %n
+OpStore %backward_var %last_gep
+%cmp_n = OpSLessThanEqual %bool %n %int_0
+OpSelectionMerge %exit None
+OpBranchConditional %cmp_n %exit %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %inc_i %loop
+%forward_gep = OpLoad %ptr_ssbo_int %forward_var
+%backward_gep = OpLoad %ptr_ssbo_int %backward_var
+%forward_next = OpPtrAccessChain %ptr_ssbo_int %forward_gep %int_1
+%backward_next = OpPtrAccessChain %ptr_ssbo_int %backward_gep %int_n1
+%inc_i = OpIAdd %int %i %int_1
+OpStore %forward_var %forward_next
+OpStore %backward_var %backward_next
+
+%equal = OpPtrEqual %bool %forward_gep %backward_gep
+%equal_int = OpSelect %int %equal %int_1 %int_0
+%out_gep = OpAccessChain %ptr_ssbo_int %out_var %int_0 %i
+OpStore %out_gep %equal_int
+
+%cmp = OpSGreaterThanEqual %bool %i %n
+OpLoopMerge %loop_exit %loop None
+OpBranchConditional %cmp %loop_exit %loop
+
+%loop_exit = OpLabel
+OpBranch %exit
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 132
+# Only data for number of iterations matters.
+ssbo 0:0 subdata int 0 32
+ssbo 0:1 128
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo int 0:1 0   == 0
+probe ssbo int 0:1 4   == 0
+probe ssbo int 0:1 8   == 0
+probe ssbo int 0:1 12  == 0
+probe ssbo int 0:1 16  == 0
+probe ssbo int 0:1 20  == 0
+probe ssbo int 0:1 24  == 0
+probe ssbo int 0:1 28  == 0
+probe ssbo int 0:1 32  == 0
+probe ssbo int 0:1 36  == 0
+probe ssbo int 0:1 40  == 0
+probe ssbo int 0:1 44  == 0
+probe ssbo int 0:1 48  == 0
+probe ssbo int 0:1 52  == 0
+probe ssbo int 0:1 56  == 0
+probe ssbo int 0:1 60  == 0
+probe ssbo int 0:1 64  == 1
+probe ssbo int 0:1 68  == 0
+probe ssbo int 0:1 72  == 0
+probe ssbo int 0:1 76  == 0
+probe ssbo int 0:1 80  == 0
+probe ssbo int 0:1 84  == 0
+probe ssbo int 0:1 88  == 0
+probe ssbo int 0:1 92  == 0
+probe ssbo int 0:1 96  == 0
+probe ssbo int 0:1 100 == 0
+probe ssbo int 0:1 104 == 0
+probe ssbo int 0:1 108 == 0
+probe ssbo int 0:1 112 == 0
+probe ssbo int 0:1 116 == 0
+probe ssbo int 0:1 120 == 0
+probe ssbo int 0:1 124 == 0
+
+

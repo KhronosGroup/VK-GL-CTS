@@ -1,0 +1,113 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; This test generates four results per iteration of the loop. The loop is executed %n times.
+
+; Each iteration generates a result for OpPtrEqual. One
+; pointer is an iterator through the input SSBO (%in_var) and the other is a
+; selection between the iterator, null or the 0'th index pointer depending on
+; the value of the iterator mod 3.
+
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %int_rta ArrayStride 4
+OpDecorate %ptr_ssbo_int ArrayStride 4
+
+OpDecorate %in_struct Block
+OpMemberDecorate %in_struct 0 Offset 0
+OpMemberDecorate %in_struct 1 Offset 4
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int2 = OpTypeVector %int 2
+%int_rta = OpTypeRuntimeArray %int
+%int2_rta = OpTypeRuntimeArray %int2
+
+%in_struct = OpTypeStruct %int %int_rta
+%ptr_ssbo_in_struct = OpTypePointer StorageBuffer %in_struct
+%in_var = OpVariable %ptr_ssbo_in_struct StorageBuffer
+
+%out_struct = OpTypeStruct %int_rta
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%ptr_ssbo_int_null = OpConstantNull %ptr_ssbo_int
+%ptr_ssbo_n = OpTypePointer StorageBuffer %int
+%ptr_ssbo_int2 = OpTypePointer StorageBuffer %int2
+%void_fn = OpTypeFunction %void
+%ptr_return_fn = OpTypeFunction %ptr_ssbo_int %ptr_ssbo_int %ptr_ssbo_int %int
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%n_gep = OpAccessChain %ptr_ssbo_n %in_var %int_0
+%n = OpLoad %int %n_gep
+%base_ssbo_gep = OpAccessChain %ptr_ssbo_int %in_var %int_1 %int_0
+%n_leq_0 = OpSLessThanEqual %bool %n %int_0
+OpSelectionMerge %exit None
+OpBranchConditional %n_leq_0 %exit %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %inc_i %loop
+%ssbo_gep = OpPhi %ptr_ssbo_int %base_ssbo_gep %entry %next_ssbo_gep %loop
+%inc_i = OpIAdd %int %i %int_1
+%next_ssbo_gep = OpPtrAccessChain %ptr_ssbo_int %ssbo_gep %int_1
+
+%ptr_call = OpFunctionCall %ptr_ssbo_int %gep_func %ssbo_gep %base_ssbo_gep %i
+%equal = OpPtrEqual %bool %ssbo_gep %ptr_call
+%equal_int = OpSelect %int %equal %int_1 %int_0
+%out_gep = OpAccessChain %ptr_ssbo_int %out_var %int_0 %i
+OpStore %out_gep %equal_int
+
+%cmp = OpSGreaterThanEqual %bool %i %n
+OpLoopMerge %loop_exit %loop None
+OpBranchConditional %cmp %loop_exit %loop
+
+%loop_exit = OpLabel
+OpBranch %exit
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+%gep_func = OpFunction %ptr_ssbo_int None %ptr_return_fn
+%param_ptr = OpFunctionParameter %ptr_ssbo_int
+%param_alt_ptr = OpFunctionParameter %ptr_ssbo_int
+%param_i = OpFunctionParameter %int
+%1 = OpLabel
+%i_mod_3 = OpSMod %int %param_i %int_3
+%i_mod_3_is_0 = OpIEqual %bool %i_mod_3 %int_0
+%i_mod_3_is_1 = OpIEqual %bool %i_mod_3 %int_1
+%ssbo_gep1 = OpSelect %ptr_ssbo_int %i_mod_3_is_0 %param_alt_ptr %ptr_ssbo_int_null
+%ssbo_gep2 = OpSelect %ptr_ssbo_int %i_mod_3_is_1 %param_ptr %ssbo_gep1
+OpReturnValue %ssbo_gep2
+OpFunctionEnd
+
+[test]
+ssbo 0:0 132
+ssbo 0:0 subdata int 0 33
+ssbo 0:1 132
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo int 0:1 0 == 1 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0

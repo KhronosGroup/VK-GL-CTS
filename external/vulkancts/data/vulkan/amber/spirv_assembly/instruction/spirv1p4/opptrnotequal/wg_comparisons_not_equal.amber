@@ -1,0 +1,164 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VariablePointerFeatures.variablePointers
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; Test operates on a Workgroup array (%wg_var) containing an array of 16 arrays of four ints.
+
+; Each invocation writes out the result of OpPtrNotEqual for elements of the
+; outer array to index 16 of the corresponding output variable. Pointers are
+; based the gid'th element vs the zero'th element.
+
+; Each invocation loops 4 times and writes out 4 results each for OpPtrNotEqual.
+; The pointers are the lid'th element of gid'th element of the outer array vs
+; the iteration count mod 4'th element of the gid'th element of the outer
+; array. Results are ordered so each thread writes continguous results.
+
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %wg_var %not_equal_var %input_var
+OpExecutionMode %main LocalSize 16 4 1
+
+OpDecorate %struct_17 Block
+OpMemberDecorate %struct_17 0 Offset 0
+OpDecorate %runtime_17 ArrayStride 68
+OpDecorate %array_17 ArrayStride 4
+
+OpDecorate %not_equal_var DescriptorSet 0
+OpDecorate %not_equal_var Binding 0
+
+OpDecorate %input_struct Block
+OpMemberDecorate %input_struct 0 BuiltIn LocalInvocationId
+OpMemberDecorate %input_struct 1 BuiltIn GlobalInvocationId
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_4 = OpConstant %int 4
+%int_16 = OpConstant %int 16
+%int_17 = OpConstant %int 17
+%int_64 = OpConstant %int 64
+%int3 = OpTypeVector %int 3
+
+%input_struct = OpTypeStruct %int3 %int3
+%ptr_input_struct = OpTypePointer Input %input_struct
+%ptr_input_int3 = OpTypePointer Input %int3
+
+%array_4 = OpTypeArray %int %int_4
+%array_array_4 = OpTypeArray %array_4 %int_16
+%ptr_array_array_4 = OpTypePointer Workgroup %array_array_4
+%ptr_array_4 = OpTypePointer Workgroup %array_4
+%ptr_wg_int = OpTypePointer Workgroup %int
+
+%array_17 = OpTypeArray %int %int_17
+%runtime_17 = OpTypeRuntimeArray %array_17
+%struct_17 = OpTypeStruct %runtime_17
+%ptr_struct_17 = OpTypePointer StorageBuffer %struct_17
+%ptr_array_17 = OpTypePointer StorageBuffer %array_17
+%ptr_int = OpTypePointer StorageBuffer %int
+
+%wg_var = OpVariable %ptr_array_array_4 Workgroup
+%not_equal_var = OpVariable %ptr_struct_17 StorageBuffer
+%input_var = OpVariable %ptr_input_struct Input
+
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gid_gep = OpAccessChain %ptr_input_int3 %input_var %int_1
+%gid = OpLoad %int3 %gid_gep
+%gid_x = OpCompositeExtract %int %gid 0
+%gid_y = OpCompositeExtract %int %gid 1
+%lid_gep = OpAccessChain %ptr_input_int3 %input_var %int_0
+%lid = OpLoad %int3 %lid_gep
+%lid_x = OpCompositeExtract %int %lid 0
+%lid_y = OpCompositeExtract %int %lid 1
+%array_gep_0 = OpAccessChain %ptr_array_4 %wg_var %int_0
+%array_gep = OpAccessChain %ptr_array_4 %wg_var %lid_x
+%lid_y_is_1 = OpIEqual %bool %lid_y %int_1
+OpSelectionMerge %loop None
+OpBranchConditional %lid_y_is_1 %then %loop
+
+%then = OpLabel
+; Compute results for outer array
+%large_not_equal = OpPtrNotEqual %bool %array_gep %array_gep_0
+%large_not_equal_gep = OpAccessChain %ptr_int %not_equal_var %int_0 %gid_x %int_16
+%large_not_equal_int = OpSelect %int %large_not_equal %int_1 %int_0
+OpStore %large_not_equal_gep %large_not_equal_int
+;
+OpBranch %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %int_0 %then %inc_i %loop
+%inc_i = OpIAdd %int %i %int_1
+%i_cmp = OpIEqual %bool %inc_i %int_4
+%lid_offset = OpIMul %int %lid_y %int_4
+%out_gep_index = OpIAdd %int %i %lid_offset
+; Compute results for inner array
+%ref_gep = OpAccessChain %ptr_wg_int %array_gep %lid_y
+%cmp_gep = OpAccessChain %ptr_wg_int %array_gep %i
+%not_equal = OpPtrNotEqual %bool %ref_gep %cmp_gep
+%not_equal_int = OpSelect %int %not_equal %int_1 %int_0
+%not_equal_gep = OpAccessChain %ptr_int %not_equal_var %int_0 %gid_x %out_gep_index
+OpStore %not_equal_gep %not_equal_int
+;
+OpLoopMerge %exit %loop None
+OpBranchConditional %i_cmp %exit %loop
+
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+
+[test]
+# 16 x 4 x 2 = 128 work items
+# 4 x 4 = 16 bytes per invocation
+# 2048 bytes from looping
+# 16 x 2 = 32 coarse results (1 per lid)
+# 128 bytes
+# 2176 total bytes
+ssbo 0:0 2176
+
+compute entrypoint main
+compute 2 1 1
+
+#not equal var
+probe ssbo int 0:0 0    == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 0
+probe ssbo int 0:0 68   == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 136  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 204  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 272  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 340  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 408  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 476  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 544  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 612  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 680  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 748  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 816  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 884  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 952  == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1020 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1088 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 0
+probe ssbo int 0:0 1156 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1224 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1292 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1360 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1428 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1496 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1564 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1632 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1700 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1768 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1836 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1904 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 1972 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 2040 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+probe ssbo int 0:0 2108 == 0 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 1
+

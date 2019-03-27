@@ -1,0 +1,47 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; SpecConstantOp zero extend 16-bit 16 value to 32-bit.
+               OpCapability Shader
+	       OpCapability Int16
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+               OpSourceExtension "GL_GOOGLE_include_directive"
+               OpName %main "main"
+               OpName %output_buffer "output_buffer"
+               OpMemberName %output_buffer 0 "out_SSBO"
+               OpName %_ ""
+               OpMemberDecorate %output_buffer 0 Offset 0
+               OpDecorate %output_buffer Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+     %uint16 = OpTypeInt 16 0
+       %uint = OpTypeInt 32 0
+%output_buffer = OpTypeStruct %uint
+%_ptr_StorageBuffer_output_buffer = OpTypePointer StorageBuffer %output_buffer
+          %_ = OpVariable %_ptr_StorageBuffer_output_buffer StorageBuffer
+      %uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %uint
+%spec_const = OpSpecConstant %uint16 16
+%op_spec_const = OpSpecConstantOp %uint UConvert %spec_const
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %34 = OpAccessChain %_ptr_StorageBuffer_int %_ %uint_0
+               OpStore %34 %op_spec_const
+               OpReturn
+               OpFunctionEnd
+[test]
+ssbo 0:1 8
+ssbo 0:1 subdata uint 0 0 0
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uint 0:1 0 == 16 0

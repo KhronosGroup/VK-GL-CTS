@@ -1,0 +1,89 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; This test generates four results.
+
+; The results are based of OpPtrEqual comparisons of
+; %ssbo_var vs null.
+; 0: comparison of %ssbo_var vs null
+; 1: comparison of SSBO float pointer vs null
+; 2: comparison of null struct vs null struct
+; 3: comparison of null float vs null float
+
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %ssbo_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %ssbo_struct Block
+OpMemberDecorate %ssbo_struct 0 Offset 0
+OpDecorate %ssbo_var DescriptorSet 0
+OpDecorate %ssbo_var Binding 0
+
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int4 = OpTypeVector %int 4
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+
+%ssbo_struct = OpTypeStruct %float
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %ssbo_struct
+%ssbo_var = OpVariable %ptr_ssbo_struct StorageBuffer
+%ptr_ssbo_float = OpTypePointer StorageBuffer %float
+
+%out_struct = OpTypeStruct %int4
+%ptr_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_out_struct StorageBuffer
+%ptr_ssbo_int4 = OpTypePointer StorageBuffer %int4
+
+%ptr_ssbo_struct_null = OpConstantNull %ptr_ssbo_struct
+%ptr_ssbo_float_null = OpConstantNull %ptr_ssbo_float
+%ptr_ssbo_struct_null2 = OpConstantNull %ptr_ssbo_struct
+%ptr_ssbo_float_null2 = OpConstantNull %ptr_ssbo_float
+
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+
+%ssbo_equal = OpPtrEqual %bool %ssbo_var %ptr_ssbo_struct_null
+%ssbo_equal_int = OpSelect %int %ssbo_equal %int_1 %int_0
+
+%ssbo_gep_0 = OpAccessChain %ptr_ssbo_float %ssbo_var %int_0
+%ssbo_equal_0 = OpPtrEqual %bool %ssbo_gep_0 %ptr_ssbo_float_null
+%ssbo_equal_0_int = OpSelect %int %ssbo_equal_0 %int_1 %int_0
+
+%null_ssbo_equal = OpPtrEqual %bool %ptr_ssbo_struct_null %ptr_ssbo_struct_null2
+%null_ssbo_equal_int = OpSelect %int %null_ssbo_equal %int_1 %int_0
+
+%null_ssbo_equal_0 = OpPtrEqual %bool %ptr_ssbo_float_null %ptr_ssbo_float_null2
+%null_ssbo_equal_0_int = OpSelect %int %null_ssbo_equal_0 %int_1 %int_0
+
+%combined = OpCompositeConstruct %int4 %ssbo_equal_int %ssbo_equal_0_int %null_ssbo_equal_int %null_ssbo_equal_0_int
+%out_gep = OpAccessChain %ptr_ssbo_int4 %out_var %int_0
+OpStore %out_gep %combined
+
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 16
+ssbo 0:1 16
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uvec4 0:1 0  == 0 0 1 1
+

@@ -1,0 +1,125 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VariablePointerFeatures.variablePointers
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; Tests use of private variables holding workgroup pointers and pointer comparisons.
+
+; Two iterators are each stored in Private variables: one moves forward, one
+; moves backward. In each iteration an equal comparison is written. Iterators
+; are then moved forward (or backward respectively) one index.
+
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %wg_var %out_var %forward_var %backward_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %int_rta ArrayStride 4
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 0
+
+OpDecorate %ptr_wg_int ArrayStride 4
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_n1 = OpConstant %int -1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_32 = OpConstant %int 32
+
+%int_array_32 = OpTypeArray %int %int_32
+%ptr_wg_array = OpTypePointer Workgroup %int_array_32
+%wg_var = OpVariable %ptr_wg_array Workgroup
+
+%int_rta = OpTypeRuntimeArray %int
+%out_struct = OpTypeStruct %int_rta
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+
+%ptr_wg_int = OpTypePointer Workgroup %int
+%ptr_ptr = OpTypePointer Private %ptr_wg_int
+%forward_var = OpVariable %ptr_ptr Private
+%backward_var = OpVariable %ptr_ptr Private
+
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%first_gep = OpAccessChain %ptr_wg_int %wg_var %int_0
+OpStore %forward_var %first_gep
+%last_gep = OpPtrAccessChain %ptr_wg_int %first_gep %int_32
+OpStore %backward_var %last_gep
+OpBranch %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %inc_i %loop
+%forward_gep = OpLoad %ptr_wg_int %forward_var
+%backward_gep = OpLoad %ptr_wg_int %backward_var
+%forward_next = OpPtrAccessChain %ptr_wg_int %forward_gep %int_1
+%backward_next = OpPtrAccessChain %ptr_wg_int %backward_gep %int_n1
+%inc_i = OpIAdd %int %i %int_1
+OpStore %forward_var %forward_next
+OpStore %backward_var %backward_next
+
+%equal = OpPtrEqual %bool %forward_gep %backward_gep
+%equal_int = OpSelect %int %equal %int_1 %int_0
+%out_gep = OpAccessChain %ptr_ssbo_int %out_var %int_0 %i
+OpStore %out_gep %equal_int
+
+%cmp = OpSGreaterThan %bool %i %int_32
+OpLoopMerge %exit %loop None
+OpBranchConditional %cmp %exit %loop
+
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 528
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo int 0:0 0   == 0
+probe ssbo int 0:0 4   == 0
+probe ssbo int 0:0 8   == 0
+probe ssbo int 0:0 12  == 0
+probe ssbo int 0:0 16  == 0
+probe ssbo int 0:0 20  == 0
+probe ssbo int 0:0 24  == 0
+probe ssbo int 0:0 28  == 0
+probe ssbo int 0:0 32  == 0
+probe ssbo int 0:0 36  == 0
+probe ssbo int 0:0 40  == 0
+probe ssbo int 0:0 44  == 0
+probe ssbo int 0:0 48  == 0
+probe ssbo int 0:0 52  == 0
+probe ssbo int 0:0 56  == 0
+probe ssbo int 0:0 60  == 0
+probe ssbo int 0:0 64  == 1
+probe ssbo int 0:0 68  == 0
+probe ssbo int 0:0 72  == 0
+probe ssbo int 0:0 76  == 0
+probe ssbo int 0:0 80  == 0
+probe ssbo int 0:0 84  == 0
+probe ssbo int 0:0 88  == 0
+probe ssbo int 0:0 92  == 0
+probe ssbo int 0:0 96  == 0
+probe ssbo int 0:0 100 == 0
+probe ssbo int 0:0 104 == 0
+probe ssbo int 0:0 108 == 0
+probe ssbo int 0:0 112 == 0
+probe ssbo int 0:0 116 == 0
+probe ssbo int 0:0 120 == 0
+probe ssbo int 0:0 124 == 0
+probe ssbo int 0:0 128 == 0
