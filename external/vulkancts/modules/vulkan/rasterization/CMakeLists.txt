@@ -1,7 +1,6 @@
 include_directories(
 		..
 		../amber
-		../../../../amber/src/include
 		)
 
 set(DEQP_VK_RASTERIZATION_SRCS

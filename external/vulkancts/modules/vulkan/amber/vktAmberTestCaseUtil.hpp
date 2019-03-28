@@ -1,3 +1,5 @@
+#ifndef _VKTAMBERTESTCASEUTIL_HPP
+#define _VKTAMBERTESTCASEUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -17,38 +19,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
- * \file
- * \brief Functional tests using amber
  *//*--------------------------------------------------------------------*/
 
-#include "vktAmberExampleTests.hpp"
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace cts_amber
 {
-namespace
+
+class AmberTestCase : public tcu::TestNode
 {
+};
 
-void createAmberTests (tcu::TestCaseGroup* tests)
-{
-	tcu::TestContext& testCtx = tests->getTestContext();
-
-	tests->addChild(createAmberTestCase(testCtx,				// tcu::TestContext		testCtx
-										"clear",				// const char*			name
-										"Example clear test",	// const char*			description
-										"example",				// const char*			category
-										"clear.amber"));		// const std::string&	filename
-}
-
-} // anonymous
-
-tcu::TestCaseGroup* createExampleTests (tcu::TestContext& testCtx)
-{
-	return createTestGroup(testCtx, "amber-example", "Amber Tests", createAmberTests);
-}
+AmberTestCase* createAmberTestCase (tcu::TestContext&	testCtx,
+									const char*			name,
+									const char*			description,
+									const char*			category,
+									const std::string&	filename);
 
 } // cts_amber
 } // vkt
+
+#endif // _VKTAMBERTESTCASEUTIL_HPP

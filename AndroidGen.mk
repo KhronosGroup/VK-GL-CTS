@@ -61,6 +61,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/amber/vktAmberGraphicsFuzzTests.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberHelper.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberTestCase.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberTestCaseUtil.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferAndImageAllocationUtil.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferComputeInstance.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferTests.cpp \

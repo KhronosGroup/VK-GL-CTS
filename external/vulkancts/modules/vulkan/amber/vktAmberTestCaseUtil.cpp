@@ -17,37 +17,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *//*!
- * \file
- * \brief Functional tests using amber
  *//*--------------------------------------------------------------------*/
 
-#include "vktAmberExampleTests.hpp"
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktAmberTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
 namespace cts_amber
 {
-namespace
+
+AmberTestCase* createAmberTestCase (tcu::TestContext&	testCtx,
+									const char*			name,
+									const char*			description,
+									const char*			category,
+									const std::string&	filename)
 {
+	AmberTestCase *testCase = new AmberTestCase(testCtx, name, description);
 
-void createAmberTests (tcu::TestCaseGroup* tests)
-{
-	tcu::TestContext& testCtx = tests->getTestContext();
+	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
+	// Make sure the input can be parsed before we use it.
+	if (testCase->parse(category, filename))
+		return testCase;
+	else
+	{
+		const std::string msg = "Failed to parse Amber file: " + filename;
 
-	tests->addChild(createAmberTestCase(testCtx,				// tcu::TestContext		testCtx
-										"clear",				// const char*			name
-										"Example clear test",	// const char*			description
-										"example",				// const char*			category
-										"clear.amber"));		// const std::string&	filename
-}
+		delete testCase;
+		TCU_THROW(InternalError, msg.c_str());
+	}
 
-} // anonymous
-
-tcu::TestCaseGroup* createExampleTests (tcu::TestContext& testCtx)
-{
-	return createTestGroup(testCtx, "amber-example", "Amber Tests", createAmberTests);
+	return DE_NULL;
 }
 
 } // cts_amber

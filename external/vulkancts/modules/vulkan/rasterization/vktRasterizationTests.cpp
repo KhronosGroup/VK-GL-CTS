@@ -23,7 +23,7 @@
  * \brief Functional rasterization tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktAmberTestCase.hpp"
+#include "vktAmberTestCaseUtil.hpp"
 #include "vktRasterizationTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
@@ -3733,7 +3733,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	{
 		tcu::TestCaseGroup* const	provokingVertex		= new tcu::TestCaseGroup(testCtx, "provoking_vertex", "Test provoking vertex");
 
-		const std::string			primitiveTypes[]	=
+		const char*					primitiveTypes[]	=
 		{
 			"triangle_list",
 			"triangle_list_with_adjacency",
@@ -3750,16 +3750,10 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 		for (deUint32 primitiveTypeIdx = 0; primitiveTypeIdx < DE_LENGTH_OF_ARRAY(primitiveTypes); primitiveTypeIdx++)
 		{
-			const std::string			type		= primitiveTypes[primitiveTypeIdx];
-			cts_amber::AmberTestCase*	testCase	= new cts_amber::AmberTestCase(testCtx, type.c_str(), "");
+			const char*			type	= primitiveTypes[primitiveTypeIdx];
+			const std::string	file	= std::string(type) + ".amber";
 
-			if (testCase->parse("provoking_vertex", (type + ".amber").c_str()))
-				provokingVertex->addChild(testCase);
-			else
-			{
-				delete testCase;
-				TCU_THROW(InternalError, "Failed to create a test case from Amber file.");
-			}
+			provokingVertex->addChild(cts_amber::createAmberTestCase(testCtx, type, "", "provoking_vertex", file));
 		}
 	}
 }
