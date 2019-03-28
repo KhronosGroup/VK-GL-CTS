@@ -1757,6 +1757,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 	TestGroupCase uabCases[] =
 	{
 		{ UPDATE_AFTER_BIND_DISABLED,	"nouab",	"no update after bind"		},
+		{ UPDATE_AFTER_BIND_ENABLED,	"uab",		"enable update after bind"	},
 	};
 
 	for (int setsNdx = 0; setsNdx < DE_LENGTH_OF_ARRAY(setsCases); setsNdx++)
