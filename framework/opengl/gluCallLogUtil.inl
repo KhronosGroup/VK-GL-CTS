@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
+ * Generated from Khronos GL API description (gl.xml) revision a7b53cf072129a0218a4a56c00843289225eba0e.
  */
 
 int getTextureParamNumArgs (int pname)

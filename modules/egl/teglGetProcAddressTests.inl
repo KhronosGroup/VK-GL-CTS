@@ -1048,6 +1048,12 @@ static const char* s_GL_QCOM_tiled_rendering[] =
 	"glStartTilingQCOM",
 };
 
+static const char* s_GL_AMD_framebuffer_multisample_advanced[] =
+{
+	"glNamedRenderbufferStorageMultisampleAdvancedAMD",
+	"glRenderbufferStorageMultisampleAdvancedAMD",
+};
+
 static const char* s_GL_AMD_performance_monitor[] =
 {
 	"glBeginPerfMonitorAMD",
@@ -1616,6 +1622,16 @@ static const char* s_GL_NV_internalformat_sample_query[] =
 	"glGetInternalformatSampleivNV",
 };
 
+static const char* s_GL_NV_memory_attachment[] =
+{
+	"glBufferAttachMemoryNV",
+	"glGetMemoryObjectDetachedResourcesuivNV",
+	"glNamedBufferAttachMemoryNV",
+	"glResetMemoryObjectParameterNV",
+	"glTexAttachMemoryNV",
+	"glTextureAttachMemoryNV",
+};
+
 static const char* s_GL_NV_non_square_matrices[] =
 {
 	"glUniformMatrix2x3fvNV",
@@ -1968,6 +1984,7 @@ static const struct
 	{ "GL_QCOM_extended_get",								DE_LENGTH_OF_ARRAY(s_GL_QCOM_extended_get),								s_GL_QCOM_extended_get								},
 	{ "GL_QCOM_extended_get2",								DE_LENGTH_OF_ARRAY(s_GL_QCOM_extended_get2),							s_GL_QCOM_extended_get2								},
 	{ "GL_QCOM_tiled_rendering",							DE_LENGTH_OF_ARRAY(s_GL_QCOM_tiled_rendering),							s_GL_QCOM_tiled_rendering							},
+	{ "GL_AMD_framebuffer_multisample_advanced",			DE_LENGTH_OF_ARRAY(s_GL_AMD_framebuffer_multisample_advanced),			s_GL_AMD_framebuffer_multisample_advanced			},
 	{ "GL_AMD_performance_monitor",							DE_LENGTH_OF_ARRAY(s_GL_AMD_performance_monitor),						s_GL_AMD_performance_monitor						},
 	{ "GL_ANGLE_framebuffer_blit",							DE_LENGTH_OF_ARRAY(s_GL_ANGLE_framebuffer_blit),						s_GL_ANGLE_framebuffer_blit							},
 	{ "GL_ANGLE_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_ANGLE_framebuffer_multisample),					s_GL_ANGLE_framebuffer_multisample					},
@@ -2038,6 +2055,7 @@ static const struct
 	{ "GL_NV_gpu_shader5",									DE_LENGTH_OF_ARRAY(s_GL_NV_gpu_shader5),								s_GL_NV_gpu_shader5									},
 	{ "GL_NV_instanced_arrays",								DE_LENGTH_OF_ARRAY(s_GL_NV_instanced_arrays),							s_GL_NV_instanced_arrays							},
 	{ "GL_NV_internalformat_sample_query",					DE_LENGTH_OF_ARRAY(s_GL_NV_internalformat_sample_query),				s_GL_NV_internalformat_sample_query					},
+	{ "GL_NV_memory_attachment",							DE_LENGTH_OF_ARRAY(s_GL_NV_memory_attachment),							s_GL_NV_memory_attachment							},
 	{ "GL_NV_non_square_matrices",							DE_LENGTH_OF_ARRAY(s_GL_NV_non_square_matrices),						s_GL_NV_non_square_matrices							},
 	{ "GL_NV_path_rendering",								DE_LENGTH_OF_ARRAY(s_GL_NV_path_rendering),								s_GL_NV_path_rendering								},
 	{ "GL_NV_polygon_mode",									DE_LENGTH_OF_ARRAY(s_GL_NV_polygon_mode),								s_GL_NV_polygon_mode								},

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
+ * Generated from Khronos GL API description (gl.xml) revision a7b53cf072129a0218a4a56c00843289225eba0e.
  */
 #define GL_DEPTH_BUFFER_BIT												0x00000100
 #define GL_STENCIL_BUFFER_BIT											0x00000400
@@ -54,6 +54,15 @@
 #define GL_TESS_EVALUATION_SHADER_BIT_EXT								0x00000010
 #define GL_COMPUTE_SHADER_BIT											0x00000020
 #define GL_ALL_SHADER_BITS												0xFFFFFFFFu
+#define GL_SUBGROUP_FEATURE_BASIC_BIT_KHR								0x00000001
+#define GL_SUBGROUP_FEATURE_VOTE_BIT_KHR								0x00000002
+#define GL_SUBGROUP_FEATURE_ARITHMETIC_BIT_KHR							0x00000004
+#define GL_SUBGROUP_FEATURE_BALLOT_BIT_KHR								0x00000008
+#define GL_SUBGROUP_FEATURE_SHUFFLE_BIT_KHR								0x00000010
+#define GL_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT_KHR					0x00000020
+#define GL_SUBGROUP_FEATURE_CLUSTERED_BIT_KHR							0x00000040
+#define GL_SUBGROUP_FEATURE_QUAD_BIT_KHR								0x00000080
+#define GL_SUBGROUP_FEATURE_PARTITIONED_BIT_NV							0x00000100
 #define GL_FALSE														0
 #define GL_NO_ERROR														0
 #define GL_ZERO															0
@@ -1782,6 +1791,10 @@
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR						0x93DC
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12							0x93DD
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR						0x93DD
+#define GL_SUBGROUP_SIZE_KHR											0x9532
+#define GL_SUBGROUP_SUPPORTED_STAGES_KHR								0x9533
+#define GL_SUBGROUP_SUPPORTED_FEATURES_KHR								0x9534
+#define GL_SUBGROUP_QUAD_ALL_STAGES_KHR									0x9535
 #define GL_PER_GPU_STORAGE_NV											0x9548
 #define GL_MULTICAST_PROGRAMMABLE_SAMPLE_LOCATION_NV					0x9549
 #define GL_SHADER_BINARY_FORMAT_SPIR_V									0x9551

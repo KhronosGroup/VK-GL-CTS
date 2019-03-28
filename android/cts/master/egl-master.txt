@@ -2489,6 +2489,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_qcom_driver_control
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_extended_get
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_extended_get2
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_tiled_rendering
+dEQP-EGL.functional.get_proc_address.extension.gl_amd_framebuffer_multisample_advanced
 dEQP-EGL.functional.get_proc_address.extension.gl_amd_performance_monitor
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_framebuffer_blit
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_framebuffer_multisample
@@ -2559,6 +2560,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_framebuffer_multisample
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_gpu_shader5
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_internalformat_sample_query
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_memory_attachment
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_non_square_matrices
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_path_rendering
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_polygon_mode
