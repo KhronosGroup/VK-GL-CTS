@@ -57,7 +57,7 @@ TestInstance* AmberTestCase::createInstance(Context& ctx) const
 	return new AmberTestInstance(ctx, m_recipe);
 }
 
-bool AmberTestCase::parse(const char* category, const char* filename)
+bool AmberTestCase::parse(const char* category, const std::string& filename)
 {
 	std::string readFilename("vulkan/amber/");
 	readFilename.append(category);

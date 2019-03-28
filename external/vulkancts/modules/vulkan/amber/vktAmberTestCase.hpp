@@ -60,7 +60,7 @@ public:
 
 	virtual TestInstance* createInstance (Context& ctx) const;
 
-	bool parse(const char* category, const char* filename);
+	bool parse(const char* category, const std::string& filename);
 	void initPrograms(vk::SourceCollections& programCollection) const;
 
 private:
