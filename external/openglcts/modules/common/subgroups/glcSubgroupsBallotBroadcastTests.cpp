@@ -84,22 +84,22 @@ std::string getBodySource(CaseDefinition caseDef)
 	std::ostringstream bdy;
 
 	bdy << "  uvec4 mask = subgroupBallot(true);\n";
-	bdy << "  uint tempResult = 0;\n";
+	bdy << "  uint tempResult = 0u;\n";
 
 	if (OPTYPE_BROADCAST == caseDef.opType)
 	{
-		bdy	<< "  tempResult = 0x3;\n";
+		bdy	<< "  tempResult = 0x3u;\n";
 		for (int i = 0; i < (int)subgroups::maxSupportedSubgroupSize(); i++)
 		{
 			bdy << "  {\n"
-			<< "    const uint id = "<< i << ";\n"
+			<< "    const uint id = "<< i << "u;\n"
 			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format)
 			<< " op = subgroupBroadcast(data1[gl_SubgroupInvocationID], id);\n"
 			<< "    if ((id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
 			<< "    {\n"
 			<< "      if (op != data1[id])\n"
 			<< "      {\n"
-			<< "        tempResult = 0;\n"
+			<< "        tempResult = 0u;\n"
 			<< "      }\n"
 			<< "    }\n"
 			<< "  }\n";
@@ -107,8 +107,8 @@ std::string getBodySource(CaseDefinition caseDef)
 	}
 	else
 	{
-		bdy	<< "  uint firstActive = 0;\n"
-			<< "  for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+		bdy	<< "  uint firstActive = 0u;\n"
+			<< "  for (uint i = 0u; i < gl_SubgroupSize; i++)\n"
 			<< "  {\n"
 			<< "    if (subgroupBallotBitExtract(mask, i))\n"
 			<< "    {\n"
@@ -116,11 +116,11 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "      break;\n"
 			<< "    }\n"
 			<< "  }\n"
-			<< "  tempResult |= (subgroupBroadcastFirst(data1[gl_SubgroupInvocationID]) == data1[firstActive]) ? 0x1 : 0;\n"
+			<< "  tempResult |= (subgroupBroadcastFirst(data1[gl_SubgroupInvocationID]) == data1[firstActive]) ? 0x1u : 0u;\n"
 			<< "  // make the firstActive invocation inactive now\n"
 			<< "  if (firstActive == gl_SubgroupInvocationID)\n"
 			<< "  {\n"
-			<< "    for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+			<< "    for (uint i = 0u; i < gl_SubgroupSize; i++)\n"
 			<< "    {\n"
 			<< "      if (subgroupBallotBitExtract(mask, i))\n"
 			<< "      {\n"
@@ -128,12 +128,12 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "        break;\n"
 			<< "      }\n"
 			<< "    }\n"
-			<< "    tempResult |= (subgroupBroadcastFirst(data1[gl_SubgroupInvocationID]) == data1[firstActive]) ? 0x2 : 0;\n"
+			<< "    tempResult |= (subgroupBroadcastFirst(data1[gl_SubgroupInvocationID]) == data1[firstActive]) ? 0x2u : 0u;\n"
 			<< "  }\n"
 			<< "  else\n"
 			<< "  {\n"
 			<< "    // the firstActive invocation didn't partake in the second result so set it to true\n"
-			<< "    tempResult |= 0x2;\n"
+			<< "    tempResult |= 0x2u;\n"
 			<< "  }\n";
 	}
    return bdy.str();
@@ -151,7 +151,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream				vertex;
-		vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		vertex << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -173,7 +173,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	{
 		std::ostringstream geometry;
 
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		geometry << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
@@ -198,7 +198,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	{
 		std::ostringstream controlSource;
 
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		controlSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
@@ -225,7 +225,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	else if (SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream evaluationSource;
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		evaluationSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -258,7 +258,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
 			<< "layout(binding = 0, std430) buffer Buffer0\n"
@@ -285,7 +285,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	else
 	{
 		const string vertex =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(binding = 0, std430) buffer Buffer0\n"
 			"{\n"
@@ -307,7 +307,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string tesc =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(vertices=1) out;\n"
 			"layout(binding = 1, std430) buffer Buffer1\n"
@@ -332,7 +332,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string tese =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(isolines) in;\n"
 			"layout(binding = 2, std430) buffer Buffer2\n"
@@ -347,13 +347,13 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"void main (void)\n"
 			"{\n"
 			+ bdyStr +
-			"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
+			"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 			"}\n";
 
 		const string geometry =
-			"#version 450\n"
+			//version string added by addGeometryShadersFromTemplate
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(${TOPOLOGY}) in;\n"
 			"layout(points, max_vertices = 1) out;\n"
@@ -376,8 +376,9 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string fragment =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			"precision highp float;\n"
 			"layout(location = 0) out uint result;\n"
 			"layout(binding = 4, std430) readonly buffer Buffer4\n"
 			"{\n"

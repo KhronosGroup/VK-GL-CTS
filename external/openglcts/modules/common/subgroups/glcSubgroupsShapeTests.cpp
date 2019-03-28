@@ -92,32 +92,32 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 	extension += "#extension GL_KHR_shader_subgroup_ballot: enable\n";
 
-	bdy << "  uint tempResult = 0x1;\n"
+	bdy << "  uint tempResult = 0x1u;\n"
 		<< "  uvec4 mask = subgroupBallot(true);\n";
 
 	if (OPTYPE_CLUSTERED == caseDef.opType)
 	{
 		for (deUint32 i = 1; i <= subgroups::maxSupportedSubgroupSize(); i *= 2)
 		{
-			bdy << "  if (gl_SubgroupSize >= " << i << ")\n"
+			bdy << "  if (gl_SubgroupSize >= " << i << "u)\n"
 				<< "  {\n"
 				<< "    uvec4 contribution = uvec4(0);\n"
-				<< "    const uint modID = gl_SubgroupInvocationID % 32;\n"
-				<< "    switch (gl_SubgroupInvocationID / 32)\n"
+				<< "    uint modID = gl_SubgroupInvocationID % 32u;\n"
+				<< "    switch (gl_SubgroupInvocationID / 32u)\n"
 				<< "    {\n"
-				<< "    case 0: contribution.x = 1 << modID; break;\n"
-				<< "    case 1: contribution.y = 1 << modID; break;\n"
-				<< "    case 2: contribution.z = 1 << modID; break;\n"
-				<< "    case 3: contribution.w = 1 << modID; break;\n"
+				<< "    case 0u: contribution.x = 1u << modID; break;\n"
+				<< "    case 1u: contribution.y = 1u << modID; break;\n"
+				<< "    case 2u: contribution.z = 1u << modID; break;\n"
+				<< "    case 3u: contribution.w = 1u << modID; break;\n"
 				<< "    }\n"
-				<< "    uvec4 result = subgroupClusteredOr(contribution, " << i << ");\n"
-				<< "    uint rootID = gl_SubgroupInvocationID & ~(" << i - 1 << ");\n"
-				<< "    for (uint i = 0; i < " << i << "; i++)\n"
+				<< "    uvec4 result = subgroupClusteredOr(contribution, " << i << "u);\n"
+				<< "    uint rootID = gl_SubgroupInvocationID & ~(" << i - 1 << "u);\n"
+				<< "    for (uint i = 0u; i < " << i << "u; i++)\n"
 				<< "    {\n"
 				<< "      uint nextID = rootID + i;\n"
 				<< "      if (subgroupBallotBitExtract(mask, nextID) ^^ subgroupBallotBitExtract(result, nextID))\n"
 				<< "      {\n"
-				<< "        tempResult = 0;\n"
+				<< "        tempResult = 0u;\n"
 				<< "      }\n"
 				<< "    }\n"
 				<< "  }\n";
@@ -126,14 +126,14 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else
 	{
 		bdy << "  uint cluster[4] =\n"
-			<< "  {\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 0),\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 1),\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 2),\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 3)\n"
-			<< "  };\n"
-			<< "  uint rootID = gl_SubgroupInvocationID & ~0x3;\n"
-			<< "  for (uint i = 0; i < 4; i++)\n"
+			<< "  uint[](\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 0u),\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 1u),\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 2u),\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 3u)\n"
+			<< "  );\n"
+			<< "  uint rootID = gl_SubgroupInvocationID & ~0x3u;\n"
+			<< "  for (uint i = 0u; i < 4u; i++)\n"
 			<< "  {\n"
 			<< "    uint nextID = rootID + i;\n"
 			<< "    if (subgroupBallotBitExtract(mask, nextID) && (cluster[i] != nextID))\n"
@@ -146,7 +146,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream vertexSrc;
-		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		vertexSrc << "${VERSION_DECL}\n"
 			<< extension
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float result;\n"
@@ -164,7 +164,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream geometry;
 
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		geometry << "${VERSION_DECL}\n"
 			<< extension
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
@@ -185,7 +185,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream controlSource;
 
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		controlSource << "${VERSION_DECL}\n"
 			<< extension
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
@@ -209,9 +209,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream evaluationSource;
 
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		evaluationSource << "${VERSION_DECL}\n"
 			<< extension
-			<< "layout(isolines, equal_spacing, ccw ) in;\n"
+			<< "layout(isolines, equal_spacing, ccw) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "void main (void)\n"
 			<< "{\n"
@@ -239,32 +239,32 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 	std::ostringstream bdy;
 
-	bdy << "  uint tempResult = 0x1;\n"
+	bdy << "  uint tempResult = 0x1u;\n"
 		<< "  uvec4 mask = subgroupBallot(true);\n";
 
 	if (OPTYPE_CLUSTERED == caseDef.opType)
 	{
 		for (deUint32 i = 1; i <= subgroups::maxSupportedSubgroupSize(); i *= 2)
 		{
-			bdy << "  if (gl_SubgroupSize >= " << i << ")\n"
+			bdy << "  if (gl_SubgroupSize >= " << i << "u)\n"
 				<< "  {\n"
 				<< "    uvec4 contribution = uvec4(0);\n"
-				<< "    const uint modID = gl_SubgroupInvocationID % 32;\n"
-				<< "    switch (gl_SubgroupInvocationID / 32)\n"
+				<< "    uint modID = gl_SubgroupInvocationID % 32u;\n"
+				<< "    switch (gl_SubgroupInvocationID / 32u)\n"
 				<< "    {\n"
-				<< "    case 0: contribution.x = 1 << modID; break;\n"
-				<< "    case 1: contribution.y = 1 << modID; break;\n"
-				<< "    case 2: contribution.z = 1 << modID; break;\n"
-				<< "    case 3: contribution.w = 1 << modID; break;\n"
+				<< "    case 0u: contribution.x = 1u << modID; break;\n"
+				<< "    case 1u: contribution.y = 1u << modID; break;\n"
+				<< "    case 2u: contribution.z = 1u << modID; break;\n"
+				<< "    case 3u: contribution.w = 1u << modID; break;\n"
 				<< "    }\n"
-				<< "    uvec4 result = subgroupClusteredOr(contribution, " << i << ");\n"
-				<< "    uint rootID = gl_SubgroupInvocationID & ~(" << i - 1 << ");\n"
-				<< "    for (uint i = 0; i < " << i << "; i++)\n"
+				<< "    uvec4 result = subgroupClusteredOr(contribution, " << i << "u);\n"
+				<< "    uint rootID = gl_SubgroupInvocationID & ~(" << i - 1 << "u);\n"
+				<< "    for (uint i = 0u; i < " << i << "u; i++)\n"
 				<< "    {\n"
 				<< "      uint nextID = rootID + i;\n"
 				<< "      if (subgroupBallotBitExtract(mask, nextID) ^^ subgroupBallotBitExtract(result, nextID))\n"
 				<< "      {\n"
-				<< "        tempResult = 0;\n"
+				<< "        tempResult = 0u;\n"
 				<< "      }\n"
 				<< "    }\n"
 				<< "  }\n";
@@ -273,14 +273,14 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	else
 	{
 		bdy << "  uint cluster[4] =\n"
-			<< "  {\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 0),\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 1),\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 2),\n"
-			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 3)\n"
-			<< "  };\n"
-			<< "  uint rootID = gl_SubgroupInvocationID & ~0x3;\n"
-			<< "  for (uint i = 0; i < 4; i++)\n"
+			<< "  uint[](\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 0u),\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 1u),\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 2u),\n"
+			<< "    subgroupQuadBroadcast(gl_SubgroupInvocationID, 3u)\n"
+			<< "  );\n"
+			<< "  uint rootID = gl_SubgroupInvocationID & ~0x3u;\n"
+			<< "  for (uint i = 0u; i < 4u; i++)\n"
 			<< "  {\n"
 			<< "    uint nextID = rootID + i;\n"
 			<< "    if (subgroupBallotBitExtract(mask, nextID) && (cluster[i] != nextID))\n"
@@ -294,7 +294,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< extension
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
 			<< "layout(binding = 0, std430) buffer Buffer0\n"
@@ -318,7 +318,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		{
 			const string vertex =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				+ extension +
 				"layout(binding = 0, std430) buffer Buffer0\n"
 				"{\n"
@@ -339,7 +339,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tesc =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				+ extension +
 				"layout(vertices=1) out;\n"
 				"layout(binding = 1, std430) buffer Buffer1\n"
@@ -350,7 +350,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"void main (void)\n"
 				"{\n"
 				+ bdy.str() +
-				"  b1.result[gl_PrimitiveID] = 1;\n"
+				"  b1.result[gl_PrimitiveID] = 1u;\n"
 				"  if (gl_InvocationID == 0)\n"
 				"  {\n"
 				"    gl_TessLevelOuter[0] = 1.0f;\n"
@@ -364,7 +364,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tese =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				+ extension +
 				"layout(isolines) in;\n"
 				"layout(binding = 2, std430) buffer Buffer2\n"
@@ -375,7 +375,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"void main (void)\n"
 				"{\n"
 				+ bdy.str() +
-				"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = 1;\n"
+				"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = 1u;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
@@ -385,8 +385,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string geometry =
-				"#version 450\n"
-				+ extension +
+				// version added by addGeometryShadersFromTemplate
+				extension +
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(binding = 3, std430) buffer Buffer3\n"
@@ -408,7 +408,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string fragment =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				+ extension +
 				"layout(location = 0) out uint result;\n"
 				"void main (void)\n"

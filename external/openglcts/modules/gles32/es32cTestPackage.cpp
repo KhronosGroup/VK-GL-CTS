@@ -45,6 +45,8 @@
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
 
+#include "../common/subgroups/glcSubgroupsTests.hpp"
+
 #include "../glesext/draw_buffers_indexed/esextcDrawBuffersIndexedTests.hpp"
 #include "../glesext/geometry_shader/esextcGeometryShaderTests.hpp"
 #include "../glesext/gpu_shader5/esextcGPUShader5Tests.hpp"
@@ -166,6 +168,10 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::CopyImageTests(getContext()));
 		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
 		addChild(coreGroup);
+
+		tcu::TestCaseGroup*  khrGroup = new tcu::TestCaseGroup(getTestContext(), "khr", "");
+		khrGroup->addChild(new glc::subgroups::GlSubgroupTests(getContext()));
+		addChild(khrGroup);
 	}
 	catch (...)
 	{

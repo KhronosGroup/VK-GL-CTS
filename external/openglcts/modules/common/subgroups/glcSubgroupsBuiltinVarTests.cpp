@@ -323,13 +323,13 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 {
 	{
 		const string fragmentGLSL =
-		    "#version 450\n"
-			"layout(location = 0) in vec4 in_color;\n"
+		  "${VERSION_DECL}\n"
+			"layout(location = 0) in highp vec4 in_color;\n"
 			"layout(location = 0) out uvec4 out_color;\n"
 			"void main()\n"
 			"{\n"
-			 "	out_color = uvec4(in_color);\n"
-			 "}\n";
+			"	out_color = uvec4(in_color);\n"
+			"}\n";
 		programCollection.add("fragment") << glu::FragmentSource(fragmentGLSL);
 	}
 
@@ -339,7 +339,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		const string vertexGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 			"layout(location = 0) out vec4 out_color;\n"
 			"layout(location = 0) in highp vec4 in_position;\n"
@@ -355,7 +355,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else if (SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
 	{
 		const string controlSourceGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_EXT_tessellation_shader : require\n"
 			"layout(vertices = 2) out;\n"
 			"layout(location = 0) out vec4 out_color[];\n"
@@ -372,7 +372,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		programCollection.add("tesc") << glu::TessellationControlSource(controlSourceGLSL);
 
 		const string evaluationSourceGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 			"#extension GL_EXT_tessellation_shader : require\n"
 			"layout(isolines, equal_spacing, ccw ) in;\n"
@@ -389,7 +389,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else if (SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
 	{
 		const string controlSourceGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_EXT_tessellation_shader : require\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 			"layout(vertices = 2) out;\n"
@@ -407,7 +407,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		programCollection.add("tesc") << glu::TessellationControlSource(controlSourceGLSL);
 
 		const string  evaluationSourceGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 			"#extension GL_EXT_tessellation_shader : require\n"
 			"layout(isolines, equal_spacing, ccw ) in;\n"
@@ -424,7 +424,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else if (SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
 		const string geometryGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 			"layout(points) in;\n"
 			"layout(points, max_vertices = 1) out;\n"
@@ -450,7 +450,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
 			<< "layout(binding = 0, std430) buffer Output\n"
@@ -473,7 +473,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		{
 			const string vertexGLSL =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(binding = 0, std430) buffer Output0\n"
 				"{\n"
@@ -493,7 +493,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tescGLSL =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(vertices=1) out;\n"
 				"layout(binding = 1, std430) buffer Output1\n"
@@ -516,7 +516,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string teseGLSL =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(isolines) in;\n"
 				"layout(binding = 2, std430) buffer Output2\n"
@@ -526,7 +526,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"\n"
 				"void main (void)\n"
 				"{\n"
-				"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, 0, 0);\n"
+				"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, 0, 0);\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
@@ -535,7 +535,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string geometryGLSL =
-				"#version 450\n"
+				// version string is added by addGeometryShadersFromTemplate
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
@@ -556,7 +556,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string fragmentGLSL =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(location = 0) out uvec4 data;\n"
 				"void main (void)\n"

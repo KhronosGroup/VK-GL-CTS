@@ -148,8 +148,8 @@ de::MovePtr<glu::ShaderProgram> makeGraphicsPipeline(glc::Context&				context,
 	DE_UNREF(stages);			// only used for asserts
 
 	map<string, string>		templateArgs;
-//	string					versionDecl(getGLSLVersionDeclaration(context.getGLSLVersion()));
-//	templateArgs.insert(pair<string, string>("VERSION_DECL", versionDecl));
+	string					versionDecl(getGLSLVersionDeclaration(context.getGLSLVersion()));
+	templateArgs.insert(pair<string, string>("VERSION_DECL", versionDecl));
 
 	string vertSource, tescSource, teseSource, geomSource, fragSource;
 	if (vshader)
@@ -269,24 +269,26 @@ de::MovePtr<glu::ShaderProgram> makeComputePipeline(glc::Context& context, const
 
 	tcu::StringTemplate computeTemplate(glslTemplate.sources[glu::SHADERTYPE_COMPUTE][0]);
 
-	map<string, string>		localSizeParams;
+	map<string, string>		templateArgs;
 	{
 		stringstream localSize;
 		localSize << "local_size_x = " << localSizeX;
-		localSizeParams.insert(pair<string, string>("LOCAL_SIZE_X", localSize.str()));
+		templateArgs.insert(pair<string, string>("LOCAL_SIZE_X", localSize.str()));
 	}
 	{
 		stringstream localSize;
 		localSize << "local_size_y = " << localSizeY;
-		localSizeParams.insert(pair<string, string>("LOCAL_SIZE_Y", localSize.str()));
+		templateArgs.insert(pair<string, string>("LOCAL_SIZE_Y", localSize.str()));
 	}
 	{
 		stringstream localSize;
 		localSize << "local_size_z = " << localSizeZ;
-		localSizeParams.insert(pair<string, string>("LOCAL_SIZE_Z", localSize.str()));
+		templateArgs.insert(pair<string, string>("LOCAL_SIZE_Z", localSize.str()));
 	}
+	string versionDecl(getGLSLVersionDeclaration(context.getGLSLVersion()));
+	templateArgs.insert(pair<string, string>("VERSION_DECL", versionDecl));
 
-	glu::ComputeSource cshader(glu::ComputeSource(computeTemplate.specialize(localSizeParams)));
+	glu::ComputeSource cshader(glu::ComputeSource(computeTemplate.specialize(templateArgs)));
 
 	if (doShaderLog)
 	{
@@ -413,7 +415,7 @@ struct Buffer : public BufferOrImage
 		m_gl.bindBuffer(m_target, m_objectId);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer");
 
-		ptr = m_gl.mapBuffer(m_target, GL_READ_WRITE);
+		ptr = m_gl.mapBufferRange(m_target, 0, m_sizeInBytes, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT);
 		GLU_EXPECT_NO_ERROR(m_gl.getError(), "glMapBuffer");
 
 		m_gl.bindBuffer(m_target, 0);
@@ -542,14 +544,14 @@ std::string glc::subgroups::getSharedMemoryBallotHelper()
 			"  subgroupMemoryBarrierShared();\n"
 			"  if (vote)\n"
 			"  {\n"
-			"    const highp uint invocationId = gl_SubgroupInvocationID % 32;\n"
-			"    const highp uint bitToSet = 1u << invocationId;\n"
-			"    switch (gl_SubgroupInvocationID / 32)\n"
+			"    highp uint invocationId = gl_SubgroupInvocationID % 32u;\n"
+			"    highp uint bitToSet = 1u << invocationId;\n"
+			"    switch (gl_SubgroupInvocationID / 32u)\n"
 			"    {\n"
-			"    case 0: atomicOr(superSecretComputeShaderHelper[groupOffset].x, bitToSet); break;\n"
-			"    case 1: atomicOr(superSecretComputeShaderHelper[groupOffset].y, bitToSet); break;\n"
-			"    case 2: atomicOr(superSecretComputeShaderHelper[groupOffset].z, bitToSet); break;\n"
-			"    case 3: atomicOr(superSecretComputeShaderHelper[groupOffset].w, bitToSet); break;\n"
+			"    case 0u: atomicOr(superSecretComputeShaderHelper[groupOffset].x, bitToSet); break;\n"
+			"    case 1u: atomicOr(superSecretComputeShaderHelper[groupOffset].y, bitToSet); break;\n"
+			"    case 2u: atomicOr(superSecretComputeShaderHelper[groupOffset].z, bitToSet); break;\n"
+			"    case 3u: atomicOr(superSecretComputeShaderHelper[groupOffset].w, bitToSet); break;\n"
 			"    }\n"
 			"  }\n"
 			"  subgroupMemoryBarrierShared();\n"
@@ -624,7 +626,7 @@ void glc::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 {
 	{
 		const std::string vertNoSubgroupGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"void main (void)\n"
 			"{\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
@@ -637,7 +639,7 @@ void glc::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 
 	{
 		const std::string tescNoSubgroupGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"layout(vertices=1) out;\n"
 			"\n"
 			"void main (void)\n"
@@ -654,7 +656,7 @@ void glc::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 
 	{
 		const std::string teseNoSubgroupGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"layout(isolines) in;\n"
 			"\n"
 			"void main (void)\n"
@@ -677,7 +679,7 @@ std::string glc::subgroups::getVertShaderForStage(const ShaderStageFlags stage)
 			return "";
 		case SHADER_STAGE_FRAGMENT_BIT:
 			return
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"void main (void)\n"
 				"{\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
@@ -686,14 +688,14 @@ std::string glc::subgroups::getVertShaderForStage(const ShaderStageFlags stage)
 				"}\n";
 		case SHADER_STAGE_GEOMETRY_BIT:
 			return
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"void main (void)\n"
 				"{\n"
 				"}\n";
 		case SHADER_STAGE_TESS_CONTROL_BIT:
 		case SHADER_STAGE_TESS_EVALUATION_BIT:
 			return
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"void main (void)\n"
 				"{\n"
 				"}\n";
@@ -826,7 +828,7 @@ std::string glc::subgroups::getFormatNameForGLSL (Format format)
 void glc::subgroups::setVertexShaderFrameBuffer (SourceCollections& programCollection)
 {
 	programCollection.add("vert") << glu::VertexSource(
-		"#version 450\n"
+		"${VERSION_DECL}\n"
 		"layout(location = 0) in highp vec4 in_position;\n"
 		"void main (void)\n"
 		"{\n"
@@ -837,8 +839,8 @@ void glc::subgroups::setVertexShaderFrameBuffer (SourceCollections& programColle
 void glc::subgroups::setFragmentShaderFrameBuffer (SourceCollections& programCollection)
 {
 	programCollection.add("fragment") << glu::FragmentSource(
-		"#version 450\n"
-		"layout(location = 0) in float in_color;\n"
+		"${VERSION_DECL}\n"
+		"layout(location = 0) in highp float in_color;\n"
 		"layout(location = 0) out uint out_color;\n"
 		"void main()\n"
 		"{\n"
@@ -849,7 +851,7 @@ void glc::subgroups::setFragmentShaderFrameBuffer (SourceCollections& programCol
 void glc::subgroups::setTesCtrlShaderFrameBuffer (SourceCollections& programCollection)
 {
 	programCollection.add("tesc") << glu::TessellationControlSource(
-		"#version 450\n"
+		"${VERSION_DECL}\n"
 		"#extension GL_KHR_shader_subgroup_basic: enable\n"
 		"#extension GL_EXT_tessellation_shader : require\n"
 		"layout(vertices = 2) out;\n"
@@ -867,7 +869,7 @@ void glc::subgroups::setTesCtrlShaderFrameBuffer (SourceCollections& programColl
 void glc::subgroups::setTesEvalShaderFrameBuffer (SourceCollections& programCollection)
 {
 	programCollection.add("tese") << glu::TessellationEvaluationSource(
-		"#version 450\n"
+		"${VERSION_DECL}\n"
 		"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 		"#extension GL_EXT_tessellation_shader : require\n"
 		"layout(isolines, equal_spacing, ccw ) in;\n"
@@ -891,8 +893,8 @@ void glc::subgroups::addGeometryShadersFromTemplate (const std::string& glslTemp
 	map<string, string>		pointsParams;
 	pointsParams.insert(pair<string, string>("TOPOLOGY", "points"));
 
-	collection.add("geometry_lines")	<< glu::GeometrySource(geometryTemplate.specialize(linesParams));
-	collection.add("geometry_points")	<< glu::GeometrySource(geometryTemplate.specialize(pointsParams));
+	collection.add("geometry_lines")	<< glu::GeometrySource("${VERSION_DECL}\n" + geometryTemplate.specialize(linesParams));
+	collection.add("geometry_points")	<< glu::GeometrySource("${VERSION_DECL}\n" + geometryTemplate.specialize(pointsParams));
 }
 
 void initializeMemory(deqp::Context& context, glw::GLvoid *hostPtr, subgroups::SSBOData& data)

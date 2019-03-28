@@ -267,7 +267,7 @@ std::string getIdentity(int opType, Format format)
 			}
 			else if (isUnsigned)
 			{
-				return subgroups::getFormatNameForGLSL(format) + "(0)";
+				return subgroups::getFormatNameForGLSL(format) + "(0u)";
 			}
 			else
 			{
@@ -348,7 +348,7 @@ string getTestString(const CaseDefinition &caseDef)
     // conversion overflow in framebuffer tests.
     string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
 	string bdy =
-		"  uint tempResult = 0;\n"
+		"  uint tempResult = 0u;\n"
 		"  uint id = gl_SubgroupInvocationID;\n";
 
     // Test the case where the partition has a single subset with all invocations in it.
@@ -358,21 +358,21 @@ string getTestString(const CaseDefinition &caseDef)
         "  " + fmt + " allResult = " + getOpTypeNamePartitioned(caseDef.opType) + "(data[gl_SubgroupInvocationID], allBallot);\n"
         "  " + fmt + " refResult = " + getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID]);\n"
         "  if (" + getCompare(caseDef.opType, caseDef.format, "allResult", "refResult") + ") {\n"
-        "      tempResult |= 0x1;\n"
+        "      tempResult |= 0x1u;\n"
         "  }\n";
 
     // The definition of a partition doesn't forbid bits corresponding to inactive
     // invocations being in the subset with active invocations. In other words, test that
     // bits corresponding to inactive invocations are ignored.
     bdy +=
-	    "  if (0 == (gl_SubgroupInvocationID % 2)) {\n"
+	    "  if (0u == (gl_SubgroupInvocationID % 2u)) {\n"
         "    " + fmt + " allResult = " + getOpTypeNamePartitioned(caseDef.opType) + "(data[gl_SubgroupInvocationID], allBallot);\n"
         "    " + fmt + " refResult = " + getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID]);\n"
         "    if (" + getCompare(caseDef.opType, caseDef.format, "allResult", "refResult") + ") {\n"
-        "        tempResult |= 0x2;\n"
+        "        tempResult |= 0x2u;\n"
         "    }\n"
         "  } else {\n"
-        "    tempResult |= 0x2;\n"
+        "    tempResult |= 0x2u;\n"
         "  }\n";
 
     // Test the case where the partition has each invocation in a unique subset. For
@@ -387,42 +387,42 @@ string getTestString(const CaseDefinition &caseDef)
         "  uvec4 selfBallot = subgroupPartitionNV(gl_SubgroupInvocationID);\n"
         "  " + fmt + " selfResult = " + getOpTypeNamePartitioned(caseDef.opType) + "(data[gl_SubgroupInvocationID], selfBallot);\n"
         "  if (" + getCompare(caseDef.opType, caseDef.format, "selfResult", expectedSelfResult) + ") {\n"
-        "      tempResult |= 0x4;\n"
+        "      tempResult |= 0x4u;\n"
         "  }\n";
 
     // Test "random" partitions based on a hash of the invocation id.
     // This "hash" function produces interesting/randomish partitions.
-    static const char *idhash = "((id%N)+(id%(N+1))-(id%2)+(id/2))%((N+1)/2)";
+    static const char *idhash = "((id%N)+(id%(N+1u))-(id%2u)+(id/2u))%((N+1u)/2u)";
 
     bdy +=
-		"  for (uint N = 1; N < 16; ++N) {\n"
+		"  for (uint N = 1u; N < 16u; ++N) {\n"
 		"    " + fmt + " idhashFmt = " + fmt + "(" + idhash + ");\n"
 		"    uvec4 partitionBallot = subgroupPartitionNV(idhashFmt) & mask;\n"
 		"    " + fmt + " partitionedResult = " + getOpTypeNamePartitioned(caseDef.opType) + "(data[gl_SubgroupInvocationID], partitionBallot);\n"
-		"      for (uint i = 0; i < N; ++i) {\n"
+		"      for (uint i = 0u; i < N; ++i) {\n"
 		"        " + fmt + " iFmt = " + fmt + "(i);\n"
         "        if (" + getCompare(caseDef.opType, caseDef.format, "idhashFmt", "iFmt") + ") {\n"
         "          " + fmt + " subsetResult = " + getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID]);\n"
-        "          tempResult |= " + getCompare(caseDef.opType, caseDef.format, "partitionedResult", "subsetResult") + " ? (0x4 << N) : 0;\n"
+        "          tempResult |= " + getCompare(caseDef.opType, caseDef.format, "partitionedResult", "subsetResult") + " ? (0x4u << N) : 0u;\n"
         "        }\n"
         "      }\n"
         "  }\n"
         // tests in flow control:
-		"  if (1 == (gl_SubgroupInvocationID % 2)) {\n"
-        "    for (uint N = 1; N < 7; ++N) {\n"
+		"  if (1u == (gl_SubgroupInvocationID % 2u)) {\n"
+        "    for (uint N = 1u; N < 7u; ++N) {\n"
 		"      " + fmt + " idhashFmt = " + fmt + "(" + idhash + ");\n"
 		"      uvec4 partitionBallot = subgroupPartitionNV(idhashFmt) & mask;\n"
         "      " + fmt + " partitionedResult = " + getOpTypeNamePartitioned(caseDef.opType) + "(data[gl_SubgroupInvocationID], partitionBallot);\n"
-        "        for (uint i = 0; i < N; ++i) {\n"
+        "        for (uint i = 0u; i < N; ++i) {\n"
 		"          " + fmt + " iFmt = " + fmt + "(i);\n"
         "          if (" + getCompare(caseDef.opType, caseDef.format, "idhashFmt", "iFmt") + ") {\n"
         "            " + fmt + " subsetResult = " + getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID]);\n"
-        "            tempResult |= " + getCompare(caseDef.opType, caseDef.format, "partitionedResult", "subsetResult") + " ? (0x20000 << N) : 0;\n"
+        "            tempResult |= " + getCompare(caseDef.opType, caseDef.format, "partitionedResult", "subsetResult") + " ? (0x20000u << N) : 0u;\n"
         "          }\n"
         "        }\n"
         "    }\n"
         "  } else {\n"
-        "    tempResult |= 0xFC0000;\n"
+        "    tempResult |= 0xFC0000u;\n"
         "  }\n"
         ;
 
@@ -443,7 +443,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream vertexSrc;
-		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		vertexSrc << "${VERSION_DECL}\n"
 			<< "#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -468,7 +468,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream geometry;
 
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		geometry << "${VERSION_DECL}\n"
 			<< "#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -495,7 +495,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else if (SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream controlSource;
-		controlSource  << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		controlSource  << "${VERSION_DECL}\n"
 			<< "#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -527,7 +527,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 
 		std::ostringstream evaluationSource;
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		evaluationSource << "${VERSION_DECL}\n"
 			<< "#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -563,7 +563,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -594,7 +594,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		{
 			const std::string vertex =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			    "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -622,7 +622,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string tesc =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			    "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -653,7 +653,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string tese =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			    "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -671,7 +671,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
 				+ bdy +
-				"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
+				"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
@@ -680,7 +680,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string geometry =
-				"#version 450\n"
+				// version added by addGeometryShadersFromTemplate
 				"#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			    "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -709,10 +709,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string fragment =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_NV_shader_subgroup_partitioned: enable\n"
 			    "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				"precision highp float;\n"
 				"layout(location = 0) out uint result;\n"
 				"layout(binding = 4, std430) readonly buffer Buffer4\n"
 				"{\n"

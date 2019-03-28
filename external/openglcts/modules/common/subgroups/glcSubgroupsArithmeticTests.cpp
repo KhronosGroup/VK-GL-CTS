@@ -317,7 +317,7 @@ std::string getIdentity(int opType, Format format)
 			}
 			else if (isUnsigned)
 			{
-				return subgroups::getFormatNameForGLSL(format) + "(0)";
+				return subgroups::getFormatNameForGLSL(format) + "(0u)";
 			}
 			else
 			{
@@ -405,7 +405,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	switch (caseDef.opType)
 	{
 		default:
-			indexVars = "  uint start = 0, end = gl_SubgroupSize;\n";
+			indexVars = "  uint start = 0u, end = gl_SubgroupSize;\n";
 			break;
 		case OPTYPE_INCLUSIVE_ADD:
 		case OPTYPE_INCLUSIVE_MUL:
@@ -414,7 +414,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		case OPTYPE_INCLUSIVE_AND:
 		case OPTYPE_INCLUSIVE_OR:
 		case OPTYPE_INCLUSIVE_XOR:
-			indexVars = "  uint start = 0, end = gl_SubgroupInvocationID + 1;\n";
+			indexVars = "  uint start = 0u, end = gl_SubgroupInvocationID + 1u;\n";
 			break;
 		case OPTYPE_EXCLUSIVE_ADD:
 		case OPTYPE_EXCLUSIVE_MUL:
@@ -423,14 +423,14 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		case OPTYPE_EXCLUSIVE_AND:
 		case OPTYPE_EXCLUSIVE_OR:
 		case OPTYPE_EXCLUSIVE_XOR:
-			indexVars = "  uint start = 0, end = gl_SubgroupInvocationID;\n";
+			indexVars = "  uint start = 0u, end = gl_SubgroupInvocationID;\n";
 			break;
 	}
 
 	bdy << indexVars
 		<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " ref = "
 		<< getIdentity(caseDef.opType, caseDef.format) << ";\n"
-		<< "  uint tempResult = 0;\n"
+		<< "  uint tempResult = 0u;\n"
 		<< "  for (uint index = start; index < end; index++)\n"
 		<< "  {\n"
 		<< "    if (subgroupBallotBitExtract(mask, index))\n"
@@ -439,8 +439,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		<< "    }\n"
 		<< "  }\n"
 		<< "  tempResult = " << getCompare(caseDef.opType, caseDef.format, "ref",
-											getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") << " ? 0x1 : 0;\n"
-		<< "  if (1 == (gl_SubgroupInvocationID % 2))\n"
+											getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") << " ? 0x1u : 0u;\n"
+		<< "  if (1u == (gl_SubgroupInvocationID % 2u))\n"
 		<< "  {\n"
 		<< "    mask = subgroupBallot(true);\n"
 		<< "    ref = " << getIdentity(caseDef.opType, caseDef.format) << ";\n"
@@ -452,17 +452,17 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		<< "      }\n"
 		<< "    }\n"
 		<< "    tempResult |= " << getCompare(caseDef.opType, caseDef.format, "ref",
-				getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") << " ? 0x2 : 0;\n"
+				getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") << " ? 0x2u : 0u;\n"
 		<< "  }\n"
 		<< "  else\n"
 		<< "  {\n"
-		<< "    tempResult |= 0x2;\n"
+		<< "    tempResult |= 0x2u;\n"
 		<< "  }\n";
 
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream vertexSrc;
-		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		vertexSrc << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
@@ -486,7 +486,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream geometry;
 
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		geometry << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(points) in;\n"
@@ -512,7 +512,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else if (SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream controlSource;
-		controlSource  << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		controlSource  << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(vertices = 2) out;\n"
@@ -543,7 +543,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 
 		std::ostringstream evaluationSource;
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		evaluationSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
@@ -576,7 +576,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	switch (caseDef.opType)
 	{
 		default:
-			indexVars = "  uint start = 0, end = gl_SubgroupSize;\n";
+			indexVars = "  uint start = 0u, end = gl_SubgroupSize;\n";
 			break;
 		case OPTYPE_INCLUSIVE_ADD:
 		case OPTYPE_INCLUSIVE_MUL:
@@ -585,7 +585,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		case OPTYPE_INCLUSIVE_AND:
 		case OPTYPE_INCLUSIVE_OR:
 		case OPTYPE_INCLUSIVE_XOR:
-			indexVars = "  uint start = 0, end = gl_SubgroupInvocationID + 1;\n";
+			indexVars = "  uint start = 0u, end = gl_SubgroupInvocationID + 1u;\n";
 			break;
 		case OPTYPE_EXCLUSIVE_ADD:
 		case OPTYPE_EXCLUSIVE_MUL:
@@ -594,7 +594,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		case OPTYPE_EXCLUSIVE_AND:
 		case OPTYPE_EXCLUSIVE_OR:
 		case OPTYPE_EXCLUSIVE_XOR:
-			indexVars = "  uint start = 0, end = gl_SubgroupInvocationID;\n";
+			indexVars = "  uint start = 0u, end = gl_SubgroupInvocationID;\n";
 			break;
 	}
 
@@ -602,7 +602,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		indexVars +
 		"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " ref = "
 		+ getIdentity(caseDef.opType, caseDef.format) + ";\n"
-		"  uint tempResult = 0;\n"
+		"  uint tempResult = 0u;\n"
 		"  for (uint index = start; index < end; index++)\n"
 		"  {\n"
 		"    if (subgroupBallotBitExtract(mask, index))\n"
@@ -610,8 +610,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		"      ref = " + getOpTypeOperation(caseDef.opType, caseDef.format, "ref", "data[index]") + ";\n"
 		"    }\n"
 		"  }\n"
-		"  tempResult = " + getCompare(caseDef.opType, caseDef.format, "ref", getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") + " ? 0x1 : 0;\n"
-		"  if (1 == (gl_SubgroupInvocationID % 2))\n"
+		"  tempResult = " + getCompare(caseDef.opType, caseDef.format, "ref", getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") + " ? 0x1u : 0u;\n"
+		"  if (1u == (gl_SubgroupInvocationID % 2u))\n"
 		"  {\n"
 		"    mask = subgroupBallot(true);\n"
 		"    ref = " + getIdentity(caseDef.opType, caseDef.format) + ";\n"
@@ -622,18 +622,18 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		"        ref = " + getOpTypeOperation(caseDef.opType, caseDef.format, "ref", "data[index]") + ";\n"
 		"      }\n"
 		"    }\n"
-		"    tempResult |= " + getCompare(caseDef.opType, caseDef.format, "ref", getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") + " ? 0x2 : 0;\n"
+		"    tempResult |= " + getCompare(caseDef.opType, caseDef.format, "ref", getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID])") + " ? 0x2u : 0u;\n"
 		"  }\n"
 		"  else\n"
 		"  {\n"
-		"    tempResult |= 0x2;\n"
+		"    tempResult |= 0x2u;\n"
 		"  }\n";
 
 	if (SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
@@ -663,7 +663,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		{
 			const std::string vertex =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(binding = 0, std430) buffer Buffer0\n"
@@ -690,7 +690,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string tesc =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(vertices=1) out;\n"
@@ -720,7 +720,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string tese =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(isolines) in;\n"
@@ -737,7 +737,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
 				+ bdy +
-				"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
+				"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
@@ -746,7 +746,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string geometry =
-				"#version 450\n"
+				// version added by addGeometryShadersFromTemplate
 				"#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(${TOPOLOGY}) in;\n"
@@ -774,9 +774,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const std::string fragment =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				"precision highp float;\n"
 				"layout(location = 0) out uint result;\n"
 				"layout(binding = 4, std430) readonly buffer Buffer4\n"
 				"{\n"

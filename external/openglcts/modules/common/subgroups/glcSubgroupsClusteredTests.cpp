@@ -253,7 +253,7 @@ std::string getIdentity(int opType, Format format)
 			}
 			else if (isUnsigned)
 			{
-				return subgroups::getFormatNameForGLSL(format) + "(0)";
+				return subgroups::getFormatNameForGLSL(format) + "(0u)";
 			}
 			else
 			{
@@ -322,12 +322,12 @@ std::string getBodySource(CaseDefinition caseDef)
 	for (deUint32 i = 1; i <= subgroups::maxSupportedSubgroupSize(); i *= 2)
 	{
 		bdy	<< "  {\n"
-			<< "    const uint clusterSize = " << i << ";\n"
+			<< "    const uint clusterSize = " << i << "u;\n"
 			<< "    if (clusterSize <= gl_SubgroupSize)\n"
 			<< "    {\n"
 			<< "      " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
 			<< getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID], clusterSize);\n"
-			<< "      for (uint clusterOffset = 0; clusterOffset < gl_SubgroupSize; clusterOffset += clusterSize)\n"
+			<< "      for (uint clusterOffset = 0u; clusterOffset < gl_SubgroupSize; clusterOffset += clusterSize)\n"
 			<< "      {\n"
 			<< "        " << subgroups::getFormatNameForGLSL(caseDef.format) << " ref = "
 			<< getIdentity(caseDef.opType, caseDef.format) << ";\n"
@@ -364,7 +364,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream				vertexSrc;
-		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450 )<< "\n"
+		vertexSrc << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
@@ -388,7 +388,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream geometry;
 
-		geometry  << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		geometry  << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(points) in;\n"
@@ -415,7 +415,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream controlSource;
 
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		controlSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(vertices = 2) out;\n"
@@ -445,7 +445,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream evaluationSource;
 
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		evaluationSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
@@ -480,7 +480,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
@@ -501,7 +501,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"gl_GlobalInvocationID.x;\n"
 			<< "  uvec4 mask = subgroupBallot(true);\n"
 			<< bdy
-			<< "  result[offset] = tempResult ? 1 : 0;\n"
+			<< "  result[offset] = tempResult ? 1u : 0u;\n"
 			<< "}\n";
 
 		programCollection.add("comp") << glu::ComputeSource(src.str());
@@ -510,7 +510,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		{
 			const string vertex =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(binding = 0, std430) buffer Buffer0\n"
@@ -526,7 +526,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
 				+ bdy +
-				"  b0.result[gl_VertexID] = tempResult ? 1 : 0;\n"
+				"  b0.result[gl_VertexID] = tempResult ? 1u : 0u;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
 				"  gl_Position = vec4(float(gl_VertexID) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
@@ -537,7 +537,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tesc =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(vertices=1) out;\n"
@@ -554,7 +554,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"{\n"
 			"  uvec4 mask = subgroupBallot(true);\n"
 			+ bdy +
-			"  b1.result[gl_PrimitiveID] = tempResult ? 1 : 0;\n"
+			"  b1.result[gl_PrimitiveID] = tempResult ? 1u : 0u;\n"
 			"  if (gl_InvocationID == 0)\n"
 			"  {\n"
 			"    gl_TessLevelOuter[0] = 1.0f;\n"
@@ -568,7 +568,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tese =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(isolines) in;\n"
@@ -585,7 +585,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
 				+ bdy +
-				"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult ? 1 : 0;\n"
+				"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult ? 1u : 0u;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
@@ -594,7 +594,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string geometry =
-				"#version 450\n"
+				// version string added by addGeometryShadersFromTemplate
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"layout(${TOPOLOGY}) in;\n"
@@ -612,7 +612,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
 				+ bdy +
-				"  b3.result[gl_PrimitiveIDIn] = tempResult ? 1 : 0;\n"
+				"  b3.result[gl_PrimitiveIDIn] = tempResult ? 1u : 0u;\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
@@ -622,9 +622,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string fragment =
-				"#version 450\n"
+				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				"precision highp float;\n"
 				"layout(location = 0) out uint result;\n"
 				"layout(binding = 4, std430) readonly buffer Buffer4\n"
 				"{\n"
@@ -634,7 +635,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
 				+ bdy +
-				"  result = tempResult ? 1 : 0;\n"
+				"  result = tempResult ? 1u : 0u;\n"
 				"}\n";
 			programCollection.add("fragment") << glu::FragmentSource(fragment);
 		}

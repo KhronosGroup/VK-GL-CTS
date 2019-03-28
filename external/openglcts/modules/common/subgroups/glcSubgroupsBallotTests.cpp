@@ -69,7 +69,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		const string vertexGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(location = 0) in highp vec4 in_position;\n"
 			"layout(location = 0) out float out_color;\n"
@@ -80,11 +80,11 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  out_color = float(tempResult);\n"
 			"  gl_Position = in_position;\n"
 			"  gl_PointSize = 1.0f;\n"
@@ -94,7 +94,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	else if (SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
 		const string geometryGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(points) in;\n"
 			"layout(points, max_vertices = 1) out;\n"
@@ -106,11 +106,11 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  out_color = float(tempResult);\n"
 			"  gl_Position = gl_in[0].gl_Position;\n"
 			"  EmitVertex();\n"
@@ -121,7 +121,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	else if (SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
 	{
 		const string controlSourceGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(vertices = 2) out;\n"
 			"layout(location = 0) out float out_color[];\n"
@@ -137,11 +137,11 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			"    gl_TessLevelOuter[0] = 1.0f;\n"
 			"    gl_TessLevelOuter[1] = 1.0f;\n"
 			"  }\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  out_color[gl_InvocationID] = float(tempResult);\n"
 			"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 			"}\n";
@@ -152,7 +152,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	else if (SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
 	{
 		const string evaluationSourceGLSL =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(isolines, equal_spacing, ccw ) in;\n"
 			"layout(location = 0) out float out_color;\n"
@@ -163,11 +163,11 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  out_color = float(tempResult);\n"
 			"  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 			"}\n";
@@ -188,7 +188,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
 			<< "layout(binding = 0, std430) buffer Buffer1\n"
@@ -207,11 +207,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
 			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
 			"gl_GlobalInvocationID.x;\n"
-			<< "  uint tempResult = 0;\n"
-			<< "  tempResult |= sharedMemoryBallot(true) == subgroupBallot(true) ? 0x1 : 0;\n"
-			<< "  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			<< "  tempResult |= sharedMemoryBallot(bData) == subgroupBallot(bData) ? 0x2 : 0;\n"
-			<< "  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			<< "  uint tempResult = 0u;\n"
+			<< "  tempResult |= sharedMemoryBallot(true) == subgroupBallot(true) ? 0x1u : 0u;\n"
+			<< "  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			<< "  tempResult |= sharedMemoryBallot(bData) == subgroupBallot(bData) ? 0x2u : 0u;\n"
+			<< "  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			<< "  result[offset] = tempResult;\n"
 			<< "}\n";
 
@@ -220,7 +220,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	else
 	{
 		const string vertex =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(binding = 0, std430) buffer Buffer0\n"
 			"{\n"
@@ -233,11 +233,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  b0.result[gl_VertexID] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
@@ -246,7 +246,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string tesc =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(vertices=1) out;\n"
 			"layout(binding = 1, std430) buffer Buffer1\n"
@@ -260,11 +260,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  b1.result[gl_PrimitiveID] = tempResult;\n"
 			"  if (gl_InvocationID == 0)\n"
 			"  {\n"
@@ -275,7 +275,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string tese =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(isolines) in;\n"
 			"layout(binding = 2, std430) buffer Buffer2\n"
@@ -289,18 +289,18 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
-			"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
+			"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 			"}\n";
 
 		const string geometry =
-			"#version 450\n"
+			// version string added by addGeometryShadersFromTemplate
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(${TOPOLOGY}) in;\n"
 			"layout(points, max_vertices = 1) out;\n"
@@ -315,11 +315,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  b3.result[gl_PrimitiveIDIn] = tempResult;\n"
 			"  gl_Position = gl_in[0].gl_Position;\n"
 			"  EmitVertex();\n"
@@ -327,7 +327,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string fragment =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(location = 0) out uint result;\n"
 			"layout(binding = 4, std430) readonly buffer Buffer4\n"
@@ -336,11 +336,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"};\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
+			"  uint tempResult = 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(true)) ? 0x1u : 0u;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0u;\n"
+			"  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2u : 0u;\n"
+			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4u : 0u;\n"
 			"  result = tempResult;\n"
 			"}\n";
 

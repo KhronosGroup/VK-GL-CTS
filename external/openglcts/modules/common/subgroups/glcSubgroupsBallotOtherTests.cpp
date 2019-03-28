@@ -99,17 +99,17 @@ std::string getBodySource(CaseDefinition caseDef)
 
 	bdy << "  uvec4 allOnes = uvec4(0xFFFFFFFF);\n"
 		<< "  uvec4 allZeros = uvec4(0);\n"
-		<< "  uint tempResult = 0;\n"
+		<< "  uint tempResult = 0u;\n"
 		<< "#define MAKE_HIGH_BALLOT_RESULT(i) uvec4("
-		<< "i >= 32 ? 0 : (0xFFFFFFFF << i), "
-		<< "i >= 64 ? 0 : (0xFFFFFFFF << ((i < 32) ? 0 : (i - 32))), "
-		<< "i >= 96 ? 0 : (0xFFFFFFFF << ((i < 64) ? 0 : (i - 64))), "
-		<< " 0xFFFFFFFF << ((i < 96) ? 0 : (i - 96)))\n"
+		<< "i >= 32u ? 0u : (0xFFFFFFFFu << i), "
+		<< "i >= 64u ? 0u : (0xFFFFFFFFu << ((i < 32u) ? 0u : (i - 32u))), "
+		<< "i >= 96u ? 0u : (0xFFFFFFFFu << ((i < 64u) ? 0u : (i - 64u))), "
+		<< " 0xFFFFFFFFu << ((i < 96u) ? 0u : (i - 96u)))\n"
 		<< "#define MAKE_SINGLE_BIT_BALLOT_RESULT(i) uvec4("
-		<< "i >= 32 ? 0 : 0x1 << i, "
-		<< "i < 32 || i >= 64 ? 0 : 0x1 << (i - 32), "
-		<< "i < 64 || i >= 96 ? 0 : 0x1 << (i - 64), "
-		<< "i < 96 ? 0 : 0x1 << (i - 96))\n";
+		<< "i >= 32u ? 0u : 0x1u << i, "
+		<< "i < 32u || i >= 64u ? 0u : 0x1u << (i - 32u), "
+		<< "i < 64u || i >= 96u ? 0u : 0x1u << (i - 64u), "
+		<< "i < 96u ? 0u : 0x1u << (i - 96u))\n";
 
 	switch (caseDef.opType)
 	{
@@ -117,39 +117,39 @@ std::string getBodySource(CaseDefinition caseDef)
 			DE_FATAL("Unknown op type!");
 			break;
 		case OPTYPE_INVERSE_BALLOT:
-			bdy << "  tempResult |= subgroupInverseBallot(allOnes) ? 0x1 : 0;\n"
-				<< "  tempResult |= subgroupInverseBallot(allZeros) ? 0 : 0x2;\n"
-				<< "  tempResult |= subgroupInverseBallot(subgroupBallot(true)) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0x8;\n";
+			bdy << "  tempResult |= subgroupInverseBallot(allOnes) ? 0x1u : 0u;\n"
+				<< "  tempResult |= subgroupInverseBallot(allZeros) ? 0u : 0x2u;\n"
+				<< "  tempResult |= subgroupInverseBallot(subgroupBallot(true)) ? 0x4u : 0u;\n"
+				<< "  tempResult |= 0x8u;\n";
 			break;
 		case OPTYPE_BALLOT_BIT_EXTRACT:
-			bdy << "  tempResult |= subgroupBallotBitExtract(allOnes, gl_SubgroupInvocationID) ? 0x1 : 0;\n"
-				<< "  tempResult |= subgroupBallotBitExtract(allZeros, gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				<< "  tempResult |= subgroupBallotBitExtract(subgroupBallot(true), gl_SubgroupInvocationID) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0x8;\n"
-				<< "  for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+			bdy << "  tempResult |= subgroupBallotBitExtract(allOnes, gl_SubgroupInvocationID) ? 0x1u : 0u;\n"
+				<< "  tempResult |= subgroupBallotBitExtract(allZeros, gl_SubgroupInvocationID) ? 0u : 0x2u;\n"
+				<< "  tempResult |= subgroupBallotBitExtract(subgroupBallot(true), gl_SubgroupInvocationID) ? 0x4u : 0u;\n"
+				<< "  tempResult |= 0x8u;\n"
+				<< "  for (uint i = 0u; i < gl_SubgroupSize; i++)\n"
 				<< "  {\n"
 				<< "    if (!subgroupBallotBitExtract(allOnes, gl_SubgroupInvocationID))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x8;\n"
+				<< "      tempResult &= ~0x8u;\n"
 				<< "    }\n"
 				<< "  }\n";
 			break;
 		case OPTYPE_BALLOT_BIT_COUNT:
-			bdy << "  tempResult |= gl_SubgroupSize == subgroupBallotBitCount(allOnes) ? 0x1 : 0;\n"
-				<< "  tempResult |= 0 == subgroupBallotBitCount(allZeros) ? 0x2 : 0;\n"
-				<< "  tempResult |= 0 < subgroupBallotBitCount(subgroupBallot(true)) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0 == subgroupBallotBitCount(MAKE_HIGH_BALLOT_RESULT(gl_SubgroupSize)) ? 0x8 : 0;\n";
+			bdy << "  tempResult |= gl_SubgroupSize == subgroupBallotBitCount(allOnes) ? 0x1u : 0u;\n"
+				<< "  tempResult |= 0u == subgroupBallotBitCount(allZeros) ? 0x2u : 0u;\n"
+				<< "  tempResult |= 0u < subgroupBallotBitCount(subgroupBallot(true)) ? 0x4u : 0u;\n"
+				<< "  tempResult |= 0u == subgroupBallotBitCount(MAKE_HIGH_BALLOT_RESULT(gl_SubgroupSize)) ? 0x8u : 0u;\n";
 			break;
 		case OPTYPE_BALLOT_INCLUSIVE_BIT_COUNT:
-			bdy << "  uint inclusiveOffset = gl_SubgroupInvocationID + 1;\n"
-				<< "  tempResult |= inclusiveOffset == subgroupBallotInclusiveBitCount(allOnes) ? 0x1 : 0;\n"
-				<< "  tempResult |= 0 == subgroupBallotInclusiveBitCount(allZeros) ? 0x2 : 0;\n"
-				<< "  tempResult |= 0 < subgroupBallotInclusiveBitCount(subgroupBallot(true)) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0x8;\n"
+			bdy << "  uint inclusiveOffset = gl_SubgroupInvocationID + 1u;\n"
+				<< "  tempResult |= inclusiveOffset == subgroupBallotInclusiveBitCount(allOnes) ? 0x1u : 0u;\n"
+				<< "  tempResult |= 0u == subgroupBallotInclusiveBitCount(allZeros) ? 0x2u : 0u;\n"
+				<< "  tempResult |= 0u < subgroupBallotInclusiveBitCount(subgroupBallot(true)) ? 0x4u : 0u;\n"
+				<< "  tempResult |= 0x8u;\n"
 				<< "  uvec4 inclusiveUndef = MAKE_HIGH_BALLOT_RESULT(inclusiveOffset);\n"
 				<< "  bool undefTerritory = false;\n"
-				<< "  for (uint i = 0; i <= 128; i++)\n"
+				<< "  for (uint i = 0u; i <= 128u; i++)\n"
 				<< "  {\n"
 				<< "    uvec4 iUndef = MAKE_HIGH_BALLOT_RESULT(i);\n"
 				<< "    if (iUndef == inclusiveUndef)"
@@ -157,25 +157,25 @@ std::string getBodySource(CaseDefinition caseDef)
 				<< "      undefTerritory = true;\n"
 				<< "    }\n"
 				<< "    uint inclusiveBitCount = subgroupBallotInclusiveBitCount(iUndef);\n"
-				<< "    if (undefTerritory && (0 != inclusiveBitCount))\n"
+				<< "    if (undefTerritory && (0u != inclusiveBitCount))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x8;\n"
+				<< "      tempResult &= ~0x8u;\n"
 				<< "    }\n"
-				<< "    else if (!undefTerritory && (0 == inclusiveBitCount))\n"
+				<< "    else if (!undefTerritory && (0u == inclusiveBitCount))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x8;\n"
+				<< "      tempResult &= ~0x8u;\n"
 				<< "    }\n"
 				<< "  }\n";
 			break;
 		case OPTYPE_BALLOT_EXCLUSIVE_BIT_COUNT:
 			bdy << "  uint exclusiveOffset = gl_SubgroupInvocationID;\n"
-				<< "  tempResult |= exclusiveOffset == subgroupBallotExclusiveBitCount(allOnes) ? 0x1 : 0;\n"
-				<< "  tempResult |= 0 == subgroupBallotExclusiveBitCount(allZeros) ? 0x2 : 0;\n"
-				<< "  tempResult |= 0x4;\n"
-				<< "  tempResult |= 0x8;\n"
+				<< "  tempResult |= exclusiveOffset == subgroupBallotExclusiveBitCount(allOnes) ? 0x1u : 0u;\n"
+				<< "  tempResult |= 0u == subgroupBallotExclusiveBitCount(allZeros) ? 0x2u : 0u;\n"
+				<< "  tempResult |= 0x4u;\n"
+				<< "  tempResult |= 0x8u;\n"
 				<< "  uvec4 exclusiveUndef = MAKE_HIGH_BALLOT_RESULT(exclusiveOffset);\n"
 				<< "  bool undefTerritory = false;\n"
-				<< "  for (uint i = 0; i <= 128; i++)\n"
+				<< "  for (uint i = 0u; i <= 128u; i++)\n"
 				<< "  {\n"
 				<< "    uvec4 iUndef = MAKE_HIGH_BALLOT_RESULT(i);\n"
 				<< "    if (iUndef == exclusiveUndef)"
@@ -183,53 +183,53 @@ std::string getBodySource(CaseDefinition caseDef)
 				<< "      undefTerritory = true;\n"
 				<< "    }\n"
 				<< "    uint exclusiveBitCount = subgroupBallotExclusiveBitCount(iUndef);\n"
-				<< "    if (undefTerritory && (0 != exclusiveBitCount))\n"
+				<< "    if (undefTerritory && (0u != exclusiveBitCount))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x4;\n"
+				<< "      tempResult &= ~0x4u;\n"
 				<< "    }\n"
-				<< "    else if (!undefTerritory && (0 == exclusiveBitCount))\n"
+				<< "    else if (!undefTerritory && (0u == exclusiveBitCount))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x8;\n"
+				<< "      tempResult &= ~0x8u;\n"
 				<< "    }\n"
 				<< "  }\n";
 			break;
 		case OPTYPE_BALLOT_FIND_LSB:
-			bdy << "  tempResult |= 0 == subgroupBallotFindLSB(allOnes) ? 0x1 : 0;\n"
+			bdy << "  tempResult |= 0u == subgroupBallotFindLSB(allOnes) ? 0x1u : 0u;\n"
 				<< "  if (subgroupElect())\n"
 				<< "  {\n"
-				<< "    tempResult |= 0x2;\n"
+				<< "    tempResult |= 0x2u;\n"
 				<< "  }\n"
 				<< "  else\n"
 				<< "  {\n"
-				<< "    tempResult |= 0 < subgroupBallotFindLSB(subgroupBallot(true)) ? 0x2 : 0;\n"
+				<< "    tempResult |= 0u < subgroupBallotFindLSB(subgroupBallot(true)) ? 0x2u : 0u;\n"
 				<< "  }\n"
-				<< "  tempResult |= gl_SubgroupSize > subgroupBallotFindLSB(subgroupBallot(true)) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0x8;\n"
-				<< "  for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+				<< "  tempResult |= gl_SubgroupSize > subgroupBallotFindLSB(subgroupBallot(true)) ? 0x4u : 0u;\n"
+				<< "  tempResult |= 0x8u;\n"
+				<< "  for (uint i = 0u; i < gl_SubgroupSize; i++)\n"
 				<< "  {\n"
 				<< "    if (i != subgroupBallotFindLSB(MAKE_HIGH_BALLOT_RESULT(i)))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x8;\n"
+				<< "      tempResult &= ~0x8u;\n"
 				<< "    }\n"
 				<< "  }\n";
 			break;
 		case OPTYPE_BALLOT_FIND_MSB:
-			bdy << "  tempResult |= (gl_SubgroupSize - 1) == subgroupBallotFindMSB(allOnes) ? 0x1 : 0;\n"
+			bdy << "  tempResult |= (gl_SubgroupSize - 1u) == subgroupBallotFindMSB(allOnes) ? 0x1u : 0u;\n"
 				<< "  if (subgroupElect())\n"
 				<< "  {\n"
-				<< "    tempResult |= 0x2;\n"
+				<< "    tempResult |= 0x2u;\n"
 				<< "  }\n"
 				<< "  else\n"
 				<< "  {\n"
-				<< "    tempResult |= 0 < subgroupBallotFindMSB(subgroupBallot(true)) ? 0x2 : 0;\n"
+				<< "    tempResult |= 0u < subgroupBallotFindMSB(subgroupBallot(true)) ? 0x2u : 0u;\n"
 				<< "  }\n"
-				<< "  tempResult |= gl_SubgroupSize > subgroupBallotFindMSB(subgroupBallot(true)) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0x8;\n"
-				<< "  for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+				<< "  tempResult |= gl_SubgroupSize > subgroupBallotFindMSB(subgroupBallot(true)) ? 0x4u : 0u;\n"
+				<< "  tempResult |= 0x8u;\n"
+				<< "  for (uint i = 0u; i < gl_SubgroupSize; i++)\n"
 				<< "  {\n"
 				<< "    if (i != subgroupBallotFindMSB(MAKE_SINGLE_BIT_BALLOT_RESULT(i)))\n"
 				<< "    {\n"
-				<< "      tempResult &= ~0x8;\n"
+				<< "      tempResult &= ~0x8u;\n"
 				<< "    }\n"
 				<< "  }\n";
 			break;
@@ -249,7 +249,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	if (SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream				vertex;
-		vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		vertex << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -267,7 +267,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	{
 		std::ostringstream geometry;
 
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		geometry << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
@@ -287,7 +287,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	{
 		std::ostringstream controlSource;
 
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		controlSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
@@ -310,7 +310,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	else if (SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream evaluationSource;
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		evaluationSource << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -338,7 +338,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n"
+		src << "${VERSION_DECL}\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
 			<< "layout(binding = 0, std430) buffer Buffer0\n"
@@ -361,7 +361,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	else
 	{
 		const string vertex =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(binding = 0, std430) buffer Buffer0\n"
 			"{\n"
@@ -379,7 +379,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string tesc =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(vertices=1) out;\n"
 			"layout(binding = 1, std430) buffer Buffer1\n"
@@ -400,7 +400,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string tese =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(isolines) in;\n"
 			"layout(binding = 2, std430) buffer Buffer2\n"
@@ -411,13 +411,13 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"void main (void)\n"
 			"{\n"
 			+ bdyStr +
-			"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
+			"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 			"}\n";
 
 		const string geometry =
-			"#version 450\n"
+			// version string added by addGeometryShadersFromTemplate
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(${TOPOLOGY}) in;\n"
 			"layout(points, max_vertices = 1) out;\n"
@@ -436,7 +436,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"}\n";
 
 		const string fragment =
-			"#version 450\n"
+			"${VERSION_DECL}\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(location = 0) out uint result;\n"
 			"void main (void)\n"
