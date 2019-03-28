@@ -85,6 +85,26 @@ deUint32 getFormatReadInfo(const subgroups::Format format, GLenum &readFormat, G
 			return 4u;
 	}
 }
+
+deUint32 getMaxWidth ()
+{
+	return 1024u;
+}
+
+deUint32 getNextWidth (const deUint32 width)
+{
+	if (width < 128)
+	{
+		// This ensures we test every value up to 128 (the max subgroup size).
+		return width + 1;
+	}
+	else
+	{
+		// And once we hit 128 we increment to only power of 2's to reduce testing time.
+		return width * 2;
+	}
+}
+
 deUint32 getFormatSizeInBytes(const subgroups::Format format)
 {
 	using namespace subgroups;
@@ -1021,7 +1041,7 @@ tcu::TestStatus glc::subgroups::makeTessellationEvaluationFrameBufferTest(
 	tcu::TestLog& log	= context.getDeqpContext().getTestContext().getLog();
 	const glw::Functions& gl = context.getDeqpContext().getRenderContext().getFunctions();
 
-	const deUint32							maxWidth				= 1024u;
+	const deUint32							maxWidth				= getMaxWidth();
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 
 	const GlslSource& vshader = context.getSourceCollection().get("vert");
@@ -1106,12 +1126,12 @@ tcu::TestStatus glc::subgroups::makeTessellationEvaluationFrameBufferTest(
 	gl.viewport(0, 0, maxWidth, 1u);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport");
 
-	for (deUint32 width = 1u; width < maxWidth; ++width)
-	{
-		const deUint64				imageResultSize		= getFormatSizeInBytes(format) * maxWidth;
-		vector<glw::GLubyte>		imageBufferResult(imageResultSize);
-		const deUint64				vertexBufferOffset	= 0u;
+	const deUint64				imageResultSize		= getFormatSizeInBytes(format) * maxWidth;
+	vector<glw::GLubyte>		imageBufferResult(imageResultSize);
+	const deUint64				vertexBufferOffset	= 0u;
 
+	for (deUint32 width = 1u; width < maxWidth; width = getNextWidth(width))
+	{
 		totalIterations++;
 
 		{
@@ -1206,7 +1226,7 @@ tcu::TestStatus glc::subgroups::makeGeometryFrameBufferTest(
 	tcu::TestLog& log	= context.getDeqpContext().getTestContext().getLog();
 	const glw::Functions& gl = context.getDeqpContext().getRenderContext().getFunctions();
 
-	const deUint32							maxWidth				= 1024u;
+	const deUint32							maxWidth				= getMaxWidth();
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 
 	const GlslSource& vshader = context.getSourceCollection().get("vert");
@@ -1289,12 +1309,13 @@ tcu::TestStatus glc::subgroups::makeGeometryFrameBufferTest(
 	gl.viewport(0, 0, maxWidth, 1u);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport");
 
-	for (deUint32 width = 1u; width < maxWidth; width++)
+	const deUint64				imageResultSize		= getFormatSizeInBytes(format) * maxWidth;
+	vector<glw::GLubyte>		imageBufferResult(imageResultSize);
+	const deUint64				vertexBufferOffset	= 0u;
+
+	for (deUint32 width = 1u; width < maxWidth; width = getNextWidth(width))
 	{
 		totalIterations++;
-		const deUint64				imageResultSize		= getFormatSizeInBytes(format) * maxWidth;
-		vector<glw::GLubyte>		imageBufferResult(imageResultSize);
-		const deUint64				vertexBufferOffset	= 0u;
 
 		for (deUint32 ndx = 0u; ndx < inputBuffers.size(); ndx++)
 		{
@@ -1369,7 +1390,7 @@ tcu::TestStatus glc::subgroups::allStages(
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
 	const ShaderStageFlags shaderStageTested)
 {
-	const deUint32					maxWidth			= 1024u;
+	const deUint32					maxWidth			= getMaxWidth();
 	vector<ShaderStageFlags>		stagesVector;
 	ShaderStageFlags				shaderStageRequired	= (ShaderStageFlags)0ull;
 	tcu::TestLog&					log					= context.getDeqpContext().getTestContext().getLog();
@@ -1517,7 +1538,7 @@ tcu::TestStatus glc::subgroups::allStages(
 		gl.viewport(0, 0, maxWidth, 1u);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "viewport");
 
-		for (deUint32 width = 1u; width < maxWidth; width++)
+		for (deUint32 width = 1u; width < maxWidth; width = getNextWidth(width))
 		{
 			for (deUint32 ndx = stagesCount; ndx < stagesCount + extraDatasCount; ++ndx)
 			{
@@ -1620,7 +1641,7 @@ tcu::TestStatus glc::subgroups::allStages(
 					}
 				}
 
-				if (!checkResult(datas, width , subgroupSize))
+				if (!checkResult(datas, width, subgroupSize))
 					failedIterations++;
 
 				while( !buffersToUnmap.empty() )
@@ -1654,7 +1675,7 @@ tcu::TestStatus glc::subgroups::makeVertexFrameBufferTest(Context& context, Form
 	tcu::TestLog& log	= context.getDeqpContext().getTestContext().getLog();
 	const glw::Functions& gl = context.getDeqpContext().getRenderContext().getFunctions();
 
-	const deUint32							maxWidth				= 1024u;
+	const deUint32							maxWidth				= getMaxWidth();
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 
 	const GlslSource& vshader = context.getSourceCollection().get("vert");
@@ -1741,12 +1762,13 @@ tcu::TestStatus glc::subgroups::makeVertexFrameBufferTest(Context& context, Form
 	gl.viewport(0, 0, maxWidth, 1u);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport");
 
-	for (deUint32 width = 1u; width < maxWidth; width++)
+	const deUint64				imageResultSize		= getFormatSizeInBytes(format) * maxWidth;
+	vector<glw::GLubyte>		imageBufferResult(imageResultSize);
+	const deUint64				vertexBufferOffset	= 0u;
+
+	for (deUint32 width = 1u; width < maxWidth; width = getNextWidth(width))
 	{
 		totalIterations++;
-		const deUint64				imageResultSize		= getFormatSizeInBytes(format) * maxWidth;
-		vector<glw::GLubyte>		imageBufferResult(imageResultSize);
-		const deUint64				vertexBufferOffset	= 0u;
 
 		for (deUint32 ndx = 0u; ndx < inputBuffers.size(); ndx++)
 		{
