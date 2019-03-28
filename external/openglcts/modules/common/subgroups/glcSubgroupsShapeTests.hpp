@@ -1,11 +1,12 @@
-#ifndef _VKTSUBGROUPSSHAPETESTS_HPP
-#define _VKTSUBGROUPSSHAPETESTS_HPP
+#ifndef _GLCSUBGROUPSSHAPETESTS_HPP
+#define _GLCSUBGROUPSSHAPETESTS_HPP
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
+ * OpenGL Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2017-2019 The Khronos Group Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
+ * Copyright (c) 2019 NVIDIA Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +26,16 @@
  */ /*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-#include "vktTestCase.hpp"
+#include "glcTestCase.hpp"
 
-namespace vkt
+namespace glc
 {
 namespace subgroups
 {
 
-tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx);
+deqp::TestCaseGroup* createSubgroupsShapeTests(deqp::Context& testCtx);
 
 } // subgroups
-} // vkt
+} // glc
 
-#endif // _VKTSUBGROUPSSHAPETESTS_HPP
+#endif // _GLCSUBGROUPSSHAPETESTS_HPP

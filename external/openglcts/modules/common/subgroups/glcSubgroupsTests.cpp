@@ -1,9 +1,10 @@
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
+ * OpenGL Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2017-2019 The Khronos Group Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
+ * Copyright (c) 2019 NVIDIA Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,56 +23,53 @@
  * \brief Subgroups Tests
  */ /*--------------------------------------------------------------------*/
 
-#include "vktSubgroupsTests.hpp"
-#include "vktSubgroupsBuiltinVarTests.hpp"
-#include "vktSubgroupsBuiltinMaskVarTests.hpp"
-#include "vktSubgroupsBasicTests.hpp"
-#include "vktSubgroupsVoteTests.hpp"
-#include "vktSubgroupsBallotTests.hpp"
-#include "vktSubgroupsBallotBroadcastTests.hpp"
-#include "vktSubgroupsBallotOtherTests.hpp"
-#include "vktSubgroupsArithmeticTests.hpp"
-#include "vktSubgroupsClusteredTests.hpp"
-#include "vktSubgroupsPartitionedTests.hpp"
-#include "vktSubgroupsShuffleTests.hpp"
-#include "vktSubgroupsQuadTests.hpp"
-#include "vktSubgroupsShapeTests.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "glcSubgroupsTests.hpp"
+#include "glcSubgroupsBuiltinVarTests.hpp"
+#include "glcSubgroupsBuiltinMaskVarTests.hpp"
+#include "glcSubgroupsBasicTests.hpp"
+#include "glcSubgroupsVoteTests.hpp"
+#include "glcSubgroupsBallotTests.hpp"
+#include "glcSubgroupsBallotBroadcastTests.hpp"
+#include "glcSubgroupsBallotOtherTests.hpp"
+#include "glcSubgroupsArithmeticTests.hpp"
+#include "glcSubgroupsClusteredTests.hpp"
+#include "glcSubgroupsPartitionedTests.hpp"
+#include "glcSubgroupsShuffleTests.hpp"
+#include "glcSubgroupsQuadTests.hpp"
+#include "glcSubgroupsShapeTests.hpp"
+//#include "glcTestGroupUtil.hpp"
 
-namespace vkt
+namespace glc
 {
 namespace subgroups
 {
 
-namespace
+/** Constructor.
+ *
+ *  @param context Rendering context.
+ */
+GlSubgroupTests::GlSubgroupTests(deqp::Context& context)
+	: TestCaseGroup(context, "subgroups", "Shader Subgroup Operation tests")
 {
-
-void createChildren(tcu::TestCaseGroup* subgroupsTests)
-{
-	tcu::TestContext& testCtx = subgroupsTests->getTestContext();
-
-	subgroupsTests->addChild(createSubgroupsBuiltinVarTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBuiltinMaskVarTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBasicTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsVoteTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotBroadcastTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsBallotOtherTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsArithmeticTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsClusteredTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsPartitionedTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsShuffleTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsQuadTests(testCtx));
-	subgroupsTests->addChild(createSubgroupsShapeTests(testCtx));
 }
 
-} // anonymous
-
-tcu::TestCaseGroup* createTests(tcu::TestContext& testCtx)
+/** Initializes the test group contents. */
+void GlSubgroupTests::init()
 {
-	return createTestGroup(
-			   testCtx, "subgroups", "Subgroups tests", createChildren);
+	addChild(createSubgroupsBuiltinVarTests(m_context));
+	addChild(createSubgroupsBuiltinMaskVarTests(m_context));
+	addChild(createSubgroupsBasicTests(m_context));
+	addChild(createSubgroupsVoteTests(m_context));
+	addChild(createSubgroupsBallotTests(m_context));
+	addChild(createSubgroupsBallotBroadcastTests(m_context));
+	addChild(createSubgroupsBallotOtherTests(m_context));
+	addChild(createSubgroupsArithmeticTests(m_context));
+	addChild(createSubgroupsClusteredTests(m_context));
+	addChild(createSubgroupsPartitionedTests(m_context));
+	addChild(createSubgroupsShuffleTests(m_context));
+	addChild(createSubgroupsQuadTests(m_context));
+	addChild(createSubgroupsShapeTests(m_context));
 }
 
 } // subgroups
-} // vkt
+} // glc

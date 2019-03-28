@@ -56,7 +56,7 @@ void checkGlSpirvSupported(deqp::Context& m_context)
 	bool is_arb_gl_spirv   = m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv");
 
 	if ((!is_at_least_gl_46) && (!is_arb_gl_spirv))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+		TCU_THROW(NotSupportedError, "GL 4.6 or GL_ARB_gl_spirv is not supported");
 }
 
 #if defined DEQP_HAVE_GLSLANG
@@ -197,7 +197,25 @@ void getDefaultBuiltInResources(TBuiltInResource* builtin)
 	builtin->maxMeshViewCountNV						   = 4;
 };
 
-bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType type, ShaderBinaryDataType* dst)
+glslang::EShTargetLanguageVersion getSpirvTargetVersion(SpirvVersion version)
+{
+    switch(version)
+    {
+    default:
+        DE_FATAL("unhandled SPIRV target version");
+        // fall-through
+    case SPIRV_VERSION_1_0:
+        return glslang::EShTargetSpv_1_0;
+    case SPIRV_VERSION_1_1:
+        return glslang::EShTargetSpv_1_1;
+    case SPIRV_VERSION_1_2:
+        return glslang::EShTargetSpv_1_2;
+    case SPIRV_VERSION_1_3:
+        return glslang::EShTargetSpv_1_3;
+    }
+}
+
+bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType type, ShaderBinaryDataType* dst, SpirvVersion version)
 {
 	TBuiltInResource builtinRes;
 
@@ -212,6 +230,7 @@ bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType t
 	const char* src[] = { source.c_str() };
 
 	shader.setStrings(src, 1);
+	shader.setEnvTarget(glslang::EshTargetSpv, getSpirvTargetVersion(version));
 	program.addShader(&shader);
 
 	const int compileRes = shader.parse(&builtinRes, 100, false, EShMsgSpvRules);
@@ -335,11 +354,11 @@ bool spirvValidate(ShaderBinaryDataType& dst, bool throwOnError)
 
 #endif // DEQP_HAVE_SPIRV_TOOLS
 
-ShaderBinary makeSpirV(tcu::TestLog& log, ShaderSource source)
+ShaderBinary makeSpirV(tcu::TestLog& log, ShaderSource source, SpirvVersion version)
 {
 	ShaderBinary binary;
 
-	if (!spirvUtils::compileGlslToSpirV(log, source.source, source.shaderType, &binary.binary))
+	if (!spirvUtils::compileGlslToSpirV(log, source.source, source.shaderType, &binary.binary, version))
 		TCU_THROW(InternalError, "Failed to convert GLSL to Spir-V");
 
 	binary << source.shaderType << "main";

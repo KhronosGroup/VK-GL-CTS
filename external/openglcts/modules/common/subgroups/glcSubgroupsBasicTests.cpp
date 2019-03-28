@@ -1,9 +1,10 @@
 /*------------------------------------------------------------------------
- * Vulkan Conformance Tests
+ * OpenGL Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2017-2019 The Khronos Group Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
+ * Copyright (c) 2019 NVIDIA Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +23,27 @@
  * \brief Subgroups Tests
  */ /*--------------------------------------------------------------------*/
 
-#include "vktSubgroupsBasicTests.hpp"
-#include "vktSubgroupsTestsUtils.hpp"
+#include "glcSubgroupsBasicTests.hpp"
+#include "glcSubgroupsTestsUtils.hpp"
+#include "gluContextInfo.hpp"
 
 #include <string>
 #include <vector>
+#include "tcuStringTemplate.hpp"
 
 using namespace tcu;
 using namespace std;
-using namespace vk;
-using namespace vkt;
+
+namespace glc
+{
+namespace subgroups
+{
 
 namespace
 {
 static const deUint32			ELECTED_VALUE		= 42u;
 static const deUint32			UNELECTED_VALUE		= 13u;
-static const vk::VkDeviceSize	SHADER_BUFFER_SIZE	= 4096ull; // min(maxUniformBufferRange, maxImageDimension1D)
+static const deUint64			SHADER_BUFFER_SIZE	= 4096ull;
 
 static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 		deUint32 width, deUint32 height, deUint32)
@@ -184,7 +190,7 @@ static bool checkComputeSubgroupElect(std::vector<const void*> datas,
 									  const deUint32 numWorkgroups[3], const deUint32 localSize[3],
 									  deUint32)
 {
-	return vkt::subgroups::checkCompute(datas, numWorkgroups, localSize, 1);
+	return glc::subgroups::checkCompute(datas, numWorkgroups, localSize, 1);
 }
 
 static bool checkComputeSubgroupBarriers(std::vector<const void*> datas,
@@ -193,7 +199,7 @@ static bool checkComputeSubgroupBarriers(std::vector<const void*> datas,
 {
 	// We used this SSBO to generate our unique value!
 	const deUint32 ref = *reinterpret_cast<const deUint32*>(datas[2]);
-	return vkt::subgroups::checkCompute(datas, numWorkgroups, localSize, ref);
+	return glc::subgroups::checkCompute(datas, numWorkgroups, localSize, ref);
 }
 
 enum OpType
@@ -231,133 +237,39 @@ std::string getOpTypeName(int opType)
 
 struct CaseDefinition
 {
-	int					opType;
-	VkShaderStageFlags	shaderStage;
+	int							opType;
+	subgroups::ShaderStageFlags	shaderStage;
 };
 
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	const vk::SpirVAsmBuildOptions	buildOptionsSpr	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3);
-
-	if(VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
+	if(subgroups::SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
 	{
-		/*
+		const string fragmentGLSL =
+			"#version 450\n"
 			"layout(location = 0) in vec4 in_color;\n"
 			"layout(location = 0) out vec4 out_color;\n"
 			"void main()\n"
-			{\n"
+			"{\n"
 			"	out_color = in_color;\n"
 			"}\n";
-		*/
-		const string fragment =
-			"; SPIR-V\n"
-			"; Version: 1.3\n"
-			"; Generator: Khronos Glslang Reference Front End; 2\n"
-			"; Bound: 13\n"
-			"; Schema: 0\n"
-			"OpCapability Shader\n"
-			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-			"OpMemoryModel Logical GLSL450\n"
-			"OpEntryPoint Fragment %4 \"main\" %9 %11\n"
-			"OpExecutionMode %4 OriginUpperLeft\n"
-			"OpDecorate %9 Location 0\n"
-			"OpDecorate %11 Location 0\n"
-			"%2 = OpTypeVoid\n"
-			"%3 = OpTypeFunction %2\n"
-			"%6 = OpTypeFloat 32\n"
-			"%7 = OpTypeVector %6 4\n"
-			"%8 = OpTypePointer Output %7\n"
-			"%9 = OpVariable %8 Output\n"
-			"%10 = OpTypePointer Input %7\n"
-			"%11 = OpVariable %10 Input\n"
-			"%4 = OpFunction %2 None %3\n"
-			"%5 = OpLabel\n"
-			"%12 = OpLoad %7 %11\n"
-			"OpStore %9 %12\n"
-			"OpReturn\n"
-			"OpFunctionEnd\n";
-		programCollection.spirvAsmSources.add("fragment") << fragment;
+
+		programCollection.add("fragment") << glu::FragmentSource(fragmentGLSL);
 	}
-	if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+	if (subgroups::SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 	{
-		/*
+		const string vertexGLSL =
 			"#version 450\n"
 			"void main (void)\n"
 			"{\n"
-			"  vec2 uv = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);\n"
+			"  vec2 uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n"
 			"  gl_Position = vec4(uv * 2.0f + -1.0f, 0.0f, 1.0f);\n"
 			"  gl_PointSize = 1.0f;\n"
 			"}\n";
-		*/
-		const string vertex =
-			"; SPIR-V\n"
-			"; Version: 1.3\n"
-			"; Generator: Khronos Glslang Reference Front End; 2\n"
-			"; Bound: 44\n"
-			"; Schema: 0\n"
-			"OpCapability Shader\n"
-			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-			"OpMemoryModel Logical GLSL450\n"
-			"OpEntryPoint Vertex %4 \"main\" %12 %29\n"
-			"OpDecorate %12 BuiltIn VertexIndex\n"
-			"OpMemberDecorate %27 0 BuiltIn Position\n"
-			"OpMemberDecorate %27 1 BuiltIn PointSize\n"
-			"OpMemberDecorate %27 2 BuiltIn ClipDistance\n"
-			"OpMemberDecorate %27 3 BuiltIn CullDistance\n"
-			"OpDecorate %27 Block\n"
-			"%2 = OpTypeVoid\n"
-			"%3 = OpTypeFunction %2\n"
-			"%6 = OpTypeFloat 32\n"
-			"%7 = OpTypeVector %6 2\n"
-			"%8 = OpTypePointer Function %7\n"
-			"%10 = OpTypeInt 32 1\n"
-			"%11 = OpTypePointer Input %10\n"
-			"%12 = OpVariable %11 Input\n"
-			"%14 = OpConstant %10 1\n"
-			"%16 = OpConstant %10 2\n"
-			"%23 = OpTypeVector %6 4\n"
-			"%24 = OpTypeInt 32 0\n"
-			"%25 = OpConstant %24 1\n"
-			"%26 = OpTypeArray %6 %25\n"
-			"%27 = OpTypeStruct %23 %6 %26 %26\n"
-			"%28 = OpTypePointer Output %27\n"
-			"%29 = OpVariable %28 Output\n"
-			"%30 = OpConstant %10 0\n"
-			"%32 = OpConstant %6 2\n"
-			"%34 = OpConstant %6 -1\n"
-			"%37 = OpConstant %6 0\n"
-			"%38 = OpConstant %6 1\n"
-			"%42 = OpTypePointer Output %23\n"
-			"%44 = OpTypePointer Output %6\n"
-			"%4 = OpFunction %2 None %3\n"
-			"%5 = OpLabel\n"
-			"%9 = OpVariable %8 Function\n"
-			"%13 = OpLoad %10 %12\n"
-			"%15 = OpShiftLeftLogical %10 %13 %14\n"
-			"%17 = OpBitwiseAnd %10 %15 %16\n"
-			"%18 = OpConvertSToF %6 %17\n"
-			"%19 = OpLoad %10 %12\n"
-			"%20 = OpBitwiseAnd %10 %19 %16\n"
-			"%21 = OpConvertSToF %6 %20\n"
-			"%22 = OpCompositeConstruct %7 %18 %21\n"
-			"OpStore %9 %22\n"
-			"%31 = OpLoad %7 %9\n"
-			"%33 = OpVectorTimesScalar %7 %31 %32\n"
-			"%35 = OpCompositeConstruct %7 %34 %34\n"
-			"%36 = OpFAdd %7 %33 %35\n"
-			"%39 = OpCompositeExtract %6 %36 0\n"
-			"%40 = OpCompositeExtract %6 %36 1\n"
-			"%41 = OpCompositeConstruct %23 %39 %40 %37 %38\n"
-			"%43 = OpAccessChain %42 %29 %30\n"
-			"OpStore %43 %41\n"
-			"%45 = OpAccessChain %44 %29 %14\n"
-			"OpStore %45 %38\n"
-			"OpReturn\n"
-			"OpFunctionEnd\n";
-		programCollection.spirvAsmSources.add("vert") << vertex;
+
+		programCollection.add("vert") << glu::VertexSource(vertexGLSL);
 	}
-	else if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
+	else if (subgroups::SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
 		subgroups::setVertexShaderFrameBuffer(programCollection);
 
 	if (OPTYPE_ELECT == caseDef.opType)
@@ -367,9 +279,10 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 		electedValue << ELECTED_VALUE;
 		unelectedValue << UNELECTED_VALUE;
 
-		if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+		if (subgroups::SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 		{
-			/*
+			const string vertexGLSL =
+				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(location = 0) out vec4 out_color;\n"
 				"layout(location = 0) in highp vec4 in_position;\n"
@@ -378,91 +291,23 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"{\n"
 				"  if (subgroupElect())\n"
 				"  {\n"
-				"    out_color.r = " << ELECTED_VALUE << ";\n"
+				"    out_color.r = " + electedValue.str() + ";\n"
 				"    out_color.g = 1.0f;\n"
 				"  }\n"
 				"  else\n"
 				"  {\n"
-				"    out_color.r = " << UNELECTED_VALUE << ";\n"
+				"    out_color.r = " + unelectedValue.str() + ";\n"
 				"    out_color.g = 0.0f;\n"
 				"  }\n"
 				"  gl_Position = in_position;\n"
 				"  gl_PointSize = 1.0f;\n"
 				"}\n";
-			*/
-			const string vertex =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 38\n"
-				"; Schema: 0\n"
-				"OpCapability Shader\n"
-				"OpCapability GroupNonUniform\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint Vertex %4 \"main\" %15 %31 %35\n"
-				"OpDecorate %15 Location 0\n"
-				"OpMemberDecorate %29 0 BuiltIn Position\n"
-				"OpMemberDecorate %29 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %29 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %29 3 BuiltIn CullDistance\n"
-				"OpDecorate %29 Block\n"
-				"OpDecorate %35 Location 0\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeBool\n"
-				"%7 = OpTypeInt 32 0\n"
-				"%8 = OpConstant %7 3\n"
-				"%12 = OpTypeFloat 32\n"
-				"%13 = OpTypeVector %12 4\n"
-				"%14 = OpTypePointer Output %13\n"
-				"%15 = OpVariable %14 Output\n"
-				"%16 = OpConstant %12 " + electedValue.str() + "\n"
-				"%17 = OpConstant %7 0\n"
-				"%18 = OpTypePointer Output %12\n"
-				"%20 = OpConstant %12 1\n"
-				"%21 = OpConstant %7 1\n"
-				"%24 = OpConstant %12 " + unelectedValue.str() + "\n"
-				"%26 = OpConstant %12 0\n"
-				"%28 = OpTypeArray %12 %21\n"
-				"%29 = OpTypeStruct %13 %12 %28 %28\n"
-				"%30 = OpTypePointer Output %29\n"
-				"%31 = OpVariable %30 Output\n"
-				"%32 = OpTypeInt 32 1\n"
-				"%33 = OpConstant %32 0\n"
-				"%34 = OpTypePointer Input %13\n"
-				"%35 = OpVariable %34 Input\n"
-				"%38 = OpConstant %32 1\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%9 = OpGroupNonUniformElect %6 %8\n"
-				"OpSelectionMerge %11 None\n"
-				"OpBranchConditional %9 %10 %23\n"
-				"%10 = OpLabel\n"
-				"%19 = OpAccessChain %18 %15 %17\n"
-				"OpStore %19 %16\n"
-				"%22 = OpAccessChain %18 %15 %21\n"
-				"OpStore %22 %20\n"
-				"OpBranch %11\n"
-				"%23 = OpLabel\n"
-				"%25 = OpAccessChain %18 %15 %17\n"
-				"OpStore %25 %24\n"
-				"%27 = OpAccessChain %18 %15 %21\n"
-				"OpStore %27 %26\n"
-				"OpBranch %11\n"
-				"%11 = OpLabel\n"
-				"%36 = OpLoad %13 %35\n"
-				"%37 = OpAccessChain %14 %31 %33\n"
-				"OpStore %37 %36\n"
-				"%39 = OpAccessChain %18 %31 %38\n"
-				"OpStore %39 %20\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-			programCollection.spirvAsmSources.add("vert") << vertex << buildOptionsSpr;
+
+			programCollection.add("vert") << glu::VertexSource(vertexGLSL);
 		}
-		else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
+		else if (subgroups::SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 		{
-			/*
+			const string geometryGLSL =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"layout(points) in;\n"
@@ -472,195 +317,42 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"{\n"
 				"  if (subgroupElect())\n"
 				"  {\n"
-				"    out_color.r = " << ELECTED_VALUE << ";\n"
+				"    out_color.r = " + electedValue.str() + ";\n"
 				"    out_color.g = 1.0f;\n"
 				"  }\n"
 				"  else\n"
 				"  {\n"
-				"    out_color.r = " << UNELECTED_VALUE << ";\n"
+				"    out_color.r = " + unelectedValue.str() + ";\n"
 				"    out_color.g = 0.0f;\n"
 				"  }\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";
-			*/
-			const string geometry =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 42\n"
-				"; Schema: 0\n"
-				"OpCapability Geometry\n"
-				"OpCapability GroupNonUniform\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint Geometry %4 \"main\" %15 %31 %37\n"
-				"OpExecutionMode %4 InputPoints\n"
-				"OpExecutionMode %4 Invocations 1\n"
-				"OpExecutionMode %4 OutputPoints\n"
-				"OpExecutionMode %4 OutputVertices 1\n"
-				"OpDecorate %15 Location 0\n"
-				"OpMemberDecorate %29 0 BuiltIn Position\n"
-				"OpMemberDecorate %29 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %29 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %29 3 BuiltIn CullDistance\n"
-				"OpDecorate %29 Block\n"
-				"OpMemberDecorate %34 0 BuiltIn Position\n"
-				"OpMemberDecorate %34 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %34 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %34 3 BuiltIn CullDistance\n"
-				"OpDecorate %34 Block\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeBool\n"
-				"%7 = OpTypeInt 32 0\n"
-				"%8 = OpConstant %7 3\n"
-				"%12 = OpTypeFloat 32\n"
-				"%13 = OpTypeVector %12 4\n"
-				"%14 = OpTypePointer Output %13\n"
-				"%15 = OpVariable %14 Output\n"
-				"%16 = OpConstant %12 " + electedValue.str() + "\n"
-				"%17 = OpConstant %7 0\n"
-				"%18 = OpTypePointer Output %12\n"
-				"%20 = OpConstant %12 1\n"
-				"%21 = OpConstant %7 1\n"
-				"%24 = OpConstant %12 " + unelectedValue.str() + "\n"
-				"%26 = OpConstant %12 0\n"
-				"%28 = OpTypeArray %12 %21\n"
-				"%29 = OpTypeStruct %13 %12 %28 %28\n"
-				"%30 = OpTypePointer Output %29\n"
-				"%31 = OpVariable %30 Output\n"
-				"%32 = OpTypeInt 32 1\n"
-				"%33 = OpConstant %32 0\n"
-				"%34 = OpTypeStruct %13 %12 %28 %28\n"
-				"%35 = OpTypeArray %34 %21\n"
-				"%36 = OpTypePointer Input %35\n"
-				"%37 = OpVariable %36 Input\n"
-				"%38 = OpTypePointer Input %13\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%9 = OpGroupNonUniformElect %6 %8\n"
-				"OpSelectionMerge %11 None\n"
-				"OpBranchConditional %9 %10 %23\n"
-				"%10 = OpLabel\n"
-				"%19 = OpAccessChain %18 %15 %17\n"
-				"OpStore %19 %16\n"
-				"%22 = OpAccessChain %18 %15 %21\n"
-				"OpStore %22 %20\n"
-				"OpBranch %11\n"
-				"%23 = OpLabel\n"
-				"%25 = OpAccessChain %18 %15 %17\n"
-				"OpStore %25 %24\n"
-				"%27 = OpAccessChain %18 %15 %21\n"
-				"OpStore %27 %26\n"
-				"OpBranch %11\n"
-				"%11 = OpLabel\n"
-				"%39 = OpAccessChain %38 %37 %33 %33\n"
-				"%40 = OpLoad %13 %39\n"
-				"%41 = OpAccessChain %14 %31 %33\n"
-				"OpStore %41 %40\n"
-				"OpEmitVertex\n"
-				"OpEndPrimitive\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-			programCollection.spirvAsmSources.add("geometry") << geometry << buildOptionsSpr;
-		}
-		else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
-		{
-			/*
-				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
-				<< "#extension GL_EXT_tessellation_shader : require\n"
-				<< "layout(vertices = 2) out;\n"
-				<< "void main (void)\n"
-				<< "{\n"
-				<< "  if (gl_InvocationID == 0)\n"
-				<<"  {\n"
-				<< "    gl_TessLevelOuter[0] = 1.0f;\n"
-				<< "    gl_TessLevelOuter[1] = 1.0f;\n"
-				<< "  }\n"
-				<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-				<< "}\n";
-			*/
-			const string controlSource =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 46\n"
-				"; Schema: 0\n"
-				"OpCapability Tessellation\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint TessellationControl %4 \"main\" %8 %20 %33 %39\n"
-				"OpExecutionMode %4 OutputVertices 2\n"
-				"OpDecorate %8 BuiltIn InvocationId\n"
-				"OpDecorate %20 Patch\n"
-				"OpDecorate %20 BuiltIn TessLevelOuter\n"
-				"OpMemberDecorate %29 0 BuiltIn Position\n"
-				"OpMemberDecorate %29 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %29 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %29 3 BuiltIn CullDistance\n"
-				"OpDecorate %29 Block\n"
-				"OpMemberDecorate %35 0 BuiltIn Position\n"
-				"OpMemberDecorate %35 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %35 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %35 3 BuiltIn CullDistance\n"
-				"OpDecorate %35 Block\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeInt 32 1\n"
-				"%7 = OpTypePointer Input %6\n"
-				"%8 = OpVariable %7 Input\n"
-				"%10 = OpConstant %6 0\n"
-				"%11 = OpTypeBool\n"
-				"%15 = OpTypeFloat 32\n"
-				"%16 = OpTypeInt 32 0\n"
-				"%17 = OpConstant %16 4\n"
-				"%18 = OpTypeArray %15 %17\n"
-				"%19 = OpTypePointer Output %18\n"
-				"%20 = OpVariable %19 Output\n"
-				"%21 = OpConstant %15 1\n"
-				"%22 = OpTypePointer Output %15\n"
-				"%24 = OpConstant %6 1\n"
-				"%26 = OpTypeVector %15 4\n"
-				"%27 = OpConstant %16 1\n"
-				"%28 = OpTypeArray %15 %27\n"
-				"%29 = OpTypeStruct %26 %15 %28 %28\n"
-				"%30 = OpConstant %16 2\n"
-				"%31 = OpTypeArray %29 %30\n"
-				"%32 = OpTypePointer Output %31\n"
-				"%33 = OpVariable %32 Output\n"
-				"%35 = OpTypeStruct %26 %15 %28 %28\n"
-				"%36 = OpConstant %16 32\n"
-				"%37 = OpTypeArray %35 %36\n"
-				"%38 = OpTypePointer Input %37\n"
-				"%39 = OpVariable %38 Input\n"
-				"%41 = OpTypePointer Input %26\n"
-				"%44 = OpTypePointer Output %26\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%9 = OpLoad %6 %8\n"
-				"%12 = OpIEqual %11 %9 %10\n"
-				"OpSelectionMerge %14 None\n"
-				"OpBranchConditional %12 %13 %14\n"
-				"%13 = OpLabel\n"
-				"%23 = OpAccessChain %22 %20 %10\n"
-				"OpStore %23 %21\n"
-				"%25 = OpAccessChain %22 %20 %24\n"
-				"OpStore %25 %21\n"
-				"OpBranch %14\n"
-				"%14 = OpLabel\n"
-				"%34 = OpLoad %6 %8\n"
-				"%40 = OpLoad %6 %8\n"
-				"%42 = OpAccessChain %41 %39 %40 %10\n"
-				"%43 = OpLoad %26 %42\n"
-				"%45 = OpAccessChain %44 %33 %34 %10\n"
-				"OpStore %45 %43\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-			programCollection.spirvAsmSources.add("tesc") << controlSource << buildOptionsSpr;
 
-			/*
+			programCollection.add("geometry") << glu::GeometrySource(geometryGLSL);
+		}
+		else if (subgroups::SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
+		{
+			const string controlSourceGLSL =
+				"#version 450\n"
+				"#extension GL_KHR_shader_subgroup_basic: enable\n"
+				"#extension GL_EXT_tessellation_shader : require\n"
+				"layout(vertices = 2) out;\n"
+				"void main (void)\n"
+				"{\n"
+				"  if (gl_InvocationID == 0)\n"
+				"  {\n"
+				"    gl_TessLevelOuter[0] = 1.0f;\n"
+				"    gl_TessLevelOuter[1] = 1.0f;\n"
+				"  }\n"
+				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				"}\n";
+
+			programCollection.add("tesc") << glu::TessellationControlSource(controlSourceGLSL);
+
+			const string evaluationSourceGLSL =
+				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"#extension GL_EXT_tessellation_shader : require\n"
 				"layout(isolines, equal_spacing, ccw ) in;\n"
@@ -670,113 +362,23 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"{\n"
 				"  if (subgroupElect())\n"
 				"  {\n"
-				"    out_color.r = " << 2 * ELECTED_VALUE - UNELECTED_VALUE << ";\n"
+				"    out_color.r = 71.f;\n" // << 2 * ELECTED_VALUE - UNELECTED_VALUE << ";\n"
 				"    out_color.g = 2.0f;\n"
 				"  }\n"
 				"  else\n"
 				"  {\n"
-				"    out_color.r = " << UNELECTED_VALUE << ";\n"
+				"    out_color.r = " + unelectedValue.str() + ";\n"
 				"    out_color.g = 0.0f;\n"
 				"  }\n"
 				"  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 				"}\n";
-			*/
 
-			const string evaluationSource =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 54\n"
-				"; Schema: 0\n"
-				"OpCapability Tessellation\n"
-				"OpCapability GroupNonUniform\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint TessellationEvaluation %4 \"main\" %15 %31 %38 %47\n"
-				"OpExecutionMode %4 Isolines\n"
-				"OpExecutionMode %4 SpacingEqual\n"
-				"OpExecutionMode %4 VertexOrderCcw\n"
-				"OpDecorate %15 Location 0\n"
-				"OpMemberDecorate %29 0 BuiltIn Position\n"
-				"OpMemberDecorate %29 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %29 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %29 3 BuiltIn CullDistance\n"
-				"OpDecorate %29 Block\n"
-				"OpMemberDecorate %34 0 BuiltIn Position\n"
-				"OpMemberDecorate %34 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %34 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %34 3 BuiltIn CullDistance\n"
-				"OpDecorate %34 Block\n"
-				"OpDecorate %47 BuiltIn TessCoord\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeBool\n"
-				"%7 = OpTypeInt 32 0\n"
-				"%8 = OpConstant %7 3\n"
-				"%12 = OpTypeFloat 32\n"
-				"%13 = OpTypeVector %12 4\n"
-				"%14 = OpTypePointer Output %13\n"
-				"%15 = OpVariable %14 Output\n"
-				"%16 = OpConstant %12 71\n"//electedValue
-				"%17 = OpConstant %7 0\n"
-				"%18 = OpTypePointer Output %12\n"
-				"%20 = OpConstant %12 2\n"
-				"%21 = OpConstant %7 1\n"
-				"%24 = OpConstant %12 " + unelectedValue.str() + "\n"
-				"%26 = OpConstant %12 0\n"
-				"%28 = OpTypeArray %12 %21\n"
-				"%29 = OpTypeStruct %13 %12 %28 %28\n"
-				"%30 = OpTypePointer Output %29\n"
-				"%31 = OpVariable %30 Output\n"
-				"%32 = OpTypeInt 32 1\n"
-				"%33 = OpConstant %32 0\n"
-				"%34 = OpTypeStruct %13 %12 %28 %28\n"
-				"%35 = OpConstant %7 32\n"
-				"%36 = OpTypeArray %34 %35\n"
-				"%37 = OpTypePointer Input %36\n"
-				"%38 = OpVariable %37 Input\n"
-				"%39 = OpTypePointer Input %13\n"
-				"%42 = OpConstant %32 1\n"
-				"%45 = OpTypeVector %12 3\n"
-				"%46 = OpTypePointer Input %45\n"
-				"%47 = OpVariable %46 Input\n"
-				"%48 = OpTypePointer Input %12\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%9 = OpGroupNonUniformElect %6 %8\n"
-				"OpSelectionMerge %11 None\n"
-				"OpBranchConditional %9 %10 %23\n"
-				"%10 = OpLabel\n"
-				"%19 = OpAccessChain %18 %15 %17\n"
-				"OpStore %19 %16\n"
-				"%22 = OpAccessChain %18 %15 %21\n"
-				"OpStore %22 %20\n"
-				"OpBranch %11\n"
-				"%23 = OpLabel\n"
-				"%25 = OpAccessChain %18 %15 %17\n"
-				"OpStore %25 %24\n"
-				"%27 = OpAccessChain %18 %15 %21\n"
-				"OpStore %27 %26\n"
-				"OpBranch %11\n"
-				"%11 = OpLabel\n"
-				"%40 = OpAccessChain %39 %38 %33 %33\n"
-				"%41 = OpLoad %13 %40\n"
-				"%43 = OpAccessChain %39 %38 %42 %33\n"
-				"%44 = OpLoad %13 %43\n"
-				"%49 = OpAccessChain %48 %47 %17\n"
-				"%50 = OpLoad %12 %49\n"
-				"%51 = OpCompositeConstruct %13 %50 %50 %50 %50\n"
-				"%52 = OpExtInst %13 %1 FMix %41 %44 %51\n"
-				"%53 = OpAccessChain %14 %31 %33\n"
-				"OpStore %53 %52\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-
-			programCollection.spirvAsmSources.add("tese") << evaluationSource << buildOptionsSpr;
+			programCollection.add("tese") << glu::TessellationEvaluationSource(evaluationSourceGLSL);
 		}
-		else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
+		else if (subgroups::SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
 		{
-			/*
+			const string  controlSourceGLSL =
+				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
 				"#extension GL_EXT_tessellation_shader : require\n"
 				"layout(vertices = 2) out;\n"
@@ -784,132 +386,27 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"void main (void)\n"
 				"{\n"
 				"  if (gl_InvocationID == 0)\n"
-				  {\n"
+				"  {\n"
 				"    gl_TessLevelOuter[0] = 1.0f;\n"
 				"    gl_TessLevelOuter[1] = 1.0f;\n"
 				"  }\n"
 				"  if (subgroupElect())\n"
 				"  {\n"
-				"    out_color[gl_InvocationID].r = " << ELECTED_VALUE << ";\n"
+				"    out_color[gl_InvocationID].r = " + electedValue.str() + ";\n"
 				"    out_color[gl_InvocationID].g = 1.0f;\n"
 				"  }\n"
 				"  else\n"
 				"  {\n"
-				"    out_color[gl_InvocationID].r = " << UNELECTED_VALUE << ";\n"
+				"    out_color[gl_InvocationID].r = " + unelectedValue.str() + ";\n"
 				"    out_color[gl_InvocationID].g = 0.0f;\n"
 				"  }\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 				"}\n";
-			*/
-			const string  controlSource =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 66\n"
-				"; Schema: 0\n"
-				"OpCapability Tessellation\n"
-				"OpCapability GroupNonUniform\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint TessellationControl %4 \"main\" %8 %20 %34 %53 %59\n"
-				"OpExecutionMode %4 OutputVertices 2\n"
-				"OpDecorate %8 BuiltIn InvocationId\n"
-				"OpDecorate %20 Patch\n"
-				"OpDecorate %20 BuiltIn TessLevelOuter\n"
-				"OpDecorate %34 Location 0\n"
-				"OpMemberDecorate %50 0 BuiltIn Position\n"
-				"OpMemberDecorate %50 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %50 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %50 3 BuiltIn CullDistance\n"
-				"OpDecorate %50 Block\n"
-				"OpMemberDecorate %55 0 BuiltIn Position\n"
-				"OpMemberDecorate %55 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %55 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %55 3 BuiltIn CullDistance\n"
-				"OpDecorate %55 Block\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeInt 32 1\n"
-				"%7 = OpTypePointer Input %6\n"
-				"%8 = OpVariable %7 Input\n"
-				"%10 = OpConstant %6 0\n"
-				"%11 = OpTypeBool\n"
-				"%15 = OpTypeFloat 32\n"
-				"%16 = OpTypeInt 32 0\n"
-				"%17 = OpConstant %16 4\n"
-				"%18 = OpTypeArray %15 %17\n"
-				"%19 = OpTypePointer Output %18\n"
-				"%20 = OpVariable %19 Output\n"
-				"%21 = OpConstant %15 1\n"
-				"%22 = OpTypePointer Output %15\n"
-				"%24 = OpConstant %6 1\n"
-				"%26 = OpConstant %16 3\n"
-				"%30 = OpTypeVector %15 4\n"
-				"%31 = OpConstant %16 2\n"
-				"%32 = OpTypeArray %30 %31\n"
-				"%33 = OpTypePointer Output %32\n"
-				"%34 = OpVariable %33 Output\n"
-				"%36 = OpConstant %15 " + electedValue.str() + "\n"
-				"%37 = OpConstant %16 0\n"
-				"%40 = OpConstant %16 1\n"
-				"%44 = OpConstant %15 " + unelectedValue.str() + "\n"
-				"%47 = OpConstant %15 0\n"
-				"%49 = OpTypeArray %15 %40\n"
-				"%50 = OpTypeStruct %30 %15 %49 %49\n"
-				"%51 = OpTypeArray %50 %31\n"
-				"%52 = OpTypePointer Output %51\n"
-				"%53 = OpVariable %52 Output\n"
-				"%55 = OpTypeStruct %30 %15 %49 %49\n"
-				"%56 = OpConstant %16 32\n"
-				"%57 = OpTypeArray %55 %56\n"
-				"%58 = OpTypePointer Input %57\n"
-				"%59 = OpVariable %58 Input\n"
-				"%61 = OpTypePointer Input %30\n"
-				"%64 = OpTypePointer Output %30\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%9 = OpLoad %6 %8\n"
-				"%12 = OpIEqual %11 %9 %10\n"
-				"OpSelectionMerge %14 None\n"
-				"OpBranchConditional %12 %13 %14\n"
-				"%13 = OpLabel\n"
-				"%23 = OpAccessChain %22 %20 %10\n"
-				"OpStore %23 %21\n"
-				"%25 = OpAccessChain %22 %20 %24\n"
-				"OpStore %25 %21\n"
-				"OpBranch %14\n"
-				"%14 = OpLabel\n"
-				"%27 = OpGroupNonUniformElect %11 %26\n"
-				"OpSelectionMerge %29 None\n"
-				"OpBranchConditional %27 %28 %42\n"
-				"%28 = OpLabel\n"
-				"%35 = OpLoad %6 %8\n"
-				"%38 = OpAccessChain %22 %34 %35 %37\n"
-				"OpStore %38 %36\n"
-				"%39 = OpLoad %6 %8\n"
-				"%41 = OpAccessChain %22 %34 %39 %40\n"
-				"OpStore %41 %21\n"
-				"OpBranch %29\n"
-				"%42 = OpLabel\n"
-				"%43 = OpLoad %6 %8\n"
-				"%45 = OpAccessChain %22 %34 %43 %37\n"
-				"OpStore %45 %44\n"
-				"%46 = OpLoad %6 %8\n"
-				"%48 = OpAccessChain %22 %34 %46 %40\n"
-				"OpStore %48 %47\n"
-				"OpBranch %29\n"
-				"%29 = OpLabel\n"
-				"%54 = OpLoad %6 %8\n"
-				"%60 = OpLoad %6 %8\n"
-				"%62 = OpAccessChain %61 %59 %60 %10\n"
-				"%63 = OpLoad %30 %62\n"
-				"%65 = OpAccessChain %64 %53 %54 %10\n"
-				"OpStore %65 %63\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-			programCollection.spirvAsmSources.add("tesc") << controlSource << buildOptionsSpr;
 
-			/*
+			programCollection.add("tesc") << glu::TessellationControlSource(controlSourceGLSL);
+
+			const string evaluationSourceGLSL =
+				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				"#extension GL_EXT_tessellation_shader : require\n"
 				"layout(isolines, equal_spacing, ccw ) in;\n"
@@ -921,81 +418,8 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 				"  out_color = in_color[0];\n"
 				"}\n";
-			*/
 
-			const string evaluationSource =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 44\n"
-				"; Schema: 0\n"
-				"OpCapability Tessellation\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint TessellationEvaluation %4 \"main\" %13 %20 %29 %38 %41\n"
-				"OpExecutionMode %4 Isolines\n"
-				"OpExecutionMode %4 SpacingEqual\n"
-				"OpExecutionMode %4 VertexOrderCcw\n"
-				"OpMemberDecorate %11 0 BuiltIn Position\n"
-				"OpMemberDecorate %11 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %11 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %11 3 BuiltIn CullDistance\n"
-				"OpDecorate %11 Block\n"
-				"OpMemberDecorate %16 0 BuiltIn Position\n"
-				"OpMemberDecorate %16 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %16 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %16 3 BuiltIn CullDistance\n"
-				"OpDecorate %16 Block\n"
-				"OpDecorate %29 BuiltIn TessCoord\n"
-				"OpDecorate %38 Location 0\n"
-				"OpDecorate %41 Location 0\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeFloat 32\n"
-				"%7 = OpTypeVector %6 4\n"
-				"%8 = OpTypeInt 32 0\n"
-				"%9 = OpConstant %8 1\n"
-				"%10 = OpTypeArray %6 %9\n"
-				"%11 = OpTypeStruct %7 %6 %10 %10\n"
-				"%12 = OpTypePointer Output %11\n"
-				"%13 = OpVariable %12 Output\n"
-				"%14 = OpTypeInt 32 1\n"
-				"%15 = OpConstant %14 0\n"
-				"%16 = OpTypeStruct %7 %6 %10 %10\n"
-				"%17 = OpConstant %8 32\n"
-				"%18 = OpTypeArray %16 %17\n"
-				"%19 = OpTypePointer Input %18\n"
-				"%20 = OpVariable %19 Input\n"
-				"%21 = OpTypePointer Input %7\n"
-				"%24 = OpConstant %14 1\n"
-				"%27 = OpTypeVector %6 3\n"
-				"%28 = OpTypePointer Input %27\n"
-				"%29 = OpVariable %28 Input\n"
-				"%30 = OpConstant %8 0\n"
-				"%31 = OpTypePointer Input %6\n"
-				"%36 = OpTypePointer Output %7\n"
-				"%38 = OpVariable %36 Output\n"
-				"%39 = OpTypeArray %7 %17\n"
-				"%40 = OpTypePointer Input %39\n"
-				"%41 = OpVariable %40 Input\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%22 = OpAccessChain %21 %20 %15 %15\n"
-				"%23 = OpLoad %7 %22\n"
-				"%25 = OpAccessChain %21 %20 %24 %15\n"
-				"%26 = OpLoad %7 %25\n"
-				"%32 = OpAccessChain %31 %29 %30\n"
-				"%33 = OpLoad %6 %32\n"
-				"%34 = OpCompositeConstruct %7 %33 %33 %33 %33\n"
-				"%35 = OpExtInst %7 %1 FMix %23 %26 %34\n"
-				"%37 = OpAccessChain %36 %13 %15\n"
-				"OpStore %37 %35\n"
-				"%42 = OpAccessChain %21 %41 %15\n"
-				"%43 = OpLoad %7 %42\n"
-				"OpStore %38 %43\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-			programCollection.spirvAsmSources.add("tese") << evaluationSource << buildOptionsSpr;
+			programCollection.add("tese") << glu::TessellationEvaluationSource(evaluationSourceGLSL);
 		}
 		else
 		{
@@ -1005,7 +429,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	else
 	{
 		std::ostringstream bdy;
-		string color = (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage) ? "out_color[gl_InvocationID].b = 1.0f;\n" : "out_color.b = 1.0f;\n";
+		string color = (subgroups::SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage) ? "out_color[gl_InvocationID].b = 1.0f;\n" : "out_color.b = 1.0f;\n";
 		switch (caseDef.opType)
 		{
 			default:
@@ -1015,13 +439,13 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER:
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_BUFFER:
 			{
-				bdy << " tempResult2 = tempBuffer[id];\n"
+				bdy << "  tempResult2 = tempBuffer[id];\n"
 					<< "  if (subgroupElect())\n"
 					<< "  {\n"
 					<< "    tempResult = value;\n"
 					<< "    " << color
 					<< "  }\n"
-					 << "  else\n"
+					<< "  else\n"
 					<< "  {\n"
 					<< "    tempResult = tempBuffer[id];\n"
 					<< "  }\n"
@@ -1029,11 +453,11 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				break;
 			}
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE:
-				bdy <<"tempResult2 = imageLoad(tempImage, ivec2(id, 0)).x;\n"
+				bdy << "  tempResult2 = imageLoad(tempImage, ivec2(id, 0)).x;\n"
 					<< "  if (subgroupElect())\n"
 					<< "  {\n"
 					<< "    tempResult = value;\n"
-					<< "     " << color
+					<< "    " << color
 					<< "  }\n"
 					<< "  else\n"
 					<< "  {\n"
@@ -1044,7 +468,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				break;
 		}
 
-		if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+		if (subgroups::SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream	fragment;
 			fragment	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
@@ -1052,16 +476,16 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				<< "layout(location = 0) out vec4 out_color;\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
-				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  if (gl_HelperInvocation) return;\n"
@@ -1080,10 +504,9 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  out_color.g = float(value);\n"
 				<< "  out_color.a = float(tempResult2);\n"
 				<< "}\n";
-			programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment.str()) << buildOptions;
+			programCollection.add("fragment") << glu::FragmentSource(fragment.str());
 		}
-		else if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+		else if (subgroups::SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream	vertex;
 			vertex	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
@@ -1093,22 +516,22 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "layout(location = 0) out vec4 out_color;\n"
 				<< "layout(location = 0) in highp vec4 in_position;\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
-				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  uint id = 0;\n"
 				<< "  if (subgroupElect())\n"
 				<< "  {\n"
-				<< "    id = gl_VertexIndex;\n"
+				<< "    id = gl_VertexID;\n"
 				<< "  }\n"
 				<< "  id = subgroupBroadcastFirst(id);\n"
 				<< "  uint tempResult = 0u;\n"
@@ -1121,10 +544,9 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  gl_Position = in_position;\n"
 				<< "  gl_PointSize = 1.0f;\n"
 				<< "}\n";
-			programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex.str()) << buildOptions;
+			programCollection.add("vert") << glu::VertexSource(vertex.str());
 		}
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
+	else if (subgroups::SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream geometry;
 
@@ -1134,16 +556,16 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 					<< "layout(points) in;\n"
 					<< "layout(points, max_vertices = 1) out;\n"
 					<< "layout(location = 0) out vec4 out_color;\n"
-					<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+					<< "layout(binding = 0) uniform Buffer1\n"
 					<< "{\n"
 					<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 					<< "};\n"
 					<< "\n"
-					<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+					<< "layout(binding = 1) uniform Buffer2\n"
 					<< "{\n"
 					<< "  uint value;\n"
 					<< "};\n"
-					<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+					<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
 					<< "void main (void)\n"
 					<< "{\n"
 					<< "  uint id = 0;\n"
@@ -1164,10 +586,9 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 					<< "  EndPrimitive();\n"
 					<< "}\n";
 
-			programCollection.glslSources.add("geometry")
-				<< glu::GeometrySource(geometry.str()) << buildOptions;
+			programCollection.add("geometry") << glu::GeometrySource(geometry.str());
 		}
-		else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
+		else if (subgroups::SHADER_STAGE_TESS_EVALUATION_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream controlSource;
 			std::ostringstream evaluationSource;
@@ -1191,16 +612,16 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "#extension GL_EXT_tessellation_shader : require\n"
 				<< "layout(isolines, equal_spacing, ccw ) in;\n"
 				<< "layout(location = 0) out vec4 out_color;\n"
-				<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
-				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  uint id = 0;\n"
@@ -1219,12 +640,10 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 				<< "}\n";
 
-			programCollection.glslSources.add("tesc")
-				<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
-			programCollection.glslSources.add("tese")
-				<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
+			programCollection.add("tesc") << glu::TessellationControlSource(controlSource.str());
+			programCollection.add("tese") << glu::TessellationEvaluationSource(evaluationSource.str());
 		}
-		else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
+		else if (subgroups::SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream controlSource;
 			std::ostringstream evaluationSource;
@@ -1235,16 +654,16 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "#extension GL_EXT_tessellation_shader : require\n"
 				<< "layout(vertices = 2) out;\n"
 				<< "layout(location = 0) out vec4 out_color[];\n"
-				<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
-				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  uint id = 0;\n"
@@ -1281,10 +700,8 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  out_color = in_color[0];\n"
 				<< "}\n";
 
-			programCollection.glslSources.add("tesc")
-				<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
-			programCollection.glslSources.add("tese")
-				<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
+			programCollection.add("tesc") << glu::TessellationControlSource(controlSource.str());
+			programCollection.add("tese") << glu::TessellationEvaluationSource(evaluationSource.str());
 		}
 		else
 		{
@@ -1297,15 +714,14 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	if (OPTYPE_ELECT == caseDef.opType)
 	{
-		if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
+		if (subgroups::SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream src;
 
 			src << "#version 450\n"
 				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
-				<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-				"local_size_z_id = 2) in;\n"
-				<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
+				<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
+				<< "layout(binding = 0, std430) buffer Buffer1\n"
 				<< "{\n"
 				<< "  uint result[];\n"
 				<< "};\n"
@@ -1326,8 +742,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				<< "  result[offset] = bits.x + bits.y + bits.z + bits.w;\n"
 				<< "}\n";
 
-			programCollection.glslSources.add("comp")
-					<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+			programCollection.add("comp") << glu::ComputeSource(src.str());
 		}
 		else
 		{
@@ -1335,33 +750,32 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				std::ostringstream  vertex;
 				vertex	<< "#version 450\n"
 						<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
-						<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
+						<< "layout(binding = 0, std430) buffer Buffer0\n"
 						<< "{\n"
 						<< "  uint result[];\n"
-						<< "};\n"
-						<< "layout(set = 0, binding = 4, std430) buffer Buffer2\n"
+						<< "} b0;\n"
+						<< "layout(binding = 4, std430) buffer Buffer4\n"
 						<< "{\n"
 						<< "  uint numSubgroupsExecuted;\n"
-						<< "};\n"
+						<< "} b4;\n"
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
 						<< "  if (subgroupElect())\n"
 						<< "  {\n"
-						<< "    result[gl_VertexIndex] = " << ELECTED_VALUE << ";\n"
-						<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
+						<< "    b0.result[gl_VertexID] = " << ELECTED_VALUE << ";\n"
+						<< "    atomicAdd(b4.numSubgroupsExecuted, 1);\n"
 						<< "  }\n"
 						<< "  else\n"
 						<< "  {\n"
-						<< "    result[gl_VertexIndex] = " << UNELECTED_VALUE << ";\n"
+						<< "    b0.result[gl_VertexID] = " << UNELECTED_VALUE << ";\n"
 						<< "  }\n"
 						<< "  float pixelSize = 2.0f/1024.0f;\n"
 						<< "  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
-						<< "  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
+						<< "  gl_Position = vec4(float(gl_VertexID) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
 						<< "  gl_PointSize = 1.0f;\n"
 						<< "}\n";
-				programCollection.glslSources.add("vert")
-					<< glu::VertexSource(vertex.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("vert") << glu::VertexSource(vertex.str());
 			}
 
 			{
@@ -1369,25 +783,25 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				tesc	<< "#version 450\n"
 						<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 						<< "layout(vertices=1) out;\n"
-						<< "layout(set = 0, binding = 1, std430) buffer Buffer1\n"
+						<< "layout(binding = 1, std430) buffer Buffer1\n"
 						<< "{\n"
 						<< "  uint result[];\n"
-						<< "};\n"
-						<< "layout(set = 0, binding = 5, std430) buffer Buffer2\n"
+						<< "} b1;\n"
+						<< "layout(binding = 5, std430) buffer Buffer5\n"
 						<< "{\n"
 						<< "  uint numSubgroupsExecuted;\n"
-						<< "};\n"
+						<< "} b5;\n"
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
 						<< "  if (subgroupElect())\n"
 						<< "  {\n"
-						<< "    result[gl_PrimitiveID] = " << ELECTED_VALUE << ";\n"
-						<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
+						<< "    b1.result[gl_PrimitiveID] = " << ELECTED_VALUE << ";\n"
+						<< "    atomicAdd(b5.numSubgroupsExecuted, 1);\n"
 						<< "  }\n"
 						<< "  else\n"
 						<< "  {\n"
-						<< "    result[gl_PrimitiveID] = " << UNELECTED_VALUE << ";\n"
+						<< "    b1.result[gl_PrimitiveID] = " << UNELECTED_VALUE << ";\n"
 						<< "  }\n"
 						<< "  if (gl_InvocationID == 0)\n"
 						<< "  {\n"
@@ -1396,8 +810,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 						<< "  }\n"
 						<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 						<< "}\n";
-				programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("tesc") << glu::TessellationControlSource(tesc.str());
 			}
 
 			{
@@ -1405,65 +818,62 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				tese	<< "#version 450\n"
 						<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 						<< "layout(isolines) in;\n"
-						<< "layout(set = 0, binding = 2, std430) buffer Buffer1\n"
+						<< "layout(binding = 2, std430) buffer Buffer2\n"
 						<< "{\n"
 						<< "  uint result[];\n"
-						<< "};\n"
-						<< "layout(set = 0, binding = 6, std430) buffer Buffer2\n"
+						<< "} b2;\n"
+						<< "layout(binding = 6, std430) buffer Buffer6\n"
 						<< "{\n"
 						<< "  uint numSubgroupsExecuted;\n"
-						<< "};\n"
+						<< "} b6;\n"
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
 						<< "  if (subgroupElect())\n"
 						<< "  {\n"
-						<< "    result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = " << ELECTED_VALUE << ";\n"
-						<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
+						<< "    b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = " << ELECTED_VALUE << ";\n"
+						<< "    atomicAdd(b6.numSubgroupsExecuted, 1);\n"
 						<< "  }\n"
 						<< "  else\n"
 						<< "  {\n"
-						<< "    result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = " << UNELECTED_VALUE << ";\n"
+						<< "    b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = " << UNELECTED_VALUE << ";\n"
 						<< "  }\n"
 						<< "  float pixelSize = 2.0f/1024.0f;\n"
 						<< "  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 						<< "}\n";
-				programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("tese") << glu::TessellationEvaluationSource(tese.str());
 			}
-
 			{
 				std::ostringstream geometry;
 				geometry	<< "#version 450\n"
 							<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 							<< "layout(${TOPOLOGY}) in;\n"
 							<< "layout(points, max_vertices = 1) out;\n"
-							<< "layout(set = 0, binding = 3, std430) buffer Buffer1\n"
+							<< "layout(binding = 3, std430) buffer Buffer3\n"
 							<< "{\n"
 							<< "  uint result[];\n"
-							<< "};\n"
-							<< "layout(set = 0, binding = 7, std430) buffer Buffer2\n"
+							<< "} b3;\n"
+							<< "layout(binding = 7, std430) buffer Buffer7\n"
 							<< "{\n"
 							<< "  uint numSubgroupsExecuted;\n"
-							<< "};\n"
+							<< "} b7;\n"
 							<< "\n"
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "  if (subgroupElect())\n"
 							<< "  {\n"
-							<< "    result[gl_PrimitiveIDIn] = " << ELECTED_VALUE << ";\n"
-							<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
+							<< "    b3.result[gl_PrimitiveIDIn] = " << ELECTED_VALUE << ";\n"
+							<< "    atomicAdd(b7.numSubgroupsExecuted, 1);\n"
 							<< "  }\n"
 							<< "  else\n"
 							<< "  {\n"
-							<< "    result[gl_PrimitiveIDIn] = " << UNELECTED_VALUE << ";\n"
+							<< "    b3.result[gl_PrimitiveIDIn] = " << UNELECTED_VALUE << ";\n"
 							<< "  }\n"
 							<< "  gl_Position = gl_in[0].gl_Position;\n"
 							<< "  EmitVertex();\n"
 							<< "  EndPrimitive();\n"
 							<< "}\n";
-				subgroups::addGeometryShadersFromTemplate(geometry.str(), vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-														  programCollection.glslSources);
+				subgroups::addGeometryShadersFromTemplate(geometry.str(), programCollection);
 			}
 
 			{
@@ -1471,25 +881,24 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				fragment	<< "#version 450\n"
 							<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 							<< "layout(location = 0) out uint data;\n"
-							<< "layout(set = 0, binding = 8, std430) buffer Buffer\n"
+							<< "layout(binding = 8, std430) buffer Buffer8\n"
 							<< "{\n"
 							<< "  uint numSubgroupsExecuted;\n"
-							<< "};\n"
+							<< "} b8;\n"
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "  if (gl_HelperInvocation) return;\n"
 							<< "  if (subgroupElect())\n"
 							<< "  {\n"
 							<< "    data = " << ELECTED_VALUE << ";\n"
-							<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
+							<< "    atomicAdd(b8.numSubgroupsExecuted, 1);\n"
 							<< "  }\n"
 							<< "  else\n"
 							<< "  {\n"
 							<< "    data = " << UNELECTED_VALUE << ";\n"
 							<< "  }\n"
 							<< "}\n";
-				programCollection.glslSources.add("fragment")
-					<< glu::FragmentSource(fragment.str())<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("fragment") << glu::FragmentSource(fragment.str());
 			}
 			subgroups::addNoSubgroupShader(programCollection);
 		}
@@ -1508,15 +917,15 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_BUFFER:
 				bdy << "  if (subgroupElect())\n"
 					<< "  {\n"
-					<< "    tempBuffer[id] = value;\n"
+					<< "    b${SSBO1}.tempBuffer[id] = b${SSBO2}.value;\n"
 					<< "  }\n"
 					<< "  " << getOpTypeName(caseDef.opType) << "();\n"
-					<< "  tempResult = tempBuffer[id];\n";
+					<< "  tempResult = b${SSBO1}.tempBuffer[id];\n";
 				break;
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_SHARED:
 				bdy << "  if (subgroupElect())\n"
 					<< "  {\n"
-					<< "    tempShared[localId] = value;\n"
+					<< "    tempShared[localId] = b${SSBO2}.value;\n"
 					<< "  }\n"
 					<< "  subgroupMemoryBarrierShared();\n"
 					<< "  tempResult = tempShared[localId];\n";
@@ -1524,34 +933,39 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE:
 				bdy << "  if (subgroupElect())\n"
 					<< "  {\n"
-					<< "    imageStore(tempImage, ivec2(id, 0), ivec4(value));\n"
+					<< "    imageStore(tempImage${IMG1}, ivec2(id, 0), ivec4(b${SSBO2}.value));\n"
 					<< "  }\n"
 					<< "  subgroupMemoryBarrierImage();\n"
-					<< "  tempResult = imageLoad(tempImage, ivec2(id, 0)).x;\n";
+					<< "  tempResult = imageLoad(tempImage${IMG1}, ivec2(id, 0)).x;\n";
 				break;
 		}
 
-		if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
+		tcu::StringTemplate bdyTemplate(bdy.str());
+
+		if (subgroups::SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream src;
+			map<string, string> bufferNameMapping;
+			bufferNameMapping.insert(pair<string, string>("SSBO1", "1"));
+			bufferNameMapping.insert(pair<string, string>("SSBO2", "2"));
+			bufferNameMapping.insert(pair<string, string>("IMG1", "0"));
 
 			src << "#version 450\n"
 				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
-				<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-				"local_size_z_id = 2) in;\n"
-				<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
+				<< "layout (${LOCAL_SIZE_X}, ${LOCAL_SIZE_Y}, ${LOCAL_SIZE_Z}) in;\n"
+				<< "layout(binding = 0, std430) buffer Buffer0\n"
 				<< "{\n"
 				<< "  uint result[];\n"
-				<< "};\n"
-				<< "layout(set = 0, binding = 1, std430) buffer Buffer2\n"
+				<< "} b0;\n"
+				<< "layout(binding = 1, std430) buffer Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer[];\n"
-				<< "};\n"
-				<< "layout(set = 0, binding = 2, std430) buffer Buffer3\n"
+				<< "} b1;\n"
+				<< "layout(binding = 2, std430) buffer Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
-				<< "};\n"
-				<< "layout(set = 0, binding = 3, r32ui) uniform uimage2D tempImage;\n"
+				<< "} b2;\n"
+				<< "layout(binding = 0, r32ui) uniform uimage2D tempImage0;\n"
 				<< "shared uint tempShared[gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z];\n"
 				<< "\n"
 				<< "void main (void)\n"
@@ -1565,93 +979,101 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"gl_WorkGroupID.z) + gl_WorkGroupID.y) + "
 				"gl_WorkGroupID.x + localId;\n"
 				<< "  uint tempResult = 0;\n"
-				<< bdy.str()
-				<< "  result[offset] = tempResult;\n"
+				<< bdyTemplate.specialize(bufferNameMapping)
+				<< "  b0.result[offset] = tempResult;\n"
 				<< "}\n";
 
-			programCollection.glslSources.add("comp")
-					<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+			programCollection.add("comp") << glu::ComputeSource(src.str());
 		}
 		else
 		{
 			{
+				map<string, string> bufferNameMapping;
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "4"));
+				bufferNameMapping.insert(pair<string, string>("SSBO2", "6"));
+				bufferNameMapping.insert(pair<string, string>("IMG1", "0"));
+
 				const string vertex =
 					"#version 450\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-					"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
+					"layout(binding = 0, std430) buffer Buffer0\n"
 					"{\n"
 					"  uint result[];\n"
-					"};\n"
-					"layout(set = 0, binding = 4, std430) buffer Buffer2\n"
+					"} b0;\n"
+					"layout(binding = 4, std430) buffer Buffer4\n"
 					"{\n"
 					"  uint tempBuffer[];\n"
-					"};\n"
-					"layout(set = 0, binding = 5, std430) buffer Buffer3\n"
+					"} b4;\n"
+					"layout(binding = 5, std430) buffer Buffer5\n"
 					"{\n"
 					"  uint subgroupID;\n"
-					"};\n"
-					"layout(set = 0, binding = 6, std430) buffer Buffer4\n"
+					"} b5;\n"
+					"layout(binding = 6, std430) buffer Buffer6\n"
 					"{\n"
 					"  uint value;\n"
-					"};\n"
-					"layout(set = 0, binding = 7, r32ui) uniform uimage2D tempImage;\n"
+					"} b6;\n"
+					"layout(binding = 0, r32ui) uniform uimage2D tempImage0;\n"
 					"void main (void)\n"
 					"{\n"
 					"  uint id = 0;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(subgroupID, 1);\n"
+					"    id = atomicAdd(b5.subgroupID, 1);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
 					"  uint tempResult = 0;\n"
-					+ bdy.str() +
-					"  result[gl_VertexIndex] = tempResult;\n"
+					+ bdyTemplate.specialize(bufferNameMapping) +
+					"  b0.result[gl_VertexID] = tempResult;\n"
 					"  float pixelSize = 2.0f/1024.0f;\n"
 					"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
-					"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
+					"  gl_Position = vec4(float(gl_VertexID) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
 					"  gl_PointSize = 1.0f;\n"
 					"}\n";
-				programCollection.glslSources.add("vert")
-					<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("vert") << glu::VertexSource(vertex);
 			}
 
 			{
+				map<string, string> bufferNameMapping;
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "7"));
+				bufferNameMapping.insert(pair<string, string>("SSBO2", "9"));
+				bufferNameMapping.insert(pair<string, string>("IMG1", "1"));
+
 				const string tesc =
 					"#version 450\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 					"layout(vertices=1) out;\n"
-					"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
+					"layout(binding = 1, std430) buffer Buffer1\n"
 					"{\n"
 					"  uint result[];\n"
-					"};\n"
-					"layout(set = 0, binding = 8, std430) buffer Buffer2\n"
+					"} b1;\n"
+					"layout(binding = 7, std430) buffer Buffer7\n"
 					"{\n"
 					"  uint tempBuffer[];\n"
-					"};\n"
-					"layout(set = 0, binding = 9, std430) buffer Buffer3\n"
+					"} b7;\n"
+					"layout(binding = 8, std430) buffer Buffer8\n"
 					"{\n"
 					"  uint subgroupID;\n"
-					"};\n"
-					"layout(set = 0, binding = 10, std430) buffer Buffer4\n"
+					"} b8;\n"
+					"layout(binding = 9, std430) buffer Buffer9\n"
 					"{\n"
 					"  uint value;\n"
-					"};\n"
-					"layout(set = 0, binding = 11, r32ui) uniform uimage2D tempImage;\n"
+					"} b9;\n"
+					"layout(binding = 1, r32ui) uniform uimage2D tempImage1;\n"
 					"void main (void)\n"
 					"{\n"
 					"  uint id = 0;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(subgroupID, 1);\n"
+					"    id = atomicAdd(b8.subgroupID, 1);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
 					"  uint tempResult = 0;\n"
-					+ bdy.str() +
-					"  result[gl_PrimitiveID] = tempResult;\n"
+					+ bdyTemplate.specialize(bufferNameMapping) +
+					"  b1.result[gl_PrimitiveID] = tempResult;\n"
 					"  if (gl_InvocationID == 0)\n"
 					"  {\n"
 					"    gl_TessLevelOuter[0] = 1.0f;\n"
@@ -1659,130 +1081,140 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  }\n"
 					"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 					"}\n";
-				programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("tesc") << glu::TessellationControlSource(tesc);
 			}
 
 			{
+				map<string, string> bufferNameMapping;
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "10"));
+				bufferNameMapping.insert(pair<string, string>("SSBO2", "12"));
+				bufferNameMapping.insert(pair<string, string>("IMG1", "2"));
+
 				const string tese =
 					"#version 450\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 					"layout(isolines) in;\n"
-					"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
+					"layout(binding = 2, std430) buffer Buffer2\n"
 					"{\n"
 					"  uint result[];\n"
-					"};\n"
-					"layout(set = 0, binding = 12, std430) buffer Buffer2\n"
+					"} b2;\n"
+					"layout(binding = 10, std430) buffer Buffer10\n"
 					"{\n"
 					"  uint tempBuffer[];\n"
-					"};\n"
-					"layout(set = 0, binding = 13, std430) buffer Buffer3\n"
+					"} b10;\n"
+					"layout(binding = 11, std430) buffer Buffer11\n"
 					"{\n"
 					"  uint subgroupID;\n"
-					"};\n"
-					"layout(set = 0, binding = 14, std430) buffer Buffer4\n"
+					"} b11;\n"
+					"layout(binding = 12, std430) buffer Buffer12\n"
 					"{\n"
 					"  uint value;\n"
-					"};\n"
-					"layout(set = 0, binding = 15, r32ui) uniform uimage2D tempImage;\n"
+					"} b12;\n"
+					"layout(binding = 2, r32ui) uniform uimage2D tempImage2;\n"
 					"void main (void)\n"
 					"{\n"
 					"  uint id = 0;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(subgroupID, 1);\n"
+					"    id = atomicAdd(b11.subgroupID, 1);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
 					"  uint tempResult = 0;\n"
-					+ bdy.str() +
-					"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
+					+ bdyTemplate.specialize(bufferNameMapping) +
+					"  b2.result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
 					"  float pixelSize = 2.0f/1024.0f;\n""  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 					"}\n";
-				programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("tese") << glu::TessellationEvaluationSource(tese);
 			}
-
 			{
+				map<string, string> bufferNameMapping;
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "13"));
+				bufferNameMapping.insert(pair<string, string>("SSBO2", "15"));
+				bufferNameMapping.insert(pair<string, string>("IMG1", "3"));
+
 				const string geometry =
 					"#version 450\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 					"layout(${TOPOLOGY}) in;\n"
 					"layout(points, max_vertices = 1) out;\n"
-					"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
+					"layout(binding = 3, std430) buffer Buffer3\n"
 					"{\n"
 					"  uint result[];\n"
-					"};\n"
-					"layout(set = 0, binding = 16, std430) buffer Buffer2\n"
+					"} b3;\n"
+					"layout(binding = 13, std430) buffer Buffer13\n"
 					"{\n"
 					"  uint tempBuffer[];\n"
-					"};\n"
-					"layout(set = 0, binding = 17, std430) buffer Buffer3\n"
+					"} b13;\n"
+					"layout(binding = 14, std430) buffer Buffer14\n"
 					"{\n"
 					"  uint subgroupID;\n"
-					"};\n"
-					"layout(set = 0, binding = 18, std430) buffer Buffer4\n"
+					"} b14;\n"
+					"layout(binding = 15, std430) buffer Buffer15\n"
 					"{\n"
 					"  uint value;\n"
-					"};\n"
-					"layout(set = 0, binding = 19, r32ui) uniform uimage2D tempImage;\n"
+					"} b15;\n"
+					"layout(binding = 3, r32ui) uniform uimage2D tempImage3;\n"
 					"void main (void)\n"
 					"{\n"
 					"  uint id = 0;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(subgroupID, 1);\n"
+					"    id = atomicAdd(b14.subgroupID, 1);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
 					"  uint tempResult = 0;\n"
-					 + bdy.str() +
-					"  result[gl_PrimitiveIDIn] = tempResult;\n"
+					 + bdyTemplate.specialize(bufferNameMapping) +
+					"  b3.result[gl_PrimitiveIDIn] = tempResult;\n"
 					"  gl_Position = gl_in[0].gl_Position;\n"
 					"  EmitVertex();\n"
 					"  EndPrimitive();\n"
 					"}\n";
-				subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-														  programCollection.glslSources);
+				subgroups::addGeometryShadersFromTemplate(geometry, programCollection);
 			}
 
 			{
+				map<string, string> bufferNameMapping;
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "16"));
+				bufferNameMapping.insert(pair<string, string>("SSBO2", "18"));
+				bufferNameMapping.insert(pair<string, string>("IMG1", "4"));
+
 				const string fragment =
 					"#version 450\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 					"layout(location = 0) out uint result;\n"
-					"layout(set = 0, binding = 20, std430) buffer Buffer1\n"
+					"layout(binding = 16, std430) buffer Buffer16\n"
 					"{\n"
 					"  uint tempBuffer[];\n"
-					"};\n"
-					"layout(set = 0, binding = 21, std430) buffer Buffer2\n"
+					"} b16;\n"
+					"layout(binding = 17, std430) buffer Buffer17\n"
 					"{\n"
 					"  uint subgroupID;\n"
-					"};\n"
-					"layout(set = 0, binding = 22, std430) buffer Buffer3\n"
+					"} b17;\n"
+					"layout(binding = 18, std430) buffer Buffer18\n"
 					"{\n"
 					"  uint value;\n"
-					"};\n"
-					"layout(set = 0, binding = 23, r32ui) uniform uimage2D tempImage;\n"
+					"} b18;\n"
+					"layout(binding = 4, r32ui) uniform uimage2D tempImage4;\n"
 					"void main (void)\n"
 					"{\n"
 					"  if (gl_HelperInvocation) return;\n"
 					"  uint id = 0;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(subgroupID, 1);\n"
+					"    id = atomicAdd(b17.subgroupID, 1);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
 					"  uint tempResult = 0;\n"
-					+ bdy.str() +
+					+ bdyTemplate.specialize(bufferNameMapping) +
 					"  result = tempResult;\n"
 					"}\n";
-				programCollection.glslSources.add("fragment")
-					<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+				programCollection.add("fragment") << glu::FragmentSource(fragment);
 			}
 
 		subgroups::addNoSubgroupShader(programCollection);
@@ -1816,17 +1248,17 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		}
 	}
 
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BASIC_BIT))
+	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, subgroups::SUBGROUP_FEATURE_BASIC_BIT))
 	{
 		return tcu::TestStatus::fail(
 				   "Subgroup feature " +
-				   subgroups::getSubgroupFeatureName(VK_SUBGROUP_FEATURE_BASIC_BIT) +
+				   subgroups::getSubgroupFeatureName(subgroups::SUBGROUP_FEATURE_BASIC_BIT) +
 				   " is a required capability!");
 	}
 
-	if (OPTYPE_ELECT != caseDef.opType && VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
+	if (OPTYPE_ELECT != caseDef.opType && subgroups::SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
 	{
-		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
+		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, subgroups::SUBGROUP_FEATURE_BALLOT_BIT))
 		{
 			TCU_THROW(NotSupportedError, "Subgroup basic operation non-compute stage test required that ballot operations are supported!");
 		}
@@ -1835,68 +1267,71 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	const deUint32						inputDatasCount	= OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? 3u : 2u;
 	std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
 
-	inputDatas[0].format = VK_FORMAT_R32_UINT;
+	inputDatas[0].format = subgroups::FORMAT_R32_UINT;
 	inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
 	inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
+	inputDatas[0].binding = 0u;
 
-	inputDatas[1].format = VK_FORMAT_R32_UINT;
+	inputDatas[1].format = subgroups::FORMAT_R32_UINT;
 	inputDatas[1].numElements = 1ull;
 	inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
+	inputDatas[1].binding = 1u;
 
 	if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
 	{
-		inputDatas[2].format = VK_FORMAT_R32_UINT;
+		inputDatas[2].format = subgroups::FORMAT_R32_UINT;
 		inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 		inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 		inputDatas[2].isImage = true;
+		inputDatas[2].binding = 0u;
 	}
 
-	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+	if (subgroups::SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		if (OPTYPE_ELECT == caseDef.opType)
-			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
+			return subgroups::makeVertexFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
 		else
-			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			return subgroups::makeVertexFrameBufferTest(context, subgroups::FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
 	}
-	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+	else if (subgroups::SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 	{
-		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkFragmentSubgroupBarriersNoSSBO);
+		return subgroups::makeFragmentFrameBufferTest(context, subgroups::FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkFragmentSubgroupBarriersNoSSBO);
 	}
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
+	else if (subgroups::SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
 		if (OPTYPE_ELECT == caseDef.opType)
-			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
+			return subgroups::makeGeometryFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
 		else
-			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			return subgroups::makeGeometryFrameBufferTest(context, subgroups::FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
 	}
 
 	if (OPTYPE_ELECT == caseDef.opType)
-		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO, caseDef.shaderStage);
+		return subgroups::makeTessellationEvaluationFrameBufferTest(context, subgroups::FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO, caseDef.shaderStage);
 
-	return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
-		(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)? checkVertexPipelineStagesSubgroupBarriersNoSSBO : checkTessellationEvaluationSubgroupBarriersNoSSBO,
+	return subgroups::makeTessellationEvaluationFrameBufferTest(context, subgroups::FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+		(subgroups::SHADER_STAGE_TESS_CONTROL_BIT == caseDef.shaderStage)? checkVertexPipelineStagesSubgroupBarriersNoSSBO : checkTessellationEvaluationSubgroupBarriersNoSSBO,
 		caseDef.shaderStage);
 }
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BASIC_BIT))
+	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, subgroups::SUBGROUP_FEATURE_BASIC_BIT))
 	{
 		return tcu::TestStatus::fail(
 					"Subgroup feature " +
-					subgroups::getSubgroupFeatureName(VK_SUBGROUP_FEATURE_BASIC_BIT) +
+					subgroups::getSubgroupFeatureName(subgroups::SUBGROUP_FEATURE_BASIC_BIT) +
 					" is a required capability!");
 	}
 
-	if (OPTYPE_ELECT != caseDef.opType && VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
+	if (OPTYPE_ELECT != caseDef.opType && subgroups::SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
 	{
-		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
+		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, subgroups::SUBGROUP_FEATURE_BALLOT_BIT))
 		{
 			TCU_THROW(NotSupportedError, "Subgroup basic operation non-compute stage test required that ballot operations are supported!");
 		}
 	}
 
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
+	if (subgroups::SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
 		{
@@ -1907,26 +1342,29 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		if (OPTYPE_ELECT == caseDef.opType)
 		{
-			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, checkComputeSubgroupElect);
+			return subgroups::makeComputeTest(context, subgroups::FORMAT_R32_UINT, DE_NULL, 0, checkComputeSubgroupElect);
 		}
 		else
 		{
 			const deUint32 inputDatasCount = 3;
 			subgroups::SSBOData inputDatas[inputDatasCount];
-			inputDatas[0].format = VK_FORMAT_R32_UINT;
+			inputDatas[0].format = subgroups::FORMAT_R32_UINT;
 			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNone;
+			inputDatas[0].binding = 1u;
 
-			inputDatas[1].format = VK_FORMAT_R32_UINT;
+			inputDatas[1].format = subgroups::FORMAT_R32_UINT;
 			inputDatas[1].numElements = 1;
 			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
+			inputDatas[1].binding = 2u;
 
-			inputDatas[2].format = VK_FORMAT_R32_UINT;
+			inputDatas[2].format = subgroups::FORMAT_R32_UINT;
 			inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[2].isImage = true;
+			inputDatas[2].binding = 0u;
 
-			return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, checkComputeSubgroupBarriers);
+			return subgroups::makeComputeTest(context, subgroups::FORMAT_R32_UINT, inputDatas, inputDatasCount, checkComputeSubgroupBarriers);
 		}
 	}
 	else
@@ -1936,27 +1374,19 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			TCU_THROW(NotSupportedError, "Subgroup basic operation require that the fragment stage be able to write to SSBOs!");
 		}
 
-		VkPhysicalDeviceSubgroupProperties subgroupProperties;
-		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties.pNext = DE_NULL;
+		int supportedStages = context.getDeqpContext().getContextInfo().getInt(GL_SUBGROUP_SUPPORTED_STAGES_KHR);
 
-		VkPhysicalDeviceProperties2 properties;
-		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties.pNext = &subgroupProperties;
+		subgroups::ShaderStageFlags stages = (subgroups::ShaderStageFlags)(caseDef.shaderStage & supportedStages);
 
-		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
-
-		VkShaderStageFlagBits stages = (VkShaderStageFlagBits)(caseDef.shaderStage  & subgroupProperties.supportedStages);
-
-		if ( VK_SHADER_STAGE_FRAGMENT_BIT != stages && !subgroups::isVertexSSBOSupportedForDevice(context))
+		if ( subgroups::SHADER_STAGE_FRAGMENT_BIT != stages && !subgroups::isVertexSSBOSupportedForDevice(context))
 		{
-			if ( (stages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+			if ( (stages & subgroups::SHADER_STAGE_FRAGMENT_BIT) == 0)
 				TCU_THROW(NotSupportedError, "Device does not support vertex stage SSBO writes");
 			else
-				stages = VK_SHADER_STAGE_FRAGMENT_BIT;
+				stages = subgroups::SHADER_STAGE_FRAGMENT_BIT;
 		}
 
-		if ((VkShaderStageFlagBits)0u == stages)
+		if ((subgroups::ShaderStageFlags)0u == stages)
 			TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
 
 		if (OPTYPE_ELECT == caseDef.opType)
@@ -1964,47 +1394,47 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputCount = 5u;
 			subgroups::SSBOData inputData[inputCount];
 
-			inputData[0].format			= VK_FORMAT_R32_UINT;
+			inputData[0].format			= subgroups::FORMAT_R32_UINT;
 			inputData[0].numElements	= 1;
 			inputData[0].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[0].binding		= 4u;
-			inputData[0].stages			= VK_SHADER_STAGE_VERTEX_BIT;
+			inputData[0].stages			= subgroups::SHADER_STAGE_VERTEX_BIT;
 
-			inputData[1].format			= VK_FORMAT_R32_UINT;
+			inputData[1].format			= subgroups::FORMAT_R32_UINT;
 			inputData[1].numElements	= 1;
 			inputData[1].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[1].binding		= 5u;
-			inputData[1].stages			= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			inputData[1].stages			= subgroups::SHADER_STAGE_TESS_CONTROL_BIT;
 
-			inputData[2].format			= VK_FORMAT_R32_UINT;
+			inputData[2].format			= subgroups::FORMAT_R32_UINT;
 			inputData[2].numElements	= 1;
 			inputData[2].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[2].binding		= 6u;
-			inputData[2].stages			= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+			inputData[2].stages			= subgroups::SHADER_STAGE_TESS_EVALUATION_BIT;
 
-			inputData[3].format			= VK_FORMAT_R32_UINT;
+			inputData[3].format			= subgroups::FORMAT_R32_UINT;
 			inputData[3].numElements	= 1;
 			inputData[3].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[3].binding		= 7u;
-			inputData[3].stages			= VK_SHADER_STAGE_GEOMETRY_BIT;
+			inputData[3].stages			= subgroups::SHADER_STAGE_GEOMETRY_BIT;
 
-			inputData[4].format			= VK_FORMAT_R32_UINT;
+			inputData[4].format			= subgroups::FORMAT_R32_UINT;
 			inputData[4].numElements	= 1;
 			inputData[4].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[4].binding		= 8u;
-			inputData[4].stages			= VK_SHADER_STAGE_FRAGMENT_BIT;
+			inputData[4].stages			= subgroups::SHADER_STAGE_FRAGMENT_BIT;
 
-			return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputData, inputCount, checkVertexPipelineStagesSubgroupElect, stages);
+			return subgroups::allStages(context, subgroups::FORMAT_R32_UINT, inputData, inputCount, checkVertexPipelineStagesSubgroupElect, stages);
 		}
 		else
 		{
-			const VkShaderStageFlagBits stagesBits[] =
+			const subgroups::ShaderStageFlags stagesBits[] =
 			{
-				VK_SHADER_STAGE_VERTEX_BIT,
-				VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-				VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-				VK_SHADER_STAGE_GEOMETRY_BIT,
-				VK_SHADER_STAGE_FRAGMENT_BIT,
+				subgroups::SHADER_STAGE_VERTEX_BIT,
+				subgroups::SHADER_STAGE_TESS_CONTROL_BIT,
+				subgroups::SHADER_STAGE_TESS_EVALUATION_BIT,
+				subgroups::SHADER_STAGE_GEOMETRY_BIT,
+				subgroups::SHADER_STAGE_FRAGMENT_BIT,
 			};
 
 			const deUint32 inputDatasCount = DE_LENGTH_OF_ARRAY(stagesBits) * 4u;
@@ -2013,59 +1443,56 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(stagesBits); ++ndx)
 			{
 				const deUint32 index = ndx*4;
-				inputDatas[index].format				= VK_FORMAT_R32_UINT;
+				const deUint32 ssboIndex = ndx*3;
+				const deUint32 imgIndex = ndx;
+				inputDatas[index].format				= subgroups::FORMAT_R32_UINT;
 				inputDatas[index].numElements			= SHADER_BUFFER_SIZE;
 				inputDatas[index].initializeType		= subgroups::SSBOData::InitializeNonZero;
-				inputDatas[index].binding				= index + 4u;
+				inputDatas[index].binding				= ssboIndex + 4u;
 				inputDatas[index].stages				= stagesBits[ndx];
 
-				inputDatas[index + 1].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 1].format			= subgroups::FORMAT_R32_UINT;
 				inputDatas[index + 1].numElements		= 1;
 				inputDatas[index + 1].initializeType	= subgroups::SSBOData::InitializeZero;
-				inputDatas[index + 1].binding			= index + 5u;
+				inputDatas[index + 1].binding			= ssboIndex + 5u;
 				inputDatas[index + 1].stages			= stagesBits[ndx];
 
-				inputDatas[index + 2].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 2].format			= subgroups::FORMAT_R32_UINT;
 				inputDatas[index + 2].numElements		= 1;
 				inputDatas[index + 2].initializeType	= subgroups::SSBOData::InitializeNonZero;
-				inputDatas[index + 2].binding			= index + 6u;
+				inputDatas[index + 2].binding			= ssboIndex + 6u;
 				inputDatas[index + 2].stages			= stagesBits[ndx];
 
-				inputDatas[index + 3].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 3].format			= subgroups::FORMAT_R32_UINT;
 				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
 				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
 				inputDatas[index + 3].isImage			= true;
-				inputDatas[index + 3].binding			= index + 7u;
+				inputDatas[index + 3].binding			= imgIndex;
 				inputDatas[index + 3].stages			= stagesBits[ndx];
 			}
 
-			return subgroups::allStages(context, VK_FORMAT_R32_UINT, inputDatas, inputDatasCount, checkVertexPipelineStagesSubgroupBarriers, stages);
+			return subgroups::allStages(context, subgroups::FORMAT_R32_UINT, inputDatas, inputDatasCount, checkVertexPipelineStagesSubgroupBarriers, stages);
 		}
 	}
 }
 }
 
-namespace vkt
+deqp::TestCaseGroup* createSubgroupsBasicTests(deqp::Context& testCtx)
 {
-namespace subgroups
-{
-tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
-{
-	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+	de::MovePtr<deqp::TestCaseGroup> graphicGroup(new deqp::TestCaseGroup(
 		testCtx, "graphics", "Subgroup basic category tests: graphics"));
-	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+	de::MovePtr<deqp::TestCaseGroup> computeGroup(new deqp::TestCaseGroup(
 		testCtx, "compute", "Subgroup basic category tests: compute"));
-	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+	de::MovePtr<deqp::TestCaseGroup> framebufferGroup(new deqp::TestCaseGroup(
 		testCtx, "framebuffer", "Subgroup basic category tests: framebuffer"));
 
-
-	const VkShaderStageFlags stages[] =
+	const subgroups::ShaderStageFlags stages[] =
 	{
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-		VK_SHADER_STAGE_GEOMETRY_BIT,
+		SHADER_STAGE_FRAGMENT_BIT,
+		SHADER_STAGE_VERTEX_BIT,
+		SHADER_STAGE_TESS_EVALUATION_BIT,
+		SHADER_STAGE_TESS_CONTROL_BIT,
+		SHADER_STAGE_GEOMETRY_BIT,
 	};
 
 	for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
@@ -2073,8 +1500,8 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 		const std::string op = de::toLower(getOpTypeName(opTypeIndex));
 
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
-			addFunctionCaseWithPrograms(computeGroup.get(), op, "",
+			const CaseDefinition caseDef = {opTypeIndex, SHADER_STAGE_COMPUTE_BIT};
+			SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(computeGroup.get(), op, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
@@ -2085,8 +1512,8 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 		}
 
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS};
-			addFunctionCaseWithPrograms(graphicGroup.get(),
+			const CaseDefinition caseDef = {opTypeIndex, SHADER_STAGE_ALL_GRAPHICS};
+			SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(graphicGroup.get(),
 										op, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
@@ -2096,7 +1523,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 			for (int stageIndex = 1; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
-				addFunctionCaseWithPrograms(framebufferGroup.get(),
+				SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(framebufferGroup.get(),
 							op + "_" + getShaderStageName(caseDef.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
@@ -2106,7 +1533,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex]};
-				addFunctionCaseWithPrograms(framebufferGroup.get(),
+				SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(framebufferGroup.get(),
 							op + "_" + getShaderStageName(caseDefFrag.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDefFrag);
 			}
@@ -2114,7 +1541,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 
 	}
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+	de::MovePtr<deqp::TestCaseGroup> group(new deqp::TestCaseGroup(
 		testCtx, "basic", "Subgroup basic category tests"));
 
 	group->addChild(graphicGroup.release());
@@ -2125,4 +1552,4 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 }
 
 } // subgroups
-} // vkt
+} // glc
