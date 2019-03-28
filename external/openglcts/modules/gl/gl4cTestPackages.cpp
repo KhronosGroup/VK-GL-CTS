@@ -85,8 +85,6 @@
 #include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcViewportArrayTests.hpp"
 
-#include "../common/subgroups/glcSubgroupsTests.hpp"
-
 #include "../gles31/es31cArrayOfArraysTests.hpp"
 #include "../gles31/es31cDrawIndirectTests.hpp"
 #include "../gles31/es31cExplicitUniformLocationTest.hpp"
@@ -392,7 +390,6 @@ void GL45TestPackage::init(void)
 		addChild(new glcts::LayoutLocationTests(getContext()));
 		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
 		addChild(new gl4cts::GlSpirvTests(getContext()));
-		addChild(new glc::subgroups::GlSubgroupTests(getContext()));
 	}
 	catch (...)
 	{
