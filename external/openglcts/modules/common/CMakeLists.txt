@@ -5,6 +5,8 @@ if (DEQP_SUPPORT_WGL)
 	add_definitions(-DGLCTS_SUPPORT_WGL=1)
 endif ()
 
+add_subdirectory(subgroups)
+
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
@@ -115,6 +117,7 @@ set(GLCTS_COMMON_LIBS
 	glutil
 	tcutil
 	eglutil
+	deqp-gl-subgroups
 	)
 
 # Add glslang
