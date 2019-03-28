@@ -368,6 +368,7 @@ struct SSBOData
 {
 	SSBOData() :
 		initializeType	(InitializeNone),
+		layout			(LayoutStd140),
 		format			(FORMAT_UNDEFINED),
 		numElements		(0),
 		isImage			(false),
@@ -381,6 +382,13 @@ struct SSBOData
 		InitializeNonZero,
 		InitializeZero,
 	} initializeType;
+
+	enum InputDataLayoutType
+	{
+		LayoutStd140 = 0,
+		LayoutStd430,
+		LayoutPacked,
+	} layout;
 
 	Format						format;
 	deUint64					numElements;

@@ -170,7 +170,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
-			<< "layout(binding = 0) uniform Buffer1\n"
+			<< "layout(binding = 0, std140) uniform Buffer1\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -195,7 +195,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "layout(binding = 0, std140) uniform Buffer1\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -219,7 +219,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "layout(binding = 0, std140) uniform Buffer1\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -248,7 +248,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "#extension GL_EXT_tessellation_shader : require\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "layout(binding = 0, std140) uniform Buffer1\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -301,7 +301,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
 		<< "precision highp float;\n"
 		<< "layout(location = 0) out uint out_color;\n"
-		<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+		<< "layout(binding = 0, std140) uniform Buffer1\n"
 		<< "{\n"
 		<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
 		<< "};\n"
@@ -637,6 +637,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 	subgroups::SSBOData inputData;
 	inputData.format = caseDef.format;
+	inputData.layout = subgroups::SSBOData::LayoutStd140;
 	inputData.numElements = subgroups::maxSupportedSubgroupSize();
 	inputData.initializeType = OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 
@@ -669,6 +670,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		subgroups::SSBOData inputData;
 		inputData.format = caseDef.format;
+		inputData.layout = subgroups::SSBOData::LayoutStd430;
 		inputData.numElements = subgroups::maxSupportedSubgroupSize();
 		inputData.initializeType = OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 		inputData.binding = 1u;
@@ -695,6 +697,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		subgroups::SSBOData inputData;
 		inputData.format			= caseDef.format;
+		inputData.layout			= subgroups::SSBOData::LayoutStd430;
 		inputData.numElements		= subgroups::maxSupportedSubgroupSize();
 		inputData.initializeType	= OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 		inputData.binding			= 4u;

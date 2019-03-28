@@ -135,6 +135,18 @@ deUint32 getFormatSizeInBytes(const subgroups::Format format)
 	}
 }
 
+deUint32 getElementSizeInBytes(
+	const subgroups::Format format,
+	const subgroups::SSBOData::InputDataLayoutType layout)
+{
+	deUint32 bytes = getFormatSizeInBytes(format);
+	if (layout == subgroups::SSBOData::LayoutStd140)
+		return bytes < 16 ? 16 : bytes;
+	else
+		return bytes;
+}
+
+
 de::MovePtr<glu::ShaderProgram> makeGraphicsPipeline(glc::Context&				context,
 									  const subgroups::ShaderStageFlags			stages,
 									  const GlslSource *						vshader,
@@ -377,8 +389,7 @@ struct Buffer : public BufferOrImage
 	explicit Buffer(
 		glc::Context& context, deUint64 sizeInBytes, GLenum target = GL_SHADER_STORAGE_BUFFER)
 		: BufferOrImage		(context, false)
-		// HACK overpad to account for the size for std140 UBOs
-		, m_sizeInBytes		(sizeInBytes * 4)
+		, m_sizeInBytes		(sizeInBytes)
 		, m_target			(target)
 	{
 		m_gl.genBuffers(1, &m_objectId);
@@ -901,7 +912,8 @@ void initializeMemory(deqp::Context& context, glw::GLvoid *hostPtr, subgroups::S
 {
 	using namespace subgroups;
 	const Format format = data.format;
-	const deUint64 size = getFormatSizeInBytes(format) * data.numElements;
+	const deUint64 size = data.numElements *
+		(data.isImage ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
 	if (subgroups::SSBOData::InitializeNonZero == data.initializeType)
 	{
 		de::Random rnd(context.getTestContext().getCommandLine().getBaseSeed());
@@ -1027,7 +1039,7 @@ tcu::TestStatus glc::subgroups::makeTessellationEvaluationFrameBufferTest(
 		}
 		else
 		{
-			deUint64 size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			deUint64 size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, GL_UNIFORM_BUFFER));
 
 			glw::GLvoid *ptr = inputBuffers[i]->getAsBuffer()->mapBufferPtr();
@@ -1211,7 +1223,7 @@ tcu::TestStatus glc::subgroups::makeGeometryFrameBufferTest(
 		}
 		else
 		{
-			deUint64 size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			deUint64 size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, GL_UNIFORM_BUFFER));
 
 			glw::GLvoid *ptr = inputBuffers[i]->getAsBuffer()->mapBufferPtr();
@@ -1433,7 +1445,7 @@ tcu::TestStatus glc::subgroups::allStages(
 	for (deUint32 ndx = 0u; ndx < stagesCount; ++ndx)
 	{
 		const deUint64 shaderSize = (stagesVector[ndx] == SHADER_STAGE_TESS_EVALUATION_BIT) ? maxWidth * 2 : maxWidth;
-		const deUint64 size = getFormatSizeInBytes(format) * shaderSize;
+		const deUint64 size = getElementSizeInBytes(format, SSBOData::LayoutStd430) * shaderSize;
 		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 
 		log << tcu::TestLog::Message
@@ -1457,7 +1469,7 @@ tcu::TestStatus glc::subgroups::allStages(
 		}
 		else
 		{
-			const deUint64 size = getFormatSizeInBytes(extraDatas[datasNdx].format) * extraDatas[datasNdx].numElements;
+			const deUint64 size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
 			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 
 			glw::GLvoid *ptr = inputBuffers[ndx]->getAsBuffer()->mapBufferPtr();
@@ -1659,7 +1671,7 @@ tcu::TestStatus glc::subgroups::makeVertexFrameBufferTest(Context& context, Form
 		}
 		else
 		{
-			deUint64 size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			deUint64 size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, GL_UNIFORM_BUFFER));
 
 			glw::GLvoid *ptr = inputBuffers[i]->getAsBuffer()->mapBufferPtr();
@@ -1830,7 +1842,7 @@ tcu::TestStatus glc::subgroups::makeFragmentFrameBufferTest	(Context& context, F
 		else
 		{
 			deUint64 size =
-				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
+				getElementSizeInBytes(extraDatas[i].format, extraDatas[i].layout) * extraDatas[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, GL_UNIFORM_BUFFER));
 
 			glw::GLvoid *ptr = inputBuffers[i]->getAsBuffer()->mapBufferPtr();
@@ -1983,7 +1995,7 @@ tcu::TestStatus glc::subgroups::makeComputeTest(
 		else
 		{
 			deUint64 size =
-				getFormatSizeInBytes(inputs[i].format) * inputs[i].numElements;
+				getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 
 			glw::GLvoid *ptr = inputBuffers[i]->getAsBuffer()->mapBufferPtr();

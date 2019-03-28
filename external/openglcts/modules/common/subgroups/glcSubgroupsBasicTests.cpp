@@ -475,12 +475,12 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 				<< "layout(location = 0) out highp vec4 out_color;\n"
 				<< "\n"
-				<< "layout(binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0, std140) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1, std140) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
@@ -515,12 +515,12 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "layout(location = 0) out vec4 out_color;\n"
 				<< "layout(location = 0) in highp vec4 in_position;\n"
 				<< "\n"
-				<< "layout(binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0, std140) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1, std140) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
@@ -555,12 +555,12 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 					<< "layout(points) in;\n"
 					<< "layout(points, max_vertices = 1) out;\n"
 					<< "layout(location = 0) out vec4 out_color;\n"
-					<< "layout(binding = 0) uniform Buffer1\n"
+					<< "layout(binding = 0, std140) uniform Buffer1\n"
 					<< "{\n"
 					<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 					<< "};\n"
 					<< "\n"
-					<< "layout(binding = 1) uniform Buffer2\n"
+					<< "layout(binding = 1, std140) uniform Buffer2\n"
 					<< "{\n"
 					<< "  uint value;\n"
 					<< "};\n"
@@ -611,12 +611,12 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "#extension GL_EXT_tessellation_shader : require\n"
 				<< "layout(isolines, equal_spacing, ccw ) in;\n"
 				<< "layout(location = 0) out vec4 out_color;\n"
-				<< "layout(binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0, std140) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1, std140) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
@@ -653,12 +653,12 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "#extension GL_EXT_tessellation_shader : require\n"
 				<< "layout(vertices = 2) out;\n"
 				<< "layout(location = 0) out vec4 out_color[];\n"
-				<< "layout(binding = 0) uniform Buffer1\n"
+				<< "layout(binding = 0, std140) uniform Buffer1\n"
 				<< "{\n"
 				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
 				<< "};\n"
 				<< "\n"
-				<< "layout(binding = 1) uniform Buffer2\n"
+				<< "layout(binding = 1, std140) uniform Buffer2\n"
 				<< "{\n"
 				<< "  uint value;\n"
 				<< "};\n"
@@ -1265,11 +1265,13 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
 
 	inputDatas[0].format = subgroups::FORMAT_R32_UINT;
+	inputDatas[0].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
 	inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 	inputDatas[0].binding = 0u;
 
 	inputDatas[1].format = subgroups::FORMAT_R32_UINT;
+	inputDatas[1].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[1].numElements = 1ull;
 	inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 	inputDatas[1].binding = 1u;
@@ -1277,6 +1279,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
 	{
 		inputDatas[2].format = subgroups::FORMAT_R32_UINT;
+		inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 		inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 		inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 		inputDatas[2].isImage = true;
@@ -1346,16 +1349,19 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 3;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = subgroups::FORMAT_R32_UINT;
+			inputDatas[0].layout = subgroups::SSBOData::LayoutStd430;
 			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[0].binding = 1u;
 
 			inputDatas[1].format = subgroups::FORMAT_R32_UINT;
+			inputDatas[1].layout = subgroups::SSBOData::LayoutStd430;
 			inputDatas[1].numElements = 1;
 			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 			inputDatas[1].binding = 2u;
 
 			inputDatas[2].format = subgroups::FORMAT_R32_UINT;
+			inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 			inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[2].isImage = true;
@@ -1392,30 +1398,35 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData inputData[inputCount];
 
 			inputData[0].format			= subgroups::FORMAT_R32_UINT;
+			inputData[0].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[0].numElements	= 1;
 			inputData[0].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[0].binding		= 4u;
 			inputData[0].stages			= subgroups::SHADER_STAGE_VERTEX_BIT;
 
 			inputData[1].format			= subgroups::FORMAT_R32_UINT;
+			inputData[1].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[1].numElements	= 1;
 			inputData[1].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[1].binding		= 5u;
 			inputData[1].stages			= subgroups::SHADER_STAGE_TESS_CONTROL_BIT;
 
 			inputData[2].format			= subgroups::FORMAT_R32_UINT;
+			inputData[2].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[2].numElements	= 1;
 			inputData[2].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[2].binding		= 6u;
 			inputData[2].stages			= subgroups::SHADER_STAGE_TESS_EVALUATION_BIT;
 
 			inputData[3].format			= subgroups::FORMAT_R32_UINT;
+			inputData[3].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[3].numElements	= 1;
 			inputData[3].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[3].binding		= 7u;
 			inputData[3].stages			= subgroups::SHADER_STAGE_GEOMETRY_BIT;
 
 			inputData[4].format			= subgroups::FORMAT_R32_UINT;
+			inputData[4].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[4].numElements	= 1;
 			inputData[4].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[4].binding		= 8u;
@@ -1443,24 +1454,28 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 				const deUint32 ssboIndex = ndx*3;
 				const deUint32 imgIndex = ndx;
 				inputDatas[index].format				= subgroups::FORMAT_R32_UINT;
+				inputDatas[index].layout				= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index].numElements			= SHADER_BUFFER_SIZE;
 				inputDatas[index].initializeType		= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index].binding				= ssboIndex + 4u;
 				inputDatas[index].stages				= stagesBits[ndx];
 
 				inputDatas[index + 1].format			= subgroups::FORMAT_R32_UINT;
+				inputDatas[index + 1].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 1].numElements		= 1;
 				inputDatas[index + 1].initializeType	= subgroups::SSBOData::InitializeZero;
 				inputDatas[index + 1].binding			= ssboIndex + 5u;
 				inputDatas[index + 1].stages			= stagesBits[ndx];
 
 				inputDatas[index + 2].format			= subgroups::FORMAT_R32_UINT;
+				inputDatas[index + 2].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 2].numElements		= 1;
 				inputDatas[index + 2].initializeType	= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index + 2].binding			= ssboIndex + 6u;
 				inputDatas[index + 2].stages			= stagesBits[ndx];
 
 				inputDatas[index + 3].format			= subgroups::FORMAT_R32_UINT;
+				inputDatas[index + 3].layout			= subgroups::SSBOData::LayoutPacked;
 				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
 				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
 				inputDatas[index + 3].isImage			= true;

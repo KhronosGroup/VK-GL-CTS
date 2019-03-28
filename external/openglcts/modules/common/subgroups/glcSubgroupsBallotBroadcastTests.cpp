@@ -155,7 +155,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(binding = 0) uniform Buffer0\n"
+			<< "layout(binding = 0, std140) uniform Buffer0\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data1[" << subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -178,7 +178,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(binding = 0) uniform Buffer0\n"
+			<< "layout(binding = 0, std140) uniform Buffer0\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data1[" <<subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -202,7 +202,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
-			<< "layout(binding = 0) uniform Buffer0\n"
+			<< "layout(binding = 0, std140) uniform Buffer0\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data1[" <<subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -229,7 +229,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(binding = 0) uniform Buffer0\n"
+			<< "layout(binding = 0, std140) uniform Buffer0\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data1[" <<subgroups::maxSupportedSubgroupSize() << "];\n"
 			<< "};\n"
@@ -291,7 +291,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"{\n"
 			"  uint result[];\n"
 			"} b0;\n"
-			"layout(set = 0, binding = 4, std430) readonly buffer Buffer4\n"
+			"layout(binding = 4, std430) readonly buffer Buffer4\n"
 			"{\n"
 			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
 			"};\n"
@@ -361,7 +361,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"{\n"
 			"  uint result[];\n"
 			"} b3;\n"
-			"layout(set = 0, binding = 4, std430) readonly buffer Buffer4\n"
+			"layout(binding = 4, std430) readonly buffer Buffer4\n"
 			"{\n"
 			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
 			"};\n"
@@ -437,6 +437,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 	subgroups::SSBOData inputData[1];
 	inputData[0].format = caseDef.format;
+	inputData[0].layout = subgroups::SSBOData::LayoutStd140;
 	inputData[0].numElements = subgroups::maxSupportedSubgroupSize();
 	inputData[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
@@ -473,6 +474,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		}
 		subgroups::SSBOData inputData[1];
 		inputData[0].format = caseDef.format;
+		inputData[0].layout = subgroups::SSBOData::LayoutStd430;
 		inputData[0].numElements = subgroups::maxSupportedSubgroupSize();
 		inputData[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 		inputData[0].binding = 1u;
@@ -498,6 +500,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		subgroups::SSBOData inputData;
 		inputData.format			= caseDef.format;
+		inputData.layout			= subgroups::SSBOData::LayoutStd430;
 		inputData.numElements		= subgroups::maxSupportedSubgroupSize();
 		inputData.initializeType	= subgroups::SSBOData::InitializeNonZero;
 		inputData.binding			= 4u;
