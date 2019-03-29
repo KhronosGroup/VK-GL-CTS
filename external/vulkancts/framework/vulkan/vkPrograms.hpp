@@ -218,7 +218,11 @@ Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface,
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
 VkShaderStageFlagBits	getVkShaderStage	(glu::ShaderType shaderType);
 
+// Returns the max SPIR-V version usable with a given Vulkan version, without requiring an extension.
+vk::SpirvVersion		getMaxSpirvVersionForVulkan	(const deUint32 vulkanVersion);
+// Deprecated. Use getMaxSpirvVersionForVulkan instead.
 vk::SpirvVersion		getMaxSpirvVersionForAsm	(const deUint32 vulkanVersion);
+// Deprecated. Use getMaxSpirvVersionForVulkan instead.
 vk::SpirvVersion		getMaxSpirvVersionForGlsl	(const deUint32 vulkanVersion);
 vk::SpirvVersion		getBaselineSpirvVersion		(const deUint32 vulkanVersion);
 SpirvVersion			extractSpirvVersion			(const ProgramBinary& binary);

@@ -196,6 +196,7 @@ public:
 	virtual tcu::TestNode::IterateResult		iterate				(tcu::TestCase* testCase);
 
 private:
+	bool										spirvVersionSupported(vk::SpirvVersion);
 	vk::BinaryCollection						m_progCollection;
 	vk::BinaryRegistryReader					m_prebuiltBinRegistry;
 
@@ -259,7 +260,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
-		if (progIter.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+		if (!spirvVersionSupported(progIter.getProgram().buildOptions.targetVersion))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
@@ -283,7 +284,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::HlslSourceCollection::Iterator progIter = sourceProgs.hlslSources.begin(); progIter != sourceProgs.hlslSources.end(); ++progIter)
 	{
-		if (progIter.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+		if (!spirvVersionSupported(progIter.getProgram().buildOptions.targetVersion))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
@@ -307,7 +308,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
 	{
-		if (asmIterator.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForAsm(m_context.getUsedApiVersion()))
+		if (!spirvVersionSupported(asmIterator.getProgram().buildOptions.targetVersion))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
 		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
@@ -377,6 +378,17 @@ tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
 	}
 	else
 		return tcu::TestNode::CONTINUE;
+}
+
+bool TestCaseExecutor::spirvVersionSupported (vk::SpirvVersion spirvVersion)
+{
+	if (spirvVersion <= vk::getMaxSpirvVersionForVulkan(m_context.getUsedApiVersion()))
+		return true;
+
+	if (spirvVersion <= vk::SPIRV_VERSION_1_4)
+		return vk::isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_spirv_1_4");
+
+	return false;
 }
 
 // GLSL shader tests

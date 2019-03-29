@@ -39,22 +39,27 @@ namespace vk
 
 struct SpirVAsmBuildOptions
 {
-	deUint32	vulkanVersion;
+	deUint32		vulkanVersion;
 	SpirvVersion	targetVersion;
+	bool			supports_VK_KHR_spirv_1_4;
 
 	SpirVAsmBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_)
-		: vulkanVersion	(vulkanVersion_)
-		, targetVersion	(targetVersion_)
+		: vulkanVersion				(vulkanVersion_)
+		, targetVersion				(targetVersion_)
+		, supports_VK_KHR_spirv_1_4	(false)
 	{}
 
 	SpirVAsmBuildOptions (void)
-		: vulkanVersion	(VK_MAKE_VERSION(1, 0, 0))
-		, targetVersion	(SPIRV_VERSION_1_0)
+		: vulkanVersion				(VK_MAKE_VERSION(1, 0, 0))
+		, targetVersion				(SPIRV_VERSION_1_0)
+		, supports_VK_KHR_spirv_1_4	(false)
 	{}
 
 	SpirvValidatorOptions getSpirvValidatorOptions() const
 	{
-		return SpirvValidatorOptions(vulkanVersion);
+		SpirvValidatorOptions result(vulkanVersion);
+		result.supports_VK_KHR_spirv_1_4 = supports_VK_KHR_spirv_1_4;
+		return result;
 	}
 };
 

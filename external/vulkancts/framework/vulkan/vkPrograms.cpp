@@ -948,8 +948,8 @@ vk::SpirvVersion getBaselineSpirvVersion (const deUint32 /* vulkanVersion */)
 	return vk::SPIRV_VERSION_1_0;
 }
 
-// Max supported versions for each vulkan version, without requiring a Vulkan extension.
-vk::SpirvVersion getMaxSpirvVersionForAsm (const deUint32 vulkanVersion)
+// Max supported versions for each Vulkan version, without requiring a Vulkan extension.
+vk::SpirvVersion getMaxSpirvVersionForVulkan (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
@@ -964,19 +964,14 @@ vk::SpirvVersion getMaxSpirvVersionForAsm (const deUint32 vulkanVersion)
 	return result;
 }
 
+vk::SpirvVersion getMaxSpirvVersionForAsm (const deUint32 vulkanVersion)
+{
+	return getMaxSpirvVersionForVulkan(vulkanVersion);
+}
+
 vk::SpirvVersion getMaxSpirvVersionForGlsl (const deUint32 vulkanVersion)
 {
-	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
-
-	deUint32 vulkanVersionMajorMinor = VK_MAKE_VERSION(VK_VERSION_MAJOR(vulkanVersion), VK_VERSION_MINOR(vulkanVersion), 0);
-	if (vulkanVersionMajorMinor == VK_API_VERSION_1_0)
-		result = vk::SPIRV_VERSION_1_0;
-	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_1)
-		result = vk::SPIRV_VERSION_1_3;
-
-	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
-
-	return result;
+	return getMaxSpirvVersionForVulkan(vulkanVersion);
 }
 
 SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
