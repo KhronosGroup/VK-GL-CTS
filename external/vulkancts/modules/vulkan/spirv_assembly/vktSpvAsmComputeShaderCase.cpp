@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -641,12 +641,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					0,											// VkDeviceSize				offset;
 					VK_WHOLE_SIZE,								// VkDeviceSize				size;
 				};
+
 				descriptorInfos.push_back(bufInfo);
 				break;
 			}
 
 			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 			{
 				const VkDescriptorImageInfo	imgInfo	=
 				{
@@ -654,6 +654,20 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					**inputImageViews.back(),					// VkImageView				imageView;
 					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
 				};
+
+				descriptorImageInfos.push_back(imgInfo);
+				break;
+			}
+
+			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			{
+				const VkDescriptorImageInfo	imgInfo	=
+				{
+					DE_NULL,									// VkSampler				sampler;
+					**inputImageViews.back(),					// VkImageView				imageView;
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout			imageLayout;
+				};
+
 				descriptorImageInfos.push_back(imgInfo);
 				break;
 			}
@@ -666,19 +680,20 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					DE_NULL,									// VkImageView				imageView;
 					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
 				};
+
 				descriptorImageInfos.push_back(imgInfo);
 				break;
 			}
 
 			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 			{
-
 				const VkDescriptorImageInfo	imgInfo	=
 				{
 					**inputSamplers.back(),						// VkSampler				sampler;
 					**inputImageViews.back(),					// VkImageView				imageView;
-					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout			imageLayout;
 				};
+
 				descriptorImageInfos.push_back(imgInfo);
 				break;
 			}
