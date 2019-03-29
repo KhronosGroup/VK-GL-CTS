@@ -45,7 +45,7 @@ struct SpirvValidatorOptions
 	};
 
 	SpirvValidatorOptions(deUint32 the_vulkan_version = VK_MAKE_VERSION(1, 0, 0), BlockLayoutRules the_layout = kDefaultBlockLayout)
-	: vulkanVersion(the_vulkan_version), blockLayout(the_layout) {}
+	: vulkanVersion(the_vulkan_version), blockLayout(the_layout), supports_VK_KHR_spirv_1_4(false) {}
 
 	// The target Vulkan version.  This determines the SPIR-V environment rules to
 	// be checked. The bit pattern is as produced by VK_MAKE_VERSION.
@@ -53,6 +53,10 @@ struct SpirvValidatorOptions
 
 	// The block layout rules to enforce.
 	BlockLayoutRules blockLayout;
+
+	// Does the device support VK_KHR_spirv_1_4?
+	// (Camelcase would just be wrong here.)
+	bool supports_VK_KHR_spirv_1_4;
 };
 
 }  // namespace vk
