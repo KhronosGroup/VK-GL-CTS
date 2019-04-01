@@ -415,6 +415,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR = 1000199000,
     VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR = 1000199001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR = 1000211000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT = 1000212000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT = 1000221000,
     VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR = 1000239000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT = 1000244000,
@@ -8290,6 +8291,21 @@ VKAPI_ATTR void VKAPI_CALL vkResetQueryPoolEXT(
     deUint32                                    firstQuery,
     deUint32                                    queryCount);
 #endif
+
+
+#define VK_EXT_pci_bus_info 1
+#define VK_EXT_PCI_BUS_INFO_SPEC_VERSION  2
+#define VK_EXT_PCI_BUS_INFO_EXTENSION_NAME "VK_EXT_pci_bus_info"
+
+typedef struct VkPhysicalDevicePCIBusInfoPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    deUint32           pciDomain;
+    deUint32           pciBus;
+    deUint32           pciDevice;
+    deUint32           pciFunction;
+} VkPhysicalDevicePCIBusInfoPropertiesEXT;
+
 
 #ifdef __cplusplus
 }

@@ -51,6 +51,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <limits>
 
 namespace vkt
 {
@@ -67,6 +68,8 @@ using std::set;
 using std::string;
 using tcu::TestLog;
 using tcu::ScopedLogSection;
+
+const deUint32 DEUINT32_MAX = std::numeric_limits<deUint32>::max();
 
 enum
 {
@@ -2611,6 +2614,19 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 // VK_KHR_get_physical_device_properties2
 
+string toString(const VkPhysicalDevicePCIBusInfoPropertiesEXT& value)
+{
+	std::ostringstream  s;
+	s << "VkPhysicalDevicePCIBusInfoPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpciDomain = " << value.pciDomain << '\n';
+	s << "\tpciBus = " << value.pciBus << '\n';
+	s << "\tpciDevice = " << value.pciDevice << '\n';
+	s << "\tpciFunction = " << value.pciFunction << '\n';
+	s << '}';
+	return s.str();
+}
+
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -3039,6 +3055,54 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 
 		log << TestLog::Message << dsResolveProperties[0] << TestLog::EndMessage;
+	}
+
+	if (isExtensionSupported(extensions, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
+	{
+		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			// Each PCI device is identified by an 8-bit domain number, 5-bit
+			// device number and 3-bit function number[1][2].
+			//
+			// In addition, because PCI systems can be interconnected and
+			// divided in segments, Linux assigns a 16-bit number to the device
+			// as the "domain". In Windows, the segment or domain is stored in
+			// the higher 24-bit section of the bus number.
+			//
+			// This means the maximum unsigned 32-bit integer for these members
+			// are invalid values and should change after querying properties.
+			//
+			// [1] https://en.wikipedia.org/wiki/PCI_configuration_space
+			// [2] PCI Express Base Specification Revision 3.0, section 2.2.4.2.
+			deMemset(pciBusInfoProperties + ndx, 0, sizeof(pciBusInfoProperties[ndx]));
+			pciBusInfoProperties[ndx].pciDomain   = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciBus      = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciDevice   = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciFunction = DEUINT32_MAX;
+
+			pciBusInfoProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
+			pciBusInfoProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = pciBusInfoProperties + ndx;
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		if (deMemCmp(pciBusInfoProperties + 0, pciBusInfoProperties + 1, sizeof(pciBusInfoProperties[0])) != 0)
+		{
+			TCU_FAIL("Mismatch in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
+
+		log << TestLog::Message << toString(pciBusInfoProperties[0]) << TestLog::EndMessage;
+
+		if (pciBusInfoProperties[0].pciDomain   == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciBus      == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciDevice   == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciFunction == DEUINT32_MAX)
+		{
+		    TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");

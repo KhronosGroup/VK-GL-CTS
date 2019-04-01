@@ -3313,6 +3313,16 @@ struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 	VkBool32		hostQueryReset;
 };
 
+struct VkPhysicalDevicePCIBusInfoPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		pciDomain;
+	deUint32		pciBus;
+	deUint32		pciDevice;
+	deUint32		pciFunction;
+};
+
 
 
 
