@@ -22,6 +22,9 @@ add_definitions(-DAMBER_CTS_VULKAN_HEADER=1)
 
 if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+	set_source_files_properties(
+		FILES vktAmberHelper.cpp
+		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
 elseif (DE_COMPILER_IS_MSC)
 	set(CMAKE_CXX_FLAGS	"${CMAKE_CXX_FLAGS} /wd4068")
 endif ()
