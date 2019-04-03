@@ -28,15 +28,15 @@ The following tools must be installed and present in the PATH variable:
 
 ### Android
 
- * Android NDK r15c or later.
+ * Android NDK r17c or later.
  * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 28
  * Java Development Kit (JDK)
  * Windows: either NMake or Ninja in PATH
 
-If you have downloaded Android SDK tools, you can install necessary components
-by running:
+If you have downloaded the Android SDK command line tools package (25.2.3 or higher) then
+you can install the necessary components by running:
 
-	tools/android update sdk --no-ui --all --filter tools,platform-tools,build-tools-25.0.2,android-28
+	tools/bin/sdkmanager tools platform-tools 'build-tools;25.0.2' 'platforms;android-28'
 
 
 Building CTS
@@ -96,12 +96,12 @@ The package can be installed by either running:
 	python scripts/android/install_apk.py
 
 By default the CTS package will contain libdeqp.so built for armeabi-v7a, arm64-v8a,
-x86, and x86_64 ABIs, but that can be changed using --abis command line option.
+x86, and x86_64 ABIs, but that can be changed at build time by passing the --abis command line
+option to `scripts/android/build_apk.py`.
 
-To pick which ABI to use at install time, following commands must be used
-instead:
+To pick which ABI to use at _install time_, use the following command instead:
 
-	adb install --abi <ABI name> <build-root>/package/dEQP.apk /data/local/tmp/dEQP-debug.apk
+	adb install -g --abi <ABI name> <build-root>/package/dEQP.apk
 
 
 Building Mustpass
