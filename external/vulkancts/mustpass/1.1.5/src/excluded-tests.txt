@@ -1,0 +1,38 @@
+# Excluded texture function tests according to the Android GLES3 issue list
+dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_vertex
+
+# Excluded sparse version of the above texture function tests
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_vertex
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_usamplercube_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_isampler3d_vertex
+
+# Issue 420: Exclude problematic clipping tests
+dEQP-VK.clipping.clip_volume.clipped.large_points
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
+
+# Issue 419: Failing sparse tests (Image mismatch)
+dEQP-VK.glsl.texture_functions.texture.sparse_isampler2d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usampler2d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isamplercube_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usamplercube_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isampler2darray_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usampler2darray_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_isampler3d_bias_fragment
+dEQP-VK.glsl.texture_functions.texture.sparse_usampler3d_bias_fragment
+
+# New tests from AOSP
+dEQP-VK.texture.explicit_lod.*
+
+# Excluded Amber example tests
+dEQP-VK.amber-example.*
+
+#VK-GL-CTS 1274
+dEQP-VK.rasterization.interpolation.basic.lines_wide
+dEQP-VK.rasterization.interpolation.projected.line_strip_wide
+dEQP-VK.rasterization.flatshading.lines_wide
+
