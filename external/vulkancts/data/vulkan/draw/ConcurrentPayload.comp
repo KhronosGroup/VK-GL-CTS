@@ -1,0 +1,16 @@
+#version 310 es
+
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(binding = 0) buffer InOut {
+    uint values[1024];
+} sb_inout;
+
+void main (void) {
+    uvec3 size           = gl_NumWorkGroups * gl_WorkGroupSize;
+    uint numValuesPerInv = uint(sb_inout.values.length()) / (size.x*size.y*size.z);
+    uint groupNdx        = size.x*size.y*gl_GlobalInvocationID.z + size.x*gl_GlobalInvocationID.y + gl_GlobalInvocationID.x;
+    uint offset          = numValuesPerInv*groupNdx;
+
+    for (uint ndx = 0u; ndx < numValuesPerInv; ndx++)
+        sb_inout.values[offset + ndx] = ~sb_inout.values[offset + ndx];
+}

@@ -25,6 +25,7 @@
 #include "vktDrawTests.hpp"
 
 #include "vktDrawSimpleTest.hpp"
+#include "vktDrawConcurrentTests.hpp"
 #include "vktDrawIndexedTest.hpp"
 #include "vktDrawIndirectTest.hpp"
 #include "vktDrawInstancedTests.hpp"
@@ -52,6 +53,7 @@ void createChildren (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&	testCtx		= group->getTestContext();
 
+	group->addChild(new ConcurrentDrawTests				(testCtx));
 	group->addChild(new SimpleDrawTests					(testCtx));
 	group->addChild(new DrawIndexedTests				(testCtx));
 	group->addChild(new IndirectDrawTests				(testCtx));
