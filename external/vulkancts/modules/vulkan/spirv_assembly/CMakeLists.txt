@@ -31,6 +31,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmInstructionTests.hpp
 	vktSpvAsmPointerParameterTests.cpp
 	vktSpvAsmPointerParameterTests.hpp
+	vktSpvAsmSignedIntCompareTests.cpp
+	vktSpvAsmSignedIntCompareTests.hpp
 	vktSpvAsmTypeTests.cpp
 	vktSpvAsmTypeTests.hpp
 	vktSpvAsmTests.cpp
@@ -54,11 +56,21 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS
+	libamber
 	tcutil
 	vkutil
+	deqp-vk-amber
 	)
 
 PCH(DEQP_VK_SPIRV_ASSEMBLY_SRCS ../pch.cpp)
+
+if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+	set(CMAKE_CXX_FLAGS     "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+elseif (DE_COMPILER_IS_MSC)
+	set(CMAKE_CXX_FLAGS     "${CMAKE_CXX_FLAGS} /wd4068")
+endif()
+include_directories("../../../../amber/src/include")
+include_directories("../amber")
 
 add_library(deqp-vk-spirv-assembly STATIC ${DEQP_VK_SPIRV_ASSEMBLY_SRCS})
 target_link_libraries(deqp-vk-spirv-assembly ${DEQP_VK_SPIRV_ASSEMBLY_LIBS})

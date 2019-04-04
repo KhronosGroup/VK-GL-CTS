@@ -1,0 +1,216 @@
+# Copyright 2018 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+# A fragment shader with somewhat complex control flow and a switch.
+# Derived from the following GLSL fragment shader.
+# We check that all pixels are red. The test passes because the final
+# statement writes red to _GLF_color and there are no discard statments.
+
+# #version 310 es
+#
+# precision highp float;
+# precision highp int;
+#
+# layout(set = 0, binding = 0) uniform buf0 {
+#  vec2 injectionSwitch;
+# };
+# layout(location=0) out vec4 _GLF_color;
+#
+# struct S {
+#  bool ok;
+# };
+#
+# bool g()
+# {
+#  for(
+#      int i = 0;
+#      i < 1;
+#      i++
+#  )
+#   {
+#    switch(int(injectionSwitch.x))
+#     {
+#      case 9:
+#      S a = S(bool(injectionSwitch.x));
+#      S b = a;
+#      case 42:
+#      if(b.ok)
+#       {
+#        return true;
+#       }
+#       default:
+#       break;
+#     }
+#   }
+#  return true;
+# }
+# vec3 f()
+# {
+#  {
+#   S a = S(bool(injectionSwitch.x));
+#   if(a.ok)
+#    {
+#     return vec3(0.0);
+#    }
+#   if(g())
+#    {
+#     return vec3(1.0);
+#    }
+#  }
+#  return vec3(1.0);
+# }
+# void main()
+# {
+#  _GLF_color = vec4(f(), 1.0);
+#  // always true at runtime
+#  if (injectionSwitch.x == 0.0) {
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#  }
+# }
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 195
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %_GLF_color
+               OpExecutionMode %main OriginUpperLeft
+               OpSource ESSL 310
+               OpName %main "main"
+               OpName %buf0 "buf0"
+               OpMemberName %buf0 0 "injectionSwitch"
+               OpName %_ ""
+               OpName %_GLF_color "_GLF_color"
+               OpMemberDecorate %buf0 0 Offset 0
+               OpDecorate %buf0 Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_GLF_color Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+    %v2float = OpTypeVector %float 2
+       %buf0 = OpTypeStruct %v2float
+%_ptr_Uniform_buf0 = OpTypePointer Uniform %buf0
+          %_ = OpVariable %_ptr_Uniform_buf0 Uniform
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+    %float_0 = OpConstant %float 0
+       %true = OpConstantTrue %bool
+         %73 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+    %float_1 = OpConstant %float 1
+         %79 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+ %_GLF_color = OpVariable %_ptr_Output_v4float Output
+         %96 = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1
+      %false = OpConstantFalse %bool
+        %182 = OpUndef %bool
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpBranch %119
+        %119 = OpLabel
+               OpLoopMerge %120 %121 None
+               OpBranch %122
+        %122 = OpLabel
+        %123 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %uint_0
+        %124 = OpLoad %float %123
+        %125 = OpFOrdNotEqual %bool %124 %float_0
+               OpSelectionMerge %129 None
+               OpBranchConditional %125 %130 %129
+        %130 = OpLabel
+               OpBranch %120
+        %129 = OpLabel
+               OpBranch %141
+        %141 = OpLabel
+               OpLoopMerge %142 %143 None
+               OpBranch %145
+        %145 = OpLabel
+        %179 = OpPhi %bool %182 %141 %194 %156
+        %177 = OpPhi %int %int_0 %141 %169 %156
+        %150 = OpSLessThan %bool %177 %int_1
+               OpLoopMerge %146 %156 None
+               OpBranchConditional %150 %151 %146
+        %151 = OpLabel
+        %154 = OpConvertFToS %int %124
+               OpSelectionMerge %156 None
+               OpSwitch %154 %156 9 %157 42 %158
+        %156 = OpLabel
+        %194 = OpPhi %bool %179 %151 %178 %166
+        %169 = OpIAdd %int %177 %int_1
+               OpBranch %145
+        %157 = OpLabel
+               OpBranch %158
+        %158 = OpLabel
+        %178 = OpPhi %bool %179 %151 %125 %157
+               OpSelectionMerge %166 None
+               OpBranchConditional %178 %167 %166
+        %167 = OpLabel
+               OpBranch %146
+        %166 = OpLabel
+               OpBranch %156
+        %146 = OpLabel
+        %187 = OpPhi %bool %182 %145 %true %167
+        %183 = OpPhi %bool %false %145 %true %167
+               OpSelectionMerge %171 None
+               OpBranchConditional %183 %142 %171
+        %171 = OpLabel
+               OpBranch %142
+        %143 = OpLabel
+               OpBranch %141
+        %142 = OpLabel
+        %186 = OpPhi %bool %187 %146 %true %171
+               OpSelectionMerge %132 None
+               OpBranchConditional %186 %133 %132
+        %133 = OpLabel
+               OpBranch %120
+        %132 = OpLabel
+               OpBranch %120
+        %121 = OpLabel
+               OpBranch %119
+        %120 = OpLabel
+        %193 = OpPhi %v3float %73 %130 %79 %133 %79 %132
+         %87 = OpCompositeExtract %float %193 0
+         %88 = OpCompositeExtract %float %193 1
+         %89 = OpCompositeExtract %float %193 2
+         %90 = OpCompositeConstruct %v4float %87 %88 %89 %float_1
+               OpStore %_GLF_color %90
+         %93 = OpFOrdEqual %bool %124 %float_0
+               OpSelectionMerge %95 None
+               OpBranchConditional %93 %94 %95
+         %94 = OpLabel
+               OpStore %_GLF_color %96
+               OpBranch %95
+         %95 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+
+[test]
+uniform ubo 0:0 vec2 0 0.0 1.0
+draw rect -1 -1 2 2
+probe all rgba 1 0 0 1

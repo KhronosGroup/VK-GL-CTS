@@ -31,9 +31,6 @@
 #include "vkApiVersion.hpp"
 #include "vktTestCaseDefs.hpp"
 
-struct vr_executor;
-struct vr_config;
-
 namespace glu
 {
 struct ProgramSources;
@@ -103,6 +100,8 @@ public:
 												getImagelessFramebufferFeatures	(void) const;
 	const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 												getCooperativeMatrixFeatures	(void) const;
+	const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
+												getHostQueryResetFeatures		(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
@@ -113,7 +112,6 @@ public:
 	deUint32									getSparseQueueFamilyIndex		(void) const;
 	vk::VkQueue									getSparseQueue					(void) const;
 	vk::Allocator&								getDefaultAllocator				(void) const;
-	vr_executor*								getExecutor						(void) const;
 	bool										contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports					(const vk::ApiVersion version) const;
 	bool										contextSupports					(const deUint32 requiredApiVersionBits) const;
@@ -131,15 +129,9 @@ protected:
 	const de::UniquePtr<DefaultDevice>			m_device;
 	const de::UniquePtr<vk::Allocator>			m_allocator;
 
-	vr_executor*								m_executor;
-	vr_config*									m_config;
-
 private:
 												Context							(const Context&); // Not allowed
 	Context&									operator=						(const Context&); // Not allowed
-
-	static void*								getInstanceProc					(const char* name, void* user_data);
-	static void									errorCb							(const char *message, void *user_data);
 };
 
 class TestInstance;

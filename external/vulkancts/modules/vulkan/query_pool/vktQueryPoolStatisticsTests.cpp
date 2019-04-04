@@ -179,7 +179,7 @@ class StatisticQueryTestInstance : public TestInstance
 public:
 					StatisticQueryTestInstance	(Context& context);
 protected:
-	virtual void	checkExtensions				(void);
+	virtual void	checkExtensions				(deBool hostResetQueryEnabled);
 };
 
 StatisticQueryTestInstance::StatisticQueryTestInstance (Context& context)
@@ -187,10 +187,18 @@ StatisticQueryTestInstance::StatisticQueryTestInstance (Context& context)
 {
 }
 
-void StatisticQueryTestInstance::checkExtensions (void)
+void StatisticQueryTestInstance::checkExtensions (deBool hostResetQueryEnabled)
 {
 	if (!m_context.getDeviceFeatures().pipelineStatisticsQuery)
 		throw tcu::NotSupportedError("Pipeline statistics queries are not supported");
+
+	if (hostResetQueryEnabled == DE_TRUE)
+	{
+		// Check VK_EXT_host_query_reset is supported
+		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
+		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
+			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
+	}
 }
 
 class ComputeInvocationsTestInstance : public StatisticQueryTestInstance
@@ -201,6 +209,7 @@ public:
 		tcu::UVec3	localSize;
 		tcu::UVec3	groupSize;
 		std::string	shaderName;
+		deBool		hostReset;
 	};
 							ComputeInvocationsTestInstance		(Context& context, const std::vector<ParametersCompute>& parameters);
 	tcu::TestStatus			iterate								(void);
@@ -225,7 +234,7 @@ ComputeInvocationsTestInstance::ComputeInvocationsTestInstance (Context& context
 
 tcu::TestStatus	ComputeInvocationsTestInstance::iterate (void)
 {
-	checkExtensions();
+	checkExtensions(m_parameters[0].hostReset);
 	const DeviceInterface&				vk						= m_context.getDeviceInterface();
 	const VkDevice						device					= m_context.getDevice();
 	deUint32							maxSize					= 0u;
@@ -330,7 +339,8 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 		const Unique<VkQueryPool>		queryPool			(makeQueryPool(vk, device, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT));
 
 		beginCommandBuffer(vk, *cmdBuffer);
-			vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+			if (!m_parameters[0].hostReset)
+				vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
@@ -345,6 +355,9 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Compute shader invocations: " << getComputeExecution(m_parameters[parametersNdx]) << tcu::TestLog::EndMessage;
 
+		if (m_parameters[0].hostReset)
+			vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 		// Wait for completion
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -352,11 +365,33 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 		const Allocation& bufferAllocation = buffer->getBoundMemory();
 		invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
 
+		if (m_parameters[0].hostReset == DE_FALSE)
 		{
 			deUint64 data = 0u;
 			VK_CHECK(vk.getQueryPoolResults(device, *queryPool, 0u, 1u, sizeof(deUint64), &data, 0u, VK_QUERY_RESULT_64_BIT));
 			if (getComputeExecution(m_parameters[parametersNdx]) != data)
 				return tcu::TestStatus::fail("QueryPoolResults incorrect");
+		}
+		else
+		{
+			deUint64 data[2] = {0u, 0u};
+			deUint64 temp = 0u;
+			VK_CHECK(vk.getQueryPoolResults(device, *queryPool, 0u, 1u, sizeof(deUint64) * 2, data, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+			if (getComputeExecution(m_parameters[parametersNdx]) != data[0] || data[1] == 0)
+				return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+			temp = data[0];
+
+			vk.resetQueryPoolEXT(device, *queryPool, 0, 1u);
+			vk::VkResult res = vk.getQueryPoolResults(device, *queryPool, 0u, 1u, sizeof(deUint64) * 2, data, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+			/* From Vulkan spec:
+			 *
+			 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+			 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+			 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+			 */
+			if (res != vk::VK_NOT_READY || data[0] != temp || data[1] != 0u)
+				return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
 		}
 
 		const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
@@ -465,7 +500,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 	clearBuffer(vk, device, buffer, bufferSizeBytes);
 	beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT);
 		vk.cmdBindDescriptorSets(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
-		vk.cmdResetQueryPool(*secondaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parameters[0].hostReset)
+			vk.cmdResetQueryPool(*secondaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*secondaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 		for(size_t parametersNdx = 0; parametersNdx < m_parameters.size(); ++parametersNdx)
 		{
@@ -486,6 +522,10 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
+	// Secondary buffer is emitted only once, so it is safe to reset the query pool here.
+	if (m_parameters[0].hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
 	return checkResult(buffer, bufferSizeBytes, *queryPool);
@@ -496,13 +536,39 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::checkResult (const de::
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
 	{
-		deUint64 result		= 0u;
 		deUint64 expected	= 0u;
 		for(size_t parametersNdx = 0; parametersNdx < m_parameters.size(); ++parametersNdx)
 			expected += getComputeExecution(m_parameters[parametersNdx]);
-		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-		if (expected != result)
-			return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+		if (m_parameters[0].hostReset == DE_FALSE)
+		{
+			deUint64 result	= 0u;
+			VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
+			if (expected != result)
+				return tcu::TestStatus::fail("QueryPoolResults incorrect");
+		}
+		else
+		{
+			deUint64 result[2]	= {0u, 0u};
+			deUint64 temp = 0u;
+			VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+			if (expected != result[0] || result[1] == 0)
+				return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+			temp = result[0];
+
+			vk.resetQueryPoolEXT(device, queryPool, 0u, 1u);
+			vk::VkResult res = vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+			/* From Vulkan spec:
+			 *
+			 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+			 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+			 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+			 */
+			if (res != vk::VK_NOT_READY || result[0] != temp || result[1] != 0)
+				return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+		}
+
 	}
 
 	{
@@ -527,7 +593,8 @@ class ComputeInvocationsSecondaryInheritedTestInstance : public ComputeInvocatio
 public:
 					ComputeInvocationsSecondaryInheritedTestInstance	(Context& context, const std::vector<ParametersCompute>& parameters);
 protected:
-	virtual void	checkExtensions							(void);
+	virtual void	checkExtensions							(deBool hostResetQueryEnabled);
+
 	tcu::TestStatus	executeTest								(const VkCommandPool&			cmdPool,
 															 const VkPipelineLayout			pipelineLayout,
 															 const VkDescriptorSet&			descriptorSet,
@@ -540,9 +607,9 @@ ComputeInvocationsSecondaryInheritedTestInstance::ComputeInvocationsSecondaryInh
 {
 }
 
-void ComputeInvocationsSecondaryInheritedTestInstance::checkExtensions (void)
+void ComputeInvocationsSecondaryInheritedTestInstance::checkExtensions (deBool hostResetQueryEnabled)
 {
-	StatisticQueryTestInstance::checkExtensions();
+	StatisticQueryTestInstance::checkExtensions(hostResetQueryEnabled);
 	if (!m_context.getDeviceFeatures().inheritedQueries)
 		throw tcu::NotSupportedError("Inherited queries are not supported");
 }
@@ -634,7 +701,8 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parameters[0].hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBindDescriptorSets(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 		vk.cmdBindPipeline(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline[0].get()->get());
 
@@ -651,6 +719,9 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 
 		vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, 0u);
 	endCommandBuffer(vk, *primaryCmdBuffer);
+
+	if (m_parameters[0].hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -671,12 +742,14 @@ public:
 	};
 	struct  ParametersGraphic
 	{
-			ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkPrimitiveTopology primitiveTopology_)
+			ParametersGraphic (const VkQueryPipelineStatisticFlags queryStatisticFlags_, const VkPrimitiveTopology primitiveTopology_, const deBool hostReset_)
 			: queryStatisticFlags	(queryStatisticFlags_)
 			, primitiveTopology		(primitiveTopology_)
+			, hostReset				(hostReset_)
 		{}
 		VkQueryPipelineStatisticFlags	queryStatisticFlags;
 		VkPrimitiveTopology				primitiveTopology;
+		deBool							hostReset;
 	};
 											GraphicBasicTestInstance			(vkt::Context&					context,
 																				 const std::vector<VertexData>&	data,
@@ -716,7 +789,7 @@ GraphicBasicTestInstance::GraphicBasicTestInstance (vkt::Context&					context,
 
 tcu::TestStatus GraphicBasicTestInstance::iterate (void)
 {
-	checkExtensions();
+	checkExtensions(m_parametersGraphic.hostReset);
 	creatColorAttachmentAndRenderPass();
 	createPipeline();
 	return executeTest();
@@ -970,7 +1043,8 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
 
@@ -987,6 +1061,9 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	return checkResult (*queryPool);
@@ -996,7 +1073,6 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
-	deUint64				result		= 0u;
 	deUint64				expectedMin	= 0u;
 
 	switch(m_parametersGraphic.queryStatisticFlags)
@@ -1043,9 +1119,34 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 			break;
 	}
 
-	VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-	if (result < expectedMin)
-		return tcu::TestStatus::fail("QueryPoolResults incorrect");
+	if (m_parametersGraphic.hostReset == DE_FALSE)
+	{
+		deUint64 result	= 0u;
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
+		if (result < expectedMin)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect");
+	}
+	else
+	{
+		deUint64 result[2]	= {0u, 0u};
+		deUint64 temp = 0u;
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+		if (result[0] < expectedMin || result[1] == 0)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+		temp = result[0];
+
+		vk.resetQueryPoolEXT(device, queryPool, 0, 1u);
+		vk::VkResult res = vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+		/* From Vulkan spec:
+		 *
+		 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+		 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+		 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+		 */
+		if (res != vk::VK_NOT_READY || result[0] != temp || result[1] != 0)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+	}
 
 	if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP && !checkImage())
 		return tcu::TestStatus::fail("Result image doesn't match expected image.");
@@ -1130,7 +1231,8 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *primaryCmdBuffer, m_depthImage->object(), vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 
 		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
@@ -1139,6 +1241,9 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
 	endCommandBuffer(vk, *primaryCmdBuffer);
+
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1150,7 +1255,7 @@ class VertexShaderSecondaryInheritedTestInstance : public VertexShaderTestInstan
 public:
 							VertexShaderSecondaryInheritedTestInstance	(vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic);
 protected:
-	void					checkExtensions						(void);
+	virtual void					checkExtensions						(deBool hostQueryResetEnabled);
 	virtual tcu::TestStatus	executeTest							(void);
 };
 
@@ -1159,9 +1264,9 @@ VertexShaderSecondaryInheritedTestInstance::VertexShaderSecondaryInheritedTestIn
 {
 }
 
-void VertexShaderSecondaryInheritedTestInstance::checkExtensions (void)
+void VertexShaderSecondaryInheritedTestInstance::checkExtensions (deBool hostQueryResetEnabled)
 {
-	StatisticQueryTestInstance::checkExtensions();
+	StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
 	if (!m_context.getDeviceFeatures().inheritedQueries)
 		throw tcu::NotSupportedError("Inherited queries are not supported");
 }
@@ -1200,7 +1305,8 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 
 		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -1212,6 +1318,9 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 	}
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
 	return checkResult (*queryPool);
@@ -1222,7 +1331,7 @@ class GeometryShaderTestInstance : public GraphicBasicTestInstance
 public:
 							GeometryShaderTestInstance	(vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic);
 protected:
-	virtual void			checkExtensions				(void);
+	virtual void			checkExtensions				(deBool hostQueryResetEnabled);
 	virtual void			createPipeline				(void);
 	virtual tcu::TestStatus	executeTest					(void);
 	tcu::TestStatus			checkResult					(VkQueryPool queryPool);
@@ -1234,9 +1343,9 @@ GeometryShaderTestInstance::GeometryShaderTestInstance (vkt::Context& context, c
 {
 }
 
-void GeometryShaderTestInstance::checkExtensions (void)
+void GeometryShaderTestInstance::checkExtensions (deBool hostQueryResetEnabled)
 {
-	StatisticQueryTestInstance::checkExtensions();
+	StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
 	if (!m_context.getDeviceFeatures().geometryShader)
 		throw tcu::NotSupportedError("Geometry shader are not supported");
 }
@@ -1340,7 +1449,8 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
 
@@ -1359,6 +1469,9 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	return checkResult(*queryPool);
@@ -1368,7 +1481,6 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult (VkQueryPool queryPool)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
-	deUint64				result		= 0u;
 	deUint64				expectedMin	= 0u;
 
 	switch(m_parametersGraphic.queryStatisticFlags)
@@ -1406,9 +1518,34 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult (VkQueryPool queryPool)
 		break;
 	}
 
-	VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-	if (result < expectedMin)
-		return tcu::TestStatus::fail("QueryPoolResults incorrect");
+	if (m_parametersGraphic.hostReset == DE_FALSE)
+	{
+		deUint64 result	= 0u;
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
+		if (result < expectedMin)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect");
+	}
+	else
+	{
+		deUint64 result[2]	= {0u, 0u};
+		deUint64 temp = 0u;
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+		if (result[0] < expectedMin || result[1] == 0)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+		temp = result[0];
+
+		vk.resetQueryPoolEXT(device, queryPool, 0, 1u);
+		vk::VkResult res = vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+		/* From Vulkan spec:
+		 *
+		 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+		 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+		 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+		 */
+		if (res != vk::VK_NOT_READY || result[0] != temp || result[1] != 0)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+	}
 
 	if ( (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST || m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ) && !checkImage())
 		return tcu::TestStatus::fail("Result image doesn't match expected image.");
@@ -1482,7 +1619,8 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
 		endRenderPass(vk, *primaryCmdBuffer);
@@ -1491,6 +1629,9 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
 	endCommandBuffer(vk, *primaryCmdBuffer);
+
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1502,7 +1643,7 @@ class GeometryShaderSecondaryInheritedTestInstance : public GeometryShaderTestIn
 public:
 							GeometryShaderSecondaryInheritedTestInstance	(vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic);
 protected:
-	void					checkExtensions						(void);
+	virtual void			checkExtensions						(deBool hostQueryResetEnabled);
 	virtual tcu::TestStatus	executeTest							(void);
 };
 
@@ -1511,9 +1652,9 @@ GeometryShaderSecondaryInheritedTestInstance::GeometryShaderSecondaryInheritedTe
 {
 }
 
-void GeometryShaderSecondaryInheritedTestInstance::checkExtensions (void)
+void GeometryShaderSecondaryInheritedTestInstance::checkExtensions (deBool hostQueryResetEnabled)
 {
-	GeometryShaderTestInstance::checkExtensions();
+	GeometryShaderTestInstance::checkExtensions(hostQueryResetEnabled);
 	if (!m_context.getDeviceFeatures().inheritedQueries)
 		throw tcu::NotSupportedError("Inherited queries are not supported");
 }
@@ -1552,7 +1693,8 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
@@ -1564,6 +1706,9 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 	}
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
 	return checkResult(*queryPool);
@@ -1574,7 +1719,7 @@ class TessellationShaderTestInstance : public GraphicBasicTestInstance
 public:
 							TessellationShaderTestInstance	(vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic);
 protected:
-	virtual	void			checkExtensions				(void);
+	virtual	void			checkExtensions				(deBool hostQueryResetEnabled);
 	virtual void			createPipeline				(void);
 	virtual tcu::TestStatus	executeTest					(void);
 	virtual tcu::TestStatus	checkResult					(VkQueryPool queryPool);
@@ -1586,9 +1731,9 @@ TessellationShaderTestInstance::TessellationShaderTestInstance	(vkt::Context& co
 {
 }
 
-void TessellationShaderTestInstance::checkExtensions (void)
+void TessellationShaderTestInstance::checkExtensions (deBool hostQueryResetEnabled)
 {
-	StatisticQueryTestInstance::checkExtensions();
+	StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
 	if (!m_context.getDeviceFeatures().tessellationShader)
 		throw tcu::NotSupportedError("Tessellation shader are not supported");
 }
@@ -1691,7 +1836,8 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 		initialTransitionDepth2DImage(vk, *cmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
 		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
 
@@ -1710,6 +1856,9 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	return checkResult (*queryPool);
@@ -1719,7 +1868,6 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
-	deUint64				result		= 0u;
 	deUint64				expectedMin	= 0u;
 
 	switch(m_parametersGraphic.queryStatisticFlags)
@@ -1734,13 +1882,41 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 			DE_ASSERT(0);
 			break;
 	}
-	VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-	if (result < expectedMin)
-		return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
-	if (!checkImage())
-		return tcu::TestStatus::fail("Result image doesn't match expected image.");
+	if (m_parametersGraphic.hostReset == DE_FALSE)
+	{
+		deUint64 result	= 0u;
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
+		if (result < expectedMin)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
+		if (!checkImage())
+			return tcu::TestStatus::fail("Result image doesn't match expected image.");
+	}
+	else
+	{
+		deUint64 result[2] = {0u, 0u};
+		deUint64 temp = 0u;
+		VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+		if (result[0] < expectedMin || result[1] == 0u)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+		if (!checkImage())
+			return tcu::TestStatus::fail("Result image doesn't match expected image.");
+
+		temp = result[0];
+
+		vk.resetQueryPoolEXT(device, queryPool, 0, 1u);
+		vk::VkResult res = vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64) * 2, &result, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+		/* From Vulkan spec:
+		 *
+		 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+		 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+		 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+		 */
+		if (res != vk::VK_NOT_READY || result[0] != temp || result[1] != 0)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+    }
 	return tcu::TestStatus::pass("Pass");
 }
 
@@ -1801,7 +1977,9 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 
 		vk.cmdBindVertexBuffers(*primaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		vk.cmdBindPipeline(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 
 		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
@@ -1811,6 +1989,9 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
 	endCommandBuffer(vk, *primaryCmdBuffer);
+
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1822,7 +2003,7 @@ class TessellationShaderSecondrayInheritedTestInstance : public TessellationShad
 public:
 							TessellationShaderSecondrayInheritedTestInstance	(vkt::Context& context, const std::vector<VertexData>& data, const ParametersGraphic& parametersGraphic);
 protected:
-	virtual void			checkExtensions							(void);
+	virtual void			checkExtensions							(deBool hostQueryResetEnabled);
 	virtual tcu::TestStatus	executeTest								(void);
 };
 
@@ -1831,9 +2012,9 @@ TessellationShaderSecondrayInheritedTestInstance::TessellationShaderSecondrayInh
 {
 }
 
-void TessellationShaderSecondrayInheritedTestInstance::checkExtensions (void)
+void TessellationShaderSecondrayInheritedTestInstance::checkExtensions (deBool hostQueryResetEnabled)
 {
-	TessellationShaderTestInstance::checkExtensions();
+	TessellationShaderTestInstance::checkExtensions(hostQueryResetEnabled);
 	if (!m_context.getDeviceFeatures().inheritedQueries)
 		throw tcu::NotSupportedError("Inherited queries are not supported");
 }
@@ -1874,7 +2055,8 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 
 		vk.cmdBindVertexBuffers(*primaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		vk.cmdBindPipeline(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
+		if (!m_parametersGraphic.hostReset)
+			vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 
 		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -1887,6 +2069,9 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 	}
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
+	if (m_parametersGraphic.hostReset)
+		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
 	return checkResult (*queryPool);
@@ -1896,7 +2081,7 @@ template<class Instance>
 class QueryPoolStatisticsTest : public TestCase
 {
 public:
-	QueryPoolStatisticsTest (tcu::TestContext &context, const char *name, const char *description)
+	QueryPoolStatisticsTest (tcu::TestContext &context, const char *name, const char *description, const deBool hostReset)
 		: TestCase			(context, name, description)
 	{
 		const tcu::UVec3	localSize[]		=
@@ -1924,6 +2109,7 @@ public:
 				localSize[shaderNdx],
 				groupSize[shaderNdx],
 				shaderName.str(),
+				hostReset
 			};
 			m_parameters.push_back(prameters);
 		}
@@ -2176,29 +2362,61 @@ void QueryPoolStatisticsTests::init (void)
 	de::MovePtr<TestCaseGroup>	tesControlPatches					(new TestCaseGroup(m_testCtx, "tes_control_patches",				"Query pipeline statistic tessellation control shader patches"));
 	de::MovePtr<TestCaseGroup>	tesEvaluationShaderInvocations		(new TestCaseGroup(m_testCtx, "tes_evaluation_shader_invocations",	"Query pipeline statistic tessellation evaluation shader invocations"));
 
-	computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsTestInstance>						(m_testCtx, "primary",				""));
-	computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryTestInstance>			(m_testCtx, "secondary",			""));
-	computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryInheritedTestInstance>	(m_testCtx, "secondary_inherited",	""));
+	de::MovePtr<TestCaseGroup>	hostQueryResetGroup								(new TestCaseGroup(m_testCtx, "host_query_reset",					"Check host query reset pipeline statistic compute shader invocations"));
+	de::MovePtr<TestCaseGroup>	computeShaderInvocationsGroupHostQueryReset		(new TestCaseGroup(m_testCtx, "compute_shader_invocations",			"Query pipeline statistic compute shader invocations"));
+	de::MovePtr<TestCaseGroup>	inputAssemblyVerticesHostQueryReset				(new TestCaseGroup(m_testCtx, "input_assembly_vertices",			"Query pipeline statistic input assembly vertices"));
+	de::MovePtr<TestCaseGroup>	inputAssemblyPrimitivesHostQueryReset			(new TestCaseGroup(m_testCtx, "input_assembly_primitives",			"Query pipeline statistic input assembly primitives"));
+	de::MovePtr<TestCaseGroup>	vertexShaderInvocationsHostQueryReset			(new TestCaseGroup(m_testCtx, "vertex_shader_invocations",			"Query pipeline statistic vertex shader invocation"));
+	de::MovePtr<TestCaseGroup>	fragmentShaderInvocationsHostQueryReset			(new TestCaseGroup(m_testCtx, "fragment_shader_invocations",		"Query pipeline statistic fragment shader invocation"));
+	de::MovePtr<TestCaseGroup>	geometryShaderInvocationsHostQueryReset			(new TestCaseGroup(m_testCtx, "geometry_shader_invocations",		"Query pipeline statistic geometry shader invocation"));
+	de::MovePtr<TestCaseGroup>	geometryShaderPrimitivesHostQueryReset			(new TestCaseGroup(m_testCtx, "geometry_shader_primitives",			"Query pipeline statistic geometry shader primitives"));
+	de::MovePtr<TestCaseGroup>	clippingInvocationsHostQueryReset				(new TestCaseGroup(m_testCtx, "clipping_invocations",				"Query pipeline statistic clipping invocations"));
+	de::MovePtr<TestCaseGroup>	clippingPrimitivesHostQueryReset				(new TestCaseGroup(m_testCtx, "clipping_primitives",				"Query pipeline statistic clipping primitives"));
+	de::MovePtr<TestCaseGroup>	tesControlPatchesHostQueryReset					(new TestCaseGroup(m_testCtx, "tes_control_patches",				"Query pipeline statistic tessellation control shader patches"));
+	de::MovePtr<TestCaseGroup>	tesEvaluationShaderInvocationsHostQueryReset	(new TestCaseGroup(m_testCtx, "tes_evaluation_shader_invocations",	"Query pipeline statistic tessellation evaluation shader invocations"));
+
+	computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsTestInstance>						(m_testCtx, "primary",				"", DE_FALSE));
+	computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryTestInstance>			(m_testCtx, "secondary",			"", DE_FALSE));
+	computeShaderInvocationsGroup->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryInheritedTestInstance>	(m_testCtx, "secondary_inherited",	"", DE_FALSE));
+
+    computeShaderInvocationsGroupHostQueryReset->addChild(new QueryPoolStatisticsTest<ComputeInvocationsTestInstance>					(m_testCtx, "primary",				"", DE_TRUE));
+	computeShaderInvocationsGroupHostQueryReset->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryTestInstance>			(m_testCtx, "secondary",			"", DE_TRUE));
+	computeShaderInvocationsGroupHostQueryReset->addChild(new QueryPoolStatisticsTest<ComputeInvocationsSecondaryInheritedTestInstance>	(m_testCtx, "secondary_inherited",	"", DE_TRUE));
 
 	//VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT
-	inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	"primary",				"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
-	inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	"secondary",			"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
-	inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	"secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
+	inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	"primary",				"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+	inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	"secondary",			"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+	inputAssemblyVertices->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	"secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+
+	inputAssemblyVerticesHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	"primary",				"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
+	inputAssemblyVerticesHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	"secondary",			"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
+	inputAssemblyVerticesHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	"secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
 
 	//VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT
 	{
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		inputAssemblyPrimitives->addChild(primary.release());
 		inputAssemblyPrimitives->addChild(secondary.release());
 		inputAssemblyPrimitives->addChild(secondaryInherited.release());
+
+		inputAssemblyPrimitivesHostQueryReset->addChild(primaryHostQueryReset.release());
+		inputAssemblyPrimitivesHostQueryReset->addChild(secondaryHostQueryReset.release());
+		inputAssemblyPrimitivesHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT
@@ -2206,15 +2424,26 @@ void QueryPoolStatisticsTests::init (void)
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild (new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		vertexShaderInvocations->addChild(primary.release());
 		vertexShaderInvocations->addChild(secondary.release());
 		vertexShaderInvocations->addChild(secondaryInherited.release());
+
+		vertexShaderInvocationsHostQueryReset->addChild(primaryHostQueryReset.release());
+		vertexShaderInvocationsHostQueryReset->addChild(secondaryHostQueryReset.release());
+		vertexShaderInvocationsHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT
@@ -2222,15 +2451,26 @@ void QueryPoolStatisticsTests::init (void)
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>					(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		fragmentShaderInvocations->addChild(primary.release());
 		fragmentShaderInvocations->addChild(secondary.release());
 		fragmentShaderInvocations->addChild(secondaryInherited.release());
+
+		fragmentShaderInvocationsHostQueryReset->addChild(primaryHostQueryReset.release());
+		fragmentShaderInvocationsHostQueryReset->addChild(secondaryHostQueryReset.release());
+		fragmentShaderInvocationsHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT
@@ -2238,15 +2478,26 @@ void QueryPoolStatisticsTests::init (void)
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		geometryShaderInvocations->addChild(primary.release());
 		geometryShaderInvocations->addChild(secondary.release());
 		geometryShaderInvocations->addChild(secondaryInherited.release());
+
+		geometryShaderInvocationsHostQueryReset->addChild(primaryHostQueryReset.release());
+		geometryShaderInvocationsHostQueryReset->addChild(secondaryHostQueryReset.release());
+		geometryShaderInvocationsHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT
@@ -2254,15 +2505,26 @@ void QueryPoolStatisticsTests::init (void)
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		geometryShaderPrimitives->addChild(primary.release());
 		geometryShaderPrimitives->addChild(secondary.release());
 		geometryShaderPrimitives->addChild(secondaryInherited.release());
+
+		geometryShaderPrimitivesHostQueryReset->addChild(primaryHostQueryReset.release());
+		geometryShaderPrimitivesHostQueryReset->addChild(secondaryHostQueryReset.release());
+		geometryShaderPrimitivesHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT
@@ -2270,15 +2532,26 @@ void QueryPoolStatisticsTests::init (void)
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		clippingInvocations->addChild(primary.release());
 		clippingInvocations->addChild(secondary.release());
 		clippingInvocations->addChild(secondaryInherited.release());
+
+		clippingInvocationsHostQueryReset->addChild(primaryHostQueryReset.release());
+		clippingInvocationsHostQueryReset->addChild(secondaryHostQueryReset.release());
+		clippingInvocationsHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT
@@ -2286,26 +2559,45 @@ void QueryPoolStatisticsTests::init (void)
 		de::MovePtr<TestCaseGroup>	primary				(new TestCaseGroup(m_testCtx, "primary",			""));
 		de::MovePtr<TestCaseGroup>	secondary			(new TestCaseGroup(m_testCtx, "secondary",			""));
 		de::MovePtr<TestCaseGroup>	secondaryInherited	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
+		de::MovePtr<TestCaseGroup>	primaryHostQueryReset				(new TestCaseGroup(m_testCtx, "primary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryHostQueryReset				(new TestCaseGroup(m_testCtx, "secondary",			""));
+		de::MovePtr<TestCaseGroup>	secondaryInheritedHostQueryReset	(new TestCaseGroup(m_testCtx, "secondary_inherited",""));
 		for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST; ++topologyNdx)
 		{
-			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
-			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx)));
+			primary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondary->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+			secondaryInherited->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_FALSE)));
+
+			primaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>						(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryHostQueryReset->addChild			(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>			(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
+			secondaryInheritedHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>	(m_testCtx,	topology_name[topologyNdx].c_str(),	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx, DE_TRUE)));
 		}
 		clippingPrimitives->addChild(primary.release());
 		clippingPrimitives->addChild(secondary.release());
 		clippingPrimitives->addChild(secondaryInherited.release());
+
+		clippingPrimitivesHostQueryReset->addChild(primaryHostQueryReset.release());
+		clippingPrimitivesHostQueryReset->addChild(secondaryHostQueryReset.release());
+		clippingPrimitivesHostQueryReset->addChild(secondaryInheritedHostQueryReset.release());
 	}
 
 	//VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT
-	tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					(m_testCtx,	"tes_control_patches",						"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
-	tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayTestInstance>			(m_testCtx,	"tes_control_patches_secondary",			"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
-	tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayInheritedTestInstance>(m_testCtx,	"tes_control_patches_secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
+	tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					(m_testCtx,	"tes_control_patches",						"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+	tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayTestInstance>			(m_testCtx,	"tes_control_patches_secondary",			"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+	tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayInheritedTestInstance>(m_testCtx,	"tes_control_patches_secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+
+	tesControlPatchesHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					(m_testCtx,	"tes_control_patches",						"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
+	tesControlPatchesHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayTestInstance>			(m_testCtx,	"tes_control_patches_secondary",			"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
+	tesControlPatchesHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayInheritedTestInstance>(m_testCtx,	"tes_control_patches_secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
 
 	//VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT
-	tesEvaluationShaderInvocations->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					 (m_testCtx,	"tes_evaluation_shader_invocations",						"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
-	tesEvaluationShaderInvocations->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayTestInstance>		 (m_testCtx,	"tes_evaluation_shader_invocations_secondary",				"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
-	tesEvaluationShaderInvocations->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayInheritedTestInstance>(m_testCtx,	"tes_evaluation_shader_invocations_secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)));
+	tesEvaluationShaderInvocations->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					 (m_testCtx,	"tes_evaluation_shader_invocations",						"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+	tesEvaluationShaderInvocations->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayTestInstance>		 (m_testCtx,	"tes_evaluation_shader_invocations_secondary",				"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+	tesEvaluationShaderInvocations->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayInheritedTestInstance>(m_testCtx,	"tes_evaluation_shader_invocations_secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_FALSE)));
+
+	tesEvaluationShaderInvocationsHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>					 (m_testCtx,	"tes_evaluation_shader_invocations",						"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
+	tesEvaluationShaderInvocationsHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayTestInstance>		 (m_testCtx,	"tes_evaluation_shader_invocations_secondary",				"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
+	tesEvaluationShaderInvocationsHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderSecondrayInheritedTestInstance>(m_testCtx,	"tes_evaluation_shader_invocations_secondary_inherited",	"",	GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, DE_TRUE)));
 
 	addChild(computeShaderInvocationsGroup.release());
 	addChild(inputAssemblyVertices.release());
@@ -2318,6 +2610,19 @@ void QueryPoolStatisticsTests::init (void)
 	addChild(clippingPrimitives.release());
 	addChild(tesControlPatches.release());
 	addChild(tesEvaluationShaderInvocations.release());
+
+	hostQueryResetGroup->addChild(computeShaderInvocationsGroupHostQueryReset.release());
+	hostQueryResetGroup->addChild(inputAssemblyVerticesHostQueryReset.release());
+	hostQueryResetGroup->addChild(inputAssemblyPrimitivesHostQueryReset.release());
+	hostQueryResetGroup->addChild(vertexShaderInvocationsHostQueryReset.release());
+	hostQueryResetGroup->addChild(fragmentShaderInvocationsHostQueryReset.release());
+	hostQueryResetGroup->addChild(geometryShaderInvocationsHostQueryReset.release());
+	hostQueryResetGroup->addChild(geometryShaderPrimitivesHostQueryReset.release());
+	hostQueryResetGroup->addChild(clippingInvocationsHostQueryReset.release());
+	hostQueryResetGroup->addChild(clippingPrimitivesHostQueryReset.release());
+	hostQueryResetGroup->addChild(tesControlPatchesHostQueryReset.release());
+	hostQueryResetGroup->addChild(tesEvaluationShaderInvocationsHostQueryReset.release());
+	addChild(hostQueryResetGroup.release());
 }
 
 } //QueryPool

@@ -3349,6 +3349,13 @@ struct VkPhysicalDeviceCooperativeMatrixFeaturesNV
 	VkBool32		cooperativeMatrixRobustBufferAccess;
 };
 
+struct VkPhysicalDeviceHostQueryResetFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		hostQueryReset;
+};
+
 
 
 

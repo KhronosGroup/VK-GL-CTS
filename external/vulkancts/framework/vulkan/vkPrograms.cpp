@@ -518,14 +518,16 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 
 		for (i = 0; i < cacheFileIndex[hash].size(); i++)
 		{
+			deUint32	cachedLength	= 0;
+
 			if (ok) ok = fseek(file, cacheFileIndex[hash][i], SEEK_SET)	== 0;
 			if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
 			if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
 			if (ok) ok = temp											== hash; // Double check
 			if (ok) ok = fread(&temp, 1, 4, file)						== 4;
-			if (ok) ok = fread(&length, 1, 4, file)						== 4;
-			if (ok) ok = length											> 0; // sanity check
-			if (ok) fseek(file, length, SEEK_CUR); // skip binary
+			if (ok) ok = fread(&cachedLength, 1, 4, file)				== 4;
+			if (ok) ok = cachedLength									> 0; // sanity check
+			if (ok) fseek(file, cachedLength, SEEK_CUR); // skip binary
 			if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
 
 			if (ok && sourcelength > 0)

@@ -1016,3 +1016,8 @@ VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const 
 {
 	return m_vk.getBufferDeviceAddressEXT(device, pInfo);
 }
+
+void DeviceDriver::resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const
+{
+	m_vk.resetQueryPoolEXT(device, queryPool, firstQuery, queryCount);
+}

@@ -1888,6 +1888,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (V
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
+{
+	DE_UNREF(device);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+	DE_UNREF(queryCount);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -2199,5 +2207,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,	getAndroidHardwareBufferPropertiesANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,		getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressEXT,					getBufferDeviceAddressEXT),
+	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,							resetQueryPoolEXT),
 };
 

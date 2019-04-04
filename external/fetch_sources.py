@@ -322,7 +322,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"822817977cdd5df28b85ae8c317fe802bfd8854b",
+		"137e071ca42f2c9e378d974c399a89504804a1e5",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
@@ -332,14 +332,9 @@ PACKAGES = [
 		"e9b9ab4f05a178a5ad1cf3ae0849aaa32de8e0a4",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/Igalia/vkrunner.git",
-		None,
-		"79229ee3662da691240bde7fb6c6578e0e10e3f1",
-		"vkrunner"),
-	GitRepo(
 		"https://github.com/google/amber.git",
 		None,
-		"b783263992229f5c7d8b422beec09cdd4b02b31a",
+		"0c050473aaba12d27e21604a2362f9eaa6e7af09",
 		"amber"),
 ]
 

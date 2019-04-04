@@ -4743,6 +4743,13 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	};
 
+	const VkImageLayout initialAndFinalColorLayoutsLazy[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	};
+
 	const VkImageLayout initialAndFinalDepthStencilLayouts[] =
 	{
 		VK_IMAGE_LAYOUT_GENERAL,
@@ -4751,6 +4758,14 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+	};
+
+	const VkImageLayout initialAndFinalDepthStencilLayoutsLazy[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	};
 
 	const VkImageLayout subpassLayouts[] =
@@ -4816,10 +4831,11 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 
 		for (size_t testCaseNdx = 0; testCaseNdx < testCaseCount; testCaseNdx++)
 		{
-			const bool					useDepthStencil		= rng.getBool();
-			VkImageLayout				depthStencilLayout	= VK_IMAGE_LAYOUT_GENERAL;
-			vector<Attachment>			attachments;
-			vector<AttachmentReference>	colorAttachmentReferences;
+			const bool						useDepthStencil		= rng.getBool();
+			const TestConfig::ImageMemory	imageMemory			= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
+			VkImageLayout					depthStencilLayout	= VK_IMAGE_LAYOUT_GENERAL;
+			vector<Attachment>				attachments;
+			vector<AttachmentReference>		colorAttachmentReferences;
 
 			for (size_t attachmentNdx = 0; attachmentNdx < attachmentCount; attachmentNdx++)
 			{
@@ -4828,8 +4844,12 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
-				const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
+				const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
+				const VkImageLayout			finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
 				const VkImageLayout			subpassLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
@@ -4846,8 +4866,12 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts));
-				const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts));
+				const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy));
+				const VkImageLayout			finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	stencilStoreOp	= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
@@ -4859,7 +4883,6 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 			{
 				const TestConfig::RenderTypes			render			= rng.choose<TestConfig::RenderTypes>(DE_ARRAY_BEGIN(renderCommands), DE_ARRAY_END(renderCommands));
 				const TestConfig::CommandBufferTypes	commandBuffer	= rng.choose<TestConfig::CommandBufferTypes>(DE_ARRAY_BEGIN(commandBuffers), DE_ARRAY_END(commandBuffers));
-				const TestConfig::ImageMemory			imageMemory		= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
 				const vector<Subpass>					subpasses		(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, vector<AttachmentReference>(), colorAttachmentReferences, vector<AttachmentReference>(), AttachmentReference((useDepthStencil ? (deUint32)(attachments.size() - 1) : VK_ATTACHMENT_UNUSED), depthStencilLayout), vector<deUint32>()));
 				const vector<SubpassDependency>			deps;
 

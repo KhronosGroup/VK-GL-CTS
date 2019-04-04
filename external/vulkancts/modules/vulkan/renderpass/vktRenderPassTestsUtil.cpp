@@ -91,7 +91,6 @@ AttachmentReference1::AttachmentReference1 (const void*			pNext_,
 											VkImageAspectFlags	aspectMask_)
 {
 	DE_ASSERT(pNext_ == DE_NULL);
-	DE_ASSERT(aspectMask_ == 0);
 
 	// No sType field in this struct
 	DE_UNREF	(pNext_);

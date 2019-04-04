@@ -143,6 +143,8 @@ bool AmberTestCase::parse(const char* category, const char* filename)
 			<< r.Error()
 			<< "\n"
 			<< tcu::TestLog::EndMessage;
+		// TODO(dneto): Enhance Amber to not require this.
+		m_recipe->SetImpl(DE_NULL);
 		return false;
 	}
 	return true;

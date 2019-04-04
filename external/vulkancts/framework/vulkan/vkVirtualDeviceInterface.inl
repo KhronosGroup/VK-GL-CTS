@@ -204,3 +204,4 @@ virtual VkResult			getMemoryHostPointerPropertiesEXT			(VkDevice device, VkExter
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID	(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const = 0;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID		(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const = 0;
 virtual VkDeviceAddress		getBufferDeviceAddressEXT					(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const = 0;
+virtual void				resetQueryPoolEXT							(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const = 0;

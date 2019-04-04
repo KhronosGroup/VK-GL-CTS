@@ -1,0 +1,170 @@
+# Copyright 2018 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+# A fragment shader that uses an array of matrices and has deep control flow.
+# Derived from the following GLSL fragment shader.
+# We check that the top-left pixel is red. The test passes because the
+# first if statement checks if the x coordinate is less than 10 and if so writes
+# red to _GLF_color and then returns.
+
+# #version 310 es
+#
+# precision highp float;
+# precision highp int;
+#
+# layout(location=0) out vec4 _GLF_color;
+#
+# void main() {
+#  if (gl_FragCoord.x < 10.0) {
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#   return;
+#  }
+#  if(true) {
+#   if(true) {
+#    if(true) {
+#     mat4 one = mat4(
+#         1.0, 1.0, 1.0, 1.0,
+#         1.0, 1.0, 1.0, 1.0,
+#         1.0, 1.0, 1.0, 1.0,
+#         1.0, 1.0, 1.0, 1.0
+#       );
+#     mat4 m[4] = mat4[](one, one, one, one);
+#     for(int i = 0; i < 4; i ++) {
+#      for(int j = 0; j < 4; j ++) {
+#       vec2 v = vec2(1.0) / m[j < 4 ? 1 : 0][i].w;
+#       if(distance(vec2(1.0), v) < 1.0) {
+#        _GLF_color = vec4(1.0);
+#       }
+#      }
+#     }
+#    }
+#   }
+#  }
+# }
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 104
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_FragCoord %_GLF_color
+               OpExecutionMode %main OriginUpperLeft
+               OpSource ESSL 310
+               OpName %main "main"
+               OpName %gl_FragCoord "gl_FragCoord"
+               OpName %_GLF_color "_GLF_color"
+               OpName %m "m"
+               OpDecorate %gl_FragCoord BuiltIn FragCoord
+               OpDecorate %_GLF_color Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+   %float_10 = OpConstant %float 10
+       %bool = OpTypeBool
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+ %_GLF_color = OpVariable %_ptr_Output_v4float Output
+    %float_1 = OpConstant %float 1
+    %float_0 = OpConstant %float 0
+         %24 = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1
+%mat4v4float = OpTypeMatrix %v4float 4
+         %36 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+         %37 = OpConstantComposite %mat4v4float %36 %36 %36 %36
+     %uint_4 = OpConstant %uint 4
+%_arr_mat4v4float_uint_4 = OpTypeArray %mat4v4float %uint_4
+%_ptr_Function__arr_mat4v4float_uint_4 = OpTypePointer Function %_arr_mat4v4float_uint_4
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_4 = OpConstant %int 4
+    %v2float = OpTypeVector %float 2
+         %70 = OpConstantComposite %v2float %float_1 %float_1
+      %int_1 = OpConstant %int 1
+     %uint_3 = OpConstant %uint 3
+%_ptr_Function_float = OpTypePointer Function %float
+        %103 = OpConstantComposite %_arr_mat4v4float_uint_4 %37 %37 %37 %37
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %m = OpVariable %_ptr_Function__arr_mat4v4float_uint_4 Function
+               OpBranch %92
+         %92 = OpLabel
+               OpLoopMerge %91 %94 None
+               OpBranch %93
+         %93 = OpLabel
+         %13 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_0
+         %14 = OpLoad %float %13
+         %17 = OpFOrdLessThan %bool %14 %float_10
+               OpSelectionMerge %19 None
+               OpBranchConditional %17 %18 %19
+         %18 = OpLabel
+               OpStore %_GLF_color %24
+               OpBranch %91
+         %19 = OpLabel
+               OpStore %m %103
+               OpBranch %51
+         %51 = OpLabel
+         %98 = OpPhi %int %int_0 %19 %90 %62
+         %58 = OpSLessThan %bool %98 %int_4
+               OpLoopMerge %53 %62 None
+               OpBranchConditional %58 %52 %53
+         %52 = OpLabel
+               OpBranch %60
+         %60 = OpLabel
+         %99 = OpPhi %int %int_0 %52 %88 %86
+         %66 = OpSLessThan %bool %99 %int_4
+               OpLoopMerge %62 %86 None
+               OpBranchConditional %66 %61 %62
+         %61 = OpLabel
+         %74 = OpSelect %int %66 %int_1 %int_0
+         %78 = OpAccessChain %_ptr_Function_float %m %74 %98 %uint_3
+         %79 = OpLoad %float %78
+         %80 = OpCompositeConstruct %v2float %79 %79
+         %81 = OpFDiv %v2float %70 %80
+         %83 = OpExtInst %float %1 Distance %70 %81
+         %84 = OpFOrdLessThan %bool %83 %float_1
+               OpSelectionMerge %86 None
+               OpBranchConditional %84 %85 %86
+         %85 = OpLabel
+               OpStore %_GLF_color %36
+               OpBranch %86
+         %86 = OpLabel
+         %88 = OpIAdd %int %99 %int_1
+               OpBranch %60
+         %62 = OpLabel
+         %90 = OpIAdd %int %98 %int_1
+               OpBranch %51
+         %53 = OpLabel
+               OpBranch %91
+         %94 = OpLabel
+               OpBranch %92
+         %91 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+
+
+[test]
+draw rect -1 -1 2 2
+probe rgba (0, 0) (1, 0, 0, 1)

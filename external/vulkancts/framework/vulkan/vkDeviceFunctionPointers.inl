@@ -204,3 +204,4 @@ GetMemoryHostPointerPropertiesEXTFunc			getMemoryHostPointerPropertiesEXT;
 GetAndroidHardwareBufferPropertiesANDROIDFunc	getAndroidHardwareBufferPropertiesANDROID;
 GetMemoryAndroidHardwareBufferANDROIDFunc		getMemoryAndroidHardwareBufferANDROID;
 GetBufferDeviceAddressEXTFunc					getBufferDeviceAddressEXT;
+ResetQueryPoolEXTFunc							resetQueryPoolEXT;

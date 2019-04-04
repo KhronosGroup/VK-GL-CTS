@@ -276,6 +276,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	}
 	else if (extName == "VK_EXT_buffer_device_address")
 		functions.push_back("vkGetBufferDeviceAddressEXT");
+	else if (extName == "VK_EXT_host_query_reset")
+		functions.push_back("vkResetQueryPoolEXT");
 	else
 		DE_ASSERT("Extension name not found");
 }
@@ -342,5 +344,6 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_EXT_sample_locations",
 	"VK_EXT_validation_cache",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
-	"VK_EXT_buffer_device_address"
+	"VK_EXT_buffer_device_address",
+	"VK_EXT_host_query_reset"
 };

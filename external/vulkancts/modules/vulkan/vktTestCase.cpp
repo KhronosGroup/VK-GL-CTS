@@ -36,7 +36,6 @@
 
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
-#include <vkrunner/vkrunner.h>
 
 #include <set>
 
@@ -328,6 +327,7 @@ public:
 	VkPhysicalDeviceBufferAddressFeaturesEXT			bufferDeviceAddressFeatures;
 	VkPhysicalDeviceImagelessFramebufferFeaturesKHR		imagelessFramebufferFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
+	VkPhysicalDeviceHostQueryResetFeaturesEXT			hostQueryResetFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -355,6 +355,7 @@ public:
 		deMemset(&bufferDeviceAddressFeatures, 0, sizeof(bufferDeviceAddressFeatures));
 		deMemset(&imagelessFramebufferFeatures, 0, sizeof(imagelessFramebufferFeatures));
 		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
+		deMemset(&hostQueryResetFeatures, 0, sizeof(hostQueryResetFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -376,6 +377,7 @@ public:
 		bufferDeviceAddressFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
 		imagelessFramebufferFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
 		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
+		hostQueryResetFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -479,6 +481,11 @@ public:
 				*nextPtr	= &cooperativeMatrixFeatures;
 				nextPtr		= &cooperativeMatrixFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_host_query_reset"))
+			{
+				*nextPtr	= &hostQueryResetFeatures;
+				nextPtr		= &hostQueryResetFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -528,6 +535,7 @@ public:
 	const VkPhysicalDeviceImagelessFramebufferFeaturesKHR&	getImagelessFramebufferFeatures		(void) const	{ return m_deviceFeatures.imagelessFramebufferFeatures;		}
 
 	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
+	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -627,18 +635,6 @@ vk::Allocator* createAllocator (DefaultDevice* device)
 
 // Context
 
-void Context::errorCb(const char* message,
-					  void* user_data)
-{
-	Context* context = (Context*) user_data;
-
-	context->getTestContext().getLog()
-		<< tcu::TestLog::Message
-		<< message
-		<< "\n"
-		<< tcu::TestLog::EndMessage;
-}
-
 Context::Context (tcu::TestContext&				testCtx,
 				  const vk::PlatformInterface&	platformInterface,
 				  vk::BinaryCollection&			progCollection)
@@ -648,22 +644,10 @@ Context::Context (tcu::TestContext&				testCtx,
 	, m_device				(new DefaultDevice(m_platformInterface, testCtx.getCommandLine()))
 	, m_allocator			(createAllocator(m_device.get()))
 {
-	m_config = vr_config_new();
-	vr_config_set_user_data(m_config, this);
-	vr_config_set_error_cb(m_config, errorCb);
-	m_executor = vr_executor_new(m_config);
-	vr_executor_set_device(m_executor,
-						   getInstanceProc,
-						   this,
-						   getPhysicalDevice(),
-						   getUniversalQueueFamilyIndex(),
-						   getDevice());
 }
 
 Context::~Context (void)
 {
-	vr_config_free(m_config);
-	vr_executor_free(m_executor);
 }
 
 deUint32								Context::getAvailableInstanceVersion	(void) const { return m_device->getAvailableInstanceVersion();	}
@@ -705,6 +689,8 @@ const vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR&
 										Context::getImagelessFramebufferFeatures	(void) const { return m_device->getImagelessFramebufferFeatures();		}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}
+const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
+										Context::getHostQueryResetFeatures		(void) const { return m_device->getHostQueryResetFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}
@@ -715,8 +701,6 @@ deUint32								Context::getSparseQueueFamilyIndex		(void) const { return m_devi
 vk::VkQueue								Context::getSparseQueue					(void) const { return m_device->getSparseQueue();				}
 vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 deUint32								Context::getUsedApiVersion				(void) const { return m_device->getUsedApiVersion();			}
-vr_executor*							Context::getExecutor					(void) const
-																							{ return m_executor; }
 bool									Context::contextSupports				(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const
 																							{ return m_device->getUsedApiVersion() >= VK_MAKE_VERSION(majorNum, minorNum, patchNum); }
 bool									Context::contextSupports				(const ApiVersion version) const
@@ -822,12 +806,6 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 		TCU_THROW(NotSupportedError, "Requested core feature is not supported: " + std::string(deviceCoreFeaturesTable[requiredFeatureIndex].featureName));
 
 	return true;
-}
-
-void* Context::getInstanceProc (const char* name, void* user_data)
-{
-	Context *context = (Context*) user_data;
-	return (void*) context->m_platformInterface.getInstanceProcAddr(context->getInstance(), name);
 }
 
 void* Context::getInstanceProcAddr	()
