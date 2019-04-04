@@ -2070,10 +2070,8 @@ tcu::TestStatus testFenceReset (Context&				context,
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
-		{
-			NativeHandle					handleB	(handle);
-			importFence(vkd, *device, *fenceB, config.externalType, handleB, flags);
-		}
+		NativeHandle					handleB	(handle);
+		importFence(vkd, *device, *fenceB, config.externalType, handleB, flags);
 		importFence(vkd, *device, *fenceC, config.externalType, handle, flags);
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
