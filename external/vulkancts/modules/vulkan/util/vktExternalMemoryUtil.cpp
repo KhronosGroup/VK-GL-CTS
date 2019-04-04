@@ -648,7 +648,7 @@ void importFence (const vk::DeviceInterface&				vkd,
 	{
 		const vk::VkImportFenceWin32HandleInfoKHR	importInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR,
 			DE_NULL,
 			fence,
 			flags,
@@ -658,8 +658,8 @@ void importFence (const vk::DeviceInterface&				vkd,
 		};
 
 		VK_CHECK(vkd.importFenceWin32HandleKHR(device, &importInfo));
-		// \note File descriptors and win32 handles behave differently, but this call wil make it seem like they would behave in same way
-		handle.reset();
+		// \note Importing a fence payload from Windows handles does not transfer ownership of the handle to the Vulkan implementation,
+		//   so we do not disown the handle until after all use has complete.
 	}
 	else
 		DE_FATAL("Unknown fence external handle type");
@@ -803,7 +803,7 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 	{
 		const vk::VkImportSemaphoreWin32HandleInfoKHR	importInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR,
 			DE_NULL,
 			semaphore,
 			flags,
@@ -813,8 +813,8 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 		};
 
 		VK_CHECK(vkd.importSemaphoreWin32HandleKHR(device, &importInfo));
-		// \note File descriptors and win32 handles behave differently, but this call wil make it seem like they would behave in same way
-		handle.reset();
+		// \note Importing a semaphore payload from Windows handles does not transfer ownership of the handle to the Vulkan implementation,
+		//   so we do not disown the handle until after all use has complete.
 	}
 	else
 		DE_FATAL("Unknown semaphore external handle type");
