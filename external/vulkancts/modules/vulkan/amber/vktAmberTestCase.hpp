@@ -74,7 +74,7 @@ public:
 	//    throw an internal error exception.
 	virtual void checkSupport(Context& ctx) const; // override
 
-	bool parse(const char* category, const char* filename);
+	bool parse(const char* category, const std::string& filename);
 	void initPrograms(vk::SourceCollections& programCollection) const;
 	// If the test case uses SPIR-V Assembly, use these build options.
 	// Otherwise, defaults to target Vulkan 1.0, SPIR-V 1.0.

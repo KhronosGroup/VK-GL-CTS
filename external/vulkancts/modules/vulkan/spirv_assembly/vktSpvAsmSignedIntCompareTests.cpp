@@ -63,7 +63,7 @@ void createSignedIntCompareTests (tcu::TestCaseGroup* tests, const char* data_di
 		cts_amber::AmberTestCase *testCase = new cts_amber::AmberTestCase(testCtx, cases[i].basename, cases[i].description);
 		// Make sure the input can be parsed before we use it.
 		std::string file = std::string(cases[i].basename) + ".amber";
-		if (testCase->parse(data_dir, file.c_str()))
+		if (testCase->parse(data_dir, file))
 		{
 			tests->addChild(testCase);
 		}
