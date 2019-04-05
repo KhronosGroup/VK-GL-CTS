@@ -23,11 +23,8 @@
  * \brief GraphicsFuzz tests
  *//*--------------------------------------------------------------------*/
 
-#include <amber/amber.h>
-
 #include "vktAmberGraphicsFuzzTests.hpp"
-#include "vktAmberTestCase.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCaseUtil.hpp"
 
 namespace vkt
 {
@@ -38,13 +35,13 @@ namespace
 
 void createAmberTests (tcu::TestCaseGroup* group)
 {
-	tcu::TestContext&	testCtx	= group->getTestContext();
+	tcu::TestContext& testCtx = group->getTestContext();
 
 	static const struct
 	{
-		const char *filename;
-		const char *name;
-		const char *description;
+		const std::string	filename;
+		const char*			name;
+		const char*			description;
 	}
 	tests[] =
 	{
@@ -61,22 +58,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 	};
 
 	for (size_t i = 0; i < sizeof tests / sizeof tests[0]; i++)
-	{
-		// .amber files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
-		AmberTestCase *testCase = new AmberTestCase(testCtx, tests[i].name, tests[i].description);
-
-		// Make sure the input can be parsed before we use it.
-		if (testCase->parse("graphicsfuzz", tests[i].filename))
-		{
-			group->addChild(testCase);
-		}
-		else
-		{
-			delete testCase;
-
-			TCU_THROW(InternalError, "Failed to parse amber file");
-		}
-	}
+		group->addChild(createAmberTestCase(testCtx, tests[i].name, tests[i].description, "graphicsfuzz", tests[i].filename));
 }
 
 } // anonymous

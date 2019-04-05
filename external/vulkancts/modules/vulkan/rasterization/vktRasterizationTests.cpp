@@ -23,6 +23,7 @@
  * \brief Functional rasterization tests.
  *//*--------------------------------------------------------------------*/
 
+#include "vktAmberTestCaseUtil.hpp"
 #include "vktRasterizationTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
@@ -3725,6 +3726,34 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			interpolation->addChild(new TriangleInterpolationTestCase		(testCtx, "triangles",		"Verify triangle interpolation",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	INTERPOLATIONFLAGS_NONE,								samples[samplesNdx]));
 			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "lines",			"Verify line interpolation",			VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_NARROW,	samples[samplesNdx]));
 			interpolation->addChild(new LineInterpolationTestCase			(testCtx, "lines_wide",		"Verify wide line interpolation",		VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		INTERPOLATIONFLAGS_NONE,	PRIMITIVEWIDENESS_WIDE,		samples[samplesNdx]));
+		}
+	}
+
+	// .provoking_vertex
+	{
+		tcu::TestCaseGroup* const	provokingVertex		= new tcu::TestCaseGroup(testCtx, "provoking_vertex", "Test provoking vertex");
+
+		const char*					primitiveTypes[]	=
+		{
+			"triangle_list",
+			"triangle_list_with_adjacency",
+			"triangle_strip",
+			"triangle_strip_with_adjacency",
+			"triangle_fan",
+			"line_list",
+			"line_list_with_adjacency",
+			"line_strip",
+			"line_strip_with_adjacency"
+		};
+
+		rasterizationTests->addChild(provokingVertex);
+
+		for (deUint32 primitiveTypeIdx = 0; primitiveTypeIdx < DE_LENGTH_OF_ARRAY(primitiveTypes); primitiveTypeIdx++)
+		{
+			const char*			type	= primitiveTypes[primitiveTypeIdx];
+			const std::string	file	= std::string(type) + ".amber";
+
+			provokingVertex->addChild(cts_amber::createAmberTestCase(testCtx, type, "", "provoking_vertex", file));
 		}
 	}
 }

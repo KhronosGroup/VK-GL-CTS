@@ -7,6 +7,8 @@ set(DEQP_VK_AMBER_SRCS
 	vktAmberHelper.cpp
 	vktAmberTestCase.hpp
 	vktAmberTestCase.cpp
+	vktAmberTestCaseUtil.hpp
+	vktAmberTestCaseUtil.cpp
 	vktAmberExampleTests.hpp
 	vktAmberExampleTests.cpp
 	vktAmberGraphicsFuzzTests.hpp

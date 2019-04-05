@@ -22,11 +22,8 @@
  * \brief Functional tests using amber
  *//*--------------------------------------------------------------------*/
 
-#include <amber/amber.h>
-
 #include "vktAmberExampleTests.hpp"
-#include "vktAmberTestCase.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCaseUtil.hpp"
 
 namespace vkt
 {
@@ -39,14 +36,11 @@ void createAmberTests (tcu::TestCaseGroup* tests)
 {
 	tcu::TestContext& testCtx = tests->getTestContext();
 
-	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
-	AmberTestCase *testCase = new AmberTestCase(testCtx, "clear", "Example clear test");
-
-	// Make sure the input can be parsed before we use it.
-	if (testCase->parse("example", "clear.amber"))
-		tests->addChild(testCase);
-	else
-		delete testCase;
+	tests->addChild(createAmberTestCase(testCtx,				// tcu::TestContext		testCtx
+										"clear",				// const char*			name
+										"Example clear test",	// const char*			description
+										"example",				// const char*			category
+										"clear.amber"));		// const std::string&	filename
 }
 
 } // anonymous

@@ -23,13 +23,9 @@
  *//*--------------------------------------------------------------------*/
 
 #include <string>
-#include <amber/amber.h>
 
-#include "tcuDefs.hpp"
-
-#include "vktAmberTestCase.hpp"
+#include "vktAmberTestCaseUtil.hpp"
 #include "vktSpvAsmSignedIntCompareTests.hpp"
-#include "vktTestGroupUtil.hpp"
 
 namespace vkt
 {
@@ -44,8 +40,8 @@ void createSignedIntCompareTests (tcu::TestCaseGroup* tests, const char* data_di
 
 	// Shader test files are saved in <path>/external/vulkancts/data/vulkan/amber/<data_dir>/<basename>.amber
 	struct Case {
-		const char *basename;
-		const char *description;
+		const char* basename;
+		const char* description;
 	};
 	const Case cases[] =
 	{
@@ -59,20 +55,10 @@ void createSignedIntCompareTests (tcu::TestCaseGroup* tests, const char* data_di
 
 	for (unsigned i = 0; i < sizeof(cases)/sizeof(cases[0]) ; ++i)
 	{
+		std::string					file		= std::string(cases[i].basename) + ".amber";
+		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
 
-		cts_amber::AmberTestCase *testCase = new cts_amber::AmberTestCase(testCtx, cases[i].basename, cases[i].description);
-		// Make sure the input can be parsed before we use it.
-		std::string file = std::string(cases[i].basename) + ".amber";
-		if (testCase->parse(data_dir, file))
-		{
-			tests->addChild(testCase);
-		}
-		else
-		{
-			delete testCase;
-			std::string message = "Failed to parse Amber test " + file + ". Check log for details";
-			TCU_THROW(Exception, message.c_str());
-		}
+		tests->addChild(testCase);
 	}
 }
 
