@@ -410,6 +410,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT = 1000178001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT = 1000178002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR = 1000180000,
+    VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT = 1000184000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT = 1000190000,
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT = 1000190001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT = 1000190002,
@@ -8514,6 +8515,46 @@ typedef struct VkPipelineCreationFeedbackCreateInfoEXT {
     deUint32                          pipelineStageCreationFeedbackCount;
     VkPipelineCreationFeedbackEXT*    pPipelineStageCreationFeedbacks;
 } VkPipelineCreationFeedbackCreateInfoEXT;
+
+#define VK_EXT_calibrated_timestamps 1
+#define VK_EXT_CALIBRATED_TIMESTAMPS_SPEC_VERSION 1
+#define VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME "VK_EXT_calibrated_timestamps"
+
+typedef enum VkTimeDomainEXT {
+    VK_TIME_DOMAIN_DEVICE_EXT = 0,
+    VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT = 1,
+    VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT = 2,
+    VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT = 3,
+    VK_TIME_DOMAIN_BEGIN_RANGE_EXT = VK_TIME_DOMAIN_DEVICE_EXT,
+    VK_TIME_DOMAIN_END_RANGE_EXT = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT,
+    VK_TIME_DOMAIN_RANGE_SIZE_EXT = (VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT - VK_TIME_DOMAIN_DEVICE_EXT + 1),
+    VK_TIME_DOMAIN_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkTimeDomainEXT;
+
+typedef struct VkCalibratedTimestampInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkTimeDomainEXT    timeDomain;
+} VkCalibratedTimestampInfoEXT;
+
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)(VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains);
+typedef VkResult (VKAPI_PTR *PFN_vkGetCalibratedTimestampsEXT)(VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceCalibrateableTimeDomainsEXT(
+    VkPhysicalDevice                            physicalDevice,
+    deUint32*                                   pTimeDomainCount,
+    VkTimeDomainEXT*                            pTimeDomains);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetCalibratedTimestampsEXT(
+    VkDevice                                    device,
+    deUint32                                    timestampCount,
+    const VkCalibratedTimestampInfoEXT*         pTimestampInfos,
+    deUint64*                                   pTimestamps,
+    deUint64*                                   pMaxDeviation);
+#endif
+
 
 #ifdef __cplusplus
 }

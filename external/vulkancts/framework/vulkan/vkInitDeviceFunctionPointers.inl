@@ -241,3 +241,4 @@ m_vk.getAndroidHardwareBufferPropertiesANDROID	= (GetAndroidHardwareBufferProper
 m_vk.getMemoryAndroidHardwareBufferANDROID		= (GetMemoryAndroidHardwareBufferANDROIDFunc)		GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");
 m_vk.getBufferDeviceAddressEXT					= (GetBufferDeviceAddressEXTFunc)					GET_PROC_ADDR("vkGetBufferDeviceAddressEXT");
 m_vk.resetQueryPoolEXT							= (ResetQueryPoolEXTFunc)							GET_PROC_ADDR("vkResetQueryPoolEXT");
+m_vk.getCalibratedTimestampsEXT					= (GetCalibratedTimestampsEXTFunc)					GET_PROC_ADDR("vkGetCalibratedTimestampsEXT");

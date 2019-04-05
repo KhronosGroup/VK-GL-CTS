@@ -61,6 +61,7 @@ const char*	getCoverageModulationModeNVName			(VkCoverageModulationModeNV value)
 const char*	getValidationCacheHeaderVersionEXTName	(VkValidationCacheHeaderVersionEXT value);
 const char*	getComponentTypeNVName					(VkComponentTypeNV value);
 const char*	getScopeNVName							(VkScopeNV value);
+const char*	getTimeDomainEXTName					(VkTimeDomainEXT value);
 
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>		getPipelineCacheHeaderVersionStr		(VkPipelineCacheHeaderVersion value)		{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);				}
 inline tcu::Format::Enum<VkResult>							getResultStr							(VkResult value)							{ return tcu::Format::Enum<VkResult>(getResultName, value);														}
@@ -122,6 +123,7 @@ inline tcu::Format::Enum<VkCoverageModulationModeNV>		getCoverageModulationModeN
 inline tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>	getValidationCacheHeaderVersionEXTStr	(VkValidationCacheHeaderVersionEXT value)	{ return tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>(getValidationCacheHeaderVersionEXTName, value);	}
 inline tcu::Format::Enum<VkComponentTypeNV>					getComponentTypeNVStr					(VkComponentTypeNV value)					{ return tcu::Format::Enum<VkComponentTypeNV>(getComponentTypeNVName, value);									}
 inline tcu::Format::Enum<VkScopeNV>							getScopeNVStr							(VkScopeNV value)							{ return tcu::Format::Enum<VkScopeNV>(getScopeNVName, value);													}
+inline tcu::Format::Enum<VkTimeDomainEXT>					getTimeDomainEXTStr						(VkTimeDomainEXT value)						{ return tcu::Format::Enum<VkTimeDomainEXT>(getTimeDomainEXTName, value);										}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)		{ return s << getPipelineCacheHeaderVersionStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)							{ return s << getResultStr(value);							}
@@ -183,6 +185,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCoverageModulationModeNV val
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationCacheHeaderVersionEXT value)	{ return s << getValidationCacheHeaderVersionEXTStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkComponentTypeNV value)					{ return s << getComponentTypeNVStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkScopeNV value)							{ return s << getScopeNVStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkTimeDomainEXT value)					{ return s << getTimeDomainEXTStr(value);					}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr								(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr									(VkImageUsageFlags value);
@@ -652,3 +655,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryPriorityAllocateInfoEXT
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreationFeedbackEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreationFeedbackCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCalibratedTimestampInfoEXT& value);

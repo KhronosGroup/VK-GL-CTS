@@ -110,6 +110,8 @@ void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const c
 		functions.push_back("vkGetPhysicalDeviceMultisamplePropertiesEXT");
 	else if (extName == "VK_NV_cooperative_matrix")
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
+	else if (extName == "VK_EXT_calibrated_timestamps")
+		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 	else
 		DE_FATAL("Extension name not found");
 }
@@ -287,6 +289,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 		functions.push_back("vkGetBufferDeviceAddressEXT");
 	else if (extName == "VK_EXT_host_query_reset")
 		functions.push_back("vkResetQueryPoolEXT");
+	else if (extName == "VK_EXT_calibrated_timestamps")
+		functions.push_back("vkGetCalibratedTimestampsEXT");
 	else
 		DE_FATAL("Extension name not found");
 }
@@ -316,7 +320,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_EXT_display_surface_counter",
 	"VK_MVK_ios_surface",
 	"VK_MVK_macos_surface",
-	"VK_NV_cooperative_matrix"
+	"VK_NV_cooperative_matrix",
+	"VK_EXT_calibrated_timestamps"
 };
 
 ::std::string deviceExtensionNames[] =

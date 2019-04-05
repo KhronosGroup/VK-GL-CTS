@@ -1952,6 +1952,24 @@ VKAPI_ATTR void VKAPI_CALL resetQueryPoolEXT (VkDevice device, VkQueryPool query
 	DE_UNREF(queryCount);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pTimeDomainCount);
+	DE_UNREF(pTimeDomains);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation)
+{
+	DE_UNREF(device);
+	DE_UNREF(timestampCount);
+	DE_UNREF(pTimestampInfos);
+	DE_UNREF(pTimestamps);
+	DE_UNREF(pMaxDeviation);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -2041,6 +2059,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,								createMacOSSurfaceMVK),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,			getPhysicalDeviceMultisamplePropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,	getPhysicalDeviceCooperativeMatrixPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,		getPhysicalDeviceCalibrateableTimeDomainsEXT),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -2270,5 +2289,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,		getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressEXT,					getBufferDeviceAddressEXT),
 	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,							resetQueryPoolEXT),
+	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsEXT,				getCalibratedTimestampsEXT),
 };
 

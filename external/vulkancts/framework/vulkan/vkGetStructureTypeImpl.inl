@@ -1351,3 +1351,8 @@ template<> VkStructureType getStructureType<VkPipelineCreationFeedbackCreateInfo
 	return VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkCalibratedTimestampInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
+}
+
