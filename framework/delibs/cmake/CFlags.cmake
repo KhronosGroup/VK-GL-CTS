@@ -46,8 +46,8 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# \note Remove -Wno-sign-conversion for more warnings
 	set(WARNING_FLAGS			"-Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion -Wno-sign-conversion")
 
-	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -std=c90 -pedantic ")
-	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -std=c++03 -Wno-delete-non-virtual-dtor")
+	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -std=c99 -pedantic ")
+	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 -Wno-delete-non-virtual-dtor")
 
 	# Force compiler to generate code where integers have well defined overflow
 	# Turn on -Wstrict-overflow=5 and check all warnings before removing

@@ -511,7 +511,7 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 	{
 		FILE*			file		= fopen(shaderCacheFilename, "rb");
 		deBool			ok			= (file != 0);
-		deBool			diff;
+		deBool			diff		= DE_TRUE;
 		deInt32			sourcelength;
 		deUint32		i;
 		deUint32		temp;
@@ -604,7 +604,7 @@ void getBuildOptions (std::string& shaderstring, const ShaderBuildOptions& build
 	if (optimizationRecipe != 0)
 	{
 		shaderstring += "Optimization recipe ";
-		shaderstring += optimizationRecipe;
+		shaderstring += de::toString(optimizationRecipe);
 		shaderstring += "\n";
 	}
 }
@@ -798,7 +798,7 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 		if (optimizationRecipe != 0)
 		{
 			cachekey += "Optimization recipe ";
-			cachekey += optimizationRecipe;
+			cachekey += de::toString(optimizationRecipe);
 			cachekey += "\n";
 		}
 
