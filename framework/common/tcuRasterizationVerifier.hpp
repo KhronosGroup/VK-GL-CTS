@@ -119,10 +119,19 @@ struct RasterizationArguments
 
 struct VerifyTriangleGroupRasterizationLogStash
 {
-	int				missingPixels;
-	int				unexpectedPixels;
-	tcu::Surface	errorMask;
-	bool			result;
+	std::vector<std::string>	messages;
+	int							missingPixels;
+	int							unexpectedPixels;
+	tcu::Surface				errorMask;
+	bool						result;
+};
+
+struct VerifyTriangleGroupInterpolationLogStash
+{
+	std::vector<std::string>	messages;
+	int							invalidPixels;
+	tcu::Surface				errorMask;
+	bool						success;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -178,7 +187,7 @@ bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surfac
  *
  * Returns false if both rasterizations are invalid.
  *//*--------------------------------------------------------------------*/
-bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool vulkanLinesTest = false);
+bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool vulkanLinesTest = false, const bool strict = true);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify point rasterization result
@@ -223,7 +232,7 @@ LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surfac
  *
  * Returns false if invalid rasterization interpolation is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool strictMode = true);
 
 } // tcu
 
