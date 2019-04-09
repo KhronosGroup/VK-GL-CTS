@@ -1165,10 +1165,10 @@ tcu::FloatFormat getYCbCrFilteringPrecision (vk::VkFormat format)
 		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
 		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
 		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
-			return low;
-
 		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
 		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+			return low;
+
 		case vk::VK_FORMAT_R16G16B16_UNORM:
 		case vk::VK_FORMAT_R16G16B16A16_UNORM:
 		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
