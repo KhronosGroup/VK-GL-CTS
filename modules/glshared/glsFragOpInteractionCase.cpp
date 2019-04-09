@@ -313,7 +313,7 @@ static void setupAttributes (sglr::Context& ctx, const VertexDataStorage& vertex
 	for (int attribNdx = 0; attribNdx < vertexData.getNumEntries(); ++attribNdx)
 	{
 		const glu::VertexArrayBinding	bindingPtr	= getEntryWithPointer(vertexData, attribNdx);
-		const int						attribLoc	= bindingPtr.binding.type == glu::BindingPoint::TYPE_NAME ? ctx.getAttribLocation(program, bindingPtr.binding.name.c_str()) : bindingPtr.binding.location;
+		const int						attribLoc	= bindingPtr.binding.type == glu::BindingPoint::BPTYPE_NAME ? ctx.getAttribLocation(program, bindingPtr.binding.name.c_str()) : bindingPtr.binding.location;
 
 		DE_ASSERT(bindingPtr.pointer.componentType == glu::VTX_COMP_FLOAT);
 

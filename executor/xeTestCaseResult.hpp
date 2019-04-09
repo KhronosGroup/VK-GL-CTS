@@ -163,20 +163,20 @@ class NumericValue
 public:
 	enum Type
 	{
-		TYPE_EMPTY = 0,
-		TYPE_INT64,
-		TYPE_FLOAT64,
+		NUMVALTYPE_EMPTY = 0,
+		NUMVALTYPE_INT64,
+		NUMVALTYPE_FLOAT64,
 
-		TYPE_LAST
+		NUMVALTYPE_LAST
 	};
 
-					NumericValue	(void)			: m_type(TYPE_EMPTY)	{}
-					NumericValue	(deInt64 value)	: m_type(TYPE_INT64)	{ m_value.int64 = value;	}
-					NumericValue	(double value)	: m_type(TYPE_FLOAT64)	{ m_value.float64 = value;	}
+					NumericValue	(void)			: m_type(NUMVALTYPE_EMPTY)		{}
+					NumericValue	(deInt64 value)	: m_type(NUMVALTYPE_INT64)		{ m_value.int64 = value;	}
+					NumericValue	(double value)	: m_type(NUMVALTYPE_FLOAT64)	{ m_value.float64 = value;	}
 
 	Type			getType			(void) const	{ return m_type; }
-	deInt64			getInt64		(void) const	{ DE_ASSERT(getType() == TYPE_INT64);	return m_value.int64;	}
-	double			getFloat64		(void) const	{ DE_ASSERT(getType() == TYPE_FLOAT64);	return m_value.float64;	}
+	deInt64			getInt64		(void) const	{ DE_ASSERT(getType() == NUMVALTYPE_INT64);		return m_value.int64;	}
+	double			getFloat64		(void) const	{ DE_ASSERT(getType() == NUMVALTYPE_FLOAT64);	return m_value.float64;	}
 
 private:
 	Type			m_type;

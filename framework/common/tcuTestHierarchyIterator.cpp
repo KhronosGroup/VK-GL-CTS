@@ -93,7 +93,7 @@ TestHierarchyIterator::TestHierarchyIterator (TestPackageRoot&			rootNode,
 {
 	// Init traverse state and "seek" to first reportable node.
 	NodeIter iter(&rootNode);
-	iter.setState(NodeIter::STATE_ENTER); // Root is never reported
+	iter.setState(NodeIter::NISTATE_ENTER); // Root is never reported
 	m_sessionStack.push_back(iter);
 	next();
 }
@@ -123,10 +123,10 @@ TestHierarchyIterator::State TestHierarchyIterator::getState (void) const
 	{
 		const NodeIter&	iter	= m_sessionStack.back();
 
-		DE_ASSERT(iter.getState() == NodeIter::STATE_ENTER ||
-				  iter.getState() == NodeIter::STATE_LEAVE);
+		DE_ASSERT(iter.getState() == NodeIter::NISTATE_ENTER ||
+				  iter.getState() == NodeIter::NISTATE_LEAVE);
 
-		return iter.getState() == NodeIter::STATE_ENTER ? STATE_ENTER_NODE : STATE_LEAVE_NODE;
+		return iter.getState() == NodeIter::NISTATE_ENTER ? STATE_ENTER_NODE : STATE_LEAVE_NODE;
 	}
 	else
 		return STATE_FINISHED;
@@ -167,7 +167,7 @@ void TestHierarchyIterator::next (void)
 
 		switch (iter.getState())
 		{
-			case NodeIter::STATE_INIT:
+			case NodeIter::NISTATE_INIT:
 			{
 				const std::string nodePath = buildNodePath(m_sessionStack);
 
@@ -179,20 +179,20 @@ void TestHierarchyIterator::next (void)
 				}
 
 				m_nodePath = nodePath;
-				iter.setState(NodeIter::STATE_ENTER);
+				iter.setState(NodeIter::NISTATE_ENTER);
 				return; // Yield enter event
 			}
 
-			case NodeIter::STATE_ENTER:
+			case NodeIter::NISTATE_ENTER:
 			{
 				if (isLeaf)
 				{
-					iter.setState(NodeIter::STATE_LEAVE);
+					iter.setState(NodeIter::NISTATE_LEAVE);
 					return; // Yield leave event
 				}
 				else
 				{
-					iter.setState(NodeIter::STATE_TRAVERSE_CHILDREN);
+					iter.setState(NodeIter::NISTATE_TRAVERSE_CHILDREN);
 					iter.children.clear();
 
 					switch (node->getNodeType())
@@ -208,7 +208,7 @@ void TestHierarchyIterator::next (void)
 				break;
 			}
 
-			case NodeIter::STATE_TRAVERSE_CHILDREN:
+			case NodeIter::NISTATE_TRAVERSE_CHILDREN:
 			{
 				int numChildren = (int)iter.children.size();
 				if (++iter.curChildNdx < numChildren)
@@ -219,7 +219,7 @@ void TestHierarchyIterator::next (void)
 				}
 				else
 				{
-					iter.setState(NodeIter::STATE_LEAVE);
+					iter.setState(NodeIter::NISTATE_LEAVE);
 					if (node->getNodeType() != NODETYPE_ROOT)
 						return; // Yield leave event
 				}
@@ -227,7 +227,7 @@ void TestHierarchyIterator::next (void)
 				break;
 			}
 
-			case NodeIter::STATE_LEAVE:
+			case NodeIter::NISTATE_LEAVE:
 			{
 				// Leave node.
 				if (!isLeaf)
