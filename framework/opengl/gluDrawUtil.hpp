@@ -94,19 +94,19 @@ struct BindingPoint
 {
 	enum Type
 	{
-		TYPE_LOCATION = 0,			//!< Binding by numeric location.
-		TYPE_NAME,					//!< Binding by input name.
+		BPTYPE_LOCATION = 0,			//!< Binding by numeric location.
+		BPTYPE_NAME,					//!< Binding by input name.
 
-		TYPE_LAST
+		BPTYPE_LAST
 	};
 
 	Type			type;			//!< Binding type (name or location).
 	std::string		name;			//!< Input name, or empty if is not binding by name.
 	int				location;		//!< Input location, or offset to named location if binding by name.
 
-				BindingPoint (void)											: type(TYPE_LAST), location (0) {}
-	explicit	BindingPoint (int location_)								: type(TYPE_LOCATION), location(location_) {}
-	explicit	BindingPoint (const std::string& name_, int location_ = 0)	: type(TYPE_NAME), name(name_), location(location_) {}
+				BindingPoint (void)											: type(BPTYPE_LAST), location (0) {}
+	explicit	BindingPoint (int location_)								: type(BPTYPE_LOCATION), location(location_) {}
+	explicit	BindingPoint (const std::string& name_, int location_ = 0)	: type(BPTYPE_NAME), name(name_), location(location_) {}
 };
 
 struct VertexArrayPointer

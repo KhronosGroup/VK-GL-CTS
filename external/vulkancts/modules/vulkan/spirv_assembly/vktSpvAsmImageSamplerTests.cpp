@@ -1103,7 +1103,7 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 					getDefaultColors(defaultColors);
 
-					const map<string, string>		fragments = generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, DEPTH_PROPERTY_NON_DEPTH, (deUint32)resources.inputs.size(), (formatIndex + 1) % optypeimageFormatMismatchFormatCount);
+					const map<string, string>		fragments = generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, DEPTH_PROPERTY_NON_DEPTH, (deUint32)resources.inputs.size(), (deUint32)((formatIndex + 1) % optypeimageFormatMismatchFormatCount));
 
 					// If testing for mismatched optypeimage, ignore the rendered
 					// result (we're only interested to see if we crash)
