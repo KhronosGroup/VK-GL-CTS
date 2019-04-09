@@ -52,6 +52,7 @@
 #include "../glesext/texture_border_clamp/esextcTextureBorderClampTests.hpp"
 #include "../glesext/texture_buffer/esextcTextureBufferTests.hpp"
 #include "../glesext/texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
+#include "../glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
 
 namespace es32cts
 {
@@ -165,6 +166,7 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		coreGroup->addChild(new glcts::CopyImageTests(getContext()));
 		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
+		coreGroup->addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
 		addChild(coreGroup);
 	}
 	catch (...)

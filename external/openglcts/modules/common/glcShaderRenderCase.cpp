@@ -104,6 +104,12 @@ TextureBinding::TextureBinding(void) : m_type(TYPE_NONE)
 	m_binding.tex2D = DE_NULL;
 }
 
+TextureBinding::TextureBinding(const glu::TextureCubeArray* texCubeArray, const tcu::Sampler& sampler)
+	: m_type(TYPE_CUBE_MAP_ARRAY), m_sampler(sampler)
+{
+	m_binding.texCubeArray = texCubeArray;
+}
+
 void TextureBinding::setSampler(const tcu::Sampler& sampler)
 {
 	m_sampler = sampler;
@@ -131,6 +137,12 @@ void TextureBinding::setTexture(const glu::Texture3D* tex3D)
 {
 	m_type			= TYPE_3D;
 	m_binding.tex3D = tex3D;
+}
+
+void TextureBinding::setTexture(const glu::TextureCubeArray* texCubeArray)
+{
+	m_type				   = TYPE_CUBE_MAP_ARRAY;
+	m_binding.texCubeArray = texCubeArray;
 }
 
 // QuadGrid.
@@ -335,6 +347,9 @@ ShaderEvalContext::ShaderEvalContext(const QuadGrid& quadGrid_)
 		case TextureBinding::TYPE_3D:
 			textures[ndx].tex3D = &binding.get3D()->getRefTexture();
 			break;
+		case TextureBinding::TYPE_CUBE_MAP_ARRAY:
+			textures[ndx].texCubeArray = &binding.getCubeArray()->getRefTexture();
+			break;
 		default:
 			DE_ASSERT(DE_FALSE);
 		}
@@ -496,7 +511,7 @@ TestNode::IterateResult ShaderRenderCase::iterate(void)
 		computeFragmentReference(refImage, quadGrid);
 
 	// Compare.
-	bool testOk = compareImages(resImage, refImage, 0.05f);
+	bool testOk = compareImages(resImage, refImage, 0.07f);
 
 	// De-initialize.
 	gl.useProgram(0);
@@ -568,6 +583,10 @@ void ShaderRenderCase::setupDefaultInputs(int programID)
 		case TextureBinding::TYPE_3D:
 			texTarget = GL_TEXTURE_3D;
 			texObj	= tex.get3D()->getGLTexture();
+			break;
+		case TextureBinding::TYPE_CUBE_MAP_ARRAY:
+			texTarget = GL_TEXTURE_CUBE_MAP_ARRAY;
+			texObj	= tex.getCubeArray()->getGLTexture();
 			break;
 		default:
 			DE_ASSERT(DE_FALSE);

@@ -44,6 +44,7 @@ class Texture2D;
 class TextureCube;
 class Texture2DArray;
 class Texture3D;
+class TextureCubeArray;
 } // glu
 
 namespace deqp
@@ -97,6 +98,7 @@ public:
 		TYPE_CUBE_MAP,
 		TYPE_2D_ARRAY,
 		TYPE_3D,
+		TYPE_CUBE_MAP_ARRAY,
 
 		TYPE_LAST
 	};
@@ -105,6 +107,7 @@ public:
 	TextureBinding(const glu::TextureCube* texCube, const tcu::Sampler& sampler);
 	TextureBinding(const glu::Texture2DArray* tex2DArray, const tcu::Sampler& sampler);
 	TextureBinding(const glu::Texture3D* tex3D, const tcu::Sampler& sampler);
+	TextureBinding(const glu::TextureCubeArray* texCubeArray, const tcu::Sampler& sampler);
 	TextureBinding(void);
 
 	void setSampler(const tcu::Sampler& sampler);
@@ -112,6 +115,7 @@ public:
 	void setTexture(const glu::TextureCube* texCube);
 	void setTexture(const glu::Texture2DArray* tex2DArray);
 	void setTexture(const glu::Texture3D* tex3D);
+	void setTexture(const glu::TextureCubeArray* texCubeArray);
 
 	Type getType(void) const
 	{
@@ -141,6 +145,11 @@ public:
 		DE_ASSERT(getType() == TYPE_3D);
 		return m_binding.tex3D;
 	}
+	const glu::TextureCubeArray* getCubeArray(void) const
+	{
+		DE_ASSERT(getType() == TYPE_CUBE_MAP_ARRAY);
+		return m_binding.texCubeArray;
+	}
 
 private:
 	Type		 m_type;
@@ -150,6 +159,7 @@ private:
 		const glu::TextureCube*	texCube;
 		const glu::Texture2DArray* tex2DArray;
 		const glu::Texture3D*	  tex3D;
+		const glu::TextureCubeArray* texCubeArray;
 	} m_binding;
 };
 
@@ -172,8 +182,10 @@ public:
 		const tcu::TextureCube*	texCube;
 		const tcu::Texture2DArray* tex2DArray;
 		const tcu::Texture3D*	  tex3D;
+		const tcu::TextureCubeArray* texCubeArray;
 
-		inline ShaderSampler(void) : tex2D(DE_NULL), texCube(DE_NULL), tex2DArray(DE_NULL), tex3D(DE_NULL)
+		inline ShaderSampler(void)
+			: tex2D(DE_NULL), texCube(DE_NULL), tex2DArray(DE_NULL), tex3D(DE_NULL), texCubeArray(DE_NULL)
 		{
 		}
 	};

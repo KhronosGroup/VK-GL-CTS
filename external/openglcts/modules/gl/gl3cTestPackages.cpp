@@ -49,6 +49,8 @@
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
 
+#include "../glesext/texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp"
+
 namespace gl3cts
 {
 
@@ -160,6 +162,7 @@ void GL30TestPackage::init(void)
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
 		addChild(new glcts::TextureRepeatModeTests(getContext()));
 		addChild(new GL30ShaderTests(getContext()));
+		addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
 	}
 	catch (...)
 	{
