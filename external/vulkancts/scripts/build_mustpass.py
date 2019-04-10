@@ -155,7 +155,7 @@ MUSTPASS_LISTS		= [
 		  Mustpass(project = PROJECT,	version = "1.1.2",	packages = [VULKAN_1_1_2_PKG]),
 		  Mustpass(project = PROJECT,	version = "1.1.3",	packages = [VULKAN_1_1_3_PKG]),
 		  Mustpass(project = PROJECT,	version = "1.1.4",	packages = [VULKAN_1_1_4_PKG]),
-		  Mustpass(project = PROJECT,	version = "1.1.5",	packages = [VULKAN_1_1_4_PKG]),
+		  Mustpass(project = PROJECT,	version = "1.1.5",	packages = [VULKAN_1_1_5_PKG]),
 	]
 
 if __name__ == "__main__":
