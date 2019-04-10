@@ -40,6 +40,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -1664,7 +1665,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 	const Unique<VkShaderModule>		vertShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass(vk, device, m_parameters.formatUncompressed, m_parameters.formatUncompressed));
+	const Unique<VkRenderPass>			renderPass				(vkt::image::makeRenderPass(vk, device, m_parameters.formatUncompressed, m_parameters.formatUncompressed));
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout		(DescriptorSetLayoutBuilder()
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -1798,7 +1799,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 	const Unique<VkShaderModule>		vertShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass(vk, device, m_parameters.formatUncompressed, m_parameters.formatUncompressed));
+	const Unique<VkRenderPass>			renderPass				(vkt::image::makeRenderPass(vk, device, m_parameters.formatUncompressed, m_parameters.formatUncompressed));
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout		(DescriptorSetLayoutBuilder()
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -2046,7 +2047,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const Unique<VkShaderModule>		vertShaderModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule			(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag_verify"), 0));
 
-	const Unique<VkRenderPass>			renderPass					(makeRenderPass(vk, device));
+	const Unique<VkRenderPass>			renderPass					(vk::makeRenderPass(vk, device));
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout			(DescriptorSetLayoutBuilder()
 																		.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -2242,7 +2243,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 	const Unique<VkShaderModule>		vertShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass(vk, device));
+	const Unique<VkRenderPass>			renderPass				(vk::makeRenderPass(vk, device));
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout		(DescriptorSetLayoutBuilder()
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -2382,7 +2383,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 	const Unique<VkShaderModule>		vertShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
 	const Unique<VkShaderModule>		fragShaderModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
 
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass(vk, device));
+	const Unique<VkRenderPass>			renderPass				(vk::makeRenderPass(vk, device));
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout		(DescriptorSetLayoutBuilder()
 																	.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)

@@ -40,6 +40,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "deDefs.hpp"
 #include "deStringUtil.hpp"

@@ -40,6 +40,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
 #include <string>

@@ -379,22 +379,6 @@ vector<SharedPtrVkDescriptorPool> createDescriptorPools (const DeviceInterface&	
 	return descriptorPools;
 }
 
-Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
-										 const VkDevice					device,
-										 const VkDescriptorPool			descriptorPool,
-										 const VkDescriptorSetLayout	setLayout)
-{
-	const VkDescriptorSetAllocateInfo info =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType				sType;
-		DE_NULL,										// const void*					pNext;
-		descriptorPool,									// VkDescriptorPool				descriptorPool;
-		1u,												// deUint32						descriptorSetCount;
-		&setLayout										// const VkDescriptorSetLayout*	pSetLayouts;
-	};
-	return allocateDescriptorSet(vk, device, &info);
-}
-
 struct ExternalTestConfig
 {
 	ExternalTestConfig	(VkFormat			format_,
