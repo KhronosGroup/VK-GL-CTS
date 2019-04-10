@@ -72,7 +72,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkDevice						device,
-								   const VkFormat						colorFormat,
+								   const VkFormat						colorFormat					= VK_FORMAT_UNDEFINED,
 								   const VkFormat						depthStencilFormat			= VK_FORMAT_UNDEFINED,
 								   const VkAttachmentLoadOp				loadOperation				= VK_ATTACHMENT_LOAD_OP_CLEAR,
 								   const VkImageLayout					finalLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -80,6 +80,27 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 								   const VkImageLayout					subpassLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 								   const VkImageLayout					subpassLayoutDepthStencil	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 								   const VkAllocationCallbacks* const	allocationCallbacks			= DE_NULL);
+
+Move<VkImageView> makeImageView (const DeviceInterface&					vk,
+								 const VkDevice							vkDevice,
+								 const VkImage							image,
+								 const VkImageViewType					imageViewType,
+								 const VkFormat							format,
+								 const VkImageSubresourceRange			subresourceRange,
+								 const vk::VkImageViewUsageCreateInfo*	imageUsageCreateInfoKHR = DE_NULL);
+
+Move<VkBufferView> makeBufferView (const DeviceInterface&	vk,
+								   const VkDevice			vkDevice,
+								   const VkBuffer			buffer,
+								   const VkFormat			format,
+								   const VkDeviceSize		offset,
+								   const VkDeviceSize		size);
+
+Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
+										 const VkDevice					device,
+										 const VkDescriptorPool			descriptorPool,
+										 const VkDescriptorSetLayout	setLayout,
+										 const void*					pNext = DE_NULL);
 
 } // vk
 

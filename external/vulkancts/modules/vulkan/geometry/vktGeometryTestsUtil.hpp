@@ -168,8 +168,6 @@ std::size_t						calcOutputVertices			(const vk::VkPrimitiveTopology& inputType)
 
 vk::VkBufferCreateInfo			makeBufferCreateInfo		(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo			(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers = 1u);
-vk::Move<vk::VkDescriptorSet>	makeDescriptorSet			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
-vk::Move<vk::VkImageView>		makeImageView				(const vk::DeviceInterface& vk, const vk::VkDevice vkDevice, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format, const vk::VkImageSubresourceRange subresourceRange);
 vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
 vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkDeviceSize& bufferOffset, const vk::VkImageSubresourceLayers& imageSubresource, const vk::VkOffset3D& imageOffset, const vk::VkExtent3D& imageExtent);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout = DE_NULL);

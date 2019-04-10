@@ -34,6 +34,7 @@
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkObjUtil.hpp"
 
 namespace vkt
 {
@@ -200,7 +201,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const vk::Unique<vk::VkDescriptorSet> descriptorSet(compute::makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+	const vk::Unique<vk::VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const vk::VkDescriptorBufferInfo descriptorInfo = vk::makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
 	vk::DescriptorSetUpdateBuilder()

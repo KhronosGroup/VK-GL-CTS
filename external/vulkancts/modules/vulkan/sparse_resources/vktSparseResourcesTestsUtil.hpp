@@ -146,25 +146,6 @@ vk::Move<vk::VkPipeline>		makeComputePipeline					(const vk::DeviceInterface&			
 																	 const vk::VkShaderModule			shaderModule,
 																	 const vk::VkSpecializationInfo*	specializationInfo	= 0);
 
-vk::Move<vk::VkBufferView>		makeBufferView						(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkBuffer					buffer,
-																	 const vk::VkFormat					format,
-																	 const vk::VkDeviceSize				offset,
-																	 const vk::VkDeviceSize				size);
-
-vk::Move<vk::VkImageView>		makeImageView						(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkImage					image,
-																	 const vk::VkImageViewType			imageViewType,
-																	 const vk::VkFormat					format,
-																	 const vk::VkImageSubresourceRange	subresourceRange);
-
-vk::Move<vk::VkDescriptorSet>	makeDescriptorSet					(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkDescriptorPool			descriptorPool,
-																	 const vk::VkDescriptorSetLayout	setLayout);
-
 vk::Move<vk::VkFramebuffer>		makeFramebuffer						(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
 																	 const vk::VkRenderPass				renderPass,

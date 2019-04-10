@@ -121,27 +121,6 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExte
 	return imageInfo;
 }
 
-Move<VkImageView> makeImageView (const DeviceInterface&			vk,
-								 const VkDevice					device,
-								 const VkImage					image,
-								 const VkImageViewType			viewType,
-								 const VkFormat					format,
-								 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageViewCreateInfo imageViewParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		(VkImageViewCreateFlags)0,						// VkImageViewCreateFlags	flags;
-		image,											// VkImage					image;
-		viewType,										// VkImageViewType			viewType;
-		format,											// VkFormat					format;
-		makeComponentMappingRGBA(),						// VkComponentMapping		components;
-		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
-	};
-	return createImageView(vk, device, &imageViewParams);
-}
-
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
 									 const VkDevice				device,
 									 const VkRenderPass			renderPass,

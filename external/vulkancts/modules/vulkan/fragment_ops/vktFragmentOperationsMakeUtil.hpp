@@ -36,12 +36,10 @@ namespace FragmentOperations
 {
 
 vk::VkBufferCreateInfo			makeBufferCreateInfo	(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
-vk::Move<vk::VkDescriptorSet>	makeDescriptorSet		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout		(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
 vk::Move<vk::VkPipeline>		makeComputePipeline		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);
 vk::Move<vk::VkFramebuffer>		makeFramebuffer			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const deUint32 attachmentCount, const vk::VkImageView* pAttachments, const deUint32 width, const deUint32 height, const deUint32 layers = 1u);
-vk::Move<vk::VkImageView>		makeImageView			(const vk::DeviceInterface& vk, const vk::VkDevice vkDevice, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format, const vk::VkImageSubresourceRange subresourceRange);
 de::MovePtr<vk::Allocation>		bindImage				(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkImage image, const vk::MemoryRequirement requirement);
 de::MovePtr<vk::Allocation>		bindBuffer				(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkBuffer buffer, const vk::MemoryRequirement requirement);
 

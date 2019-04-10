@@ -138,29 +138,6 @@ vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface&					
 																	 const vk::VkFormat							inputFormat,
 																	 const vk::VkFormat							colorFormat);
 
-vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device);
-
-vk::Move<vk::VkBufferView>			makeBufferView					(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device,
-																	 const vk::VkBuffer							buffer,
-																	 const vk::VkFormat							format,
-																	 const vk::VkDeviceSize						offset,
-																	 const vk::VkDeviceSize						size);
-
-vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device,
-																	 const vk::VkImage							image,
-																	 const vk::VkImageViewType					imageViewType,
-																	 const vk::VkFormat							format,
-																	 const vk::VkImageSubresourceRange			subresourceRange,
-																	 const vk::VkImageViewUsageCreateInfo*		ImageUsageCreateInfoKHR = DE_NULL);
-
-vk::Move<vk::VkDescriptorSet>		makeDescriptorSet				(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device,
-																	 const vk::VkDescriptorPool					descriptorPool,
-																	 const vk::VkDescriptorSetLayout			setLayout);
-
 vk::VkBufferCreateInfo				makeBufferCreateInfo			(const vk::VkDeviceSize						bufferSize,
 																	 const vk::VkBufferUsageFlags				usage);
 

@@ -27,6 +27,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
