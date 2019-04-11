@@ -131,12 +131,16 @@ void addGraphicsSameLabelsTest (tcu::TestCaseGroup* group)
 	RGBA					defaultColors[4];
 	GraphicsResources		resources;
 	vector<deUint32>		outputData;
+	VulkanFeatures			features;
 
 	outputData.reserve(numItems);
 	for (deUint32 numIdx = 0; numIdx < numItems; ++numIdx)
 		outputData.push_back(numIdx);
 
 	resources.outputs.push_back(Resource(BufferSp(new Buffer<deUint32>(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
+	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	features.coreFeatures.fragmentStoresAndAtomics			= true;
 
 	getDefaultColors(defaultColors);
 
@@ -209,7 +213,7 @@ void addGraphicsSameLabelsTest (tcu::TestCaseGroup* group)
 		specs["condition"]		= conditions[conditionIdx];
 		fragments["testfun"]	= testFun.specialize(specs);
 
-		createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, resources, vector<string>(), group);
+		createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, resources, vector<string>(), group, features);
 	}
 }
 
