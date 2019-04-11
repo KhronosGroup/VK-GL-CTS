@@ -2177,13 +2177,19 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 					for (deUint32 padIdx = 0; padIdx < arrayStrides[capIdx] / 4 - 1; ++padIdx)
 						inputsPadded.push_back(0);
 				}
+
 				GraphicsResources	resources;
+				VulkanFeatures		features;
+
 				resources.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputsPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
-				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 	}
 	// Vector
@@ -2197,6 +2203,7 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 			{
 				map<string, string>	specs;
 				string				name		= string(CAPABILITIES[capIdx].name) + "_vector_" + intFacts[factIdx].name;
+				VulkanFeatures		features;
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
 				specs["indecor"]				= CAPABILITIES[capIdx].decor;
@@ -2213,7 +2220,11 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
-				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 	}
 }
@@ -3337,8 +3348,9 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 			{
 				map<string, string>	specs;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float_" + rndModes[rndModeIdx].name;
-
 				GraphicsResources	resources;
+				VulkanFeatures		features;
+
 				resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(arrayStrides[capIdx] == 4 ? float32Data : float32DataPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				// We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
 				resources.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
@@ -3354,7 +3366,11 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 	}
 
@@ -3440,6 +3456,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 			for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
 			{
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_vector_float_" + rndModes[rndModeIdx].name;
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
@@ -3452,8 +3469,11 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
 
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 	}
 
@@ -3553,6 +3573,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 			for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
 			{
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_matrix_float_" + rndModes[rndModeIdx].name;
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
@@ -3565,8 +3586,11 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
 
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 	}
 }
@@ -4733,7 +4757,10 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 		float32Data.push_back(deFloat16To32(float16Data[numIdx]));
 
 	extensions.push_back("VK_KHR_16bit_storage");
-	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+
+	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
+	requiredFeatures.ext16BitStorage								= EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant16\n";
 	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
@@ -5046,7 +5073,10 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 	}
 
 	extensions.push_back("VK_KHR_16bit_storage");
-	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+
+	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
+	requiredFeatures.ext16BitStorage								= EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant16\n";
 	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
@@ -5559,6 +5589,8 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 
 					GraphicsResources	resources;
 					vector<deInt16>		inputsPadded;
+					VulkanFeatures		features;
+
 					for (size_t dataIdx = 0; dataIdx < inputs.size() / numElements; ++dataIdx)
 					{
 						for (deUint32 elementIdx = 0; elementIdx < numElements; ++elementIdx)
@@ -5589,7 +5621,11 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 					else
 						resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-					createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+					features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+					features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+					features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+					createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 				}
 }
 
@@ -5694,6 +5730,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			{
 				GraphicsResources	resources;
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float";
 				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
 				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
@@ -5730,10 +5767,14 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 				resources.verifyIO = check32BitFloats;
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
 				if (useConstIdx)
 					testName += string("_const_idx_") + de::toString(constIdx);
 
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 		}
 	}
@@ -5811,6 +5852,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			{
 				GraphicsResources	resources;
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_vector_float";
 				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
 				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
@@ -5848,10 +5890,14 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 				resources.verifyIO = check32BitFloats;
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
 				if (constantIndices[constIndexIdx].useConstantIndex)
 					testName += string("_const_idx_") + de::toString(constantIndices[constIndexIdx].constantIndex);
 
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 		}
 	}
@@ -5944,6 +5990,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			{
 				GraphicsResources	resources;
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_matrix_float";
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
@@ -5962,7 +6009,11 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 				resources.verifyIO = check32BitFloats;
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
-				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 	}
 }
@@ -6179,6 +6230,7 @@ void addGraphics16BitStorageUniformStructFloat16To32Group (tcu::TestCaseGroup* t
 			vector<deFloat16>	float16Data	= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? data16bitStd430(rnd) :  data16bitStd140(rnd);
 			GraphicsResources	resources;
 			map<string, string>	specs;
+			VulkanFeatures		features;
 			string				testName	= string(CAPABILITIES[capIdx].name);
 
 			specs["cap"]					= CAPABILITIES[capIdx].cap;
@@ -6195,7 +6247,11 @@ void addGraphics16BitStorageUniformStructFloat16To32Group (tcu::TestCaseGroup* t
 			resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			resources.verifyIO = (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? graphicsCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430> : graphicsCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
 
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+			features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+			features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 }
 
@@ -6430,7 +6486,10 @@ void addGraphics16BitStorageUniformStructFloat32To16Group (tcu::TestCaseGroup* t
 		resources.verifyIO				=  (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? graphicsCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE16BIT_STD430> : graphicsCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE16BIT_STD430>;
 
 		VulkanFeatures features;
-		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+		features.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 	}
@@ -6615,6 +6674,7 @@ void addGraphics16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		map<string, string>		specsLoop;
 		map<string, string>		specsOffset;
 		map<string, string>		specs;
+		VulkanFeatures			features;
 		string					testName	= string(CAPABILITIES[capIdx].name);
 
 		specsLoop["exeCount"]	= "c_i32_7";
@@ -6649,7 +6709,11 @@ void addGraphics16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		resources.inputs.push_back(Resource(BufferSp(new Int16Buffer(inData)), CAPABILITIES[capIdx].dtype));
 		resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+		features												= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, features);
 	}
 }
 

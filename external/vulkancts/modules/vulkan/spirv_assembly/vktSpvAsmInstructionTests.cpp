@@ -9678,6 +9678,9 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 
 		getVulkanFeaturesAndExtensions(test->m_fromType, test->m_toType, vulkanFeatures, extensions);
 
+		vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		vulkanFeatures.coreFeatures.fragmentStoresAndAtomics		= true;
+
 		createTestsForAllStages(
 			test->m_name, defaultColors, defaultColors, fragments, noSpecConstants,
 			noPushConstants, resources, noInterfaces, extensions, vulkanFeatures, group.get());
@@ -18164,6 +18167,9 @@ void createSparseIdsAbuseTest (tcu::TestContext& testCtx, de::MovePtr<tcu::TestC
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
+	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	features.coreFeatures.fragmentStoresAndAtomics			= true;
+
 	finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 }
 
@@ -18305,6 +18311,9 @@ void createLotsIdsAbuseTest (tcu::TestContext& testCtx, de::MovePtr<tcu::TestCas
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData1)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inData2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	specResource.outputs.push_back(Resource(BufferSp(new Uint32Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
+	features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	features.coreFeatures.fragmentStoresAndAtomics			= true;
 
 	finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 }
