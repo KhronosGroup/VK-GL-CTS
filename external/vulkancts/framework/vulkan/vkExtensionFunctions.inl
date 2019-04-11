@@ -111,7 +111,7 @@ void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const c
 	else if (extName == "VK_NV_cooperative_matrix")
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
 	else
-		DE_ASSERT("Extension name not found");
+		DE_FATAL("Extension name not found");
 }
 
 void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const char*>& functions)
@@ -279,7 +279,7 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	else if (extName == "VK_EXT_host_query_reset")
 		functions.push_back("vkResetQueryPoolEXT");
 	else
-		DE_ASSERT("Extension name not found");
+		DE_FATAL("Extension name not found");
 }
 
 ::std::string instanceExtensionNames[] =

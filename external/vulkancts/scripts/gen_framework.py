@@ -1413,7 +1413,7 @@ def writeExtensionFunctions (api, filename):
 				isFirstWrite = False
 		if not isFirstWrite:
 			yield '\telse'
-			yield '\t\tDE_ASSERT("Extension name not found");\n}'
+			yield '\t\tDE_FATAL("Extension name not found");\n}'
 
 	lines = ['']
 	for line in writeExtensionFunctions(Function.TYPE_INSTANCE):
