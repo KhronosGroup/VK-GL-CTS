@@ -27,7 +27,9 @@
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "deMath.h"
 
 namespace vk
 {
@@ -1500,6 +1502,26 @@ bool isSupportedByFramework (VkFormat format)
 	}
 }
 
+void checkImageSupport (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const VkImageCreateInfo& imageCreateInfo)
+{
+	VkImageFormatProperties imageFormatProperties;
+
+	if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType,
+												   imageCreateInfo.tiling, imageCreateInfo.usage, imageCreateInfo.flags,
+												   &imageFormatProperties))
+	{
+		TCU_THROW(NotSupportedError, "Image format not supported.");
+	}
+	if (((VkSampleCountFlagBits)imageFormatProperties.sampleCounts & imageCreateInfo.samples) == 0)
+	{
+		TCU_THROW(NotSupportedError, "Sample count not supported.");
+	}
+	if (imageFormatProperties.maxArrayLayers < imageCreateInfo.arrayLayers)
+	{
+		TCU_THROW(NotSupportedError, "Layer count not supported.");
+	}
+}
+
 VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 {
 	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST < (1<<16));
@@ -2962,6 +2984,582 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
 						  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+}
+
+void clearColorImage (const DeviceInterface&	vk,
+					  const VkDevice			device,
+					  const VkQueue				queue,
+					  deUint32					queueFamilyIndex,
+					  VkImage					image,
+					  tcu::Vec4					clearColor,
+					  VkImageLayout				oldLayout,
+					  VkImageLayout				newLayout,
+					  VkPipelineStageFlags		dstStageFlags)
+{
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	const VkClearColorValue			clearColorValue		= makeClearValueColor(clearColor).color;
+
+	const VkImageSubresourceRange	subresourceRange	=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask
+		0u,							// deUint32				baseMipLevel
+		1u,							// deUint32				levelCount
+		0u,							// deUint32				baseArrayLayer
+		1u,							// deUint32				layerCount
+	};
+
+	const VkImageMemoryBarrier		preImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		0u,											// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+		oldLayout,									// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	const VkImageMemoryBarrier		postImageBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+		newLayout,									// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_HOST_BIT,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &preImageBarrier);
+	vk.cmdClearColorImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &subresourceRange);
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  dstStageFlags,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &postImageBarrier);
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+std::vector<VkBufferImageCopy> generateChessboardCopyRegions (deUint32				tileSize,
+															  deUint32				imageWidth,
+															  deUint32				imageHeight,
+															  deUint32				tileIdx,
+															  VkImageAspectFlags	aspectMask)
+{
+	std::vector<VkBufferImageCopy>	copyRegions;
+
+	for (deUint32 x = 0; x < (deUint32)deFloatCeil((float)imageWidth / (float)tileSize); x++)
+		for (deUint32 y = 0; y < (deUint32)deFloatCeil((float)imageHeight / (float)tileSize); y++)
+		{
+			if ((x + tileIdx) % 2 == y % 2) continue;
+
+			const deUint32					tileWidth			= de::min(tileSize, imageWidth - tileSize * x);
+			const deUint32					tileHeight			= de::min(tileSize, imageHeight - tileSize * y);
+
+			const VkOffset3D				offset				=
+			{
+				(deInt32)x * (deInt32)tileWidth,	// deInt32	x
+				(deInt32)y * (deInt32)tileHeight,	// deInt32	y
+				0									// deInt32	z
+			};
+
+			const VkExtent3D				extent				=
+			{
+				tileWidth,	// deUint32	width
+				tileHeight,	// deUint32	height
+				1u			// deUint32	depth
+			};
+
+			const VkImageSubresourceLayers	subresourceLayers	=
+			{
+				aspectMask,	// VkImageAspectFlags	aspectMask
+				0u,			// deUint32				mipLevel
+				0u,			// deUint32				baseArrayLayer
+				1u,			// deUint32				layerCount
+			};
+
+			const VkBufferImageCopy			copy				=
+			{
+				(VkDeviceSize)0,	// VkDeviceSize				bufferOffset
+				0u,					// deUint32					bufferRowLength
+				0u,					// deUint32					bufferImageHeight
+				subresourceLayers,	// VkImageSubresourceLayers	imageSubresource
+				offset,				// VkOffset3D				imageOffset
+				extent				// VkExtent3D				imageExtent
+			};
+
+			copyRegions.push_back(copy);
+		}
+
+	return copyRegions;
+}
+
+void initColorImageChessboardPattern (const DeviceInterface&	vk,
+									  const VkDevice			device,
+									  const VkQueue				queue,
+									  deUint32					queueFamilyIndex,
+									  Allocator&				allocator,
+									  VkImage					image,
+									  VkFormat					format,
+									  tcu::Vec4					colorValue0,
+									  tcu::Vec4					colorValue1,
+									  deUint32					imageWidth,
+									  deUint32					imageHeight,
+									  deUint32					tileSize,
+									  VkImageLayout				oldLayout,
+									  VkImageLayout				newLayout,
+									  VkPipelineStageFlags		dstStageFlags)
+{
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const tcu::TextureFormat		tcuFormat			= mapVkFormat(format);
+	const tcu::Vec4					colorValues[]		= { colorValue0, colorValue1 };
+	const deUint32					bufferSize			= tileSize * tileSize * tcuFormat.getPixelSize();
+
+	const VkImageSubresourceRange	subresourceRange	=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask
+		0u,							// deUint32				baseMipLevel
+		1u,							// deUint32				levelCount
+		0u,							// deUint32				baseArrayLayer
+		1u							// deUint32				layerCount
+	};
+
+	const VkImageMemoryBarrier		preImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		0u,											// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+		oldLayout,									// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	const VkImageMemoryBarrier		postImageBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+		newLayout,									// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	// Create staging buffers for both color values
+	Move<VkBuffer>					buffers[2];
+	de::MovePtr<Allocation>			bufferAllocs[2];
+
+	const VkBufferCreateInfo		bufferParams		=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType
+		DE_NULL,								// const void*			pNext
+		0u,										// VkBufferCreateFlags	flags
+		(VkDeviceSize)bufferSize,				// VkDeviceSize			size
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode
+		0u,										// deUint32				queueFamilyIndexCount
+		DE_NULL									// const deUint32*		pQueueFamilyIndices
+	};
+
+	for (deUint32 bufferIdx = 0; bufferIdx < 2; bufferIdx++)
+	{
+		buffers[bufferIdx]		= createBuffer(vk, device, &bufferParams);
+		bufferAllocs[bufferIdx]	= allocator.allocate(getBufferMemoryRequirements(vk, device, *buffers[bufferIdx]), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *buffers[bufferIdx], bufferAllocs[bufferIdx]->getMemory(), bufferAllocs[bufferIdx]->getOffset()));
+
+		deUint32*				dstPtr	= (deUint32*)bufferAllocs[bufferIdx]->getHostPtr();
+		tcu::PixelBufferAccess	access	(tcuFormat, tileSize, tileSize, 1, dstPtr);
+
+		for (deUint32 x = 0; x < tileSize; x++)
+			for (deUint32 y = 0; y < tileSize; y++)
+				access.setPixel(colorValues[bufferIdx], x, y, 0);
+
+		flushAlloc(vk, device, *bufferAllocs[bufferIdx]);
+	}
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_HOST_BIT,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &preImageBarrier);
+
+	for (deUint32 bufferIdx = 0; bufferIdx < 2; bufferIdx++)
+	{
+		std::vector<VkBufferImageCopy> copyRegions = generateChessboardCopyRegions(tileSize, imageWidth, imageHeight, bufferIdx, VK_IMAGE_ASPECT_COLOR_BIT);
+
+		vk.cmdCopyBufferToImage(*cmdBuffer, *buffers[bufferIdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
+	}
+
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  dstStageFlags,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &postImageBarrier);
+
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+void copyDepthStencilImageToBuffers (const DeviceInterface&	vk,
+									 VkCommandBuffer		cmdBuffer,
+									 VkImage				image,
+									 VkBuffer				depthBuffer,
+									 VkBuffer				stencilBuffer,
+									 tcu::IVec2				size,
+									 VkAccessFlags			srcAccessMask,
+									 VkImageLayout			oldLayout,
+									 deUint32				numLayers)
+{
+	const VkImageAspectFlags		aspect				= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	const VkImageMemoryBarrier		imageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
+		DE_NULL,												// const void*				pNext;
+		srcAccessMask,											// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags			dstAccessMask;
+		oldLayout,												// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,					// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,								// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,								// deUint32					destQueueFamilyIndex;
+		image,													// VkImage					image;
+		makeImageSubresourceRange(aspect, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
+	};
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+						  0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
+
+	const VkImageSubresourceLayers	subresourceDepth	=
+	{
+		VK_IMAGE_ASPECT_DEPTH_BIT,					// VkImageAspectFlags	aspectMask;
+		0u,											// deUint32				mipLevel;
+		0u,											// deUint32				baseArrayLayer;
+		numLayers									// deUint32				layerCount;
+	};
+
+	const VkBufferImageCopy			regionDepth			=
+	{
+		0ull,										// VkDeviceSize					bufferOffset;
+		0u,											// deUint32						bufferRowLength;
+		0u,											// deUint32						bufferImageHeight;
+		subresourceDepth,							// VkImageSubresourceLayers		imageSubresource;
+		makeOffset3D(0, 0, 0),						// VkOffset3D					imageOffset;
+		makeExtent3D(size.x(), size.y(), 1u)		// VkExtent3D					imageExtent;
+	};
+
+	const VkImageSubresourceLayers	subresourceStencil	=
+	{
+		VK_IMAGE_ASPECT_STENCIL_BIT,				// VkImageAspectFlags	aspectMask;
+		0u,											// deUint32				mipLevel;
+		0u,											// deUint32				baseArrayLayer;
+		numLayers									// deUint32				layerCount;
+	};
+
+	const VkBufferImageCopy			regionStencil		=
+	{
+		0ull,										// VkDeviceSize					bufferOffset;
+		0u,											// deUint32						bufferRowLength;
+		0u,											// deUint32						bufferImageHeight;
+		subresourceStencil,							// VkImageSubresourceLayers		imageSubresource;
+		makeOffset3D(0, 0, 0),						// VkOffset3D					imageOffset;
+		makeExtent3D(size.x(), size.y(), 1u)		// VkExtent3D					imageExtent;
+	};
+
+	vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, depthBuffer, 1u, &regionDepth);
+	vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stencilBuffer, 1u, &regionStencil);
+
+	const VkBufferMemoryBarrier	bufferBarriers[]		=
+	{
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+			DE_NULL,									// const void*		pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+			depthBuffer,								// VkBuffer			buffer;
+			0ull,										// VkDeviceSize		offset;
+			VK_WHOLE_SIZE								// VkDeviceSize		size;
+		},
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+			DE_NULL,									// const void*		pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+			stencilBuffer,								// VkBuffer			buffer;
+			0ull,										// VkDeviceSize		offset;
+			VK_WHOLE_SIZE								// VkDeviceSize		size;
+		}
+	};
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
+						  0u, DE_NULL, 2u, bufferBarriers, 0u, DE_NULL);
+}
+
+void clearDepthStencilImage (const DeviceInterface&	vk,
+							 const VkDevice			device,
+							 const VkQueue			queue,
+							 deUint32				queueFamilyIndex,
+							 VkImage				image,
+							 float					depthValue,
+							 deUint32				stencilValue,
+							 VkImageLayout			oldLayout,
+							 VkImageLayout			newLayout,
+							 VkPipelineStageFlags	dstStageFlags)
+{
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	const VkClearDepthStencilValue	clearValue			= makeClearValueDepthStencil(depthValue, stencilValue).depthStencil;
+
+	const VkImageSubresourceRange	subresourceRange	=
+	{
+		VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask
+		0u,															// deUint32				baseMipLevel
+		1u,															// deUint32				levelCount
+		0u,															// deUint32				baseArrayLayer
+		1u															// deUint32				layerCount
+	};
+
+	const VkImageMemoryBarrier		preImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		0u,											// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+		oldLayout,									// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	const VkImageMemoryBarrier		postImageBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+		newLayout,									// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_HOST_BIT,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &preImageBarrier);
+	vk.cmdClearDepthStencilImage(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &subresourceRange);
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  dstStageFlags,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &postImageBarrier);
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+}
+
+void initDepthStencilImageChessboardPattern (const DeviceInterface&	vk,
+											 const VkDevice			device,
+											 const VkQueue			queue,
+											 deUint32				queueFamilyIndex,
+											 Allocator&				allocator,
+											 VkImage				image,
+											 VkFormat				format,
+											 float					depthValue0,
+											 float					depthValue1,
+											 deUint32				stencilValue0,
+											 deUint32				stencilValue1,
+											 deUint32				imageWidth,
+											 deUint32				imageHeight,
+											 deUint32				tileSize,
+											 VkImageLayout			oldLayout,
+											 VkImageLayout			newLayout,
+											 VkPipelineStageFlags	dstStageFlags)
+{
+	Move<VkCommandPool>				cmdPool				= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	Move<VkCommandBuffer>			cmdBuffer			= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	const deUint32					depthBufferSize		= tileSize * tileSize * 4;
+	const deUint32					stencilBufferSize	= tileSize * tileSize;
+	const float						depthValues[]		= { depthValue0, depthValue1 };
+	const deUint32					stencilValues[]		= { stencilValue0, stencilValue1 };
+	const tcu::TextureFormat		tcuFormat			= mapVkFormat(format);
+
+	const VkImageSubresourceRange	subresourceRange	=
+	{
+		VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask
+		0u,															// deUint32				baseMipLevel
+		1u,															// deUint32				levelCount
+		0u,															// deUint32				baseArrayLayer
+		1u															// deUint32				layerCount
+	};
+
+	const VkImageMemoryBarrier		preImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		0u,											// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+		oldLayout,									// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	const VkImageMemoryBarrier		postImageBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+		newLayout,									// VkImageLayout			newLayout;
+		queueFamilyIndex,							// deUint32					srcQueueFamilyIndex;
+		queueFamilyIndex,							// deUint32					dstQueueFamilyIndex;
+		image,										// VkImage					image;
+		subresourceRange							// VkImageSubresourceRange	subresourceRange;
+	};
+
+	// Create staging buffers for depth and stencil values
+	Move<VkBuffer>					depthBuffers[2];
+	de::MovePtr<Allocation>			depthBufferAllocs[2];
+	Move<VkBuffer>					stencilBuffers[2];
+	de::MovePtr<Allocation>			stencilBufferAllocs[2];
+
+	const VkBufferCreateInfo		depthBufferParams	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType
+		DE_NULL,								// const void*			pNext
+		0u,										// VkBufferCreateFlags	flags
+		(VkDeviceSize)depthBufferSize,			// VkDeviceSize			size
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode
+		0u,										// deUint32				queueFamilyIndexCount
+		DE_NULL									// const deUint32*		pQueueFamilyIndices
+	};
+
+	const VkBufferCreateInfo		stencilBufferParams	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType
+		DE_NULL,								// const void*			pNext
+		0u,										// VkBufferCreateFlags	flags
+		(VkDeviceSize)stencilBufferSize,		// VkDeviceSize			size
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode
+		0u,										// deUint32				queueFamilyIndexCount
+		DE_NULL									// const deUint32*		pQueueFamilyIndices
+	};
+
+	for (deUint32 bufferIdx = 0; bufferIdx < 2; bufferIdx++)
+	{
+		depthBuffers[bufferIdx]			= createBuffer(vk, device, &depthBufferParams);
+		depthBufferAllocs[bufferIdx]	= allocator.allocate(getBufferMemoryRequirements(vk, device, *depthBuffers[bufferIdx]), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *depthBuffers[bufferIdx], depthBufferAllocs[bufferIdx]->getMemory(), depthBufferAllocs[bufferIdx]->getOffset()));
+		stencilBuffers[bufferIdx]		= createBuffer(vk, device, &stencilBufferParams);
+		stencilBufferAllocs[bufferIdx]	= allocator.allocate(getBufferMemoryRequirements(vk, device, *stencilBuffers[bufferIdx]), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *stencilBuffers[bufferIdx], stencilBufferAllocs[bufferIdx]->getMemory(), stencilBufferAllocs[bufferIdx]->getOffset()));
+
+		deUint32*	depthPtr	= (deUint32*)depthBufferAllocs[bufferIdx]->getHostPtr();
+		deUint32*	stencilPtr	= (deUint32*)stencilBufferAllocs[bufferIdx]->getHostPtr();
+
+		if (format == VK_FORMAT_D24_UNORM_S8_UINT)
+		{
+			tcu::PixelBufferAccess access(tcuFormat, tileSize, tileSize, 1, depthPtr);
+
+			for (deUint32 x = 0; x < tileSize; x++)
+				for (deUint32 y = 0; y < tileSize; y++)
+					access.setPixDepth(depthValues[bufferIdx], x, y, 0);
+		}
+		else
+		{
+			DE_ASSERT(format == VK_FORMAT_D32_SFLOAT_S8_UINT);
+
+			for (deUint32 i = 0; i < tileSize * tileSize; i++)
+				((float*)depthPtr)[i] = depthValues[bufferIdx];
+		}
+
+		deMemset(stencilPtr, stencilValues[bufferIdx], stencilBufferSize);
+		flushAlloc(vk, device, *depthBufferAllocs[bufferIdx]);
+		flushAlloc(vk, device, *stencilBufferAllocs[bufferIdx]);
+	}
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_HOST_BIT,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &preImageBarrier);
+
+	for (deUint32 bufferIdx = 0; bufferIdx < 2; bufferIdx++)
+	{
+		std::vector<VkBufferImageCopy>	copyRegionsDepth	= generateChessboardCopyRegions(tileSize, imageWidth, imageHeight, bufferIdx, VK_IMAGE_ASPECT_DEPTH_BIT);
+		std::vector<VkBufferImageCopy>	copyRegionsStencil	= generateChessboardCopyRegions(tileSize, imageWidth, imageHeight, bufferIdx, VK_IMAGE_ASPECT_STENCIL_BIT);
+
+		vk.cmdCopyBufferToImage(*cmdBuffer, *depthBuffers[bufferIdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegionsDepth.size(), copyRegionsDepth.data());
+		vk.cmdCopyBufferToImage(*cmdBuffer, *stencilBuffers[bufferIdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegionsStencil.size(), copyRegionsStencil.data());
+	}
+
+	vk.cmdPipelineBarrier(*cmdBuffer,
+						  VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  dstStageFlags,
+						  (VkDependencyFlags)0,
+						  0, (const VkMemoryBarrier*)DE_NULL,
+						  0, (const VkBufferMemoryBarrier*)DE_NULL,
+						  1, &postImageBarrier);
+
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 }
 
 void allocateAndBindSparseImage (const DeviceInterface&						vk,

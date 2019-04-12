@@ -44,6 +44,7 @@ bool						isCompressedFormat			(VkFormat format);
 bool						isSrgbFormat				(VkFormat format);
 
 bool						isSupportedByFramework		(VkFormat format);
+void						checkImageSupport			(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const VkImageCreateInfo& imageCreateInfo);
 
 tcu::TextureFormat			mapVkFormat					(VkFormat format);
 tcu::CompressedTexFormat	mapVkCompressedFormat		(VkFormat format);
@@ -147,68 +148,149 @@ tcu::UVec3						alignedDivide					(const VkExtent3D&				extent,
  * Copies buffer data into an image. The buffer is expected to be
  * in a state after host write.
 *//*--------------------------------------------------------------------*/
-void							copyBufferToImage				(const DeviceInterface&						vk,
-																 vk::VkDevice								device,
-																 vk::VkQueue								queue,
-																 deUint32									queueFamilyIndex,
-																 const vk::VkBuffer&						buffer,
-																 vk::VkDeviceSize							bufferSize,
-																 const std::vector<vk::VkBufferImageCopy>&	copyRegions,
-																 const vk::VkSemaphore*						waitSemaphore,
-																 vk::VkImageAspectFlags						imageAspectFlags,
-																 deUint32									mipLevels,
-																 deUint32									arrayLayers,
-																 vk::VkImage								destImage,
-																 VkImageLayout								destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-																 VkPipelineStageFlags						destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+void	copyBufferToImage						(const DeviceInterface&							vk,
+												 vk::VkDevice									device,
+												 vk::VkQueue									queue,
+												 deUint32										queueFamilyIndex,
+												 const vk::VkBuffer&							buffer,
+												 vk::VkDeviceSize								bufferSize,
+												 const std::vector<vk::VkBufferImageCopy>&		copyRegions,
+												 const vk::VkSemaphore*							waitSemaphore,
+												 vk::VkImageAspectFlags							imageAspectFlags,
+												 deUint32										mipLevels,
+												 deUint32										arrayLayers,
+												 vk::VkImage									destImage,
+												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-void							copyBufferToImage				(const DeviceInterface&					vk,
-																 const VkCommandBuffer&					cmdBuffer,
-																 const VkBuffer&						buffer,
-																 vk::VkDeviceSize						bufferSize,
-																 const std::vector<VkBufferImageCopy>&	copyRegions,
-																 VkImageAspectFlags						imageAspectFlags,
-																 deUint32								mipLevels,
-																 deUint32								arrayLayers,
-																 VkImage								destImage,
-																 VkImageLayout							destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-																 VkPipelineStageFlags					destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+void	copyBufferToImage						(const DeviceInterface&							vk,
+												 const VkCommandBuffer&							cmdBuffer,
+												 const VkBuffer&								buffer,
+												 vk::VkDeviceSize								bufferSize,
+												 const std::vector<VkBufferImageCopy>&			copyRegions,
+												 VkImageAspectFlags								imageAspectFlags,
+												 deUint32										mipLevels,
+												 deUint32										arrayLayers,
+												 VkImage										destImage,
+												 VkImageLayout									destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+												 VkPipelineStageFlags							destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 /*--------------------------------------------------------------------*//*!
  * Copies image data into a buffer. The buffer is expected to be
  * read by the host.
 *//*--------------------------------------------------------------------*/
-void							copyImageToBuffer				(const DeviceInterface&		vk,
-																 vk::VkCommandBuffer		cmdBuffer,
-																 vk::VkImage				image,
-																 vk::VkBuffer				buffer,
-																 tcu::IVec2					size,
-																 vk::VkAccessFlags			srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-																 vk::VkImageLayout			oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-																 deUint32					numLayers = 1u);
+void	copyImageToBuffer						(const DeviceInterface&							vk,
+												 vk::VkCommandBuffer							cmdBuffer,
+												 vk::VkImage									image,
+												 vk::VkBuffer									buffer,
+												 tcu::IVec2										size,
+												 vk::VkAccessFlags								srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+												 vk::VkImageLayout								oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+												 deUint32										numLayers = 1u);
+
+/*--------------------------------------------------------------------*//*!
+ * Clear a color image
+*//*--------------------------------------------------------------------*/
+void	clearColorImage							(const DeviceInterface&							vk,
+												 const vk::VkDevice								device,
+												 const vk::VkQueue								queue,
+												 deUint32										queueFamilyIndex,
+												 vk::VkImage									image,
+												 tcu::Vec4										clearColor,
+												 vk::VkImageLayout								oldLayout,
+												 vk::VkImageLayout								newLayout,
+												 vk::VkPipelineStageFlags						dstStageFlags);
+
+/*--------------------------------------------------------------------*//*!
+ * Initialize color image with a chessboard pattern
+*//*--------------------------------------------------------------------*/
+void	initColorImageChessboardPattern			(const DeviceInterface&							vk,
+												 const vk::VkDevice								device,
+												 const vk::VkQueue								queue,
+												 deUint32										queueFamilyIndex,
+												 Allocator&										allocator,
+												 vk::VkImage									image,
+												 vk::VkFormat									format,
+												 tcu::Vec4										colorValue0,
+												 tcu::Vec4										colorValue1,
+												 deUint32										imageWidth,
+												 deUint32										imageHeight,
+												 deUint32										tileSize,
+												 vk::VkImageLayout								oldLayout,
+												 vk::VkImageLayout								newLayout,
+												 vk::VkPipelineStageFlags						dstStageFlags);
+
+/*--------------------------------------------------------------------*//*!
+ * Copies depth/stencil image data into two separate buffers.
+ * The buffers are expected to be read by the host.
+*//*--------------------------------------------------------------------*/
+void	copyDepthStencilImageToBuffers			(const DeviceInterface&							vk,
+												 vk::VkCommandBuffer							cmdBuffer,
+												 vk::VkImage									image,
+												 vk::VkBuffer									depthBuffer,
+												 vk::VkBuffer									stencilBuffer,
+												 tcu::IVec2										size,
+												 vk::VkAccessFlags								srcAccessMask,
+												 vk::VkImageLayout								oldLayout,
+												 deUint32										numLayers = 1u);
+
+/*--------------------------------------------------------------------*//*!
+ * Clear a depth/stencil image
+*//*--------------------------------------------------------------------*/
+void	clearDepthStencilImage					(const DeviceInterface&							vk,
+												 const vk::VkDevice								device,
+												 const vk::VkQueue								queue,
+												 deUint32										queueFamilyIndex,
+												 vk::VkImage									image,
+												 float											depthValue,
+												 deUint32										stencilValue,
+												 vk::VkImageLayout								oldLayout,
+												 vk::VkImageLayout								newLayout,
+												 vk::VkPipelineStageFlags						dstStageFlags);
+
+/*--------------------------------------------------------------------*//*!
+ * Initialize depth and stencil channels with a chessboard pattern
+*//*--------------------------------------------------------------------*/
+void	initDepthStencilImageChessboardPattern	(const DeviceInterface&							vk,
+												 const vk::VkDevice								device,
+												 const vk::VkQueue								queue,
+												 deUint32										queueFamilyIndex,
+												 Allocator&										allocator,
+												 vk::VkImage									image,
+												 vk::VkFormat									format,
+												 float											depthValue0,
+												 float											depthValue1,
+												 deUint32										stencilValue0,
+												 deUint32										stencilValue1,
+												 deUint32										imageWidth,
+												 deUint32										imageHeight,
+												 deUint32										tileSize,
+												 vk::VkImageLayout								oldLayout,
+												 vk::VkImageLayout								newLayout,
+												 vk::VkPipelineStageFlags						dstStageFlags);
 
 /*--------------------------------------------------------------------*//*!
  * Checks if the physical device supports creation of the specified
  * image format.
  *//*--------------------------------------------------------------------*/
-bool							checkSparseImageFormatSupport	(const vk::VkPhysicalDevice		physicalDevice,
-																 const vk::InstanceInterface&	instance,
-																 const vk::VkImageCreateInfo&	imageCreateInfo);
+bool	checkSparseImageFormatSupport			(const vk::VkPhysicalDevice						physicalDevice,
+												 const vk::InstanceInterface&					instance,
+												 const vk::VkImageCreateInfo&					imageCreateInfo);
 
 /*--------------------------------------------------------------------*//*!
  * Allocates memory for a sparse image and handles the memory binding.
  *//*--------------------------------------------------------------------*/
-void							allocateAndBindSparseImage		(const vk::DeviceInterface&						vk,
-																 vk::VkDevice									device,
-																 const vk::VkPhysicalDevice						physicalDevice,
-																 const vk::InstanceInterface&					instance,
-																 const vk::VkImageCreateInfo&					imageCreateInfo,
-																 const vk::VkSemaphore&							signalSemaphore,
-																 vk::VkQueue									queue,
-																 vk::Allocator&									allocator,
-																 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
-																 tcu::TextureFormat								format,
-																 vk::VkImage									destImage);
+void	allocateAndBindSparseImage				(const vk::DeviceInterface&						vk,
+												 vk::VkDevice									device,
+												 const vk::VkPhysicalDevice						physicalDevice,
+												 const vk::InstanceInterface&					instance,
+												 const vk::VkImageCreateInfo&					imageCreateInfo,
+												 const vk::VkSemaphore&							signalSemaphore,
+												 vk::VkQueue									queue,
+												 vk::Allocator&									allocator,
+												 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
+												 tcu::TextureFormat								format,
+												 vk::VkImage									destImage);
 
 } // vk
 
