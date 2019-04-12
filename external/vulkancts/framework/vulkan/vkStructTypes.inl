@@ -1496,7 +1496,7 @@ struct VkPhysicalDeviceMultiviewProperties
 	deUint32		maxMultiviewInstanceIndex;
 };
 
-struct VkPhysicalDeviceVariablePointerFeatures
+struct VkPhysicalDeviceVariablePointersFeatures
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -1737,7 +1737,7 @@ struct VkDescriptorSetLayoutSupport
 	VkBool32		supported;
 };
 
-struct VkPhysicalDeviceShaderDrawParameterFeatures
+struct VkPhysicalDeviceShaderDrawParametersFeatures
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3398,7 +3398,7 @@ struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
 	VkBool32		uniformBufferStandardLayout;
 };
 
-struct VkPhysicalDeviceBufferAddressFeaturesEXT
+struct VkPhysicalDeviceBufferDeviceAddressFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3456,6 +3456,39 @@ struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 	void*			pNext;
 	VkBool32		hostQueryReset;
 };
+
+struct VkPhysicalDevicePCIBusInfoPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		pciDomain;
+	deUint32		pciBus;
+	deUint32		pciDevice;
+	deUint32		pciFunction;
+};
+
+struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	heapBudget[VK_MAX_MEMORY_HEAPS];
+	VkDeviceSize	heapUsage[VK_MAX_MEMORY_HEAPS];
+};
+
+struct VkPhysicalDeviceMemoryPriorityFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		memoryPriority;
+};
+
+struct VkMemoryPriorityAllocateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	float			priority;
+};
+
 
 
 

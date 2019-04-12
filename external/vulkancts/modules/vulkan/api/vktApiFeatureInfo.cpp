@@ -51,6 +51,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <limits>
 
 namespace vkt
 {
@@ -67,6 +68,8 @@ using std::set;
 using std::string;
 using tcu::TestLog;
 using tcu::ScopedLogSection;
+
+const deUint32 DEUINT32_MAX = std::numeric_limits<deUint32>::max();
 
 enum
 {
@@ -1537,6 +1540,65 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	return tcu::TestStatus::pass("Querying deviceGroup peer memory features succeeded");
 }
 
+tcu::TestStatus deviceMemoryBudgetProperties (Context& context)
+{
+	TestLog&							log			= context.getTestContext().getLog();
+	deUint8								buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
+
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_memory_budget"))
+		TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
+
+	VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps = reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
+	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
+
+	budgetProps->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
+	budgetProps->pNext = DE_NULL;
+
+	VkPhysicalDeviceMemoryProperties2	memProps;
+	deMemset(&memProps, 0, sizeof(memProps));
+	memProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
+	memProps.pNext = budgetProps;
+
+	context.getInstanceInterface().getPhysicalDeviceMemoryProperties2(context.getPhysicalDevice(), &memProps);
+
+	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
+		<< TestLog::Message << *budgetProps << TestLog::EndMessage;
+
+	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+	{
+		if (buffer[ndx + sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT)] != GUARD_VALUE)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties buffer overflow");
+		}
+	}
+
+	for (deUint32 i = 0; i < memProps.memoryProperties.memoryHeapCount; ++i)
+	{
+		if (budgetProps->heapBudget[i] == 0)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Supported heaps must report nonzero budget" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid heap budget (zero)");
+		}
+		if (budgetProps->heapBudget[i] > memProps.memoryProperties.memoryHeaps[i].size)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Heap budget must be less than or equal to heap size" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid heap budget (too large)");
+		}
+	}
+
+	for (deUint32 i = memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
+	{
+		if (budgetProps->heapBudget[i] != 0 || budgetProps->heapUsage[i] != 0)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Unused heaps must report budget/usage of zero" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid unused heaps");
+		}
+	}
+
+	return tcu::TestStatus::pass("Querying memory budget properties succeeded");
+}
+
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 {
 	struct Formatpair
@@ -2612,6 +2674,19 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 // VK_KHR_get_physical_device_properties2
 
+string toString(const VkPhysicalDevicePCIBusInfoPropertiesEXT& value)
+{
+	std::ostringstream  s;
+	s << "VkPhysicalDevicePCIBusInfoPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpciDomain = " << value.pciDomain << '\n';
+	s << "\tpciBus = " << value.pciBus << '\n';
+	s << "\tpciDevice = " << value.pciDevice << '\n';
+	s << "\tpciFunction = " << value.pciFunction << '\n';
+	s << '}';
+	return s.str();
+}
+
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -2676,7 +2751,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
-	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures[count];
+	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures[count];
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
 	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures[count];
 
@@ -2688,7 +2763,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&deviceMultiviewFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
 		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
-		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointersFeatures));
 		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
 		deMemset(&performanceCounterFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePerformanceCounterFeaturesKHR));
 
@@ -2777,7 +2852,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		variablePointerFeatures[0].variablePointers					!= variablePointerFeatures[1].variablePointers)
 		)
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointerFeatures");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures");
 	}
 	if (scalar_block_layout &&
 		(scalarBlockLayoutFeatures[0].scalarBlockLayout	!= scalarBlockLayoutFeatures[1].scalarBlockLayout))
@@ -3076,6 +3151,54 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 
 		log << TestLog::Message << performanceCounterProperties[0] << TestLog::EndMessage;
+	}
+
+	if (isExtensionSupported(extensions, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
+	{
+		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			// Each PCI device is identified by an 8-bit domain number, 5-bit
+			// device number and 3-bit function number[1][2].
+			//
+			// In addition, because PCI systems can be interconnected and
+			// divided in segments, Linux assigns a 16-bit number to the device
+			// as the "domain". In Windows, the segment or domain is stored in
+			// the higher 24-bit section of the bus number.
+			//
+			// This means the maximum unsigned 32-bit integer for these members
+			// are invalid values and should change after querying properties.
+			//
+			// [1] https://en.wikipedia.org/wiki/PCI_configuration_space
+			// [2] PCI Express Base Specification Revision 3.0, section 2.2.4.2.
+			deMemset(pciBusInfoProperties + ndx, 0, sizeof(pciBusInfoProperties[ndx]));
+			pciBusInfoProperties[ndx].pciDomain   = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciBus      = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciDevice   = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciFunction = DEUINT32_MAX;
+
+			pciBusInfoProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
+			pciBusInfoProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = pciBusInfoProperties + ndx;
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		if (deMemCmp(pciBusInfoProperties + 0, pciBusInfoProperties + 1, sizeof(pciBusInfoProperties[0])) != 0)
+		{
+			TCU_FAIL("Mismatch in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
+
+		log << TestLog::Message << toString(pciBusInfoProperties[0]) << TestLog::EndMessage;
+
+		if (pciBusInfoProperties[0].pciDomain   == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciBus      == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciDevice   == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciFunction == DEUINT32_MAX)
+		{
+		    TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
@@ -3594,6 +3717,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(deviceInfoTests.get(), "layers",					"Layers",					enumerateDeviceLayers);
 		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
 		addFunctionCase(deviceInfoTests.get(), "no_khx_extensions",			"KHX extensions",			testNoKhxExtensions);
+		addFunctionCase(deviceInfoTests.get(), "memory_budget",				"Memory budget",			deviceMemoryBudgetProperties);
 
 		infoTests->addChild(deviceInfoTests.release());
 	}

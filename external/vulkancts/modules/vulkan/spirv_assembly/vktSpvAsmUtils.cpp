@@ -143,7 +143,7 @@ bool is16BitStorageFeaturesSupported (const Context& context, Extension16BitStor
 
 bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVariablePointersFeatures toCheck)
 {
-	const VkPhysicalDeviceVariablePointerFeatures& extensionFeatures = context.getVariablePointerFeatures();
+	const VkPhysicalDeviceVariablePointersFeatures& extensionFeatures = context.getVariablePointerFeatures();
 
 	if ((toCheck & EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER) != 0 && extensionFeatures.variablePointersStorageBuffer == VK_FALSE)
 		return false;

@@ -1403,7 +1403,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 				depthChannelType = tcu::TextureFormat::FLOAT;
 				break;
 			default:
-				DE_ASSERT("Unhandled texture format type in switch");
+				DE_FATAL("Unhandled texture format type in switch");
 			}
 			textureCopy	= m_texture->copy(tcu::TextureFormat(tcu::TextureFormat::D, depthChannelType));
 			texture		= textureCopy.get();

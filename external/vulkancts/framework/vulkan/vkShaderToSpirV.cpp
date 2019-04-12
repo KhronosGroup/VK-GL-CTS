@@ -252,7 +252,7 @@ EShMessages getCompileFlags (const ShaderBuildOptions& buildOpts, const ShaderLa
 
 bool compileShaderToSpirV (const std::vector<std::string>* sources, const ShaderBuildOptions& buildOptions, const ShaderLanguage shaderLanguage, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 {
-	TBuiltInResource	builtinRes = {0};
+	TBuiltInResource	builtinRes = {};
 	const EShMessages	compileFlags	= getCompileFlags(buildOptions, shaderLanguage);
 
 	if (buildOptions.targetVersion >= SPIRV_VERSION_LAST)
@@ -271,7 +271,6 @@ bool compileShaderToSpirV (const std::vector<std::string>* sources, const Shader
 		{
 			const std::string&		srcText				= getShaderStageSource(sources, buildOptions, (glu::ShaderType)shaderType);
 			const char*				srcPtrs[]			= { srcText.c_str() };
-			const int				srcLengths[]		= { (int)srcText.size() };
 			const EShLanguage		shaderStage			= getGlslangStage(glu::ShaderType(shaderType));
 			glslang::TShader		shader				(shaderStage);
 			glslang::TProgram		glslangProgram;
@@ -292,6 +291,8 @@ bool compileShaderToSpirV (const std::vector<std::string>* sources, const Shader
 			case SPIRV_VERSION_1_3:
 				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10300);
 				break;
+			default:
+				TCU_THROW(InternalError, "Unsupported SPIR-V target version");
 			}
 
 			glslangProgram.addShader(&shader);

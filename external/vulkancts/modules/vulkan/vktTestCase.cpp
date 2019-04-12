@@ -313,7 +313,7 @@ public:
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYCbCrConversionFeatures;
 	VkPhysicalDevice8BitStorageFeaturesKHR				eightBitStorageFeatures;
 	VkPhysicalDevice16BitStorageFeatures				sixteenBitStorageFeatures;
-	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures;
+	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures;
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	vertexAttributeDivisorFeatures;
 	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		descriptorIndexingFeatures;
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT		inlineUniformBlockFeatures;
@@ -324,12 +324,13 @@ public:
 	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
 	VkPhysicalDeviceDepthClipEnableFeaturesEXT			depthClipEnableFeatures;
 	VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR	uniformBufferStandardLayoutFeatures;
-	VkPhysicalDeviceBufferAddressFeaturesEXT			bufferDeviceAddressFeatures;
+	VkPhysicalDeviceBufferDeviceAddressFeaturesEXT		bufferDeviceAddressFeatures;
 	VkPhysicalDeviceImagelessFramebufferFeaturesKHR		imagelessFramebufferFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 	VkPhysicalDeviceHostQueryResetFeaturesEXT			hostQueryResetFeatures;
 	VkPhysicalDeviceTransformFeedbackFeaturesEXT		transformFeedbackFeatures;
 	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures;
+	VkPhysicalDeviceMemoryPriorityFeaturesEXT			memoryPriorityFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -360,6 +361,7 @@ public:
 		deMemset(&hostQueryResetFeatures, 0, sizeof(hostQueryResetFeatures));
 		deMemset(&transformFeedbackFeatures, 0, sizeof(transformFeedbackFeatures));
 		deMemset(&performanceCounterFeatures, 0, sizeof(performanceCounterFeatures));
+		deMemset(&memoryPriorityFeatures, 0, sizeof(memoryPriorityFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -383,7 +385,7 @@ public:
 		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 		hostQueryResetFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
 		transformFeedbackFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
-		performanceCounterFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
+		memoryPriorityFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -502,6 +504,11 @@ public:
 				*nextPtr	= &transformFeedbackFeatures;
 				nextPtr		= &transformFeedbackFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_memory_priority"))
+			{
+				*nextPtr	= &memoryPriorityFeatures;
+				nextPtr		= &memoryPriorityFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -538,7 +545,7 @@ public:
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures&	getSamplerYCbCrConversionFeatures	(void) const	{ return m_deviceFeatures.samplerYCbCrConversionFeatures;	}
 	const VkPhysicalDevice8BitStorageFeaturesKHR&			get8BitStorageFeatures				(void) const	{ return m_deviceFeatures.eightBitStorageFeatures;			}
 	const VkPhysicalDevice16BitStorageFeatures&				get16BitStorageFeatures				(void) const	{ return m_deviceFeatures.sixteenBitStorageFeatures;		}
-	const VkPhysicalDeviceVariablePointerFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
+	const VkPhysicalDeviceVariablePointersFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
 	const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&getVertexAttributeDivisorFeatures	(void) const	{ return m_deviceFeatures.vertexAttributeDivisorFeatures;	}
 	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&		getVulkanMemoryModelFeatures		(void) const	{ return m_deviceFeatures.vulkanMemoryModelFeatures;	}
 	const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&		getShaderAtomicInt64Features		(void) const	{ return m_deviceFeatures.shaderAtomicInt64Features;	}
@@ -547,13 +554,13 @@ public:
 	const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&				getUniformBufferStandardLayoutFeatures				(void) const	{ return m_deviceFeatures.uniformBufferStandardLayoutFeatures;	}
 	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
 	const VkPhysicalDeviceDepthClipEnableFeaturesEXT&		getDepthClipEnableFeatures			(void) const	{ return m_deviceFeatures.depthClipEnableFeatures;			}
-	const VkPhysicalDeviceBufferAddressFeaturesEXT&			getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
+	const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&	getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
 	const VkPhysicalDeviceImagelessFramebufferFeaturesKHR&	getImagelessFramebufferFeatures		(void) const	{ return m_deviceFeatures.imagelessFramebufferFeatures;		}
 	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
 	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		getTransformFeedbackFeatures		(void) const	{ return m_deviceFeatures.transformFeedbackFeatures;		}
 	const VkPhysicalDevicePerformanceCounterFeaturesKHR&	getPerformanceCounterFeatures		(void) const	{ return m_deviceFeatures.performanceCounterFeatures;		}
-
+	const VkPhysicalDeviceMemoryPriorityFeaturesEXT&		getMemoryPriorityFeatures			(void) const	{ return m_deviceFeatures.memoryPriorityFeatures;			}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -683,7 +690,7 @@ const vk::VkPhysicalDevice8BitStorageFeaturesKHR&
 										Context::get8BitStorageFeatures			(void) const { return m_device->get8BitStorageFeatures();		}
 const vk::VkPhysicalDevice16BitStorageFeatures&
 										Context::get16BitStorageFeatures		(void) const { return m_device->get16BitStorageFeatures();		}
-const vk::VkPhysicalDeviceVariablePointerFeatures&
+const vk::VkPhysicalDeviceVariablePointersFeatures&
 										Context::getVariablePointerFeatures		(void) const { return m_device->getVariablePointerFeatures();	}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
 										Context::getVertexAttributeDivisorFeatures	(void) const { return m_device->getVertexAttributeDivisorFeatures();	}
@@ -701,7 +708,7 @@ const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
 										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
 										Context::getDepthClipEnableFeatures		(void) const { return m_device->getDepthClipEnableFeatures();	}
-const vk::VkPhysicalDeviceBufferAddressFeaturesEXT&
+const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&
 										Context::getBufferDeviceAddressFeatures	(void) const { return m_device->getBufferDeviceAddressFeatures();	}
 const vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR&
 										Context::getImagelessFramebufferFeatures	(void) const { return m_device->getImagelessFramebufferFeatures();		}
@@ -713,6 +720,8 @@ const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&
 										Context::getTransformFeedbackFeatures	(void) const { return m_device->getTransformFeedbackFeatures();	}
 const vk::VkPhysicalDevicePerformanceCounterFeaturesKHR&
 										Context::getPerformanceCounterFeatures	(void) const { return m_device->getPerformanceCounterFeatures();	}
+const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&
+										Context::getMemoryPriorityFeatures		(void) const { return m_device->getMemoryPriorityFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

@@ -192,7 +192,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:								return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES";
 		case VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO:											return "VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES";
@@ -220,7 +220,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES:									return "VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES";
 		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT:									return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR:							return "VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_INFO_KHR:												return "VK_STRUCTURE_TYPE_PRESENT_INFO_KHR";
@@ -374,9 +374,13 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR:					return "VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT:									return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR";
@@ -4436,9 +4440,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewProper
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointerFeatures& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointersFeatures& value)
 {
-	s << "VkPhysicalDeviceVariablePointerFeatures = {\n";
+	s << "VkPhysicalDeviceVariablePointersFeatures = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
@@ -4767,9 +4771,9 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutSupport& v
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderDrawParameterFeatures& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value)
 {
-	s << "VkPhysicalDeviceShaderDrawParameterFeatures = {\n";
+	s << "VkPhysicalDeviceShaderDrawParametersFeatures = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderDrawParameters = " << value.shaderDrawParameters << '\n';
@@ -6986,9 +6990,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceUniformBufferSt
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceBufferAddressFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceBufferAddressFeaturesEXT = {\n";
+	s << "VkPhysicalDeviceBufferDeviceAddressFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tbufferDeviceAddress = " << value.bufferDeviceAddress << '\n';
@@ -7062,6 +7066,50 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostQueryResetF
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\thostQueryReset = " << value.hostQueryReset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePCIBusInfoPropertiesEXT& value)
+{
+	s << "VkPhysicalDevicePCIBusInfoPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpciDomain = " << value.pciDomain << '\n';
+	s << "\tpciBus = " << value.pciBus << '\n';
+	s << "\tpciDevice = " << value.pciDevice << '\n';
+	s << "\tpciFunction = " << value.pciFunction << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryBudgetPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceMemoryBudgetPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\theapBudget = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.heapBudget), DE_ARRAY_END(value.heapBudget)) << '\n';
+	s << "\theapUsage = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.heapUsage), DE_ARRAY_END(value.heapUsage)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryPriorityFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceMemoryPriorityFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemoryPriority = " << value.memoryPriority << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryPriorityAllocateInfoEXT& value)
+{
+	s << "VkMemoryPriorityAllocateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpriority = " << value.priority << '\n';
 	s << '}';
 	return s;
 }

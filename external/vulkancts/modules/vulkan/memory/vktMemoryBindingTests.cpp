@@ -149,12 +149,14 @@ struct BindingCaseParameters
 	VkExtent3D							imageSize;
 	deUint32							targetsCount;
 	VkImageCreateFlags					imageCreateFlags;
+	bool								usePriority;
 };
 
 BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 																			 deUint32				width,
 																			 deUint32				height,
-																			 VkImageCreateFlags		imageCreateFlags)
+																			 VkImageCreateFlags		imageCreateFlags,
+																			 bool					usePriority)
 {
 	BindingCaseParameters				params;
 	deMemset(&params, 0, sizeof(BindingCaseParameters));
@@ -165,6 +167,7 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 	params.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	params.targetsCount = targetsCount;
 	params.imageCreateFlags = imageCreateFlags;
+	params.usePriority = usePriority;
 	return params;
 }
 
@@ -172,7 +175,8 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 																			 VkBufferUsageFlags		usage,
 																			 VkSharingMode			sharing,
 																			 VkDeviceSize			bufferSize,
-																			 VkImageCreateFlags		imageCreateFlags)
+																			 VkImageCreateFlags		imageCreateFlags,
+																			 bool					usePriority)
 {
 	BindingCaseParameters				params								=
 	{
@@ -183,6 +187,7 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 		{0u, 0u, 0u},														// VkExtent3D			imageSize;
 		targetsCount,														// deUint32				targetsCount;
 		imageCreateFlags,													// VkImageCreateFlags	imageCreateFlags
+		usePriority,														// bool					usePriority
 	};
 	return params;
 }
@@ -229,7 +234,7 @@ VkBufferCreateInfo						makeBufferCreateInfo				(Context&				ctx,
 }
 
 const VkMemoryAllocateInfo				makeMemoryAllocateInfo				(VkMemoryRequirements&	memReqs,
-																			 ConstDedicatedInfo*	next)
+																			 const void*	next)
 {
 	const deUint32						heapTypeIndex						= (deUint32)deCtz32(memReqs.memoryTypeBits);
 	const VkMemoryAllocateInfo			allocateParams						=
@@ -335,6 +340,18 @@ const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 		0u,																	// VkDeviceSize			memoryOffset;
 	};
 	return imageMemoryBinding;
+}
+
+const VkMemoryPriorityAllocateInfoEXT	makeMemoryPriorityAllocateInfo		(const void *	pNext,
+																			 float			priority)
+{
+	const VkMemoryPriorityAllocateInfoEXT	info						=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT,				// VkStructureType		sType;
+		pNext,																// const void*			pNext;
+		priority,															// float				priority
+	};
+	return info;
 }
 
 enum TransferDirection
@@ -475,7 +492,8 @@ void									createMemory<VkBuffer, DE_FALSE>	(BuffersList&			targets,
 
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
-		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, DE_NULL);
+		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(DE_NULL, ((float)i)/((float)count));
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : DE_NULL);
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
@@ -500,7 +518,8 @@ void									createMemory<VkImage, DE_FALSE>		(ImagesList&			targets,
 		VkMemoryRequirements			memReqs;
 		vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
-		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, DE_NULL);
+		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(DE_NULL, ((float)i)/((float)count));
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : DE_NULL);
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, (VkAllocationCallbacks*)DE_NULL, &rawMemory);
@@ -527,7 +546,8 @@ void									createMemory<VkBuffer, DE_TRUE>		(BuffersList&			targets,
 		vk.getBufferMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
 		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);;
-		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, &dedicatedAllocationInfo);
+		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : (const void *)&dedicatedAllocationInfo);
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks*>(DE_NULL), &rawMemory);
@@ -553,7 +573,8 @@ void									createMemory<VkImage, DE_TRUE>		(ImagesList&			targets,
 		vk.getImageMemoryRequirements(vkDevice, **targets[i], &memReqs);
 
 		ConstDedicatedInfo				dedicatedAllocationInfo				= makeDedicatedAllocationInfo(**targets[i]);
-		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, &dedicatedAllocationInfo);
+		VkMemoryPriorityAllocateInfoEXT	priority							= makeMemoryPriorityAllocateInfo(&dedicatedAllocationInfo, ((float)i)/((float)count));
+		const VkMemoryAllocateInfo		memAlloc							= makeMemoryAllocateInfo(memReqs, params.usePriority ? &priority : (const void *)&dedicatedAllocationInfo);
 		VkDeviceMemory					rawMemory							= DE_NULL;
 
 		vk.allocateMemory(vkDevice, &memAlloc, static_cast<VkAllocationCallbacks*>(DE_NULL), &rawMemory);
@@ -829,6 +850,8 @@ public:
 		{
 			TCU_THROW(NotSupportedError, "Not supported");
 		}
+		if (m_params.usePriority && !m_context.getMemoryPriorityFeatures().memoryPriority)
+			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
 
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets;
@@ -882,6 +905,8 @@ public:
 		{
 			TCU_THROW(NotSupportedError, "Not supported");
 		}
+		if (m_params.usePriority && !m_context.getMemoryPriorityFeatures().memoryPriority)
+			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
 
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets[2];
@@ -952,53 +977,63 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>		group								(new tcu::TestCaseGroup(testCtx, "binding", "Memory binding tests."));
 
-	de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular", "Basic memory binding tests."));
-	de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing", "Memory binding tests with aliasing of two resources."));
-
-	de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Basic memory binding tests with suballocated memory."));
-	de::MovePtr<tcu::TestCaseGroup>		regular_dedicated					(new tcu::TestCaseGroup(testCtx, "dedicated", "Basic memory binding tests with deditatedly allocated memory."));
-
-	de::MovePtr<tcu::TestCaseGroup>		aliasing_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Memory binding tests with aliasing of two resources with suballocated mamory."));
-
-	const VkDeviceSize					allocationSizes[]					= {	33, 257, 4087, 8095, 1*1024*1024 + 1	};
-
-	for (deUint32 sizeNdx = 0u; sizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); ++sizeNdx )
+	for (int i = 0; i < 2; ++i)
 	{
-		const VkDeviceSize				bufferSize							= allocationSizes[sizeNdx];
-		const BindingCaseParameters		params								= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, 0u);
-		const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, VK_IMAGE_CREATE_ALIAS_BIT);
-		std::ostringstream				testName;
+		bool usePriority = i != 0;
+		de::MovePtr<tcu::TestCaseGroup>		regular								(new tcu::TestCaseGroup(testCtx, "regular", "Basic memory binding tests."));
+		de::MovePtr<tcu::TestCaseGroup>		aliasing							(new tcu::TestCaseGroup(testCtx, "aliasing", "Memory binding tests with aliasing of two resources."));
 
-		testName << "buffer_" << bufferSize;
-		regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", params));
-		regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_TRUE> >(testCtx, testName.str(), " ", params));
-		aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
+		de::MovePtr<tcu::TestCaseGroup>		regular_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Basic memory binding tests with suballocated memory."));
+		de::MovePtr<tcu::TestCaseGroup>		regular_dedicated					(new tcu::TestCaseGroup(testCtx, "dedicated", "Basic memory binding tests with deditatedly allocated memory."));
+
+		de::MovePtr<tcu::TestCaseGroup>		aliasing_suballocated				(new tcu::TestCaseGroup(testCtx, "suballocated", "Memory binding tests with aliasing of two resources with suballocated mamory."));
+
+		const VkDeviceSize					allocationSizes[]					= {	33, 257, 4087, 8095, 1*1024*1024 + 1	};
+
+		for (deUint32 sizeNdx = 0u; sizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); ++sizeNdx )
+		{
+			const VkDeviceSize				bufferSize							= allocationSizes[sizeNdx];
+			const BindingCaseParameters		params								= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, 0u, usePriority);
+			const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, VK_IMAGE_CREATE_ALIAS_BIT, usePriority);
+			std::ostringstream				testName;
+
+			testName << "buffer_" << bufferSize;
+			regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", params));
+			regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_TRUE> >(testCtx, testName.str(), " ", params));
+			aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
+		}
+
+		const deUint32						imageSizes[]						= {	8, 33, 257	};
+
+		for (deUint32 widthNdx = 0u; widthNdx < DE_LENGTH_OF_ARRAY(imageSizes); ++widthNdx )
+		for (deUint32 heightNdx = 0u; heightNdx < DE_LENGTH_OF_ARRAY(imageSizes); ++heightNdx )
+		{
+			const deUint32					width								= imageSizes[widthNdx];
+			const deUint32					height								= imageSizes[heightNdx];
+			const BindingCaseParameters		regularparams						= makeBindingCaseParameters(10, width, height, 0u, usePriority);
+			const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, width, height, VK_IMAGE_CREATE_ALIAS_BIT, usePriority);
+			std::ostringstream				testName;
+
+			testName << "image_" << width << '_' << height;
+			regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", regularparams));
+			regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_TRUE> >(testCtx, testName.str(), "", regularparams));
+			aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
+		}
+
+		regular->addChild(regular_suballocated.release());
+		regular->addChild(regular_dedicated.release());
+
+		aliasing->addChild(aliasing_suballocated.release());
+		if (usePriority) {
+			de::MovePtr<tcu::TestCaseGroup>		priority	(new tcu::TestCaseGroup(testCtx, "priority", "Using VK_EXT_memory_priority."));
+			priority->addChild(regular.release());
+			priority->addChild(aliasing.release());
+			group->addChild(priority.release());
+		} else {
+			group->addChild(regular.release());
+			group->addChild(aliasing.release());
+		}
 	}
-
-	const deUint32						imageSizes[]						= {	8, 33, 257	};
-
-	for (deUint32 widthNdx = 0u; widthNdx < DE_LENGTH_OF_ARRAY(imageSizes); ++widthNdx )
-	for (deUint32 heightNdx = 0u; heightNdx < DE_LENGTH_OF_ARRAY(imageSizes); ++heightNdx )
-	{
-		const deUint32					width								= imageSizes[widthNdx];
-		const deUint32					height								= imageSizes[heightNdx];
-		const BindingCaseParameters		regularparams						= makeBindingCaseParameters(10, width, height, 0u);
-		const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, width, height, VK_IMAGE_CREATE_ALIAS_BIT);
-		std::ostringstream				testName;
-
-		testName << "image_" << width << '_' << height;
-		regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", regularparams));
-		regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_TRUE> >(testCtx, testName.str(), "", regularparams));
-		aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
-	}
-
-	regular->addChild(regular_suballocated.release());
-	regular->addChild(regular_dedicated.release());
-
-	aliasing->addChild(aliasing_suballocated.release());
-
-	group->addChild(regular.release());
-	group->addChild(aliasing.release());
 
 	return group.release();
 }

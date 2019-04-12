@@ -2566,6 +2566,30 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
 	}
 
+	// Check Interface Input/Output formats are supported
+	if (needInterface)
+	{
+		VkFormatProperties formatProperties;
+		vkInstance.getPhysicalDeviceFormatProperties(vkPhysicalDevice, instance.interfaces.getInputType().getVkFormat(), &formatProperties);
+		if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) == 0)
+		{
+			std::string	error				= "Interface Input format (";
+			const std::string formatName	= getFormatName(instance.interfaces.getInputType().getVkFormat());
+			error += formatName + ") not supported";
+			TCU_THROW(NotSupportedError, error.c_str());
+		}
+
+		vkInstance.getPhysicalDeviceFormatProperties(vkPhysicalDevice, instance.interfaces.getOutputType().getVkFormat(), &formatProperties);
+		if (((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0) ||
+			((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) == 0))
+		{
+			std::string	error				= "Interface Output format (";
+			const std::string formatName	= getFormatName(instance.interfaces.getInputType().getVkFormat());
+			error += formatName + ") not supported";
+			TCU_THROW(NotSupportedError, error.c_str());
+		}
+	}
+
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
 	const Vec4								vertexData[]			=
