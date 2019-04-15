@@ -359,7 +359,7 @@ vk::Move<vk::VkImage> createImage (const vk::DeviceInterface&	vkd,
 		vk::VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		vk::VK_IMAGE_LAYOUT_UNDEFINED,
+		vk::VK_IMAGE_LAYOUT_PREINITIALIZED,
 	};
 
 	return vk::createImage(vkd, device, &createInfo);
