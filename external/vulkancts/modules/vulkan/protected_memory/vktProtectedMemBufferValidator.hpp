@@ -204,7 +204,7 @@ bool BufferValidator<T>::validateBuffer (ProtectedContext&		ctx,
 																 queueFamilyIndex,
 																 helperBufferSize,
 																 vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-																 vk::MemoryRequirement::Any));
+																 vk::MemoryRequirement::Protected));
 	vk::Unique<vk::VkShaderModule>			resetSSBOShader		(vk::createShaderModule(vk, device, ctx.getBinaryCollection().get("ResetSSBO"), 0));
 	vk::Unique<vk::VkShaderModule>			validatorShader		(vk::createShaderModule(vk, device, ctx.getBinaryCollection().get("BufferValidator"), 0));
 
