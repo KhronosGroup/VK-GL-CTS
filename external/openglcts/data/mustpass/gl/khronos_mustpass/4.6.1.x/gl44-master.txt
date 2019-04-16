@@ -6439,6 +6439,7 @@ KHR-GL44.enhanced_layouts.glsl_constant_integral_expression
 KHR-GL44.enhanced_layouts.uniform_block_layout_qualifier_conflict
 KHR-GL44.enhanced_layouts.ssb_member_invalid_offset_alignment
 KHR-GL44.enhanced_layouts.ssb_member_overlapping_offsets
+KHR-GL44.enhanced_layouts.varying_invalid_value_component
 KHR-GL44.enhanced_layouts.varying_exceeding_components
 KHR-GL44.enhanced_layouts.varying_component_of_invalid_type
 KHR-GL44.enhanced_layouts.output_component_aliasing

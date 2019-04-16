@@ -30,6 +30,7 @@
 
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
+#include "gluShaderUtil.hpp"
 #include "gluStrUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -491,7 +492,7 @@ const glw::GLchar* Type::GetGLSLTypeName() const
 		result = uint_lut[m_n_rows - 1];
 		break;
 	default:
-		TCU_FAIL("Invliad enum");
+		TCU_FAIL("Invalid enum");
 	}
 
 	return result;
@@ -589,7 +590,7 @@ GLenum Type::GetTypeGLenum() const
 		result = uint_lut[m_n_rows - 1];
 		break;
 	default:
-		TCU_FAIL("Invliad enum");
+		TCU_FAIL("Invalid enum");
 	}
 
 	return result;
@@ -688,7 +689,7 @@ bool Type::DoesTypeSupportMatrix(TYPES type)
 		result = false;
 		break;
 	default:
-		TCU_FAIL("Invliad enum");
+		TCU_FAIL("Invalid enum");
 	}
 
 	return result;
@@ -3454,7 +3455,7 @@ void Texture::Storage(const Functions& gl, TYPES tex_type, GLuint width, GLuint 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage3D");
 		break;
 	default:
-		TCU_FAIL("Invliad enum");
+		TCU_FAIL("Invalid enum");
 		break;
 	}
 }
@@ -3521,7 +3522,7 @@ void Texture::Update(const Functions& gl, TYPES tex_type, GLuint width, GLuint h
 		GLU_EXPECT_NO_ERROR(gl.getError(), "TexStorage3D");
 		break;
 	default:
-		TCU_FAIL("Invliad enum");
+		TCU_FAIL("Invalid enum");
 		break;
 	}
 }
@@ -3619,7 +3620,7 @@ void VertexArray::Release()
  * @param index            Index of attribute
  * @param type             Type of attribute
  * @param n_array_elements Arary length
- * @param normalized       Selectis if values should be normalized
+ * @param normalized       Selects if values should be normalized
  * @param stride           Stride
  * @param pointer          Pointer to data, or offset in buffer
  **/
@@ -3648,7 +3649,7 @@ void VertexArray::Bind()
  * @param index            Index of attribute
  * @param type             Type of attribute
  * @param n_array_elements Arary length
- * @param normalized       Selectis if values should be normalized
+ * @param normalized       Selects if values should be normalized
  * @param stride           Stride
  * @param pointer          Pointer to data, or offset in buffer
  **/
@@ -4068,7 +4069,7 @@ std::string Variable::Descriptor::GetDefinition(FLAVOUR flavour, STORAGE storage
 		definition = array_template;
 		break;
 	default:
-		TCU_FAIL("Invliad enum");
+		TCU_FAIL("Invalid enum");
 		break;
 	}
 
@@ -5587,16 +5588,8 @@ bool TestBase::test()
 	{
 #endif /* DEBUG_REPEAT_TEST_CASE */
 
-		bool case_result = true;
-
 		/* Execute case */
-		if (false == testCase(test_case))
-		{
-			case_result = false;
-		}
-
-		/* Log failure */
-		if (false == case_result)
+		if (!testCase(test_case))
 		{
 			const std::string& test_case_name = getTestCaseName(test_case);
 
@@ -6819,10 +6812,10 @@ std::string TextureTestBase::getVariableVerification(const std::string& parent_n
 void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramInterface& program_interface,
 										Utils::Buffer& buffer, Utils::VertexArray& vao)
 {
-	bool use_component_qualifier = useComponentQualifier(test_case_index);
+	const bool use_component_qualifier = useComponentQualifier(test_case_index);
 
 	/* Get shader interface */
-	Utils::ShaderInterface& si = program_interface.GetShaderInterface(Utils::Shader::VERTEX);
+	const Utils::ShaderInterface& si = program_interface.GetShaderInterface(Utils::Shader::VERTEX);
 
 	/* Bind vao and buffer */
 	vao.Bind();
@@ -6842,34 +6835,31 @@ void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramIn
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
 	/* dvec3/4 vertex inputs use a single location but require 2x16B slots */
-	GLint max_slots = max_inputs * 2;
+	const GLuint max_slots = max_inputs * 2;
 
 	/* Compute used slots */
-	std::vector<GLint> slot_sizes;
-	slot_sizes.resize(max_slots);
-	std::fill(slot_sizes.begin(), slot_sizes.end(), 0);
+	std::vector<GLuint> slot_sizes(max_slots, 0);
 	for (GLuint i = 0; i < si.m_inputs.size(); ++i)
 	{
-		Utils::Variable& variable = *si.m_inputs[i];
+		const Utils::Variable& variable = *si.m_inputs[i];
 
-		GLint variable_size = static_cast<GLuint>(variable.m_data_size);
+		const GLuint variable_size = static_cast<GLuint>(variable.m_data_size);
 
-		GLint base_slot = variable.m_descriptor.m_expected_location + variable.m_descriptor.m_offset / 16;
-		GLint ends_at = variable.m_descriptor.m_offset % 16 + variable_size;
+		const GLuint base_slot = variable.m_descriptor.m_expected_location + variable.m_descriptor.m_offset / 16;
+		const GLuint ends_at   = variable.m_descriptor.m_offset % 16 + variable_size;
 
-		GLint array_length = std::max(1u, variable.m_descriptor.m_n_array_elements);
-		for (GLint loc = 0; loc < array_length; loc++) {
-			GLint slot = base_slot + loc;
+		const GLuint array_length = std::max(1u, variable.m_descriptor.m_n_array_elements);
+		for (GLuint loc = 0; loc < array_length; loc++)
+		{
+			const GLuint slot = base_slot + loc;
 			slot_sizes[slot] = std::max(slot_sizes[slot], ends_at);
 		}
 	}
 
 	/* Compute the offsets where we need to put vertex buffer data for each slot */
-	std::vector<GLint> slot_offsets;
-	slot_offsets.resize(max_slots);
-	std::fill(slot_offsets.begin(), slot_offsets.end(), -1);
-	GLint buffer_size = 0;
-	for (GLint i = 0; i < max_slots; i++)
+	std::vector<GLint> slot_offsets(max_slots, -1);
+	GLuint			   buffer_size = 0;
+	for (GLuint i = 0; i < max_slots; i++)
 	{
 		if (slot_sizes[i] == 0)
 			continue;
@@ -6878,24 +6868,24 @@ void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramIn
 	}
 
 	/* Prepare buffer data and set up vao */
-	std::vector<GLubyte> buffer_data;
-	buffer_data.resize(buffer_size);
+	std::vector<GLubyte> buffer_data(buffer_size);
 
 	GLubyte* ptr = &buffer_data[0];
 
 	for (GLuint i = 0; i < si.m_inputs.size(); ++i)
 	{
-		Utils::Variable& variable = *si.m_inputs[i];
+		const Utils::Variable& variable = *si.m_inputs[i];
 
-		GLint base_slot = variable.m_descriptor.m_expected_location + variable.m_descriptor.m_offset / 16;
-		GLint variable_offset = variable.m_descriptor.m_offset % 16;
-		GLint array_length = std::max(1u, variable.m_descriptor.m_n_array_elements);
-		for (GLint loc = 0; loc < array_length; loc++) {
-			GLint slot = base_slot + loc;
+		const GLuint base_slot		 = variable.m_descriptor.m_expected_location + variable.m_descriptor.m_offset / 16;
+		const GLuint variable_offset = variable.m_descriptor.m_offset % 16;
+		const GLuint array_length	= std::max(1u, variable.m_descriptor.m_n_array_elements);
+		for (GLuint loc = 0; loc < array_length; loc++)
+		{
+			const GLuint slot = base_slot + loc;
 			memcpy(ptr + slot_offsets[slot] + variable_offset, variable.m_data, variable.m_data_size);
 		}
 
-		if (false == use_component_qualifier)
+		if (!use_component_qualifier)
 		{
 			vao.Attribute(variable.m_descriptor.m_expected_location, variable.m_descriptor.m_builtin,
 						  variable.m_descriptor.m_n_array_elements, variable.m_descriptor.m_normalized,
@@ -6903,10 +6893,16 @@ void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramIn
 		}
 		else if (0 == variable.m_descriptor.m_expected_component)
 		{
-			/* Components can only be applied to vectors.
-			 Assumption that test use all 4 components */
-			const Utils::Type& type =
-				Utils::Type::GetType(variable.m_descriptor.m_builtin.m_basic_type, 1 /* n_columns */, 4 /* n_rows */);
+			/* Components can only be applied to types not surpassing
+			 * the bounds of a single slot. Therefore, we calculate
+			 * the amount of used components in the varying based on
+			 * the calculated slot sizes.
+			 */
+			const GLuint n_component_size = Utils::Type::Double == variable.m_descriptor.m_builtin.m_basic_type ? 8 : 4;
+			const GLuint n_rows			  = slot_sizes[base_slot] / n_component_size;
+
+			const Utils::Type& type = Utils::Type::GetType(variable.m_descriptor.m_builtin.m_basic_type,
+														   1 /* n_columns */, n_rows /* n_rows */);
 
 			vao.Attribute(variable.m_descriptor.m_expected_location, type, variable.m_descriptor.m_n_array_elements,
 						  variable.m_descriptor.m_normalized, variable.GetStride(),
@@ -7319,16 +7315,18 @@ std::string TextureTestBase::getShaderSource(GLuint test_case_index, Utils::Prog
 {
 	/* Get strings */
 	const GLchar*	  shader_template  = getShaderTemplate(stage);
+	glu::GLSLVersion   glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	const char*		   shader_version   = glu::getGLSLVersionDeclaration(glslVersion);
 	const std::string& shader_interface = program_interface.GetInterfaceForStage(stage);
-
 	const std::string& verification = getVerificationSnippet(test_case_index, program_interface, stage);
-
 	const std::string& passthrough = getPassSnippet(test_case_index, varying_passthrough, stage);
 
 	const GLchar* per_vertex = "";
 
 	std::string source   = shader_template;
 	size_t		position = 0;
+
+	Utils::replaceToken("VERSION", position, shader_version, source);
 
 	/* Replace tokens in template */
 	if (Utils::Shader::GEOMETRY == stage)
@@ -7372,7 +7370,7 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 {
 
 	static const GLchar* compute_shader_template =
-		"#version 430 core\n"
+		"VERSION\n"
 		"#extension GL_ARB_enhanced_layouts : require\n"
 		"\n"
 		"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
@@ -7391,7 +7389,7 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 		"}\n"
 		"\n";
 
-	static const GLchar* fragment_shader_template = "#version 430 core\n"
+	static const GLchar* fragment_shader_template = "VERSION\n"
 													"#extension GL_ARB_enhanced_layouts : require\n"
 													"\n"
 													"flat in  uint gs_fs_result;\n"
@@ -7415,14 +7413,14 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 													"\n";
 
 	static const GLchar* geometry_shader_template =
-		"#version 430 core\n"
+		"VERSION\n"
 		"#extension GL_ARB_enhanced_layouts : require\n"
 		"\n"
 		"layout(points)                           in;\n"
 		"layout(triangle_strip, max_vertices = 4) out;\n"
 		"\n"
 		"     in  uint tes_gs_result[];\n"
-		"flat out uint gs_fs_result;\n"
+		"     flat out uint gs_fs_result;\n"
 		"\n"
 		"PERVERTEX" /* Separable programs require explicit declaration of gl_PerVertex */
 		"INTERFACE"
@@ -7456,7 +7454,7 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 		"}\n"
 		"\n";
 
-	static const GLchar* tess_ctrl_shader_template = "#version 430 core\n"
+	static const GLchar* tess_ctrl_shader_template = "VERSION\n"
 													 "#extension GL_ARB_enhanced_layouts : require\n"
 													 "\n"
 													 "layout(vertices = 1) out;\n"
@@ -7489,7 +7487,7 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 													 "}\n"
 													 "\n";
 
-	static const GLchar* tess_eval_shader_template = "#version 430 core\n"
+	static const GLchar* tess_eval_shader_template = "VERSION\n"
 													 "#extension GL_ARB_enhanced_layouts : require\n"
 													 "\n"
 													 "layout(isolines, point_mode) in;\n"
@@ -7503,7 +7501,7 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 													 "{\n"
 													 "    uint result = 1u;\n"
 													 "\n"
-													 "    if (1 != tcs_tes_result[0])\n"
+													 "    if (1u != tcs_tes_result[0])\n"
 													 "    {\n"
 													 "         result = tcs_tes_result[0];\n"
 													 "    }\n"
@@ -7515,7 +7513,7 @@ const GLchar* TextureTestBase::getShaderTemplate(Utils::Shader::STAGES stage)
 													 "}\n"
 													 "\n";
 
-	static const GLchar* vertex_shader_template = "#version 430 core\n"
+	static const GLchar* vertex_shader_template = "VERSION\n"
 												  "#extension GL_ARB_enhanced_layouts : require\n"
 												  "\n"
 												  "out uint vs_tcs_result;\n"
@@ -7589,6 +7587,7 @@ bool TextureTestBase::testCase(GLuint test_case_index)
 	}
 	catch (Utils::Program::BuildException& exc)
 	{
+		exc.log(m_context);
 		TCU_FAIL(exc.what());
 	}
 }
@@ -7886,6 +7885,13 @@ bool TextureTestBase::testSeparable(GLuint test_case_index)
 				<< tcu::TestLog::KernelSource(tes) << tcu::TestLog::KernelSource(gs) << tcu::TestLog::KernelSource(fs);
 
 			result = false;
+		}
+		else
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Success." << tcu::TestLog::EndMessage << tcu::TestLog::KernelSource(vs)
+				<< tcu::TestLog::KernelSource(tcs) << tcu::TestLog::KernelSource(tes) << tcu::TestLog::KernelSource(gs)
+				<< tcu::TestLog::KernelSource(fs);
 		}
 	}
 
@@ -14920,6 +14926,12 @@ std::string VaryingComponentsTest::getTestCaseName(glw::GLuint test_case_index)
 
 	switch (test_case.m_layout)
 	{
+	case G64VEC2:
+		name.append("G64VEC2");
+		break;
+	case G64SCALAR_G64SCALAR:
+		name.append("G64SCALAR_G64SCALAR");
+		break;
 	case GVEC4:
 		name.append("GVEC4");
 		break;
@@ -14951,7 +14963,7 @@ std::string VaryingComponentsTest::getTestCaseName(glw::GLuint test_case_index)
 
 /** Returns number of types to test
  *
- * @return Number of types, 34
+ * @return Number of types
  **/
 glw::GLuint VaryingComponentsTest::getTestCaseNumber()
 {
@@ -14961,7 +14973,8 @@ glw::GLuint VaryingComponentsTest::getTestCaseNumber()
 /* Prepare test cases */
 void VaryingComponentsTest::testInit()
 {
-	// FIXME: add tests for doubles, which have specific rules
+	m_test_cases.push_back(testCase(G64VEC2, Utils::Type::Double));
+	m_test_cases.push_back(testCase(G64SCALAR_G64SCALAR, Utils::Type::Double));
 
 	m_test_cases.push_back(testCase(GVEC4, Utils::Type::Float));
 	m_test_cases.push_back(testCase(SCALAR_GVEC3, Utils::Type::Float));
@@ -15091,6 +15104,27 @@ void VaryingComponentsTest::prepareShaderStage(Utils::Shader::STAGES stage, cons
 
 	switch (test_case.m_layout)
 	{
+	case G64VEC2:
+		n_desc = 2;
+		desc_in[0].assign(0, "comp_x", first_in_loc, "first_input_location", 2, "g64vec2");
+		desc_in[1].assign(0, "comp_x", last_in_loc, "last_input_location", 2, "g64vec2");
+
+		desc_out[0].assign(0, "comp_x", first_out_loc, "first_output_location", 2, "g64vec2");
+		desc_out[1].assign(0, "comp_x", last_out_loc, "last_output_location", 2, "g64vec2");
+		break;
+
+	case G64SCALAR_G64SCALAR:
+		n_desc = 4;
+		desc_in[0].assign(0, "comp_x", first_in_loc, "first_input_location", 1, "g64scalar");
+		desc_in[1].assign(0, "comp_x", last_in_loc, "last_input_location", 1, "g64scalar");
+		desc_in[2].assign(2, "comp_z", first_in_loc, "first_input_location", 1, "g64scalar");
+		desc_in[3].assign(2, "comp_z", last_in_loc, "last_input_location", 1, "g64scalar");
+
+		desc_out[0].assign(0, "comp_x", first_out_loc, "first_output_location", 1, "g64scalar");
+		desc_out[1].assign(0, "comp_x", last_out_loc, "last_output_location", 1, "g64scalar");
+		desc_out[2].assign(2, "comp_z", first_out_loc, "first_output_location", 1, "g64scalar");
+		desc_out[3].assign(2, "comp_z", last_out_loc, "last_output_location", 1, "g64scalar");
+		break;
 	case GVEC4:
 		n_desc = 2;
 		desc_in[0].assign(0, "comp_x", first_in_loc, "first_input_location", 4, "gvec4");
@@ -15234,11 +15268,11 @@ Utils::Variable* VaryingComponentsTest::prepareVarying(const Utils::Type& basic_
 													   Utils::Shader::STAGES stage, Utils::Variable::STORAGE storage)
 {
 	const GLuint	   array_length   = getArrayLength();
-	const GLuint	   component_size = basic_type.GetSize();
+	const GLuint	   component_size = Utils::Type::_float.GetSize();
 	const std::string& name			  = prepareName(desc.m_name, desc.m_location, desc.m_component, stage, storage);
 	const GLuint	   offset		  = desc.m_component * component_size;
 	const std::string& qual			  = prepareQualifiers(desc.m_location_str, desc.m_component_str, interpolation);
-	const GLuint	   size			  = desc.m_n_rows * component_size;
+	const GLuint	   size			  = desc.m_n_rows * basic_type.GetSize();
 	const Utils::Type& type			  = Utils::Type::GetType(basic_type.m_basic_type, 1 /* n_columns */, desc.m_n_rows);
 	Utils::Variable*   var			  = 0;
 
@@ -15300,9 +15334,10 @@ GLuint VaryingArrayComponentsTest::getArrayLength()
  *
  * @param context Test framework context
  **/
-VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context& context)
-	: NegativeTestBase(context, "varying_exceeding_components",
-					   "Test verifies that compiler reports error when component qualifier exceeds limits")
+VaryingInvalidValueComponentTest::VaryingInvalidValueComponentTest(deqp::Context& context)
+	: NegativeTestBase(context, "varying_invalid_value_component", "Test verifies that compiler reports error when "
+																   "using an invalid value in the component "
+																   "qualification for a specific type")
 {
 }
 
@@ -15313,7 +15348,7 @@ VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context& co
  *
  * @return Shader source
  **/
-std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
+std::string VaryingInvalidValueComponentTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
 #if DEBUG_NEG_REMOVE_ERROR
 	static const GLchar* var_definition_arr =
@@ -15660,7 +15695,7 @@ std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_ind
  *
  * @return Test case description
  **/
-std::string VaryingExceedingComponentsTest::getTestCaseName(GLuint test_case_index)
+std::string VaryingInvalidValueComponentTest::getTestCaseName(GLuint test_case_index)
 {
 	std::stringstream stream;
 	testCase&		  test_case = m_test_cases[test_case_index];
@@ -15685,6 +15720,468 @@ std::string VaryingExceedingComponentsTest::getTestCaseName(GLuint test_case_ind
 	}
 
 	stream << ", component: " << test_case.m_component;
+
+	return stream.str();
+}
+
+/** Get number of test cases
+ *
+ * @return Number of test cases
+ **/
+GLuint VaryingInvalidValueComponentTest::getTestCaseNumber()
+{
+	return static_cast<GLuint>(m_test_cases.size());
+}
+
+/** Selects if "compute" stage is relevant for test
+ *
+ * @param ignored
+ *
+ * @return false
+ **/
+bool VaryingInvalidValueComponentTest::isComputeRelevant(GLuint /* test_case_index */)
+{
+	return false;
+}
+
+/** Prepare all test cases
+ *
+ **/
+void VaryingInvalidValueComponentTest::testInit()
+{
+	const GLuint n_types = getTypesNumber();
+
+	for (GLuint i = 0; i < n_types; ++i)
+	{
+		const Utils::Type&		   type				= getType(i);
+		const std::vector<GLuint>& valid_components = type.GetValidComponents();
+
+		if (valid_components.empty())
+		{
+			continue;
+		}
+
+		std::vector<GLuint> every_component(4, 0);
+		every_component[1] = 1;
+		every_component[2] = 2;
+		every_component[3] = 3;
+		std::vector<GLuint> invalid_components;
+
+		std::set_symmetric_difference(every_component.begin(), every_component.end(), valid_components.begin(),
+									  valid_components.end(), back_inserter(invalid_components));
+
+		for (std::vector<GLuint>::const_iterator it_invalid_components = invalid_components.begin();
+			 it_invalid_components != invalid_components.end(); ++it_invalid_components)
+		{
+			for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+			{
+				if (Utils::Shader::COMPUTE == stage)
+				{
+					continue;
+				}
+
+				testCase test_case_in_arr = { *it_invalid_components, true, true, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_in_one = { *it_invalid_components, true, false, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_out_arr = { *it_invalid_components, false, true, (Utils::Shader::STAGES)stage,
+											   type };
+				testCase test_case_out_one = { *it_invalid_components, false, false, (Utils::Shader::STAGES)stage,
+											   type };
+
+				m_test_cases.push_back(test_case_in_arr);
+				m_test_cases.push_back(test_case_in_one);
+
+				if (Utils::Shader::FRAGMENT != stage)
+				{
+					m_test_cases.push_back(test_case_out_arr);
+					m_test_cases.push_back(test_case_out_one);
+				}
+			}
+		}
+	}
+}
+
+/** Constructor
+ *
+ * @param context Test framework context
+ **/
+VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context& context)
+	: NegativeTestBase(context, "varying_exceeding_components",
+					   "Test verifies that compiler reports error when component qualifier exceeds limits")
+{
+}
+
+/** Source for given test case and stage
+ *
+ * @param test_case_index Index of test case
+ * @param stage           Shader stage
+ *
+ * @return Shader source
+ **/
+std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
+{
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* var_definition_arr =
+		"layout (location = 1 /*, component = 4 */) FLAT DIRECTION TYPE gokuARRAY[1];\n";
+	static const GLchar* var_definition_one =
+		"layout (location = 1 /*, component = 4 */) FLAT DIRECTION TYPE gokuARRAY;\n";
+#else
+	static const GLchar* var_definition_arr =
+		"layout (location = 1, component = 4) FLAT DIRECTION TYPE gokuARRAY[1];\n";
+	static const GLchar* var_definition_one = "layout (location = 1, component = 4) FLAT DIRECTION TYPE gokuARRAY;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* input_use_arr = "    if (TYPE(0) == gokuINDEX[0])\n"
+										 "    {\n"
+										 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
+										 "    }\n";
+	static const GLchar* input_use_one = "    if (TYPE(0) == gokuINDEX)\n"
+										 "    {\n"
+										 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
+										 "    }\n";
+	static const GLchar* output_use_arr = "    gokuINDEX[0] = TYPE(0);\n"
+										  "    if (vec4(0) == result)\n"
+										  "    {\n"
+										  "        gokuINDEX[0] = TYPE(1);\n"
+										  "    }\n";
+	static const GLchar* output_use_one = "    gokuINDEX = TYPE(0);\n"
+										  "    if (vec4(0) == result)\n"
+										  "    {\n"
+										  "        gokuINDEX = TYPE(1);\n"
+										  "    }\n";
+	static const GLchar* fs = "#version 430 core\n"
+							  "#extension GL_ARB_enhanced_layouts : require\n"
+							  "\n"
+							  "in  vec4 gs_fs;\n"
+							  "out vec4 fs_out;\n"
+							  "\n"
+							  "void main()\n"
+							  "{\n"
+							  "    fs_out = gs_fs;\n"
+							  "}\n"
+							  "\n";
+	static const GLchar* fs_tested = "#version 430 core\n"
+									 "#extension GL_ARB_enhanced_layouts : require\n"
+									 "\n"
+									 "VAR_DEFINITION"
+									 "\n"
+									 "in  vec4 gs_fs;\n"
+									 "out vec4 fs_out;\n"
+									 "\n"
+									 "void main()\n"
+									 "{\n"
+									 "    vec4 result = gs_fs;\n"
+									 "\n"
+									 "VARIABLE_USE"
+									 "\n"
+									 "    fs_out += result;\n"
+									 "}\n"
+									 "\n";
+	static const GLchar* gs = "#version 430 core\n"
+							  "#extension GL_ARB_enhanced_layouts : require\n"
+							  "\n"
+							  "layout(points)                           in;\n"
+							  "layout(triangle_strip, max_vertices = 4) out;\n"
+							  "\n"
+							  "in  vec4 tes_gs[];\n"
+							  "out vec4 gs_fs;\n"
+							  "\n"
+							  "void main()\n"
+							  "{\n"
+							  "    gs_fs = tes_gs[0];\n"
+							  "    gl_Position  = vec4(-1, -1, 0, 1);\n"
+							  "    EmitVertex();\n"
+							  "    gs_fs = tes_gs[0];\n"
+							  "    gl_Position  = vec4(-1, 1, 0, 1);\n"
+							  "    EmitVertex();\n"
+							  "    gs_fs = tes_gs[0];\n"
+							  "    gl_Position  = vec4(1, -1, 0, 1);\n"
+							  "    EmitVertex();\n"
+							  "    gs_fs = tes_gs[0];\n"
+							  "    gl_Position  = vec4(1, 1, 0, 1);\n"
+							  "    EmitVertex();\n"
+							  "}\n"
+							  "\n";
+	static const GLchar* gs_tested = "#version 430 core\n"
+									 "#extension GL_ARB_enhanced_layouts : require\n"
+									 "\n"
+									 "layout(points)                           in;\n"
+									 "layout(triangle_strip, max_vertices = 4) out;\n"
+									 "\n"
+									 "VAR_DEFINITION"
+									 "\n"
+									 "in  vec4 tes_gs[];\n"
+									 "out vec4 gs_fs;\n"
+									 "\n"
+									 "void main()\n"
+									 "{\n"
+									 "    vec4 result = tes_gs[0];\n"
+									 "\n"
+									 "VARIABLE_USE"
+									 "\n"
+									 "    gs_fs = result;\n"
+									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
+									 "    EmitVertex();\n"
+									 "    gs_fs = result;\n"
+									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
+									 "    EmitVertex();\n"
+									 "    gs_fs = result;\n"
+									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
+									 "    EmitVertex();\n"
+									 "    gs_fs = result;\n"
+									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
+									 "    EmitVertex();\n"
+									 "}\n"
+									 "\n";
+	static const GLchar* tcs = "#version 430 core\n"
+							   "#extension GL_ARB_enhanced_layouts : require\n"
+							   "\n"
+							   "layout(vertices = 1) out;\n"
+							   "\n"
+							   "in  vec4 vs_tcs[];\n"
+							   "out vec4 tcs_tes[];\n"
+							   "\n"
+							   "void main()\n"
+							   "{\n"
+							   "\n"
+							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "\n"
+							   "    gl_TessLevelOuter[0] = 1.0;\n"
+							   "    gl_TessLevelOuter[1] = 1.0;\n"
+							   "    gl_TessLevelOuter[2] = 1.0;\n"
+							   "    gl_TessLevelOuter[3] = 1.0;\n"
+							   "    gl_TessLevelInner[0] = 1.0;\n"
+							   "    gl_TessLevelInner[1] = 1.0;\n"
+							   "}\n"
+							   "\n";
+	static const GLchar* tcs_tested = "#version 430 core\n"
+									  "#extension GL_ARB_enhanced_layouts : require\n"
+									  "\n"
+									  "layout(vertices = 1) out;\n"
+									  "\n"
+									  "VAR_DEFINITION"
+									  "\n"
+									  "in  vec4 vs_tcs[];\n"
+									  "out vec4 tcs_tes[];\n"
+									  "\n"
+									  "void main()\n"
+									  "{\n"
+									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
+									  "\n"
+									  "VARIABLE_USE"
+									  "\n"
+									  "    tcs_tes[gl_InvocationID] = result;\n"
+									  "\n"
+									  "    gl_TessLevelOuter[0] = 1.0;\n"
+									  "    gl_TessLevelOuter[1] = 1.0;\n"
+									  "    gl_TessLevelOuter[2] = 1.0;\n"
+									  "    gl_TessLevelOuter[3] = 1.0;\n"
+									  "    gl_TessLevelInner[0] = 1.0;\n"
+									  "    gl_TessLevelInner[1] = 1.0;\n"
+									  "}\n"
+									  "\n";
+	static const GLchar* tes = "#version 430 core\n"
+							   "#extension GL_ARB_enhanced_layouts : require\n"
+							   "\n"
+							   "layout(isolines, point_mode) in;\n"
+							   "\n"
+							   "in  vec4 tcs_tes[];\n"
+							   "out vec4 tes_gs;\n"
+							   "\n"
+							   "void main()\n"
+							   "{\n"
+							   "    tes_gs = tcs_tes[0];\n"
+							   "}\n"
+							   "\n";
+	static const GLchar* tes_tested = "#version 430 core\n"
+									  "#extension GL_ARB_enhanced_layouts : require\n"
+									  "\n"
+									  "layout(isolines, point_mode) in;\n"
+									  "\n"
+									  "VAR_DEFINITION"
+									  "\n"
+									  "in  vec4 tcs_tes[];\n"
+									  "out vec4 tes_gs;\n"
+									  "\n"
+									  "void main()\n"
+									  "{\n"
+									  "    vec4 result = tcs_tes[0];\n"
+									  "\n"
+									  "VARIABLE_USE"
+									  "\n"
+									  "    tes_gs += result;\n"
+									  "}\n"
+									  "\n";
+	static const GLchar* vs = "#version 430 core\n"
+							  "#extension GL_ARB_enhanced_layouts : require\n"
+							  "\n"
+							  "in  vec4 in_vs;\n"
+							  "out vec4 vs_tcs;\n"
+							  "\n"
+							  "void main()\n"
+							  "{\n"
+							  "    vs_tcs = in_vs;\n"
+							  "}\n"
+							  "\n";
+	static const GLchar* vs_tested = "#version 430 core\n"
+									 "#extension GL_ARB_enhanced_layouts : require\n"
+									 "\n"
+									 "VAR_DEFINITION"
+									 "\n"
+									 "in  vec4 in_vs;\n"
+									 "out vec4 vs_tcs;\n"
+									 "\n"
+									 "void main()\n"
+									 "{\n"
+									 "    vec4 result = in_vs;\n"
+									 "\n"
+									 "VARIABLE_USE"
+									 "\n"
+									 "    vs_tcs += result;\n"
+									 "}\n"
+									 "\n";
+
+	std::string source;
+	testCase&   test_case = m_test_cases[test_case_index];
+
+	if (test_case.m_stage == stage)
+	{
+		const GLchar*			 array			= "";
+		const GLchar*			 var_definition = 0;
+		const GLchar*			 direction		= "in";
+		const GLchar*			 index			= "";
+		size_t					 position		= 0;
+		const GLchar*			 type_name		= test_case.m_type.GetGLSLTypeName();
+		const GLchar*			 var_use		= 0;
+		Utils::Variable::STORAGE storage		= Utils::Variable::VARYING_INPUT;
+		const GLchar*			 flat			= "";
+
+		if (false == test_case.m_is_input)
+		{
+			direction = "out";
+			storage   = Utils::Variable::VARYING_OUTPUT;
+
+			if (false == test_case.m_is_array)
+			{
+				var_definition = var_definition_one;
+				var_use		   = output_use_one;
+			}
+			else
+			{
+				var_definition = var_definition_arr;
+				var_use		   = output_use_arr;
+			}
+		}
+		else
+		{
+			if (false == test_case.m_is_array)
+			{
+				var_definition = var_definition_one;
+				var_use		   = Utils::Shader::VERTEX == stage ? input_use_one : "\n";
+			}
+			else
+			{
+				var_definition = var_definition_arr;
+				var_use		   = Utils::Shader::VERTEX == stage ? input_use_arr : "\n";
+			}
+		}
+
+		if (isFlatRequired(stage, test_case.m_type, storage, true))
+		{
+			flat = "flat";
+		}
+
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			source = fs_tested;
+			break;
+		case Utils::Shader::GEOMETRY:
+			source = gs_tested;
+			array  = test_case.m_is_input ? "[]" : "";
+			index  = test_case.m_is_input ? "[0]" : "";
+			break;
+		case Utils::Shader::TESS_CTRL:
+			source = tcs_tested;
+			array  = "[]";
+			index  = "[gl_InvocationID]";
+			break;
+		case Utils::Shader::TESS_EVAL:
+			source = tes_tested;
+			array  = test_case.m_is_input ? "[]" : "";
+			index  = test_case.m_is_input ? "[0]" : "";
+			break;
+		case Utils::Shader::VERTEX:
+			source = vs_tested;
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+
+		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
+		position = 0;
+		Utils::replaceToken("FLAT", position, flat, source);
+		Utils::replaceToken("DIRECTION", position, direction, source);
+		Utils::replaceToken("ARRAY", position, array, source);
+		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
+
+		Utils::replaceAllTokens("TYPE", type_name, source);
+		Utils::replaceAllTokens("INDEX", index, source);
+	}
+	else
+	{
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			source = fs;
+			break;
+		case Utils::Shader::GEOMETRY:
+			source = gs;
+			break;
+		case Utils::Shader::TESS_CTRL:
+			source = tcs;
+			break;
+		case Utils::Shader::TESS_EVAL:
+			source = tes;
+			break;
+		case Utils::Shader::VERTEX:
+			source = vs;
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
+	}
+
+	return source;
+}
+
+/** Get description of test case
+ *
+ * @param test_case_index Index of test case
+ *
+ * @return Test case description
+ **/
+std::string VaryingExceedingComponentsTest::getTestCaseName(GLuint test_case_index)
+{
+	std::stringstream stream;
+	testCase&		  test_case = m_test_cases[test_case_index];
+
+	stream << "Stage: " << Utils::Shader::GetStageName(test_case.m_stage)
+		   << " type: " << test_case.m_type.GetGLSLTypeName();
+
+	if (true == test_case.m_is_array)
+	{
+		stream << "[1]";
+	}
+
+	stream << ", direction: ";
+
+	if (true == test_case.m_is_input)
+	{
+		stream << "input";
+	}
+	else
+	{
+		stream << "output";
+	}
 
 	return stream.str();
 }
@@ -15726,8 +16223,6 @@ void VaryingExceedingComponentsTest::testInit()
 			continue;
 		}
 
-		const GLuint invalid_component = valid_components.back() + (Utils::Type::Double == type.m_basic_type ? 2 : 1);
-
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
 			if (Utils::Shader::COMPUTE == stage)
@@ -15735,10 +16230,10 @@ void VaryingExceedingComponentsTest::testInit()
 				continue;
 			}
 
-			testCase test_case_in_arr  = { invalid_component, true, true, (Utils::Shader::STAGES)stage, type };
-			testCase test_case_in_one  = { invalid_component, true, false, (Utils::Shader::STAGES)stage, type };
-			testCase test_case_out_arr = { invalid_component, false, true, (Utils::Shader::STAGES)stage, type };
-			testCase test_case_out_one = { invalid_component, false, false, (Utils::Shader::STAGES)stage, type };
+			testCase test_case_in_arr  = { true, true, (Utils::Shader::STAGES)stage, type };
+			testCase test_case_in_one  = { true, false, (Utils::Shader::STAGES)stage, type };
+			testCase test_case_out_arr = { false, true, (Utils::Shader::STAGES)stage, type };
+			testCase test_case_out_one = { false, false, (Utils::Shader::STAGES)stage, type };
 
 			m_test_cases.push_back(test_case_in_arr);
 			m_test_cases.push_back(test_case_in_one);
@@ -16181,8 +16676,10 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 	static const GLchar* block_definition_one = "layout (location = 1COMPONENT) DIRECTION Goku {\n"
 												"    FLAT TYPE member;\n"
 												"} gokuARRAY;\n";
-	static const GLchar* matrix_definition_arr = "layout (location = 1COMPONENT) FLAT DIRECTION TYPE gokuARRAY[1];\n";
-	static const GLchar* matrix_definition_one = "layout (location = 1COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
+	static const GLchar* matrix_dvec3_dvec4_definition_arr =
+		"layout (location = 1COMPONENT) FLAT DIRECTION TYPE gokuARRAY[1];\n";
+	static const GLchar* matrix_dvec3_dvec4_definition_one =
+		"layout (location = 1COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
 	static const GLchar* struct_definition_arr = "struct Goku {\n"
 												 "    TYPE member;\n"
 												 "};\n"
@@ -16193,24 +16690,24 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 												 "};\n"
 												 "\n"
 												 "layout (location = 1COMPONENT) FLAT DIRECTION Goku gokuARRAY;\n";
-	static const GLchar* matrix_input_use_arr = "    if (TYPE(0) == gokuINDEX[0])\n"
-												"    {\n"
-												"        result += vec4(1, 0.5, 0.25, 0.125);\n"
-												"    }\n";
-	static const GLchar* matrix_input_use_one = "    if (TYPE(0) == gokuINDEX)\n"
-												"    {\n"
-												"        result += vec4(1, 0.5, 0.25, 0.125);\n"
-												"    }\n";
-	static const GLchar* matrix_output_use_arr = "    gokuINDEX[0] = TYPE(0);\n"
-												 "    if (vec4(0) == result)\n"
-												 "    {\n"
-												 "        gokuINDEX[0] = TYPE(1);\n"
-												 "    }\n";
-	static const GLchar* matrix_output_use_one = "    gokuINDEX = TYPE(0);\n"
-												 "    if (vec4(0) == result)\n"
-												 "    {\n"
-												 "        gokuINDEX = TYPE(1);\n"
-												 "    }\n";
+	static const GLchar* matrix_dvec3_dvec4_input_use_arr = "    if (TYPE(0) == gokuINDEX[0])\n"
+															"    {\n"
+															"        result += vec4(1, 0.5, 0.25, 0.125);\n"
+															"    }\n";
+	static const GLchar* matrix_dvec3_dvec4_input_use_one = "    if (TYPE(0) == gokuINDEX)\n"
+															"    {\n"
+															"        result += vec4(1, 0.5, 0.25, 0.125);\n"
+															"    }\n";
+	static const GLchar* matrix_dvec3_dvec4_output_use_arr = "    gokuINDEX[0] = TYPE(0);\n"
+															 "    if (vec4(0) == result)\n"
+															 "    {\n"
+															 "        gokuINDEX[0] = TYPE(1);\n"
+															 "    }\n";
+	static const GLchar* matrix_dvec3_dvec4_output_use_one = "    gokuINDEX = TYPE(0);\n"
+															 "    if (vec4(0) == result)\n"
+															 "    {\n"
+															 "        gokuINDEX = TYPE(1);\n"
+															 "    }\n";
 	static const GLchar* member_input_use_arr = "    if (TYPE(0) == gokuINDEX[0].member)\n"
 												"    {\n"
 												"        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -16451,8 +16948,9 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 					var_use		   = member_output_use_one;
 					break;
 				case MATRIX:
-					var_definition = matrix_definition_one;
-					var_use		   = matrix_output_use_one;
+				case DVEC3_DVEC4:
+					var_definition = matrix_dvec3_dvec4_definition_one;
+					var_use		   = matrix_dvec3_dvec4_output_use_one;
 					break;
 				case STRUCT:
 					var_definition = struct_definition_one;
@@ -16471,8 +16969,9 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 					var_use		   = member_output_use_arr;
 					break;
 				case MATRIX:
-					var_definition = matrix_definition_arr;
-					var_use		   = matrix_output_use_arr;
+				case DVEC3_DVEC4:
+					var_definition = matrix_dvec3_dvec4_definition_arr;
+					var_use		   = matrix_dvec3_dvec4_output_use_arr;
 					break;
 				case STRUCT:
 					var_definition = struct_definition_arr;
@@ -16494,8 +16993,9 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 					var_use		   = Utils::Shader::VERTEX == stage ? member_input_use_one : "\n";
 					break;
 				case MATRIX:
-					var_definition = matrix_definition_one;
-					var_use		   = Utils::Shader::VERTEX == stage ? matrix_input_use_one : "\n";
+				case DVEC3_DVEC4:
+					var_definition = matrix_dvec3_dvec4_definition_one;
+					var_use		   = Utils::Shader::VERTEX == stage ? matrix_dvec3_dvec4_input_use_one : "\n";
 					break;
 				case STRUCT:
 					var_definition = struct_definition_one;
@@ -16514,8 +17014,9 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 					var_use		   = Utils::Shader::VERTEX == stage ? member_input_use_arr : "\n";
 					break;
 				case MATRIX:
-					var_definition = matrix_definition_arr;
-					var_use		   = Utils::Shader::VERTEX == stage ? matrix_input_use_arr : "\n";
+				case DVEC3_DVEC4:
+					var_definition = matrix_dvec3_dvec4_definition_arr;
+					var_use		   = Utils::Shader::VERTEX == stage ? matrix_dvec3_dvec4_input_use_arr : "\n";
 					break;
 				case STRUCT:
 					var_definition = struct_definition_arr;
@@ -16677,7 +17178,7 @@ void VaryingComponentOfInvalidTypeTest::testInit()
 				continue;
 			}
 
-			/* Use different CASE for matrices */
+			/* matrices */
 			if (1 != type.m_n_columns)
 			{
 				testCase test_case_in_arr  = { MATRIX, 0, true, true, (Utils::Shader::STAGES)stage, type };
@@ -16694,11 +17195,27 @@ void VaryingComponentOfInvalidTypeTest::testInit()
 					m_test_cases.push_back(test_case_out_one);
 				}
 			}
+			else if (Utils::Type::Double == type.m_basic_type && 2 < type.m_n_rows) /* dvec3 and dvec4 */
+			{
+				testCase test_case_in_arr  = { DVEC3_DVEC4, 0, true, true, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_in_one  = { DVEC3_DVEC4, 0, false, true, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_out_arr = { DVEC3_DVEC4, 0, true, false, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_out_one = { DVEC3_DVEC4, 0, false, false, (Utils::Shader::STAGES)stage, type };
+
+				m_test_cases.push_back(test_case_in_arr);
+				m_test_cases.push_back(test_case_in_one);
+
+				if (Utils::Shader::FRAGMENT != stage)
+				{
+					m_test_cases.push_back(test_case_out_arr);
+					m_test_cases.push_back(test_case_out_one);
+				}
+			}
 			else
 			{
 				if (valid_components.empty())
 				{
-					continue;
+					TCU_FAIL("Unhandled type");
 				}
 
 				for (GLuint c = BLOCK; c < MAX_CASES; ++c)
@@ -27206,6 +27723,7 @@ void EnhancedLayoutsTests::init(void)
 	addChild(new EnhancedLayouts::UniformBlockLayoutQualifierConflictTest(m_context));
 	addChild(new EnhancedLayouts::SSBMemberInvalidOffsetAlignmentTest(m_context));
 	addChild(new EnhancedLayouts::SSBMemberOverlappingOffsetsTest(m_context));
+	addChild(new EnhancedLayouts::VaryingInvalidValueComponentTest(m_context));
 	addChild(new EnhancedLayouts::VaryingExceedingComponentsTest(m_context));
 	addChild(new EnhancedLayouts::VaryingComponentOfInvalidTypeTest(m_context));
 	addChild(new EnhancedLayouts::OutputComponentAliasingTest(m_context));
