@@ -38,6 +38,7 @@
 #include "tcuRGBA.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "rrRenderer.hpp"
 
@@ -631,9 +632,12 @@ void DrawTestInstance<DrawParams>::generateDrawData (void)
 	// Fill only the used indexes
 	for (deUint32 vertexIdx = m_data.params.firstVertex; vertexIdx < vectorSize; ++vertexIdx)
 	{
+		const float f0 = rnd.getFloat(-1.0f, 1.0f);
+		const float f1 = rnd.getFloat(-1.0f, 1.0f);
+
 		m_data.vertices[vertexIdx] = PositionColorVertex(
-			tcu::Vec4(rnd.getFloat(-1.0, 1.0), rnd.getFloat(-1.0, 1.0), 1.0, 1.0),										// Coord
-			tcu::Vec4(rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0)));	// Color
+			tcu::Vec4(f0, f1, 1.0f, 1.0f),	// Coord
+			tcu::randomVec4(rnd));			// Color
 	}
 }
 
@@ -712,10 +716,12 @@ void DrawTestInstance<DrawIndexedParams>::generateDrawData (void)
 		std::vector<PositionColorVertex>::iterator vertexIt = m_data.vertices.begin() + m_data.params.vertexOffset + *indexIt;
 
 		tcu::VecAccess<float, 4, 4>	positionAccess = vertexIt->position.xyzw();
-		positionAccess = tcu::Vec4(rnd.getFloat(-1.0, 1.0), rnd.getFloat(-1.0, 1.0), 1.0, 1.0);
+		const float f0 = rnd.getFloat(-1.0f, 1.0f);
+		const float f1 = rnd.getFloat(-1.0f, 1.0f);
+		positionAccess = tcu::Vec4(f0, f1, 1.0f, 1.0f);
 
 		tcu::VecAccess<float, 4, 4>	colorAccess = vertexIt->color.xyzw();
-		colorAccess = tcu::Vec4(rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0));
+		colorAccess = tcu::randomVec4(rnd);
 	}
 }
 
@@ -825,10 +831,12 @@ void DrawTestInstance<DrawIndirectParams>::generateDrawData (void)
 			std::vector<PositionColorVertex>::iterator vertexIt = vertexStart + idx;
 
 			tcu::VecAccess<float, 4, 4> positionAccess = vertexIt->position.xyzw();
-			positionAccess = tcu::Vec4(rnd.getFloat(-1.0, 1.0), rnd.getFloat(-1.0, 1.0), 1.0, 1.0);
+			const float f0 = rnd.getFloat(-1.0f, 1.0f);
+			const float f1 = rnd.getFloat(-1.0f, 1.0f);
+			positionAccess = tcu::Vec4(f0, f1, 1.0f, 1.0f);
 
 			tcu::VecAccess<float, 4, 4> colorAccess = vertexIt->color.xyzw();
-			colorAccess = tcu::Vec4(rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0));
+			colorAccess = tcu::randomVec4(rnd);
 		}
 	}
 }
@@ -976,10 +984,12 @@ void DrawTestInstance<DrawIndexedIndirectParams>::generateDrawData (void)
 			std::vector<PositionColorVertex>::iterator	vertexIt = m_data.vertices.begin() + cmdIt->vertexOffset + m_data.indexes[idx];
 
 			tcu::VecAccess<float, 4, 4> positionAccess = vertexIt->position.xyzw();
-			positionAccess = tcu::Vec4(rnd.getFloat(-1.0, 1.0), rnd.getFloat(-1.0, 1.0), 1.0, 1.0);
+			const float f0 = rnd.getFloat(-1.0f, 1.0f);
+			const float f1 = rnd.getFloat(-1.0f, 1.0f);
+			positionAccess = tcu::Vec4(f0, f1, 1.0f, 1.0f);
 
 			tcu::VecAccess<float, 4, 4> colorAccess = vertexIt->color.xyzw();
-			colorAccess = tcu::Vec4(rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0), rnd.getFloat(0.0, 1.0));
+			colorAccess = tcu::randomVec4(rnd);
 		}
 	}
 }
