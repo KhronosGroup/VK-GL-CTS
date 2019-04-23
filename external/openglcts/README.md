@@ -320,7 +320,7 @@ as well. See CMake help for more details.
 
 The conformance tests come with native Android support. The following packages
 are needed in order to build an Android binary:
-- Python 2.7.x
+- Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
 - Android NDK r17c
 - Android SDK with API 28 packages and tools installed
 - Apache Ant
