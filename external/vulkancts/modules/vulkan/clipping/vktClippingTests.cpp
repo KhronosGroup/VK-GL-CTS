@@ -375,19 +375,23 @@ tcu::TestStatus testPrimitivesInside (Context& context, const VkPrimitiveTopolog
 			minExpectedBlackPixels = NUM_RENDER_PIXELS - 5;
 			break;
 
-		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
 		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			// Fallthrough
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
 			// Allow for some error.
 			minExpectedBlackPixels = NUM_RENDER_PIXELS - 3 * RENDER_SIZE;
 			break;
 
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			// Fallthrough
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
 			// All render area should be covered.
 			minExpectedBlackPixels = 0;
 			break;
@@ -438,6 +442,18 @@ tcu::TestStatus testPrimitivesInside (Context& context, const VkPrimitiveTopolog
 //! Primitives fully outside the clip volume.
 tcu::TestStatus testPrimitivesOutside (Context& context, const VkPrimitiveTopology topology)
 {
+	switch (topology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_GEOMETRY_SHADER);
+			break;
+		default:
+			break;
+	}
+
 	std::vector<VulkanShader> shaders;
 	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
 	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
