@@ -264,6 +264,7 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 
 	tcu::TextureFormat				retFormat		(tcu::TextureFormat::D, tcu::TextureFormat::CHANNELTYPE_LAST);
 	tcu::TextureFormat				bufferFormat	(tcu::TextureFormat::D, tcu::TextureFormat::CHANNELTYPE_LAST);
+	deUint32						depthAspectBits = VK_IMAGE_ASPECT_DEPTH_BIT;
 	switch (format)
 	{
 	case vk::VK_FORMAT_D16_UNORM:
@@ -283,6 +284,10 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 	default:
 		TCU_FAIL("unrecognized format");
 	}
+
+	if (format == vk::VK_FORMAT_D16_UNORM_S8_UINT || format == vk::VK_FORMAT_D24_UNORM_S8_UINT ||
+		format == vk::VK_FORMAT_D32_SFLOAT_S8_UINT)
+		depthAspectBits |= VK_IMAGE_ASPECT_STENCIL_BIT;
 
 	const VkDeviceSize				pixelDataSize	= renderSize.x() * renderSize.y() * bufferFormat.getPixelSize();
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(retFormat, renderSize.x(), renderSize.y()));
@@ -314,6 +319,23 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 	fence = createFence(vk, device);
 
 	beginCommandBuffer(vk, *cmdBuffer);
+
+	const VkImageMemoryBarrier	imageBarrier	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,										// VkStructureType			sType;
+		DE_NULL,																	// const void*				pNext;
+		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,								// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,												// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,							// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,										// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,													// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,													// deUint32					destQueueFamilyIndex;
+		image,																		// VkImage					image;
+		makeImageSubresourceRange(depthAspectBits, 0u, 1u, 0u, 1u)					// VkImageSubresourceRange	subresourceRange;
+	};
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+						  0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
 	const VkImageSubresourceLayers	subresource	=
 	{
