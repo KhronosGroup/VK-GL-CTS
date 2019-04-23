@@ -29,6 +29,7 @@
 #include "tcuFloat.hpp"
 #include "tcuInterval.hpp"
 #include "tcuFloatFormat.hpp"
+#include "tcuVectorUtil.hpp"
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
@@ -69,26 +70,12 @@ private:
 	tcu::Vector<T, Size>*			m_array;
 };
 
-template<typename T>	T			randomScalar	(de::Random& rnd, T minValue, T maxValue);
-template<> inline		float		randomScalar	(de::Random& rnd, float minValue, float maxValue)		{ return rnd.getFloat(minValue, maxValue);	}
-template<> inline		deInt32		randomScalar	(de::Random& rnd, deInt32 minValue, deInt32 maxValue)	{ return rnd.getInt(minValue, maxValue);	}
-template<> inline		deUint32	randomScalar	(de::Random& rnd, deUint32 minValue, deUint32 maxValue)	{ return minValue + rnd.getUint32() % (maxValue - minValue + 1); }
-
-template<typename T, int Size>
-inline tcu::Vector<T, Size> randomVector (de::Random& rnd, const tcu::Vector<T, Size>& minValue, const tcu::Vector<T, Size>& maxValue)
-{
-	tcu::Vector<T, Size> res;
-	for (int ndx = 0; ndx < Size; ndx++)
-		res[ndx] = randomScalar<T>(rnd, minValue[ndx], maxValue[ndx]);
-	return res;
-}
-
 template<typename T, int Size>
 static void fillRandomVectors (de::Random& rnd, const tcu::Vector<T, Size>& minValue, const tcu::Vector<T, Size>& maxValue, void* dst, int numValues, int offset = 0)
 {
 	VecArrayAccess<T, Size> access(dst);
 	for (int ndx = 0; ndx < numValues; ndx++)
-		access[offset + ndx] = randomVector<T, Size>(rnd, minValue, maxValue);
+		access[offset + ndx] = tcu::randomVector<T, Size>(rnd, minValue, maxValue);
 }
 
 template<typename T>
@@ -96,7 +83,7 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 {
 	T* typedPtr = (T*)dst;
 	for (int ndx = 0; ndx < numValues; ndx++)
-		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
+		typedPtr[offset + ndx] = de::randomScalar<T>(rnd, minValue, maxValue);
 }
 
 inline int numBitsLostInOp (float input, float output)

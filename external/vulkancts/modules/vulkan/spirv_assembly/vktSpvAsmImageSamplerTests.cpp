@@ -28,6 +28,7 @@
 
 #include "vkImageUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuVectorUtil.hpp"
 
 namespace vkt
 {
@@ -758,7 +759,7 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 	inputData.reserve(numDataPoints);
 
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputData.push_back(tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
+		inputData.push_back(tcu::randomVec4(rnd));
 
 	for (deUint32 opNdx = 0u; opNdx <= READOP_IMAGESAMPLE; opNdx++)
 	{
@@ -1050,7 +1051,7 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 	vector<tcu::Vec4> inputData(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputData[numIdx] = tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat());
+		inputData[numIdx] = tcu::randomVec4(rnd);
 
 	for (deUint32 opNdx = 0u; opNdx <= READOP_IMAGESAMPLE; opNdx++)
 	{
@@ -1196,7 +1197,7 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 	inputDataVec4.reserve(numDataPoints);
 
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputDataVec4.push_back(Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
+		inputDataVec4.push_back(tcu::randomVec4(rnd));
 
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "depth_property", ""));
 

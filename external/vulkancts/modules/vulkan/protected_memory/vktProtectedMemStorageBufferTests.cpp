@@ -694,7 +694,8 @@ tcu::TestCaseGroup* createRandomizedBufferTests (tcu::TestContext& testCtx, SSBO
 	testData.resize(testCount);
 
 	for (size_t ndx = 0; ndx < testCount; ++ndx)
-		testData[ndx].values = tcu::UVec4(rnd.getUint32(), rnd.getUint32(), rnd.getUint32(), rnd.getUint32());
+		for (deUint32 compIdx = 0; compIdx < 4; ++compIdx)
+			testData[ndx].values[compIdx] = rnd.getUint32();
 
 	return createSpecifiedStorageBufferTests(testCtx, "random", testType, shaderType, testData.data(), testData.size());
 }

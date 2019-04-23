@@ -28,6 +28,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuVectorUtil.hpp"
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
@@ -179,17 +180,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*2.5f - 1.25f;
-			const float y = rnd.getFloat()*2.5f - 1.25f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(-1.25f), tcu::Vec2(1.25f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 0.5e6f;
-			const float y = rnd.getFloat()*1e6f - 0.5e6f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(-0.5e6f), tcu::Vec2(0.5e6f)));
 		}
 
 		outputs.resize(inputs.size());
@@ -402,17 +399,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*1.25f;
-			const float y = rnd.getFloat()*1.25f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(0.0f), tcu::Vec2(1.25f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 1e5f;
-			const float y = rnd.getFloat()*1e6f - 1e5f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(-1e5f), tcu::Vec2(0.9e6f)));
 		}
 
 		outputs.resize(inputs.size());
@@ -949,21 +942,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*2.5f - 1.25f;
-			const float y = rnd.getFloat()*2.5f - 1.25f;
-			const float z = rnd.getFloat()*2.5f - 1.25f;
-			const float w = rnd.getFloat()*2.5f - 1.25f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-1.25f), tcu::Vec4(1.25f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 0.5e6f;
-			const float y = rnd.getFloat()*1e6f - 0.5e6f;
-			const float z = rnd.getFloat()*1e6f - 0.5e6f;
-			const float w = rnd.getFloat()*1e6f - 0.5e6f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-0.5e6f), tcu::Vec4(0.5e6f)));
 		}
 
 		outputs.resize(inputs.size());
@@ -1192,21 +1177,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*1.25f - 0.125f;
-			const float y = rnd.getFloat()*1.25f - 0.125f;
-			const float z = rnd.getFloat()*1.25f - 0.125f;
-			const float w = rnd.getFloat()*1.25f - 0.125f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-0.125f), tcu::Vec4(1.125f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 1e5f;
-			const float y = rnd.getFloat()*1e6f - 1e5f;
-			const float z = rnd.getFloat()*1e6f - 1e5f;
-			const float w = rnd.getFloat()*1e6f - 1e5f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-1e5f), tcu::Vec4(0.9e6f)));
 		}
 
 		outputs.resize(inputs.size());

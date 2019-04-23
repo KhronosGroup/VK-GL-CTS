@@ -463,30 +463,43 @@ tcu::TestCaseGroup* createGranularityQueryTests (tcu::TestContext& testCtx)
 
 		{
 			std::vector<AttachmentInfo>	attachments;
-			attachments.push_back(AttachmentInfo(format, rnd.getInt(1, maxDimension), rnd.getInt(1, maxDimension), 1));
+			const int					i0				= rnd.getInt(1, maxDimension);
+			const int					i1				= rnd.getInt(1, maxDimension);
+			attachments.push_back(AttachmentInfo(format, i0, i1, 1));
 			single->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
 		}
 
 		{
 			std::vector<AttachmentInfo>	attachments;
-			deUint32	iterations	= rnd.getInt(minIteration, maxIteration);
+			const deUint32				iterations		= rnd.getInt(minIteration, maxIteration);
+			const int					i0				= rnd.getInt(1, maxDimension);
+			const int					i1				= rnd.getInt(1, maxDimension);
 			for (deUint32 idx = 0; idx < iterations; ++idx)
-				attachments.push_back(AttachmentInfo(VkFormat(formatIdx), rnd.getInt(1, maxDimension), rnd.getInt(1, maxDimension), 1));
+				attachments.push_back(AttachmentInfo(VkFormat(formatIdx), i0, i1, 1));
 			multi->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
 		}
 
 		{
 			std::vector<AttachmentInfo>	attachments;
-			deUint32	iterations	= rnd.getInt(minIteration, maxIteration);
-			attachments.push_back(AttachmentInfo(VkFormat(formatIdx), rnd.getInt(1, maxDimension), rnd.getInt(1, maxDimension), 1));
+			const deUint32				iterations		= rnd.getInt(minIteration, maxIteration);
+			const int					i0				= rnd.getInt(1, maxDimension);
+			const int					i1				= rnd.getInt(1, maxDimension);
+			attachments.push_back(AttachmentInfo(VkFormat(formatIdx), i0, i1, 1));
 			for (deUint32 idx = 0; idx < iterations; ++idx)
-				attachments.push_back(AttachmentInfo(mandatoryFormats[rnd.getInt(0, DE_LENGTH_OF_ARRAY(mandatoryFormats) - 1)], rnd.getInt(1, maxDimension), rnd.getInt(1, maxDimension), 1));
+			{
+				const int	i2	= rnd.getInt(0, DE_LENGTH_OF_ARRAY(mandatoryFormats) - 1);
+				const int	i3	= rnd.getInt(1, maxDimension);
+				const int	i4	= rnd.getInt(1, maxDimension);
+				attachments.push_back(AttachmentInfo(mandatoryFormats[i2], i3, i4, 1));
+			}
 			random->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments));
 		}
 
 		{
 			std::vector<AttachmentInfo>	attachments;
-			attachments.push_back(AttachmentInfo(format, rnd.getInt(1, maxDimension), rnd.getInt(1, maxDimension), 1));
+			const int					i0				= rnd.getInt(1, maxDimension);
+			const int					i1				= rnd.getInt(1, maxDimension);
+			attachments.push_back(AttachmentInfo(format, i0, i1, 1));
 			inRenderPass->addChild(new GranularityCase(testCtx, name.c_str(), description, attachments, true));
 		}
 	}

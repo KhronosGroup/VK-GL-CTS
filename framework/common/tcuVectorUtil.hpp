@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tcuVector.hpp"
+#include "deRandom.hpp"
 #include "deMeta.hpp"
 #include "deMath.h"
 #include "deInt32.h"
@@ -366,6 +367,32 @@ static inline Vector<T, Size> absDiff (const Vector<T, Size>& a, const Vector<T,
 		res[ndx] = (a[ndx] > b[ndx]) ? (a[ndx] - b[ndx]) : (b[ndx] - a[ndx]);
 
 	return res;
+}
+
+template<typename T, int Size>
+inline tcu::Vector<T, Size> randomVector (de::Random& rnd, const tcu::Vector<T, Size>& minValue, const tcu::Vector<T, Size>& maxValue)
+{
+	tcu::Vector<T, Size> res;
+
+	for (int ndx = 0; ndx < Size; ndx++)
+		res[ndx] = de::randomScalar<T>(rnd, minValue[ndx], maxValue[ndx]);
+
+	return res;
+}
+
+inline Vector<float, 2> randomVec2 (de::Random& rnd)
+{
+	return randomVector<float, 2>(rnd, tcu::Vector<float, 2>(0.0f), tcu::Vector<float, 2>(1.0f));
+}
+
+inline Vector<float, 3> randomVec3 (de::Random& rnd)
+{
+	return randomVector<float, 3>(rnd, tcu::Vector<float, 3>(0.0f), tcu::Vector<float, 3>(1.0f));
+}
+
+inline Vector<float, 4> randomVec4 (de::Random& rnd)
+{
+	return randomVector<float, 4>(rnd, tcu::Vector<float, 4>(0.0f), tcu::Vector<float, 4>(1.0f));
 }
 
 // Macros for component-wise ops.

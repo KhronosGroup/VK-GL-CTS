@@ -27,6 +27,7 @@
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 
 #include "tcuStringTemplate.hpp"
+#include "tcuVectorUtil.hpp"
 
 namespace vkt
 {
@@ -81,7 +82,7 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 
 	indexSelectorData.reserve(numItems);
 	for (deUint32 numIdx = 0; numIdx < numItems; ++numIdx)
-		indexSelectorData.push_back(UVec4(rnd.getUint32() % 32, rnd.getUint32() % 32, rnd.getUint32() % 4, rnd.getUint32() % 4));
+		indexSelectorData.push_back(tcu::randomVector<deUint32, 4>(rnd, UVec4(0), UVec4(31, 31, 3, 3)));
 
 	for (int chainOpIdx = 0; chainOpIdx < CHAIN_OP_LAST; ++chainOpIdx)
 	{
@@ -297,7 +298,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 
 	indexSelectorData.reserve(numItems);
 	for (deUint32 numIdx = 0; numIdx < numItems; ++numIdx)
-		indexSelectorData.push_back(UVec4(rnd.getUint32() % 32, rnd.getUint32() % 32, rnd.getUint32() % 4, rnd.getUint32() % 4));
+		indexSelectorData.push_back(tcu::randomVector<deUint32, 4>(rnd, UVec4(0), UVec4(31, 31, 3, 3)));
 
 	getDefaultColors(defaultColors);
 

@@ -83,7 +83,7 @@ void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* dst, int 
 {
 	T* const typedPtr = (T*)dst;
 	for (int ndx = 0; ndx < numValues; ndx++)
-		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
+		typedPtr[offset + ndx] = de::randomScalar<T>(rnd, minValue, maxValue);
 }
 
 // The following structure (outer_struct) is passed as a vector of 64 32-bit floats into some shaders.

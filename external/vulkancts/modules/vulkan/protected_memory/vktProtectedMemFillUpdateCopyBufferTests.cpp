@@ -369,13 +369,15 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 			deUint32	uint;
 		}					fillValue	= { rnd.getFloat(std::numeric_limits<float>::min(), std::numeric_limits<float>::max() - 1) };
 
-		tcu::Vec4			refValue	(fillValue.flt);
+		const tcu::Vec4		refValue	(fillValue.flt);
+		const tcu::IVec4	vec0		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	vec1		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	vec2		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	vec3		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+
 		ValidationDataVec4	data		=
 		{
-			{ tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)) },
+			{ vec0, vec1, vec2, vec3 },
 			{ refValue, refValue, refValue, refValue }
 		};
 
@@ -478,13 +480,15 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 			deUint32	uint;
 		}					fillValue	= { rnd.getInt(std::numeric_limits<deInt32>::min(), std::numeric_limits<deInt32>::max() - 1) };
 
-		tcu::IVec4			refValue	(fillValue.integer);
+		const tcu::IVec4	refValue	(fillValue.integer);
+		const tcu::IVec4	v0			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	v1			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	v2			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	v3			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+
 		ValidationDataIVec4	data		=
 		{
-			{ tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)) },
+			{ v0, v1, v2, v3 },
 			{ refValue, refValue, refValue, refValue }
 		};
 
@@ -579,14 +583,16 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 	for (int ndx = 0; ndx < testCount; ++ndx)
 	{
 		const std::string	name		= "test_" + de::toString(ndx + 1);
-		deUint32			fillValue	= rnd.getUint32();
-		tcu::UVec4			refValue	(fillValue);
+		const deUint32		fillValue	= rnd.getUint32();
+		const tcu::UVec4	refValue	(fillValue);
+		const tcu::IVec4	v0			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	v1			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	v2			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	v3			= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+
 		ValidationDataUVec4	data		=
 		{
-			{ tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)) },
+			{ v0, v1, v2, v3 },
 			{ refValue, refValue, refValue, refValue }
 		};
 
