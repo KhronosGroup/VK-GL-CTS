@@ -46,21 +46,25 @@ tcu::UVec3 computeWorkGroupSize (const tcu::UVec3& gridSize)
 
 void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& programCollection) const
 {
-	const std::string	imageTypeStr	= getShaderImageType(m_format, m_imageType);
-	const std::string	formatDataStr	= getShaderImageDataType(m_format);
-	const std::string	formatQualStr	= getShaderImageFormatQualifier(m_format);
-
-	const std::string  coordString		= getShaderImageCoordinates(m_imageType,
+	const PlanarFormatDescription	formatDescription			= getPlanarFormatDescription(m_format);
+	const std::string				imageTypeStr				= getShaderImageType(formatDescription, m_imageType);
+	const std::string				formatDataStr				= getShaderImageDataType(formatDescription);
+	const std::string				formatQualStr				= getShaderImageFormatQualifier(m_format);
+	const std::string				coordString					= getShaderImageCoordinates(m_imageType,
 																	"%local_int_GlobalInvocationID_x",
 																	"%local_ivec2_GlobalInvocationID_xy",
 																	"%local_ivec3_GlobalInvocationID_xyz");
 	// Create compute program
-	std::ostringstream	src;
+	std::ostringstream				src;
 
-	const std::string	typeImgComp					= getImageComponentTypeName(m_format);
-	const std::string	typeImgCompVec4				= getImageComponentVec4TypeName(m_format);
-	const std::string	typeImageSparse				= getSparseImageTypeName();
-	const std::string	typeUniformConstImageSparse	= getUniformConstSparseImageTypeName();
+	const std::string				typeImgComp					= getImageComponentTypeName(formatDescription);
+	const std::string				typeImgCompVec4				= getImageComponentVec4TypeName(formatDescription);
+	const std::string				typeImageSparse				= getSparseImageTypeName();
+	const std::string				typeUniformConstImageSparse	= getUniformConstSparseImageTypeName();
+	const std::string				opTypeImageSparse			= getOpTypeImageSparse(m_imageType, m_format, typeImgComp, false);
+	const std::string				opTypeImageResidency		= getOpTypeImageResidency(m_imageType);
+	// it's not possible to declare two OpTypeImage aliases for the same data type - we have to eliminate %type_image_residency when %type_image_sparse is the same
+	const std::string				typeImageResidencyName		= (opTypeImageSparse == opTypeImageResidency) ? "%type_image_sparse" : "%type_image_residency";
 
 	src << "OpCapability Shader\n"
 		<< "OpCapability ImageCubeArray\n"
@@ -109,11 +113,15 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "%type_bool						= OpTypeBool\n"
 		<< "%type_int						= OpTypeInt 32 1\n"
 		<< "%type_uint						= OpTypeInt 32 0\n"
+		<< "%type_float						= OpTypeFloat 32\n"
 		<< "%type_ivec2						= OpTypeVector %type_int  2\n"
 		<< "%type_ivec3						= OpTypeVector %type_int  3\n"
 		<< "%type_ivec4						= OpTypeVector %type_int  4\n"
 		<< "%type_uvec3						= OpTypeVector %type_uint 3\n"
 		<< "%type_uvec4						= OpTypeVector %type_uint 4\n"
+		<< "%type_vec2						= OpTypeVector %type_float 2\n"
+		<< "%type_vec3						= OpTypeVector %type_float 3\n"
+		<< "%type_vec4						= OpTypeVector %type_float 4\n"
 		<< "%type_struct_int_img_comp_vec4	= OpTypeStruct %type_int " << typeImgCompVec4 << "\n"
 
 		<< "%type_input_uint		= OpTypePointer Input %type_uint\n"
@@ -131,11 +139,14 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 
 		// Sparse image with sampler type declaration
 		<< "%type_image_sparse_with_sampler = " << getOpTypeImageSparse(m_imageType, m_format, typeImgComp, true) << "\n"
-		<< "%type_uniformconst_image_sparse_with_sampler = OpTypePointer UniformConstant %type_image_sparse_with_sampler\n"
+		<< "%type_uniformconst_image_sparse_with_sampler = OpTypePointer UniformConstant %type_image_sparse_with_sampler\n";
+
 
 		// Residency image type declaration
-		<< "%type_image_residency				= " << getOpTypeImageResidency(m_imageType) << "\n"
-		<< "%type_uniformconst_image_residency	= OpTypePointer UniformConstant %type_image_residency\n"
+	if ( opTypeImageSparse != opTypeImageResidency )
+		src << "%type_image_residency				= " << getOpTypeImageResidency(m_imageType) << "\n";
+
+	src << "%type_uniformconst_image_residency	= OpTypePointer UniformConstant "<< typeImageResidencyName <<"\n"
 
 		// Declare sparse image variable
 		<< "%uniform_image_sparse = OpVariable " << typeUniformConstImageSparse << " UniformConstant\n"
@@ -226,7 +237,7 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "OpImageWrite %local_image_texels " << coordString << " %local_img_comp_vec4\n"
 
 		// Load residency info image
-		<< "%local_image_residency	= OpLoad %type_image_residency %uniform_image_residency\n"
+		<< "%local_image_residency	= OpLoad " << typeImageResidencyName <<" %uniform_image_residency\n"
 
 		// Check if loaded texel is placed in resident memory
 		<< "%local_texel_resident = OpImageSparseTexelsResident %type_bool %local_residency_code\n"
@@ -271,11 +282,11 @@ std::string	SparseCaseOpImageSparseFetch::getUniformConstSparseImageTypeName (vo
 	return "%type_uniformconst_image_sparse_with_sampler";
 }
 
-std::string	SparseCaseOpImageSparseFetch::sparseImageOpString  (const std::string& resultVariable,
-																const std::string& resultType,
-																const std::string& image,
-																const std::string& coord,
-																const std::string& mipLevel) const
+std::string	SparseCaseOpImageSparseFetch::sparseImageOpString (const std::string& resultVariable,
+															   const std::string& resultType,
+															   const std::string& image,
+															   const std::string& coord,
+															   const std::string& mipLevel) const
 {
 	std::ostringstream	src;
 
@@ -312,24 +323,24 @@ std::string	SparseCaseOpImageSparseRead::sparseImageOpString (const std::string&
 class SparseShaderIntrinsicsInstanceStorage : public SparseShaderIntrinsicsInstanceBase
 {
 public:
-	SparseShaderIntrinsicsInstanceStorage	(Context&					context,
-											 const SpirVFunction		function,
-											 const ImageType			imageType,
-											 const tcu::UVec3&			imageSize,
-											 const tcu::TextureFormat&	format)
+	SparseShaderIntrinsicsInstanceStorage			(Context&				context,
+													 const SpirVFunction	function,
+													 const ImageType		imageType,
+													 const tcu::UVec3&		imageSize,
+													 const VkFormat			format)
 		: SparseShaderIntrinsicsInstanceBase(context, function, imageType, imageSize, format) {}
 
-	VkImageUsageFlags				imageOutputUsageFlags	(void) const;
+	VkImageUsageFlags		imageOutputUsageFlags	(void) const;
 
-	VkQueueFlags					getQueueFlags			(void) const;
+	VkQueueFlags			getQueueFlags			(void) const;
 
-	void							recordCommands			(const VkCommandBuffer		commandBuffer,
-															 const VkImageCreateInfo&	imageSparseInfo,
-															 const VkImage				imageSparse,
-															 const VkImage				imageTexels,
-															 const VkImage				imageResidency);
+	void					recordCommands			(const VkCommandBuffer		commandBuffer,
+													 const VkImageCreateInfo&	imageSparseInfo,
+													 const VkImage				imageSparse,
+													 const VkImage				imageTexels,
+													 const VkImage				imageResidency);
 
-	virtual VkDescriptorType		imageSparseDescType		(void) const = 0;
+	virtual VkDescriptorType	imageSparseDescType	(void) const = 0;
 };
 
 VkImageUsageFlags SparseShaderIntrinsicsInstanceStorage::imageOutputUsageFlags (void) const
@@ -439,8 +450,8 @@ void SparseShaderIntrinsicsInstanceStorage::recordCommands (const VkCommandBuffe
 
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
-		const tcu::UVec3  gridSize				= getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
-		const tcu::UVec3  workGroupSize			= computeWorkGroupSize(gridSize);
+		const tcu::UVec3 gridSize				= getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
+		const tcu::UVec3 workGroupSize			= computeWorkGroupSize(gridSize);
 		const tcu::UVec3 specializationData[2]	= { gridSize, workGroupSize };
 
 		const VkSpecializationInfo specializationInfo =
@@ -531,8 +542,8 @@ public:
 												 const SpirVFunction		function,
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
-												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsInstanceStorage (context, function, imageType, imageSize, format) {}
+												 const VkFormat				format)
+		: SparseShaderIntrinsicsInstanceStorage(context, function, imageType, imageSize, format) {}
 
 	VkImageUsageFlags	imageSparseUsageFlags	(void) const { return VK_IMAGE_USAGE_SAMPLED_BIT; }
 	VkDescriptorType	imageSparseDescType		(void) const { return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; }
@@ -550,8 +561,8 @@ public:
 												 const SpirVFunction		function,
 												 const ImageType			imageType,
 												 const tcu::UVec3&			imageSize,
-												 const tcu::TextureFormat&	format)
-	: SparseShaderIntrinsicsInstanceStorage (context, function, imageType, imageSize, format) {}
+												 const VkFormat				format)
+		: SparseShaderIntrinsicsInstanceStorage(context, function, imageType, imageSize, format) {}
 
 	VkImageUsageFlags	imageSparseUsageFlags	(void) const { return VK_IMAGE_USAGE_STORAGE_BIT; }
 	VkDescriptorType	imageSparseDescType		(void) const { return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE; }

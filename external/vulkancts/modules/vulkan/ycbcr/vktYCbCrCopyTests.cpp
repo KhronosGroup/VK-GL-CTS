@@ -59,7 +59,6 @@ namespace ycbcr
 {
 namespace
 {
-typedef de::SharedPtr<vk::Allocation> AllocationSp;
 
 struct ImageConfig
 {
@@ -165,134 +164,6 @@ vk::Move<vk::VkImage> createImage (const vk::DeviceInterface&	vkd,
 	};
 
 	return vk::createImage(vkd, device, &createInfo);
-}
-
-vk::VkFormat getPlaneCompatibleFormat (vk::VkFormat format, deUint32 planeNdx)
-{
-	DE_ASSERT(planeNdx < 3);
-
-	switch (format)
-	{
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
-			return vk::VK_FORMAT_R8_UNORM;
-
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R8_UNORM;
-			else
-				return vk::VK_FORMAT_R8G8_UNORM;
-		}
-
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
-			return vk::VK_FORMAT_R8_UNORM;
-
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R8_UNORM;
-			else
-				return vk::VK_FORMAT_R8G8_UNORM;
-		}
-
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
-			return vk::VK_FORMAT_R8_UNORM;
-
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
-			return vk::VK_FORMAT_R10X6_UNORM_PACK16;
-
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R10X6_UNORM_PACK16;
-			else
-				return vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16;
-		}
-
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
-			return vk::VK_FORMAT_R10X6_UNORM_PACK16;
-
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R10X6_UNORM_PACK16;
-			else
-				return vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16;
-		}
-
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
-			return vk::VK_FORMAT_R10X6_UNORM_PACK16;
-
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
-			return vk::VK_FORMAT_R12X4_UNORM_PACK16;
-
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R12X4_UNORM_PACK16;
-			else
-				return vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
-		}
-
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
-			return vk::VK_FORMAT_R12X4_UNORM_PACK16;
-
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R12X4_UNORM_PACK16;
-			else
-				return vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
-		}
-
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
-			return vk::VK_FORMAT_R12X4_UNORM_PACK16;
-
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
-			return vk::VK_FORMAT_R16_UNORM;
-
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R16_UNORM;
-			else
-				return vk::VK_FORMAT_R16G16_UNORM;
-		}
-
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
-			return vk::VK_FORMAT_R16_UNORM;
-
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
-		{
-			DE_ASSERT(planeNdx < 2);
-
-			if (planeNdx == 0)
-				return vk::VK_FORMAT_R16_UNORM;
-			else
-				return vk::VK_FORMAT_R16G16_UNORM;
-		}
-
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
-			return vk::VK_FORMAT_R16_UNORM;
-
-		default:
-			DE_ASSERT(planeNdx == 0);
-			return format;
-	}
 }
 
 bool isCompatible (vk::VkFormat	srcFormat,
@@ -504,25 +375,6 @@ bool isCompatible (vk::VkFormat	srcFormat,
 	}
 }
 
-UVec2 getBlockSize (vk::VkFormat format)
-{
-	switch (format)
-	{
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
-			return UVec2(2, 1);
-
-		default:
-			return UVec2(1u, 1u);
-	}
-}
-
 deUint32 getBlockByteSize (vk::VkFormat format)
 {
 	switch (format)
@@ -580,16 +432,6 @@ deUint32 getBlockByteSize (vk::VkFormat format)
 	}
 }
 
-UVec2 getPlaneSize (const vk::PlanarFormatDescription&	info,
-					deUint32							planeNdx,
-					const UVec2&						size)
-{
-	if (info.numPlanes > 1)
-		return UVec2(size.x() / info.planes[planeNdx].widthDivisor, size.y() / info.planes[planeNdx].heightDivisor);
-	else
-		return size;
-}
-
 UVec2 randomUVec2 (de::Random&	rng,
 				   const UVec2&	min,
 				   const UVec2&	max)
@@ -618,8 +460,8 @@ void genCopies (de::Random&					rng,
 	{
 		for (deUint32 dstPlaneNdx = 0; dstPlaneNdx < dstPlaneInfo.numPlanes; dstPlaneNdx++)
 		{
-			const vk::VkFormat srcPlaneFormat (getPlaneCompatibleFormat(srcFormat, srcPlaneNdx));
-			const vk::VkFormat dstPlaneFormat (getPlaneCompatibleFormat(dstFormat, dstPlaneNdx));
+			const vk::VkFormat srcPlaneFormat (getPlaneCompatibleFormat(srcPlaneInfo, srcPlaneNdx));
+			const vk::VkFormat dstPlaneFormat (getPlaneCompatibleFormat(dstPlaneInfo, dstPlaneNdx));
 
 			if (isCompatible(srcPlaneFormat, dstPlaneFormat))
 				pairs.push_back(std::make_pair(srcPlaneNdx, dstPlaneNdx));
@@ -635,21 +477,21 @@ void genCopies (de::Random&					rng,
 		const pair<deUint32, deUint32>	planes			(rng.choose<pair<deUint32, deUint32> >(pairs.begin(), pairs.end()));
 
 		const deUint32					srcPlaneNdx			(planes.first);
-		const vk::VkFormat				srcPlaneFormat		(getPlaneCompatibleFormat(srcFormat, srcPlaneNdx));
-		const UVec2						srcBlockSize		(getBlockSize(srcPlaneFormat));
-		const UVec2						srcPlaneSize		(getPlaneSize(srcPlaneInfo, srcPlaneNdx, srcSize));
-		const UVec2						srcPlaneBlockSize	(srcPlaneSize / srcBlockSize);
+		const vk::VkFormat				srcPlaneFormat		(getPlaneCompatibleFormat(srcPlaneInfo, srcPlaneNdx));
+		const UVec2						srcBlockExtent		(getBlockExtent(srcPlaneFormat));
+		const UVec2						srcPlaneExtent		(getPlaneExtent(srcPlaneInfo, srcSize, srcPlaneNdx, 0));
+		const UVec2						srcPlaneBlockExtent	(srcPlaneExtent / srcBlockExtent);
 
 		const deUint32					dstPlaneNdx			(planes.second);
-		const vk::VkFormat				dstPlaneFormat		(getPlaneCompatibleFormat(dstFormat, dstPlaneNdx));
-		const UVec2						dstBlockSize		(getBlockSize(dstPlaneFormat));
-		const UVec2						dstPlaneSize		(getPlaneSize(dstPlaneInfo, dstPlaneNdx, dstSize));
-		const UVec2						dstPlaneBlockSize	(dstPlaneSize / dstBlockSize);
+		const vk::VkFormat				dstPlaneFormat		(getPlaneCompatibleFormat(dstPlaneInfo, dstPlaneNdx));
+		const UVec2						dstBlockExtent		(getBlockExtent(dstPlaneFormat));
+		const UVec2						dstPlaneExtent		(getPlaneExtent(dstPlaneInfo, dstSize, dstPlaneNdx, 0));
+		const UVec2						dstPlaneBlockExtent	(dstPlaneExtent / dstBlockExtent);
 
-		const UVec2						copyBlockSize		(randomUVec2(rng, UVec2(1u, 1u), tcu::min(srcPlaneBlockSize, dstPlaneBlockSize)));
-		const UVec2						srcOffset			(srcBlockSize * randomUVec2(rng, UVec2(0u, 0u), srcPlaneBlockSize - copyBlockSize));
-		const UVec2						dstOffset			(dstBlockSize * randomUVec2(rng, UVec2(0u, 0u), dstPlaneBlockSize - copyBlockSize));
-		const UVec2						copySize			(copyBlockSize * srcBlockSize);
+		const UVec2						copyBlockExtent		(randomUVec2(rng, UVec2(1u, 1u), tcu::min(srcPlaneBlockExtent, dstPlaneBlockExtent)));
+		const UVec2						srcOffset			(srcBlockExtent * randomUVec2(rng, UVec2(0u, 0u), srcPlaneBlockExtent - copyBlockExtent));
+		const UVec2						dstOffset			(dstBlockExtent * randomUVec2(rng, UVec2(0u, 0u), dstPlaneBlockExtent - copyBlockExtent));
+		const UVec2						copyExtent			(copyBlockExtent * srcBlockExtent);
 		const vk::VkImageCopy			copy				=
 		{
 			// src
@@ -678,8 +520,8 @@ void genCopies (de::Random&					rng,
 			},
 			// size
 			{
-				copySize.x(),
-				copySize.y(),
+				copyExtent.x(),
+				copyExtent.y(),
 				1u
 			}
 		};
@@ -842,36 +684,36 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 				const deUint32			srcPlaneNdx			(copy.srcSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT
 															? vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copy.srcSubresource.aspectMask)
 															: 0u);
-				const UVec2				srcPlaneSize		(getPlaneSize(srcData.getDescription(), srcPlaneNdx, config.src.size));
+				const UVec2				srcPlaneExtent		(getPlaneExtent(srcData.getDescription(), config.src.size, srcPlaneNdx, 0));
 
 				const vk::VkFormat		srcPlaneFormat		(getPlaneCompatibleFormat(config.src.format, srcPlaneNdx));
-				const UVec2				srcBlockSize		(getBlockSize(srcPlaneFormat));
+				const UVec2				srcBlockExtent		(getBlockExtent(srcPlaneFormat));
 
 				const deUint32			blockSizeBytes		(getBlockByteSize(srcPlaneFormat));
 
-				const UVec2				srcPlaneBlockSize	(srcPlaneSize / srcBlockSize);
-				const UVec2				srcBlockOffset		(copy.srcOffset.x / srcBlockSize.x(), copy.srcOffset.y / srcBlockSize.y());
-				const UVec2				srcBlockPitch		(blockSizeBytes, blockSizeBytes * srcPlaneBlockSize.x());
+				const UVec2				srcPlaneBlockExtent	(srcPlaneExtent / srcBlockExtent);
+				const UVec2				srcBlockOffset		(copy.srcOffset.x / srcBlockExtent.x(), copy.srcOffset.y / srcBlockExtent.y());
+				const UVec2				srcBlockPitch		(blockSizeBytes, blockSizeBytes * srcPlaneBlockExtent.x());
 
 				const deUint32			dstPlaneNdx			(copy.dstSubresource.aspectMask != vk::VK_IMAGE_ASPECT_COLOR_BIT
 															? vk::getAspectPlaneNdx((vk::VkImageAspectFlagBits)copy.dstSubresource.aspectMask)
 															: 0u);
-				const UVec2				dstPlaneSize		(getPlaneSize(dstData.getDescription(), dstPlaneNdx, config.dst.size));
+				const UVec2				dstPlaneExtent		(getPlaneExtent(dstData.getDescription(), config.dst.size, dstPlaneNdx, 0));
 
 				const vk::VkFormat		dstPlaneFormat		(getPlaneCompatibleFormat(config.dst.format, dstPlaneNdx));
-				const UVec2				dstBlockSize		(getBlockSize(dstPlaneFormat));
+				const UVec2				dstBlockExtent		(getBlockExtent(dstPlaneFormat));
 
-				const UVec2				dstPlaneBlockSize	(dstPlaneSize / dstBlockSize);
-				const UVec2				dstBlockOffset		(copy.dstOffset.x / dstBlockSize.x(), copy.dstOffset.y / dstBlockSize.y());
-				const UVec2				dstBlockPitch		(blockSizeBytes, blockSizeBytes * dstPlaneBlockSize.x());
+				const UVec2				dstPlaneBlockExtent	(dstPlaneExtent / dstBlockExtent);
+				const UVec2				dstBlockOffset		(copy.dstOffset.x / dstBlockExtent.x(), copy.dstOffset.y / dstBlockExtent.y());
+				const UVec2				dstBlockPitch		(blockSizeBytes, blockSizeBytes * dstPlaneBlockExtent.x());
 
-				const UVec2				blockSize			(copy.extent.width / srcBlockSize.x(), copy.extent.height / srcBlockSize.y());
+				const UVec2				blockExtent			(copy.extent.width / srcBlockExtent.x(), copy.extent.height / srcBlockExtent.y());
 
 				DE_ASSERT(blockSizeBytes == getBlockByteSize(dstPlaneFormat));
 
-				for (deUint32 y = 0; y < blockSize.y(); y++)
+				for (deUint32 y = 0; y < blockExtent.y(); y++)
 				{
-					const deUint32	size	= blockSize.x() * blockSizeBytes;
+					const deUint32	size	= blockExtent.x() * blockSizeBytes;
 					const deUint32	srcPos	= tcu::dot(srcBlockPitch, UVec2(srcBlockOffset.x(), srcBlockOffset.y() + y));
 					const deUint32	dstPos	= tcu::dot(dstBlockPitch, UVec2(dstBlockOffset.x(), dstBlockOffset.y() + y));
 
@@ -885,7 +727,8 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 
 			for (deUint32 planeNdx = 0; planeNdx < result.getDescription().numPlanes; ++planeNdx)
 			{
-				for (size_t byteNdx = 0; byteNdx < result.getPlaneSize(planeNdx); byteNdx++)
+				deUint32 planeSize = vk::getPlaneSizeInBytes(result.getDescription(), result.getSize(), planeNdx, 0u, 1u);
+				for (size_t byteNdx = 0; byteNdx < planeSize; byteNdx++)
 				{
 					const deUint8	res	= ((const deUint8*)result.getPlanePtr(planeNdx))[byteNdx];
 					const deUint8	ref	= ((const deUint8*)reference.getPlanePtr(planeNdx))[byteNdx];

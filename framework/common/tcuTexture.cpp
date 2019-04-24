@@ -912,6 +912,7 @@ IVec3 calculatePackedPitch (const TextureFormat& format, const IVec3& size)
 ConstPixelBufferAccess::ConstPixelBufferAccess (void)
 	: m_size		(0)
 	, m_pitch		(0)
+	, m_divider		(1,1,1)
 	, m_data		(DE_NULL)
 {
 }
@@ -920,6 +921,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int
 	: m_format		(format)
 	, m_size		(width, height, depth)
 	, m_pitch		(calculatePackedPitch(m_format, m_size))
+	, m_divider		(1,1,1)
 	, m_data		((void*)data)
 {
 	DE_ASSERT(isValid(format));
@@ -929,6 +931,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, con
 	: m_format		(format)
 	, m_size		(size)
 	, m_pitch		(calculatePackedPitch(m_format, m_size))
+	, m_divider		(1,1,1)
 	, m_data		((void*)data)
 {
 	DE_ASSERT(isValid(format));
@@ -938,6 +941,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, int
 	: m_format		(format)
 	, m_size		(width, height, depth)
 	, m_pitch		(format.getPixelSize(), rowPitch, slicePitch)
+	, m_divider		(1,1,1)
 	, m_data		((void*)data)
 {
 	DE_ASSERT(isValid(format));
@@ -947,6 +951,18 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureFormat& format, con
 	: m_format		(format)
 	, m_size		(size)
 	, m_pitch		(pitch)
+	, m_divider		(1,1,1)
+	, m_data		((void*)data)
+{
+	DE_ASSERT(isValid(format));
+	DE_ASSERT(m_format.getPixelSize() <= m_pitch.x());
+}
+
+ConstPixelBufferAccess::ConstPixelBufferAccess(const TextureFormat& format, const IVec3& size, const IVec3& pitch, const IVec3& block, const void* data)
+	: m_format		(format)
+	, m_size		(size)
+	, m_pitch		(pitch)
+	, m_divider		(block)
 	, m_data		((void*)data)
 {
 	DE_ASSERT(isValid(format));
@@ -957,6 +973,7 @@ ConstPixelBufferAccess::ConstPixelBufferAccess (const TextureLevel& level)
 	: m_format		(level.getFormat())
 	, m_size		(level.getSize())
 	, m_pitch		(calculatePackedPitch(m_format, m_size))
+	, m_divider		(1,1,1)
 	, m_data		((void*)level.getPtr())
 {
 }
@@ -980,6 +997,12 @@ PixelBufferAccess::PixelBufferAccess (const TextureFormat& format, const IVec3& 
 	: ConstPixelBufferAccess(format, size, pitch, data)
 {
 }
+
+PixelBufferAccess::PixelBufferAccess(const TextureFormat& format, const IVec3& size, const IVec3& pitch, const IVec3& block, void* data)
+	: ConstPixelBufferAccess(format, size, pitch, block, data)
+{
+}
+
 
 PixelBufferAccess::PixelBufferAccess (TextureLevel& level)
 	: ConstPixelBufferAccess(level)

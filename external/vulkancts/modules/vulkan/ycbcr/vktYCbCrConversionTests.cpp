@@ -81,8 +81,6 @@ namespace ycbcr
 {
 namespace
 {
-typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > VkBufferSp;
-typedef de::SharedPtr<vk::Allocation> AllocationSp;
 
 template<typename T>
 inline de::SharedPtr<vk::Unique<T> > makeSharedPtr(vk::Move<T> move)

@@ -46,9 +46,9 @@ struct QueueFamilyQueuesCount
 	deUint32 queueCount;
 };
 
-deUint32 findMatchingQueueFamilyIndex (const std::vector<vk::VkQueueFamilyProperties>&	queueFamilyProperties,
-									   const VkQueueFlags								queueFlags,
-									   const deUint32									startIndex)
+deUint32 findMatchingQueueFamilyIndex	(const std::vector<VkQueueFamilyProperties>&	queueFamilyProperties,
+										 const VkQueueFlags								queueFlags,
+										 const deUint32									startIndex)
 {
 	for (deUint32 queueNdx = startIndex; queueNdx < queueFamilyProperties.size(); ++queueNdx)
 	{
@@ -63,13 +63,13 @@ deUint32 findMatchingQueueFamilyIndex (const std::vector<vk::VkQueueFamilyProper
 
 void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequirementsVec& queueRequirements)
 {
-	typedef std::map<vk::VkQueueFlags, std::vector<Queue> >		QueuesMap;
-	typedef std::map<deUint32, QueueFamilyQueuesCount>			SelectedQueuesMap;
-	typedef std::map<deUint32, std::vector<float> >				QueuePrioritiesMap;
+	typedef std::map<VkQueueFlags, std::vector<Queue> >	QueuesMap;
+	typedef std::map<deUint32, QueueFamilyQueuesCount>	SelectedQueuesMap;
+	typedef std::map<deUint32, std::vector<float> >		QueuePrioritiesMap;
 
-	std::vector<VkPhysicalDeviceGroupProperties>				devGroupProperties;
-	std::vector<const char*>									deviceExtensions;
-	VkDeviceGroupDeviceCreateInfo								deviceGroupInfo =
+	std::vector<VkPhysicalDeviceGroupProperties>		devGroupProperties;
+	std::vector<const char*>							deviceExtensions;
+	VkDeviceGroupDeviceCreateInfo						deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,		//stype
 		DE_NULL,													//pNext
@@ -163,12 +163,12 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
 		const VkDeviceQueueCreateInfo queueInfo =
 		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType             sType;
-			DE_NULL,										// const void*                 pNext;
-			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags    flags;
-			queueFamilyIter->first,							// uint32_t                    queueFamilyIndex;
-			queueFamilyIter->second.queueCount,				// uint32_t                    queueCount;
-			&queuePriorities[queueFamilyIter->first][0],	// const float*                pQueuePriorities;
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags	flags;
+			queueFamilyIter->first,							// uint32_t					queueFamilyIndex;
+			queueFamilyIter->second.queueCount,				// uint32_t					queueCount;
+			&queuePriorities[queueFamilyIter->first][0],	// const float*				pQueuePriorities;
 		};
 
 		queueInfos.push_back(queueInfo);
@@ -177,16 +177,16 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
 	const VkDeviceCreateInfo		deviceInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType                    sType;
-		m_useDeviceGroups ? &deviceGroupInfo : DE_NULL,				// const void*                        pNext;
-		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags                flags;
-		static_cast<deUint32>(queueInfos.size())	,				// uint32_t                           queueCreateInfoCount;
-		&queueInfos[0],												// const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
-		0u,															// uint32_t                           enabledLayerCount;
-		DE_NULL,													// const char* const*                 ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),							// uint32_t                           enabledExtensionCount;
-		deviceExtensions.size() ? &deviceExtensions[0] : DE_NULL,	// const char* const*                 ppEnabledExtensionNames;
-		&deviceFeatures,											// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
+		m_useDeviceGroups ? &deviceGroupInfo : DE_NULL,				// const void*						pNext;
+		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
+		static_cast<deUint32>(queueInfos.size())	,				// uint32_t							queueCreateInfoCount;
+		&queueInfos[0],												// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,															// uint32_t							enabledLayerCount;
+		DE_NULL,													// const char* const*				ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),							// uint32_t							enabledExtensionCount;
+		deviceExtensions.size() ? &deviceExtensions[0] : DE_NULL,	// const char* const*				ppEnabledExtensionNames;
+		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);

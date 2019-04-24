@@ -349,6 +349,7 @@ public:
 							ConstPixelBufferAccess		(const TextureFormat& format, const IVec3& size, const void* data);
 							ConstPixelBufferAccess		(const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, const void* data);
 							ConstPixelBufferAccess		(const TextureFormat& format, const IVec3& size, const IVec3& pitch, const void* data);
+							ConstPixelBufferAccess		(const TextureFormat& format, const IVec3& size, const IVec3& pitch, const IVec3& divider, const void* data);
 
 	const TextureFormat&	getFormat					(void) const	{ return m_format;					}
 	const IVec3&			getSize						(void) const	{ return m_size;					}
@@ -359,9 +360,10 @@ public:
 	int						getRowPitch					(void) const	{ return m_pitch.y();				}
 	int						getSlicePitch				(void) const	{ return m_pitch.z();				}
 	const IVec3&			getPitch					(void) const	{ return m_pitch;					}
+	const IVec3&			getDivider					(void) const	{ return m_divider;					}
 
 	const void*				getDataPtr					(void) const	{ return m_data;					}
-	const void*				getPixelPtr					(int x, int y, int z = 0) const { return (const deUint8*)m_data + x * m_pitch.x() + y * m_pitch.y() + z * m_pitch.z(); }
+	const void*				getPixelPtr					(int x, int y, int z = 0) const { return (const deUint8*)m_data + (x/m_divider.x()) * m_pitch.x() + (y/m_divider.y()) * m_pitch.y() + (z/m_divider.z()) * m_pitch.z(); }
 
 	Vec4					getPixel					(int x, int y, int z = 0) const;
 	IVec4					getPixelInt					(int x, int y, int z = 0) const;
@@ -388,6 +390,7 @@ protected:
 	TextureFormat			m_format;
 	IVec3					m_size;
 	IVec3					m_pitch;	//!< (pixelPitch, rowPitch, slicePitch)
+	IVec3					m_divider;
 	mutable void*			m_data;
 } DE_WARN_UNUSED_TYPE;
 
@@ -409,9 +412,10 @@ public:
 						PixelBufferAccess	(const TextureFormat& format, const IVec3& size, void* data);
 						PixelBufferAccess	(const TextureFormat& format, int width, int height, int depth, int rowPitch, int slicePitch, void* data);
 						PixelBufferAccess	(const TextureFormat& format, const IVec3& size, const IVec3& pitch, void* data);
+						PixelBufferAccess	(const TextureFormat& format, const IVec3& size, const IVec3& pitch, const IVec3& block, void* data);
 
 	void*				getDataPtr			(void) const { return m_data; }
-	void*				getPixelPtr			(int x, int y, int z = 0) const { return (deUint8*)m_data + x * m_pitch.x() + y * m_pitch.y() + z * m_pitch.z(); }
+	void*				getPixelPtr			(int x, int y, int z = 0) const { return (deUint8*)m_data + (x/m_divider.x()) * m_pitch.x() + (y/m_divider.y()) * m_pitch.y() + (z/m_divider.z()) * m_pitch.z(); }
 
 	void				setPixel			(const tcu::Vec4& color, int x, int y, int z = 0) const;
 	void				setPixel			(const tcu::IVec4& color, int x, int y, int z = 0) const;

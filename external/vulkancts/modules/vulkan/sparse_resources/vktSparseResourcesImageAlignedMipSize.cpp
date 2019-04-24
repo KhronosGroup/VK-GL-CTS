@@ -56,29 +56,29 @@ namespace
 class ImageAlignedMipSizeCase : public TestCase
 {
 public:
-					ImageAlignedMipSizeCase	(tcu::TestContext&			testCtx,
-											 const std::string&			name,
-											 const std::string&			description,
-											 const ImageType			imageType,
-											 const tcu::UVec3&			imageSize,
-											 const tcu::TextureFormat&	format);
+	ImageAlignedMipSizeCase			(tcu::TestContext&	testCtx,
+									 const std::string&	name,
+									 const std::string&	description,
+									 const ImageType	imageType,
+									 const tcu::UVec3&	imageSize,
+									 const VkFormat		format);
 
-	void			initPrograms			(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);};
-	TestInstance*	createInstance			(Context&					context) const;
-	virtual void	checkSupport			(Context&					context) const;
+	void			initPrograms	(SourceCollections&	sourceCollections) const {DE_UNREF(sourceCollections);};
+	TestInstance*	createInstance	(Context&			context) const;
+	virtual void	checkSupport	(Context&			context) const;
 
 private:
-	const ImageType				m_imageType;
-	const tcu::UVec3			m_imageSize;
-	const tcu::TextureFormat	m_format;
+	const ImageType		m_imageType;
+	const tcu::UVec3	m_imageSize;
+	const VkFormat		m_format;
 };
 
-ImageAlignedMipSizeCase::ImageAlignedMipSizeCase (tcu::TestContext&			testCtx,
-												  const std::string&		name,
-												  const std::string&		description,
-												  const ImageType			imageType,
-												  const tcu::UVec3&			imageSize,
-												  const tcu::TextureFormat&	format)
+ImageAlignedMipSizeCase::ImageAlignedMipSizeCase	(tcu::TestContext&	testCtx,
+													 const std::string&	name,
+													 const std::string&	description,
+													 const ImageType	imageType,
+													 const tcu::UVec3&	imageSize,
+													 const VkFormat		format)
 	: TestCase		(testCtx, name, description)
 	, m_imageType	(imageType)
 	, m_imageSize	(imageSize)
@@ -103,23 +103,23 @@ void ImageAlignedMipSizeCase::checkSupport (Context& context) const
 class ImageAlignedMipSizeInstance : public SparseResourcesBaseInstance
 {
 public:
-					ImageAlignedMipSizeInstance(Context&					context,
-												const ImageType				imageType,
-												const tcu::UVec3&			imageSize,
-												const tcu::TextureFormat&	format);
+	ImageAlignedMipSizeInstance	(Context&			context,
+								 const ImageType	imageType,
+								 const tcu::UVec3&	imageSize,
+								 const VkFormat		format);
 
-	tcu::TestStatus	iterate						(void);
+	tcu::TestStatus	iterate		(void);
 
 private:
-	const ImageType				m_imageType;
-	const tcu::UVec3			m_imageSize;
-	const tcu::TextureFormat	m_format;
+	const ImageType		m_imageType;
+	const tcu::UVec3	m_imageSize;
+	const VkFormat		m_format;
 };
 
-ImageAlignedMipSizeInstance::ImageAlignedMipSizeInstance (Context&					context,
-														  const ImageType			imageType,
-														  const tcu::UVec3&			imageSize,
-														  const tcu::TextureFormat&	format)
+ImageAlignedMipSizeInstance::ImageAlignedMipSizeInstance	(Context&			context,
+															 const ImageType	imageType,
+															 const tcu::UVec3&	imageSize,
+															 const VkFormat		format)
 	: SparseResourcesBaseInstance	(context)
 	, m_imageType					(imageType)
 	, m_imageSize					(imageSize)
@@ -129,20 +129,21 @@ ImageAlignedMipSizeInstance::ImageAlignedMipSizeInstance (Context&					context,
 
 tcu::TestStatus ImageAlignedMipSizeInstance::iterate (void)
 {
-	const InstanceInterface&				instance = m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice = m_context.getPhysicalDevice();
-	const VkPhysicalDeviceProperties		physicalDeviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
+	const InstanceInterface&				instance					= m_context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice				= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceProperties		physicalDeviceProperties	= getPhysicalDeviceProperties(instance, physicalDevice);
 	VkImageCreateInfo						imageCreateInfo;
 	VkSparseImageMemoryRequirements			aspectRequirements;
 	VkExtent3D								imageGranularity;
-	const VkPhysicalDeviceSparseProperties	sparseProperties = physicalDeviceProperties.sparseProperties;
-	VkImageFormatProperties					imageFormatProperties;
+	const VkPhysicalDeviceSparseProperties	sparseProperties			= physicalDeviceProperties.sparseProperties;
+	const PlanarFormatDescription			formatDescription			= getPlanarFormatDescription(m_format);
+
 
 	imageCreateInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.pNext					= DE_NULL;
 	imageCreateInfo.flags					= VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
 	imageCreateInfo.imageType				= mapImageType(m_imageType);
-	imageCreateInfo.format					= mapTextureFormat(m_format);
+	imageCreateInfo.format					= m_format;
 	imageCreateInfo.extent					= makeExtent3D(getLayerSize(m_imageType, m_imageSize));
 	imageCreateInfo.arrayLayers				= getNumLayers(m_imageType, m_imageSize);
 	imageCreateInfo.samples					= VK_SAMPLE_COUNT_1_BIT;
@@ -159,13 +160,26 @@ tcu::TestStatus ImageAlignedMipSizeInstance::iterate (void)
 		imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 	}
 
-	imageFormatProperties = getPhysicalDeviceImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.tiling, imageCreateInfo.usage, imageCreateInfo.flags);
-
-	imageCreateInfo.mipLevels				= getImageMaxMipLevels(imageFormatProperties, imageCreateInfo.extent);
-
 	// Check if device supports sparse operations for image format
 	if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageCreateInfo))
 		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
+
+	{
+		VkImageFormatProperties imageFormatProperties;
+
+		if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
+			imageCreateInfo.format,
+			imageCreateInfo.imageType,
+			imageCreateInfo.tiling,
+			imageCreateInfo.usage,
+			imageCreateInfo.flags,
+			&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		{
+			TCU_THROW(NotSupportedError, "Image format does not support sparse operations");
+		}
+
+		imageCreateInfo.mipLevels = getMipmapCount(m_format, formatDescription, imageFormatProperties, imageCreateInfo.extent);
+	}
 
 	{
 		QueueRequirementsVec queueRequirements;
@@ -178,10 +192,10 @@ tcu::TestStatus ImageAlignedMipSizeInstance::iterate (void)
 		const DeviceInterface&								deviceInterface				= getDeviceInterface();
 
 		// Create sparse image
-		const Unique<VkImage>								sparseImage					(createImage(deviceInterface, getDevice(), &imageCreateInfo));
+		const Unique<VkImage>								imageSparse					(createImage(deviceInterface, getDevice(), &imageCreateInfo));
 
 		// Get sparse image sparse memory requirements
-		const std::vector<VkSparseImageMemoryRequirements>	sparseMemoryRequirements	= getImageSparseMemoryRequirements(deviceInterface, getDevice(), *sparseImage);
+		const std::vector<VkSparseImageMemoryRequirements>	sparseMemoryRequirements	= getImageSparseMemoryRequirements(deviceInterface, getDevice(), *imageSparse);
 
 		DE_ASSERT(sparseMemoryRequirements.size() != 0);
 
@@ -202,9 +216,9 @@ tcu::TestStatus ImageAlignedMipSizeInstance::iterate (void)
 		do
 		{
 			extent = mipLevelExtents(imageCreateInfo.extent, lod);
-			if (extent.width % imageGranularity.width != 0
+			if (   extent.width  % imageGranularity.width  != 0
 				|| extent.height % imageGranularity.height != 0
-				|| extent.depth % imageGranularity.depth != 0)
+				|| extent.depth  % imageGranularity.depth  != 0)
 			{
 				break;
 			}
@@ -239,44 +253,32 @@ tcu::TestCaseGroup* createImageAlignedMipSizeTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "aligned_mip_size", "Aligned mip size"));
 
-	struct ImageParameters
+	const std::vector<TestImageParameters> imageParameters =
 	{
-		ImageType	imageType;
-		tcu::UVec3	imageSize;
+		{ IMAGE_TYPE_2D,		 { tcu::UVec3(512u, 256u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
+		{ IMAGE_TYPE_2D_ARRAY,	 { tcu::UVec3(512u, 256u, 6u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },
+		{ IMAGE_TYPE_CUBE,		 { tcu::UVec3(256u, 256u, 1u) },	getTestFormats(IMAGE_TYPE_CUBE) },
+		{ IMAGE_TYPE_CUBE_ARRAY, { tcu::UVec3(256u, 256u, 6u) },	getTestFormats(IMAGE_TYPE_CUBE_ARRAY) },
+		{ IMAGE_TYPE_3D,		 { tcu::UVec3(512u, 256u, 16u) },	getTestFormats(IMAGE_TYPE_3D) }
 	};
 
-	static const ImageParameters imageParametersArray[] =
+	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
-		{ IMAGE_TYPE_2D,		 tcu::UVec3(512u, 256u, 1u)		},
-		{ IMAGE_TYPE_2D_ARRAY,	 tcu::UVec3(512u, 256u, 6u)		},
-		{ IMAGE_TYPE_CUBE,		 tcu::UVec3(256u, 256u, 1u)		},
-		{ IMAGE_TYPE_CUBE_ARRAY, tcu::UVec3(256u, 256u, 6u)		},
-		{ IMAGE_TYPE_3D,		 tcu::UVec3(512u, 256u, 16u)	}
-	};
-
-	static const tcu::TextureFormat formats[] =
-	{
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT8),
-		tcu::TextureFormat(tcu::TextureFormat::RG,	 tcu::TextureFormat::SIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::RG,   tcu::TextureFormat::SIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::RG,   tcu::TextureFormat::SIGNED_INT8),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT8)
-	};
-
-	for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParametersArray); ++imageTypeNdx)
-	{
-		const ImageType					imageType = imageParametersArray[imageTypeNdx].imageType;
+		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
 		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
 
-		for (deInt32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
+		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
-			const tcu::TextureFormat&	format		= formats[formatNdx];
-			const tcu::UVec3			imageSize	= imageParametersArray[imageTypeNdx].imageSize;
-			const std::string			name		= getShaderImageFormatQualifier(format);
+			VkFormat			format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
+			tcu::UVec3			imageSizeAlignment	= getImageSizeAlignment(format);
+			const std::string	name				= getImageFormatID(format);
+			const tcu::UVec3	imageSize			= imageParameters[imageTypeNdx].imageSizes[0];
+
+			// skip test for images with odd sizes for some YCbCr formats
+			if ((imageSize.x() % imageSizeAlignment.x()) != 0)
+				continue;
+			if ((imageSize.y() % imageSizeAlignment.y()) != 0)
+				continue;
 
 			imageTypeGroup->addChild(new ImageAlignedMipSizeCase(testCtx, name.c_str(), "", imageType, imageSize, format));
 		}

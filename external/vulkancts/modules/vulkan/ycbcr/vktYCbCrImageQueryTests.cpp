@@ -67,9 +67,6 @@ using de::UniquePtr;
 using std::vector;
 using std::string;
 
-typedef de::SharedPtr<Allocation>				AllocationSp;
-typedef de::SharedPtr<vk::Unique<VkBuffer> >	VkBufferSp;
-
 enum QueryType
 {
 	QUERY_TYPE_IMAGE_SIZE_LOD,			// OpImageQuerySizeLod
