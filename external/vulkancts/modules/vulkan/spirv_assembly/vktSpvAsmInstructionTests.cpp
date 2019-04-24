@@ -13747,6 +13747,12 @@ struct fp16SmoothStep : public fp16PerComponent
 
 struct fp16Fma : public fp16PerComponent
 {
+	fp16Fma()
+	{
+		flavorNames.push_back("DoubleCalc");
+		flavorNames.push_back("EmulatingFP16");
+	}
+
 	virtual double getULPs(vector<const deFloat16*>& in)
 	{
 		DE_UNREF(in);
@@ -13766,10 +13772,30 @@ struct fp16Fma : public fp16PerComponent
 		const fp16type	a		(*in[0]);
 		const fp16type	b		(*in[1]);
 		const fp16type	c		(*in[2]);
-		const double	ad		(a.asDouble());
-		const double	bd		(b.asDouble());
-		const double	cd		(c.asDouble());
-		const double	result	(deMadd(ad, bd, cd));
+		double			result	(0.0);
+
+		if (getFlavor() == 0)
+		{
+			const double	ad	(a.asDouble());
+			const double	bd	(b.asDouble());
+			const double	cd	(c.asDouble());
+
+			result	= deMadd(ad, bd, cd);
+		}
+		else if (getFlavor() == 1)
+		{
+			const double	ad	(a.asDouble());
+			const double	bd	(b.asDouble());
+			const double	cd	(c.asDouble());
+			const fp16type	ab	(ad * bd);
+			const fp16type	r	(ab.asDouble() + cd);
+
+			result	= r.asDouble();
+		}
+		else
+		{
+			TCU_THROW(InternalError, "Unknown flavor");
+		}
 
 		out[0] = fp16type(result).bits();
 		min[0] = getMin(result, getULPs(in));

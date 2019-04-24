@@ -1319,7 +1319,7 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 				chanR|chanG|chanB|chanA,
 				{
 				//		Size	WDiv	HDiv
-					{	16,		1,		1 },
+					{	8,		1,		1 },
 					{	0,		0,		0 },
 					{	0,		0,		0 },
 				},
