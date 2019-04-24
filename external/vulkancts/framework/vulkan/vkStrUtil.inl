@@ -640,6 +640,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationDepthCli
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageStencilUsageCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesNV& value);

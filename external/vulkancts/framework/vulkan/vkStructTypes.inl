@@ -3309,6 +3309,13 @@ struct VkBufferDeviceAddressCreateInfoEXT
 	VkDeviceSize	deviceAddress;
 };
 
+struct VkImageStencilUsageCreateInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkImageUsageFlags	stencilUsage;
+};
+
 struct VkCooperativeMatrixPropertiesNV
 {
 	VkStructureType		sType;

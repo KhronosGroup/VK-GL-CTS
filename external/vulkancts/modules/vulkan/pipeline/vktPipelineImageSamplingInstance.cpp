@@ -197,6 +197,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 											  const VkSamplerCreateInfo&		samplerParams,
 											  float								samplerLod,
 											  const std::vector<Vertex4Tex4>&	vertices,
+											  bool								separateStencilUsage,
 											  VkDescriptorType					samplingType,
 											  int								imageCount,
 											  AllocationKind					allocationKind)
@@ -216,16 +217,23 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	, m_renderSize			(renderSize)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_vertices			(vertices)
+	, m_separateStencilUsage(separateStencilUsage)
 {
-	const InstanceInterface&			vki						= context.getInstanceInterface();
-	const DeviceInterface&				vk						= context.getDeviceInterface();
-	const VkPhysicalDevice				physDevice				= context.getPhysicalDevice();
-	const VkDevice						vkDevice				= context.getDevice();
-	const VkQueue						queue					= context.getUniversalQueue();
-	const deUint32						queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator						memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-	const VkComponentMapping			componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	const vk::VkPhysicalDeviceLimits	limits					= getPhysicalDeviceProperties(vki, physDevice).limits;
+	const InstanceInterface&				vki						= context.getInstanceInterface();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkPhysicalDevice					physDevice				= context.getPhysicalDevice();
+	const VkDevice							vkDevice				= context.getDevice();
+	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const vk::VkPhysicalDeviceLimits		limits					= getPhysicalDeviceProperties(vki, physDevice).limits;
+	const VkImageStencilUsageCreateInfoEXT  stencilUsage			=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,
+		DE_NULL,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT
+	};
 
 	if (de::abs(samplerParams.mipLodBias) > limits.maxSamplerLodBias)
 		TCU_THROW(NotSupportedError, "Unsupported sampler Lod bias value");
@@ -241,6 +249,52 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		 samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
 		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
 		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(imageFormat));
+
+	if (separateStencilUsage)
+	{
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_separate_stencil_usage"))
+			TCU_THROW(NotSupportedError, "VK_EXT_separate_stencil_usage not supported");
+
+		if (!isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2"))
+			TCU_THROW(NotSupportedError, "VK_KHR_get_physical_device_properties2 not supported");
+
+		const VkPhysicalDeviceImageFormatInfo2	formatInfo2		=
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,		//	VkStructureType			sType
+			m_separateStencilUsage ? &stencilUsage
+								   : DE_NULL,							//	const void*				pNext
+			imageFormat,												//	VkFormat				format
+			getCompatibleImageType(m_imageViewType),					//	VkImageType				type
+			VK_IMAGE_TILING_OPTIMAL,									//	VkImageTiling			tiling
+			VK_IMAGE_USAGE_SAMPLED_BIT
+			| VK_IMAGE_USAGE_TRANSFER_DST_BIT,							//	VkImageUsageFlags		usage
+			(VkImageCreateFlags)0u										//	VkImageCreateFlags		flags
+		};
+
+		VkImageFormatProperties2				extProperties	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+			DE_NULL,
+		{
+			{
+				0,	// width
+				0,	// height
+				0,	// depth
+			},
+			0u,		// maxMipLevels
+			0u,		// maxArrayLayers
+			0,		// sampleCounts
+			0u,		// maxResourceSize
+		},
+		};
+
+		if ((vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &formatInfo2, &extProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			|| extProperties.imageFormatProperties.maxExtent.width < (deUint32)m_imageSize.x()
+			|| extProperties.imageFormatProperties.maxExtent.height < (deUint32)m_imageSize.y())
+		{
+			TCU_THROW(NotSupportedError, "Image format not supported");
+		}
+	}
 
 	if (samplerParams.pNext != DE_NULL)
 	{

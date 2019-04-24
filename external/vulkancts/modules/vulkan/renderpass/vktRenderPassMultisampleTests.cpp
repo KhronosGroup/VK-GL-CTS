@@ -91,6 +91,12 @@ enum
 	MAX_COLOR_ATTACHMENT_COUNT = 4u
 };
 
+enum TestSeparateUsage
+{
+	TEST_DEPTH	 = (1 << 0),
+	TEST_STENCIL = (1 << 1)
+};
+
 template<typename T>
 de::SharedPtr<T> safeSharedPtr (T* ptr)
 {
@@ -164,12 +170,23 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 						   VkSharingMode			sharingMode,
 						   deUint32					queueFamilyCount,
 						   const deUint32*			pQueueFamilyIndices,
-						   VkImageLayout			initialLayout)
+						   VkImageLayout			initialLayout,
+						   TestSeparateUsage		separateStencilUsage)
 {
+	VkImageUsageFlags depthUsage	= (separateStencilUsage == TEST_DEPTH)	 ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	VkImageUsageFlags stencilUsage	= (separateStencilUsage == TEST_STENCIL) ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+	const VkImageStencilUsageCreateInfoEXT stencilUsageInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,
+		DE_NULL,
+		stencilUsage
+	};
+
 	const VkImageCreateInfo pCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		DE_NULL,
+		separateStencilUsage ? &stencilUsageInfo : DE_NULL,
 		flags,
 		imageType,
 		format,
@@ -178,12 +195,13 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 		arrayLayers,
 		samples,
 		tiling,
-		usage,
+		separateStencilUsage ? depthUsage : usage,
 		sharingMode,
 		queueFamilyCount,
 		pQueueFamilyIndices,
 		initialLayout
 	};
+
 	return createImage(vk, device, &pCreateInfo);
 }
 
@@ -218,7 +236,8 @@ Move<VkImage> createImage (const InstanceInterface&	vki,
 						   VkSampleCountFlagBits	sampleCountBit,
 						   VkImageUsageFlags		usage,
 						   deUint32					width,
-						   deUint32					height)
+						   deUint32					height,
+						   TestSeparateUsage		separateStencilUsage = (TestSeparateUsage)0u)
 {
 	try
 	{
@@ -227,6 +246,8 @@ Move<VkImage> createImage (const InstanceInterface&	vki,
 		const VkImageTiling				imageTiling				(VK_IMAGE_TILING_OPTIMAL);
 		const VkFormatProperties		formatProperties		(getPhysicalDeviceFormatProperties(vki, physicalDevice, vkFormat));
 		const VkImageFormatProperties	imageFormatProperties	(getPhysicalDeviceImageFormatProperties(vki, physicalDevice, vkFormat, imageType, imageTiling, usage, 0u));
+		const VkImageUsageFlags			depthUsage				= (separateStencilUsage == TEST_DEPTH)	 ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		const VkImageUsageFlags			stencilUsage			= (separateStencilUsage == TEST_STENCIL) ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		const VkExtent3D				imageExtent				=
 		{
 			width,
@@ -249,7 +270,54 @@ Move<VkImage> createImage (const InstanceInterface&	vki,
 			TCU_THROW(NotSupportedError, "Image type not supported");
 		}
 
-		return createImage(vkd, device, 0u, imageType, vkFormat, imageExtent, 1u, 1u, sampleCountBit, imageTiling, usage, VK_SHARING_MODE_EXCLUSIVE, 0u, DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED);
+		if (separateStencilUsage)
+		{
+			const VkImageStencilUsageCreateInfoEXT	stencilUsageInfo =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,			//	VkStructureType			sType
+				DE_NULL,														//	const void*				pNext
+				stencilUsage													//	VkImageUsageFlags		stencilUsage
+			};
+
+			const VkPhysicalDeviceImageFormatInfo2 formatInfo2 =
+			{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,			//	VkStructureType			sType
+				&stencilUsageInfo,												//	const void*				pNext
+				vkFormat,														//	VkFormat				format
+				imageType,														//	VkImageType				type
+				imageTiling,													//	VkImageTiling			tiling
+				depthUsage,														//	VkImageUsageFlags		usage
+				(VkImageCreateFlags)0u											//	VkImageCreateFlags		flags
+			};
+
+			VkImageFormatProperties2				extProperties =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+				DE_NULL,
+			{
+				{
+					0,	// width
+					0,	// height
+					0,	// depth
+				},
+				0u,		// maxMipLevels
+				0u,		// maxArrayLayers
+				0,		// sampleCounts
+				0u,		// maxResourceSize
+			},
+			};
+
+			if ((vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &formatInfo2, &extProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+				|| extProperties.imageFormatProperties.maxExtent.width < imageExtent.width
+				|| extProperties.imageFormatProperties.maxExtent.height < imageExtent.height
+				|| ((extProperties.imageFormatProperties.sampleCounts & sampleCountBit) == 0))
+			{
+				TCU_THROW(NotSupportedError, "Image format not supported");
+			}
+
+		}
+
+		return createImage(vkd, device, 0u, imageType, vkFormat, imageExtent, 1u, 1u, sampleCountBit, imageTiling, usage, VK_SHARING_MODE_EXCLUSIVE, 0u, DE_NULL, VK_IMAGE_LAYOUT_UNDEFINED, separateStencilUsage);
 	}
 	catch (const vk::Error& error)
 	{
@@ -282,12 +350,15 @@ Move<VkImageView> createSrcPrimaryInputImageView (const DeviceInterface&	vkd,
 												  VkDevice					device,
 												  VkImage					image,
 												  VkFormat					format,
-												  VkImageAspectFlags		aspect)
+												  VkImageAspectFlags		aspect,
+												  TestSeparateUsage			testSeparateUsage)
 {
+	VkImageAspectFlags primaryDepthStencilAspect = (testSeparateUsage == TEST_STENCIL) ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+
 	const VkImageSubresourceRange	range =
 	{
 		aspect == (VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT)
-			? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT
+			? primaryDepthStencilAspect
 			: aspect,
 		0u,
 		1u,
@@ -302,9 +373,10 @@ Move<VkImageView> createSrcSecondaryInputImageView (const DeviceInterface&	vkd,
 													VkDevice				device,
 													VkImage					image,
 													VkFormat				format,
-													VkImageAspectFlags		aspect)
+													VkImageAspectFlags		aspect,
+													TestSeparateUsage		separateStencilUsage)
 {
-	if (aspect == (VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT))
+	if ((aspect == (VK_IMAGE_ASPECT_STENCIL_BIT | VK_IMAGE_ASPECT_DEPTH_BIT)) && !separateStencilUsage)
 	{
 		const VkImageSubresourceRange	range =
 		{
@@ -465,12 +537,16 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkFormat				srcFormat,
 									 VkFormat				dstFormat,
 									 deUint32				sampleCount,
-									 RenderPassType			renderPassType)
+									 RenderPassType			renderPassType,
+									 TestSeparateUsage		separateStencilUsage)
 {
 	const VkSampleCountFlagBits		samples						(sampleCountBitFromomSampleCount(sampleCount));
 	const deUint32					splitSubpassCount			(deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT));
 	const tcu::TextureFormat		format						(mapVkFormat(srcFormat));
 	const bool						isDepthStencilFormat		(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
+	const VkImageAspectFlags		inputAspect					(separateStencilUsage == TEST_DEPTH ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT
+																: separateStencilUsage == TEST_STENCIL ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT
+																									   : getImageAspectFlags(srcFormat));
 	vector<SubpassDesc>				subpasses;
 	vector<vector<AttachmentRef> >	dstAttachmentRefs			(splitSubpassCount);
 	vector<vector<AttachmentRef> >	dstResolveAttachmentRefs	(splitSubpassCount);
@@ -493,7 +569,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 		0u,															//  deUint32						attachment;					||  deUint32							attachment;
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,					//  VkImageLayout					layout;						||  VkImageLayout						layout;
 		(renderPassType == RENDERPASS_TYPE_RENDERPASS2)				//																||  VkImageAspectFlags					aspectMask;
-			? getImageAspectFlags(srcFormat)
+			? inputAspect
 			: 0u
 	);
 
@@ -659,19 +735,20 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 	}
 }
 
-Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
-									 VkDevice				device,
-									 VkFormat				srcFormat,
-									 VkFormat				dstFormat,
-									 deUint32				sampleCount,
-									 const RenderPassType	renderPassType)
+Move<VkRenderPass> createRenderPass (const DeviceInterface&		vkd,
+									 VkDevice					device,
+									 VkFormat					srcFormat,
+									 VkFormat					dstFormat,
+									 deUint32					sampleCount,
+									 const RenderPassType		renderPassType,
+									 const TestSeparateUsage	separateStencilUsage)
 {
 	switch (renderPassType)
 	{
 		case RENDERPASS_TYPE_LEGACY:
-			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType);
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType, separateStencilUsage);
 		case RENDERPASS_TYPE_RENDERPASS2:
-			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType);
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType, separateStencilUsage);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
@@ -1128,18 +1205,21 @@ Move<VkDescriptorSet> createSplitDescriptorSet (const DeviceInterface&	vkd,
 
 struct TestConfig
 {
-				TestConfig		(VkFormat		format_,
-								 deUint32		sampleCount_,
-								 RenderPassType	renderPassType_)
+				TestConfig		(VkFormat			format_,
+								 deUint32			sampleCount_,
+								 RenderPassType		renderPassType_,
+								 TestSeparateUsage	separateStencilUsage_ = (TestSeparateUsage)0u)
 		: format			(format_)
 		, sampleCount		(sampleCount_)
 		, renderPassType	(renderPassType_)
+		, separateStencilUsage(separateStencilUsage_)
 	{
 	}
 
-	VkFormat		format;
-	deUint32		sampleCount;
-	RenderPassType	renderPassType;
+	VkFormat			format;
+	deUint32			sampleCount;
+	RenderPassType		renderPassType;
+	TestSeparateUsage	separateStencilUsage;
 };
 
 VkImageUsageFlags getSrcImageUsage (VkFormat vkFormat)
@@ -1154,18 +1234,33 @@ VkImageUsageFlags getSrcImageUsage (VkFormat vkFormat)
 		return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 }
 
-VkFormat getDstFormat (VkFormat vkFormat)
+VkFormat getDstFormat (VkFormat vkFormat, TestSeparateUsage separateStencilUsage)
 {
 	const tcu::TextureFormat	format		(mapVkFormat(vkFormat));
 	const bool					hasDepth	(tcu::hasDepthComponent(format.order));
 	const bool					hasStencil	(tcu::hasStencilComponent(format.order));
 
-	if (hasDepth && hasStencil)
+	if (hasDepth && hasStencil && !separateStencilUsage)
 		return VK_FORMAT_R32G32_SFLOAT;
 	else if (hasDepth || hasStencil)
 		return VK_FORMAT_R32_SFLOAT;
 	else
 		return vkFormat;
+}
+
+bool isExtensionSupported(Context& context, RenderPassType renderPassType, TestSeparateUsage separateStencilUsage)
+{
+
+	if (renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+		context.requireDeviceExtension("VK_KHR_create_renderpass2");
+
+	if (separateStencilUsage)
+	{
+		context.requireDeviceExtension	("VK_EXT_separate_stencil_usage");
+		context.requireInstanceExtension("VK_KHR_get_physical_device_properties2");
+	}
+
+	return true;
 }
 
 
@@ -1183,6 +1278,7 @@ public:
 private:
 	const bool										m_extensionSupported;
 	const RenderPassType							m_renderPassType;
+	const TestSeparateUsage							m_separateStencilUsage;
 
 	const VkFormat									m_srcFormat;
 	const VkFormat									m_dstFormat;
@@ -1227,21 +1323,22 @@ private:
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
-	, m_extensionSupported			((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported			(isExtensionSupported(context, config.renderPassType, config.separateStencilUsage))
 	, m_renderPassType				(config.renderPassType)
+	, m_separateStencilUsage		(config.separateStencilUsage)
 	, m_srcFormat					(config.format)
-	, m_dstFormat					(getDstFormat(config.format))
+	, m_dstFormat					(getDstFormat(config.format, config.separateStencilUsage))
 	, m_sampleCount					(config.sampleCount)
 	, m_width						(32u)
 	, m_height						(32u)
 
 	, m_srcImageAspect				(getImageAspectFlags(m_srcFormat))
 	, m_srcImageUsage				(getSrcImageUsage(m_srcFormat))
-	, m_srcImage					(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(), context.getDevice(), m_srcFormat, sampleCountBitFromomSampleCount(m_sampleCount), m_srcImageUsage, m_width, m_height))
+	, m_srcImage					(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(), context.getDevice(), m_srcFormat, sampleCountBitFromomSampleCount(m_sampleCount), m_srcImageUsage, m_width, m_height, m_separateStencilUsage))
 	, m_srcImageMemory				(createImageMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_srcImage))
 	, m_srcImageView				(createImageAttachmentView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect))
-	, m_srcPrimaryInputImageView	(createSrcPrimaryInputImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect))
-	, m_srcSecondaryInputImageView	(createSrcSecondaryInputImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect))
+	, m_srcPrimaryInputImageView	(createSrcPrimaryInputImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect, m_separateStencilUsage))
+	, m_srcSecondaryInputImageView	(createSrcSecondaryInputImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage, m_srcFormat, m_srcImageAspect, m_separateStencilUsage))
 
 	, m_dstMultisampleImages		(createMultisampleImages(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(), context.getDevice(), m_dstFormat, m_sampleCount, m_width, m_height))
 	, m_dstMultisampleImageMemory	(createImageMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), m_dstMultisampleImages))
@@ -1254,7 +1351,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_dstBuffers					(createBuffers(context.getDeviceInterface(), context.getDevice(), m_dstFormat, m_sampleCount, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), m_dstBuffers))
 
-	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, config.renderPassType))
+	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_srcFormat, m_dstFormat, m_sampleCount, config.renderPassType, m_separateStencilUsage))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
@@ -1370,8 +1467,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 	{
 		const tcu::TextureFormat		format			(mapVkFormat(m_dstFormat));
 		const tcu::TextureFormat		srcFormat		(mapVkFormat(m_srcFormat));
-		const bool						hasDepth		(tcu::hasDepthComponent(srcFormat.order));
-		const bool						hasStencil		(tcu::hasStencilComponent(srcFormat.order));
+		const bool						verifyDepth		(m_separateStencilUsage ? (m_separateStencilUsage == TEST_DEPTH)   : tcu::hasDepthComponent(srcFormat.order));
+		const bool						verifyStencil	(m_separateStencilUsage ? (m_separateStencilUsage == TEST_STENCIL) : tcu::hasStencilComponent(srcFormat.order));
 
 		for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
 		{
@@ -1383,9 +1480,9 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 			const tcu::ConstPixelBufferAccess	access		(format, m_width, m_height, 1, ptr);
 			tcu::TextureLevel					reference	(format, m_width, m_height);
 
-			if (hasDepth || hasStencil)
+			if (verifyDepth || verifyStencil)
 			{
-				if (hasDepth)
+				if (verifyDepth)
 				{
 					for (deUint32 y = 0; y < m_height; y++)
 					for (deUint32 x = 0; x < m_width; x++)
@@ -1407,14 +1504,14 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 						reference.getAccess().setPixel(Vec4(depth, 0.0f, 0.0f, 0.0f), x, y);
 					}
 				}
-				if (hasStencil)
+				if (verifyStencil)
 				{
 					for (deUint32 y = 0; y < m_height; y++)
 					for (deUint32 x = 0; x < m_width; x++)
 					{
 						const deUint32	stencil	= sampleNdx + 1u;
 
-						if (hasDepth)
+						if (verifyDepth)
 						{
 							const Vec4 src (reference.getAccess().getPixel(x, y));
 
@@ -1425,7 +1522,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 					}
 				}
 				{
-					const Vec4 threshold (hasDepth ? (1.0f / 1024.0f) : 0.0f, 0.0f, 0.0f, 0.0f);
+					const Vec4 threshold (verifyDepth ? (1.0f / 1024.0f) : 0.0f, 0.0f, 0.0f, 0.0f);
 
 					if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), name.c_str(), name.c_str(), reference.getAccess(), access, threshold, tcu::COMPARE_LOG_ON_ERROR))
 						m_resultCollector.fail("Compare failed for sample " + de::toString(sampleNdx));
@@ -1610,6 +1707,8 @@ struct Programs
 	{
 		const tcu::TextureFormat		format			(mapVkFormat(config.format));
 		const tcu::TextureChannelClass	channelClass	(tcu::getTextureChannelClass(format.type));
+		const bool						testDepth		(config.separateStencilUsage ? (config.separateStencilUsage == TEST_DEPTH) : tcu::hasDepthComponent(format.order));
+		const bool						testStencil		(config.separateStencilUsage ? (config.separateStencilUsage == TEST_STENCIL) : tcu::hasStencilComponent(format.order));
 
 		dst.glslSources.add("quad-vert") << glu::VertexSource(
 			"#version 450\n"
@@ -1622,7 +1721,7 @@ struct Programs
 			"\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
 			"}\n");
 
-		if (tcu::hasDepthComponent(format.order))
+		if (testDepth)
 		{
 			const Vec4			minValue		(0.0f);
 			const Vec4			range			(1.0f);
@@ -1663,7 +1762,7 @@ struct Programs
 
 			dst.glslSources.add("quad-frag") << glu::FragmentSource(fragmentShader.str());
 		}
-		else if (tcu::hasStencilComponent(format.order))
+		else if (testStencil)
 		{
 			dst.glslSources.add("quad-frag") << glu::FragmentSource(
 				"#version 450\n"
@@ -1880,14 +1979,14 @@ struct Programs
 			splitShader <<
 				"#version 450\n";
 
-			if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
+			if (testDepth && testStencil)
 			{
 				splitShader << "layout(input_attachment_index = 0, set = 0, binding = 0) uniform highp subpassInputMS i_depth;\n"
 							<< "layout(input_attachment_index = 0, set = 0, binding = 1) uniform highp usubpassInputMS i_stencil;\n";
 			}
-			else if (tcu::hasDepthComponent(format.order))
+			else if (testDepth)
 				splitShader << "layout(input_attachment_index = 0, set = 0, binding = 0) uniform highp subpassInputMS i_depth;\n";
-			else if (tcu::hasStencilComponent(format.order))
+			else if (testStencil)
 				splitShader << "layout(input_attachment_index = 0, set = 0, binding = 0) uniform highp usubpassInputMS i_stencil;\n";
 
 			splitShader <<
@@ -1897,7 +1996,7 @@ struct Programs
 
 			for (deUint32 attachmentNdx = 0; attachmentNdx < de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, config.sampleCount); attachmentNdx++)
 			{
-				if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
+				if (testDepth && testStencil)
 					splitShader << "layout(location = " << attachmentNdx << ") out highp vec2 o_color" << attachmentNdx << ";\n";
 				else
 					splitShader << "layout(location = " << attachmentNdx << ") out highp float o_color" << attachmentNdx << ";\n";
@@ -1909,17 +2008,17 @@ struct Programs
 
 			for (deUint32 attachmentNdx = 0; attachmentNdx < de::min((deUint32)MAX_COLOR_ATTACHMENT_COUNT, config.sampleCount); attachmentNdx++)
 			{
-				if (tcu::hasDepthComponent(format.order))
+				if (testDepth)
 					splitShader << "\thighp float depth" << attachmentNdx << " = subpassLoad(i_depth, int(" << MAX_COLOR_ATTACHMENT_COUNT << " * pushConstants.splitSubpassIndex + " << attachmentNdx << "u)).x;\n";
 
-				if (tcu::hasStencilComponent(format.order))
+				if (testStencil)
 					splitShader << "\thighp uint stencil" << attachmentNdx << " = subpassLoad(i_stencil, int(" << MAX_COLOR_ATTACHMENT_COUNT << " * pushConstants.splitSubpassIndex + " << attachmentNdx << "u)).x;\n";
 
-				if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
+				if (testDepth && testStencil)
 					splitShader << "\to_color" << attachmentNdx << " = vec2(depth" << attachmentNdx << ", float(stencil" << attachmentNdx << "));\n";
-				else if (tcu::hasDepthComponent(format.order))
+				else if (testDepth)
 					splitShader << "\to_color" << attachmentNdx << " = float(depth" << attachmentNdx << ");\n";
-				else if (tcu::hasStencilComponent(format.order))
+				else if (testStencil)
 					splitShader << "\to_color" << attachmentNdx << " = float(stencil" << attachmentNdx << ");\n";
 			}
 
@@ -2057,13 +2156,17 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 	{
 		2u, 4u, 8u, 16u, 32u
 	};
-	tcu::TestContext&		testCtx		(group->getTestContext());
+	tcu::TestContext&				testCtx		(group->getTestContext());
+	de::MovePtr<tcu::TestCaseGroup>	extGroup	(new tcu::TestCaseGroup(testCtx, "separate_stencil_usage", "test VK_EXT_separate_stencil_usage"));
+
 
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
-		const VkFormat					format		(formats[formatNdx]);
-		const std::string				formatName	(formatToName(format));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
+		const VkFormat					format			(formats[formatNdx]);
+		const std::string				formatName		(formatToName(format));
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
+		de::MovePtr<tcu::TestCaseGroup>	extFormatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), formatName.c_str()));
+
 
 		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
 		{
@@ -2072,10 +2175,28 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 			const std::string	testName	("samples_" + de::toString(sampleCount));
 
 			formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+
+			// create tests for VK_EXT_separate_stencil_usage
+			if (tcu::hasDepthComponent(mapVkFormat(format).order) && tcu::hasStencilComponent(mapVkFormat(format).order))
+			{
+				de::MovePtr<tcu::TestCaseGroup>	sampleGroup	(new tcu::TestCaseGroup(testCtx, testName.c_str(), testName.c_str()));
+				{
+					const TestConfig	separateUsageDepthTestConfig	(format, sampleCount, renderPassType, TEST_DEPTH);
+					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_depth", "depth with input attachment bit", separateUsageDepthTestConfig));
+
+					const TestConfig	separateUsageStencilTestConfig	(format, sampleCount, renderPassType, TEST_STENCIL);
+					sampleGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, "test_stencil", "stencil with input attachment bit", separateUsageStencilTestConfig));
+				}
+
+				extFormatGroup->addChild(sampleGroup.release());
+			}
 		}
 
 		group->addChild(formatGroup.release());
+		extGroup->addChild(extFormatGroup.release());
 	}
+
+	group->addChild(extGroup.release());
 }
 
 } // anonymous

@@ -204,9 +204,10 @@ TestInstance* ImageTest::createInstance (Context& context) const
 		renderSize = tcu::UVec2((deUint32)m_imageSize.x() * 3, (deUint32)m_imageSize.y() * 2);
 	}
 
-	const std::vector<Vertex4Tex4>	vertices			= createTestQuadMosaic(m_imageViewType);
-	const VkComponentMapping		componentMapping	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	const VkImageSubresourceRange	subresourceRange	=
+	const bool						separateStencilUsage	= false;
+	const std::vector<Vertex4Tex4>	vertices				= createTestQuadMosaic(m_imageViewType);
+	const VkComponentMapping		componentMapping		= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const VkImageSubresourceRange	subresourceRange		=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		0u,
@@ -237,7 +238,7 @@ TestInstance* ImageTest::createInstance (Context& context) const
 		false																	// VkBool32					unnormalizedCoordinates;
 	};
 
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, m_samplingType, m_imageCount, m_allocationKind);
+	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, m_imageSize, m_arraySize, componentMapping, subresourceRange, samplerParams, 0.0f, vertices, separateStencilUsage, m_samplingType, m_imageCount, m_allocationKind);
 }
 
 std::string ImageTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
