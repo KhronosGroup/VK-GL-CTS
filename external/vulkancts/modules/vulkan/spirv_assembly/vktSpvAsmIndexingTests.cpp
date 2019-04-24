@@ -486,6 +486,9 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 
 				resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
+				vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				vulkanFeatures.coreFeatures.fragmentStoresAndAtomics		= true;
+
 				fragments["pre_main"]	= preMain.specialize(specs);
 				fragments["decoration"]	= decoration.specialize(specs);
 				fragments["testfun"]	= testFun.specialize(specs);

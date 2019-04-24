@@ -2854,6 +2854,7 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 		for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
 		{
 			map<string, string>	specs;
+			VulkanFeatures		features;
 			string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 			specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
@@ -2868,7 +2869,11 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 			fragments["capability"]			= capabilities.specialize(specs);
 			fragments["decoration"]			= categories[catIdx].decoration.specialize(specs);
 
-			createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name));
+			features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+			features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+			createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 	}
 }
@@ -3069,6 +3074,7 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
 				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 				specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
@@ -3137,7 +3143,11 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 						resources.verifyIO = checkUniformsArray<deInt8, deInt32, 1>;
 				}
 
-				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name));
+				features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 	}
 }
@@ -3185,7 +3195,10 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 	}
 
 	extensions.push_back("VK_KHR_8bit_storage");
-	requiredFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+
+	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
+	requiredFeatures.ext8BitStorage									= EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant8\n";
 	fragments["extension"]				= "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
@@ -3664,6 +3677,7 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 		for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
 		{
 			map<string, string>	specs;
+			VulkanFeatures		features;
 			string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 			specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
@@ -3678,7 +3692,11 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 			fragments["capability"]			= capabilities.specialize(specs);
 			fragments["decoration"]			= categories[catIdx].decoration.specialize(specs);
 
-			createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name));
+			features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+			features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+			createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 	}
 }
@@ -3885,6 +3903,7 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
 				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
 				map<string, string>	specs;
+				VulkanFeatures		features;
 				string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 				specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
@@ -3953,7 +3972,11 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 						resources.verifyIO = checkUniformsArray<deInt8, deInt16, 1>;
 				}
 
-				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name));
+				features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+				features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 	}
 }
@@ -4002,7 +4025,10 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 
 	extensions.push_back("VK_KHR_8bit_storage");
 	extensions.push_back("VK_KHR_16bit_storage");
-	requiredFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+
+	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
+	requiredFeatures.ext8BitStorage									= EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant8\n"
 										  "OpCapability StorageUniform16\n";
@@ -4527,6 +4553,7 @@ void addGraphics8BitStorageUniformStruct8To32Group (tcu::TestCaseGroup* testGrou
 			vector<deInt8>			i8Data		= isUniform ? data8bit(SHADERTEMPLATE_STRIDE8BIT_STD140, rnd) : data8bit(SHADERTEMPLATE_STRIDE8BIT_STD430, rnd);
 			GraphicsResources		resources;
 			map<string, string>		specs;
+			VulkanFeatures			features;
 			const string			testName	= string(CAPABILITIES[capIdx].name) + "_" + intFacts[intFactsNdx].name;
 
 			specs["cap"]						= CAPABILITIES[capIdx].cap;
@@ -4550,7 +4577,11 @@ void addGraphics8BitStorageUniformStruct8To32Group (tcu::TestCaseGroup* testGrou
 			else
 				resources.verifyIO = checkStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430>;
 
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[capIdx].name));
+			features												= get8BitStorageFeatures(CAPABILITIES[capIdx].name);
+			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+			features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 }
 
@@ -4798,6 +4829,7 @@ void addGraphics8BitStorageUniformStruct32To8Group (tcu::TestCaseGroup* testGrou
 			string				testName	= string(CAPABILITIES[capIdx].name) + "_" + intFacts[intFactsNdx].name;
 			vector<deInt32>		i32Data		= isUniform ? data32bit(SHADERTEMPLATE_STRIDE32BIT_STD140, rnd) : data32bit(SHADERTEMPLATE_STRIDE32BIT_STD430, rnd);
 			GraphicsResources	resources;
+			VulkanFeatures		features;
 
 			specs["cap"]					= CAPABILITIES[STORAGE_BUFFER_TEST].cap;
 			specs["stridei8"]				= getStructShaderComponet(SHADERTEMPLATE_STRIDE8BIT_STD430);
@@ -4820,7 +4852,11 @@ void addGraphics8BitStorageUniformStruct32To8Group (tcu::TestCaseGroup* testGrou
 			else
 				resources.verifyIO = checkStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE8BIT_STD430>;
 
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name));
+			features												= get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
+			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+			features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 }
 
@@ -5005,6 +5041,7 @@ void addGraphics8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		map<string, string>		specsLoop;
 		map<string, string>		specsOffset;
 		map<string, string>		specs;
+		VulkanFeatures			features;
 		string					testName	= string(CAPABILITIES[capIdx].name);
 
 		specsLoop["exeCount"]	= "c_i32_7";
@@ -5040,16 +5077,20 @@ void addGraphics8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		specsOffset["InOut"]	= "Out";
 		specs["OutOffsets"]		= StringTemplate(getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
 
-		fragments["capability"]			= capabilities.specialize(specs);
-		fragments["decoration"]			= decoration.specialize(specs);
-		fragments["pre_main"]			= preMain.specialize(specs);
-		fragments["testfun"]			= testFun.specialize(specs);
+		fragments["capability"]	= capabilities.specialize(specs);
+		fragments["decoration"]	= decoration.specialize(specs);
+		fragments["pre_main"]	= preMain.specialize(specs);
+		fragments["testfun"]	= testFun.specialize(specs);
 
-		resources.verifyIO				= isUniform ? checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
+		resources.verifyIO		= isUniform ? checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
 		resources.inputs.push_back(Resource(BufferSp(new Int8Buffer(inData)), CAPABILITIES[capIdx].dtype));
 		resources.outputs.push_back(Resource(BufferSp(new Int8Buffer(outData)), CAPABILITIES[STORAGE_BUFFER_TEST].dtype));
 
-		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, get8BitStorageFeatures(CAPABILITIES[capIdx].name));
+		features												= get8BitStorageFeatures(CAPABILITIES[capIdx].name);
+		features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
+		features.coreFeatures.fragmentStoresAndAtomics			= true;
+
+		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, features);
 	}
 }
 
