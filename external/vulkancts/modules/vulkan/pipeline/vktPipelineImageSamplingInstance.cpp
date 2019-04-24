@@ -217,14 +217,18 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_vertices			(vertices)
 {
-	const InstanceInterface&	vki						= context.getInstanceInterface();
-	const DeviceInterface&		vk						= context.getDeviceInterface();
-	const VkPhysicalDevice		physDevice				= context.getPhysicalDevice();
-	const VkDevice				vkDevice				= context.getDevice();
-	const VkQueue				queue					= context.getUniversalQueue();
-	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const InstanceInterface&			vki						= context.getInstanceInterface();
+	const DeviceInterface&				vk						= context.getDeviceInterface();
+	const VkPhysicalDevice				physDevice				= context.getPhysicalDevice();
+	const VkDevice						vkDevice				= context.getDevice();
+	const VkQueue						queue					= context.getUniversalQueue();
+	const deUint32						queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	SimpleAllocator						memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	const VkComponentMapping			componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const vk::VkPhysicalDeviceLimits	limits					= getPhysicalDeviceProperties(vki, physDevice).limits;
+
+	if (de::abs(samplerParams.mipLodBias) > limits.maxSamplerLodBias)
+		TCU_THROW(NotSupportedError, "Unsupported sampler Lod bias value");
 
 	if (!isSupportedSamplableFormat(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") + getFormatName(imageFormat));
