@@ -271,9 +271,17 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 	}
 
 	if ((externalMemoryTypes
-			& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT) != 0)
+			& (vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
+				| vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_memory_fd");
+		useExternalMemory = true;
+	}
+
+	if ((externalMemoryTypes
+			& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) != 0)
+	{
+		deviceExtensions.push_back("VK_EXT_external_memory_dma_buf");
 		useExternalMemory = true;
 	}
 
@@ -2980,7 +2988,7 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testMemoryMultimpleImports (Context& context, MemoryTestConfig config)
+tcu::TestStatus testMemoryMultipleImports (Context& context, MemoryTestConfig config)
 {
 	const size_t							count				= 4 * 1024;
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
@@ -3016,7 +3024,7 @@ tcu::TestStatus testMemoryMultimpleImports (Context& context, MemoryTestConfig c
 	return tcu::TestStatus::pass("Pass");
 }
 
-tcu::TestStatus testMemoryMultimpleExports (Context& context, MemoryTestConfig config)
+tcu::TestStatus testMemoryMultipleExports (Context& context, MemoryTestConfig config)
 {
 	const size_t							count				= 4 * 1024;
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
@@ -3041,6 +3049,46 @@ tcu::TestStatus testMemoryMultimpleExports (Context& context, MemoryTestConfig c
 	{
 		NativeHandle	handle;
 		getMemoryNative(vkd, *device, *memory, config.externalType, handle);
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus testMemoryFdProperties (Context& context, MemoryTestConfig config)
+{
+	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
+	const vk::InstanceDriver				vki					(vkp, *instance);
+	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+	const vk::Unique<vk::VkDevice>			device				(createDevice(context.getUsedApiVersion(), vkp, *instance, vki, physicalDevice, 0u, config.externalType, 0u, queueFamilyIndex));
+	const vk::DeviceDriver					vkd					(vkp, *instance, *device);
+	const vk::VkBufferUsageFlags			usage				= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	const vk::VkDeviceSize					bufferSize			= 1024;
+
+	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
+
+	deUint32								exportedMemoryTypeIndex	= ~0U;
+	// \note Buffer is only allocated to get memory requirements
+	const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+
+	vk::VkMemoryFdPropertiesKHR	properties;
+	NativeHandle				handle;
+
+	getMemoryNative(vkd, *device, *memory, config.externalType, handle);
+	vk::VkResult res = vkd.getMemoryFdPropertiesKHR(*device, config.externalType, handle.getFd(), &properties);
+
+	switch (config.externalType)
+	{
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT:
+			TCU_CHECK_MSG(res == vk::VK_SUCCESS, "vkGetMemoryFdPropertiesKHR failed for VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT");
+			break;
+		default:
+			// Invalid external memory type for this test.
+			DE_ASSERT(false);
+			break;
 	}
 
 	return tcu::TestStatus::pass("Pass");
@@ -4249,16 +4297,22 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			}
 
 			addFunctionCase(hostVisibleGroup.get(), "import_twice",				"Test importing memory object twice.",			testMemoryImportTwice,		memoryConfig);
-			addFunctionCase(hostVisibleGroup.get(), "import_multiple_times",	"Test importing memory object multiple times.",	testMemoryMultimpleImports,	memoryConfig);
+			addFunctionCase(hostVisibleGroup.get(), "import_multiple_times",	"Test importing memory object multiple times.",	testMemoryMultipleImports,	memoryConfig);
 
-			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
+			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
+				|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 			{
-				addFunctionCase(hostVisibleGroup.get(), "dup",									"Test calling dup() on exported memory.",	testMemoryFdDup,			memoryConfig);
-				addFunctionCase(hostVisibleGroup.get(), "dup2",									"Test calling dup2() on exported memory.",	testMemoryFdDup2,			memoryConfig);
-				addFunctionCase(hostVisibleGroup.get(), "dup3",									"Test calling dup3() on exported memory.",	testMemoryFdDup3,			memoryConfig);
-				addFunctionCase(hostVisibleGroup.get(), "send_over_socket",						"Test sending memory fd over socket.",		testMemoryFdSendOverSocket,	memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "dup",						"Test calling dup() on exported memory.",	testMemoryFdDup,			memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "dup2",						"Test calling dup2() on exported memory.",	testMemoryFdDup2,			memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "dup3",						"Test calling dup3() on exported memory.",	testMemoryFdDup3,			memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "send_over_socket",			"Test sending memory fd over socket.",		testMemoryFdSendOverSocket,	memoryConfig);
 				// \note Not supported on WIN32 handles
-				addFunctionCase(hostVisibleGroup.get(), "export_multiple_times",				"Test exporting memory multiple times.",	testMemoryMultimpleExports,	memoryConfig);
+				addFunctionCase(hostVisibleGroup.get(), "export_multiple_times",	"Test exporting memory multiple times.",	testMemoryMultipleExports,	memoryConfig);
+			}
+
+			if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
+			{
+				addFunctionCase(hostVisibleGroup.get(), "fd_properties",			"Test obtaining the FD memory properties",	testMemoryFdProperties,		memoryConfig);
 			}
 
 			dedicatedGroup->addChild(hostVisibleGroup.release());
@@ -4271,11 +4325,12 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			addFunctionCase(bufferGroup.get(), "info",						"External buffer memory info query.",						testBufferQueries,				externalType);
 			addFunctionCase(bufferGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding buffer.",	testBufferBindExportImportBind,	bufferConfig);
 			addFunctionCase(bufferGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding buffer.",	testBufferExportBindImportBind,	bufferConfig);
-			addFunctionCase(bufferGroup.get(), "export_import_bind_bind",	"Test exporting, importind and binding buffer.",			testBufferExportImportBindBind,	bufferConfig);
+			addFunctionCase(bufferGroup.get(), "export_import_bind_bind",	"Test exporting, importing and binding buffer.",			testBufferExportImportBindBind,	bufferConfig);
 
 			dedicatedGroup->addChild(bufferGroup.release());
 		}
 
+		if (externalType != vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 		{
 			de::MovePtr<tcu::TestCaseGroup> imageGroup	(new tcu::TestCaseGroup(testCtx, "image", ""));
 			const ImageTestConfig			imageConfig	(externalType, dedicated);
@@ -4283,7 +4338,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			addFunctionCase(imageGroup.get(), "info",						"External image memory info query.",						testImageQueries,				externalType);
 			addFunctionCase(imageGroup.get(), "bind_export_import_bind",	"Test binding, exporting, importing and binding image.",	testImageBindExportImportBind,	imageConfig);
 			addFunctionCase(imageGroup.get(), "export_bind_import_bind",	"Test exporting, binding, importing and binding image.",	testImageExportBindImportBind,	imageConfig);
-			addFunctionCase(imageGroup.get(), "export_import_bind_bind",	"Test exporting, importind and binding image.",				testImageExportImportBindBind,	imageConfig);
+			addFunctionCase(imageGroup.get(), "export_import_bind_bind",	"Test exporting, importing and binding image.",				testImageExportImportBindBind,	imageConfig);
 
 			dedicatedGroup->addChild(imageGroup.release());
 		}
@@ -4327,6 +4382,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx)
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID).release());
+	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT).release());
 
 	return group;
 }
