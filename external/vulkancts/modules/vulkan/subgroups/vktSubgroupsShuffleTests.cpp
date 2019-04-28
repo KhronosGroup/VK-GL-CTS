@@ -474,10 +474,12 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 	subgroups::SSBOData inputData[2];
 	inputData[0].format = caseDef.format;
+	inputData[0].layout = subgroups::SSBOData::LayoutStd140;
 	inputData[0].numElements = subgroups::maxSupportedSubgroupSize();
 	inputData[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 	inputData[1].format = VK_FORMAT_R32_UINT;
+	inputData[1].layout = subgroups::SSBOData::LayoutStd140;
 	inputData[1].numElements = inputData[0].numElements;
 	inputData[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
@@ -529,10 +531,12 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		}
 		subgroups::SSBOData inputData[2];
 		inputData[0].format = caseDef.format;
+		inputData[0].layout = subgroups::SSBOData::LayoutStd430;
 		inputData[0].numElements = subgroups::maxSupportedSubgroupSize();
 		inputData[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 		inputData[1].format = VK_FORMAT_R32_UINT;
+		inputData[1].layout = subgroups::SSBOData::LayoutStd430;
 		inputData[1].numElements = inputData[0].numElements;
 		inputData[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
@@ -566,12 +570,14 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		subgroups::SSBOData inputData[2];
 		inputData[0].format			= caseDef.format;
+		inputData[0].layout			= subgroups::SSBOData::LayoutStd430;
 		inputData[0].numElements	= subgroups::maxSupportedSubgroupSize();
 		inputData[0].initializeType	= subgroups::SSBOData::InitializeNonZero;
 		inputData[0].binding		= 4u;
 		inputData[0].stages			= stages;
 
 		inputData[1].format			= VK_FORMAT_R32_UINT;
+		inputData[1].layout			= subgroups::SSBOData::LayoutStd430;
 		inputData[1].numElements	= inputData[0].numElements;
 		inputData[1].initializeType	= subgroups::SSBOData::InitializeNonZero;
 		inputData[1].binding		= 5u;
