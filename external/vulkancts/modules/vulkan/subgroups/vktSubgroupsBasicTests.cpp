@@ -39,8 +39,8 @@ static const deUint32			ELECTED_VALUE		= 42u;
 static const deUint32			UNELECTED_VALUE		= 13u;
 static const vk::VkDeviceSize	SHADER_BUFFER_SIZE	= 4096ull; // min(maxUniformBufferRange, maxImageDimension1D)
 
-static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
-		deUint32 width, deUint32 height, deUint32)
+static bool _checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, bool withImage)
 {
 	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
 
@@ -49,7 +49,11 @@ static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 		for (deUint32 y = 0u; y < height; ++y)
 		{
 			const deUint32 ndx = (x * height + y) * 4u;
-			if (1.0f == resultData[ndx +2])
+			if (!withImage && 0.0f == resultData[ndx])
+			{
+				return false;
+			}
+			else if (1.0f == resultData[ndx +2])
 			{
 				if(resultData[ndx] != resultData[ndx +1])
 				{
@@ -64,6 +68,18 @@ static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 	}
 
 	return true;
+}
+
+static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, deUint32)
+{
+	return _checkFragmentSubgroupBarriersNoSSBO(datas, width, height, false);
+}
+
+static bool checkFragmentSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, deUint32)
+{
+	return _checkFragmentSubgroupBarriersNoSSBO(datas, width, height, true);
 }
 
 static bool checkVertexPipelineStagesSubgroupElectNoSSBO(std::vector<const void*> datas,
@@ -143,15 +159,19 @@ static bool checkVertexPipelineStagesSubgroupBarriers(std::vector<const void*> d
 	return true;
 }
 
-static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
-		deUint32 width, deUint32)
+static bool _checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, bool withImage)
 {
 	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
 
 	for (deUint32 x = 0u; x < width; ++x)
 	{
 		const deUint32 ndx = x*4u;
-		if (1.0f == resultData[ndx +2])
+		if (!withImage && 0.0f == resultData[ndx])
+		{
+			return false;
+		}
+		else if (1.0f == resultData[ndx +2])
 		{
 			if(resultData[ndx] != resultData[ndx +1])
 				return false;
@@ -162,6 +182,18 @@ static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const vo
 		}
 	}
 	return true;
+}
+
+static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32)
+{
+    return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, false);
+}
+
+static bool checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32)
+{
+    return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, true);
 }
 
 static bool checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
@@ -1836,16 +1868,19 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
 
 	inputDatas[0].format = VK_FORMAT_R32_UINT;
+	inputDatas[0].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
 	inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 	inputDatas[1].format = VK_FORMAT_R32_UINT;
+	inputDatas[1].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[1].numElements = 1ull;
 	inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 	if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
 	{
 		inputDatas[2].format = VK_FORMAT_R32_UINT;
+		inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 		inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 		inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 		inputDatas[2].isImage = true;
@@ -1856,18 +1891,30 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		if (OPTYPE_ELECT == caseDef.opType)
 			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
 		else
-			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+				(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+					checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
+					checkVertexPipelineStagesSubgroupBarriersNoSSBO
+			);
 	}
 	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 	{
-		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkFragmentSubgroupBarriersNoSSBO);
+		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+			(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+				checkFragmentSubgroupBarriersWithImageNoSSBO :
+				checkFragmentSubgroupBarriersNoSSBO
+		);
 	}
 	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
 		if (OPTYPE_ELECT == caseDef.opType)
 			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
 		else
-			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+				(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+					checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
+					checkVertexPipelineStagesSubgroupBarriersNoSSBO
+			);
 	}
 
 	if (OPTYPE_ELECT == caseDef.opType)
@@ -1914,14 +1961,17 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 3;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
+			inputDatas[0].layout = subgroups::SSBOData::LayoutStd430;
 			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNone;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
+			inputDatas[1].layout = subgroups::SSBOData::LayoutStd430;
 			inputDatas[1].numElements = 1;
 			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[2].format = VK_FORMAT_R32_UINT;
+			inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 			inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[2].isImage = true;
@@ -1965,30 +2015,35 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData inputData[inputCount];
 
 			inputData[0].format			= VK_FORMAT_R32_UINT;
+			inputData[0].layout			 = subgroups::SSBOData::LayoutStd430;
 			inputData[0].numElements	= 1;
 			inputData[0].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[0].binding		= 4u;
 			inputData[0].stages			= VK_SHADER_STAGE_VERTEX_BIT;
 
 			inputData[1].format			= VK_FORMAT_R32_UINT;
+			inputData[1].layout			 = subgroups::SSBOData::LayoutStd430;
 			inputData[1].numElements	= 1;
 			inputData[1].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[1].binding		= 5u;
 			inputData[1].stages			= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
 			inputData[2].format			= VK_FORMAT_R32_UINT;
+			inputData[2].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[2].numElements	= 1;
 			inputData[2].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[2].binding		= 6u;
 			inputData[2].stages			= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 			inputData[3].format			= VK_FORMAT_R32_UINT;
+			inputData[3].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[3].numElements	= 1;
 			inputData[3].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[3].binding		= 7u;
 			inputData[3].stages			= VK_SHADER_STAGE_GEOMETRY_BIT;
 
 			inputData[4].format			= VK_FORMAT_R32_UINT;
+			inputData[4].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[4].numElements	= 1;
 			inputData[4].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[4].binding		= 8u;
@@ -2014,24 +2069,28 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			{
 				const deUint32 index = ndx*4;
 				inputDatas[index].format				= VK_FORMAT_R32_UINT;
+				inputDatas[index].layout				= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index].numElements			= SHADER_BUFFER_SIZE;
 				inputDatas[index].initializeType		= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index].binding				= index + 4u;
 				inputDatas[index].stages				= stagesBits[ndx];
 
 				inputDatas[index + 1].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 1].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 1].numElements		= 1;
 				inputDatas[index + 1].initializeType	= subgroups::SSBOData::InitializeZero;
 				inputDatas[index + 1].binding			= index + 5u;
 				inputDatas[index + 1].stages			= stagesBits[ndx];
 
 				inputDatas[index + 2].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 2].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 2].numElements		= 1;
 				inputDatas[index + 2].initializeType	= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index + 2].binding			= index + 6u;
 				inputDatas[index + 2].stages			= stagesBits[ndx];
 
 				inputDatas[index + 3].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 3].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
 				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
 				inputDatas[index + 3].isImage			= true;

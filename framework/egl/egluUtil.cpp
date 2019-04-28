@@ -250,6 +250,7 @@ EGLDisplay getDisplay (NativeDisplay& nativeDisplay)
 		{
 			const vector<string> platformExts = eglu::getClientExtensions(egl);
 			usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
+				nativeDisplay.getPlatformExtensionName() &&
 				de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 
 		}
@@ -327,6 +328,7 @@ EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& wind
 		{
 			const vector<string> platformExts = eglu::getClientExtensions(egl);
 			usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
+				nativeDisplay.getPlatformExtensionName() &&
 				de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 
 		}
@@ -384,6 +386,7 @@ EGLSurface createPixmapSurface (NativeDisplay& nativeDisplay, NativePixmap& pixm
 		{
 			const vector<string> platformExts = eglu::getClientExtensions(egl);
 			usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
+				nativeDisplay.getPlatformExtensionName() &&
 				de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 
 		}
