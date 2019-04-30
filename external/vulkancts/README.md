@@ -405,21 +405,14 @@ optimizer:
 The list of the optimization recipes can be found and customized in the
 `optimizeCompiledBinary()` function in `vkPrograms.cpp`.
 
-As of this writing, there are 8 recipes to choose from:
+As of this writing, there are 2 recipes to choose from:
 
 	0. Disabled (default)
-	1. The example recipe from spir-v opt 1.0 whitepaper
-	2. RegisterPerformancePasses from commandline optimizer tool october 2017
-	3. RegisterSizePasses from commandline optimizer tool october 2017
-	4. RegisterLegalizationPasses from commandline optimizer tool April 2018
-	5. RegisterPerformancePasses from commandline optimizer tool April 2018
-	6. RegisterPerformancePasses from commandline optimizer tool April 2018 with CreateCommonUniformElimPass
-	7. RegisterSizePasses from commandline optimizer tool April 2018
-	8. RegisterSizePasses from commandline optimizer tool April 2018 with CreateCommonUniformElimPass
+	1. Optimize for performance
+	2. Optimize for size
 
-The `Register...Passes()` calls change in the SPIR-V optimizer tool from
-time to time. Since different sets of passes may result in different
-shaders, having several fixed sets is useful for issue discovery.
+The performance and size optimization recipes are defined by the spir-v
+optimizer, and will change from time to time as the optimizer matures.
 
 	--deqp-optimize-spirv=enable
 
