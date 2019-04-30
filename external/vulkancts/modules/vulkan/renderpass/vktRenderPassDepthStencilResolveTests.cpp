@@ -106,6 +106,7 @@ struct TestConfig
 	VkClearDepthStencilValue	clearValue;
 	float						depthExpectedValue;
 	deUint8						stencilExpectedValue;
+	bool						separateDepthStencilLayouts;
 };
 
 float get16bitDepthComponent(deUint8* pixelPtr)
@@ -220,6 +221,9 @@ bool DepthStencilResolveTest::isFeaturesSupported()
 	m_context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 	if (m_config.imageLayers > 1)
 		m_context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_config.separateDepthStencilLayouts)
+		m_context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
 
 	VkPhysicalDeviceDepthStencilResolvePropertiesKHR dsResolveProperties;
 	deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR));
@@ -382,10 +386,48 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 {
 	const VkSampleCountFlagBits samples(sampleCountBitFromSampleCount(m_config.sampleCount));
 
+	VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	VkAttachmentReferenceStencilLayoutKHR stencilLayout =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR,
+		DE_NULL,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+	};
+	void * attachmentRefStencil = DE_NULL;
+	VkImageLayout finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	VkAttachmentDescriptionStencilLayoutKHR stencilFinalLayout =
+	{
+		VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR,
+		DE_NULL,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	};
+	void * attachmentDescriptionStencil = DE_NULL;
+
+	if (m_config.separateDepthStencilLayouts)
+	{
+		if (m_config.verifyBuffer == VB_DEPTH)
+		{
+			layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_GENERAL;
+			finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
+		}
+		else
+		{
+			layout = VK_IMAGE_LAYOUT_GENERAL;
+			stencilLayout.stencilLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+			finalLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR; // This aspect should be unused.
+			stencilFinalLayout.stencilFinalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		}
+		attachmentRefStencil = &stencilLayout;
+		attachmentDescriptionStencil = &stencilFinalLayout;
+	}
+
 	const AttachmentDescription2 multisampleAttachment		// VkAttachmentDescription2KHR
 	(
 															// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
+		attachmentDescriptionStencil,						// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
 		m_config.format,									// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
@@ -394,21 +436,21 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
 		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL				// VkImageLayout					finalLayout;
+		finalLayout											// VkImageLayout					finalLayout;
 	);
 	const AttachmentReference2 multisampleAttachmentRef		// VkAttachmentReference2KHR
 	(
 															// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
+		attachmentRefStencil,								// const void*						pNext;
 		0u,													// deUint32							attachment;
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					layout;
+		layout,												// VkImageLayout					layout;
 		0u													// VkImageAspectFlags				aspectMask;
 	);
 
 	const AttachmentDescription2 singlesampleAttachment		// VkAttachmentDescription2KHR
 	(
 															// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
+		attachmentDescriptionStencil,						// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
 		m_config.format,									// VkFormat							format;
 		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
@@ -417,14 +459,14 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				stencilStoreOp;
 		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL				// VkImageLayout					finalLayout;
+		finalLayout											// VkImageLayout					finalLayout;
 	);
 	AttachmentReference2 singlesampleAttachmentRef			// VkAttachmentReference2KHR
 	(
 															// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
 		1u,													// deUint32							attachment;
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					layout;
+		layout,												// VkImageLayout					layout;
 		0u													// VkImageAspectFlags				aspectMask;
 	);
 
@@ -743,7 +785,7 @@ void DepthStencilResolveTest::submit (void)
 
 			**m_singlesampleImage,
 			{
-				m_config.aspectFlag,
+				(m_config.separateDepthStencilLayouts) ? VkImageAspectFlags(testingDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT) : m_config.aspectFlag,
 				0u,
 				1u,
 				0u,
@@ -761,7 +803,7 @@ void DepthStencilResolveTest::submit (void)
 		0u,
 		0u,
 		{
-			testingDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT,
+			VkImageAspectFlags(testingDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT),
 			0u,
 			0u,
 			m_config.viewLayers,
@@ -1153,104 +1195,112 @@ void initTests (tcu::TestCaseGroup* group)
 			// iterate over depth/stencil formats
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 			{
-				const FormatData&			formatData	= formats[formatNdx];
-				VkFormat					format		= formatData.format;
-				const char*					formatName	= formatData.name;
-				const bool					hasDepth	= formatData.hasDepth;
-				const bool					hasStencil	= formatData.hasStencil;
-				VkImageAspectFlags			aspectFlags	= (hasDepth * VK_IMAGE_ASPECT_DEPTH_BIT) |
-														  (hasStencil * VK_IMAGE_ASPECT_STENCIL_BIT);
+				const FormatData&			formatData					= formats[formatNdx];
+				VkFormat					format						= formatData.format;
+				const char*					formatName					= formatData.name;
+				const bool					hasDepth					= formatData.hasDepth;
+				const bool					hasStencil					= formatData.hasStencil;
+				VkImageAspectFlags			aspectFlags					= (hasDepth * VK_IMAGE_ASPECT_DEPTH_BIT) |
+																		  (hasStencil * VK_IMAGE_ASPECT_STENCIL_BIT);
+				const int					separateLayoutsLoopCount	= (hasDepth && hasStencil) ? 2 : 1;
 
-				// create test group for format
-				de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName, formatName));
-
-				// iterate over depth resolve modes
-				for (size_t depthResolveModeNdx = 0; depthResolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); depthResolveModeNdx++)
+				for (int separateDepthStencilLayouts = 0; separateDepthStencilLayouts < separateLayoutsLoopCount; ++separateDepthStencilLayouts)
 				{
-					// iterate over stencil resolve modes
-					for (size_t stencilResolveModeNdx = 0; stencilResolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); stencilResolveModeNdx++)
+					const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
+					const std::string	groupName						= std::string(formatName) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "");
+
+					// create test group for format
+					de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+
+					// iterate over depth resolve modes
+					for (size_t depthResolveModeNdx = 0; depthResolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); depthResolveModeNdx++)
 					{
-						// there is no average resolve mode for stencil - go to next iteration
-						ResolveModeData& sResolve = resolveModes[stencilResolveModeNdx];
-						if (sResolve.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
-							continue;
-
-						// if pDepthStencilResolveAttachment is not NULL and does not have the value VK_ATTACHMENT_UNUSED,
-						// depthResolveMode and stencilResolveMode must not both be VK_RESOLVE_MODE_NONE_KHR
-						ResolveModeData& dResolve = resolveModes[depthResolveModeNdx];
-						if ((dResolve.flag == VK_RESOLVE_MODE_NONE_KHR) && (sResolve.flag == VK_RESOLVE_MODE_NONE_KHR))
-							continue;
-
-						// If there is no depth, the depth resolve mode should be NONE, or
-						// match the stencil resolve mode.
-						if (!hasDepth && (dResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
-							(dResolve.flag != sResolve.flag))
-							continue;
-
-						// If there is no stencil, the stencil resmove mode should be NONE, or
-						// match the depth resolve mode.
-						if (!hasStencil && (sResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
-							(dResolve.flag != sResolve.flag))
-							continue;
-
-						std::string baseName = "depth_" + dResolve.name + "_stencil_" + sResolve.name;
-
-						if (hasDepth)
+						// iterate over stencil resolve modes
+						for (size_t stencilResolveModeNdx = 0; stencilResolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); stencilResolveModeNdx++)
 						{
-							std::string	name			= baseName + "_testing_depth";
-							const char*	testName		= name.c_str();
-							float		expectedValue	= depthExpectedValue[depthResolveModeNdx][sampleCountNdx];
+							// there is no average resolve mode for stencil - go to next iteration
+							ResolveModeData& sResolve = resolveModes[stencilResolveModeNdx];
+							if (sResolve.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
+								continue;
 
-							const TestConfig testConfig =
-							{
-								format,
-								imageData.width,
-								imageData.height,
-								1u,
-								1u,
-								0u,
-								imageData.renderArea,
-								aspectFlags,
-								sampleCount,
-								dResolve.flag,
-								sResolve.flag,
-								VB_DEPTH,
-								imageData.clearValue,
-								expectedValue,
-								0u
-							};
-							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
-						}
-						if (hasStencil)
-						{
-							std::string	name			= baseName + "_testing_stencil";
-							const char*	testName		= name.c_str();
-							deUint8		expectedValue	= stencilExpectedValue[stencilResolveModeNdx][sampleCountNdx];
+							// if pDepthStencilResolveAttachment is not NULL and does not have the value VK_ATTACHMENT_UNUSED,
+							// depthResolveMode and stencilResolveMode must not both be VK_RESOLVE_MODE_NONE_KHR
+							ResolveModeData& dResolve = resolveModes[depthResolveModeNdx];
+							if ((dResolve.flag == VK_RESOLVE_MODE_NONE_KHR) && (sResolve.flag == VK_RESOLVE_MODE_NONE_KHR))
+								continue;
 
-							const TestConfig testConfig =
+							// If there is no depth, the depth resolve mode should be NONE, or
+							// match the stencil resolve mode.
+							if (!hasDepth && (dResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
+								(dResolve.flag != sResolve.flag))
+								continue;
+
+							// If there is no stencil, the stencil resmove mode should be NONE, or
+							// match the depth resolve mode.
+							if (!hasStencil && (sResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
+								(dResolve.flag != sResolve.flag))
+								continue;
+
+							std::string baseName = "depth_" + dResolve.name + "_stencil_" + sResolve.name;
+
+							if (hasDepth)
 							{
-								format,
-								imageData.width,
-								imageData.height,
-								1u,
-								1u,
-								0u,
-								imageData.renderArea,
-								aspectFlags,
-								sampleCount,
-								dResolve.flag,
-								sResolve.flag,
-								VB_STENCIL,
-								imageData.clearValue,
-								0.0f,
-								expectedValue
-							};
-							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+								std::string	name			= baseName + "_testing_depth";
+								const char*	testName		= name.c_str();
+								float		expectedValue	= depthExpectedValue[depthResolveModeNdx][sampleCountNdx];
+
+								const TestConfig testConfig =
+								{
+									format,
+									imageData.width,
+									imageData.height,
+									1u,
+									1u,
+									0u,
+									imageData.renderArea,
+									aspectFlags,
+									sampleCount,
+									dResolve.flag,
+									sResolve.flag,
+									VB_DEPTH,
+									imageData.clearValue,
+									expectedValue,
+									0u,
+									useSeparateDepthStencilLayouts
+								};
+								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							}
+							if (hasStencil)
+							{
+								std::string	name			= baseName + "_testing_stencil";
+								const char*	testName		= name.c_str();
+								deUint8		expectedValue	= stencilExpectedValue[stencilResolveModeNdx][sampleCountNdx];
+
+								const TestConfig testConfig =
+								{
+									format,
+									imageData.width,
+									imageData.height,
+									1u,
+									1u,
+									0u,
+									imageData.renderArea,
+									aspectFlags,
+									sampleCount,
+									dResolve.flag,
+									sResolve.flag,
+									VB_STENCIL,
+									imageData.clearValue,
+									0.0f,
+									expectedValue,
+									useSeparateDepthStencilLayouts
+								};
+								formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							}
 						}
 					}
+					sampleGroup->addChild(formatGroup.release());
 				}
-
-				sampleGroup->addChild(formatGroup.release());
 			}
 
 			imageGroup->addChild(sampleGroup.release());
@@ -1282,78 +1332,87 @@ void initTests (tcu::TestCaseGroup* group)
 			// iterate over depth/stencil formats
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 			{
-				const FormatData&			formatData	= formats[formatNdx];
-				VkFormat					format		= formatData.format;
-				const char*					formatName	= formatData.name;
-				const bool					hasDepth	= formatData.hasDepth;
-				const bool					hasStencil	= formatData.hasStencil;
-				VkImageAspectFlags			aspectFlags	= (hasDepth * VK_IMAGE_ASPECT_DEPTH_BIT) |
-														  (hasStencil * VK_IMAGE_ASPECT_STENCIL_BIT);
+				const FormatData&			formatData					= formats[formatNdx];
+				VkFormat					format						= formatData.format;
+				const char*					formatName					= formatData.name;
+				const bool					hasDepth					= formatData.hasDepth;
+				const bool					hasStencil					= formatData.hasStencil;
+				VkImageAspectFlags			aspectFlags					= (hasDepth * VK_IMAGE_ASPECT_DEPTH_BIT) |
+																		  (hasStencil * VK_IMAGE_ASPECT_STENCIL_BIT);
+				const int					separateLayoutsLoopCount	= (hasDepth && hasStencil) ? 2 : 1;
 
-				// create test group for format
-				de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName, formatName));
-
-				for (size_t resolveModeNdx = 0; resolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); resolveModeNdx++)
+				for (int separateDepthStencilLayouts = 0; separateDepthStencilLayouts < separateLayoutsLoopCount; ++separateDepthStencilLayouts)
 				{
-					ResolveModeData& mode = resolveModes[resolveModeNdx];
+					const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
+					const std::string	groupName						= std::string(formatName) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "");
 
-					if (hasDepth)
+					// create test group for format
+					de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupName.c_str()));
+
+					for (size_t resolveModeNdx = 0; resolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); resolveModeNdx++)
 					{
-						std::string	name			= "depth_" + mode.name;
-						const char*	testName		= name.c_str();
-						float		expectedValue	= depthExpectedValue[resolveModeNdx][sampleCountNdx];
-						const TestConfig testConfig =
-						{
-							format,
-							layeredTextureTestData.width,
-							layeredTextureTestData.height,
-							layeredTextureTestData.imageLayers,
-							3u,
-							0u,
-							layeredTextureTestData.renderArea,
-							aspectFlags,
-							sampleCount,
-							mode.flag,
-							VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
-							VB_DEPTH,
-							layeredTextureTestData.clearValue,
-							expectedValue,
-							0u
-						};
-						formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
-					}
+						ResolveModeData& mode = resolveModes[resolveModeNdx];
 
-					// there is no average resolve mode for stencil - go to next iteration
-					if (mode.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
-						continue;
-
-					if (hasStencil)
-					{
-						std::string	name			= "stencil_" + mode.name;
-						const char*	testName		= name.c_str();
-						deUint8		expectedValue	= stencilExpectedValue[resolveModeNdx][sampleCountNdx];
-						const TestConfig testConfig =
+						if (hasDepth)
 						{
-							format,
-							layeredTextureTestData.width,
-							layeredTextureTestData.height,
-							layeredTextureTestData.imageLayers,
-							3u,
-							0u,
-							layeredTextureTestData.renderArea,
-							aspectFlags,
-							sampleCount,
-							VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
-							mode.flag,
-							VB_STENCIL,
-							layeredTextureTestData.clearValue,
-							0.0f,
-							expectedValue
-						};
-						formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+							std::string	name			= "depth_" + mode.name;
+							const char*	testName		= name.c_str();
+							float		expectedValue	= depthExpectedValue[resolveModeNdx][sampleCountNdx];
+							const TestConfig testConfig =
+							{
+								format,
+								layeredTextureTestData.width,
+								layeredTextureTestData.height,
+								layeredTextureTestData.imageLayers,
+								3u,
+								0u,
+								layeredTextureTestData.renderArea,
+								aspectFlags,
+								sampleCount,
+								mode.flag,
+								VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+								VB_DEPTH,
+								layeredTextureTestData.clearValue,
+								expectedValue,
+								0u,
+								useSeparateDepthStencilLayouts
+							};
+							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+						}
+
+						// there is no average resolve mode for stencil - go to next iteration
+						if (mode.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
+							continue;
+
+						if (hasStencil)
+						{
+							std::string	name			= "stencil_" + mode.name;
+							const char*	testName		= name.c_str();
+							deUint8		expectedValue	= stencilExpectedValue[resolveModeNdx][sampleCountNdx];
+							const TestConfig testConfig =
+							{
+								format,
+								layeredTextureTestData.width,
+								layeredTextureTestData.height,
+								layeredTextureTestData.imageLayers,
+								3u,
+								0u,
+								layeredTextureTestData.renderArea,
+								aspectFlags,
+								sampleCount,
+								VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+								mode.flag,
+								VB_STENCIL,
+								layeredTextureTestData.clearValue,
+								0.0f,
+								expectedValue,
+								useSeparateDepthStencilLayouts
+							};
+							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+						}
 					}
+					sampleGroup->addChild(formatGroup.release());
 				}
-				sampleGroup->addChild(formatGroup.release());
 			}
 			imageGroup->addChild(sampleGroup.release());
 		}

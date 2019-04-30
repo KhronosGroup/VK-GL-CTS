@@ -470,6 +470,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR:							return "VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR:						return "VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT:									return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT";
@@ -864,6 +867,10 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR:							return "VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR";
 		case VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV:						return "VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV";
 		case VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT:				return "VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT";
+		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR:					return "VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR";
+		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR:					return "VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR";
+		case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR:				return "VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR";
+		case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR:					return "VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR";
 		case VK_IMAGE_LAYOUT_MAX_ENUM:										return "VK_IMAGE_LAYOUT_MAX_ENUM";
 		default:															return DE_NULL;
 	}
@@ -6406,6 +6413,37 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceProtectedCapabilitiesK
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsupportsProtected = " << value.supportsProtected << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tseparateDepthStencilLayouts = " << value.separateDepthStencilLayouts << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentReferenceStencilLayoutKHR& value)
+{
+	s << "VkAttachmentReferenceStencilLayoutKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstencilLayout = " << value.stencilLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentDescriptionStencilLayoutKHR& value)
+{
+	s << "VkAttachmentDescriptionStencilLayoutKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstencilInitialLayout = " << value.stencilInitialLayout << '\n';
+	s << "\tstencilFinalLayout = " << value.stencilFinalLayout << '\n';
 	s << '}';
 	return s;
 }

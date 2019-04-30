@@ -2368,6 +2368,28 @@ struct VkSurfaceProtectedCapabilitiesKHR
 	VkBool32		supportsProtected;
 };
 
+struct VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		separateDepthStencilLayouts;
+};
+
+struct VkAttachmentReferenceStencilLayoutKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkImageLayout	stencilLayout;
+};
+
+struct VkAttachmentDescriptionStencilLayoutKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkImageLayout	stencilInitialLayout;
+	VkImageLayout	stencilFinalLayout;
+};
+
 struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
 {
 	VkStructureType	sType;

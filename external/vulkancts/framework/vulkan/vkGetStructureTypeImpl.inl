@@ -851,6 +851,21 @@ template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (
 	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAttachmentReferenceStencilLayoutKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAttachmentDescriptionStencilLayoutKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;

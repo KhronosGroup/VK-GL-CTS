@@ -31,6 +31,7 @@ const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatur
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures		(void) const;
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures			(void) const;
 const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&					getScalarBlockLayoutFeatures				(void) const;
+const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR&		getSeparateDepthStencilLayoutsFeatures		(void) const;
 const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					getShaderAtomicInt64Features				(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeatures	(void) const;

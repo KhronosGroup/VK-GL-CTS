@@ -119,6 +119,7 @@ public:
 																 const std::string&		description,
 																 const VkFormat			depthFormat,
 																 const VkCompareOp		depthCompareOps[QUAD_COUNT],
+																 const bool				separateDepthStencilLayouts,
 																 const bool				depthBoundsTestEnable			= false,
 																 const float			depthBoundsMin					= 0.0f,
 																 const float			depthBoundsMax					= 1.0f,
@@ -132,6 +133,7 @@ public:
 
 private:
 	const VkFormat						m_depthFormat;
+	const bool							m_separateDepthStencilLayouts;
 	const bool							m_depthBoundsTestEnable;
 	const float							m_depthBoundsMin;
 	const float							m_depthBoundsMax;
@@ -147,6 +149,7 @@ public:
 										DepthTestInstance		(Context&			context,
 																 const VkFormat		depthFormat,
 																 const VkCompareOp	depthCompareOps[DepthTest::QUAD_COUNT],
+																 const bool			separateDepthStencilLayouts,
 																 const bool			depthBoundsTestEnable,
 																 const float		depthBoundsMin,
 																 const float		depthBoundsMax,
@@ -164,6 +167,7 @@ private:
 	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
+	const bool							m_separateDepthStencilLayouts;
 	const bool							m_depthBoundsTestEnable;
 	const float							m_depthBoundsMin;
 	const float							m_depthBoundsMax;
@@ -208,6 +212,7 @@ DepthTest::DepthTest (tcu::TestContext&		testContext,
 					  const std::string&	description,
 					  const VkFormat		depthFormat,
 					  const VkCompareOp		depthCompareOps[QUAD_COUNT],
+					  const bool			separateDepthStencilLayouts,
 					  const bool			depthBoundsTestEnable,
 					  const float			depthBoundsMin,
 					  const float			depthBoundsMax,
@@ -215,13 +220,14 @@ DepthTest::DepthTest (tcu::TestContext&		testContext,
 					  const bool			stencilTestEnable,
 					  const bool			colorAttachmentEnable)
 	: vkt::TestCase	(testContext, name, description)
-	, m_depthFormat				(depthFormat)
-	, m_depthBoundsTestEnable	(depthBoundsTestEnable)
-	, m_depthBoundsMin			(depthBoundsMin)
-	, m_depthBoundsMax			(depthBoundsMax)
-	, m_depthTestEnable			(depthTestEnable)
-	, m_stencilTestEnable		(stencilTestEnable)
-	, m_colorAttachmentEnable	(colorAttachmentEnable)
+	, m_depthFormat					(depthFormat)
+	, m_separateDepthStencilLayouts	(separateDepthStencilLayouts)
+	, m_depthBoundsTestEnable		(depthBoundsTestEnable)
+	, m_depthBoundsMin				(depthBoundsMin)
+	, m_depthBoundsMax				(depthBoundsMax)
+	, m_depthTestEnable				(depthTestEnable)
+	, m_stencilTestEnable			(stencilTestEnable)
+	, m_colorAttachmentEnable		(colorAttachmentEnable)
 {
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * QUAD_COUNT);
 }
@@ -237,11 +243,14 @@ void DepthTest::checkSupport (Context& context) const
 
 	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
+
+	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
+		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 }
 
 TestInstance* DepthTest::createInstance (Context& context) const
 {
-	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps, m_depthBoundsTestEnable, m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable, m_colorAttachmentEnable);
+	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps, m_separateDepthStencilLayouts, m_depthBoundsTestEnable, m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable, m_colorAttachmentEnable);
 }
 
 void DepthTest::initPrograms (SourceCollections& programCollection) const
@@ -291,22 +300,24 @@ void DepthTest::initPrograms (SourceCollections& programCollection) const
 DepthTestInstance::DepthTestInstance (Context&				context,
 									  const VkFormat		depthFormat,
 									  const VkCompareOp		depthCompareOps[DepthTest::QUAD_COUNT],
+									  const bool			separateDepthStencilLayouts,
 									  const bool			depthBoundsTestEnable,
 									  const float			depthBoundsMin,
 									  const float			depthBoundsMax,
 									  const bool			depthTestEnable,
 									  const bool			stencilTestEnable,
 									  const bool			colorAttachmentEnable)
-	: vkt::TestInstance			(context)
-	, m_renderSize				(32, 32)
-	, m_colorFormat				(colorAttachmentEnable ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED)
-	, m_depthFormat				(depthFormat)
-	, m_depthBoundsTestEnable	(depthBoundsTestEnable)
-	, m_depthBoundsMin			(depthBoundsMin)
-	, m_depthBoundsMax			(depthBoundsMax)
-	, m_depthTestEnable			(depthTestEnable)
-	, m_stencilTestEnable		(stencilTestEnable)
-	, m_colorAttachmentEnable	(colorAttachmentEnable)
+	: vkt::TestInstance				(context)
+	, m_renderSize					(32, 32)
+	, m_colorFormat					(colorAttachmentEnable ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_UNDEFINED)
+	, m_depthFormat					(depthFormat)
+	, m_separateDepthStencilLayouts	(separateDepthStencilLayouts)
+	, m_depthBoundsTestEnable		(depthBoundsTestEnable)
+	, m_depthBoundsMin				(depthBoundsMin)
+	, m_depthBoundsMax				(depthBoundsMax)
+	, m_depthTestEnable				(depthTestEnable)
+	, m_stencilTestEnable			(stencilTestEnable)
+	, m_colorAttachmentEnable		(colorAttachmentEnable)
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkDevice				vkDevice				= context.getDevice();
@@ -601,7 +612,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 		attachmentClearValues.push_back(defaultClearValue(m_depthFormat));
 
-		const VkImageMemoryBarrier			colorBarrier				=
+		const VkImageMemoryBarrier			colorBarrier					=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType            sType;
 			DE_NULL,																// const void*                pNext;
@@ -615,18 +626,26 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }							// VkImageSubresourceRange    subresourceRange;
 		};
 
-		const VkImageMemoryBarrier			depthBarrier				=
+		VkImageSubresourceRange				depthBarrierSubresourceRange	= m_depthImageSubresourceRange;
+		VkImageLayout						newLayout						= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		if (m_separateDepthStencilLayouts)
+		{
+			depthBarrierSubresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+			newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR;
+		}
+
+		const VkImageMemoryBarrier			depthBarrier					=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType            sType;
 			DE_NULL,																// const void*                pNext;
 			(VkAccessFlags)0,														// VkAccessFlags              srcAccessMask;
 			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,							// VkAccessFlags              dstAccessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout              oldLayout;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,						// VkImageLayout              newLayout;
+			newLayout										,						// VkImageLayout              newLayout;
 			VK_QUEUE_FAMILY_IGNORED,												// uint32_t                   srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,												// uint32_t                   dstQueueFamilyIndex;
 			*m_depthImage,															// VkImage                    image;
-			m_depthImageSubresourceRange,											// VkImageSubresourceRange    subresourceRange;
+			depthBarrierSubresourceRange,											// VkImageSubresourceRange    subresourceRange;
 		};
 
 		std::vector<VkImageMemoryBarrier>	imageLayoutBarriers;
@@ -981,67 +1000,80 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 
 			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(depthFormats); formatNdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
-							getFormatCaseName(depthFormats[formatNdx]).c_str(),
-							(std::string("Uses format ") + getFormatName(depthFormats[formatNdx])).c_str()));
-				de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops", "Combines depth compare operators"));
+				const bool		hasDepth					= tcu::hasDepthComponent(mapVkFormat(depthFormats[formatNdx]).order);
+				const bool		hasStencil					= tcu::hasStencilComponent(mapVkFormat(depthFormats[formatNdx]).order);
+				const int		separateLayoutsLoopCount	= (hasDepth && hasStencil) ? 2 : 1;
 
-				for (size_t opsNdx = 0; opsNdx < DE_LENGTH_OF_ARRAY(depthOps); opsNdx++)
+				for (int separateDepthStencilLayouts = 0; separateDepthStencilLayouts < separateLayoutsLoopCount; ++separateDepthStencilLayouts)
 				{
-					compareOpsTests->addChild(new DepthTest(testCtx,
-								getCompareOpsName(depthOps[opsNdx]),
-								getCompareOpsDescription(depthOps[opsNdx]),
-								depthFormats[formatNdx],
-								depthOps[opsNdx]));
+					const bool			useSeparateDepthStencilLayouts	= bool(separateDepthStencilLayouts);
 
-					compareOpsTests->addChild(new DepthTest(testCtx,
-								getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
-								getCompareOpsDescription(depthOps[opsNdx]) + " with depth bounds test enabled",
-								depthFormats[formatNdx],
-								depthOps[opsNdx],
-								true,
-								0.1f,
-								0.25f,
-								true,
-								false,
-								colorEnabled));
-				}
-				// Special VkPipelineDepthStencilStateCreateInfo known to have issues
-				{
-					const VkCompareOp depthOpsSpecial[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER };
+					de::MovePtr<tcu::TestCaseGroup>	formatTest		(new tcu::TestCaseGroup(testCtx,
+								(getFormatCaseName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : "")).c_str(),
+								(std::string("Uses format ") + getFormatName(depthFormats[formatNdx]) + ((useSeparateDepthStencilLayouts) ? " with separate depth/stencil layouts" : "")).c_str()));
+					de::MovePtr<tcu::TestCaseGroup>	compareOpsTests	(new tcu::TestCaseGroup(testCtx, "compare_ops", "Combines depth compare operators"));
 
-					compareOpsTests->addChild(new DepthTest(testCtx,
-								"never_zerodepthbounds_depthdisabled_stencilenabled",
-								"special VkPipelineDepthStencilStateCreateInfo",
-								depthFormats[formatNdx],
-								depthOpsSpecial,
-								true,
-								0.0f,
-								0.0f,
-								false,
-								true,
-								colorEnabled));
-				}
-				formatTest->addChild(compareOpsTests.release());
+					for (size_t opsNdx = 0; opsNdx < DE_LENGTH_OF_ARRAY(depthOps); opsNdx++)
+					{
+						compareOpsTests->addChild(new DepthTest(testCtx,
+									getCompareOpsName(depthOps[opsNdx]),
+									getCompareOpsDescription(depthOps[opsNdx]),
+									depthFormats[formatNdx],
+									depthOps[opsNdx],
+									useSeparateDepthStencilLayouts));
 
-				// Test case with depth test enabled, but depth write disabled
-				de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled", "Test for disabled depth test"));
-				{
-					const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
-					depthTestDisabled->addChild(new DepthTest(testCtx,
-								"depth_write_enabled",
-								"Depth writes should not occur if depth test is disabled",
-								depthFormats[formatNdx],
-								depthOpsDepthTestDisabled,
-								false,			/* depthBoundsTestEnable */
-								0.0f,			/* depthBoundMin*/
-								1.0f,			/* depthBoundMax*/
-								false,			/* depthTestEnable */
-								false,			/* stencilTestEnable */
-								colorEnabled	/* colorAttachmentEnable */));
+						compareOpsTests->addChild(new DepthTest(testCtx,
+									getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
+									getCompareOpsDescription(depthOps[opsNdx]) + " with depth bounds test enabled",
+									depthFormats[formatNdx],
+									depthOps[opsNdx],
+									useSeparateDepthStencilLayouts,
+									true,
+									0.1f,
+									0.25f,
+									true,
+									false,
+									colorEnabled));
+					}
+					// Special VkPipelineDepthStencilStateCreateInfo known to have issues
+					{
+						const VkCompareOp depthOpsSpecial[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER };
+
+						compareOpsTests->addChild(new DepthTest(testCtx,
+									"never_zerodepthbounds_depthdisabled_stencilenabled",
+									"special VkPipelineDepthStencilStateCreateInfo",
+									depthFormats[formatNdx],
+									depthOpsSpecial,
+									useSeparateDepthStencilLayouts,
+									true,
+									0.0f,
+									0.0f,
+									false,
+									true,
+									colorEnabled));
+					}
+					formatTest->addChild(compareOpsTests.release());
+
+					// Test case with depth test enabled, but depth write disabled
+					de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled", "Test for disabled depth test"));
+					{
+						const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
+						depthTestDisabled->addChild(new DepthTest(testCtx,
+									"depth_write_enabled",
+									"Depth writes should not occur if depth test is disabled",
+									depthFormats[formatNdx],
+									depthOpsDepthTestDisabled,
+									useSeparateDepthStencilLayouts,
+									false,			/* depthBoundsTestEnable */
+									0.0f,			/* depthBoundMin*/
+									1.0f,			/* depthBoundMax*/
+									false,			/* depthTestEnable */
+									false,			/* stencilTestEnable */
+									colorEnabled	/* colorAttachmentEnable */));
+					}
+					formatTest->addChild(depthTestDisabled.release());
+					formatTests->addChild(formatTest.release());
 				}
-				formatTest->addChild(depthTestDisabled.release());
-				formatTests->addChild(formatTest.release());
 			}
 			if (colorEnabled)
 				depthTests->addChild(formatTests.release());
