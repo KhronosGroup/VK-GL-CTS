@@ -40,6 +40,7 @@
 #include "vktProtectedMemWsiSwapchainTests.hpp"
 #include "vktProtectedMemYCbCrConversionTests.hpp"
 #include "vktProtectedMemWorkgroupStorageTests.hpp"
+#include "vktProtectedMemStackTests.hpp"
 
 namespace vkt
 {
@@ -96,6 +97,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	}
 
 	protectedTests->addChild(createWorkgroupStorageTests(testCtx));
+	protectedTests->addChild(createStackTests(testCtx));
 
 	return protectedTests.release();
 
