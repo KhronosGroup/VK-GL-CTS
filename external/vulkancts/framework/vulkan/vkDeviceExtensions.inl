@@ -54,5 +54,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_EXT_scalar_block_layout",
 	"VK_KHR_buffer_device_address",
 	"VK_EXT_host_query_reset",
+	"VK_KHR_separate_depth_stencil_layouts",
 };
 

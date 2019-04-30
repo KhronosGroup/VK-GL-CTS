@@ -73,3 +73,4 @@ VK_EXT_descriptor_indexing					DEVICE 1_2_0
 VK_EXT_scalar_block_layout					DEVICE 1_2_0
 VK_KHR_buffer_device_address				DEVICE 1_2_0
 VK_EXT_host_query_reset						DEVICE 1_2_0
+VK_KHR_separate_depth_stencil_layouts		DEVICE 1_2_0
