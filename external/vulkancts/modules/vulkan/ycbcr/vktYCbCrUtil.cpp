@@ -1134,147 +1134,15 @@ tcu::UVec4 getYCbCrBitDepth (vk::VkFormat format)
 	}
 }
 
-// \note Taken from explicit lod filtering tests
-tcu::FloatFormat getYCbCrFilteringPrecision (vk::VkFormat format)
+std::vector<tcu::FloatFormat> getPrecision (VkFormat format)
 {
-	const tcu::FloatFormat	reallyLow	(0, 0, 6, false, tcu::YES);
-	const tcu::FloatFormat	low			(0, 0, 7, false, tcu::YES);
-	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
-	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
+	std::vector<FloatFormat>	floatFormats;
+	UVec4						channelDepth	= getYCbCrBitDepth (format);
 
-	switch (format)
-	{
-		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			return reallyLow;
+	for (deUint32 channelIdx = 0; channelIdx < 4; channelIdx++)
+		floatFormats.push_back(tcu::FloatFormat(0, 0, channelDepth[channelIdx], false, tcu::YES));
 
-		case vk::VK_FORMAT_R8G8B8_UNORM:
-		case vk::VK_FORMAT_B8G8R8_UNORM:
-		case vk::VK_FORMAT_R8G8B8A8_UNORM:
-		case vk::VK_FORMAT_B8G8R8A8_UNORM:
-		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
-		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
-		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-			return low;
-
-		case vk::VK_FORMAT_R16G16B16_UNORM:
-		case vk::VK_FORMAT_R16G16B16A16_UNORM:
-		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
-		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
-		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
-		case vk::VK_FORMAT_R12X4_UNORM_PACK16:
-		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
-		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
-			return fp16;
-
-		default:
-			DE_FATAL("Precision not defined for format");
-			return fp32;
-	}
-}
-
-// \note Taken from explicit lod filtering tests
-tcu::FloatFormat getYCbCrConversionPrecision (vk::VkFormat format)
-{
-	const tcu::FloatFormat	reallyLow	(0, 0, 8, false, tcu::YES);
-	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
-	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
-
-	switch (format)
-	{
-		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			return reallyLow;
-
-		case vk::VK_FORMAT_R8G8B8_UNORM:
-		case vk::VK_FORMAT_B8G8R8_UNORM:
-		case vk::VK_FORMAT_R8G8B8A8_UNORM:
-		case vk::VK_FORMAT_B8G8R8A8_UNORM:
-		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
-			return reallyLow;
-
-		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
-		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-		case vk::VK_FORMAT_R16G16B16_UNORM:
-		case vk::VK_FORMAT_R16G16B16A16_UNORM:
-		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
-		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
-		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
-		case vk::VK_FORMAT_R12X4_UNORM_PACK16:
-		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
-		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
-			return fp16;
-
-		default:
-			DE_FATAL("Precision not defined for format");
-			return fp32;
-	}
+	return floatFormats;
 }
 
 deUint32 getYCbCrFormatChannelCount (vk::VkFormat format)
@@ -1424,7 +1292,7 @@ tcu::Interval clampMaybe (const tcu::Interval&	x,
 
 void convertColor (vk::VkSamplerYcbcrModelConversion	colorModel,
 				   vk::VkSamplerYcbcrRange				range,
-				   const tcu::FloatFormat&				conversionFormat,
+				   const vector<tcu::FloatFormat>&		conversionFormat,
 				   const tcu::UVec4&					bitDepth,
 				   const tcu::Interval					input[4],
 				   tcu::Interval						output[4])
@@ -1440,60 +1308,60 @@ void convertColor (vk::VkSamplerYcbcrModelConversion	colorModel,
 
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY:
 		{
-			output[0] = clampMaybe(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]), -0.5, 0.5);
-			output[1] = clampMaybe(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]), 0.0, 1.0);
-			output[2] = clampMaybe(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]), -0.5, 0.5);
+			output[0] = clampMaybe(rangeExpandChroma(range, conversionFormat[0], bitDepth[0], input[0]), -0.5, 0.5);
+			output[1] = clampMaybe(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]), 0.0, 1.0);
+			output[2] = clampMaybe(rangeExpandChroma(range, conversionFormat[2], bitDepth[2], input[2]), -0.5, 0.5);
 			output[3] = input[3];
 			break;
 		}
 
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:
 		{
-			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
-			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
-			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
+			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]));
+			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat[0], bitDepth[0], input[0]));
+			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat[2], bitDepth[2], input[2]));
 
 			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
 			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
 			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
 
-			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.402 * crClamped, false), false);
-			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut((0.202008 / 0.587) * cbClamped, false), false) - conversionFormat.roundOut((0.419198 / 0.587) * crClamped, false), false);
-			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.772 * cbClamped, false), false);
+			output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.402 * crClamped, false), false);
+			output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut((0.202008 / 0.587) * cbClamped, false), false) - conversionFormat[1].roundOut((0.419198 / 0.587) * crClamped, false), false);
+			output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.772 * cbClamped, false), false);
 			output[3] = input[3];
 			break;
 		}
 
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:
 		{
-			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
-			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
-			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
+			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]));
+			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat[0], bitDepth[0], input[0]));
+			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat[2], bitDepth[2], input[2]));
 
 			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
 			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
 			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
 
-			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.5748 * crClamped, false), false);
-			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut((0.13397432 / 0.7152) * cbClamped, false), false) - conversionFormat.roundOut((0.33480248 / 0.7152) * crClamped, false), false);
-			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.8556 * cbClamped, false), false);
+			output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.5748 * crClamped, false), false);
+			output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut((0.13397432 / 0.7152) * cbClamped, false), false) - conversionFormat[1].roundOut((0.33480248 / 0.7152) * crClamped, false), false);
+			output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.8556 * cbClamped, false), false);
 			output[3] = input[3];
 			break;
 		}
 
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020:
 		{
-			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
-			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
-			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
+			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]));
+			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat[0], bitDepth[0], input[0]));
+			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat[2], bitDepth[2], input[2]));
 
 			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
 			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
 			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
 
-			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.4746 * crClamped, false), false);
-			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut(conversionFormat.roundOut(0.11156702 / 0.6780, false) * cbClamped, false), false) - conversionFormat.roundOut(conversionFormat.roundOut(0.38737742 / 0.6780, false) * crClamped, false), false);
-			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.8814 * cbClamped, false), false);
+			output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.4746 * crClamped, false), false);
+			output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut(conversionFormat[1].roundOut(0.11156702 / 0.6780, false) * cbClamped, false), false) - conversionFormat[1].roundOut(conversionFormat[1].roundOut(0.38737742 / 0.6780, false) * crClamped, false), false);
+			output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.8814 * cbClamped, false), false);
 			output[3] = input[3];
 			break;
 		}
@@ -1768,29 +1636,29 @@ int divFloor (int a, int b)
 		return (a / b) - 1;
 }
 
-void calculateBounds (const ChannelAccess&					rPlane,
-					  const ChannelAccess&					gPlane,
-					  const ChannelAccess&					bPlane,
-					  const ChannelAccess&					aPlane,
-					  const UVec4&							bitDepth,
-					  const vector<Vec2>&					sts,
-					  const FloatFormat&					filteringFormat,
-					  const FloatFormat&					conversionFormat,
-					  const deUint32						subTexelPrecisionBits,
-					  vk::VkFilter							filter,
-					  vk::VkSamplerYcbcrModelConversion		colorModel,
-					  vk::VkSamplerYcbcrRange				range,
-					  vk::VkFilter							chromaFilter,
-					  vk::VkChromaLocation					xChromaOffset,
-					  vk::VkChromaLocation					yChromaOffset,
-					  const vk::VkComponentMapping&			componentMapping,
-					  bool									explicitReconstruction,
-					  vk::VkSamplerAddressMode				addressModeU,
-					  vk::VkSamplerAddressMode				addressModeV,
-					  std::vector<Vec4>&					minBounds,
-					  std::vector<Vec4>&					maxBounds,
-					  std::vector<Vec4>&					uvBounds,
-					  std::vector<IVec4>&					ijBounds)
+void calculateBounds (const ChannelAccess&				rPlane,
+					  const ChannelAccess&				gPlane,
+					  const ChannelAccess&				bPlane,
+					  const ChannelAccess&				aPlane,
+					  const UVec4&						bitDepth,
+					  const vector<Vec2>&				sts,
+					  const vector<FloatFormat>&		filteringFormat,
+					  const vector<FloatFormat>&		conversionFormat,
+					  const deUint32					subTexelPrecisionBits,
+					  vk::VkFilter						filter,
+					  vk::VkSamplerYcbcrModelConversion	colorModel,
+					  vk::VkSamplerYcbcrRange			range,
+					  vk::VkFilter						chromaFilter,
+					  vk::VkChromaLocation				xChromaOffset,
+					  vk::VkChromaLocation				yChromaOffset,
+					  const vk::VkComponentMapping&		componentMapping,
+					  bool								explicitReconstruction,
+					  vk::VkSamplerAddressMode			addressModeU,
+					  vk::VkSamplerAddressMode			addressModeV,
+					  std::vector<Vec4>&				minBounds,
+					  std::vector<Vec4>&				maxBounds,
+					  std::vector<Vec4>&				uvBounds,
+					  std::vector<IVec4>&				ijBounds)
 {
 	const FloatFormat		highp			(-126, 127, 23, true,
 											 tcu::MAYBE,	// subnormals
@@ -1849,8 +1717,8 @@ void calculateBounds (const ChannelAccess&					rPlane,
 			for (int j = jRange.x(); j <= jRange.y(); j++)
 			for (int i = iRange.x(); i <= iRange.y(); i++)
 			{
-				const Interval	gValue	(lookupWrapped(gAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)));
-				const Interval	aValue	(lookupWrapped(aAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)));
+				const Interval	gValue	(lookupWrapped(gAccess, conversionFormat[1], addressModeU, addressModeV, IVec2(i, j)));
+				const Interval	aValue	(lookupWrapped(aAccess, conversionFormat[3], addressModeU, addressModeV, IVec2(i, j)));
 
 				if (subsampledX || subsampledY)
 				{
@@ -1863,9 +1731,9 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							const int		subJ		= subsampledY ? j / 2 : j;
 							const Interval	srcColor[]	=
 							{
-								lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
+								lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(subI, subJ)),
 								gValue,
-								lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
+								lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(subI, subJ)),
 								aValue
 							};
 							Interval		dstColor[4];
@@ -1880,8 +1748,8 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							if (subsampledX && subsampledY)
 							{
 								// Nearest, Reconstructed both chroma samples with explicit linear filtering
-								const Interval	rValue	(reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j));
-								const Interval	bValue	(reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j));
+								const Interval	rValue	(reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j));
+								const Interval	bValue	(reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j));
 								const Interval	srcColor[]	=
 								{
 									rValue,
@@ -1899,8 +1767,8 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							else if (subsampledX)
 							{
 								// Nearest, Reconstructed x chroma samples with explicit linear filtering
-								const Interval	rValue	(reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i, j));
-								const Interval	bValue	(reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i, j));
+								const Interval	rValue	(reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i, j));
+								const Interval	bValue	(reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i, j));
 								const Interval	srcColor[]	=
 								{
 									rValue,
@@ -1937,9 +1805,9 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							{
 								const Interval	srcColor[]	=
 								{
-									lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
 									gValue,
-									lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
 									aValue
 								};
 								Interval		dstColor[4];
@@ -1964,9 +1832,9 @@ void calculateBounds (const ChannelAccess&					rPlane,
 
 								const Interval	srcColor[]	=
 								{
-									linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
+									linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
 									gValue,
-									linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
+									linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
 									aValue
 								};
 								Interval		dstColor[4];
@@ -1986,9 +1854,9 @@ void calculateBounds (const ChannelAccess&					rPlane,
 					// Linear, no chroma subsampling
 					const Interval	srcColor[]	=
 					{
-						lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)),
+						lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i, j)),
 						gValue,
-						lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)),
+						lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i, j)),
 						aValue
 					};
 					Interval dstColor[4];
@@ -2017,8 +1885,8 @@ void calculateBounds (const ChannelAccess&					rPlane,
 				const Interval	lumaA		(calculateAB(subTexelPrecisionBits, u, i));
 				const Interval	lumaB		(calculateAB(subTexelPrecisionBits, v, j));
 
-				const Interval	gValue		(linearSample(gAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
-				const Interval	aValue		(linearSample(aAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
+				const Interval	gValue		(linearSample(gAccess, conversionFormat[1], filteringFormat[1], addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
+				const Interval	aValue		(linearSample(aAccess, conversionFormat[3], filteringFormat[3], addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
 
 				if (subsampledX || subsampledY)
 				{
@@ -2028,17 +1896,17 @@ void calculateBounds (const ChannelAccess&					rPlane,
 						{
 							const Interval	srcColor[]	=
 							{
-								linearInterpolate(filteringFormat, lumaA, lumaB,
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
+								linearInterpolate(filteringFormat[0], lumaA, lumaB,
+																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
+																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
 								gValue,
-								linearInterpolate(filteringFormat, lumaA, lumaB,
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
+								linearInterpolate(filteringFormat[2], lumaA, lumaB,
+																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
+																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
 								aValue
 							};
 							Interval		dstColor[4];
@@ -2053,16 +1921,16 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							if (subsampledX && subsampledY)
 							{
 								// Linear, Reconstructed xx chroma samples with explicit linear filtering
-								const Interval	rValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
-								const Interval	bValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
+								const Interval	rValue	(linearInterpolate(filteringFormat[0], lumaA, lumaB,
+																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j),
+																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
+																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
+																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
+								const Interval	bValue	(linearInterpolate(filteringFormat[2], lumaA, lumaB,
+																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j),
+																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
+																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
+																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
 								const Interval	srcColor[]	=
 								{
 									rValue,
@@ -2081,16 +1949,16 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							else if (subsampledX)
 							{
 								// Linear, Reconstructed x chroma samples with explicit linear filtering
-								const Interval	rValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
-								const Interval	bValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
+								const Interval	rValue	(linearInterpolate(filteringFormat[0], lumaA, lumaB,
+																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i, j),
+																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
+																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
+																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
+								const Interval	bValue	(linearInterpolate(filteringFormat[2], lumaA, lumaB,
+																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i, j),
+																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
+																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
+																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
 								const Interval	srcColor[]	=
 								{
 									rValue,
@@ -2126,9 +1994,9 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							{
 								const Interval	srcColor[]	=
 								{
-									lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									lookupWrapped(rAccess, conversionFormat[1], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
 									gValue,
-									lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									lookupWrapped(bAccess, conversionFormat[3], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
 									aValue
 								};
 								Interval	dstColor[4];
@@ -2150,8 +2018,8 @@ void calculateBounds (const ChannelAccess&					rPlane,
 								const Interval	chromaA		(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
 								const Interval	chromaB		(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
 
-								const Interval	rValue		(linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
-								const Interval	bValue		(linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
+								const Interval	rValue		(linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
+								const Interval	bValue		(linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
 
 								const Interval	srcColor[]	=
 								{
@@ -2175,8 +2043,8 @@ void calculateBounds (const ChannelAccess&					rPlane,
 				{
 					const Interval	chromaA		(lumaA);
 					const Interval	chromaB		(lumaB);
-					const Interval	rValue		(linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
-					const Interval	bValue		(linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
+					const Interval	rValue		(linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
+					const Interval	bValue		(linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
 					const Interval	srcColor[]	=
 					{
 						rValue,

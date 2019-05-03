@@ -587,15 +587,15 @@ void checkSupport (Context& context, const TestConfig config)
 
 tcu::TestStatus textureConversionTest (Context& context, const TestConfig config)
 {
-	const FloatFormat	filteringPrecision		(getYCbCrFilteringPrecision(config.format));
-	const FloatFormat	conversionPrecision		(getYCbCrConversionPrecision(config.format));
-	const deUint32		subTexelPrecisionBits	(vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits.subTexelPrecisionBits);
-	const tcu::UVec4	bitDepth				(getYCbCrBitDepth(config.format));
-	TestLog&			log						(context.getTestContext().getLog());
-	bool				explicitReconstruction	= config.explicitReconstruction;
-	const UVec2			srcSize					= config.srcSize;
-	const UVec2			dstSize					= config.dstSize;
-	bool				isOk					= true;
+	const std::vector<FloatFormat>	filteringPrecision		(getPrecision(config.format));
+	const std::vector<FloatFormat>	conversionPrecision		(getPrecision(config.format));
+	const deUint32					subTexelPrecisionBits	(vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits.subTexelPrecisionBits);
+	const tcu::UVec4				bitDepth				(getYCbCrBitDepth(config.format));
+	TestLog&						log						(context.getTestContext().getLog());
+	bool							explicitReconstruction	= config.explicitReconstruction;
+	const UVec2						srcSize					= config.srcSize;
+	const UVec2						dstSize					= config.dstSize;
+	bool							isOk					= true;
 
 	logTestCaseInfo(log, config);
 
