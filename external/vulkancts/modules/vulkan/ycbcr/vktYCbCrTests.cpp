@@ -46,6 +46,7 @@ void populateTestGroup (tcu::TestCaseGroup* ycbcrTests)
 	ycbcrTests->addChild(createImageQueryTests(testCtx));
 	ycbcrTests->addChild(createConversionTests(testCtx));
 	ycbcrTests->addChild(createCopyTests(testCtx));
+	ycbcrTests->addChild(createDimensionsCopyTests(testCtx));
 }
 
 } // anonymous

@@ -907,7 +907,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 																				(int)m_params.src.image.extent.width,
 																				(int)m_params.src.image.extent.height,
 																				(int)m_params.src.image.extent.depth));
-	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_RED);
+	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.src.image.extent.depth, FILL_MODE_GRADIENT);
 	m_destinationTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dstTcuFormat,
 																				(int)m_params.dst.image.extent.width,
 																				(int)m_params.dst.image.extent.height,
@@ -1173,7 +1173,9 @@ public:
 				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 		}
 
-		VkImageFormatProperties properties;
+		const VkPhysicalDeviceLimits	limits		= context.getDeviceProperties().limits;
+		VkImageFormatProperties			properties;
+
 		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.src.image.format,
 																					m_params.src.image.imageType,
@@ -1190,6 +1192,38 @@ public:
 																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
 		{
 			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		// Check maxImageDimension2D
+		{
+			if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D && (m_params.src.image.extent.width > limits.maxImageDimension2D
+				|| m_params.src.image.extent.height > limits.maxImageDimension2D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 2D src image dimensions not supported");
+			}
+
+			if (m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && (m_params.dst.image.extent.width > limits.maxImageDimension2D
+				|| m_params.dst.image.extent.height > limits.maxImageDimension2D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 2D dst image dimensions not supported");
+			}
+		}
+
+		// Check maxImageDimension3D
+		{
+			if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D && (m_params.src.image.extent.width > limits.maxImageDimension3D
+				|| m_params.src.image.extent.height > limits.maxImageDimension3D
+				|| m_params.src.image.extent.depth > limits.maxImageDimension3D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 3D src image dimensions not supported");
+			}
+
+			if (m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && (m_params.dst.image.extent.width > limits.maxImageDimension3D
+				|| m_params.dst.image.extent.height > limits.maxImageDimension3D
+				|| m_params.src.image.extent.depth > limits.maxImageDimension3D))
+			{
+				TCU_THROW(NotSupportedError, "Requested 3D dst image dimensions not supported");
+			}
 		}
 	}
 
@@ -4661,6 +4695,210 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 	}
 }
 
+void addImageToImageDimensionsTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+{
+	tcu::TestContext&		testCtx				= group->getTestContext();
+
+	const VkFormat			testFormats[][2]	=
+	{
+		// From compatibleFormats8Bit
+		{
+			VK_FORMAT_R4G4_UNORM_PACK8,
+			VK_FORMAT_R8_SRGB
+		},
+		// From compatibleFormats16Bit
+		{
+			VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+			VK_FORMAT_R16_SFLOAT,
+		},
+		// From compatibleFormats24Bit
+		{
+			VK_FORMAT_R8G8B8_UNORM,
+			VK_FORMAT_B8G8R8_SRGB
+		},
+		// From compatibleFormats32Bit
+		{
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_FORMAT_R32_SFLOAT
+		},
+		// From compatibleFormats48Bit
+		{
+			VK_FORMAT_R16G16B16_UNORM,
+			VK_FORMAT_R16G16B16_SFLOAT
+		},
+		// From compatibleFormats64Bit
+		{
+			VK_FORMAT_R16G16B16A16_UNORM,
+			VK_FORMAT_R64_SFLOAT
+		},
+		// From compatibleFormats96Bit
+		{
+			VK_FORMAT_R32G32B32_UINT,
+			VK_FORMAT_R32G32B32_SFLOAT
+		},
+		// From compatibleFormats128Bit
+		{
+			VK_FORMAT_R32G32B32A32_UINT,
+			VK_FORMAT_R64G64_SFLOAT
+		},
+		// From compatibleFormats192Bit
+		{
+			VK_FORMAT_R64G64B64_UINT,
+			VK_FORMAT_R64G64B64_SFLOAT,
+		},
+		// From compatibleFormats256Bit
+		{
+			VK_FORMAT_R64G64B64A64_UINT,
+			VK_FORMAT_R64G64B64A64_SFLOAT
+		}
+	};
+
+	const tcu::UVec2		imageDimensions[]	=
+	{
+		// large pot x small pot
+		tcu::UVec2(4096,	4u),
+		tcu::UVec2(8192,	4u),
+		tcu::UVec2(16384,	4u),
+		tcu::UVec2(32768,	4u),
+
+		// large pot x small npot
+		tcu::UVec2(4096,	6u),
+		tcu::UVec2(8192,	6u),
+		tcu::UVec2(16384,	6u),
+		tcu::UVec2(32768,	6u),
+
+		// small pot x large pot
+		tcu::UVec2(4u, 4096),
+		tcu::UVec2(4u, 8192),
+		tcu::UVec2(4u, 16384),
+		tcu::UVec2(4u, 32768),
+
+		// small npot x large pot
+		tcu::UVec2(6u, 4096),
+		tcu::UVec2(6u, 8192),
+		tcu::UVec2(6u, 16384),
+		tcu::UVec2(6u, 32768)
+	};
+
+	const VkImageLayout		copySrcLayouts[]	=
+	{
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL
+	};
+
+	const VkImageLayout		copyDstLayouts[]	=
+	{
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL
+	};
+
+	if (allocationKind == ALLOCATION_KIND_DEDICATED)
+	{
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(testFormats); compatibleFormatsIndex++)
+			dedicatedAllocationImageToImageFormatsToTestSet.insert(dedicatedAllocationImageToImageFormatsToTest[compatibleFormatsIndex]);
+	}
+
+	// Image dimensions
+	for (size_t dimensionNdx = 0; dimensionNdx < DE_LENGTH_OF_ARRAY(imageDimensions); dimensionNdx++)
+	{
+		CopyRegion				copyRegion;
+		CopyColorTestParams		testParams;
+
+		const VkExtent3D		extent			= { imageDimensions[dimensionNdx].x(), imageDimensions[dimensionNdx].y(), 1 };
+
+		const VkImageCopy		testCopy		=
+		{
+			defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+			{0, 0, 0},			// VkOffset3D				srcOffset;
+			defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+			{0, 0, 0},			// VkOffset3D				dstOffset;
+			extent,				// VkExtent3D				extent;
+		};
+
+		testParams.params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		testParams.params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		testParams.params.src.image.extent		= extent;
+
+		testParams.params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		testParams.params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		testParams.params.dst.image.extent		= extent;
+
+		copyRegion.imageCopy					= testCopy;
+		testParams.params.allocationKind		= allocationKind;
+
+		testParams.params.regions.push_back(copyRegion);
+
+		const std::string	dimensionStr		= "src" + de::toString(testParams.params.src.image.extent.width) + "x" + de::toString(testParams.params.src.image.extent.height)
+												  + "_dst" + de::toString(testParams.params.dst.image.extent.width) + "x" + de::toString(testParams.params.dst.image.extent.height);
+		tcu::TestCaseGroup*	imageSizeGroup		= new tcu::TestCaseGroup(testCtx, dimensionStr.c_str(), ("Image sizes " + dimensionStr).c_str());
+
+		// Compatible formats for copying
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(testFormats); compatibleFormatsIndex++)
+		{
+			const VkFormat* compatibleFormats = testFormats[compatibleFormatsIndex];
+
+			testParams.compatibleFormats = compatibleFormats;
+
+			// Source image format
+			for (int srcFormatIndex = 0; srcFormatIndex < DE_LENGTH_OF_ARRAY(testFormats[compatibleFormatsIndex]); srcFormatIndex++)
+			{
+				testParams.params.src.image.format = testParams.compatibleFormats[srcFormatIndex];
+
+				if (!isSupportedByFramework(testParams.params.src.image.format) && !isCompressedFormat(testParams.params.src.image.format))
+					continue;
+
+				const std::string	srcDescription	= "Copy from source format " + getFormatCaseName(testParams.params.src.image.format);
+				tcu::TestCaseGroup*	srcFormatGroup	= new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.src.image.format).c_str(), srcDescription.c_str());
+
+				// Destination image format
+				for (int dstFormatIndex = 0; dstFormatIndex < DE_LENGTH_OF_ARRAY(testFormats[compatibleFormatsIndex]); dstFormatIndex++)
+				{
+					testParams.params.dst.image.format = testParams.compatibleFormats[dstFormatIndex];
+
+					if (!isSupportedByFramework(testParams.params.dst.image.format) && !isCompressedFormat(testParams.params.dst.image.format))
+						continue;
+
+					if (!isAllowedImageToImageAllFormatsColorSrcFormatTests(testParams))
+						continue;
+
+					if (isCompressedFormat(testParams.params.src.image.format) && isCompressedFormat(testParams.params.dst.image.format))
+					{
+						if ((getBlockWidth(testParams.params.src.image.format) != getBlockWidth(testParams.params.dst.image.format))
+							|| (getBlockHeight(testParams.params.src.image.format) != getBlockHeight(testParams.params.dst.image.format)))
+							continue;
+					}
+
+					const std::string	dstDescription	= "Copy to destination format " + getFormatCaseName(testParams.params.dst.image.format);
+					tcu::TestCaseGroup*	dstFormatGroup	= new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.dst.image.format).c_str(), dstDescription.c_str());
+
+					// Source/destionation image layouts
+					for (int srcLayoutNdx = 0u; srcLayoutNdx < DE_LENGTH_OF_ARRAY(copySrcLayouts); srcLayoutNdx++)
+					{
+						testParams.params.src.image.operationLayout = copySrcLayouts[srcLayoutNdx];
+
+						for (int dstLayoutNdx = 0u; dstLayoutNdx < DE_LENGTH_OF_ARRAY(copyDstLayouts); dstLayoutNdx++)
+						{
+							testParams.params.dst.image.operationLayout = copyDstLayouts[dstLayoutNdx];
+
+							const std::string	testName	= getImageLayoutCaseName(testParams.params.src.image.operationLayout) + "_" + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
+							const std::string	description	= "From layout " + getImageLayoutCaseName(testParams.params.src.image.operationLayout) + " to " + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
+							const TestParams	params		= testParams.params;
+
+							dstFormatGroup->addChild(new CopyImageToImageTestCase(testCtx, testName, description, params));
+						}
+					}
+
+					srcFormatGroup->addChild(dstFormatGroup);
+				}
+
+				imageSizeGroup->addChild(srcFormatGroup);
+			}
+		}
+
+		group->addChild(imageSizeGroup);
+	}
+}
+
 void addImageToImageAllFormatsDepthStencilFormatsTests (tcu::TestCaseGroup* group, TestParams params)
 {
 	const VkImageLayout copySrcLayouts[]		=
@@ -5105,6 +5343,7 @@ void addImageToImageTests (tcu::TestCaseGroup* group, AllocationKind allocationK
 	addTestGroup(group, "simple_tests", "Copy from image to image simple tests", addImageToImageSimpleTests, allocationKind);
 	addTestGroup(group, "all_formats", "Copy from image to image with all compatible formats", addImageToImageAllFormatsTests, allocationKind);
 	addTestGroup(group, "3d_images", "Coping operations on 3d images", addImageToImage3dImagesTests, allocationKind);
+	addTestGroup(group, "dimensions", "Copying operations on different image dimensions", addImageToImageDimensionsTests, allocationKind);
 }
 
 void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)

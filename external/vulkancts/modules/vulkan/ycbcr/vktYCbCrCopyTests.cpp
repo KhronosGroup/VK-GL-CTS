@@ -122,6 +122,14 @@ void checkFormatSupport(Context& context, const ImageConfig& config)
 
 void checkSupport (Context& context, const TestConfig config)
 {
+	const vk::VkPhysicalDeviceLimits limits = context.getDeviceProperties().limits;
+
+	if (config.src.size.x() > limits.maxImageDimension2D || config.src.size.y() > limits.maxImageDimension2D
+		|| config.dst.size.x() > limits.maxImageDimension2D || config.dst.size.y() > limits.maxImageDimension2D)
+	{
+		TCU_THROW(NotSupportedError, "Requested image dimensions not supported");
+	}
+
 	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_sampler_ycbcr_conversion")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
@@ -959,7 +967,7 @@ bool isCopyCompatible (vk::VkFormat srcFormat, vk::VkFormat dstFormat)
 	return false;
 }
 
-void initTests (tcu::TestCaseGroup* testGroup)
+void initYcbcrDefaultCopyTests (tcu::TestCaseGroup* testGroup)
 {
 	const vk::VkFormat ycbcrFormats[] =
 	{
@@ -1078,11 +1086,128 @@ void initTests (tcu::TestCaseGroup* testGroup)
 	}
 }
 
+void initYcbcrDimensionsCopyTests (tcu::TestCaseGroup* testGroup)
+{
+	tcu::TestContext&	testCtx				= testGroup->getTestContext();
+
+	const vk::VkFormat	testFormats[]		=
+	{
+		// 8-bit
+		vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
+		// 10-bit
+		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
+		// 12-bit
+		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
+		// 16-bit
+		vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
+		// Non-ycbcr
+		vk::VK_FORMAT_R8G8B8A8_UNORM,
+	};
+
+	const tcu::UVec2	imageDimensions[]	=
+	{
+		// Wide: large pot x small pot
+		tcu::UVec2(4096,	4u),
+		tcu::UVec2(8192,	4u),
+		tcu::UVec2(16384,	4u),
+		tcu::UVec2(32768,	4u),
+
+		// Wide: large pot x small npot
+		tcu::UVec2(4096,	6u),
+		tcu::UVec2(8192,	6u),
+		tcu::UVec2(16384,	6u),
+		tcu::UVec2(32768,	6u),
+
+		// Tall: small pot x large pot
+		tcu::UVec2(4u, 4096),
+		tcu::UVec2(4u, 8192),
+		tcu::UVec2(4u, 16384),
+		tcu::UVec2(4u, 32768),
+
+		// Tall: small npot x large pot
+		tcu::UVec2(6u, 4096),
+		tcu::UVec2(6u, 8192),
+		tcu::UVec2(6u, 16384),
+		tcu::UVec2(6u, 32768)
+	};
+
+	const struct
+	{
+		const char*			name;
+		vk::VkImageTiling	value;
+	} imageTilings[] =
+	{
+		{ "linear",		vk::VK_IMAGE_TILING_LINEAR	},
+		{ "optimal",	vk::VK_IMAGE_TILING_OPTIMAL	}
+	};
+
+	for (size_t imageDimensionNdx = 0; imageDimensionNdx < DE_LENGTH_OF_ARRAY(imageDimensions); imageDimensionNdx++)
+	{
+		const UVec2						srcSize			(imageDimensions[imageDimensionNdx]);
+		const UVec2						dstSize			(imageDimensions[imageDimensionNdx]);
+		const string					dimensionsName	("src" + de::toString(srcSize.x()) + "x" + de::toString(srcSize.y()) + "_dst" + de::toString(dstSize.x()) + "x" + de::toString(dstSize.y()));
+
+		de::MovePtr<tcu::TestCaseGroup>	dimensionGroup	(new tcu::TestCaseGroup(testCtx, dimensionsName.c_str(), ("Image dimensions " + dimensionsName).c_str()));
+
+		for (size_t srcFormatNdx = 0; srcFormatNdx < DE_LENGTH_OF_ARRAY(testFormats); srcFormatNdx++)
+		{
+			const vk::VkFormat				srcFormat		(testFormats[srcFormatNdx]);
+			const string					srcFormatName	(de::toLower(std::string(getFormatName(srcFormat)).substr(10)));
+			de::MovePtr<tcu::TestCaseGroup>	srcFormatGroup	(new tcu::TestCaseGroup(testCtx, srcFormatName.c_str(), ("Tests for copies using format " + srcFormatName).c_str()));
+
+			for (size_t dstFormatNdx = 0; dstFormatNdx < DE_LENGTH_OF_ARRAY(testFormats); dstFormatNdx++)
+			{
+				const vk::VkFormat	dstFormat		(testFormats[dstFormatNdx]);
+				const string		dstFormatName	(de::toLower(std::string(getFormatName(dstFormat)).substr(10)));
+
+				if ((!vk::isYCbCrFormat(srcFormat) && !vk::isYCbCrFormat(dstFormat))
+						|| !isCopyCompatible(srcFormat, dstFormat))
+					continue;
+
+				de::MovePtr<tcu::TestCaseGroup>	dstFormatGroup	(new tcu::TestCaseGroup(testCtx, dstFormatName.c_str(), ("Tests for copies using format " + dstFormatName).c_str()));
+
+				for (size_t srcTilingNdx = 0; srcTilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); srcTilingNdx++)
+				{
+					const vk::VkImageTiling	srcTiling		= imageTilings[srcTilingNdx].value;
+					const char* const		srcTilingName	= imageTilings[srcTilingNdx].name;
+
+					for (size_t dstTilingNdx = 0; dstTilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); dstTilingNdx++)
+					{
+						const vk::VkImageTiling	dstTiling		= imageTilings[dstTilingNdx].value;
+						const char* const		dstTilingName	= imageTilings[dstTilingNdx].name;
+
+						for (size_t srcDisjointNdx = 0; srcDisjointNdx < 2; srcDisjointNdx++)
+						for (size_t dstDisjointNdx = 0; dstDisjointNdx < 2; dstDisjointNdx++)
+						{
+							const bool			srcDisjoint	= srcDisjointNdx == 1;
+							const bool			dstDisjoint	= dstDisjointNdx == 1;
+							const TestConfig	config		(ImageConfig(srcFormat, srcTiling, srcDisjoint, srcSize), ImageConfig(dstFormat, dstTiling, dstDisjoint, dstSize));
+
+							addFunctionCase(dstFormatGroup.get(), string(srcTilingName) + (srcDisjoint ? "_disjoint_" : "_") + string(dstTilingName) + (dstDisjoint ? "_disjoint" : ""), "", checkSupport, imageCopyTest, config);
+						}
+					}
+				}
+
+				srcFormatGroup->addChild(dstFormatGroup.release());
+			}
+
+			dimensionGroup->addChild(srcFormatGroup.release());
+		}
+
+		testGroup->addChild(dimensionGroup.release());
+	}
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createCopyTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "copy", "YCbCr Format Copy Tests", initTests);
+	return createTestGroup(testCtx, "copy", "YCbCr Format Copy Tests", initYcbcrDefaultCopyTests);
+}
+
+tcu::TestCaseGroup* createDimensionsCopyTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "copy_dimensions", "YCbCr format copy tests between different image dimensions", initYcbcrDimensionsCopyTests);
 }
 
 } // ycbcr
