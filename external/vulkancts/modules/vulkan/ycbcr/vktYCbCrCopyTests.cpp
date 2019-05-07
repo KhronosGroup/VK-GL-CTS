@@ -93,58 +93,40 @@ struct TestConfig
 	ImageConfig	dst;
 };
 
+void checkFormatSupport(Context& context, const ImageConfig& config)
+{
+	try
+	{
+		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
+		const vk::VkFormatFeatureFlags	features	(config.tiling == vk::VK_IMAGE_TILING_OPTIMAL
+													? properties.optimalTilingFeatures
+													: properties.linearTilingFeatures);
+
+		if ((features & vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) == 0
+			&& (features & vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT) == 0)
+		{
+			TCU_THROW(NotSupportedError, "Format doesn't support copies");
+		}
+
+		if (config.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
+			TCU_THROW(NotSupportedError, "Format doesn't support disjoint planes");
+	}
+	catch (const vk::Error& err)
+	{
+		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Format not supported");
+
+		throw;
+	}
+}
+
 void checkSupport (Context& context, const TestConfig config)
 {
 	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_sampler_ycbcr_conversion")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
-	try
-	{
-		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.src.format));
-		const vk::VkFormatFeatureFlags	features	(config.src.tiling == vk::VK_IMAGE_TILING_OPTIMAL
-													? properties.optimalTilingFeatures
-													: properties.linearTilingFeatures);
-
-		if ((features & vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) == 0
-			&& (features & vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT) == 0)
-		{
-			TCU_THROW(NotSupportedError, "Source format doesn't support copies");
-		}
-
-		if (config.src.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
-			TCU_THROW(NotSupportedError, "Format doesn'tsupport  disjoint planes");
-	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
-	}
-
-	try
-	{
-		const vk::VkFormatProperties	properties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), config.dst.format));
-		const vk::VkFormatFeatureFlags	features	(config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL
-													? properties.optimalTilingFeatures
-													: properties.linearTilingFeatures);
-
-		if ((features & vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) == 0
-			&& (features & vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT) == 0)
-		{
-			TCU_THROW(NotSupportedError, "Source format doesn't support copies");
-		}
-
-		if (config.dst.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
-			TCU_THROW(NotSupportedError, "Format doesn't disjoint planes");
-	}
-	catch (const vk::Error& err)
-	{
-		if (err.getError() == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Format not supported");
-
-		throw;
-	}
+	checkFormatSupport(context, config.src);
+	checkFormatSupport(context, config.dst);
 }
 
 vk::Move<vk::VkImage> createImage (const vk::DeviceInterface&	vkd,
