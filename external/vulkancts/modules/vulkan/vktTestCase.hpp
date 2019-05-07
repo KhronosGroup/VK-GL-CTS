@@ -104,6 +104,8 @@ public:
 												getTransformFeedbackFeatures	(void) const;
 	const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&
 												getMemoryPriorityFeatures		(void) const;
+	const vk::VkPhysicalDeviceMultiviewFeatures&
+												getMultiviewFeatures			(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
