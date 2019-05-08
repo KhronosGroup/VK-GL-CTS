@@ -424,6 +424,8 @@ bool isFragmentSSBOSupportedForDevice(Context& context);
 
 bool isVertexSSBOSupportedForDevice(Context& context);
 
+bool isImageSupportedForStageOnDevice(Context& context, const ShaderStageFlags stage);
+
 bool isDoubleSupportedForDevice(Context& context);
 
 bool isDoubleFormat(Format format);

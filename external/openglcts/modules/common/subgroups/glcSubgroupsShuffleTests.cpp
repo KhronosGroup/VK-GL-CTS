@@ -404,6 +404,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		{
 			const string fragment =
 				versionSource + extSource +
+				"precision highp int;\n"
 				"precision highp float;\n"
 				"layout(location = 0) out uint result;\n"
 				+ declSource +

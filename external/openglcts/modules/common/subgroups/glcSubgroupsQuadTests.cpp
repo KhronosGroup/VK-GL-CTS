@@ -518,6 +518,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				"precision highp int;\n"
 				"precision highp float;\n"
 				"layout(location = 0) out uint result;\n"
 				"layout(binding = 4, std430) readonly buffer Buffer4\n"

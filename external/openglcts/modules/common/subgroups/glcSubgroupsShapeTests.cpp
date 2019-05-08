@@ -410,6 +410,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string fragment =
 				"${VERSION_DECL}\n"
 				+ extension +
+				"precision highp int;\n"
 				"layout(location = 0) out uint result;\n"
 				"void main (void)\n"
 				"{\n"

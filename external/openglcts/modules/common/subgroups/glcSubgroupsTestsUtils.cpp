@@ -785,6 +785,37 @@ bool glc::subgroups::isVertexSSBOSupportedForDevice(Context& context)
 	return (numVertexSSBOs > 0) ? true : false;
 }
 
+bool glc::subgroups::isImageSupportedForStageOnDevice(Context& context, const ShaderStageFlags stage)
+{
+	glw::GLint stageQuery;
+	DE_ASSERT(stage & SHADER_STAGE_ALL_VALID);
+
+	// image uniforms are optional in VTG stages
+	switch (stage)
+	{
+		case SHADER_STAGE_FRAGMENT_BIT:
+		case SHADER_STAGE_COMPUTE_BIT:
+		default:
+			return true;
+		case SHADER_STAGE_VERTEX_BIT:
+			stageQuery = GL_MAX_VERTEX_IMAGE_UNIFORMS;
+			break;
+		case SHADER_STAGE_TESS_CONTROL_BIT:
+			stageQuery = GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS;
+			break;
+		case SHADER_STAGE_TESS_EVALUATION_BIT:
+			stageQuery = GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS;
+			break;
+		case SHADER_STAGE_GEOMETRY_BIT:
+			stageQuery = GL_MAX_GEOMETRY_IMAGE_UNIFORMS;
+			break;
+	}
+
+	int numImages = context.getDeqpContext().getContextInfo().getInt(stageQuery);
+
+	return (numImages > 0) ? true : false;
+}
+
 bool glc::subgroups::isDoubleSupportedForDevice(Context& context)
 {
 	glu::ContextType contextType = context.getDeqpContext().getRenderContext().getType();
@@ -871,6 +902,7 @@ void glc::subgroups::setFragmentShaderFrameBuffer (SourceCollections& programCol
 {
 	programCollection.add("fragment") << glu::FragmentSource(
 		"${VERSION_DECL}\n"
+		"precision highp int;\n"
 		"layout(location = 0) in highp float in_color;\n"
 		"layout(location = 0) out uint out_color;\n"
 		"void main()\n"
@@ -1470,7 +1502,8 @@ tcu::TestStatus glc::subgroups::allStages(
 		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 
 		log << tcu::TestLog::Message
-			<< "binding inputBuffers[" << ndx << "](" << inputBuffers[ndx]->getType() << ", " << inputBuffers[ndx]->getId() << " ), "
+			<< "binding inputBuffers[" << ndx << "](" << inputBuffers[ndx]->getType() << ", "
+			<< inputBuffers[ndx]->getId() << ", " << size << "), "
 			<< "inputstage[" << ndx << "] = " << stagesVector[ndx] << " binding = " << getResultBinding(stagesVector[ndx])
 			<< tcu::TestLog::EndMessage;
 
@@ -1499,7 +1532,8 @@ tcu::TestStatus glc::subgroups::allStages(
 		}
 
 		log << tcu::TestLog::Message
-			<< "binding inputBuffers[" << ndx << "](" << inputBuffers[ndx]->getType() << ", " << inputBuffers[ndx]->getId() << " ), "
+			<< "binding inputBuffers[" << ndx << "](" << inputBuffers[ndx]->getType() << ", "
+			<< inputBuffers[ndx]->getId() << ", " << extraDatas[datasNdx].numElements << " els), "
 			<< "extrastage[" << datasNdx << "] = " << extraDatas[datasNdx].stages << " binding = " << extraDatas[datasNdx].binding
 			<< tcu::TestLog::EndMessage;
 
@@ -1606,7 +1640,6 @@ tcu::TestStatus glc::subgroups::allStages(
 					{
 						glw::GLvoid * resultData = inputBuffers[index]->getAsBuffer()->mapBufferPtr();
 						buffersToUnmap.push_back(inputBuffers[index]->getAsBuffer());
-						// we always have our result data first
 						datas.push_back(resultData);
 					}
 				}

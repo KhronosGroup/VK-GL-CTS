@@ -323,7 +323,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 {
 	{
 		const string fragmentGLSL =
-		  "${VERSION_DECL}\n"
+			"${VERSION_DECL}\n"
+			"precision highp int;\n"
 			"layout(location = 0) in highp vec4 in_color;\n"
 			"layout(location = 0) out uvec4 out_color;\n"
 			"void main()\n"
@@ -558,6 +559,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string fragmentGLSL =
 				"${VERSION_DECL}\n"
 				"#extension GL_KHR_shader_subgroup_basic: enable\n"
+				"precision highp int;\n"
 				"layout(location = 0) out uvec4 data;\n"
 				"void main (void)\n"
 				"{\n"

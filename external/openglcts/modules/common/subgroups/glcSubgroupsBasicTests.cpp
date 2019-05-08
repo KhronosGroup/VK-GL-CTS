@@ -135,7 +135,7 @@ static bool checkVertexPipelineStagesSubgroupBarriers(std::vector<const void*> d
 	const deUint32* const resultData = reinterpret_cast<const deUint32*>(datas[0]);
 
 	// We used this SSBO to generate our unique value!
-	const deUint32 ref = *reinterpret_cast<const deUint32*>(datas[3]);
+	const deUint32 ref = *reinterpret_cast<const deUint32*>(datas[1]);
 
 	for (deUint32 x = 0; x < width; ++x)
 	{
@@ -197,7 +197,7 @@ static bool checkComputeSubgroupBarriers(std::vector<const void*> datas,
 		deUint32)
 {
 	// We used this SSBO to generate our unique value!
-	const deUint32 ref = *reinterpret_cast<const deUint32*>(datas[2]);
+	const deUint32 ref = *reinterpret_cast<const deUint32*>(datas[1]);
 	return glc::subgroups::checkCompute(datas, numWorkgroups, localSize, ref);
 }
 
@@ -473,6 +473,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			fragment	<< "${VERSION_DECL}\n"
 				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
 				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				<< "precision highp int;\n"
 				<< "layout(location = 0) out highp vec4 out_color;\n"
 				<< "\n"
 				<< "layout(binding = 0, std140) uniform Buffer1\n"
@@ -878,6 +879,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				std::ostringstream fragment;
 				fragment	<< "${VERSION_DECL}\n"
 							<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
+							<< "precision highp int;\n"
 							<< "layout(location = 0) out uint data;\n"
 							<< "layout(binding = 8, std430) buffer Buffer8\n"
 							<< "{\n"
@@ -915,7 +917,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_BUFFER:
 				bdy << "  if (subgroupElect())\n"
 					<< "  {\n"
-					<< "    b${SSBO1}.tempBuffer[id] = b${SSBO2}.value;\n"
+					<< "    b${SSBO1}.tempBuffer[id] = b${SSBO1}.value;\n"
 					<< "  }\n"
 					<< "  " << getOpTypeName(caseDef.opType) << "();\n"
 					<< "  tempResult = b${SSBO1}.tempBuffer[id];\n";
@@ -923,7 +925,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_SHARED:
 				bdy << "  if (subgroupElect())\n"
 					<< "  {\n"
-					<< "    tempShared[localId] = b${SSBO2}.value;\n"
+					<< "    tempShared[localId] = b${SSBO1}.value;\n"
 					<< "  }\n"
 					<< "  subgroupMemoryBarrierShared();\n"
 					<< "  tempResult = tempShared[localId];\n";
@@ -931,7 +933,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE:
 				bdy << "  if (subgroupElect())\n"
 					<< "  {\n"
-					<< "    imageStore(tempImage${IMG1}, ivec2(id, 0), uvec4(b${SSBO2}.value));\n"
+					<< "    imageStore(tempImage${IMG1}, ivec2(id, 0), uvec4(b${SSBO1}.value));\n"
 					<< "  }\n"
 					<< "  subgroupMemoryBarrierImage();\n"
 					<< "  tempResult = imageLoad(tempImage${IMG1}, ivec2(id, 0)).x;\n";
@@ -945,7 +947,6 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			std::ostringstream src;
 			map<string, string> bufferNameMapping;
 			bufferNameMapping.insert(pair<string, string>("SSBO1", "1"));
-			bufferNameMapping.insert(pair<string, string>("SSBO2", "2"));
 			bufferNameMapping.insert(pair<string, string>("IMG1", "0"));
 
 			src << "${VERSION_DECL}\n"
@@ -957,25 +958,22 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				<< "} b0;\n"
 				<< "layout(binding = 1, std430) buffer Buffer1\n"
 				<< "{\n"
+				<< "  uint value;\n"
 				<< "  uint tempBuffer[];\n"
 				<< "} b1;\n"
-				<< "layout(binding = 2, std430) buffer Buffer2\n"
-				<< "{\n"
-				<< "  uint value;\n"
-				<< "} b2;\n"
-				<< "layout(binding = 0, r32ui) uniform highp uimage2D tempImage0;\n"
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) uniform highp uimage2D tempImage0;\n" : "\n")
 				<< "shared uint tempShared[gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z];\n"
 				<< "\n"
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
 				<< "  highp uint offset = globalSize.x * ((globalSize.y * "
-				"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
-				"gl_GlobalInvocationID.x;\n"
+						"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
+						"gl_GlobalInvocationID.x;\n"
 				<< "  uint localId = gl_SubgroupID;\n"
 				<< "  uint id = globalSize.x * ((globalSize.y * "
-				"gl_WorkGroupID.z) + gl_WorkGroupID.y) + "
-				"gl_WorkGroupID.x + localId;\n"
+						"gl_WorkGroupID.z) + gl_WorkGroupID.y) + "
+						"gl_WorkGroupID.x + localId;\n"
 				<< "  uint tempResult = 0u;\n"
 				<< bdyTemplate.specialize(bufferNameMapping)
 				<< "  b0.result[offset] = tempResult;\n"
@@ -988,10 +986,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			{
 				map<string, string> bufferNameMapping;
 				bufferNameMapping.insert(pair<string, string>("SSBO1", "4"));
-				bufferNameMapping.insert(pair<string, string>("SSBO2", "6"));
 				bufferNameMapping.insert(pair<string, string>("IMG1", "0"));
 
-				const string vertex =
+				std::ostringstream vertex;
+				vertex <<
 					"${VERSION_DECL}\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -1001,18 +999,15 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"} b0;\n"
 					"layout(binding = 4, std430) buffer Buffer4\n"
 					"{\n"
+					"  uint value;\n"
 					"  uint tempBuffer[];\n"
 					"} b4;\n"
 					"layout(binding = 5, std430) buffer Buffer5\n"
 					"{\n"
 					"  uint subgroupID;\n"
 					"} b5;\n"
-					"layout(binding = 6, std430) buffer Buffer6\n"
-					"{\n"
-					"  uint value;\n"
-					"} b6;\n"
-					"layout(binding = 0, r32ui) uniform highp uimage2D tempImage0;\n"
-					"void main (void)\n"
+				<<	(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 0, r32ui) uniform highp uimage2D tempImage0;\n" : "")
+				<<	"void main (void)\n"
 					"{\n"
 					"  uint id = 0u;\n"
 					"  if (subgroupElect())\n"
@@ -1029,16 +1024,16 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  gl_Position = vec4(float(gl_VertexID) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
 					"  gl_PointSize = 1.0f;\n"
 					"}\n";
-				programCollection.add("vert") << glu::VertexSource(vertex);
+				programCollection.add("vert") << glu::VertexSource(vertex.str());
 			}
 
 			{
 				map<string, string> bufferNameMapping;
-				bufferNameMapping.insert(pair<string, string>("SSBO1", "7"));
-				bufferNameMapping.insert(pair<string, string>("SSBO2", "9"));
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "6"));
 				bufferNameMapping.insert(pair<string, string>("IMG1", "1"));
 
-				const string tesc =
+				std::ostringstream tesc;
+				tesc <<
 					"${VERSION_DECL}\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -1047,25 +1042,22 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"{\n"
 					"  uint result[];\n"
 					"} b1;\n"
-					"layout(binding = 7, std430) buffer Buffer7\n"
-					"{\n"
-					"  uint tempBuffer[];\n"
-					"} b7;\n"
-					"layout(binding = 8, std430) buffer Buffer8\n"
-					"{\n"
-					"  uint subgroupID;\n"
-					"} b8;\n"
-					"layout(binding = 9, std430) buffer Buffer9\n"
+					"layout(binding = 6, std430) buffer Buffer6\n"
 					"{\n"
 					"  uint value;\n"
-					"} b9;\n"
-					"layout(binding = 1, r32ui) uniform highp uimage2D tempImage1;\n"
-					"void main (void)\n"
+					"  uint tempBuffer[];\n"
+					"} b6;\n"
+					"layout(binding = 7, std430) buffer Buffer7\n"
+					"{\n"
+					"  uint subgroupID;\n"
+					"} b7;\n"
+				<<	(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 1, r32ui) uniform highp uimage2D tempImage1;\n" : "")
+				<<	"void main (void)\n"
 					"{\n"
 					"  uint id = 0u;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(b8.subgroupID, 1u);\n"
+					"    id = atomicAdd(b7.subgroupID, 1u);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
@@ -1079,16 +1071,16 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  }\n"
 					"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 					"}\n";
-				programCollection.add("tesc") << glu::TessellationControlSource(tesc);
+				programCollection.add("tesc") << glu::TessellationControlSource(tesc.str());
 			}
 
 			{
 				map<string, string> bufferNameMapping;
-				bufferNameMapping.insert(pair<string, string>("SSBO1", "10"));
-				bufferNameMapping.insert(pair<string, string>("SSBO2", "12"));
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "8"));
 				bufferNameMapping.insert(pair<string, string>("IMG1", "2"));
 
-				const string tese =
+				std::ostringstream tese;
+				tese <<
 					"${VERSION_DECL}\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
@@ -1097,25 +1089,22 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"{\n"
 					"  uint result[];\n"
 					"} b2;\n"
-					"layout(binding = 10, std430) buffer Buffer10\n"
-					"{\n"
-					"  uint tempBuffer[];\n"
-					"} b10;\n"
-					"layout(binding = 11, std430) buffer Buffer11\n"
-					"{\n"
-					"  uint subgroupID;\n"
-					"} b11;\n"
-					"layout(binding = 12, std430) buffer Buffer12\n"
+					"layout(binding = 8, std430) buffer Buffer8\n"
 					"{\n"
 					"  uint value;\n"
-					"} b12;\n"
-					"layout(binding = 2, r32ui) uniform highp uimage2D tempImage2;\n"
-					"void main (void)\n"
+					"  uint tempBuffer[];\n"
+					"} b8;\n"
+					"layout(binding = 9, std430) buffer Buffer9\n"
+					"{\n"
+					"  uint subgroupID;\n"
+					"} b9;\n"
+				<<	(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 2, r32ui) uniform highp uimage2D tempImage2;\n" : "")
+				<<	"void main (void)\n"
 					"{\n"
 					"  uint id = 0u;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(b11.subgroupID, 1u);\n"
+					"    id = atomicAdd(b9.subgroupID, 1u);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
@@ -1124,15 +1113,15 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  b2.result[gl_PrimitiveID * 2 + int(gl_TessCoord.x + 0.5)] = tempResult;\n"
 					"  float pixelSize = 2.0f/1024.0f;\n""  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 					"}\n";
-				programCollection.add("tese") << glu::TessellationEvaluationSource(tese);
+				programCollection.add("tese") << glu::TessellationEvaluationSource(tese.str());
 			}
 			{
 				map<string, string> bufferNameMapping;
-				bufferNameMapping.insert(pair<string, string>("SSBO1", "13"));
-				bufferNameMapping.insert(pair<string, string>("SSBO2", "15"));
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "10"));
 				bufferNameMapping.insert(pair<string, string>("IMG1", "3"));
 
-				const string geometry =
+				std::ostringstream geometry;
+				geometry <<
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 					"layout(${TOPOLOGY}) in;\n"
@@ -1141,25 +1130,22 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"{\n"
 					"  uint result[];\n"
 					"} b3;\n"
-					"layout(binding = 13, std430) buffer Buffer13\n"
-					"{\n"
-					"  uint tempBuffer[];\n"
-					"} b13;\n"
-					"layout(binding = 14, std430) buffer Buffer14\n"
-					"{\n"
-					"  uint subgroupID;\n"
-					"} b14;\n"
-					"layout(binding = 15, std430) buffer Buffer15\n"
+					"layout(binding = 10, std430) buffer Buffer10\n"
 					"{\n"
 					"  uint value;\n"
-					"} b15;\n"
-					"layout(binding = 3, r32ui) uniform highp uimage2D tempImage3;\n"
-					"void main (void)\n"
+					"  uint tempBuffer[];\n"
+					"} b10;\n"
+					"layout(binding = 11, std430) buffer Buffer11\n"
+					"{\n"
+					"  uint subgroupID;\n"
+					"} b11;\n"
+				<<	(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 3, r32ui) uniform highp uimage2D tempImage3;\n" : "")
+				<<	"void main (void)\n"
 					"{\n"
 					"  uint id = 0u;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(b14.subgroupID, 1u);\n"
+					"    id = atomicAdd(b11.subgroupID, 1u);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
@@ -1170,40 +1156,38 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  EmitVertex();\n"
 					"  EndPrimitive();\n"
 					"}\n";
-				subgroups::addGeometryShadersFromTemplate(geometry, programCollection);
+				subgroups::addGeometryShadersFromTemplate(geometry.str(), programCollection);
 			}
 
 			{
 				map<string, string> bufferNameMapping;
-				bufferNameMapping.insert(pair<string, string>("SSBO1", "16"));
-				bufferNameMapping.insert(pair<string, string>("SSBO2", "18"));
+				bufferNameMapping.insert(pair<string, string>("SSBO1", "12"));
 				bufferNameMapping.insert(pair<string, string>("IMG1", "4"));
 
-				const string fragment =
+				std::ostringstream fragment;
+				fragment <<
 					"${VERSION_DECL}\n"
 					"#extension GL_KHR_shader_subgroup_basic: enable\n"
 					"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+					"precision highp int;\n"
 					"layout(location = 0) out uint result;\n"
-					"layout(binding = 16, std430) buffer Buffer16\n"
-					"{\n"
-					"  uint tempBuffer[];\n"
-					"} b16;\n"
-					"layout(binding = 17, std430) buffer Buffer17\n"
-					"{\n"
-					"  uint subgroupID;\n"
-					"} b17;\n"
-					"layout(binding = 18, std430) buffer Buffer18\n"
+					"layout(binding = 12, std430) buffer Buffer12\n"
 					"{\n"
 					"  uint value;\n"
-					"} b18;\n"
-					"layout(binding = 4, r32ui) uniform highp uimage2D tempImage4;\n"
-					"void main (void)\n"
+					"  uint tempBuffer[];\n"
+					"} b12;\n"
+					"layout(binding = 13, std430) buffer Buffer13\n"
+					"{\n"
+					"  uint subgroupID;\n"
+					"} b13;\n"
+				<<	(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(binding = 4, r32ui) uniform highp uimage2D tempImage4;\n" : "")
+				<<	"void main (void)\n"
 					"{\n"
 					"  if (gl_HelperInvocation) return;\n"
 					"  uint id = 0u;\n"
 					"  if (subgroupElect())\n"
 					"  {\n"
-					"    id = atomicAdd(b17.subgroupID, 1u);\n"
+					"    id = atomicAdd(b13.subgroupID, 1u);\n"
 					"  }\n"
 					"  id = subgroupBroadcastFirst(id);\n"
 					"  uint localId = id;\n"
@@ -1211,7 +1195,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					+ bdyTemplate.specialize(bufferNameMapping) +
 					"  result = tempResult;\n"
 					"}\n";
-				programCollection.add("fragment") << glu::FragmentSource(fragment);
+				programCollection.add("fragment") << glu::FragmentSource(fragment.str());
 			}
 
 		subgroups::addNoSubgroupShader(programCollection);
@@ -1258,6 +1242,16 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, subgroups::SUBGROUP_FEATURE_BALLOT_BIT))
 		{
 			TCU_THROW(NotSupportedError, "Subgroup basic operation non-compute stage test required that ballot operations are supported!");
+		}
+	}
+
+	if (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType)
+	{
+		if (!subgroups::isImageSupportedForStageOnDevice(context, caseDef.shaderStage))
+		{
+			TCU_THROW(NotSupportedError, "Subgroup basic memory barrier image test for " +
+										 subgroups::getShaderStageName(caseDef.shaderStage) +
+										 " stage requires that image uniforms be supported on this stage");
 		}
 	}
 
@@ -1346,26 +1340,20 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		}
 		else
 		{
-			const deUint32 inputDatasCount = 3;
+			const deUint32 inputDatasCount = 2;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = subgroups::FORMAT_R32_UINT;
 			inputDatas[0].layout = subgroups::SSBOData::LayoutStd430;
-			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
-			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNone;
+			inputDatas[0].numElements = 1 + SHADER_BUFFER_SIZE;
+			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 			inputDatas[0].binding = 1u;
 
 			inputDatas[1].format = subgroups::FORMAT_R32_UINT;
-			inputDatas[1].layout = subgroups::SSBOData::LayoutStd430;
-			inputDatas[1].numElements = 1;
-			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
-			inputDatas[1].binding = 2u;
-
-			inputDatas[2].format = subgroups::FORMAT_R32_UINT;
-			inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
-			inputDatas[2].numElements = SHADER_BUFFER_SIZE;
-			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
-			inputDatas[2].isImage = true;
-			inputDatas[2].binding = 0u;
+			inputDatas[1].layout = subgroups::SSBOData::LayoutPacked;
+			inputDatas[1].numElements = SHADER_BUFFER_SIZE;
+			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNone;
+			inputDatas[1].isImage = true;
+			inputDatas[1].binding = 0u;
 
 			return subgroups::makeComputeTest(context, subgroups::FORMAT_R32_UINT, inputDatas, inputDatasCount, checkComputeSubgroupBarriers);
 		}
@@ -1378,6 +1366,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		}
 
 		int supportedStages = context.getDeqpContext().getContextInfo().getInt(GL_SUBGROUP_SUPPORTED_STAGES_KHR);
+		int combinedSSBOs = context.getDeqpContext().getContextInfo().getInt(GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS);
 
 		subgroups::ShaderStageFlags stages = (subgroups::ShaderStageFlags)(caseDef.shaderStage & supportedStages);
 
@@ -1391,6 +1380,13 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		if ((subgroups::ShaderStageFlags)0u == stages)
 			TCU_THROW(NotSupportedError, "Subgroup operations are not supported for any graphic shader");
+
+		// with sufficient effort we could dynamically assign the binding points
+		// based on the number of stages actually supported, etc, but we already
+		// have the framebuffer tests which cover those cases, so there doesn't seem
+		// to be much benefit in doing that right now.
+		if (combinedSSBOs < 14)
+			TCU_THROW(NotSupportedError, "Device does not support enough combined SSBOs for this test (14)");
 
 		if (OPTYPE_ELECT == caseDef.opType)
 		{
@@ -1445,17 +1441,17 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 				subgroups::SHADER_STAGE_FRAGMENT_BIT,
 			};
 
-			const deUint32 inputDatasCount = DE_LENGTH_OF_ARRAY(stagesBits) * 4u;
+			const deUint32 inputDatasCount = DE_LENGTH_OF_ARRAY(stagesBits) * 3u;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 
 			for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(stagesBits); ++ndx)
 			{
-				const deUint32 index = ndx*4;
-				const deUint32 ssboIndex = ndx*3;
+				const deUint32 index = ndx*3;
+				const deUint32 ssboIndex = ndx*2;
 				const deUint32 imgIndex = ndx;
 				inputDatas[index].format				= subgroups::FORMAT_R32_UINT;
 				inputDatas[index].layout				= subgroups::SSBOData::LayoutStd430;
-				inputDatas[index].numElements			= SHADER_BUFFER_SIZE;
+				inputDatas[index].numElements			= 1 + SHADER_BUFFER_SIZE;
 				inputDatas[index].initializeType		= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index].binding				= ssboIndex + 4u;
 				inputDatas[index].stages				= stagesBits[ndx];
@@ -1468,19 +1464,12 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 				inputDatas[index + 1].stages			= stagesBits[ndx];
 
 				inputDatas[index + 2].format			= subgroups::FORMAT_R32_UINT;
-				inputDatas[index + 2].layout			= subgroups::SSBOData::LayoutStd430;
-				inputDatas[index + 2].numElements		= 1;
-				inputDatas[index + 2].initializeType	= subgroups::SSBOData::InitializeNonZero;
-				inputDatas[index + 2].binding			= ssboIndex + 6u;
+				inputDatas[index + 2].layout			= subgroups::SSBOData::LayoutPacked;
+				inputDatas[index + 2].numElements		= SHADER_BUFFER_SIZE;
+				inputDatas[index + 2].initializeType	= subgroups::SSBOData::InitializeNone;
+				inputDatas[index + 2].isImage			= true;
+				inputDatas[index + 2].binding			= imgIndex;
 				inputDatas[index + 2].stages			= stagesBits[ndx];
-
-				inputDatas[index + 3].format			= subgroups::FORMAT_R32_UINT;
-				inputDatas[index + 3].layout			= subgroups::SSBOData::LayoutPacked;
-				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
-				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
-				inputDatas[index + 3].isImage			= true;
-				inputDatas[index + 3].binding			= imgIndex;
-				inputDatas[index + 3].stages			= stagesBits[ndx];
 			}
 
 			return subgroups::allStages(context, subgroups::FORMAT_R32_UINT, inputDatas, inputDatasCount, checkVertexPipelineStagesSubgroupBarriers, stages);
