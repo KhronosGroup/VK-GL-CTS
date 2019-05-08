@@ -74,6 +74,9 @@ using cmake.
 
 Release build can be done by using -DCMAKE_BUILD_TYPE=Release
 
+If building for 32-bit x86 with GCC, you probably also want to add `-msse2
+-mfpmath=sse` to ensure that you get correct IEEE floating-point behavior.
+
 ### Linux 64-bit Debug
 
 	cmake <path to vulkancts> -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-m64 -DCMAKE_CXX_FLAGS=-m64

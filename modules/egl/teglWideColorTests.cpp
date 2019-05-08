@@ -1194,7 +1194,15 @@ void WideColorSurfaceTest::doClearTest (EGLSurface surface)
 
 				reference += it->increment;
 
-				testFramebufferColorEncoding();
+				// Detect compatible GLES context by querying GL_MAJOR_VERSION.
+				// This query does not exist on GLES2 so succeeding query implies GLES3+ context.
+				glw::GLint majorVersion = 0;
+				m_gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+				if (m_gl.getError() == GL_NO_ERROR)
+				{
+					// This device is ES3 compatible, so do some additional testing
+					testFramebufferColorEncoding();
+				}
 			}
 
 			EGLU_CHECK_CALL(egl, swapBuffers(m_eglDisplay, surface));
