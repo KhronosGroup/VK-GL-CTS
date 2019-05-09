@@ -178,9 +178,8 @@ static void fillWithRandomColorTiles (const PixelBufferAccess& dst, const Vec4& 
 		const int	yEnd	= (row+1)*dst.getHeight()/numRows;
 		const int	xBegin	= (col+0)*dst.getWidth()/numCols;
 		const int	xEnd	= (col+1)*dst.getWidth()/numCols;
-		Vec4		color;
-		for (int i = 0; i < 4; i++)
-			color[i] = rnd.getFloat(minVal[i], maxVal[i]);
+		const Vec4	color	= tcu::randomVector<float, 4>(rnd, minVal, maxVal);
+
 		tcu::clear(tcu::getSubregion(dst, xBegin, yBegin, slice, xEnd-xBegin, yEnd-yBegin, 1), color);
 	}
 }

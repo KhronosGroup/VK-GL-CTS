@@ -111,23 +111,6 @@ VkSampleCountFlagBits sampleCountBitFromSampleCount (deUint32 count)
 	}
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
-										 const VkBufferUsageFlags	usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	//  VkStructureType		sType;
-		DE_NULL,								//  const void*			pNext;
-		(VkBufferCreateFlags)0,					//  VkBufferCreateFlags	flags;
-		bufferSize,								//  VkDeviceSize		size;
-		usage,									//  VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				//  VkSharingMode		sharingMode;
-		0u,										//  deUint32			queueFamilyIndexCount;
-		DE_NULL,								//  const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
 VkAttachmentReference2KHR convertAttachmentReference (const VkAttachmentReference& attachmentReference, const VkImageAspectFlags aspectMask)
 {
 	const VkAttachmentReference2KHR	attachmentReference2	=

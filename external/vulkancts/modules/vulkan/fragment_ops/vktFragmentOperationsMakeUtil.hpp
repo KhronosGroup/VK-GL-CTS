@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
+#include "vkObjUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -35,7 +36,6 @@ namespace vkt
 namespace FragmentOperations
 {
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo	(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout		(const vk::DeviceInterface& vk, const vk::VkDevice device);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
 vk::Move<vk::VkPipeline>		makeComputePipeline		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo);

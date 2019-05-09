@@ -30,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkObjUtil.hpp"
 
 namespace vkt
 {
@@ -100,9 +101,6 @@ vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&				
 																 const vk::VkPipelineCreateFlags			pipelineFlags,
 																 const vk::VkShaderModule					shaderModule,
 																 const vk::VkPipelineShaderStageCreateFlags	shaderFlags);
-
-vk::VkBufferCreateInfo			makeBufferCreateInfo			(const vk::VkDeviceSize						bufferSize,
-																 const vk::VkBufferUsageFlags				usage);
 
 vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
 																 const deUint32								arraySize);

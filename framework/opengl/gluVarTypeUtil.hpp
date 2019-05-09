@@ -79,11 +79,11 @@ struct VarTypeComponent
 		MATRIX_COLUMN,
 		VECTOR_COMPONENT,
 
-		TYPE_LAST
+		VTCTYPE_LAST
 	};
 
 				VarTypeComponent	(Type type_, int index_)	: type(type_), index(index_) {}
-				VarTypeComponent	(void)						: type(TYPE_LAST), index(0) {}
+				VarTypeComponent	(void)						: type(VTCTYPE_LAST), index(0) {}
 
 	bool		operator==			(const VarTypeComponent& other) const { return type == other.type && index == other.index; }
 	bool		operator!=			(const VarTypeComponent& other) const { return type != other.type || index != other.index; }

@@ -48,6 +48,7 @@
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deMath.h"
+#include "deRandom.hpp"
 #include "tcuStringTemplate.hpp"
 
 #include "vktSpvAsmCrossStageInterfaceTests.hpp"
@@ -111,7 +112,7 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 {
 	T* const typedPtr = (T*)dst;
 	for (int ndx = 0; ndx < numValues; ndx++)
-		typedPtr[offset + ndx] = randomScalar<T>(rnd, minValue, maxValue);
+		typedPtr[offset + ndx] = de::randomScalar<T>(rnd, minValue, maxValue);
 }
 
 // Filter is a function that returns true if a value should pass, false otherwise.
@@ -123,7 +124,7 @@ static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* ds
 	for (int ndx = 0; ndx < numValues; ndx++)
 	{
 		do
-			value = randomScalar<T>(rnd, minValue, maxValue);
+			value = de::randomScalar<T>(rnd, minValue, maxValue);
 		while (!filter(value));
 
 		typedPtr[offset + ndx] = value;

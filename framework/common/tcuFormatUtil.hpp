@@ -28,6 +28,8 @@
 
 #include <ostream>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace tcu
 {
@@ -43,20 +45,22 @@ public:
 
 	std::ostream& toStream (std::ostream& stream) const
 	{
-		return stream << this->toString();
+		DE_STATIC_ASSERT(0 < NumDigits && NumDigits <= 16);
+
+		return stream	<< "0x"
+						<< std::right
+						<< std::setfill('0')
+						<< std::setw(NumDigits)
+						<< std::hex
+						<< value;
 	}
 
 	std::string toString (void) const
 	{
-		DE_STATIC_ASSERT(0 < NumDigits && NumDigits <= 16);
+		std::stringstream stream;
 
-		const char longFmt[]	= {'0', 'x', '%', '0', '0' + NumDigits/10, '0' + NumDigits%10, 'l', 'l', 'x', 0};
-		const char shortFmt[]	= {'0', 'x', '%', '0', '0' + NumDigits, 'l', 'l', 'x', 0};
-
-		char buf[sizeof(deUint64)*2 + 3];
-		deSprintf(buf, sizeof(buf), NumDigits > 9 ? longFmt : shortFmt, value);
-
-		return std::string(buf);
+		toStream(stream);
+		return stream.str();
 	}
 
 private:

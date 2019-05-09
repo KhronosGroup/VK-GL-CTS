@@ -55,9 +55,9 @@ public:
 	explicit			VarType			(const StructType* structPtr);					//!< Struct type constructor.
 						~VarType		(void);
 
-	bool				isBasicType		(void) const	{ return m_type == TYPE_BASIC;	}
-	bool				isArrayType		(void) const	{ return m_type == TYPE_ARRAY;	}
-	bool				isStructType	(void) const	{ return m_type == TYPE_STRUCT;	}
+	bool				isBasicType		(void) const	{ return m_type == VARTYPE_BASIC;	}
+	bool				isArrayType		(void) const	{ return m_type == VARTYPE_ARRAY;	}
+	bool				isStructType	(void) const	{ return m_type == VARTYPE_STRUCT;	}
 
 	DataType			getBasicType	(void) const	{ DE_ASSERT(isBasicType()); return m_data.basic.type;			}
 	Precision			getPrecision	(void) const	{ DE_ASSERT(isBasicType()); return m_data.basic.precision;		}
@@ -82,11 +82,11 @@ public:
 private:
 	enum Type
 	{
-		TYPE_BASIC,
-		TYPE_ARRAY,
-		TYPE_STRUCT,
+		VARTYPE_BASIC,
+		VARTYPE_ARRAY,
+		VARTYPE_STRUCT,
 
-		TYPE_LAST
+		VARTYPE_LAST
 	};
 
 	Type				m_type;

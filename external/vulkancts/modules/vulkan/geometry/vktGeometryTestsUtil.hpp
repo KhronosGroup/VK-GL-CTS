@@ -25,6 +25,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkObjUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRef.hpp"
 #include "vkPrograms.hpp"
@@ -166,7 +167,6 @@ std::string						inputTypeToGLString			(const vk::VkPrimitiveTopology& inputType
 std::string						outputTypeToGLString		(const vk::VkPrimitiveTopology& outputType);
 std::size_t						calcOutputVertices			(const vk::VkPrimitiveTopology& inputType);
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo		(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo			(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers = 1u);
 vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
 vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkDeviceSize& bufferOffset, const vk::VkImageSubresourceLayers& imageSubresource, const vk::VkOffset3D& imageOffset, const vk::VkExtent3D& imageExtent);

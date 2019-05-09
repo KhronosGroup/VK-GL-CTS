@@ -27,6 +27,7 @@
 #include "deRandom.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "vkPrograms.hpp"
 #include "vktTestCase.hpp"
@@ -371,19 +372,16 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 	for (int ndx = 0; ndx < testCount; ++ndx)
 	{
 		const std::string	name		= "copy_" + de::toString(ndx + 1);
-		vk::VkClearValue	clearValue	= vk::makeClearValueColorF32(
-											rnd.getFloat(0.0, 1.0f),
-											rnd.getFloat(0.0, 1.0f),
-											rnd.getFloat(0.0, 1.0f),
-											rnd.getFloat(0.0, 1.0f));
+		vk::VkClearValue	clearValue	= vk::makeClearValueColorVec4(tcu::randomVec4(rnd));
+		const tcu::Vec4		refValue	(clearValue.color.float32[0], clearValue.color.float32[1], clearValue.color.float32[2], clearValue.color.float32[3]);
+		const tcu::IVec4	vec0		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	vec1		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	vec2		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
+		const tcu::IVec4	vec3		= tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1));
 
-		tcu::Vec4			refValue	(clearValue.color.float32[0], clearValue.color.float32[1], clearValue.color.float32[2], clearValue.color.float32[3]);
 		ValidationDataVec4	data		=
 		{
-			{ tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)),
-			  tcu::IVec4(rnd.getInt(0, MAX_POSITION - 1)) },
+			{ vec0, vec1, vec2, vec3 },
 			{ refValue, refValue, refValue, refValue }
 		};
 

@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkObjUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
@@ -166,9 +167,6 @@ de::MovePtr<vk::Allocation>		bindBuffer							(const vk::DeviceInterface&			vk,
 																	 vk::Allocator&						allocator,
 																	 const vk::VkBuffer					buffer,
 																	 const vk::MemoryRequirement		requirement);
-
-vk::VkBufferCreateInfo			makeBufferCreateInfo				(const vk::VkDeviceSize				bufferSize,
-																	 const vk::VkBufferUsageFlags		usage);
 
 vk::VkBufferImageCopy			makeBufferImageCopy					(const vk::VkExtent3D				extent,
 																	 const deUint32						layersCount,

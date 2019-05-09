@@ -27,6 +27,7 @@
 #include "deRandom.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "vkPrograms.hpp"
 #include "vktTestCase.hpp"
@@ -356,19 +357,16 @@ tcu::TestCaseGroup*	createAttachmentClearTests (tcu::TestContext& testCtx, CmdBu
 	for (int ndx = 0; ndx < testCount; ++ndx)
 	{
 		const std::string	name		= "clear_" +  de::toString(ndx + 1);
-		vk::VkClearValue	clearValue	= vk::makeClearValueColorF32(
-											rnd.getFloat(0.0, 1.0f),
-											rnd.getFloat(0.0, 1.0f),
-											rnd.getFloat(0.0, 1.0f),
-											rnd.getFloat(0.0, 1.0f));
+		vk::VkClearValue	clearValue	= vk::makeClearValueColorVec4(tcu::randomVec4(rnd));
+		const tcu::Vec4		refValue	(clearValue.color.float32[0], clearValue.color.float32[1], clearValue.color.float32[2], clearValue.color.float32[3]);
+		const tcu::Vec4		vec0		= tcu::randomVec4(rnd);
+		const tcu::Vec4		vec1		= tcu::randomVec4(rnd);
+		const tcu::Vec4		vec2		= tcu::randomVec4(rnd);
+		const tcu::Vec4		vec3		= tcu::randomVec4(rnd);
 
-		tcu::Vec4			refValue	(clearValue.color.float32[0], clearValue.color.float32[1], clearValue.color.float32[2], clearValue.color.float32[3]);
 		ValidationData		data		=
 		{
-			{ tcu::Vec4(rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f)),
-			  tcu::Vec4(rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f)),
-			  tcu::Vec4(rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f)),
-			  tcu::Vec4(rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f), rnd.getFloat(0.0f, 1.0f)) },
+			{ vec0, vec1, vec2, vec3 },
 			{ refValue, refValue, refValue, refValue }
 		};
 
