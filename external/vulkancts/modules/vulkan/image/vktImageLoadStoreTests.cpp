@@ -416,7 +416,7 @@ public:
 																			 const bool		declareImageFormatInShader,
 																			 const bool		singleLayerBind);
 
-	tcu::TestStatus                 iterate									(void);
+	tcu::TestStatus					iterate									(void);
 
 	virtual							~BaseTestInstance						(void) {}
 
@@ -551,13 +551,22 @@ tcu::TestStatus StoreTestInstance::verifyResult	(void)
 
 void StoreTestInstance::checkRequirements (void)
 {
-	const VkPhysicalDeviceFeatures	features	= m_context.getDeviceFeatures();
+	const VkPhysicalDeviceFeatures	features			(m_context.getDeviceFeatures());
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
+																							   m_context.getPhysicalDevice(),
+																							   m_format));
 
 	if (!m_declareImageFormatInShader && !features.shaderStorageImageWriteWithoutFormat)
-		throw tcu::NotSupportedError("shaderStorageImageWriteWithoutFormat feature not supported");
+		TCU_THROW(NotSupportedError, "shaderStorageImageWriteWithoutFormat feature not supported");
 
-    if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
-        TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
 
 //! Store test for images
@@ -653,8 +662,8 @@ VkDescriptorSetLayout ImageStoreTestInstance::prepareDescriptors (void)
 	{
 		for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
-			m_allDescriptorSets[layerNdx] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
-			m_allImageViews[layerNdx]     = makeVkSharedPtr(makeImageView(
+			m_allDescriptorSets[layerNdx]	= makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+			m_allImageViews[layerNdx]		= makeVkSharedPtr(makeImageView(
 												vk, device, m_image->get(), mapImageViewType(getImageTypeForSingleLayer(m_texture.type())), m_format,
 												makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, layerNdx, 1u)));
 		}
@@ -960,15 +969,23 @@ tcu::TestStatus LoadStoreTestInstance::verifyResult	(void)
 
 void LoadStoreTestInstance::checkRequirements (void)
 {
-	const VkPhysicalDeviceFeatures	features	= m_context.getDeviceFeatures();
+	const VkPhysicalDeviceFeatures	features			(m_context.getDeviceFeatures());
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
+																							   m_context.getPhysicalDevice(),
+																							   m_format));
 
 	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
-		throw tcu::NotSupportedError("shaderStorageImageReadWithoutFormat feature not supported");
+		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat feature not supported");
 
-    if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
-        TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
-
 
 //! Load/store test for images
 class ImageLoadStoreTestInstance : public LoadStoreTestInstance
@@ -1266,6 +1283,7 @@ const Texture& getTestTexture (const ImageType imageType)
 
 static const VkFormat s_formats[] =
 {
+	// Mandatory support
 	VK_FORMAT_R32G32B32A32_SFLOAT,
 	VK_FORMAT_R16G16B16A16_SFLOAT,
 	VK_FORMAT_R32_SFLOAT,
@@ -1283,6 +1301,35 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R8G8B8A8_UNORM,
 
 	VK_FORMAT_R8G8B8A8_SNORM,
+
+	// Requires StorageImageExtendedFormats capability
+	VK_FORMAT_R32G32_SFLOAT,
+	VK_FORMAT_R16G16_SFLOAT,
+	VK_FORMAT_R16_SFLOAT,
+
+	VK_FORMAT_R32G32_UINT,
+	VK_FORMAT_R16G16_UINT,
+	VK_FORMAT_R16_UINT,
+	VK_FORMAT_R8G8_UINT,
+	VK_FORMAT_R8_UINT,
+
+	VK_FORMAT_R32G32_SINT,
+	VK_FORMAT_R16G16_SINT,
+	VK_FORMAT_R16_SINT,
+	VK_FORMAT_R8G8_SINT,
+	VK_FORMAT_R8_SINT,
+
+	VK_FORMAT_R16G16B16A16_UNORM,
+	VK_FORMAT_R16G16B16A16_SNORM,
+	VK_FORMAT_R16G16_UNORM,
+	VK_FORMAT_R16_UNORM,
+	VK_FORMAT_R8G8_UNORM,
+	VK_FORMAT_R8_UNORM,
+
+	VK_FORMAT_R16G16_SNORM,
+	VK_FORMAT_R16_SNORM,
+	VK_FORMAT_R8G8_SNORM,
+	VK_FORMAT_R8_SNORM
 };
 
 } // anonymous ns
@@ -1307,8 +1354,8 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 
 			if (isLayered)
 				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-														texture, s_formats[formatNdx],
-														StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+														 texture, s_formats[formatNdx],
+														 StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 		}
 
 		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
@@ -1341,8 +1388,8 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 
 			if (isLayered)
 				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-														texture, s_formats[formatNdx], s_formats[formatNdx],
-														LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+														 texture, s_formats[formatNdx], s_formats[formatNdx],
+														 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 		}
 
 		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
