@@ -90,7 +90,10 @@ enum RenderType
 	RENDER_TYPE_COPY_SAMPLES		= 1u,
 
 	// render first with only depth/stencil and then with color + depth/stencil
-	RENDER_TYPE_DEPTHSTENCIL_ONLY	= 2u
+	RENDER_TYPE_DEPTHSTENCIL_ONLY	= 2u,
+
+	// render using color attachment at location 1 and location 0 set as unused
+	RENDER_TYPE_UNUSED_ATTACHMENT	= 3u
 };
 
 enum ImageBackingMode
@@ -308,6 +311,33 @@ protected:
 																						 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
 
 	static VkPipelineMultisampleStateCreateInfo	getStateParams							(VkSampleCountFlagBits rasterizationSamples);
+
+	GeometryType								m_geometryType;
+	const ImageBackingMode						m_backingMode;
+};
+
+class AlphaToCoverageColorUnusedAttachmentTest : public MultisampleTest
+{
+public:
+												AlphaToCoverageColorUnusedAttachmentTest	(tcu::TestContext&		testContext,
+																							 const std::string&		name,
+																							 const std::string&		description,
+																							 VkSampleCountFlagBits	rasterizationSamples,
+																							 GeometryType			geometryType,
+																							 ImageBackingMode		backingMode);
+
+	virtual										~AlphaToCoverageColorUnusedAttachmentTest	(void) {}
+
+protected:
+	virtual void								initPrograms								(SourceCollections& programCollection) const;
+
+	virtual TestInstance*						createMultisampleTestInstance				(Context&										context,
+																							 VkPrimitiveTopology							topology,
+																							 const std::vector<Vertex4RGBA>&				vertices,
+																							 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																							 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
+
+	static VkPipelineMultisampleStateCreateInfo	getStateParams								(VkSampleCountFlagBits rasterizationSamples);
 
 	GeometryType								m_geometryType;
 	const ImageBackingMode						m_backingMode;
@@ -598,6 +628,32 @@ protected:
 	const ImageBackingMode						m_backingMode;
 };
 
+class AlphaToCoverageColorUnusedAttachmentInstance : public vkt::TestInstance
+{
+public:
+												AlphaToCoverageColorUnusedAttachmentInstance	(Context&										context,
+																								 VkPrimitiveTopology							topology,
+																								 const std::vector<Vertex4RGBA>&				vertices,
+																								 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																								 const VkPipelineColorBlendAttachmentState&		blendState,
+																								 GeometryType									geometryType,
+																								 ImageBackingMode								backingMode);
+	virtual										~AlphaToCoverageColorUnusedAttachmentInstance	(void) {}
+
+	virtual tcu::TestStatus						iterate											(void);
+
+protected:
+	virtual tcu::TestStatus						verifyImage										(const tcu::ConstPixelBufferAccess& result);
+	const VkFormat								m_colorFormat;
+	const tcu::IVec2							m_renderSize;
+	const VkPrimitiveTopology					m_primitiveTopology;
+	const std::vector<Vertex4RGBA>				m_vertices;
+	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
+	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
+	const GeometryType							m_geometryType;
+	const ImageBackingMode						m_backingMode;
+};
+
 class SampleMaskWithDepthTestInstance : public vkt::TestInstance
 {
 public:
@@ -733,6 +789,37 @@ void initSampleShadingPrograms (SourceCollections& sources, MultisampleTestParam
 		sources.glslSources.add("quad_vert") << glu::VertexSource(vertexSource);
 		sources.glslSources.add("copy_sample_frag") << glu::FragmentSource(fragmentSource);
 	}
+}
+
+void initAlphaToCoverageColorUnusedAttachmentPrograms (SourceCollections& sources)
+{
+	std::ostringstream vertexSource;
+
+	vertexSource <<
+		"#version 310 es\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec4 color;\n"
+		"layout(location = 0) out highp vec4 vtxColor;\n"
+		"void main (void)\n"
+		"{\n"
+		"	gl_Position = position;\n"
+		"	vtxColor = color;\n"
+		"}\n";
+
+	// Location 0 is unused, but the alpha for coverage is written there. Location 1 has no alpha channel.
+	static const char* fragmentSource =
+		"#version 310 es\n"
+		"layout(location = 0) in highp vec4 vtxColor;\n"
+		"layout(location = 0) out highp vec4 fragColor0;\n"
+		"layout(location = 1) out highp vec3 fragColor1;\n"
+		"void main (void)\n"
+		"{\n"
+		"	fragColor0 = vtxColor;\n"
+		"	fragColor1 = vtxColor.rgb;\n"
+		"}\n";
+
+	sources.glslSources.add("color_vert") << glu::VertexSource(vertexSource.str());
+	sources.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource);
 }
 
 bool isSupportedSampleCount (const InstanceInterface& instanceInterface, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits rasterizationSamples)
@@ -1277,6 +1364,52 @@ TestInstance* AlphaToCoverageNoColorAttachmentTest::createMultisampleTestInstanc
 }
 
 VkPipelineMultisampleStateCreateInfo AlphaToCoverageNoColorAttachmentTest::getStateParams (VkSampleCountFlagBits rasterizationSamples)
+{
+	const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+		rasterizationSamples,										// VkSampleCountFlagBits					rasterizationSamples;
+		false,														// VkBool32									sampleShadingEnable;
+		0.0f,														// float									minSampleShading;
+		DE_NULL,													// const VkSampleMask*						pSampleMask;
+		true,														// VkBool32									alphaToCoverageEnable;
+		false														// VkBool32									alphaToOneEnable;
+	};
+
+	return multisampleStateParams;
+}
+
+// AlphaToCoverageColorUnusedAttachmentTest
+
+AlphaToCoverageColorUnusedAttachmentTest::AlphaToCoverageColorUnusedAttachmentTest (tcu::TestContext&		testContext,
+																					const std::string&		name,
+																					const std::string&		description,
+																					VkSampleCountFlagBits	rasterizationSamples,
+																					GeometryType			geometryType,
+																					ImageBackingMode		backingMode)
+	: MultisampleTest	(testContext, name, description, getStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType, backingMode)
+	, m_geometryType	(geometryType)
+	, m_backingMode		(backingMode)
+{
+}
+
+void AlphaToCoverageColorUnusedAttachmentTest::initPrograms (SourceCollections& programCollection) const
+{
+	initAlphaToCoverageColorUnusedAttachmentPrograms(programCollection);
+}
+
+TestInstance* AlphaToCoverageColorUnusedAttachmentTest::createMultisampleTestInstance (Context&										context,
+																					   VkPrimitiveTopology							topology,
+																					   const std::vector<Vertex4RGBA>&				vertices,
+																					   const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																					   const VkPipelineColorBlendAttachmentState&	colorBlendState) const
+{
+	return new AlphaToCoverageColorUnusedAttachmentInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_geometryType, m_backingMode);
+}
+
+VkPipelineMultisampleStateCreateInfo AlphaToCoverageColorUnusedAttachmentTest::getStateParams (VkSampleCountFlagBits rasterizationSamples)
 {
 	const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
 	{
@@ -1944,6 +2077,61 @@ tcu::TestStatus AlphaToCoverageNoColorAttachmentInstance::verifyImage (const tcu
 	return tcu::TestStatus::pass("Pass");
 }
 
+// AlphaToCoverageColorUnusedAttachmentInstance
+
+AlphaToCoverageColorUnusedAttachmentInstance::AlphaToCoverageColorUnusedAttachmentInstance (Context&									context,
+																							VkPrimitiveTopology							topology,
+																							const std::vector<Vertex4RGBA>&				vertices,
+																							const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																							const VkPipelineColorBlendAttachmentState&	blendState,
+																							GeometryType								geometryType,
+																							ImageBackingMode							backingMode)
+	: vkt::TestInstance			(context)
+	, m_colorFormat				(VK_FORMAT_R5G6B5_UNORM_PACK16)
+	, m_renderSize				(32, 32)
+	, m_primitiveTopology		(topology)
+	, m_vertices				(vertices)
+	, m_multisampleStateParams	(multisampleStateParams)
+	, m_colorBlendState			(blendState)
+	, m_geometryType			(geometryType)
+	, m_backingMode				(backingMode)
+{
+}
+
+tcu::TestStatus AlphaToCoverageColorUnusedAttachmentInstance::iterate (void)
+{
+	DE_ASSERT(m_multisampleStateParams.alphaToCoverageEnable);
+
+	de::MovePtr<tcu::TextureLevel>	result;
+	MultisampleRenderer				renderer	(m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_UNUSED_ATTACHMENT, m_backingMode);
+
+	result = renderer.render();
+
+	return verifyImage(result->getAccess());
+}
+
+tcu::TestStatus AlphaToCoverageColorUnusedAttachmentInstance::verifyImage (const tcu::ConstPixelBufferAccess&	result)
+{
+	for (int y = 0; y < m_renderSize.y(); y++)
+	{
+		for (int x = 0; x < m_renderSize.x(); x++)
+		{
+			// Quad color gets written to color buffer at location 1, and the alpha value to location 0 which is unused.
+			// The coverage should still be affected by the alpha written to location 0.
+			if ((m_geometryType == GEOMETRY_TYPE_OPAQUE_QUAD && result.getPixel(x, y).x() < 1.0f)
+				|| (m_geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD && result.getPixel(x, y).x() > 0.0f))
+			{
+				// Log result image when failing.
+				m_context.getTestContext().getLog() << tcu::TestLog::ImageSet("Result", "Result image") << tcu::TestLog::Image("Rendered", "Rendered image", result) << tcu::TestLog::EndImageSet;
+
+				return tcu::TestStatus::fail("Fail");
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 // SampleMaskWithDepthTestInstance
 
 SampleMaskWithDepthTestInstance::SampleMaskWithDepthTestInstance (Context&						context,
@@ -2171,7 +2359,7 @@ void MultisampleRenderer::initialize (Context&									context,
 	const VkImageCreateFlags		imageCreateFlags		= sparse ? (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) : 0u;
 	const VkSharingMode				sharingMode				= (sparse && context.getUniversalQueueFamilyIndex() != context.getSparseQueueFamilyIndex()) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 	Allocator&						memAlloc				= m_context.getDefaultAllocator();
-	const bool						usesResolveImage		= m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY;
+	const bool						usesResolveImage		= m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY || m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT;
 
 	if (sparse)
 	{
@@ -2513,6 +2701,30 @@ void MultisampleRenderer::initialize (Context&									context,
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
 		};
 
+		const VkAttachmentReference colorAttachmentReferencesUnusedAttachment[] =
+		{
+			{
+				VK_ATTACHMENT_UNUSED,		// deUint32			attachment
+				VK_IMAGE_LAYOUT_UNDEFINED	// VkImageLayout	layout
+			},
+			{
+				0u,											// deUint32			attachment
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
+			}
+		};
+
+		const VkAttachmentReference resolveAttachmentReferencesUnusedAttachment[] =
+		{
+			{
+				VK_ATTACHMENT_UNUSED,		// deUint32			attachment
+				VK_IMAGE_LAYOUT_UNDEFINED	// VkImageLayout	layout
+			},
+			{
+				resolveAttachmentIndex,						// deUint32			attachment
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
+			}
+		};
+
 		std::vector<VkAttachmentReference> perSampleAttachmentReferences(m_perSampleImages.size());
 		if (m_renderType == RENDER_TYPE_COPY_SAMPLES)
 		{
@@ -2580,6 +2792,24 @@ void MultisampleRenderer::initialize (Context&									context,
 				subpassDescriptions.push_back(subpassDescription0);
 				subpassDescriptions.push_back(subpassDescription1);
 				subpassDependencies.push_back(subpassDependency);
+		}
+		else if (m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT)
+		{
+			const VkSubpassDescription renderSubpassDescription =
+			{
+				0u,												// VkSubpassDescriptionFlags	flags
+				VK_PIPELINE_BIND_POINT_GRAPHICS,				// VkPipelineBindPoint			pipelineBindPoint
+				0u,												// deUint32						inputAttachmentCount
+				DE_NULL,										// const VkAttachmentReference*	pInputAttachments
+				2u,												// deUint32						colorAttachmentCount
+				colorAttachmentReferencesUnusedAttachment,		// const VkAttachmentReference*	pColorAttachments
+				resolveAttachmentReferencesUnusedAttachment,	// const VkAttachmentReference*	pResolveAttachments
+				DE_NULL,										// const VkAttachmentReference*	pDepthStencilAttachment
+				0u,												// deUint32						preserveAttachmentCount
+				DE_NULL											// const VkAttachmentReference*	pPreserveAttachments
+			};
+
+			subpassDescriptions.push_back(renderSubpassDescription);
 		}
 		else
 		{
@@ -2793,8 +3023,15 @@ void MultisampleRenderer::initialize (Context&									context,
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
-		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
+		const std::vector<VkViewport>	viewports		(1, makeViewport(m_renderSize));
+		const std::vector<VkRect2D>		scissors		(1, makeRect2D(m_renderSize));
+
+		const deUint32					attachmentCount	= m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT ? 2u : 1u;
+
+		std::vector<VkPipelineColorBlendAttachmentState> attachments;
+
+		for (deUint32 attachmentIdx = 0; attachmentIdx < attachmentCount; attachmentIdx++)
+			attachments.push_back(m_colorBlendState);
 
 		const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 		{
@@ -2803,8 +3040,8 @@ void MultisampleRenderer::initialize (Context&									context,
 			0u,															// VkPipelineColorBlendStateCreateFlags			flags;
 			false,														// VkBool32										logicOpEnable;
 			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-			1u,															// deUint32										attachmentCount;
-			&m_colorBlendState,											// const VkPipelineColorBlendAttachmentState*	pAttachments;
+			attachmentCount,											// deUint32										attachmentCount;
+			attachments.data(),											// const VkPipelineColorBlendAttachmentState*	pAttachments;
 			{ 0.0f, 0.0f, 0.0f, 0.0f }									// float										blendConstants[4];
 		};
 
@@ -3204,7 +3441,7 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-	if (m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY)
+	if (m_renderType == RENDER_TYPE_RESOLVE || m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY || m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT)
 	{
 		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, m_context.getDefaultAllocator(), *m_resolveImage, m_colorFormat, m_renderSize.cast<deUint32>());
 	}
@@ -3458,6 +3695,28 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			alphaToCoverageNoColorAttachmentTests->addChild(samplesTests.release());
 		}
 		multisampleTests->addChild(alphaToCoverageNoColorAttachmentTests.release());
+	}
+
+	// AlphaToCoverageEnable with unused color attachment:
+	// Set color output at location 0 as unused, but use the alpha write to control coverage for rendering to color buffer at location 1.
+	{
+		de::MovePtr<tcu::TestCaseGroup> alphaToCoverageColorUnusedAttachmentTests (new tcu::TestCaseGroup(testCtx, "alpha_to_coverage_unused_attachment", ""));
+
+		for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+		{
+			std::ostringstream caseName;
+			caseName << "samples_" << samples[samplesNdx];
+
+			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+
+			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_opaque", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_opaque_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE));
+			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_invisible", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+			samplesTests->addChild(new AlphaToCoverageColorUnusedAttachmentTest(testCtx, "alpha_invisible_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE));
+
+			alphaToCoverageColorUnusedAttachmentTests->addChild(samplesTests.release());
+		}
+		multisampleTests->addChild(alphaToCoverageColorUnusedAttachmentTests.release());
 	}
 
 	// Sampling from a multisampled image texture (texelFetch)
