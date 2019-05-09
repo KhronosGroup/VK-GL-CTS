@@ -2144,7 +2144,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%ip_v3u32 = OpTypePointer Input %v3u32\n"
 		"%up_float   = OpTypePointer Uniform " << inputType1 << "\n"
 		"\n"
-		"%fun     = OpTypeFunction %void\n"
+		"%voidf   = OpTypeFunction %void\n"
 		"%fp_u32  = OpTypePointer Function %u32\n"
 		"%fp_i32  = OpTypePointer Function " << outputType << "\n"
 		"%fp_f32  = OpTypePointer Function " << inputType1 << "\n"
@@ -2181,7 +2181,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%up_ssboOUT  = OpTypePointer Uniform %ssboOUT\n"
 		"%ssbo_dst    = OpVariable %up_ssboOUT Uniform\n"
 		"\n"
-		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_main = OpFunction %void None %voidf\n"
 		"%BP_label = OpLabel\n"
 		"%invocationNdx = OpVariable  %fp_u32 Function\n";
 

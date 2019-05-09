@@ -372,7 +372,7 @@ struct ComputeShaderSpec
  * \brief Helper functions for SPIR-V assembly shared by various tests
  *//*--------------------------------------------------------------------*/
 
-std::string getComputeAsmShaderPreamble				(const std::string& capabilities = "", const std::string& extensions = "", const std::string& exeModes = "");
+std::string getComputeAsmShaderPreamble				(const std::string& capabilities = "", const std::string& extensions = "", const std::string& exeModes = "", const std::string& extraEntryPoints = "");
 const char* getComputeAsmShaderPreambleWithoutLocalSize         (void);
 std::string getComputeAsmCommonTypes				(std::string blockStorageClass = "Uniform");
 const char*	getComputeAsmCommonInt64Types			(void);
