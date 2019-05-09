@@ -488,6 +488,9 @@ public:
 		const vk::VkQueue	queue	= m_context.getUniversalQueue();
 		const vk::VkDevice	device	= m_context.getDevice();
 
+		if (!m_context.getDeviceFeatures().depthBiasClamp)
+			TCU_THROW(NotSupportedError, "depthBiasClamp feature is not supported");
+
 		beginRenderPass();
 
 		// set states here

@@ -168,7 +168,8 @@ void verifyDriverSupport(const deUint32							apiVersion,
 						 const std::vector<std::string>&		deviceExtensions,
 						 DescriptorUpdateMethod					updateMethod,
 						 vk::VkDescriptorType					descType,
-						 vk::VkShaderStageFlags					activeStages)
+						 vk::VkShaderStageFlags					activeStages,
+						 vk::VkImageViewType					viewType = vk::VK_IMAGE_VIEW_TYPE_2D)
 {
 	std::vector<std::string>	extensionNames;
 	size_t						numExtensionsNeeded = 0;
@@ -229,7 +230,7 @@ void verifyDriverSupport(const deUint32							apiVersion,
 		case vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 		case vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 			// These are supported in all stages
-			return;
+			break;
 
 		case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case vk::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
@@ -249,11 +250,14 @@ void verifyDriverSupport(const deUint32							apiVersion,
 				if (!deviceFeatures.fragmentStoresAndAtomics)
 					TCU_THROW(NotSupportedError, (de::toString(descType) + " is not supported in fragment shaders").c_str());
 			}
-			return;
+			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
+
+	if (viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !deviceFeatures.imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
 }
 
 vk::VkImageType viewTypeToImageType (vk::VkImageViewType type)
@@ -7483,7 +7487,7 @@ std::string ImageDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages, m_viewType);
 
 	switch (m_descriptorType)
 	{

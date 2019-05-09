@@ -187,29 +187,45 @@ static bool _checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const v
 static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 		deUint32 width, deUint32)
 {
-    return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, false);
+	return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, false);
 }
 
 static bool checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
 		deUint32 width, deUint32)
 {
-    return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, true);
+	return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, true);
 }
 
-static bool checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
-		deUint32 width, deUint32)
+static bool _checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32, bool withImage)
 {
 	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
 
 	for (deUint32 x = 0u; x < width; ++x)
 	{
 		const deUint32 ndx = x*4u;
-		if (0.0f == resultData[ndx +2] && resultData[ndx] != resultData[ndx +3])
+		if (!withImage && 0.0f == resultData[ndx])
+		{
+			return false;
+		}
+		else if (0.0f == resultData[ndx +2] && resultData[ndx] != resultData[ndx +3])
 		{
 			return false;
 		}
 	}
 	return true;
+}
+
+static bool checkTessellationEvaluationSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
+	deUint32 width, deUint32 height)
+{
+	return _checkTessellationEvaluationSubgroupBarriersNoSSBO(datas, width, height, true);
+}
+
+static bool checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height)
+{
+	return _checkTessellationEvaluationSubgroupBarriersNoSSBO(datas, width, height, false);
 }
 
 static bool checkComputeSubgroupElect(std::vector<const void*> datas,
@@ -1921,7 +1937,13 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO, caseDef.shaderStage);
 
 	return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
-		(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)? checkVertexPipelineStagesSubgroupBarriersNoSSBO : checkTessellationEvaluationSubgroupBarriersNoSSBO,
+		(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage) ?
+			((OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+				checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
+				checkVertexPipelineStagesSubgroupBarriersNoSSBO) :
+			((OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+				checkTessellationEvaluationSubgroupBarriersWithImageNoSSBO :
+				checkTessellationEvaluationSubgroupBarriersNoSSBO),
 		caseDef.shaderStage);
 }
 
