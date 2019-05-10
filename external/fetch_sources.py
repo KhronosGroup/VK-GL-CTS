@@ -87,7 +87,7 @@ class SourcePackage (Source):
 	def isArchiveUpToDate (self):
 		archiveFile = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir, pkg.filename)
 		if os.path.exists(archiveFile):
-			return computeChecksum(readFile(archiveFile)) == self.checksum
+			return computeChecksum(readBinaryFile(archiveFile)) == self.checksum
 		else:
 			return False
 
@@ -104,7 +104,7 @@ class SourcePackage (Source):
 
 	def storeExtractedChecksum (self, checksum):
 		checksum_bytes = checksum.encode("utf-8")
-		writeFile(self.getExtractedChecksumFilePath(), checksum_bytes)
+		writeBinaryFile(self.getExtractedChecksumFilePath(), checksum_bytes)
 
 	def connectToUrl (self, url):
 		result = None
@@ -137,7 +137,7 @@ class SourcePackage (Source):
 		if not os.path.exists(os.path.dirname(dstPath)):
 			os.mkdir(os.path.dirname(dstPath))
 
-		writeFile(dstPath, data)
+		writeBinaryFile(dstPath, data)
 
 	def extract (self):
 		print("Extracting %s to %s/%s" % (self.filename, self.baseDir, self.extractDir))
@@ -190,7 +190,8 @@ class SourceFile (Source):
 	def isFileUpToDate (self):
 		file = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.extractDir, pkg.filename)
 		if os.path.exists(file):
-			return computeChecksum(readFile(file)) == self.checksum
+			data = readFile(file)
+			return computeChecksum(data.encode('utf-8')) == self.checksum
 		else:
 			return False
 
@@ -225,7 +226,7 @@ class SourceFile (Source):
 		if not os.path.exists(os.path.dirname(dstPath)):
 			os.mkdir(os.path.dirname(dstPath))
 
-		writeFile(dstPath, data)
+		writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
 	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = []):
