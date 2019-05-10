@@ -52,7 +52,7 @@ TYPE_SUBSTITUTIONS		= [
 ]
 
 def readFile (filename):
-	with open(filename, 'rb') as f:
+	with open(filename, 'rt') as f:
 		return f.read()
 
 def writeVulkanCHeader (src, filename):

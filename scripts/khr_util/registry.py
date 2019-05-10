@@ -170,7 +170,8 @@ class EnumIndex(NameApiIndex):
 		name, api, alias = (item.get(attrib) for attrib in ['name', 'api', 'alias'])
 		return [(name, api)] + ([(alias, api)] if alias is not None else [])
 
-	def duplicateKey(self, (name, api), item):
+	def duplicateKey(self, nameapipair, item):
+		(name, api) = nameapipair
 		if name == item.get('alias'):
 			warnElem(item, "Alias already present: %s", name)
 		else:
@@ -190,7 +191,7 @@ class Registry:
 		self.apis = {}
 		for eFeature in self.features:
 			self.apis.setdefault(eFeature.get('api'), []).append(eFeature)
-		for apiFeatures in self.apis.itervalues():
+		for apiFeatures in self.apis.values():
 			apiFeatures.sort(key=lambda eFeature: eFeature.get('number'))
 		self.extensions = ElemNameIndex(eRegistry.findall('extensions/extension'))
 		self.element = eRegistry
@@ -337,7 +338,7 @@ def createInterface(registry, spec, api=None):
 			ptype=extractPtype(eProto),
 			group=extractGroup(eProto),
 			alias=extractAlias(eCmd),
-			params=NameIndex(map(parseParam, eCmd.findall('param'))))
+			params=NameIndex(list(map(parseParam, eCmd.findall('param')))))
 
 	def createGroup(name):
 		info('Add group %s', name)
@@ -356,11 +357,11 @@ def createInterface(registry, spec, api=None):
 		return NameIndex(sorted(items, key=lambda item: item.location))
 
 	groups = NameIndex(createMissing=createGroup, kind="group")
-	types = NameIndex(map(createType, spec.types),
+	types = NameIndex(list(map(createType, spec.types)),
 					  createMissing=createType, kind="type")
-	enums = NameIndex(map(createEnum, spec.enums),
+	enums = NameIndex(list(map(createEnum, spec.enums)),
 					  createMissing=Enum, kind="enum")
-	commands = NameIndex(map(createCommand, spec.commands),
+	commands = NameIndex(list(map(createCommand, spec.commands)),
 						createMissing=Command, kind="command")
 	versions = sorted(spec.versions)
 

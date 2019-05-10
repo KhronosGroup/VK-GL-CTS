@@ -15,7 +15,7 @@ Requirements
 The following tools must be installed and present in the PATH variable:
 
  * Git (for checking out sources)
- * Python 2.7.x (all recent versions in 2.x should work, 3.x is not supported)
+ * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
  * CMake 2.8 (3.6 for Android NDK r17+ builds) or newer
 
 ### Win32
@@ -174,7 +174,7 @@ No other command line options are allowed.
 ### Win32
 
 	cd <builddir>/external/vulkancts/modules/vulkan
-	Debug/deqp-vk.exe --deqp-caselist-file=...
+	Debug\deqp-vk.exe --deqp-caselist-file=...
 
 Test log will be written into TestResults.qpa
 

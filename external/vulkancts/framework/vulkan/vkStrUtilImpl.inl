@@ -6980,16 +6980,6 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationDepthCli
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR& value)
-{
-	s << "VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tuniformBufferStandardLayout = " << value.uniformBufferStandardLayout << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceBufferDeviceAddressFeaturesEXT = {\n";
@@ -7110,6 +7100,16 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryPriorityAllocateInfoEXT
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpriority = " << value.priority << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tuniformBufferStandardLayout = " << value.uniformBufferStandardLayout << '\n';
 	s << '}';
 	return s;
 }

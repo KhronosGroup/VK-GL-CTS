@@ -267,8 +267,8 @@ class Variable:
 		self.arraySize	= arraySize
 
 	def contains(self, big, small):
-		for i in xrange(len(big)-len(small)+1):
-			for j in xrange(len(small)):
+		for i in range(len(big)-len(small)+1):
+			for j in range(len(small)):
 				if big[i+j] != small[j]:
 					break
 			else:
@@ -392,7 +392,7 @@ class API:
 		self.extensions		= extensions
 
 def readFile (filename):
-	with open(filename, 'rb') as f:
+	with open(filename, 'rt') as f:
 		return f.read()
 
 IDENT_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_]*'

@@ -323,7 +323,6 @@ public:
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures;
 	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
 	VkPhysicalDeviceDepthClipEnableFeaturesEXT			depthClipEnableFeatures;
-	VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR	uniformBufferStandardLayoutFeatures;
 	VkPhysicalDeviceBufferDeviceAddressFeaturesEXT		bufferDeviceAddressFeatures;
 	VkPhysicalDeviceImagelessFramebufferFeaturesKHR		imagelessFramebufferFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
@@ -331,6 +330,7 @@ public:
 	VkPhysicalDeviceTransformFeedbackFeaturesEXT		transformFeedbackFeatures;
 	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures;
 	VkPhysicalDeviceMemoryPriorityFeaturesEXT			memoryPriorityFeatures;
+	VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR	uniformBufferStandardLayoutFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -362,6 +362,7 @@ public:
 		deMemset(&transformFeedbackFeatures, 0, sizeof(transformFeedbackFeatures));
 		deMemset(&performanceCounterFeatures, 0, sizeof(performanceCounterFeatures));
 		deMemset(&memoryPriorityFeatures, 0, sizeof(memoryPriorityFeatures));
+		deMemset(&uniformBufferStandardLayoutFeatures, 0, sizeof(uniformBufferStandardLayoutFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -386,6 +387,7 @@ public:
 		hostQueryResetFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
 		transformFeedbackFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
 		memoryPriorityFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
+		uniformBufferStandardLayoutFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -508,6 +510,11 @@ public:
 			{
 				*nextPtr	= &memoryPriorityFeatures;
 				nextPtr		= &memoryPriorityFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_uniform_buffer_standard_layout"))
+			{
+				*nextPtr	= &uniformBufferStandardLayoutFeatures;
+				nextPtr		= &uniformBufferStandardLayoutFeatures.pNext;
 			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);

@@ -8464,17 +8464,6 @@ typedef struct VkPipelineRasterizationDepthClipStateCreateInfoEXT {
     VkBool32                                               depthClipEnable;
 } VkPipelineRasterizationDepthClipStateCreateInfoEXT;
 
-
-#define VK_KHR_uniform_buffer_standard_layout 1
-#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_SPEC_VERSION 1
-#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "VK_KHR_uniform_buffer_standard_layout"
-
-typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           uniformBufferStandardLayout;
-} VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
-
 #define VK_EXT_buffer_device_address 1
 typedef deUint64 VkDeviceAddress;
 
@@ -8644,6 +8633,17 @@ typedef struct VkMemoryPriorityAllocateInfoEXT {
     const void*        pNext;
     float              priority;
 } VkMemoryPriorityAllocateInfoEXT;
+
+#define VK_KHR_uniform_buffer_standard_layout 1
+#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_SPEC_VERSION 1
+#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "VK_KHR_uniform_buffer_standard_layout"
+
+typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           uniformBufferStandardLayout;
+} VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
+
 
 
 #ifdef __cplusplus

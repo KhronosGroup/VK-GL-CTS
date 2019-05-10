@@ -87,7 +87,7 @@ class SourcePackage (Source):
 	def isArchiveUpToDate (self):
 		archiveFile = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.archiveDir, pkg.filename)
 		if os.path.exists(archiveFile):
-			return computeChecksum(readFile(archiveFile)) == self.checksum
+			return computeChecksum(readBinaryFile(archiveFile)) == self.checksum
 		else:
 			return False
 
@@ -104,7 +104,7 @@ class SourcePackage (Source):
 
 	def storeExtractedChecksum (self, checksum):
 		checksum_bytes = checksum.encode("utf-8")
-		writeFile(self.getExtractedChecksumFilePath(), checksum_bytes)
+		writeBinaryFile(self.getExtractedChecksumFilePath(), checksum_bytes)
 
 	def connectToUrl (self, url):
 		result = None
@@ -137,7 +137,7 @@ class SourcePackage (Source):
 		if not os.path.exists(os.path.dirname(dstPath)):
 			os.mkdir(os.path.dirname(dstPath))
 
-		writeFile(dstPath, data)
+		writeBinaryFile(dstPath, data)
 
 	def extract (self):
 		print("Extracting %s to %s/%s" % (self.filename, self.baseDir, self.extractDir))
@@ -190,7 +190,8 @@ class SourceFile (Source):
 	def isFileUpToDate (self):
 		file = os.path.join(EXTERNAL_DIR, pkg.baseDir, pkg.extractDir, pkg.filename)
 		if os.path.exists(file):
-			return computeChecksum(readFile(file)) == self.checksum
+			data = readFile(file)
+			return computeChecksum(data.encode('utf-8')) == self.checksum
 		else:
 			return False
 
@@ -225,7 +226,7 @@ class SourceFile (Source):
 		if not os.path.exists(os.path.dirname(dstPath)):
 			os.mkdir(os.path.dirname(dstPath))
 
-		writeFile(dstPath, data)
+		writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
 	def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = []):
@@ -313,23 +314,20 @@ PACKAGES = [
 		"e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
 		"renderdoc"),
 	GitRepo(
-		"https://gitlab.khronos.org/spirv/spirv-tools.git",
-		"git@gitlab.khronos.org:spirv/spirv-tools.git",
-		# Preliminary support for SPIR-V 1.4,
-                # VK_KHR_uniform_buffer_standard_layout
-		"4d8991f7c1bd1bcc285538f68d9b9fed31131240",
+		"https://github.com/KhronosGroup/SPIRV-Tools.git",
+		None,
+		"f6d9a1784313a88d6b1a1ca680458264cce4c2bd",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"137e071ca42f2c9e378d974c399a89504804a1e5",
+		"08e01e79c5dc6fe735f730a14b20003cdb204433",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
-		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
-		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		# Preliminary support for SPIR-V 1.4
-		"e9b9ab4f05a178a5ad1cf3ae0849aaa32de8e0a4",
+		"https://github.com/KhronosGroup/SPIRV-Headers.git",
+		None,
+		"c4f8f65792d4bf2657ca751904c511bbcf2ac77b",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/google/amber.git",
