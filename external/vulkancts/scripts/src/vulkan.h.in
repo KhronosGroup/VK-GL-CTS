@@ -424,6 +424,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT = 1000244000,
     VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT = 1000244001,
     VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT = 1000244002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR = 1000253000,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV = 1000249000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV = 1000249002,
@@ -8432,6 +8433,17 @@ typedef struct VkMemoryPriorityAllocateInfoEXT {
     const void*        pNext;
     float              priority;
 } VkMemoryPriorityAllocateInfoEXT;
+
+#define VK_KHR_uniform_buffer_standard_layout 1
+#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_SPEC_VERSION 1
+#define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "VK_KHR_uniform_buffer_standard_layout"
+
+typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           uniformBufferStandardLayout;
+} VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
+
 
 
 #ifdef __cplusplus

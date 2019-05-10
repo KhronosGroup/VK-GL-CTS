@@ -647,3 +647,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePCIBusInfoPrope
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryBudgetPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryPriorityFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryPriorityAllocateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR& value);

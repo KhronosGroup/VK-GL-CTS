@@ -38,6 +38,8 @@ struct SpirvValidatorOptions
 		kNoneBlockLayout,
 		// VK_KHR_relaxed_block_layout
 		kRelaxedBlockLayout,
+		// VK_EXT_uniform_buffer_standard_layout
+		kUniformStandardLayout,
 		// VK_EXT_scalar_block_layout
 		kScalarBlockLayout
 	};

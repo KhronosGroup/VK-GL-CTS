@@ -1336,3 +1336,8 @@ template<> VkStructureType getStructureType<VkMemoryPriorityAllocateInfoEXT> (vo
 	return VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
+}
+

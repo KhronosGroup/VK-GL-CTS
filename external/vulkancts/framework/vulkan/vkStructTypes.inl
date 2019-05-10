@@ -3377,6 +3377,13 @@ struct VkMemoryPriorityAllocateInfoEXT
 	float			priority;
 };
 
+struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		uniformBufferStandardLayout;
+};
+
 
 
 
