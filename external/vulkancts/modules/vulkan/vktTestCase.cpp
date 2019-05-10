@@ -354,7 +354,6 @@ public:
 		deMemset(&shaderAtomicInt64Features, 0, sizeof(shaderAtomicInt64Features));
 		deMemset(&conditionalRenderingFeatures, 0, sizeof(conditionalRenderingFeatures));
 		deMemset(&scalarBlockLayoutFeatures, 0, sizeof(scalarBlockLayoutFeatures));
-		deMemset(&uniformBufferStandardLayoutFeatures, 0, sizeof(uniformBufferStandardLayoutFeatures));
 		deMemset(&bufferDeviceAddressFeatures, 0, sizeof(bufferDeviceAddressFeatures));
 		deMemset(&imagelessFramebufferFeatures, 0, sizeof(imagelessFramebufferFeatures));
 		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
@@ -380,7 +379,6 @@ public:
 		conditionalRenderingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 		depthClipEnableFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT;
-		uniformBufferStandardLayoutFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 		bufferDeviceAddressFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
 		imagelessFramebufferFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
 		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
@@ -466,20 +464,15 @@ public:
 				*nextPtr	= &scalarBlockLayoutFeatures;
 				nextPtr		= &scalarBlockLayoutFeatures.pNext;
 			}
-            if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_depth_clip_enable"))
-            {
-                *nextPtr = &depthClipEnableFeatures;
-                nextPtr = &depthClipEnableFeatures.pNext;
-            }
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_depth_clip_enable"))
+			{
+				*nextPtr = &depthClipEnableFeatures;
+				nextPtr = &depthClipEnableFeatures.pNext;
+			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_performance_query"))
 			{
 				*nextPtr	= &performanceCounterFeatures;
 				nextPtr		= &performanceCounterFeatures.pNext;
-			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_uniform_buffer_standard_layout"))
-			{
-				*nextPtr	= &uniformBufferStandardLayoutFeatures;
-				nextPtr		= &uniformBufferStandardLayoutFeatures.pNext;
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_buffer_device_address"))
 			{
