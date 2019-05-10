@@ -174,7 +174,7 @@ No other command line options are allowed.
 ### Win32
 
 	cd <builddir>/external/vulkancts/modules/vulkan
-	Debug/deqp-vk.exe --deqp-caselist-file=...
+	Debug\deqp-vk.exe --deqp-caselist-file=...
 
 Test log will be written into TestResults.qpa
 
