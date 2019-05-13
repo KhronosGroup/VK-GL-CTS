@@ -144,7 +144,7 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
  *
  * Returns false if invalid rasterization is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode = VERIFICATIONMODE_STRICT, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL);
+bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode = VERIFICATIONMODE_STRICT, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL, const bool vulkanLinesTest = false);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify line rasterization result
@@ -178,7 +178,7 @@ bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surfac
  *
  * Returns false if both rasterizations are invalid.
  *//*--------------------------------------------------------------------*/
-bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool vulkanLinesTest = false);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Verify point rasterization result
