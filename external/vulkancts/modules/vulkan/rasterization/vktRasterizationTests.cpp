@@ -92,6 +92,12 @@ enum InterpolationCaseFlags
 	INTERPOLATIONFLAGS_FLATSHADE = (1 << 2),
 };
 
+enum ResolutionValues
+{
+	RESOLUTION_POT = 256,
+	RESOLUTION_NPOT = 258
+};
+
 enum PrimitiveWideness
 {
 	PRIMITIVEWIDENESS_NARROW = 0,
@@ -139,17 +145,15 @@ BaseRenderingTestCase::~BaseRenderingTestCase (void)
 class BaseRenderingTestInstance : public TestInstance
 {
 public:
-	enum {
-		DEFAULT_RENDER_SIZE = 256
-	};
-
-													BaseRenderingTestInstance		(Context& context, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deUint32 renderSize = DEFAULT_RENDER_SIZE, VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM);
+													BaseRenderingTestInstance		(Context& context, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deUint32 renderSize = RESOLUTION_POT, VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM, deUint32 additionalRenderSize = 0);
 													~BaseRenderingTestInstance		(void);
 
 protected:
 	void											addImageTransitionBarrier		(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 	void											drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology);
 	void											drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, const std::vector<tcu::Vec4>& coloDrata, VkPrimitiveTopology primitiveTopology);
+	void											drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, const std::vector<tcu::Vec4>& colorData, VkPrimitiveTopology primitiveTopology,
+																						VkImage image, VkImage resolvedImage, VkFramebuffer frameBuffer, const deUint32 renderSize, VkBuffer resultBuffer, const Allocation& resultBufferMemory);
 	virtual float									getLineWidth					(void) const;
 	virtual float									getPointSize					(void) const;
 
@@ -197,9 +201,12 @@ protected:
 	Move<VkBuffer>									m_resultBuffer;
 	de::MovePtr<Allocation>							m_resultBufferMemory;
 	const VkDeviceSize								m_resultBufferSize;
+
+	const deUint32									m_additionalRenderSize;
+	const VkDeviceSize								m_additionalResultBufferSize;
 };
 
-BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderSize, VkFormat imageFormat)
+BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderSize, VkFormat imageFormat, deUint32 additionalRenderSize)
 	: TestInstance			(context)
 	, m_renderSize			(renderSize)
 	, m_sampleCount			(sampleCount)
@@ -209,6 +216,8 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 	, m_textureFormat		(vk::mapVkFormat(m_imageFormat))
 	, m_uniformBufferSize	(sizeof(float))
 	, m_resultBufferSize	(renderSize * renderSize * m_textureFormat.getPixelSize())
+	, m_additionalRenderSize(additionalRenderSize)
+	, m_additionalResultBufferSize(additionalRenderSize * additionalRenderSize * m_textureFormat.getPixelSize())
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
@@ -606,6 +615,11 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 
 void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, const std::vector<tcu::Vec4>& colorData, VkPrimitiveTopology primitiveTopology)
 {
+	drawPrimitives(result, positionData, colorData, primitiveTopology, *m_image, *m_resolvedImage, *m_frameBuffer, m_renderSize, *m_resultBuffer, *m_resultBufferMemory);
+}
+void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, const std::vector<tcu::Vec4>& colorData, VkPrimitiveTopology primitiveTopology,
+					VkImage image, VkImage resolvedImage, VkFramebuffer frameBuffer, const deUint32 renderSize, VkBuffer resultBuffer, const Allocation& resultBufferMemory)
+{
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
 	const VkQueue								queue					= m_context.getUniversalQueue();
@@ -662,8 +676,8 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const std::vector<VkViewport>	viewports	(1, makeViewport(tcu::UVec2(m_renderSize)));
-		const std::vector<VkRect2D>		scissors	(1, makeRect2D(tcu::UVec2(m_renderSize)));
+		const std::vector<VkViewport>	viewports	(1, makeViewport(tcu::UVec2(renderSize)));
+		const std::vector<VkRect2D>		scissors	(1, makeRect2D(tcu::UVec2(renderSize)));
 
 		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
 		{
@@ -730,7 +744,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	// Begin Command Buffer
 	beginCommandBuffer(vkd, *commandBuffer);
 
-	addImageTransitionBarrier(*commandBuffer, *m_image,
+	addImageTransitionBarrier(*commandBuffer, image,
 							  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags		srcStageMask
 							  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,				// VkPipelineStageFlags		dstStageMask
 							  0,												// VkAccessFlags			srcAccessMask
@@ -739,7 +753,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 							  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);		// VkImageLayout			newLayout;
 
 	if (m_multisampling) {
-		addImageTransitionBarrier(*commandBuffer, *m_resolvedImage,
+		addImageTransitionBarrier(*commandBuffer, resolvedImage,
 								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags		srcStageMask
 								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,				// VkPipelineStageFlags		dstStageMask
 								  0,												// VkAccessFlags			srcAccessMask
@@ -749,7 +763,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	}
 
 	// Begin Render Pass
-	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, vk::makeRect2D(0, 0, m_renderSize, m_renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	beginRenderPass(vkd, *commandBuffer, *m_renderPass, frameBuffer, vk::makeRect2D(0, 0, renderSize, renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	const VkDeviceSize						vertexBufferOffset		= 0;
 
@@ -760,7 +774,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	endRenderPass(vkd, *commandBuffer);
 
 	// Copy Image
-	copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderSize, m_renderSize));
+	copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? resolvedImage : image, resultBuffer, tcu::IVec2(renderSize, renderSize));
 
 	endCommandBuffer(vkd, *commandBuffer);
 
@@ -774,8 +788,8 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	// Submit
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 
-	invalidateAlloc(vkd, vkDevice, *m_resultBufferMemory);
-	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderSize, m_renderSize, 1), m_resultBufferMemory->getHostPtr()));
+	invalidateAlloc(vkd, vkDevice, resultBufferMemory);
+	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(renderSize, renderSize, 1), resultBufferMemory.getHostPtr()));
 }
 
 float BaseRenderingTestInstance::getLineWidth (void) const
@@ -922,7 +936,7 @@ tcu::TestStatus BaseTriangleTestInstance::iterate (void)
 class BaseLineTestInstance : public BaseRenderingTestInstance
 {
 public:
-							BaseLineTestInstance	(Context& context, VkPrimitiveTopology primitiveTopology, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount);
+							BaseLineTestInstance	(Context& context, VkPrimitiveTopology primitiveTopology, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount, const deUint32 additionalRenderSize = 0);
 	virtual tcu::TestStatus	iterate					(void);
 	virtual float			getLineWidth			(void) const;
 
@@ -936,10 +950,20 @@ private:
 	bool					m_allIterationsPassed;
 	float					m_maxLineWidth;
 	std::vector<float>		m_lineWidths;
+
+	Move<VkImage>									m_additionalImage;
+	de::MovePtr<Allocation>							m_additionalImageMemory;
+	Move<VkImageView>								m_additionalImageView;
+	Move<VkImage>									m_additionalResolvedImage;
+	de::MovePtr<Allocation>							m_additionalResolvedImageMemory;
+	Move<VkImageView>								m_additionalResolvedImageView;
+	Move<VkFramebuffer>								m_additionalFrameBuffer;
+	Move<VkBuffer>									m_additionalResultBuffer;
+	de::MovePtr<Allocation>							m_additionalResultBufferMemory;
 };
 
-BaseLineTestInstance::BaseLineTestInstance (Context& context, VkPrimitiveTopology primitiveTopology, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount)
-	: BaseRenderingTestInstance			(context, sampleCount)
+BaseLineTestInstance::BaseLineTestInstance (Context& context, VkPrimitiveTopology primitiveTopology, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount, const deUint32 additionalRenderSize)
+	: BaseRenderingTestInstance			(context, sampleCount,  RESOLUTION_POT, VK_FORMAT_R8G8B8A8_UNORM, additionalRenderSize)
 	, m_iteration						(0)
 	, m_iterationCount					(3)
 	, m_primitiveTopology				(primitiveTopology)
@@ -972,6 +996,159 @@ BaseLineTestInstance::BaseLineTestInstance (Context& context, VkPrimitiveTopolog
 	}
 	else
 		DE_ASSERT(false);
+
+	// Create image, image view and frame buffer for testing at an additional resolution if required.
+	if (m_additionalRenderSize != 0)
+	{
+		const DeviceInterface&						vkd						= m_context.getDeviceInterface();
+		const VkDevice								vkDevice				= m_context.getDevice();
+		const deUint32								queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+		Allocator&									allocator				= m_context.getDefaultAllocator();
+		DescriptorPoolBuilder						descriptorPoolBuilder;
+		DescriptorSetLayoutBuilder					descriptorSetLayoutBuilder;
+		{
+			const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+			const VkImageCreateInfo					imageCreateInfo			=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
+				DE_NULL,									// const void*				pNext;
+				0u,											// VkImageCreateFlags		flags;
+				VK_IMAGE_TYPE_2D,							// VkImageType				imageType;
+				m_imageFormat,								// VkFormat					format;
+				{ m_additionalRenderSize, m_additionalRenderSize, 1u },			// VkExtent3D				extent;
+				1u,											// deUint32					mipLevels;
+				1u,											// deUint32					arrayLayers;
+				m_sampleCount,								// VkSampleCountFlagBits	samples;
+				VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
+				imageUsage,									// VkImageUsageFlags		usage;
+				VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
+				1u,											// deUint32					queueFamilyIndexCount;
+				&queueFamilyIndex,							// const deUint32*			pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED					// VkImageLayout			initialLayout;
+			};
+
+			m_additionalImage = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+
+			m_additionalImageMemory	= allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_additionalImage), MemoryRequirement::Any);
+			VK_CHECK(vkd.bindImageMemory(vkDevice, *m_additionalImage, m_additionalImageMemory->getMemory(), m_additionalImageMemory->getOffset()));
+		}
+
+		// Image View
+		{
+			const VkImageViewCreateInfo				imageViewCreateInfo		=
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,									// const void*					pNext;
+				0u,											// VkImageViewCreateFlags		flags;
+				*m_additionalImage,							// VkImage						image;
+				VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
+				m_imageFormat,								// VkFormat						format;
+				makeComponentMappingRGBA(),					// VkComponentMapping			components;
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags			aspectMask;
+					0u,											// deUint32						baseMipLevel;
+					1u,											// deUint32						mipLevels;
+					0u,											// deUint32						baseArrayLayer;
+					1u,											// deUint32						arraySize;
+				},											// VkImageSubresourceRange		subresourceRange;
+			};
+
+			m_additionalImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+		}
+
+		if (m_multisampling)
+		{
+			{
+				const VkImageUsageFlags	imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				const VkImageCreateInfo					imageCreateInfo			=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
+					DE_NULL,									// const void*				pNext;
+					0u,											// VkImageCreateFlags		flags;
+					VK_IMAGE_TYPE_2D,							// VkImageType				imageType;
+					m_imageFormat,								// VkFormat					format;
+					{ m_additionalRenderSize,	m_additionalRenderSize, 1u },			// VkExtent3D				extent;
+					1u,											// deUint32					mipLevels;
+					1u,											// deUint32					arrayLayers;
+					VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
+					VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
+					imageUsage,									// VkImageUsageFlags		usage;
+					VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
+					1u,											// deUint32					queueFamilyIndexCount;
+					&queueFamilyIndex,							// const deUint32*			pQueueFamilyIndices;
+					VK_IMAGE_LAYOUT_UNDEFINED					// VkImageLayout			initialLayout;
+				};
+
+				m_additionalResolvedImage			= vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
+				m_additionalResolvedImageMemory	= allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_additionalResolvedImage), MemoryRequirement::Any);
+				VK_CHECK(vkd.bindImageMemory(vkDevice, *m_additionalResolvedImage, m_additionalResolvedImageMemory->getMemory(), m_additionalResolvedImageMemory->getOffset()));
+			}
+
+			// Image view
+			{
+				const VkImageViewCreateInfo				imageViewCreateInfo		=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType				sType;
+					DE_NULL,									// const void*					pNext;
+					0u,											// VkImageViewCreateFlags		flags;
+					*m_additionalResolvedImage,					// VkImage						image;
+					VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
+					m_imageFormat,								// VkFormat						format;
+					makeComponentMappingRGBA(),					// VkComponentMapping			components;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags			aspectMask;
+						0u,											// deUint32						baseMipLevel;
+						1u,											// deUint32						mipLevels;
+						0u,											// deUint32						baseArrayLayer;
+						1u,											// deUint32						arraySize;
+					},											// VkImageSubresourceRange		subresourceRange;
+				};
+				m_additionalResolvedImageView = vk::createImageView(vkd, vkDevice, &imageViewCreateInfo, DE_NULL);
+			}
+		}
+
+		{
+			const VkImageView						attachments[]			=
+			{
+				*m_additionalImageView,
+				*m_additionalResolvedImageView
+			};
+
+			const VkFramebufferCreateInfo			framebufferCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType			sType;
+				DE_NULL,									// const void*				pNext;
+				0u,											// VkFramebufferCreateFlags	flags;
+				*m_renderPass,								// VkRenderPass				renderPass;
+				m_multisampling ? 2u : 1u,					// deUint32					attachmentCount;
+				attachments,								// const VkImageView*		pAttachments;
+				m_additionalRenderSize,						// deUint32					width;
+				m_additionalRenderSize,						// deUint32					height;
+				1u,											// deUint32					layers;
+			};
+			m_additionalFrameBuffer = createFramebuffer(vkd, vkDevice, &framebufferCreateInfo, DE_NULL);
+		}
+
+		// Framebuffer
+		{
+			const VkBufferCreateInfo				bufferCreateInfo		=
+			{
+				VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+				DE_NULL,									// const void*			pNext;
+				0u,											// VkBufferCreateFlags	flags;
+				m_additionalResultBufferSize,							// VkDeviceSize			size;
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+				VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+				1u,											// deUint32				queueFamilyIndexCount;
+				&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+			};
+
+			m_additionalResultBuffer			= createBuffer(vkd, vkDevice, &bufferCreateInfo);
+			m_additionalResultBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vkd, vkDevice, *m_additionalResultBuffer), MemoryRequirement::HostVisible);
+
+			VK_CHECK(vkd.bindBufferMemory(vkDevice, *m_additionalResultBuffer, m_additionalResultBufferMemory->getMemory(), m_additionalResultBufferMemory->getOffset()));
+		}
+	}
 }
 
 tcu::TestStatus BaseLineTestInstance::iterate (void)
@@ -980,36 +1157,45 @@ tcu::TestStatus BaseLineTestInstance::iterate (void)
 	const tcu::ScopedLogSection				section					(m_context.getTestContext().getLog(), iterationDescription, iterationDescription);
 	const float								lineWidth				= getLineWidth();
 	tcu::Surface							resultImage				(m_renderSize, m_renderSize);
+	tcu::Surface							additionalResultImage	(m_additionalRenderSize, m_additionalRenderSize);
 	std::vector<tcu::Vec4>					drawBuffer;
 	std::vector<LineSceneSpec::SceneLine>	lines;
 
 	// supported?
 	if (lineWidth <= m_maxLineWidth)
 	{
+		RasterizationArguments	args;
+		LineSceneSpec			scene;
+
+		tcu::IVec4				colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
+
+		args.numSamples		= m_multisampling ? 1 : 0;
+		args.subpixelBits	= m_subpixelBits;
+		args.redBits		= colorBits[0];
+		args.greenBits		= colorBits[1];
+		args.blueBits		= colorBits[2];
+
 		// gen data
 		generateLines(m_iteration, drawBuffer, lines);
 
 		// draw image
 		drawPrimitives(resultImage, drawBuffer, m_primitiveTopology);
 
-		// compare
+		scene.lines.swap(lines);
+		scene.lineWidth = lineWidth;
+
+		/* Compare, Only apply verification workaround for single sample test cases. */
+		if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling)))
+			m_allIterationsPassed = false;
+
+		if (m_additionalRenderSize != 0)
 		{
-			RasterizationArguments	args;
-			LineSceneSpec			scene;
+			const std::vector<tcu::Vec4> colorData(drawBuffer.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
+			drawPrimitives(additionalResultImage, drawBuffer, colorData, m_primitiveTopology, *m_additionalImage, *m_additionalResolvedImage, *m_additionalFrameBuffer, m_additionalRenderSize, *m_additionalResultBuffer, *m_additionalResultBufferMemory);
 
-			tcu::IVec4				colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
-
-			args.numSamples		= m_multisampling ? 1 : 0;
-			args.subpixelBits	= m_subpixelBits;
-			args.redBits		= colorBits[0];
-			args.greenBits		= colorBits[1];
-			args.blueBits		= colorBits[2];
-
-			scene.lines.swap(lines);
-			scene.lineWidth = lineWidth;
-
-			if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog()))
+			// Compare
+			if (!verifyRelaxedLineGroupRasterization(additionalResultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling)))
 				m_allIterationsPassed = false;
 		}
 	}
@@ -1038,7 +1224,7 @@ float BaseLineTestInstance::getLineWidth (void) const
 class PointTestInstance : public BaseRenderingTestInstance
 {
 public:
-							PointTestInstance		(Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount);
+							PointTestInstance		(Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount, deUint32 renderSize);
 	virtual tcu::TestStatus	iterate					(void);
 	virtual float			getPointSize			(void) const;
 
@@ -1053,7 +1239,7 @@ private:
 	std::vector<float>		m_pointSizes;
 };
 
-PointTestInstance::PointTestInstance (Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount)
+PointTestInstance::PointTestInstance (Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount, deUint32)
 	: BaseRenderingTestInstance	(context, sampleCount)
 	, m_iteration				(0)
 	, m_iterationCount			(3)
@@ -1736,15 +1922,16 @@ template <typename ConcreteTestInstance>
 class WidenessTestCase : public BaseRenderingTestCase
 {
 public:
-								WidenessTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, PrimitiveWideness wideness, bool isLineTest, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+								WidenessTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, PrimitiveWideness wideness, bool isLineTest, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, deUint32 additionalRenderSize = 0)
 									: BaseRenderingTestCase(context, name, description, sampleCount)
 									, m_wideness	(wideness)
 									, m_isLineTest	(isLineTest)
+									, m_additionalRenderSize	(additionalRenderSize)
 								{}
 
 	virtual TestInstance*		createInstance		(Context& context) const
 								{
-									return new ConcreteTestInstance(context, m_wideness, m_sampleCount);
+									return new ConcreteTestInstance(context, m_wideness, m_sampleCount, m_additionalRenderSize);
 								}
 
 	virtual	void				checkSupport		(Context& context) const
@@ -1766,13 +1953,14 @@ public:
 protected:
 	const PrimitiveWideness		m_wideness;
 	const bool					m_isLineTest;
+	const deUint32				m_additionalRenderSize;
 };
 
 class LinesTestInstance : public BaseLineTestInstance
 {
 public:
-								LinesTestInstance	(Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount)
-									: BaseLineTestInstance(context, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, wideness, sampleCount)
+								LinesTestInstance	(Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount, deUint32 additionalRenderSize = 0)
+									: BaseLineTestInstance(context, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, wideness, sampleCount, additionalRenderSize)
 								{}
 
 	virtual void				generateLines		(int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines);
@@ -1780,7 +1968,7 @@ public:
 
 void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
 {
-	outData.resize(6);
+	outData.resize(8);
 
 	switch (iteration)
 	{
@@ -1792,6 +1980,8 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 			outData[3] = tcu::Vec4(-0.3f,   0.2f, 0.0f, 1.0f);
 			outData[4] = tcu::Vec4(-1.5f,  -0.4f, 0.0f, 1.0f);
 			outData[5] = tcu::Vec4( 0.1f,   0.5f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4( 0.75f, -0.4f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4( 0.3f,   0.8f, 0.0f, 1.0f);
 			break;
 
 		case 1:
@@ -1801,6 +1991,8 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 			outData[3] = tcu::Vec4(  0.11f,   0.2f, 0.0f, 1.0f);
 			outData[4] = tcu::Vec4(  0.88f,   0.9f, 0.0f, 1.0f);
 			outData[5] = tcu::Vec4(  0.18f,  -0.2f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(  0.0f,   1.0f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4(  0.0f,  -1.0f, 0.0f, 1.0f);
 			break;
 
 		case 2:
@@ -1810,16 +2002,20 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 			outData[3] = tcu::Vec4( 0.11f,  0.2f, 0.0f, 1.0f);
 			outData[4] = tcu::Vec4( 0.88f,  0.7f, 0.0f, 1.0f);
 			outData[5] = tcu::Vec4(  0.8f, -0.7f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(  1.0f,   0.0f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4(  -1.0f,  0.0f, 0.0f, 1.0f);
 			break;
 	}
 
-	outLines.resize(3);
+	outLines.resize(4);
 	outLines[0].positions[0] = outData[0];
 	outLines[0].positions[1] = outData[1];
 	outLines[1].positions[0] = outData[2];
 	outLines[1].positions[1] = outData[3];
 	outLines[2].positions[0] = outData[4];
 	outLines[2].positions[1] = outData[5];
+	outLines[3].positions[0] = outData[6];
+	outLines[3].positions[1] = outData[7];
 
 	// log
 	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Rendering " << outLines.size() << " lines(s): (width = " << getLineWidth() << ")" << tcu::TestLog::EndMessage;
@@ -1837,7 +2033,7 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 class LineStripTestInstance : public BaseLineTestInstance
 {
 public:
-					LineStripTestInstance	(Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount)
+					LineStripTestInstance	(Context& context, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount, deUint32)
 						: BaseLineTestInstance(context, VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, wideness, sampleCount)
 					{}
 
@@ -2032,9 +2228,9 @@ tcu::TestStatus FillRuleTestInstance::iterate (void)
 int FillRuleTestInstance::getRenderSize (FillRuleCaseType type) const
 {
 	if (type == FILLRULECASE_CLIPPED_FULL || type == FILLRULECASE_CLIPPED_PARTIAL)
-		return DEFAULT_RENDER_SIZE / 4;
+		return RESOLUTION_POT / 4;
 	else
-		return DEFAULT_RENDER_SIZE;
+		return RESOLUTION_POT;
 }
 
 int FillRuleTestInstance::getNumIterations (FillRuleCaseType type) const
@@ -2198,7 +2394,7 @@ class CullingTestInstance : public BaseRenderingTestInstance
 {
 public:
 													CullingTestInstance				(Context& context, VkCullModeFlags cullMode, VkPrimitiveTopology primitiveTopology, VkFrontFace frontFace, VkPolygonMode polygonMode)
-														: BaseRenderingTestInstance		(context, VK_SAMPLE_COUNT_1_BIT, DEFAULT_RENDER_SIZE)
+														: BaseRenderingTestInstance		(context, VK_SAMPLE_COUNT_1_BIT, RESOLUTION_POT)
 														, m_cullMode					(cullMode)
 														, m_primitiveTopology			(primitiveTopology)
 														, m_frontFace					(frontFace)
@@ -2497,7 +2693,7 @@ class DiscardTestInstance : public BaseRenderingTestInstance
 {
 public:
 															DiscardTestInstance					(Context& context, VkPrimitiveTopology primitiveTopology, deBool queryFragmentShaderInvocations)
-																: BaseRenderingTestInstance			(context, VK_SAMPLE_COUNT_1_BIT, DEFAULT_RENDER_SIZE)
+																: BaseRenderingTestInstance			(context, VK_SAMPLE_COUNT_1_BIT, RESOLUTION_POT)
 																, m_primitiveTopology				(primitiveTopology)
 																, m_queryFragmentShaderInvocations	(queryFragmentShaderInvocations)
 															{}
@@ -2975,7 +3171,7 @@ class TriangleInterpolationTestInstance : public BaseRenderingTestInstance
 public:
 
 								TriangleInterpolationTestInstance	(Context& context, VkPrimitiveTopology primitiveTopology, int flags, VkSampleCountFlagBits sampleCount)
-									: BaseRenderingTestInstance	(context, sampleCount, DEFAULT_RENDER_SIZE)
+									: BaseRenderingTestInstance	(context, sampleCount, RESOLUTION_POT)
 									, m_primitiveTopology		(primitiveTopology)
 									, m_projective				((flags & INTERPOLATIONFLAGS_PROJECTED) != 0)
 									, m_iterationCount			(3)
@@ -3472,7 +3668,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		primitives->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result"));
 		primitives->addChild(new BaseTestCase<TriangleStripTestInstance>	(testCtx, "triangle_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, verify rasterization result"));
 		primitives->addChild(new BaseTestCase<TriangleFanTestInstance>		(testCtx, "triangle_fan",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, verify rasterization result"));
-		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true));
+		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true,	VK_SAMPLE_COUNT_1_BIT,	RESOLUTION_NPOT));
 		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true));
 		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		true));
 		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		true));
@@ -3710,7 +3906,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			rasterizationTests->addChild(primitives);
 
 			primitives->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result",					samples[samplesNdx]));
-			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true,	samples[samplesNdx]));
+			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true,	samples[samplesNdx],	RESOLUTION_NPOT));
 			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		true,	samples[samplesNdx]));
 			primitives->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE,		false,	samples[samplesNdx]));
 		}

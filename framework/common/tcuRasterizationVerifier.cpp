@@ -907,7 +907,7 @@ enum ClipMode
 	CLIPMODE_LAST
 };
 
-bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, ClipMode clipMode, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL)
+bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, ClipMode clipMode, VerifyTriangleGroupRasterizationLogStash* logStash = DE_NULL, const bool vulkanLinesTest = false)
 {
 	// Multisampled line == 2 triangles
 
@@ -963,7 +963,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const
 		triangleScene.triangles[lineNdx*2 + 1].positions[2] = tcu::Vec4(lineQuadNormalizedDeviceSpace[3].x(), lineQuadNormalizedDeviceSpace[3].y(), 0.0f, 1.0f);	triangleScene.triangles[lineNdx*2 + 1].sharedEdge[2] = false;
 	}
 
-	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, VERIFICATIONMODE_STRICT, logStash);
+	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, VERIFICATIONMODE_STRICT, logStash, vulkanLinesTest);
 }
 
 bool verifyMultisampleLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
@@ -2271,7 +2271,7 @@ static void verifyTriangleGroupRasterizationLog (const tcu::Surface& surface, tc
 	}
 }
 
-bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode, VerifyTriangleGroupRasterizationLogStash* logStash)
+bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const TriangleSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, VerificationMode mode, VerifyTriangleGroupRasterizationLogStash* logStash, const bool vulkanLinesTest)
 {
 	DE_ASSERT(mode < VERIFICATIONMODE_LAST);
 
@@ -2384,8 +2384,36 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 				break;
 
 			case COVERAGE_PARTIAL:
-				// anything goes
-				errorMask.setPixel(x, y, partialPixelColor);
+				{
+					bool foundFragment = false;
+
+					if (vulkanLinesTest == true)
+					{
+						// find nearby fragment
+						for (int dy = -1; dy < 2 && !foundFragment; ++dy)
+							for (int dx = -1; dx < 2 && !foundFragment; ++dx)
+							{
+								// check anything in vicinity not marked as no coverage, (also check edge conditions.)
+								if (x + dx >= 0 && x + dx != surface.getWidth() && y + dy >= 0 && y + dy != surface.getHeight()
+									&& (CoverageType)coverageMap.getAccess().getPixelUint(x + dx, y + dy).x() != COVERAGE_NONE)
+								{
+									const tcu::RGBA color2 = surface.getPixel(x + dx , y + dy);
+									if (compareColors(color2, triangleColor, args.redBits, args.greenBits, args.blueBits))
+										foundFragment = true;
+								}
+							}
+					}
+
+					// anything goes
+					if (foundFragment == false)
+					{
+						errorMask.setPixel(x, y, partialPixelColor);
+
+						if (vulkanLinesTest == true)
+							++missingPixels;
+					}
+
+				}
 				break;
 
 			case COVERAGE_FULL:
@@ -2450,12 +2478,12 @@ bool verifyClippedTriangulatedLineGroupRasterization (const tcu::Surface& surfac
 	return verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, DE_NULL);
 }
 
-bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
+bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool vulkanLinesTest)
 {
 	VerifyTriangleGroupRasterizationLogStash noClippingLogStash;
 	VerifyTriangleGroupRasterizationLogStash useClippingLogStash;
 
-	if (verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, &useClippingLogStash))
+	if (verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_USE_CLIPPING_BOX, &useClippingLogStash, vulkanLinesTest))
 	{
 		log << tcu::TestLog::Message << "Relaxed rasterization succeeded with CLIPMODE_USE_CLIPPING_BOX, details follow." << tcu::TestLog::EndMessage;
 
@@ -2463,7 +2491,7 @@ bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const Lin
 
 		return true;
 	}
-	else if (verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING, &noClippingLogStash))
+	else if (verifyMultisampleLineGroupRasterization(surface, scene, args, log, CLIPMODE_NO_CLIPPING, &noClippingLogStash, vulkanLinesTest))
 	{
 		log << tcu::TestLog::Message << "Relaxed rasterization succeeded with CLIPMODE_NO_CLIPPING, details follow." << tcu::TestLog::EndMessage;
 
