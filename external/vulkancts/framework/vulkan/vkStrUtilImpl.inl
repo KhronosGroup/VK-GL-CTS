@@ -62,8 +62,9 @@ const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion valu
 {
 	switch (value)
 	{
-		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:	return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
-		default:									return DE_NULL;
+		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:		return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
+		case VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM";
+		default:										return DE_NULL;
 	}
 }
 
@@ -99,6 +100,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_VALIDATION_FAILED_EXT:		return "VK_ERROR_VALIDATION_FAILED_EXT";
 		case VK_ERROR_INVALID_SHADER_NV:			return "VK_ERROR_INVALID_SHADER_NV";
 		case VK_ERROR_INVALID_DEVICE_ADDRESS_EXT:	return "VK_ERROR_INVALID_DEVICE_ADDRESS_EXT";
+		case VK_RESULT_MAX_ENUM:					return "VK_RESULT_MAX_ENUM";
 		default:									return DE_NULL;
 	}
 }
@@ -377,6 +379,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV:								return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
 }
@@ -390,6 +393,7 @@ const char* getSystemAllocationScopeName (VkSystemAllocationScope value)
 		case VK_SYSTEM_ALLOCATION_SCOPE_CACHE:		return "VK_SYSTEM_ALLOCATION_SCOPE_CACHE";
 		case VK_SYSTEM_ALLOCATION_SCOPE_DEVICE:		return "VK_SYSTEM_ALLOCATION_SCOPE_DEVICE";
 		case VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE:	return "VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE";
+		case VK_SYSTEM_ALLOCATION_SCOPE_MAX_ENUM:	return "VK_SYSTEM_ALLOCATION_SCOPE_MAX_ENUM";
 		default:									return DE_NULL;
 	}
 }
@@ -399,6 +403,7 @@ const char* getInternalAllocationTypeName (VkInternalAllocationType value)
 	switch (value)
 	{
 		case VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE:	return "VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE";
+		case VK_INTERNAL_ALLOCATION_TYPE_MAX_ENUM:		return "VK_INTERNAL_ALLOCATION_TYPE_MAX_ENUM";
 		default:										return DE_NULL;
 	}
 }
@@ -634,6 +639,7 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:					return "VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG";
 		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:					return "VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG";
 		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:					return "VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG";
+		case VK_FORMAT_MAX_ENUM:									return "VK_FORMAT_MAX_ENUM";
 		default:													return DE_NULL;
 	}
 }
@@ -642,10 +648,11 @@ const char* getImageTypeName (VkImageType value)
 {
 	switch (value)
 	{
-		case VK_IMAGE_TYPE_1D:	return "VK_IMAGE_TYPE_1D";
-		case VK_IMAGE_TYPE_2D:	return "VK_IMAGE_TYPE_2D";
-		case VK_IMAGE_TYPE_3D:	return "VK_IMAGE_TYPE_3D";
-		default:				return DE_NULL;
+		case VK_IMAGE_TYPE_1D:			return "VK_IMAGE_TYPE_1D";
+		case VK_IMAGE_TYPE_2D:			return "VK_IMAGE_TYPE_2D";
+		case VK_IMAGE_TYPE_3D:			return "VK_IMAGE_TYPE_3D";
+		case VK_IMAGE_TYPE_MAX_ENUM:	return "VK_IMAGE_TYPE_MAX_ENUM";
+		default:						return DE_NULL;
 	}
 }
 
@@ -655,6 +662,7 @@ const char* getImageTilingName (VkImageTiling value)
 	{
 		case VK_IMAGE_TILING_OPTIMAL:	return "VK_IMAGE_TILING_OPTIMAL";
 		case VK_IMAGE_TILING_LINEAR:	return "VK_IMAGE_TILING_LINEAR";
+		case VK_IMAGE_TILING_MAX_ENUM:	return "VK_IMAGE_TILING_MAX_ENUM";
 		default:						return DE_NULL;
 	}
 }
@@ -668,6 +676,7 @@ const char* getPhysicalDeviceTypeName (VkPhysicalDeviceType value)
 		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU";
 		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:		return "VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU";
 		case VK_PHYSICAL_DEVICE_TYPE_CPU:				return "VK_PHYSICAL_DEVICE_TYPE_CPU";
+		case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:			return "VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM";
 		default:										return DE_NULL;
 	}
 }
@@ -680,6 +689,7 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_PIPELINE_STATISTICS:				return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
 		case VK_QUERY_TYPE_TIMESTAMP:						return "VK_QUERY_TYPE_TIMESTAMP";
 		case VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT:	return "VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT";
+		case VK_QUERY_TYPE_MAX_ENUM:						return "VK_QUERY_TYPE_MAX_ENUM";
 		default:											return DE_NULL;
 	}
 }
@@ -690,6 +700,7 @@ const char* getSharingModeName (VkSharingMode value)
 	{
 		case VK_SHARING_MODE_EXCLUSIVE:		return "VK_SHARING_MODE_EXCLUSIVE";
 		case VK_SHARING_MODE_CONCURRENT:	return "VK_SHARING_MODE_CONCURRENT";
+		case VK_SHARING_MODE_MAX_ENUM:		return "VK_SHARING_MODE_MAX_ENUM";
 		default:							return DE_NULL;
 	}
 }
@@ -711,6 +722,7 @@ const char* getImageLayoutName (VkImageLayout value)
 		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:	return "VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL";
 		case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:								return "VK_IMAGE_LAYOUT_PRESENT_SRC_KHR";
 		case VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR:							return "VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR";
+		case VK_IMAGE_LAYOUT_MAX_ENUM:										return "VK_IMAGE_LAYOUT_MAX_ENUM";
 		default:															return DE_NULL;
 	}
 }
@@ -726,6 +738,7 @@ const char* getImageViewTypeName (VkImageViewType value)
 		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_1D_ARRAY";
 		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:	return "VK_IMAGE_VIEW_TYPE_2D_ARRAY";
 		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:	return "VK_IMAGE_VIEW_TYPE_CUBE_ARRAY";
+		case VK_IMAGE_VIEW_TYPE_MAX_ENUM:	return "VK_IMAGE_VIEW_TYPE_MAX_ENUM";
 		default:							return DE_NULL;
 	}
 }
@@ -741,6 +754,7 @@ const char* getComponentSwizzleName (VkComponentSwizzle value)
 		case VK_COMPONENT_SWIZZLE_G:		return "VK_COMPONENT_SWIZZLE_G";
 		case VK_COMPONENT_SWIZZLE_B:		return "VK_COMPONENT_SWIZZLE_B";
 		case VK_COMPONENT_SWIZZLE_A:		return "VK_COMPONENT_SWIZZLE_A";
+		case VK_COMPONENT_SWIZZLE_MAX_ENUM:	return "VK_COMPONENT_SWIZZLE_MAX_ENUM";
 		default:							return DE_NULL;
 	}
 }
@@ -751,6 +765,7 @@ const char* getVertexInputRateName (VkVertexInputRate value)
 	{
 		case VK_VERTEX_INPUT_RATE_VERTEX:	return "VK_VERTEX_INPUT_RATE_VERTEX";
 		case VK_VERTEX_INPUT_RATE_INSTANCE:	return "VK_VERTEX_INPUT_RATE_INSTANCE";
+		case VK_VERTEX_INPUT_RATE_MAX_ENUM:	return "VK_VERTEX_INPUT_RATE_MAX_ENUM";
 		default:							return DE_NULL;
 	}
 }
@@ -770,6 +785,7 @@ const char* getPrimitiveTopologyName (VkPrimitiveTopology value)
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY";
 		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:	return "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY";
 		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:						return "VK_PRIMITIVE_TOPOLOGY_PATCH_LIST";
+		case VK_PRIMITIVE_TOPOLOGY_MAX_ENUM:						return "VK_PRIMITIVE_TOPOLOGY_MAX_ENUM";
 		default:													return DE_NULL;
 	}
 }
@@ -782,6 +798,7 @@ const char* getPolygonModeName (VkPolygonMode value)
 		case VK_POLYGON_MODE_LINE:				return "VK_POLYGON_MODE_LINE";
 		case VK_POLYGON_MODE_POINT:				return "VK_POLYGON_MODE_POINT";
 		case VK_POLYGON_MODE_FILL_RECTANGLE_NV:	return "VK_POLYGON_MODE_FILL_RECTANGLE_NV";
+		case VK_POLYGON_MODE_MAX_ENUM:			return "VK_POLYGON_MODE_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -792,6 +809,7 @@ const char* getFrontFaceName (VkFrontFace value)
 	{
 		case VK_FRONT_FACE_COUNTER_CLOCKWISE:	return "VK_FRONT_FACE_COUNTER_CLOCKWISE";
 		case VK_FRONT_FACE_CLOCKWISE:			return "VK_FRONT_FACE_CLOCKWISE";
+		case VK_FRONT_FACE_MAX_ENUM:			return "VK_FRONT_FACE_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -808,6 +826,7 @@ const char* getCompareOpName (VkCompareOp value)
 		case VK_COMPARE_OP_NOT_EQUAL:			return "VK_COMPARE_OP_NOT_EQUAL";
 		case VK_COMPARE_OP_GREATER_OR_EQUAL:	return "VK_COMPARE_OP_GREATER_OR_EQUAL";
 		case VK_COMPARE_OP_ALWAYS:				return "VK_COMPARE_OP_ALWAYS";
+		case VK_COMPARE_OP_MAX_ENUM:			return "VK_COMPARE_OP_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -824,6 +843,7 @@ const char* getStencilOpName (VkStencilOp value)
 		case VK_STENCIL_OP_INVERT:				return "VK_STENCIL_OP_INVERT";
 		case VK_STENCIL_OP_INCREMENT_AND_WRAP:	return "VK_STENCIL_OP_INCREMENT_AND_WRAP";
 		case VK_STENCIL_OP_DECREMENT_AND_WRAP:	return "VK_STENCIL_OP_DECREMENT_AND_WRAP";
+		case VK_STENCIL_OP_MAX_ENUM:			return "VK_STENCIL_OP_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -848,6 +868,7 @@ const char* getLogicOpName (VkLogicOp value)
 		case VK_LOGIC_OP_OR_INVERTED:	return "VK_LOGIC_OP_OR_INVERTED";
 		case VK_LOGIC_OP_NAND:			return "VK_LOGIC_OP_NAND";
 		case VK_LOGIC_OP_SET:			return "VK_LOGIC_OP_SET";
+		case VK_LOGIC_OP_MAX_ENUM:		return "VK_LOGIC_OP_MAX_ENUM";
 		default:						return DE_NULL;
 	}
 }
@@ -875,6 +896,7 @@ const char* getBlendFactorName (VkBlendFactor value)
 		case VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR:		return "VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR";
 		case VK_BLEND_FACTOR_SRC1_ALPHA:				return "VK_BLEND_FACTOR_SRC1_ALPHA";
 		case VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA:		return "VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA";
+		case VK_BLEND_FACTOR_MAX_ENUM:					return "VK_BLEND_FACTOR_MAX_ENUM";
 		default:										return DE_NULL;
 	}
 }
@@ -934,6 +956,7 @@ const char* getBlendOpName (VkBlendOp value)
 		case VK_BLEND_OP_RED_EXT:					return "VK_BLEND_OP_RED_EXT";
 		case VK_BLEND_OP_GREEN_EXT:					return "VK_BLEND_OP_GREEN_EXT";
 		case VK_BLEND_OP_BLUE_EXT:					return "VK_BLEND_OP_BLUE_EXT";
+		case VK_BLEND_OP_MAX_ENUM:					return "VK_BLEND_OP_MAX_ENUM";
 		default:									return DE_NULL;
 	}
 }
@@ -954,6 +977,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV:	return "VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV";
 		case VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT:	return "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT";
 		case VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT:		return "VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT";
+		case VK_DYNAMIC_STATE_MAX_ENUM:					return "VK_DYNAMIC_STATE_MAX_ENUM";
 		default:										return DE_NULL;
 	}
 }
@@ -965,6 +989,7 @@ const char* getFilterName (VkFilter value)
 		case VK_FILTER_NEAREST:		return "VK_FILTER_NEAREST";
 		case VK_FILTER_LINEAR:		return "VK_FILTER_LINEAR";
 		case VK_FILTER_CUBIC_IMG:	return "VK_FILTER_CUBIC_IMG";
+		case VK_FILTER_MAX_ENUM:	return "VK_FILTER_MAX_ENUM";
 		default:					return DE_NULL;
 	}
 }
@@ -975,6 +1000,7 @@ const char* getSamplerMipmapModeName (VkSamplerMipmapMode value)
 	{
 		case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return "VK_SAMPLER_MIPMAP_MODE_NEAREST";
 		case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return "VK_SAMPLER_MIPMAP_MODE_LINEAR";
+		case VK_SAMPLER_MIPMAP_MODE_MAX_ENUM:	return "VK_SAMPLER_MIPMAP_MODE_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -988,6 +1014,7 @@ const char* getSamplerAddressModeName (VkSamplerAddressMode value)
 		case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:			return "VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE";
 		case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:		return "VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER";
 		case VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:	return "VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE";
+		case VK_SAMPLER_ADDRESS_MODE_MAX_ENUM:				return "VK_SAMPLER_ADDRESS_MODE_MAX_ENUM";
 		default:											return DE_NULL;
 	}
 }
@@ -1002,6 +1029,7 @@ const char* getBorderColorName (VkBorderColor value)
 		case VK_BORDER_COLOR_INT_OPAQUE_BLACK:			return "VK_BORDER_COLOR_INT_OPAQUE_BLACK";
 		case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:		return "VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE";
 		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:			return "VK_BORDER_COLOR_INT_OPAQUE_WHITE";
+		case VK_BORDER_COLOR_MAX_ENUM:					return "VK_BORDER_COLOR_MAX_ENUM";
 		default:										return DE_NULL;
 	}
 }
@@ -1022,6 +1050,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:		return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
 		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:			return "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT";
 		case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:	return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT";
+		case VK_DESCRIPTOR_TYPE_MAX_ENUM:					return "VK_DESCRIPTOR_TYPE_MAX_ENUM";
 		default:											return DE_NULL;
 	}
 }
@@ -1033,6 +1062,7 @@ const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
 		case VK_ATTACHMENT_LOAD_OP_LOAD:		return "VK_ATTACHMENT_LOAD_OP_LOAD";
 		case VK_ATTACHMENT_LOAD_OP_CLEAR:		return "VK_ATTACHMENT_LOAD_OP_CLEAR";
 		case VK_ATTACHMENT_LOAD_OP_DONT_CARE:	return "VK_ATTACHMENT_LOAD_OP_DONT_CARE";
+		case VK_ATTACHMENT_LOAD_OP_MAX_ENUM:	return "VK_ATTACHMENT_LOAD_OP_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -1043,6 +1073,7 @@ const char* getAttachmentStoreOpName (VkAttachmentStoreOp value)
 	{
 		case VK_ATTACHMENT_STORE_OP_STORE:		return "VK_ATTACHMENT_STORE_OP_STORE";
 		case VK_ATTACHMENT_STORE_OP_DONT_CARE:	return "VK_ATTACHMENT_STORE_OP_DONT_CARE";
+		case VK_ATTACHMENT_STORE_OP_MAX_ENUM:	return "VK_ATTACHMENT_STORE_OP_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -1053,6 +1084,7 @@ const char* getPipelineBindPointName (VkPipelineBindPoint value)
 	{
 		case VK_PIPELINE_BIND_POINT_GRAPHICS:	return "VK_PIPELINE_BIND_POINT_GRAPHICS";
 		case VK_PIPELINE_BIND_POINT_COMPUTE:	return "VK_PIPELINE_BIND_POINT_COMPUTE";
+		case VK_PIPELINE_BIND_POINT_MAX_ENUM:	return "VK_PIPELINE_BIND_POINT_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -1063,6 +1095,7 @@ const char* getCommandBufferLevelName (VkCommandBufferLevel value)
 	{
 		case VK_COMMAND_BUFFER_LEVEL_PRIMARY:	return "VK_COMMAND_BUFFER_LEVEL_PRIMARY";
 		case VK_COMMAND_BUFFER_LEVEL_SECONDARY:	return "VK_COMMAND_BUFFER_LEVEL_SECONDARY";
+		case VK_COMMAND_BUFFER_LEVEL_MAX_ENUM:	return "VK_COMMAND_BUFFER_LEVEL_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -1071,9 +1104,10 @@ const char* getIndexTypeName (VkIndexType value)
 {
 	switch (value)
 	{
-		case VK_INDEX_TYPE_UINT16:	return "VK_INDEX_TYPE_UINT16";
-		case VK_INDEX_TYPE_UINT32:	return "VK_INDEX_TYPE_UINT32";
-		default:					return DE_NULL;
+		case VK_INDEX_TYPE_UINT16:		return "VK_INDEX_TYPE_UINT16";
+		case VK_INDEX_TYPE_UINT32:		return "VK_INDEX_TYPE_UINT32";
+		case VK_INDEX_TYPE_MAX_ENUM:	return "VK_INDEX_TYPE_MAX_ENUM";
+		default:						return DE_NULL;
 	}
 }
 
@@ -1083,6 +1117,7 @@ const char* getSubpassContentsName (VkSubpassContents value)
 	{
 		case VK_SUBPASS_CONTENTS_INLINE:					return "VK_SUBPASS_CONTENTS_INLINE";
 		case VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS:	return "VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS";
+		case VK_SUBPASS_CONTENTS_MAX_ENUM:					return "VK_SUBPASS_CONTENTS_MAX_ENUM";
 		default:											return DE_NULL;
 	}
 }
@@ -1127,6 +1162,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_OBJECT_TABLE_NVX:				return "VK_OBJECT_TYPE_OBJECT_TABLE_NVX";
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NVX:	return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NVX";
 		case VK_OBJECT_TYPE_VALIDATION_CACHE_EXT:			return "VK_OBJECT_TYPE_VALIDATION_CACHE_EXT";
+		case VK_OBJECT_TYPE_MAX_ENUM:						return "VK_OBJECT_TYPE_MAX_ENUM";
 		default:											return DE_NULL;
 	}
 }
@@ -1137,6 +1173,7 @@ const char* getPointClippingBehaviorName (VkPointClippingBehavior value)
 	{
 		case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES:		return "VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES";
 		case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY:	return "VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY";
+		case VK_POINT_CLIPPING_BEHAVIOR_MAX_ENUM:				return "VK_POINT_CLIPPING_BEHAVIOR_MAX_ENUM";
 		default:												return DE_NULL;
 	}
 }
@@ -1147,6 +1184,7 @@ const char* getTessellationDomainOriginName (VkTessellationDomainOrigin value)
 	{
 		case VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT:	return "VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT";
 		case VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT:	return "VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT";
+		case VK_TESSELLATION_DOMAIN_ORIGIN_MAX_ENUM:	return "VK_TESSELLATION_DOMAIN_ORIGIN_MAX_ENUM";
 		default:										return DE_NULL;
 	}
 }
@@ -1160,6 +1198,7 @@ const char* getSamplerYcbcrModelConversionName (VkSamplerYcbcrModelConversion va
 		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709";
 		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601";
 		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020";
+		case VK_SAMPLER_YCBCR_MODEL_CONVERSION_MAX_ENUM:		return "VK_SAMPLER_YCBCR_MODEL_CONVERSION_MAX_ENUM";
 		default:												return DE_NULL;
 	}
 }
@@ -1170,6 +1209,7 @@ const char* getSamplerYcbcrRangeName (VkSamplerYcbcrRange value)
 	{
 		case VK_SAMPLER_YCBCR_RANGE_ITU_FULL:	return "VK_SAMPLER_YCBCR_RANGE_ITU_FULL";
 		case VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:	return "VK_SAMPLER_YCBCR_RANGE_ITU_NARROW";
+		case VK_SAMPLER_YCBCR_RANGE_MAX_ENUM:	return "VK_SAMPLER_YCBCR_RANGE_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -1180,6 +1220,7 @@ const char* getChromaLocationName (VkChromaLocation value)
 	{
 		case VK_CHROMA_LOCATION_COSITED_EVEN:	return "VK_CHROMA_LOCATION_COSITED_EVEN";
 		case VK_CHROMA_LOCATION_MIDPOINT:		return "VK_CHROMA_LOCATION_MIDPOINT";
+		case VK_CHROMA_LOCATION_MAX_ENUM:		return "VK_CHROMA_LOCATION_MAX_ENUM";
 		default:								return DE_NULL;
 	}
 }
@@ -1190,6 +1231,7 @@ const char* getDescriptorUpdateTemplateTypeName (VkDescriptorUpdateTemplateType 
 	{
 		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET:			return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET";
 		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR:	return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR";
+		case VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_MAX_ENUM:				return "VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_MAX_ENUM";
 		default:														return DE_NULL;
 	}
 }
@@ -1213,6 +1255,7 @@ const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 		case VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT:			return "VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT";
 		case VK_COLOR_SPACE_PASS_THROUGH_EXT:				return "VK_COLOR_SPACE_PASS_THROUGH_EXT";
 		case VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT:	return "VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT";
+		case VK_COLOR_SPACE_MAX_ENUM_KHR:					return "VK_COLOR_SPACE_MAX_ENUM_KHR";
 		default:											return DE_NULL;
 	}
 }
@@ -1227,6 +1270,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		case VK_PRESENT_MODE_MAX_ENUM_KHR:					return "VK_PRESENT_MODE_MAX_ENUM_KHR";
 		default:											return DE_NULL;
 	}
 }
@@ -1271,6 +1315,7 @@ const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
 		case VK_DEBUG_REPORT_OBJECT_TYPE_VALIDATION_CACHE_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_VALIDATION_CACHE_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_EXT:	return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_MAX_ENUM_EXT:						return "VK_DEBUG_REPORT_OBJECT_TYPE_MAX_ENUM_EXT";
 		default:															return DE_NULL;
 	}
 }
@@ -1281,6 +1326,7 @@ const char* getRasterizationOrderAMDName (VkRasterizationOrderAMD value)
 	{
 		case VK_RASTERIZATION_ORDER_STRICT_AMD:		return "VK_RASTERIZATION_ORDER_STRICT_AMD";
 		case VK_RASTERIZATION_ORDER_RELAXED_AMD:	return "VK_RASTERIZATION_ORDER_RELAXED_AMD";
+		case VK_RASTERIZATION_ORDER_MAX_ENUM_AMD:	return "VK_RASTERIZATION_ORDER_MAX_ENUM_AMD";
 		default:									return DE_NULL;
 	}
 }
@@ -1291,6 +1337,7 @@ const char* getValidationCheckEXTName (VkValidationCheckEXT value)
 	{
 		case VK_VALIDATION_CHECK_ALL_EXT:		return "VK_VALIDATION_CHECK_ALL_EXT";
 		case VK_VALIDATION_CHECK_SHADERS_EXT:	return "VK_VALIDATION_CHECK_SHADERS_EXT";
+		case VK_VALIDATION_CHECK_MAX_ENUM_EXT:	return "VK_VALIDATION_CHECK_MAX_ENUM_EXT";
 		default:								return DE_NULL;
 	}
 }
@@ -1307,6 +1354,7 @@ const char* getIndirectCommandsTokenTypeNVXName (VkIndirectCommandsTokenTypeNVX 
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NVX:		return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_INDEXED_NVX";
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NVX:				return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DRAW_NVX";
 		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NVX:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_DISPATCH_NVX";
+		case VK_INDIRECT_COMMANDS_TOKEN_TYPE_MAX_ENUM_NVX:			return "VK_INDIRECT_COMMANDS_TOKEN_TYPE_MAX_ENUM_NVX";
 		default:													return DE_NULL;
 	}
 }
@@ -1320,6 +1368,7 @@ const char* getObjectEntryTypeNVXName (VkObjectEntryTypeNVX value)
 		case VK_OBJECT_ENTRY_TYPE_INDEX_BUFFER_NVX:		return "VK_OBJECT_ENTRY_TYPE_INDEX_BUFFER_NVX";
 		case VK_OBJECT_ENTRY_TYPE_VERTEX_BUFFER_NVX:	return "VK_OBJECT_ENTRY_TYPE_VERTEX_BUFFER_NVX";
 		case VK_OBJECT_ENTRY_TYPE_PUSH_CONSTANT_NVX:	return "VK_OBJECT_ENTRY_TYPE_PUSH_CONSTANT_NVX";
+		case VK_OBJECT_ENTRY_TYPE_MAX_ENUM_NVX:			return "VK_OBJECT_ENTRY_TYPE_MAX_ENUM_NVX";
 		default:										return DE_NULL;
 	}
 }
@@ -1331,6 +1380,7 @@ const char* getDisplayPowerStateEXTName (VkDisplayPowerStateEXT value)
 		case VK_DISPLAY_POWER_STATE_OFF_EXT:		return "VK_DISPLAY_POWER_STATE_OFF_EXT";
 		case VK_DISPLAY_POWER_STATE_SUSPEND_EXT:	return "VK_DISPLAY_POWER_STATE_SUSPEND_EXT";
 		case VK_DISPLAY_POWER_STATE_ON_EXT:			return "VK_DISPLAY_POWER_STATE_ON_EXT";
+		case VK_DISPLAY_POWER_STATE_MAX_ENUM_EXT:	return "VK_DISPLAY_POWER_STATE_MAX_ENUM_EXT";
 		default:									return DE_NULL;
 	}
 }
@@ -1340,6 +1390,7 @@ const char* getDeviceEventTypeEXTName (VkDeviceEventTypeEXT value)
 	switch (value)
 	{
 		case VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT:	return "VK_DEVICE_EVENT_TYPE_DISPLAY_HOTPLUG_EXT";
+		case VK_DEVICE_EVENT_TYPE_MAX_ENUM_EXT:			return "VK_DEVICE_EVENT_TYPE_MAX_ENUM_EXT";
 		default:										return DE_NULL;
 	}
 }
@@ -1349,6 +1400,7 @@ const char* getDisplayEventTypeEXTName (VkDisplayEventTypeEXT value)
 	switch (value)
 	{
 		case VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT:	return "VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT";
+		case VK_DISPLAY_EVENT_TYPE_MAX_ENUM_EXT:		return "VK_DISPLAY_EVENT_TYPE_MAX_ENUM_EXT";
 		default:										return DE_NULL;
 	}
 }
@@ -1365,6 +1417,7 @@ const char* getViewportCoordinateSwizzleNVName (VkViewportCoordinateSwizzleNV va
 		case VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_Z_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_Z_NV";
 		case VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_POSITIVE_W_NV";
 		case VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_W_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_NEGATIVE_W_NV";
+		case VK_VIEWPORT_COORDINATE_SWIZZLE_MAX_ENUM_NV:	return "VK_VIEWPORT_COORDINATE_SWIZZLE_MAX_ENUM_NV";
 		default:											return DE_NULL;
 	}
 }
@@ -1375,6 +1428,7 @@ const char* getDiscardRectangleModeEXTName (VkDiscardRectangleModeEXT value)
 	{
 		case VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT:	return "VK_DISCARD_RECTANGLE_MODE_INCLUSIVE_EXT";
 		case VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT:	return "VK_DISCARD_RECTANGLE_MODE_EXCLUSIVE_EXT";
+		case VK_DISCARD_RECTANGLE_MODE_MAX_ENUM_EXT:	return "VK_DISCARD_RECTANGLE_MODE_MAX_ENUM_EXT";
 		default:										return DE_NULL;
 	}
 }
@@ -1386,6 +1440,7 @@ const char* getSamplerReductionModeEXTName (VkSamplerReductionModeEXT value)
 		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT:	return "VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT";
 		case VK_SAMPLER_REDUCTION_MODE_MIN_EXT:					return "VK_SAMPLER_REDUCTION_MODE_MIN_EXT";
 		case VK_SAMPLER_REDUCTION_MODE_MAX_EXT:					return "VK_SAMPLER_REDUCTION_MODE_MAX_EXT";
+		case VK_SAMPLER_REDUCTION_MODE_MAX_ENUM_EXT:			return "VK_SAMPLER_REDUCTION_MODE_MAX_ENUM_EXT";
 		default:												return DE_NULL;
 	}
 }
@@ -1397,6 +1452,7 @@ const char* getBlendOverlapEXTName (VkBlendOverlapEXT value)
 		case VK_BLEND_OVERLAP_UNCORRELATED_EXT:	return "VK_BLEND_OVERLAP_UNCORRELATED_EXT";
 		case VK_BLEND_OVERLAP_DISJOINT_EXT:		return "VK_BLEND_OVERLAP_DISJOINT_EXT";
 		case VK_BLEND_OVERLAP_CONJOINT_EXT:		return "VK_BLEND_OVERLAP_CONJOINT_EXT";
+		case VK_BLEND_OVERLAP_MAX_ENUM_EXT:		return "VK_BLEND_OVERLAP_MAX_ENUM_EXT";
 		default:								return DE_NULL;
 	}
 }
@@ -1405,11 +1461,12 @@ const char* getCoverageModulationModeNVName (VkCoverageModulationModeNV value)
 {
 	switch (value)
 	{
-		case VK_COVERAGE_MODULATION_MODE_NONE_NV:	return "VK_COVERAGE_MODULATION_MODE_NONE_NV";
-		case VK_COVERAGE_MODULATION_MODE_RGB_NV:	return "VK_COVERAGE_MODULATION_MODE_RGB_NV";
-		case VK_COVERAGE_MODULATION_MODE_ALPHA_NV:	return "VK_COVERAGE_MODULATION_MODE_ALPHA_NV";
-		case VK_COVERAGE_MODULATION_MODE_RGBA_NV:	return "VK_COVERAGE_MODULATION_MODE_RGBA_NV";
-		default:									return DE_NULL;
+		case VK_COVERAGE_MODULATION_MODE_NONE_NV:		return "VK_COVERAGE_MODULATION_MODE_NONE_NV";
+		case VK_COVERAGE_MODULATION_MODE_RGB_NV:		return "VK_COVERAGE_MODULATION_MODE_RGB_NV";
+		case VK_COVERAGE_MODULATION_MODE_ALPHA_NV:		return "VK_COVERAGE_MODULATION_MODE_ALPHA_NV";
+		case VK_COVERAGE_MODULATION_MODE_RGBA_NV:		return "VK_COVERAGE_MODULATION_MODE_RGBA_NV";
+		case VK_COVERAGE_MODULATION_MODE_MAX_ENUM_NV:	return "VK_COVERAGE_MODULATION_MODE_MAX_ENUM_NV";
+		default:										return DE_NULL;
 	}
 }
 
@@ -1417,8 +1474,9 @@ const char* getValidationCacheHeaderVersionEXTName (VkValidationCacheHeaderVersi
 {
 	switch (value)
 	{
-		case VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT:	return "VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT";
-		default:											return DE_NULL;
+		case VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT:		return "VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT";
+		case VK_VALIDATION_CACHE_HEADER_VERSION_MAX_ENUM_EXT:	return "VK_VALIDATION_CACHE_HEADER_VERSION_MAX_ENUM_EXT";
+		default:												return DE_NULL;
 	}
 }
 
@@ -1437,6 +1495,7 @@ const char* getComponentTypeNVName (VkComponentTypeNV value)
 		case VK_COMPONENT_TYPE_UINT16_NV:	return "VK_COMPONENT_TYPE_UINT16_NV";
 		case VK_COMPONENT_TYPE_UINT32_NV:	return "VK_COMPONENT_TYPE_UINT32_NV";
 		case VK_COMPONENT_TYPE_UINT64_NV:	return "VK_COMPONENT_TYPE_UINT64_NV";
+		case VK_COMPONENT_TYPE_MAX_ENUM_NV:	return "VK_COMPONENT_TYPE_MAX_ENUM_NV";
 		default:							return DE_NULL;
 	}
 }
@@ -1449,6 +1508,7 @@ const char* getScopeNVName (VkScopeNV value)
 		case VK_SCOPE_WORKGROUP_NV:		return "VK_SCOPE_WORKGROUP_NV";
 		case VK_SCOPE_SUBGROUP_NV:		return "VK_SCOPE_SUBGROUP_NV";
 		case VK_SCOPE_QUEUE_FAMILY_NV:	return "VK_SCOPE_QUEUE_FAMILY_NV";
+		case VK_SCOPE_MAX_ENUM_NV:		return "VK_SCOPE_MAX_ENUM_NV";
 		default:						return DE_NULL;
 	}
 }
@@ -1481,6 +1541,7 @@ tcu::Format::Bitfield<32> getFormatFeatureFlagsStr (VkFormatFeatureFlags value)
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_DISJOINT_BIT,																"VK_FORMAT_FEATURE_DISJOINT_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT,													"VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG,											"VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_FLAG_BITS_MAX_ENUM,															"VK_FORMAT_FEATURE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1497,6 +1558,7 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	"VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,		"VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,			"VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM,				"VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1518,6 +1580,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_PROTECTED_BIT,								"VK_IMAGE_CREATE_PROTECTED_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_DISJOINT_BIT,								"VK_IMAGE_CREATE_DISJOINT_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT,	"VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM,						"VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1526,13 +1589,14 @@ tcu::Format::Bitfield<32> getSampleCountFlagsStr (VkSampleCountFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_1_BIT,		"VK_SAMPLE_COUNT_1_BIT"),
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_2_BIT,		"VK_SAMPLE_COUNT_2_BIT"),
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_4_BIT,		"VK_SAMPLE_COUNT_4_BIT"),
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_8_BIT,		"VK_SAMPLE_COUNT_8_BIT"),
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_16_BIT,	"VK_SAMPLE_COUNT_16_BIT"),
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_32_BIT,	"VK_SAMPLE_COUNT_32_BIT"),
-		tcu::Format::BitDesc(VK_SAMPLE_COUNT_64_BIT,	"VK_SAMPLE_COUNT_64_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_1_BIT,					"VK_SAMPLE_COUNT_1_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_2_BIT,					"VK_SAMPLE_COUNT_2_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_4_BIT,					"VK_SAMPLE_COUNT_4_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_8_BIT,					"VK_SAMPLE_COUNT_8_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_16_BIT,				"VK_SAMPLE_COUNT_16_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_32_BIT,				"VK_SAMPLE_COUNT_32_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_64_BIT,				"VK_SAMPLE_COUNT_64_BIT"),
+		tcu::Format::BitDesc(VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM,	"VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1546,6 +1610,7 @@ tcu::Format::Bitfield<32> getQueueFlagsStr (VkQueueFlags value)
 		tcu::Format::BitDesc(VK_QUEUE_TRANSFER_BIT,			"VK_QUEUE_TRANSFER_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_SPARSE_BINDING_BIT,	"VK_QUEUE_SPARSE_BINDING_BIT"),
 		tcu::Format::BitDesc(VK_QUEUE_PROTECTED_BIT,		"VK_QUEUE_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_QUEUE_FLAG_BITS_MAX_ENUM,	"VK_QUEUE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1560,6 +1625,7 @@ tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_CACHED_BIT,		"VK_MEMORY_PROPERTY_HOST_CACHED_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,	"VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PROTECTED_BIT,			"VK_MEMORY_PROPERTY_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM,		"VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1570,6 +1636,7 @@ tcu::Format::Bitfield<32> getMemoryHeapFlagsStr (VkMemoryHeapFlags value)
 	{
 		tcu::Format::BitDesc(VK_MEMORY_HEAP_DEVICE_LOCAL_BIT,	"VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"),
 		tcu::Format::BitDesc(VK_MEMORY_HEAP_MULTI_INSTANCE_BIT,	"VK_MEMORY_HEAP_MULTI_INSTANCE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM,	"VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1578,7 +1645,8 @@ tcu::Format::Bitfield<32> getDeviceQueueCreateFlagsStr (VkDeviceQueueCreateFlags
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,	"VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,		"VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_DEVICE_QUEUE_CREATE_FLAG_BITS_MAX_ENUM,	"VK_DEVICE_QUEUE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1607,6 +1675,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,			"VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX,				"VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,		"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM,					"VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1615,13 +1684,14 @@ tcu::Format::Bitfield<32> getImageAspectFlagsStr (VkImageAspectFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_COLOR_BIT,		"VK_IMAGE_ASPECT_COLOR_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_DEPTH_BIT,		"VK_IMAGE_ASPECT_DEPTH_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_STENCIL_BIT,	"VK_IMAGE_ASPECT_STENCIL_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_METADATA_BIT,	"VK_IMAGE_ASPECT_METADATA_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_PLANE_0_BIT,	"VK_IMAGE_ASPECT_PLANE_0_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_PLANE_1_BIT,	"VK_IMAGE_ASPECT_PLANE_1_BIT"),
-		tcu::Format::BitDesc(VK_IMAGE_ASPECT_PLANE_2_BIT,	"VK_IMAGE_ASPECT_PLANE_2_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_COLOR_BIT,				"VK_IMAGE_ASPECT_COLOR_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_DEPTH_BIT,				"VK_IMAGE_ASPECT_DEPTH_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_STENCIL_BIT,			"VK_IMAGE_ASPECT_STENCIL_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_METADATA_BIT,			"VK_IMAGE_ASPECT_METADATA_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_PLANE_0_BIT,			"VK_IMAGE_ASPECT_PLANE_0_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_PLANE_1_BIT,			"VK_IMAGE_ASPECT_PLANE_1_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_PLANE_2_BIT,			"VK_IMAGE_ASPECT_PLANE_2_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM,	"VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1633,6 +1703,7 @@ tcu::Format::Bitfield<32> getSparseImageFormatFlagsStr (VkSparseImageFormatFlags
 		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT,			"VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT"),
 		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT,		"VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT"),
 		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT,	"VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT"),
+		tcu::Format::BitDesc(VK_SPARSE_IMAGE_FORMAT_FLAG_BITS_MAX_ENUM,			"VK_SPARSE_IMAGE_FORMAT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1641,7 +1712,8 @@ tcu::Format::Bitfield<32> getSparseMemoryBindFlagsStr (VkSparseMemoryBindFlags v
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SPARSE_MEMORY_BIND_METADATA_BIT,	"VK_SPARSE_MEMORY_BIND_METADATA_BIT"),
+		tcu::Format::BitDesc(VK_SPARSE_MEMORY_BIND_METADATA_BIT,		"VK_SPARSE_MEMORY_BIND_METADATA_BIT"),
+		tcu::Format::BitDesc(VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM,	"VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1650,7 +1722,8 @@ tcu::Format::Bitfield<32> getFenceCreateFlagsStr (VkFenceCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_FENCE_CREATE_SIGNALED_BIT,	"VK_FENCE_CREATE_SIGNALED_BIT"),
+		tcu::Format::BitDesc(VK_FENCE_CREATE_SIGNALED_BIT,			"VK_FENCE_CREATE_SIGNALED_BIT"),
+		tcu::Format::BitDesc(VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM,	"VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1670,6 +1743,7 @@ tcu::Format::Bitfield<32> getQueryPipelineStatisticFlagsStr (VkQueryPipelineStat
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,			"VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,	"VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT,					"VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM,								"VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1682,6 +1756,7 @@ tcu::Format::Bitfield<32> getQueryResultFlagsStr (VkQueryResultFlags value)
 		tcu::Format::BitDesc(VK_QUERY_RESULT_WAIT_BIT,				"VK_QUERY_RESULT_WAIT_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_RESULT_WITH_AVAILABILITY_BIT,	"VK_QUERY_RESULT_WITH_AVAILABILITY_BIT"),
 		tcu::Format::BitDesc(VK_QUERY_RESULT_PARTIAL_BIT,			"VK_QUERY_RESULT_PARTIAL_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_RESULT_FLAG_BITS_MAX_ENUM,	"VK_QUERY_RESULT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1695,6 +1770,7 @@ tcu::Format::Bitfield<32> getBufferCreateFlagsStr (VkBufferCreateFlags value)
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_SPARSE_ALIASED_BIT,						"VK_BUFFER_CREATE_SPARSE_ALIASED_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_PROTECTED_BIT,							"VK_BUFFER_CREATE_PROTECTED_BIT"),
 		tcu::Format::BitDesc(VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT,	"VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM,						"VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1716,6 +1792,7 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT,	"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT,				"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,						"VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1729,6 +1806,7 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,						"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,	"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,						"VK_PIPELINE_CREATE_DISPATCH_BASE"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,					"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1745,6 +1823,7 @@ tcu::Format::Bitfield<32> getShaderStageFlagsStr (VkShaderStageFlags value)
 		tcu::Format::BitDesc(VK_SHADER_STAGE_COMPUTE_BIT,					"VK_SHADER_STAGE_COMPUTE_BIT"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_ALL_GRAPHICS,					"VK_SHADER_STAGE_ALL_GRAPHICS"),
 		tcu::Format::BitDesc(VK_SHADER_STAGE_ALL,							"VK_SHADER_STAGE_ALL"),
+		tcu::Format::BitDesc(VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM,			"VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1753,10 +1832,11 @@ tcu::Format::Bitfield<32> getCullModeFlagsStr (VkCullModeFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_CULL_MODE_NONE,				"VK_CULL_MODE_NONE"),
-		tcu::Format::BitDesc(VK_CULL_MODE_FRONT_BIT,		"VK_CULL_MODE_FRONT_BIT"),
-		tcu::Format::BitDesc(VK_CULL_MODE_BACK_BIT,			"VK_CULL_MODE_BACK_BIT"),
-		tcu::Format::BitDesc(VK_CULL_MODE_FRONT_AND_BACK,	"VK_CULL_MODE_FRONT_AND_BACK"),
+		tcu::Format::BitDesc(VK_CULL_MODE_NONE,					"VK_CULL_MODE_NONE"),
+		tcu::Format::BitDesc(VK_CULL_MODE_FRONT_BIT,			"VK_CULL_MODE_FRONT_BIT"),
+		tcu::Format::BitDesc(VK_CULL_MODE_BACK_BIT,				"VK_CULL_MODE_BACK_BIT"),
+		tcu::Format::BitDesc(VK_CULL_MODE_FRONT_AND_BACK,		"VK_CULL_MODE_FRONT_AND_BACK"),
+		tcu::Format::BitDesc(VK_CULL_MODE_FLAG_BITS_MAX_ENUM,	"VK_CULL_MODE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1765,10 +1845,11 @@ tcu::Format::Bitfield<32> getColorComponentFlagsStr (VkColorComponentFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_COLOR_COMPONENT_R_BIT,	"VK_COLOR_COMPONENT_R_BIT"),
-		tcu::Format::BitDesc(VK_COLOR_COMPONENT_G_BIT,	"VK_COLOR_COMPONENT_G_BIT"),
-		tcu::Format::BitDesc(VK_COLOR_COMPONENT_B_BIT,	"VK_COLOR_COMPONENT_B_BIT"),
-		tcu::Format::BitDesc(VK_COLOR_COMPONENT_A_BIT,	"VK_COLOR_COMPONENT_A_BIT"),
+		tcu::Format::BitDesc(VK_COLOR_COMPONENT_R_BIT,				"VK_COLOR_COMPONENT_R_BIT"),
+		tcu::Format::BitDesc(VK_COLOR_COMPONENT_G_BIT,				"VK_COLOR_COMPONENT_G_BIT"),
+		tcu::Format::BitDesc(VK_COLOR_COMPONENT_B_BIT,				"VK_COLOR_COMPONENT_B_BIT"),
+		tcu::Format::BitDesc(VK_COLOR_COMPONENT_A_BIT,				"VK_COLOR_COMPONENT_A_BIT"),
+		tcu::Format::BitDesc(VK_COLOR_COMPONENT_FLAG_BITS_MAX_ENUM,	"VK_COLOR_COMPONENT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1779,6 +1860,7 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,			"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_FLAG_BITS_MAX_ENUM,				"VK_DESCRIPTOR_SET_LAYOUT_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1789,6 +1871,7 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 	{
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT,	"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM,			"VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1797,7 +1880,8 @@ tcu::Format::Bitfield<32> getAttachmentDescriptionFlagsStr (VkAttachmentDescript
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,	"VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT"),
+		tcu::Format::BitDesc(VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,		"VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT"),
+		tcu::Format::BitDesc(VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM,	"VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1808,6 +1892,7 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 	{
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX,		"VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX,	"VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM,					"VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1840,6 +1925,7 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX,				"VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX,				"VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX"),
 		tcu::Format::BitDesc(VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,	"VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_FLAG_BITS_MAX_ENUM,							"VK_ACCESS_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1851,6 +1937,7 @@ tcu::Format::Bitfield<32> getDependencyFlagsStr (VkDependencyFlags value)
 		tcu::Format::BitDesc(VK_DEPENDENCY_BY_REGION_BIT,		"VK_DEPENDENCY_BY_REGION_BIT"),
 		tcu::Format::BitDesc(VK_DEPENDENCY_DEVICE_GROUP_BIT,	"VK_DEPENDENCY_DEVICE_GROUP_BIT"),
 		tcu::Format::BitDesc(VK_DEPENDENCY_VIEW_LOCAL_BIT,		"VK_DEPENDENCY_VIEW_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_DEPENDENCY_FLAG_BITS_MAX_ENUM,	"VK_DEPENDENCY_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1862,6 +1949,7 @@ tcu::Format::Bitfield<32> getCommandPoolCreateFlagsStr (VkCommandPoolCreateFlags
 		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,				"VK_COMMAND_POOL_CREATE_TRANSIENT_BIT"),
 		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	"VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT"),
 		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_PROTECTED_BIT,				"VK_COMMAND_POOL_CREATE_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM,			"VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1871,6 +1959,7 @@ tcu::Format::Bitfield<32> getCommandPoolResetFlagsStr (VkCommandPoolResetFlags v
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,	"VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT"),
+		tcu::Format::BitDesc(VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM,		"VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1882,6 +1971,7 @@ tcu::Format::Bitfield<32> getCommandBufferUsageFlagsStr (VkCommandBufferUsageFla
 		tcu::Format::BitDesc(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,		"VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT"),
 		tcu::Format::BitDesc(VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	"VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT"),
 		tcu::Format::BitDesc(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,		"VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT"),
+		tcu::Format::BitDesc(VK_COMMAND_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,		"VK_COMMAND_BUFFER_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1890,7 +1980,8 @@ tcu::Format::Bitfield<32> getQueryControlFlagsStr (VkQueryControlFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_QUERY_CONTROL_PRECISE_BIT,	"VK_QUERY_CONTROL_PRECISE_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_CONTROL_PRECISE_BIT,			"VK_QUERY_CONTROL_PRECISE_BIT"),
+		tcu::Format::BitDesc(VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM,	"VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1900,6 +1991,7 @@ tcu::Format::Bitfield<32> getCommandBufferResetFlagsStr (VkCommandBufferResetFla
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT,	"VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT"),
+		tcu::Format::BitDesc(VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM,	"VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1908,9 +2000,10 @@ tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_BIT,	"VK_STENCIL_FACE_FRONT_BIT"),
-		tcu::Format::BitDesc(VK_STENCIL_FACE_BACK_BIT,	"VK_STENCIL_FACE_BACK_BIT"),
-		tcu::Format::BitDesc(VK_STENCIL_FRONT_AND_BACK,	"VK_STENCIL_FRONT_AND_BACK"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_BIT,				"VK_STENCIL_FACE_FRONT_BIT"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_BACK_BIT,				"VK_STENCIL_FACE_BACK_BIT"),
+		tcu::Format::BitDesc(VK_STENCIL_FRONT_AND_BACK,				"VK_STENCIL_FRONT_AND_BACK"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1928,6 +2021,7 @@ tcu::Format::Bitfield<32> getSubgroupFeatureFlagsStr (VkSubgroupFeatureFlags val
 		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_CLUSTERED_BIT,			"VK_SUBGROUP_FEATURE_CLUSTERED_BIT"),
 		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_QUAD_BIT,				"VK_SUBGROUP_FEATURE_QUAD_BIT"),
 		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV,	"VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_FLAG_BITS_MAX_ENUM,	"VK_SUBGROUP_FEATURE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1940,6 +2034,7 @@ tcu::Format::Bitfield<32> getPeerMemoryFeatureFlagsStr (VkPeerMemoryFeatureFlags
 		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_COPY_DST_BIT,		"VK_PEER_MEMORY_FEATURE_COPY_DST_BIT"),
 		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT,	"VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT"),
 		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT,	"VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT"),
+		tcu::Format::BitDesc(VK_PEER_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM,	"VK_PEER_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1949,6 +2044,7 @@ tcu::Format::Bitfield<32> getMemoryAllocateFlagsStr (VkMemoryAllocateFlags value
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,	"VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_ALLOCATE_FLAG_BITS_MAX_ENUM,	"VK_MEMORY_ALLOCATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1967,6 +2063,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,				"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1978,6 +2075,7 @@ tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsStr (VkExternalMemoryFeat
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT,	"VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT,		"VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT,		"VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM,	"VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1990,6 +2088,7 @@ tcu::Format::Bitfield<32> getExternalFenceHandleTypeFlagsStr (VkExternalFenceHan
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,	"VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,				"VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM,		"VK_EXTERNAL_FENCE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1998,8 +2097,9 @@ tcu::Format::Bitfield<32> getExternalFenceFeatureFlagsStr (VkExternalFenceFeatur
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT,	"VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT"),
-		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT,	"VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT,		"VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT,		"VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_FENCE_FEATURE_FLAG_BITS_MAX_ENUM,	"VK_EXTERNAL_FENCE_FEATURE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2008,7 +2108,8 @@ tcu::Format::Bitfield<32> getFenceImportFlagsStr (VkFenceImportFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_FENCE_IMPORT_TEMPORARY_BIT,	"VK_FENCE_IMPORT_TEMPORARY_BIT"),
+		tcu::Format::BitDesc(VK_FENCE_IMPORT_TEMPORARY_BIT,			"VK_FENCE_IMPORT_TEMPORARY_BIT"),
+		tcu::Format::BitDesc(VK_FENCE_IMPORT_FLAG_BITS_MAX_ENUM,	"VK_FENCE_IMPORT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2017,7 +2118,8 @@ tcu::Format::Bitfield<32> getSemaphoreImportFlagsStr (VkSemaphoreImportFlags val
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SEMAPHORE_IMPORT_TEMPORARY_BIT,	"VK_SEMAPHORE_IMPORT_TEMPORARY_BIT"),
+		tcu::Format::BitDesc(VK_SEMAPHORE_IMPORT_TEMPORARY_BIT,			"VK_SEMAPHORE_IMPORT_TEMPORARY_BIT"),
+		tcu::Format::BitDesc(VK_SEMAPHORE_IMPORT_FLAG_BITS_MAX_ENUM,	"VK_SEMAPHORE_IMPORT_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2031,6 +2133,7 @@ tcu::Format::Bitfield<32> getExternalSemaphoreHandleTypeFlagsStr (VkExternalSema
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,	"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT,			"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,				"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM,		"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2039,8 +2142,9 @@ tcu::Format::Bitfield<32> getExternalSemaphoreFeatureFlagsStr (VkExternalSemapho
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT,	"VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT"),
-		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT,	"VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT,		"VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT,		"VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_FEATURE_FLAG_BITS_MAX_ENUM,	"VK_EXTERNAL_SEMAPHORE_FEATURE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2058,6 +2162,7 @@ tcu::Format::Bitfield<32> getSurfaceTransformFlagsKHRStr (VkSurfaceTransformFlag
 		tcu::Format::BitDesc(VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR,	"VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR,	"VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR,						"VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SURFACE_TRANSFORM_FLAG_BITS_MAX_ENUM_KHR,				"VK_SURFACE_TRANSFORM_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2070,6 +2175,7 @@ tcu::Format::Bitfield<32> getCompositeAlphaFlagsKHRStr (VkCompositeAlphaFlagsKHR
 		tcu::Format::BitDesc(VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,		"VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,	"VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,			"VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_COMPOSITE_ALPHA_FLAG_BITS_MAX_ENUM_KHR,		"VK_COMPOSITE_ALPHA_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2081,6 +2187,7 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,			"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,			"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,	"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR,	"VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2093,6 +2200,7 @@ tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHRStr (VkDeviceGroupPre
 		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR,				"VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR,					"VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR,	"VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_FLAG_BITS_MAX_ENUM_KHR,		"VK_DEVICE_GROUP_PRESENT_MODE_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2105,6 +2213,7 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR,						"VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR,					"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR,	"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR,				"VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2113,11 +2222,12 @@ tcu::Format::Bitfield<32> getResolveModeFlagsKHRStr (VkResolveModeFlagsKHR value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_NONE_KHR,				"VK_RESOLVE_MODE_NONE_KHR"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,	"VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_AVERAGE_BIT_KHR,		"VK_RESOLVE_MODE_AVERAGE_BIT_KHR"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_MIN_BIT_KHR,			"VK_RESOLVE_MODE_MIN_BIT_KHR"),
-		tcu::Format::BitDesc(VK_RESOLVE_MODE_MAX_BIT_KHR,			"VK_RESOLVE_MODE_MAX_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_NONE_KHR,					"VK_RESOLVE_MODE_NONE_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,		"VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_AVERAGE_BIT_KHR,			"VK_RESOLVE_MODE_AVERAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_MIN_BIT_KHR,				"VK_RESOLVE_MODE_MIN_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_MAX_BIT_KHR,				"VK_RESOLVE_MODE_MAX_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_FLAG_BITS_MAX_ENUM_KHR,	"VK_RESOLVE_MODE_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2131,6 +2241,7 @@ tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT,	"VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_ERROR_BIT_EXT,					"VK_DEBUG_REPORT_ERROR_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DEBUG_REPORT_DEBUG_BIT_EXT,					"VK_DEBUG_REPORT_DEBUG_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT,		"VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2143,6 +2254,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemor
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_NV,	"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_BIT_NV,			"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_KMT_BIT_NV,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_IMAGE_KMT_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM_NV,		"VK_EXTERNAL_MEMORY_HANDLE_TYPE_FLAG_BITS_MAX_ENUM_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2154,6 +2266,7 @@ tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFe
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV,	"VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM_NV,	"VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2162,7 +2275,8 @@ tcu::Format::Bitfield<32> getConditionalRenderingFlagsEXTStr (VkConditionalRende
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT,	"VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT,			"VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT,	"VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2175,6 +2289,7 @@ tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsNVXStr (VkIndirectC
 		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_SPARSE_SEQUENCES_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_SPARSE_SEQUENCES_BIT_NVX"),
 		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EMPTY_EXECUTIONS_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EMPTY_EXECUTIONS_BIT_NVX"),
 		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NVX,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NVX"),
+		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_FLAG_BITS_MAX_ENUM_NVX,		"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_FLAG_BITS_MAX_ENUM_NVX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2183,8 +2298,9 @@ tcu::Format::Bitfield<32> getObjectEntryUsageFlagsNVXStr (VkObjectEntryUsageFlag
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX,	"VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX"),
-		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX,		"VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX"),
+		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX,		"VK_OBJECT_ENTRY_USAGE_GRAPHICS_BIT_NVX"),
+		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX,			"VK_OBJECT_ENTRY_USAGE_COMPUTE_BIT_NVX"),
+		tcu::Format::BitDesc(VK_OBJECT_ENTRY_USAGE_FLAG_BITS_MAX_ENUM_NVX,	"VK_OBJECT_ENTRY_USAGE_FLAG_BITS_MAX_ENUM_NVX"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2193,7 +2309,8 @@ tcu::Format::Bitfield<32> getSurfaceCounterFlagsEXTStr (VkSurfaceCounterFlagsEXT
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SURFACE_COUNTER_VBLANK_EXT,	"VK_SURFACE_COUNTER_VBLANK_EXT"),
+		tcu::Format::BitDesc(VK_SURFACE_COUNTER_VBLANK_EXT,				"VK_SURFACE_COUNTER_VBLANK_EXT"),
+		tcu::Format::BitDesc(VK_SURFACE_COUNTER_FLAG_BITS_MAX_ENUM_EXT,	"VK_SURFACE_COUNTER_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2206,6 +2323,7 @@ tcu::Format::Bitfield<32> getDescriptorBindingFlagsEXTStr (VkDescriptorBindingFl
 		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT,	"VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,				"VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT,	"VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_FLAG_BITS_MAX_ENUM_EXT,				"VK_DESCRIPTOR_BINDING_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
