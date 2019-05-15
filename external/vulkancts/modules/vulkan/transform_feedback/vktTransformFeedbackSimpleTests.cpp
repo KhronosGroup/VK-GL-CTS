@@ -1075,6 +1075,7 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance (Cont
 	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
+	const bool												geomPointSizeRequired		= m_parameters.testType == TEST_TYPE_STREAMS_POINTSIZE;
 
 	if (!features.geometryShader)
 		TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
@@ -1087,6 +1088,9 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance (Cont
 
 	if (streamsSupported < streamsRequired)
 		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) + ", while test requires " + de::toString(streamsRequired)).c_str());
+
+	if (geomPointSizeRequired && !features.shaderTessellationAndGeometryPointSize)
+		TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize feature is not supported");
 }
 
 bool TransformFeedbackStreamsTestInstance::verifyImage (const VkFormat imageFormat, const VkExtent2D& size, const void* resultData)
