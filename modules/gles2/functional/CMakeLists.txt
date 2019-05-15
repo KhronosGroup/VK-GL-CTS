@@ -5,6 +5,8 @@ set(DEQP_GLES2_FUNCTIONAL_SRCS
 	es2fApiCase.hpp
 	es2fAttribLocationTests.cpp
 	es2fAttribLocationTests.hpp
+	es2fClipControlTests.cpp
+	es2fClipControlTests.hpp
 	es2fColorClearTest.cpp
 	es2fColorClearTest.hpp
 	es2fDefaultVertexAttributeTests.cpp

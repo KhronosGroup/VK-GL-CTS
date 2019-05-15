@@ -67,6 +67,11 @@ if (de::contains(extSet, "GL_EXT_primitive_bounding_box"))
 	gl->primitiveBoundingBox	= (glPrimitiveBoundingBoxFunc)	loader->get("glPrimitiveBoundingBoxEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_clip_control"))
+{
+	gl->clipControl	= (glClipControlFunc)	loader->get("glClipControlEXT");
+}
+
 if (de::contains(extSet, "GL_EXT_copy_image"))
 {
 	gl->copyImageSubData	= (glCopyImageSubDataFunc)	loader->get("glCopyImageSubDataEXT");

@@ -1036,7 +1036,9 @@
 #define GL_TRANSFORM_FEEDBACK_BUFFER_BINDING							0x8C8F
 #define GL_POINT_SPRITE_COORD_ORIGIN									0x8CA0
 #define GL_LOWER_LEFT													0x8CA1
+#define GL_LOWER_LEFT_EXT												0x8CA1
 #define GL_UPPER_LEFT													0x8CA2
+#define GL_UPPER_LEFT_EXT												0x8CA2
 #define GL_STENCIL_BACK_REF												0x8CA3
 #define GL_STENCIL_BACK_VALUE_MASK										0x8CA4
 #define GL_STENCIL_BACK_WRITEMASK										0x8CA5
@@ -1712,9 +1714,13 @@
 #define GL_TRANSFORM_FEEDBACK_BUFFER_INDEX								0x934B
 #define GL_TRANSFORM_FEEDBACK_BUFFER_STRIDE								0x934C
 #define GL_CLIP_ORIGIN													0x935C
+#define GL_CLIP_ORIGIN_EXT												0x935C
 #define GL_CLIP_DEPTH_MODE												0x935D
+#define GL_CLIP_DEPTH_MODE_EXT											0x935D
 #define GL_NEGATIVE_ONE_TO_ONE											0x935E
+#define GL_NEGATIVE_ONE_TO_ONE_EXT										0x935E
 #define GL_ZERO_TO_ONE													0x935F
+#define GL_ZERO_TO_ONE_EXT												0x935F
 #define GL_CLEAR_TEXTURE												0x9365
 #define GL_TEXTURE_REDUCTION_MODE_ARB									0x9366
 #define GL_WEIGHTED_AVERAGE_ARB											0x9367
