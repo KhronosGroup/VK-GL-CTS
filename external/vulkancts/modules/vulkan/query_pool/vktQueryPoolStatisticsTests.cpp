@@ -41,6 +41,7 @@
 #include "vkImageUtil.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuRGBA.hpp"
+#include "tcuStringTemplate.hpp"
 
 namespace vkt
 {
@@ -1243,12 +1244,13 @@ void GeometryShaderTestInstance::checkExtensions (void)
 
 void GeometryShaderTestInstance::createPipeline (void)
 {
-	const DeviceInterface&	vk		= m_context.getDeviceInterface();
-	const VkDevice			device	= m_context.getDevice();
+	const DeviceInterface&	vk						= m_context.getDeviceInterface();
+	const VkDevice			device					= m_context.getDevice();
+	const VkBool32			useGeomPointSize		= m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize && (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 
 	// Pipeline
 	Unique<VkShaderModule> vs(createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), (VkShaderModuleCreateFlags)0));
-	Unique<VkShaderModule> gs(createShaderModule(vk, device, m_context.getBinaryCollection().get("geometry"), (VkShaderModuleCreateFlags)0));
+	Unique<VkShaderModule> gs(createShaderModule(vk, device, m_context.getBinaryCollection().get(useGeomPointSize ? "geometry_point_size" : "geometry"), (VkShaderModuleCreateFlags)0));
 	Unique<VkShaderModule> fs(createShaderModule(vk, device, m_context.getBinaryCollection().get("fragment"), (VkShaderModuleCreateFlags)0));
 
 	const PipelineCreateInfo::ColorBlendState::Attachment attachmentState;
@@ -2057,6 +2059,7 @@ public:
 		if(m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
 									VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT | VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_PRIMITIVES_BIT))
 		{ // Geometry Shader
+			const bool isTopologyPointSize = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 			std::ostringstream	source;
 			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 					<< "layout("<<inputTypeToGLString(m_parametersGraphic.primitiveTopology)<<") in;\n"
@@ -2066,14 +2069,17 @@ public:
 					<< "void main (void)\n"
 					<< "{\n"
 					<< "	out_color = in_color[0];\n"
+					<< (isTopologyPointSize ? "${pointSize}" : "" )
 					<< "	gl_Position = gl_in[0].gl_Position;\n"
 					<< "	EmitVertex();\n"
 					<< "	EndPrimitive();\n"
 					<< "\n"
 					<< "	out_color = in_color[0];\n"
+					<< (isTopologyPointSize ? "${pointSize}" : "")
 					<< "	gl_Position = vec4(1.0, 1.0, 1.0, 1.0);\n"
 					<< "	EmitVertex();\n"
 					<< "	out_color = in_color[0];\n"
+					<< (isTopologyPointSize ? "${pointSize}" : "")
 					<< "	gl_Position = vec4(-1.0, -1.0, 1.0, 1.0);\n"
 					<< "	EmitVertex();\n"
 					<< "	EndPrimitive();\n"
@@ -2099,21 +2105,44 @@ public:
 			else
 			{
 				source	<< "	out_color = in_color[0];\n"
-						<< "	gl_Position =  vec4(1.0, 1.0, 1.0, 1.0);\n"
+						<< (isTopologyPointSize ? "${pointSize}" : "")
+						<< "	gl_Position = vec4(1.0, 1.0, 1.0, 1.0);\n"
 						<< "	EmitVertex();\n"
 						<< "	out_color = in_color[0];\n"
+						<< (isTopologyPointSize ? "${pointSize}" : "")
 						<< "	gl_Position = vec4(1.0, -1.0, 1.0, 1.0);\n"
 						<< "	EmitVertex();\n"
 						<< "	out_color = in_color[0];\n"
+						<< (isTopologyPointSize ? "${pointSize}" : "")
 						<< "	gl_Position = vec4(-1.0, 1.0, 1.0, 1.0);\n"
 						<< "	EmitVertex();\n"
 						<< "	out_color = in_color[0];\n"
+						<< (isTopologyPointSize ? "${pointSize}" : "")
 						<< "	gl_Position = vec4(-1.0, -1.0, 1.0, 1.0);\n"
 						<< "	EmitVertex();\n"
 						<< "	EndPrimitive();\n";
 			}
 			source	<< "}\n";
-			sourceCollections.glslSources.add("geometry") << glu::GeometrySource(source.str());
+
+			if (isTopologyPointSize)
+			{
+				// Add geometry shader codes with and without gl_PointSize if the primitive topology is VK_PRIMITIVE_TOPOLOGY_POINT_LIST
+
+				tcu::StringTemplate sourceTemplate(source.str());
+
+				std::map<std::string, std::string> pointSize;
+				std::map<std::string, std::string> noPointSize;
+
+				pointSize["pointSize"]		= "	gl_PointSize = gl_in[0].gl_PointSize;\n";
+				noPointSize["pointSize"]	= "";
+
+				sourceCollections.glslSources.add("geometry") << glu::GeometrySource(sourceTemplate.specialize(noPointSize));
+				sourceCollections.glslSources.add("geometry_point_size") << glu::GeometrySource(sourceTemplate.specialize(pointSize));
+			}
+			else
+			{
+				sourceCollections.glslSources.add("geometry") << glu::GeometrySource(source.str());
+			}
 		}
 
 		{ // Fragment Shader
