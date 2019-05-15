@@ -690,6 +690,7 @@ LOCAL_SRC_FILES := \
 	modules/gles2/functional/es2fBufferObjectQueryTests.cpp \
 	modules/gles2/functional/es2fBufferTestUtil.cpp \
 	modules/gles2/functional/es2fBufferWriteTests.cpp \
+	modules/gles2/functional/es2fClipControlTests.cpp \
 	modules/gles2/functional/es2fClippingTests.cpp \
 	modules/gles2/functional/es2fColorClearTest.cpp \
 	modules/gles2/functional/es2fDebugMarkerTests.cpp \
