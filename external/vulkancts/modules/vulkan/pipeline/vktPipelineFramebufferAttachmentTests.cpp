@@ -209,7 +209,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		DE_NULL,														// const void*                              pNext;
 		(VkPipelineMultisampleStateCreateFlags)0,						// VkPipelineMultisampleStateCreateFlags    flags;
 		!multisample ? VK_SAMPLE_COUNT_1_BIT : VK_SAMPLE_COUNT_4_BIT,	// VkSampleCountFlagBits                    rasterizationSamples;
-		!multisample ? VK_FALSE : VK_TRUE,								// VkBool32                                 sampleShadingEnable;
+		VK_FALSE,														// VkBool32                                 sampleShadingEnable;
 		1.0f,															// float                                    minSampleShading;
 		DE_NULL,														// const VkSampleMask*                      pSampleMask;
 		VK_FALSE,														// VkBool32                                 alphaToCoverageEnable;
