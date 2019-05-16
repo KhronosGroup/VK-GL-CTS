@@ -21,6 +21,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassSubpassDependencyTests.hpp
 	vktRenderPassUnusedAttachmentTests.cpp
 	vktRenderPassUnusedAttachmentTests.hpp
+	vktRenderPassUnusedClearAttachmentTests.cpp
+	vktRenderPassUnusedClearAttachmentTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS
