@@ -633,10 +633,12 @@ vk::Move<vk::VkPipelineLayout> createPipelineLayout (const vk::DeviceInterface&	
 
 struct TestConfig
 {
-	vk::wsi::Type			wsiType;
-	Scaling					scaling;
-	bool					useIncrementalPresent;
-	vk::VkPresentModeKHR	presentMode;
+	vk::wsi::Type					wsiType;
+	Scaling							scaling;
+	bool							useIncrementalPresent;
+	vk::VkPresentModeKHR			presentMode;
+	vk::VkSurfaceTransformFlagsKHR	transform;
+	vk::VkCompositeAlphaFlagsKHR	alpha;
 };
 
 class IncrementalPresentTestInstance : public TestInstance
@@ -714,7 +716,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 																	const vk::VkSurfaceCapabilitiesKHR&		properties,
 																	const vector<vk::VkSurfaceFormatKHR>&	formats,
 																	const vector<vk::VkPresentModeKHR>&		presentModes,
-																	vk::VkPresentModeKHR					presentMode)
+																	vk::VkPresentModeKHR					presentMode,
+																	const vk::VkSurfaceTransformFlagsKHR	transform,
+																	const vk::VkCompositeAlphaFlagsKHR		alpha)
 {
 	const deUint32							imageLayers			= 1u;
 	const vk::VkImageUsageFlags				imageUsage			= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -752,74 +756,69 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 
 		if (presentModeNdx == presentModes.size())
 			TCU_THROW(NotSupportedError, "Present mode not supported");
+
+		if ((properties.supportedTransforms & transform) == 0)
+			TCU_THROW(NotSupportedError, "Transform not supported");
+
+		if ((properties.supportedCompositeAlpha & alpha) == 0)
+			TCU_THROW(NotSupportedError, "Composite alpha not supported");
 	}
 
 	for (size_t formatNdx = 0; formatNdx < formats.size(); formatNdx++)
 	{
-		for (vk::VkSurfaceTransformFlagsKHR transform = 1u; transform <= properties.supportedTransforms; transform = transform << 1u)
+
+		const vk::VkSurfaceTransformFlagBitsKHR	preTransform	= (vk::VkSurfaceTransformFlagBitsKHR)transform;
+		const vk::VkCompositeAlphaFlagBitsKHR	compositeAlpha	= (vk::VkCompositeAlphaFlagBitsKHR)alpha;
+		const vk::VkFormat						imageFormat		= formats[formatNdx].format;
+		const vk::VkColorSpaceKHR				imageColorSpace	= formats[formatNdx].colorSpace;
+		const vk::VkSwapchainCreateInfoKHR		createInfo		=
 		{
-			if ((properties.supportedTransforms & transform) == 0)
-				continue;
+			vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			surface,
+			properties.minImageCount,
+			imageFormat,
+			imageColorSpace,
+			imageSize,
+			imageLayers,
+			imageUsage,
+			vk::VK_SHARING_MODE_EXCLUSIVE,
+			1u,
+			queueFamilyIndex,
+			preTransform,
+			compositeAlpha,
+			presentMode,
+			clipped,
+			(vk::VkSwapchainKHR)0
+		};
 
-			for (vk::VkCompositeAlphaFlagsKHR alpha = 1u; alpha <= properties.supportedCompositeAlpha; alpha = alpha << 1u)
-			{
-				if ((alpha & properties.supportedCompositeAlpha) == 0)
-					continue;
+		createInfos.push_back(createInfo);
 
-				const vk::VkSurfaceTransformFlagBitsKHR	preTransform	= (vk::VkSurfaceTransformFlagBitsKHR)transform;
-				const vk::VkCompositeAlphaFlagBitsKHR	compositeAlpha	= (vk::VkCompositeAlphaFlagBitsKHR)alpha;
-				const vk::VkFormat						imageFormat		= formats[formatNdx].format;
-				const vk::VkColorSpaceKHR				imageColorSpace	= formats[formatNdx].colorSpace;
-				const vk::VkSwapchainCreateInfoKHR		createInfo		=
-				{
-					vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-					DE_NULL,
-					0u,
-					surface,
-					properties.minImageCount,
-					imageFormat,
-					imageColorSpace,
-					imageSize,
-					imageLayers,
-					imageUsage,
-					vk::VK_SHARING_MODE_EXCLUSIVE,
-					1u,
-					queueFamilyIndex,
-					preTransform,
-					compositeAlpha,
-					presentMode,
-					clipped,
-					(vk::VkSwapchainKHR)0
-				};
+		// add an extra dummy swapchain
+		const vk::VkSwapchainCreateInfoKHR		dummyInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			surface,
+			properties.minImageCount,
+			imageFormat,
+			imageColorSpace,
+			dummySize,
+			imageLayers,
+			imageUsage,
+			vk::VK_SHARING_MODE_EXCLUSIVE,
+			1u,
+			queueFamilyIndex,
+			preTransform,
+			compositeAlpha,
+			presentMode,
+			clipped,
+			(vk::VkSwapchainKHR)0
+		};
 
-				createInfos.push_back(createInfo);
-
-				// add an extra dummy swapchain
-				const vk::VkSwapchainCreateInfoKHR		dummyInfo		=
-				{
-					vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-					DE_NULL,
-					0u,
-					surface,
-					properties.minImageCount,
-					imageFormat,
-					imageColorSpace,
-					dummySize,
-					imageLayers,
-					imageUsage,
-					vk::VK_SHARING_MODE_EXCLUSIVE,
-					1u,
-					queueFamilyIndex,
-					preTransform,
-					compositeAlpha,
-					presentMode,
-					clipped,
-					(vk::VkSwapchainKHR)0
-				};
-
-				createInfos.push_back(dummyInfo);
-			}
-		}
+		createInfos.push_back(dummyInfo);
 	}
 
 	return createInfos;
@@ -856,7 +855,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_freeAcquireSemaphore	((vk::VkSemaphore)0)
 	, m_freeRenderSemaphore		((vk::VkSemaphore)0)
 
-	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode))
+	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, testConfig.transform, testConfig.alpha))
 	, m_swapchainConfigNdx		(0u)
 
 	, m_frameCount				(60u * 5u)
@@ -1079,7 +1078,7 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate (void)
 	{
 		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode);
+			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_testConfig.transform, m_testConfig.alpha);
 
 			if (m_outOfDateCount < m_maxOutOfDateCount)
 			{
@@ -1196,6 +1195,33 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 		{ vk::VK_PRESENT_MODE_FIFO_KHR,			"fifo"			},
 		{ vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR,	"fifo_relaxed"	}
 	};
+	const struct
+	{
+		vk::VkSurfaceTransformFlagsKHR	transform;
+		const char*						name;
+	} transforms[] =
+	{
+		{ vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,						"identity"						},
+		{ vk::VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR,						"rotate_90"						},
+		{ vk::VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR,						"rotate_180"					},
+		{ vk::VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR,						"rotate_270"					},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR,				"horizontal_mirror"				},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR,		"horizontal_mirror_rotate_90"	},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR,	"horizontal_mirror_rotate_180"	},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR,	"horizontal_mirror_rotate_270"	},
+		{ vk::VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR,							"inherit"						}
+	};
+	const struct
+	{
+		vk::VkCompositeAlphaFlagsKHR	alpha;
+		const char*						name;
+	} alphas[] =
+	{
+		{ vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,			"opaque"			},
+		{ vk::VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,	"pre_multiplied"	},
+		{ vk::VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,	"post_multiplied"	},
+		{ vk::VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,			"inherit"			}
+	};
 
 	for (size_t scalingNdx = 0; scalingNdx < DE_LENGTH_OF_ARRAY(scaling); scalingNdx++)
 	{
@@ -1213,18 +1239,34 @@ void createIncrementalPresentTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type
 			{
 				de::MovePtr<tcu::TestCaseGroup>	presentModeGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name, presentModes[presentModeNdx].name));
 
-				for (size_t ref = 0; ref < 2; ref++)
+				for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
 				{
-					const bool						isReference	= (ref == 0);
-					const char* const				name		= isReference ? "reference" : "incremental_present";
-					TestConfig						config;
+					de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name, transforms[transformNdx].name));
 
-					config.wsiType					= wsiType;
-					config.scaling					= scaling[scalingNdx].scaling;
-					config.useIncrementalPresent	= !isReference;
-					config.presentMode				= presentModes[presentModeNdx].mode;
+					for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
+					{
+						de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name, alphas[alphaNdx].name));
 
-					presentModeGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+						for (size_t ref = 0; ref < 2; ref++)
+						{
+							const bool						isReference	= (ref == 0);
+							const char* const				name		= isReference ? "reference" : "incremental_present";
+							TestConfig						config;
+
+							config.wsiType					= wsiType;
+							config.scaling					= scaling[scalingNdx].scaling;
+							config.useIncrementalPresent	= !isReference;
+							config.presentMode				= presentModes[presentModeNdx].mode;
+							config.transform				= transforms[transformNdx].transform;
+							config.alpha					= alphas[alphaNdx].alpha;
+
+							alphaGroup->addChild(new vkt::InstanceFactory1<IncrementalPresentTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+						}
+
+						transformGroup->addChild(alphaGroup.release());
+					}
+
+					presentModeGroup->addChild(transformGroup.release());
 				}
 
 				scaleGroup->addChild(presentModeGroup.release());
