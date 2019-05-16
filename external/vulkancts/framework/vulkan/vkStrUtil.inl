@@ -770,6 +770,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCoverageReductionModeFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageReductionStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFramebufferMixedSamplesCombinationNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostQueryResetFeaturesEXT& value);

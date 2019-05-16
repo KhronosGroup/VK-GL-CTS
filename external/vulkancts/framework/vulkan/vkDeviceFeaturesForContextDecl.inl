@@ -30,6 +30,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicat
 const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				getBufferDeviceAddressFeatures				(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&					getCooperativeMatrixFeatures				(void) const;
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				getCoverageReductionModeFeatures			(void) const;
+const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeatures			(void) const;
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeatures					(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		getUniformBufferStandardLayoutFeatures		(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&					getHostQueryResetFeatures					(void) const;

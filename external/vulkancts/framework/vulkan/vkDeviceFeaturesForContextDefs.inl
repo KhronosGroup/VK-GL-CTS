@@ -30,6 +30,7 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	Context::g
 const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&					Context::getCooperativeMatrixFeatures					(void) const { return m_device->getCooperativeMatrixFeatures();					}
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				Context::getCoverageReductionModeFeatures				(void) const { return m_device->getCoverageReductionModeFeatures();				}
+const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeatures				(void) const { return m_device->getFragmentShaderInterlockFeatures();			}
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					Context::getYcbcrImageArraysFeatures					(void) const { return m_device->getYcbcrImageArraysFeatures();					}
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		Context::getUniformBufferStandardLayoutFeatures			(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&					Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}
