@@ -223,6 +223,20 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 			TCU_THROW(NotSupportedError, "64-bit integer shared atomics not supported");
 		}
 	}
+	if (m_data.stage == STAGE_VERTEX)
+	{
+		if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+		{
+			TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
+		}
+	}
+	if (m_data.stage == STAGE_FRAGMENT)
+	{
+		if (!context.getDeviceFeatures().fragmentStoresAndAtomics)
+		{
+			TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
+		}
+	}
 }
 
 
