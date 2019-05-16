@@ -81,6 +81,5 @@ static const FeatureStructMapItem featureStructCreatorMap[] =
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrixFeaturesNV>, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceHostQueryResetFeaturesEXT>, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, VK_EXT_HOST_QUERY_RESET_SPEC_VERSION },
 };
-
 } // vk
 

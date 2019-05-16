@@ -199,7 +199,7 @@ void readStagingBuffers (MultiPlaneImageData*			imageData,
 void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags createFlags, VkImageTiling tiling)
 {
 	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
-	const VkPhysicalDeviceSamplerYcbcrConversionFeatures		features	= context.getSamplerYCbCrConversionFeatures();
+	const VkPhysicalDeviceSamplerYcbcrConversionFeatures		features	= context.getSamplerYcbcrConversionFeatures();
 	vector<string>												reqExts;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))

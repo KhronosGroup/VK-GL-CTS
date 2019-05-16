@@ -1482,95 +1482,94 @@ def writeCoreFunctionalities(api, filename):
 
 	writeInlFile(filename, INL_HEADER, lines)
 
-def writeDeviceFeatures	(src, filename):
+def generateDeviceFeaturesDefs(src):
+	# look for definitions
+	ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_FEATURES(\w*)\s*='
+	matches		= re.findall(ptrnSType, src, re.M)
+	# remove duplicates
+	i       = 0
+	sType	= 0
+	sSuffix = 1
+	while i < len(matches):
+		j = i + 1
+		while j < len(matches):
+			if matches[i][sType] == matches[j][sType]:
+				if not matches[i][sSuffix]:
+					matches.pop(i)
+					i = i - 1
+					break
+				if not matches[j][sSuffix]:
+					matches.pop(j)
+					j = j - 1
+			j = j + 1
+		i = i + 1
+	# construct final list
+	defs = []
+	for sType, sSuffix in matches:
+		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
+		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features\w*)'
+		matchStructName		= re.search(ptrnStructName, src, re.M)
+		if matchStructName:
+			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sType + '_EXTENSION_NAME).+$'
+			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
+			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sType + '_SPEC_VERSION).+$'
+			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
+			defs.append( (sType, sSuffix, matchStructName.group(1), \
+							matchExtensionName.group(0)	if matchExtensionName	else None,
+							matchExtensionName.group(1)	if matchExtensionName	else None,
+							matchSpecVersion.group	(1)	if matchSpecVersion		else '0') )
+	return defs
 
-	def makeExtensionNameDef(extName, sType, sSuffix):
-		if extName:	return extName
-		return 'DECL' + (sSuffix if sSuffix else '') + '_' + sType + '_EXTENSION_NAME'
-
-	def makeExtensionNameLine(extName, extLine, sType, sSuffix):
-		if extLine: return extLine
-		definitionExtensionName		= makeExtensionNameDef(extName, sType, sSuffix)
-		definitionExtensionString	= "not_existent_feature"
-		return '#define {0} "{1}"'.format(definitionExtensionName, definitionExtensionString)
-
-	def writeExtensionNameBlock(stream, defs):
-		for sType, sSuffix, extStruct, extLine, extName, specVer in defs:
-			definitionExtensionLine = makeExtensionNameLine(extName, extLine, sType, sSuffix)
-			stream.append(definitionExtensionLine)
-		stream.append("\n")
-
-	def writeCreateFeatureStructWrapperBlock(stream, defs):
-		stream.append("static const FeatureStructMapItem featureStructCreatorMap[] =\n{");
-		for sType, sSuffix, extStruct, extLine, extName, specVer in defs:
-			definitionExtensionName = makeExtensionNameDef(extName, sType, sSuffix)
-			stream.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, definitionExtensionName, specVer))
-		stream.append("};\n");
-
-	def writeMakeFeatureDescBlock(stream, defs):
-		for idx, (sType, sSuffix, extStruct, extLine, extName, specVer) in enumerate(defs):
-			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_" + sType + "_FEATURES" + sSuffix
-			extString = makeExtensionNameDef(extName, sType, sSuffix)
-			stream.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
-				"{{ return FeatureDesc({1}, {2}, {3}, {4}); }}".format(extStruct, sTypeName, extString, specVer, len(defs)-idx))
-		stream.append('\n')
-
-	def structNameFromSTypePart(sType):
-		def capitalize_undescore_letter(match): return match.group(0).upper()
-		return re.sub("[_0-9][a-z]", capitalize_undescore_letter, sType.capitalize()).replace('_', '')
-
-	def resolveExceptions(sType):
-		return sType
-
-	def removeDuplicates(defs):
-		i       = 0
-		sType	= 0
-		sSuffix = 1
-		while i < len(defs):
-			j = i + 1
-			while j < len(defs):
-				if defs[i][sType] == defs[j][sType]:
-					if not defs[i][sSuffix]:
-						defs.pop(i)
-						i = i - 1
-						break
-					if not defs[j][sSuffix]:
-						defs.pop(j)
-						j = j - 1
-				j = j + 1
-			i = i + 1
-
-	def lookForDefinitions(src):
-		defs = []
-		ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_FEATURES(\w*)\s*='
-		matches		= re.findall(ptrnSType, src, re.M)
-		removeDuplicates(matches)
-		for sType, sSuffix in matches:
-			structName			= structNameFromSTypePart(sType)
-			ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features\w*)'
-			matchStructName		= re.search(ptrnStructName, src, re.M)
-			if matchStructName:
-				ptrnExtensionName	= r'^\s*#define\s+(\w+' + resolveExceptions(sType) + '_EXTENSION_NAME).+$'
-				matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
-				ptrnSpecVersion		= r'^\s*#define\s+(\w+' + resolveExceptions(sType) + '_SPEC_VERSION).+$'
-				matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
-				defs.append( (sType, sSuffix, matchStructName.group(1), \
-								matchExtensionName.group(0)	if matchExtensionName	else None,
-								matchExtensionName.group(1)	if matchExtensionName	else None,
-								matchSpecVersion.group	(1)	if matchSpecVersion		else '0') )
-		return defs
-
-	stream									= []
-	defs									= lookForDefinitions(src)
-
-	stream.append							('#include "vkDeviceFeatures.hpp"\n')
-	stream.append							('namespace vk\n{')
-	writeExtensionNameBlock					(stream, defs)
-	writeMakeFeatureDescBlock				(stream, defs)
-	writeCreateFeatureStructWrapperBlock	(stream, defs)
-	stream.append							('} // vk\n')
-
+def writeDeviceFeatures(dfDefs, filename):
+	extensionDefines = []
+	makeFeatureDescDefinitions = []
+	featureStructWrappers = []
+	for idx, (sType, sSuffix, extStruct, extLine, extName, specVer) in enumerate(dfDefs):
+		extensionNameDefinition = extName
+		if not extensionNameDefinition:
+			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sSuffix if sSuffix else ''), sType)
+		# construct defines with names
+		if extLine:
+			extensionDefines.append(extLine)
+		else:
+			extensionDefines.append('#define {0} "not_existent_feature"'.format(extensionNameDefinition))
+		# construct makeFeatureDesc template function definitions
+		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)
+		makeFeatureDescDefinitions.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
+			"{{ return FeatureDesc({1}, {2}, {3}, {4}); }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dfDefs)-idx))
+		# construct CreateFeatureStruct wrapper block
+		featureStructWrappers.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
+	# combine all definition lists
+	stream = [
+	'#include "vkDeviceFeatures.hpp"\n',
+	'namespace vk\n{']
+	stream.extend(extensionDefines)
+	stream.append('\n')
+	stream.extend(makeFeatureDescDefinitions)
+	stream.append('\n')
+	stream.append('static const FeatureStructMapItem featureStructCreatorMap[] =\n{')
+	stream.extend(featureStructWrappers)
+	stream.append('};\n} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
+
+def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
+	stream = []
+	for _, _, extStruct, _, _, _ in dfDefs:
+		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("EXT", "").replace("NV", "")
+		stream.append(pattern.format(extStruct, nameSubStr))
+	writeInlFile(filename, INL_HEADER, indentLines(stream))
+
+def writeDefaultDeviceDefs(dfDefs, filename):
+	pattern = "const {0}&\tget{1}\t(void) const {{ return m_deviceFeatures.getFeatureType<{0}>();\t}}"
+	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
+
+def writeContextDecl(dfDefs, filename):
+	pattern = "const vk::{0}&\tget{1}\t(void) const;"
+	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
+
+def writeContextDefs(dfDefs, filename):
+	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
+	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
 
 if __name__ == "__main__":
 	src				= readFile(VULKAN_H)
@@ -1609,4 +1608,9 @@ if __name__ == "__main__":
 	writeSupportedExtenions		(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities	(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions		(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
-	writeDeviceFeatures         (src, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
+
+	dfd							= generateDeviceFeaturesDefs(src)
+	writeDeviceFeatures         (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
+	writeDefaultDeviceDefs      (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
+	writeContextDecl            (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
+	writeContextDefs            (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
