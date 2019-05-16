@@ -144,6 +144,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorMultiViewportTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsScissorTests.cpp \
 	external/vulkancts/modules/vulkan/fragment_ops/vktFragmentOperationsTests.cpp \
+	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockBasic.cpp \
+	external/vulkancts/modules/vulkan/fragment_shader_interlock/vktFragmentShaderInterlockTests.cpp \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryBasicClass.cpp \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryBasicGeometryShaderTests.cpp \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryEmitGeometryShaderTests.cpp \
@@ -1106,6 +1108,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/draw \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_ops \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/fragment_shader_interlock \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/geometry \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/image \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/imageless_framebuffer \
