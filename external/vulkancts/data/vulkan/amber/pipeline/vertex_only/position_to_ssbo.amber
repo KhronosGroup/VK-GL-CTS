@@ -1,0 +1,43 @@
+# Copyright 2019 Google LLC.
+# Copyright 2019 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[require]
+vertexPipelineStoresAndAtomics
+
+[vertex shader]
+#version 430
+
+layout(location = 0) in vec4 position_in;
+layout(binding = 0) buffer DataOut
+{
+	vec4 values[];
+} dataOut;
+
+void main()
+{
+	gl_Position = position_in;
+	dataOut.values[gl_VertexIndex] = position_in;
+}
+
+[vertex data]
+0/R32G32B32A32_SFLOAT
+0.1 0.2 0.3 0.4
+0.5 0.6 0.7 0.8
+0.9 1.0 1.1 1.2
+
+[test]
+ssbo 0 48
+draw arrays TRIANGLE_STRIP 0 3
+probe ssbo float 0 0 == 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2

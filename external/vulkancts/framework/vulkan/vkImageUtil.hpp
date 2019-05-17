@@ -188,7 +188,9 @@ void	copyImageToBuffer						(const DeviceInterface&							vk,
 												 tcu::IVec2										size,
 												 vk::VkAccessFlags								srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 												 vk::VkImageLayout								oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-												 deUint32										numLayers = 1u);
+												 deUint32										numLayers = 1u,
+												 VkImageAspectFlags								barrierAspect = VK_IMAGE_ASPECT_COLOR_BIT,
+												 VkImageAspectFlags								copyAspect = VK_IMAGE_ASPECT_COLOR_BIT);
 
 /*--------------------------------------------------------------------*//*!
  * Clear a color image

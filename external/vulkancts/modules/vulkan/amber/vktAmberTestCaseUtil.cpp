@@ -27,13 +27,17 @@ namespace vkt
 namespace cts_amber
 {
 
-AmberTestCase* createAmberTestCase (tcu::TestContext&	testCtx,
-									const char*			name,
-									const char*			description,
-									const char*			category,
-									const std::string&	filename)
+AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
+									const char*						name,
+									const char*						description,
+									const char*						category,
+									const std::string&				filename,
+									const std::vector<std::string>	requirements)
 {
 	AmberTestCase *testCase = new AmberTestCase(testCtx, name, description);
+
+	for (auto req : requirements)
+		testCase->addRequirement(req);
 
 	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
 	// Make sure the input can be parsed before we use it.

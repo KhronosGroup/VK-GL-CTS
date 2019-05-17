@@ -2976,20 +2976,22 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 						tcu::IVec2				size,
 						VkAccessFlags			srcAccessMask,
 						VkImageLayout			oldLayout,
-						deUint32				numLayers)
+						deUint32				numLayers,
+						VkImageAspectFlags		barrierAspect,
+						VkImageAspectFlags		copyAspect)
 {
 	const VkImageMemoryBarrier	imageBarrier	=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,										// VkStructureType			sType;
-		DE_NULL,																	// const void*				pNext;
-		srcAccessMask,																// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,												// VkAccessFlags			dstAccessMask;
-		oldLayout,																	// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,										// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,													// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,													// deUint32					destQueueFamilyIndex;
-		image,																		// VkImage					image;
-		makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,							// VkStructureType			sType;
+		DE_NULL,														// const void*				pNext;
+		srcAccessMask,													// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,									// VkAccessFlags			dstAccessMask;
+		oldLayout,														// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,							// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,										// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,										// deUint32					destQueueFamilyIndex;
+		image,															// VkImage					image;
+		makeImageSubresourceRange(barrierAspect, 0u, 1u, 0, numLayers)	// VkImageSubresourceRange	subresourceRange;
 	};
 
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
@@ -2997,7 +2999,7 @@ void copyImageToBuffer (const DeviceInterface&	vk,
 
 	const VkImageSubresourceLayers	subresource	=
 	{
-		VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags	aspectMask;
+		copyAspect,									// VkImageAspectFlags	aspectMask;
 		0u,											// deUint32				mipLevel;
 		0u,											// deUint32				baseArrayLayer;
 		numLayers									// deUint32				layerCount;
