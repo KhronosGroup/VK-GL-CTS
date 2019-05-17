@@ -832,6 +832,21 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 		&& !hasSeparateCopyCmdBuf())
 	{
 		vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
+		const vk::VkBufferMemoryBarrier bufferBarrier =
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+			DE_NULL,										// const void*		pNext;
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+			vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+			VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+			m_queryPoolResultsBuffer->object(),				// VkBuffer			buffer;
+			0ull,											// VkDeviceSize		offset;
+			VK_WHOLE_SIZE									// VkDeviceSize		size;
+		};
+
+		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 	}
 
 	transition2DImage(vk, *cmdBuffer, m_stateObjects->m_colorAttachmentImage->object(), vk::VK_IMAGE_ASPECT_COLOR_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
@@ -852,6 +867,21 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordCopyResults (vk:
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
+	const vk::VkBufferMemoryBarrier bufferBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+		m_queryPoolResultsBuffer->object(),				// VkBuffer			buffer;
+		0ull,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE									// VkDeviceSize		size;
+	};
+
+	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+						  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	return cmdBuffer;
