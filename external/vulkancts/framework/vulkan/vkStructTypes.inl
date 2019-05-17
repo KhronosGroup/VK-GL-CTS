@@ -3384,6 +3384,21 @@ struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
 	VkBool32		uniformBufferStandardLayout;
 };
 
+struct VkPipelineCreationFeedbackEXT
+{
+	VkPipelineCreationFeedbackFlagsEXT	flags;
+	deUint64							duration;
+};
+
+struct VkPipelineCreationFeedbackCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkPipelineCreationFeedbackEXT*	pPipelineCreationFeedback;
+	deUint32						pipelineStageCreationFeedbackCount;
+	VkPipelineCreationFeedbackEXT*	pPipelineStageCreationFeedbacks;
+};
+
 
 
 

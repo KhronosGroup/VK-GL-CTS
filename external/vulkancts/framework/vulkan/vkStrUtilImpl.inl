@@ -360,6 +360,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR";
@@ -2324,6 +2325,18 @@ tcu::Format::Bitfield<32> getDescriptorBindingFlagsEXTStr (VkDescriptorBindingFl
 		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,				"VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT,	"VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_FLAG_BITS_MAX_ENUM_EXT,				"VK_DESCRIPTOR_BINDING_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsEXTStr (VkPipelineCreationFeedbackFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT,							"VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT,	"VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT,		"VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM_EXT,					"VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7012,6 +7025,27 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceUniformBufferSt
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tuniformBufferStandardLayout = " << value.uniformBufferStandardLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCreationFeedbackEXT& value)
+{
+	s << "VkPipelineCreationFeedbackEXT = {\n";
+	s << "\tflags = " << getPipelineCreationFeedbackFlagsEXTStr(value.flags) << '\n';
+	s << "\tduration = " << value.duration << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCreationFeedbackCreateInfoEXT& value)
+{
+	s << "VkPipelineCreationFeedbackCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpPipelineCreationFeedback = " << value.pPipelineCreationFeedback << '\n';
+	s << "\tpipelineStageCreationFeedbackCount = " << value.pipelineStageCreationFeedbackCount << '\n';
+	s << "\tpPipelineStageCreationFeedbacks = " << value.pPipelineStageCreationFeedbacks << '\n';
 	s << '}';
 	return s;
 }
