@@ -353,6 +353,7 @@ struct ComputeShaderSpec
 	SpirvVersion							spirvVersion;
 	bool									coherentMemory;
 	bool									usesPhysStorageBuffer;
+	bool									spirvVersion14;
 
 											ComputeShaderSpec (void)
 												: entryPoint					("main")
@@ -365,6 +366,7 @@ struct ComputeShaderSpec
 												, spirvVersion					(SPIRV_VERSION_1_0)
 												, coherentMemory				(false)
 												, usesPhysStorageBuffer			(false)
+												, spirvVersion14				(false)
 											{}
 };
 
@@ -372,7 +374,11 @@ struct ComputeShaderSpec
  * \brief Helper functions for SPIR-V assembly shared by various tests
  *//*--------------------------------------------------------------------*/
 
-std::string getComputeAsmShaderPreamble				(const std::string& capabilities = "", const std::string& extensions = "", const std::string& exeModes = "", const std::string& extraEntryPoints = "");
+std::string getComputeAsmShaderPreamble				(const std::string& capabilities				= "",
+													 const std::string& extensions					= "",
+													 const std::string& exeModes					= "",
+													 const std::string& extraEntryPoints			= "",
+													 const std::string& extraEntryPointsArguments	= "");
 const char* getComputeAsmShaderPreambleWithoutLocalSize         (void);
 std::string getComputeAsmCommonTypes				(std::string blockStorageClass = "Uniform");
 const char*	getComputeAsmCommonInt64Types			(void);
@@ -381,13 +387,13 @@ const char*	getComputeAsmCommonInt64Types			(void);
  * Declares two uniform variables (indata, outdata) of type
  * "struct { float[] }". Depends on type "f32arr" (for "float[]").
  *//*--------------------------------------------------------------------*/
-const char* getComputeAsmInputOutputBuffer			(void);
+std::string getComputeAsmInputOutputBuffer			(std::string blockStorageClass = "Uniform");
 /*--------------------------------------------------------------------*//*!
  * Declares buffer type and layout for uniform variables indata and
  * outdata. Both of them are SSBO bounded to descriptor set 0.
  * indata is at binding point 0, while outdata is at 1.
  *//*--------------------------------------------------------------------*/
-const char* getComputeAsmInputOutputBufferTraits	(void);
+std::string getComputeAsmInputOutputBufferTraits	(std::string blockStorageClass = "BufferBlock");
 
 bool verifyOutput									(const std::vector<Resource>&,
 													const std::vector<AllocationSp>&	outputAllocs,

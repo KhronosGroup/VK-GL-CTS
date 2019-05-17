@@ -57,6 +57,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmWorkgroupMemoryTests.hpp
 	vktSpvAsmPtrAccessChainTests.cpp
 	vktSpvAsmPtrAccessChainTests.hpp
+	vktSpvAsmFloatControlsExtensionlessTests.cpp
+	vktSpvAsmFloatControlsExtensionlessTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS
