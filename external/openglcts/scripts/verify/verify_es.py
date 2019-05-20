@@ -169,7 +169,7 @@ def verifyTestLogs (package):
 
 	try:
 		execute(['git', 'checkout', '--quiet', package.conformVersion])
-	except Exception, e:
+	except Exception as e:
 		print(str(e))
 		print("Failed to checkout release tag %s." % package.conformVersion)
 		return messages
@@ -251,7 +251,7 @@ def verifyGitLogFile (package):
 		for log, path in package.gitLog:
 			try:
 				isEmpty = isGitLogFileEmpty(package, path, log)
-			except Exception, e:
+			except Exception as e:
 				print(str(e))
 				isEmpty = False
 
@@ -312,7 +312,7 @@ def verifyESSubmission(argv):
 		sys.exit(-1)
 	try:
 		execute(['git', 'ls-remote', 'origin', '--quiet'])
-	except Exception, e:
+	except Exception as e:
 		print(str(e))
 		print("This script must be executed inside VK-GL-CTS directory.")
 		sys.exit(-1)

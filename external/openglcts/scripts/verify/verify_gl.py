@@ -59,11 +59,11 @@ def verifyConfigFile (filename, type):
 
 	if caseResult == None:
 		print("FAIL: %s not found" % caseName)
-                return False
+		return False
 
 	if not isStatusCodeOk(caseResult.statusCode):
 		print("FAIL: %s" % caseResult)
-                return False
+		return False
 
 	return True
 
@@ -102,7 +102,7 @@ def verifyGLSubmission(argv):
 		isOk = verifySubmission(argv[1])
 		print("Verification %s" % ("PASSED" if isOk else "FAILED!"))
 		sys.exit(0 if isOk else 1)
-	except Exception, e:
+	except Exception as e:
 		print(str(e))
 		print("Error occurred during verification")
 		sys.exit(-1)

@@ -114,7 +114,7 @@ def parallelApply (f, argsList):
 		job.join()
 
 	if errorCode.error:
-		raise errorCode.error[0], errorCode.error[1], errorCode.error[2]
+		raise errorCode.error[0](errorCode.error[1]).with_traceback(errorCode.error[2])
 
 def uninstall (adbPath, packageName, extraArgs = [], printPrefix=""):
 	print(printPrefix + "Removing existing %s...\n" % packageName,)
