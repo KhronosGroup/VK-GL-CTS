@@ -67,7 +67,9 @@ class RegistrySource:
 		return self.filename
 
 def computeChecksum (data):
-	return hashlib.sha256(data.replace('\r','').encode("utf-8")).hexdigest()
+	dataFiltered = data.replace('\r','')
+	hash = hashlib.sha256(dataFiltered.encode("utf-8")).hexdigest()
+	return hash
 
 def makeSourceUrl (repository, revision, filename):
 	return "%s/%s/%s" % (repository, revision, filename)
@@ -92,6 +94,8 @@ def checkoutFile (repository, revision, filename, cacheDir):
 	try:
 		req		= urlopen(makeSourceUrl(repository, revision, filename))
 		data	= req.read()
+		if sys.version_info >= (3, 0):
+			data	= data.decode("utf-8")
 	except IOError:
 		fullDstPath = os.path.join(cacheDir, "git")
 

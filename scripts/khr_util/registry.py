@@ -147,7 +147,9 @@ class ElemNameIndex(Index):
 
 class CommandIndex(Index):
 	def getkeys(self, item):
-		return [item.findtext('proto/name'), item.findtext('alias')]
+		#BOZA: No reason to add alias: it has its own entry in enums in xml file
+		#return [(name, api)] + ([(alias, api)] if alias is not None else [])
+		return [item.findtext('proto/name')]
 
 class NameApiIndex(Index):
 	def getkeys(self, item):
@@ -168,7 +170,9 @@ class TypeIndex(NameApiIndex):
 class EnumIndex(NameApiIndex):
 	def getkeys(self, item):
 		name, api, alias = (item.get(attrib) for attrib in ['name', 'api', 'alias'])
-		return [(name, api)] + ([(alias, api)] if alias is not None else [])
+		#BOZA: No reason to add alias: it has its own entry in enums
+		#return [(name, api)] + ([(alias, api)] if alias is not None else [])
+		return [(name, api)]
 
 	def duplicateKey(self, nameapipair, item):
 		(name, api) = nameapipair
@@ -354,7 +358,24 @@ def createInterface(registry, spec, api=None):
 							if name in enums))
 
 	def sortedIndex(items):
-		return NameIndex(sorted(items, key=lambda item: item.location))
+		# Some groups have no location set, due to it is absent in gl.xml file
+		# for example glGetFenceivNV uses group FenceNV which is not declared
+		#	<command>
+		#		<proto>void <name>glGetFenceivNV</name></proto>
+		#		<param group="FenceNV"><ptype>GLuint</ptype> <name>fence</name></param>
+		# Python 2 ignores it. Avoid sorting to allow Python 3 to continue
+
+		enableSort=True
+		for item in items:
+			if item.location is None:
+				enableSort=False
+				warning("Location not found for %s: %s", type(item).__name__.lower(), item.name)
+
+		if enableSort:
+			sortedItems = sorted(items, key=lambda item: item.location)
+		else:
+			sortedItems = items
+		return NameIndex(sortedItems)
 
 	groups = NameIndex(createMissing=createGroup, kind="group")
 	types = NameIndex(list(map(createType, spec.types)),
@@ -380,12 +401,19 @@ def createInterface(registry, spec, api=None):
 			if name in commands:
 				command.alias = commands[name]
 
-	return Interface(
-		types=sortedIndex(types),
-		enums=sortedIndex(enums),
-		groups=sortedIndex(groups),
-		commands=sortedIndex(commands),
+	sortedTypes=sortedIndex(types)
+	sortedEnums=sortedIndex(enums)
+	sortedGroups=sortedIndex(groups)
+	sortedCommands=sortedIndex(commands)
+
+	ifc=Interface(
+		types=sortedTypes,
+		enums=sortedEnums,
+		groups=sortedGroups,
+		commands=sortedCommands,
 		versions=versions)
+
+	return ifc
 
 
 def spec(registry, api, version=None, profile=None, extensionNames=[], protects=[], force=False):
@@ -398,6 +426,9 @@ def spec(registry, api, version=None, profile=None, extensionNames=[], protects=
 		def check(v): return True
 	else:
 		def check(v): return v <= version
+
+#	BOZA TODO: I suppose adding primitive types will remove a lot of warnings
+#	spec.addComponents(registry.types, api, profile)
 
 	for eFeature in registry.getFeatures(api, check):
 		spec.addFeature(eFeature, api, profile, force)
