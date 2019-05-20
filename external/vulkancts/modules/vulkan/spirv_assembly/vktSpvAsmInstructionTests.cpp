@@ -5122,7 +5122,6 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 	cases.push_back(CaseParameter("none",				"None"));
 	cases.push_back(CaseParameter("unroll",				"Unroll"));
 	cases.push_back(CaseParameter("dont_unroll",		"DontUnroll"));
-	cases.push_back(CaseParameter("unroll_dont_unroll",	"Unroll|DontUnroll"));
 
 	fillRandomScalars(rnd, -100.f, 100.f, &inputFloats[0], numElements);
 
