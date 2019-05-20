@@ -151,14 +151,22 @@ void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::os
 
 bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, const SpirvValidatorOptions &val_options)
 {
-	const spv_context	context		= spvContextCreate(getSpirvToolsEnvForValidatorOptions(val_options));
-	spv_diagnostic		diagnostic	= DE_NULL;
+	const spv_context		context		= spvContextCreate(getSpirvToolsEnvForValidatorOptions(val_options));
+	spv_diagnostic			diagnostic	= DE_NULL;
+	spv_validator_options	options		= DE_NULL;
+	spv_text				disasmText	= DE_NULL;
+
+	if (!context)
+		throw std::bad_alloc();
 
 	try
 	{
 		spv_const_binary_t		cbinary	= { binary, binarySizeInWords };
 
-		spv_validator_options options = spvValidatorOptionsCreate();
+		options = spvValidatorOptionsCreate();
+
+		if (options == DE_NULL)
+			throw std::bad_alloc();
 
 		switch (val_options.blockLayout)
 		{
@@ -181,20 +189,27 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 		const spv_result_t		valid	= spvValidateWithOptions(context, options, &cbinary, &diagnostic);
 		const bool				passed	= (valid == SPV_SUCCESS);
 
-		if (diagnostic)
+		*infoLog << "Validation " << (passed ? "PASSED: " : "FAILED: ");
+
+		if (diagnostic && diagnostic->error)
 		{
 			// Print the diagnostic whether validation passes or fails.
 			// In theory we could get a warning even in the pass case, but there are no cases
 			// like that now.
-			*infoLog << "Validation " << (passed ? "PASSED: " : "FAILED: ") << diagnostic->error << "\n";
+			*infoLog << diagnostic->error << "\n";
 
-			spv_text text;
-			spvBinaryToText(context, binary, binarySizeInWords, SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES | SPV_BINARY_TO_TEXT_OPTION_INDENT, &text, DE_NULL);
+			const deUint32		disasmOptions	= SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES
+												| SPV_BINARY_TO_TEXT_OPTION_INDENT;
+			const spv_result_t	disasmResult	= spvBinaryToText(context, binary, binarySizeInWords, disasmOptions, &disasmText, DE_NULL);
 
-			*infoLog << text->str << "\n";
-			spvTextDestroy(text);
+			if (disasmResult != SPV_SUCCESS)
+				*infoLog << "Disassembly failed with code: " << de::toString(disasmResult) << "\n";
+
+			if (disasmText != DE_NULL)
+				*infoLog << disasmText->str << "\n";
 		}
 
+		spvTextDestroy(disasmText);
 		spvValidatorOptionsDestroy(options);
 		spvDiagnosticDestroy(diagnostic);
 		spvContextDestroy(context);
@@ -203,6 +218,8 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 	}
 	catch (...)
 	{
+		spvTextDestroy(disasmText);
+		spvValidatorOptionsDestroy(options);
 		spvDiagnosticDestroy(diagnostic);
 		spvContextDestroy(context);
 

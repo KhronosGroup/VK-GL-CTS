@@ -253,6 +253,7 @@ tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVXStr				(VkIndire
 tcu::Format::Bitfield<32>	getObjectEntryUsageFlagsNVXStr							(VkObjectEntryUsageFlagsNVX value);
 tcu::Format::Bitfield<32>	getSurfaceCounterFlagsEXTStr							(VkSurfaceCounterFlagsEXT value);
 tcu::Format::Bitfield<32>	getDescriptorBindingFlagsEXTStr							(VkDescriptorBindingFlagsEXT value);
+tcu::Format::Bitfield<32>	getPipelineCreationFeedbackFlagsEXTStr					(VkPipelineCreationFeedbackFlagsEXT value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr								(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr									(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr									(VkMemoryMapFlags value);
@@ -671,3 +672,5 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryBudgetPro
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryPriorityFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryPriorityAllocateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreationFeedbackEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCreationFeedbackCreateInfoEXT& value);

@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -81,6 +82,7 @@ struct CaseDefinition
 	VkShaderStageFlags	shaderStage;
 	VkFormat			format;
 	int					direction;
+	de::SharedPtr<bool>	geometryPointSizeSupported;
 };
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
@@ -186,6 +188,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "    out_color = 1.0;\n" // Invocation we read from was inactive, so we can't verify results!
 			<< "  }\n"
 			<< "  gl_Position = gl_in[0].gl_Position;\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
 			<< "  EmitVertex();\n"
 			<< "  EndPrimitive();\n"
 			<< "}\n";
@@ -568,6 +571,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
 	}
+
+	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
@@ -727,7 +732,7 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 				name << "_" << subgroups::getFormatNameForGLSL(format);
 
 				{
-					const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, direction};
+					const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, direction, de::SharedPtr<bool>(new bool)};
 					addFunctionCaseWithPrograms(computeGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
 				}
 
@@ -737,13 +742,14 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 						opTypeIndex,
 						VK_SHADER_STAGE_ALL_GRAPHICS,
 						format,
-						direction
+						direction,
+						de::SharedPtr<bool>(new bool)
 					};
 					addFunctionCaseWithPrograms(graphicGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
 				}
 				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 				{
-					const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, direction};
+					const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, direction, de::SharedPtr<bool>(new bool)};
 					addFunctionCaseWithPrograms(framebufferGroup.get(), name.str()+"_"+ getShaderStageName(caseDef.shaderStage), "",
 												supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 				}

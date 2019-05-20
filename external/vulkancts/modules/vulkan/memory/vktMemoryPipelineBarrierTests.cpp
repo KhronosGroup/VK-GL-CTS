@@ -83,7 +83,10 @@ namespace memory
 namespace
 {
 
-#define ONE_MEGABYTE 1024*1024
+#define ONE_MEGABYTE						1024*1024
+#define DEFAULT_VERTEX_BUFFER_STRIDE		2
+#define ALTERNATIVE_VERTEX_BUFFER_STRIDE	4
+
 enum
 {
 	MAX_UNIFORM_BUFFER_SIZE = 1024,
@@ -472,6 +475,7 @@ vk::VkAccessFlags usageToAccessFlags (Usage usage)
 struct TestConfig
 {
 	Usage				usage;
+	deUint32			vertexBufferStride;
 	vk::VkDeviceSize	size;
 	vk::VkSharingMode	sharing;
 };
@@ -4792,10 +4796,13 @@ void RenderIndexBuffer::verify (VerifyRenderPassContext& context, size_t)
 class RenderVertexBuffer : public RenderPassCommand
 {
 public:
-				RenderVertexBuffer	(void) {}
+				RenderVertexBuffer	(deUint32 stride)
+					: m_stride(stride)
+					, m_name("RenderVertexBuffer" + de::toString(stride))
+					{}
 				~RenderVertexBuffer	(void) {}
 
-	const char*	getName				(void) const { return "RenderVertexBuffer"; }
+	const char*	getName				(void) const { return m_name.c_str(); }
 	void		logPrepare			(TestLog&, size_t) const;
 	void		logSubmit			(TestLog&, size_t) const;
 	void		prepare				(PrepareRenderPassContext&);
@@ -4803,6 +4810,8 @@ public:
 	void		verify				(VerifyRenderPassContext&, size_t);
 
 private:
+	const deUint32		m_stride;
+	const std::string	m_name;
 	PipelineResources	m_resources;
 	vk::VkDeviceSize	m_bufferSize;
 };
@@ -4833,7 +4842,7 @@ void RenderVertexBuffer::prepare (PrepareRenderPassContext& context)
 		const vk::VkVertexInputBindingDescription vertexBindingDescription =
 			{
 				0,
-				2,
+				m_stride,
 				vk::VK_VERTEX_INPUT_RATE_VERTEX
 			};
 
@@ -4865,15 +4874,15 @@ void RenderVertexBuffer::submit (SubmitContext& context)
 
 	vkd.cmdBindPipeline(commandBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_resources.pipeline);
 	vkd.cmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, &offset);
-	vkd.cmdDraw(commandBuffer, (deUint32)(context.getBufferSize() / 2), 1, 0, 0);
+	vkd.cmdDraw(commandBuffer, (deUint32)(context.getBufferSize() / m_stride), 1, 0, 0);
 }
 
 void RenderVertexBuffer::verify (VerifyRenderPassContext& context, size_t)
 {
-	for (size_t pos = 0; pos < (size_t)m_bufferSize / 2; pos++)
+	for (size_t pos = 0; pos < (size_t)m_bufferSize / m_stride; pos++)
 	{
-		const deUint8 x  = context.getReference().get(pos * 2);
-		const deUint8 y  = context.getReference().get((pos * 2) + 1);
+		const deUint8 x  = context.getReference().get(pos * m_stride);
+		const deUint8 y  = context.getReference().get((pos * m_stride) + 1);
 
 		context.getReferenceTarget().getAccess().setPixel(Vec4(1.0f, 1.0f, 1.0f, 1.0f), x, y);
 	}
@@ -8997,11 +9006,12 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 
 de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 														const State&,
-														Op				op)
+														const TestConfig&	testConfig,
+														Op					op)
 {
 	switch (op)
 	{
-		case OP_RENDER_VERTEX_BUFFER:					return de::MovePtr<RenderPassCommand>(new RenderVertexBuffer());
+		case OP_RENDER_VERTEX_BUFFER:					return de::MovePtr<RenderPassCommand>(new RenderVertexBuffer(testConfig.vertexBufferStride));
 		case OP_RENDER_INDEX_BUFFER:					return de::MovePtr<RenderPassCommand>(new RenderIndexBuffer());
 
 		case OP_RENDER_VERTEX_UNIFORM_BUFFER:			return de::MovePtr<RenderPassCommand>(new RenderVertexUniformBuffer());
@@ -9028,12 +9038,12 @@ de::MovePtr<RenderPassCommand> createRenderPassCommand (de::Random&,
 	}
 }
 
-de::MovePtr<CmdCommand> createRenderPassCommands (const Memory&	memory,
-												  de::Random&	nextOpRng,
-												  State&		state,
-												  Usage			usage,
-												  size_t&		opNdx,
-												  size_t		opCount)
+de::MovePtr<CmdCommand> createRenderPassCommands (const Memory&		memory,
+												  de::Random&		nextOpRng,
+												  State&			state,
+												  const TestConfig&	testConfig,
+												  size_t&			opNdx,
+												  size_t			opCount)
 {
 	vector<RenderPassCommand*>	commands;
 
@@ -9043,7 +9053,7 @@ de::MovePtr<CmdCommand> createRenderPassCommands (const Memory&	memory,
 		{
 			vector<Op>	ops;
 
-			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
+			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), testConfig.usage, ops);
 
 			DE_ASSERT(!ops.empty());
 
@@ -9058,15 +9068,15 @@ de::MovePtr<CmdCommand> createRenderPassCommands (const Memory&	memory,
 				{
 					de::Random	rng	(state.rng);
 
-					commands.push_back(createRenderPassCommand(rng, state, op).release());
-					applyOp(state, memory, op, usage);
+					commands.push_back(createRenderPassCommand(rng, state, testConfig, op).release());
+					applyOp(state, memory, op, testConfig.usage);
 
 					DE_ASSERT(state.rng == rng);
 				}
 			}
 		}
 
-		applyOp(state, memory, OP_RENDERPASS_END, usage);
+		applyOp(state, memory, OP_RENDERPASS_END, testConfig.usage);
 		return de::MovePtr<CmdCommand>(new SubmitRenderPass(commands));
 	}
 	catch (...)
@@ -9128,12 +9138,12 @@ de::MovePtr<CmdCommand> createSecondaryCmdCommands (const Memory&	memory,
 	}
 }
 
-de::MovePtr<Command> createCmdCommands (const Memory&	memory,
-										de::Random&		nextOpRng,
-										State&			state,
-										Usage			usage,
-										size_t&			opNdx,
-										size_t			opCount)
+de::MovePtr<Command> createCmdCommands (const Memory&		memory,
+										de::Random&			nextOpRng,
+										State&				state,
+										const TestConfig&	testConfig,
+										size_t&				opNdx,
+										size_t				opCount)
 {
 	vector<CmdCommand*>	commands;
 
@@ -9151,7 +9161,7 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 		{
 			vector<Op>	ops;
 
-			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
+			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), testConfig.usage, ops);
 
 			DE_ASSERT(!ops.empty());
 
@@ -9167,20 +9177,20 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 					// \note Command needs to known the state before the operation
 					if (op == OP_RENDERPASS_BEGIN)
 					{
-						applyOp(state, memory, op, usage);
-						commands.push_back(createRenderPassCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
+						applyOp(state, memory, op, testConfig.usage);
+						commands.push_back(createRenderPassCommands(memory, nextOpRng, state, testConfig, opNdx, opCount).release());
 					}
 					else if (op == OP_SECONDARY_COMMAND_BUFFER_BEGIN)
 					{
-						applyOp(state, memory, op, usage);
-						commands.push_back(createSecondaryCmdCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
+						applyOp(state, memory, op, testConfig.usage);
+						commands.push_back(createSecondaryCmdCommands(memory, nextOpRng, state, testConfig.usage, opNdx, opCount).release());
 					}
 					else
 					{
 						de::Random	rng	(state.rng);
 
-						commands.push_back(createCmdCommand(rng, state, op, usage).release());
-						applyOp(state, memory, op, usage);
+						commands.push_back(createCmdCommand(rng, state, op, testConfig.usage).release());
+						applyOp(state, memory, op, testConfig.usage);
 
 						DE_ASSERT(state.rng == rng);
 					}
@@ -9189,7 +9199,7 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 			}
 		}
 
-		applyOp(state, memory, OP_COMMAND_BUFFER_END, usage);
+		applyOp(state, memory, OP_COMMAND_BUFFER_END, testConfig.usage);
 		return de::MovePtr<Command>(new SubmitCommandBuffer(commands));
 	}
 	catch (...)
@@ -9204,11 +9214,10 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 void createCommands (vector<Command*>&	commands,
 					 deUint32			seed,
 					 const Memory&		memory,
-					 Usage				usage,
-					 vk::VkSharingMode	sharingMode,
+					 const TestConfig&	testConfig,
 					 size_t				opCount)
 {
-	State			state		(usage, seed);
+	State			state		(testConfig.usage, seed);
 	// Used to select next operation only
 	de::Random		nextOpRng	(seed ^ 12930809);
 
@@ -9218,7 +9227,7 @@ void createCommands (vector<Command*>&	commands,
 	{
 		vector<Op>	ops;
 
-		getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
+		getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), testConfig.usage, ops);
 
 		DE_ASSERT(!ops.empty());
 
@@ -9227,15 +9236,15 @@ void createCommands (vector<Command*>&	commands,
 
 			if (op == OP_COMMAND_BUFFER_BEGIN)
 			{
-				applyOp(state, memory, op, usage);
-				commands.push_back(createCmdCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
+				applyOp(state, memory, op, testConfig.usage);
+				commands.push_back(createCmdCommands(memory, nextOpRng, state, testConfig, opNdx, opCount).release());
 			}
 			else
 			{
 				de::Random	rng	(state.rng);
 
-				commands.push_back(createHostCommand(op, rng, usage, sharingMode).release());
-				applyOp(state, memory, op, usage);
+				commands.push_back(createHostCommand(op, rng, testConfig.usage, testConfig.sharing).release());
+				applyOp(state, memory, op, testConfig.usage);
 
 				// Make sure that random generator is in sync
 				DE_ASSERT(state.rng == rng);
@@ -9462,7 +9471,7 @@ bool MemoryTestInstance::createCommandsAndAllocateMemory (void)
 				m_memory	= MovePtr<Memory>(new Memory(vki, vkd, physicalDevice, device, m_config.size, m_memoryTypeNdx, maxBufferSize, maxImageSize[0], maxImageSize[1]));
 
 				log << TestLog::Message << "Create commands" << TestLog::EndMessage;
-				createCommands(m_commands, seed, *m_memory, m_config.usage, m_config.sharing, m_opCount);
+				createCommands(m_commands, seed, *m_memory, m_config, m_opCount);
 
 				m_stage = &MemoryTestInstance::prepare;
 				return true;
@@ -9480,7 +9489,7 @@ bool MemoryTestInstance::prepare (void)
 {
 	TestLog&					log		= m_context.getTestContext().getLog();
 	const tcu::ScopedLogSection	section	(log, "MemoryType" + de::toString(m_memoryTypeNdx) + "Prepare" + de::toString(m_iteration),
-											  "Memory type " + de::toString(m_memoryTypeNdx) + " prepare iteration" + de::toString(m_iteration));
+											  "Memory type " + de::toString(m_memoryTypeNdx) + " prepare iteration " + de::toString(m_iteration));
 
 	m_prepareContext = MovePtr<PrepareContext>(new PrepareContext(*m_renderContext, *m_memory));
 
@@ -10061,6 +10070,12 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 		USAGE_TRANSFER_DST
 	};
 
+	const deUint32					vertexStrides[]	=
+	{
+		DEFAULT_VERTEX_BUFFER_STRIDE,
+		ALTERNATIVE_VERTEX_BUFFER_STRIDE,
+	};
+
 	for (size_t writeUsageNdx = 0; writeUsageNdx < DE_LENGTH_OF_ARRAY(writeUsages); writeUsageNdx++)
 	{
 		const Usage	writeUsage	= writeUsages[writeUsageNdx];
@@ -10075,15 +10090,30 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 			{
 				const vk::VkDeviceSize	size		= sizes[sizeNdx];
-				const string			testName	(de::toString((deUint64)(size)));
-				const TestConfig		config		=
+				TestConfig				config		=
 				{
 					usage,
+					DEFAULT_VERTEX_BUFFER_STRIDE,
 					size,
 					vk::VK_SHARING_MODE_EXCLUSIVE
 				};
+				const string			testName	(de::toString((deUint64)(size)));
 
-				usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  testName, testName, AddPrograms(), config));
+				if (readUsage == USAGE_VERTEX_BUFFER)
+				{
+					for (size_t strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++strideNdx)
+					{
+						const deUint32	stride			= vertexStrides[strideNdx];
+						const string	finalTestName	= testName + "_vertex_buffer_stride_" + de::toString(stride);
+
+						config.vertexBufferStride = stride;
+						usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  finalTestName, finalTestName, AddPrograms(), config));
+					}
+				}
+				else
+				{
+					usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  testName, testName, AddPrograms(), config));
+				}
 			}
 
 			group->addChild(usageGroup.get());
@@ -10104,15 +10134,21 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 			{
 				const vk::VkDeviceSize	size		= sizes[sizeNdx];
-				const string			testName	(de::toString((deUint64)(size)));
-				const TestConfig		config		=
-				{
-					all,
-					size,
-					vk::VK_SHARING_MODE_EXCLUSIVE
-				};
 
-				usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  testName, testName, AddPrograms(), config));
+				for (size_t strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++strideNdx)
+				{
+					const deUint32			stride		= vertexStrides[strideNdx];
+					const string			testName	= de::toString(size) + "_vertex_buffer_stride_" + de::toString(stride);
+					const TestConfig		config		=
+					{
+						all,
+						stride,
+						size,
+						vk::VK_SHARING_MODE_EXCLUSIVE
+					};
+
+					usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  testName, testName, AddPrograms(), config));
+				}
 			}
 
 			group->addChild(usageGroup.get());
@@ -10126,15 +10162,21 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 			for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 			{
 				const vk::VkDeviceSize	size		= sizes[sizeNdx];
-				const string			testName	(de::toString((deUint64)(size)));
-				const TestConfig		config		=
-				{
-					(Usage)(all & (~(USAGE_HOST_READ|USAGE_HOST_WRITE))),
-					size,
-					vk::VK_SHARING_MODE_EXCLUSIVE
-				};
 
-				usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  testName, testName, AddPrograms(), config));
+				for (size_t strideNdx = 0; strideNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++strideNdx)
+				{
+					const deUint32			stride		= vertexStrides[strideNdx];
+					const string			testName	= de::toString(size) + "_vertex_buffer_stride_" + de::toString(stride);
+					const TestConfig		config		=
+					{
+						(Usage)(all & (~(USAGE_HOST_READ|USAGE_HOST_WRITE))),
+						stride,
+						size,
+						vk::VK_SHARING_MODE_EXCLUSIVE
+					};
+
+					usageGroup->addChild(new InstanceFactory1<MemoryTestInstance, TestConfig, AddPrograms>(testCtx,tcu::NODETYPE_SELF_VALIDATE,  testName, testName, AddPrograms(), config));
+				}
 			}
 
 			group->addChild(usageGroup.get());

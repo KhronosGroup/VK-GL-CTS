@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +52,7 @@ static bool checkCompute(std::vector<const void*> datas,
 struct CaseDefinition
 {
 	VkShaderStageFlags	shaderStage;
+	de::SharedPtr<bool>	geometryPointSizeSupported;
 };
 
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
@@ -223,135 +225,146 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			"  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
 			"  out_color = float(tempResult);\n"
 			"  gl_Position = gl_in[0].gl_Position;\n"
+			"  gl_PointSize = gl_in[0].gl_PointSize;\n"
 			"  EmitVertex();\n"
 			"  EndPrimitive();\n"
 			"}\n";
 		*/
-		const string geometry =
-			"; SPIR-V\n"
-			"; Version: 1.3\n"
-			"; Generator: Khronos Glslang Reference Front End; 2\n"
-			"; Bound: 80\n"
-			"; Schema: 0\n"
-			"OpCapability Geometry\n"
-			"OpCapability GroupNonUniform\n"
-			"OpCapability GroupNonUniformBallot\n"
-			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-			"OpMemoryModel Logical GLSL450\n"
-			"OpEntryPoint Geometry %4 \"main\" %35 %62 %70 %74\n"
-			"OpExecutionMode %4 InputPoints\n"
-			"OpExecutionMode %4 Invocations 1\n"
-			"OpExecutionMode %4 OutputPoints\n"
-			"OpExecutionMode %4 OutputVertices 1\n"
-			"OpDecorate %30 ArrayStride 16\n"
-			"OpMemberDecorate %31 0 Offset 0\n"
-			"OpDecorate %31 Block\n"
-			"OpDecorate %33 DescriptorSet 0\n"
-			"OpDecorate %33 Binding 0\n"
-			"OpDecorate %35 RelaxedPrecision\n"
-			"OpDecorate %35 BuiltIn SubgroupLocalInvocationId\n"
-			"OpDecorate %36 RelaxedPrecision\n"
-			"OpDecorate %62 Location 0\n"
-			"OpMemberDecorate %68 0 BuiltIn Position\n"
-			"OpMemberDecorate %68 1 BuiltIn PointSize\n"
-			"OpMemberDecorate %68 2 BuiltIn ClipDistance\n"
-			"OpMemberDecorate %68 3 BuiltIn CullDistance\n"
-			"OpDecorate %68 Block\n"
-			"OpMemberDecorate %71 0 BuiltIn Position\n"
-			"OpMemberDecorate %71 1 BuiltIn PointSize\n"
-			"OpMemberDecorate %71 2 BuiltIn ClipDistance\n"
-			"OpMemberDecorate %71 3 BuiltIn CullDistance\n"
-			"OpDecorate %71 Block\n"
-			"%2 = OpTypeVoid\n"
-			"%3 = OpTypeFunction %2\n"
-			"%6 = OpTypeInt 32 0\n"
-			"%7 = OpTypePointer Function %6\n"
-			"%9 = OpConstant %6 0\n"
-			"%10 = OpTypeVector %6 4\n"
-			"%11 = OpConstantComposite %10 %9 %9 %9 %9\n"
-			"%12 = OpTypeBool\n"
-			"%13 = OpConstantTrue %12\n"
-			"%14 = OpConstant %6 3\n"
-			"%16 = OpTypeVector %12 4\n"
-			"%20 = OpTypeInt 32 1\n"
-			"%21 = OpConstant %20 1\n"
-			"%22 = OpConstant %20 0\n"
-			"%27 = OpTypePointer Function %12\n"
-			"%29 = OpConstant %6 " + subgroupSizeStr.str() + "\n"
-			"%30 = OpTypeArray %6 %29\n"
-			"%31 = OpTypeStruct %30\n"
-			"%32 = OpTypePointer Uniform %31\n"
-			"%33 = OpVariable %32 Uniform\n"
-			"%34 = OpTypePointer Input %6\n"
-			"%35 = OpVariable %34 Input\n"
-			"%37 = OpTypePointer Uniform %6\n"
-			"%46 = OpConstant %20 2\n"
-			"%51 = OpConstantFalse %12\n"
-			"%55 = OpConstant %20 4\n"
-			"%60 = OpTypeFloat 32\n"
-			"%61 = OpTypePointer Output %60\n"
-			"%62 = OpVariable %61 Output\n"
-			"%65 = OpTypeVector %60 4\n"
-			"%66 = OpConstant %6 1\n"
-			"%67 = OpTypeArray %60 %66\n"
-			"%68 = OpTypeStruct %65 %60 %67 %67\n"
-			"%69 = OpTypePointer Output %68\n"
-			"%70 = OpVariable %69 Output\n"
-			"%71 = OpTypeStruct %65 %60 %67 %67\n"
-			"%72 = OpTypeArray %71 %66\n"
-			"%73 = OpTypePointer Input %72\n"
-			"%74 = OpVariable %73 Input\n"
-			"%75 = OpTypePointer Input %65\n"
-			"%78 = OpTypePointer Output %65\n"
-			"%4 = OpFunction %2 None %3\n"
-			"%5 = OpLabel\n"
-			"%8 = OpVariable %7 Function\n"
-			"%28 = OpVariable %27 Function\n"
-			"OpStore %8 %9\n"
-			"%15 = OpGroupNonUniformBallot %10 %14 %13\n"
-			"%17 = OpIEqual %16 %11 %15\n"
-			"%18 = OpAll %12 %17\n"
-			"%19 = OpLogicalNot %12 %18\n"
-			"%23 = OpSelect %20 %19 %21 %22\n"
-			"%24 = OpBitcast %6 %23\n"
-			"%25 = OpLoad %6 %8\n"
-			"%26 = OpBitwiseOr %6 %25 %24\n"
-			"OpStore %8 %26\n"
-			"%36 = OpLoad %6 %35\n"
-			"%38 = OpAccessChain %37 %33 %22 %36\n"
-			"%39 = OpLoad %6 %38\n"
-			"%40 = OpINotEqual %12 %39 %9\n"
-			"OpStore %28 %40\n"
-			"%41 = OpLoad %12 %28\n"
-			"%42 = OpGroupNonUniformBallot %10 %14 %41\n"
-			"%43 = OpIEqual %16 %11 %42\n"
-			"%44 = OpAll %12 %43\n"
-			"%45 = OpLogicalNot %12 %44\n"
-			"%47 = OpSelect %20 %45 %46 %22\n"
-			"%48 = OpBitcast %6 %47\n"
-			"%49 = OpLoad %6 %8\n"
-			"%50 = OpBitwiseOr %6 %49 %48\n"
-			"OpStore %8 %50\n"
-			"%52 = OpGroupNonUniformBallot %10 %14 %51\n"
-			"%53 = OpIEqual %16 %11 %52\n"
-			"%54 = OpAll %12 %53\n"
-			"%56 = OpSelect %20 %54 %55 %22\n"
-			"%57 = OpBitcast %6 %56\n"
-			"%58 = OpLoad %6 %8\n"
-			"%59 = OpBitwiseOr %6 %58 %57\n"
-			"OpStore %8 %59\n"
-			"%63 = OpLoad %6 %8\n"
-			"%64 = OpConvertUToF %60 %63\n"
-			"OpStore %62 %64\n"
-			"%76 = OpAccessChain %75 %74 %22 %22\n"
-			"%77 = OpLoad %65 %76\n"
-			"%79 = OpAccessChain %78 %70 %22\n"
-			"OpStore %79 %77\n"
-			"OpEmitVertex\n"
-			"OpEndPrimitive\n"
-			"OpReturn\n"
-			"OpFunctionEnd\n";
-		programCollection.spirvAsmSources.add("geometry") << geometry << buildOptionsSpr;
+		std::ostringstream geometry;
+		geometry
+			<< "; SPIR-V\n"
+			<< "; Version: 1.3\n"
+			<< "; Generator: Khronos Glslang Reference Front End; 2\n"
+			<< "; Bound: 80\n"
+			<< "; Schema: 0\n"
+			<< "OpCapability Geometry\n"
+			<< (*caseDef.geometryPointSizeSupported ? "OpCapability GeometryPointSize\n" : "")
+			<< "OpCapability GroupNonUniform\n"
+			<< "OpCapability GroupNonUniformBallot\n"
+			<< "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+			<< "OpMemoryModel Logical GLSL450\n"
+			<< "OpEntryPoint Geometry %4 \"main\" %35 %62 %70 %74\n"
+			<< "OpExecutionMode %4 InputPoints\n"
+			<< "OpExecutionMode %4 Invocations 1\n"
+			<< "OpExecutionMode %4 OutputPoints\n"
+			<< "OpExecutionMode %4 OutputVertices 1\n"
+			<< "OpDecorate %30 ArrayStride 16\n"
+			<< "OpMemberDecorate %31 0 Offset 0\n"
+			<< "OpDecorate %31 Block\n"
+			<< "OpDecorate %33 DescriptorSet 0\n"
+			<< "OpDecorate %33 Binding 0\n"
+			<< "OpDecorate %35 RelaxedPrecision\n"
+			<< "OpDecorate %35 BuiltIn SubgroupLocalInvocationId\n"
+			<< "OpDecorate %36 RelaxedPrecision\n"
+			<< "OpDecorate %62 Location 0\n"
+			<< "OpMemberDecorate %68 0 BuiltIn Position\n"
+			<< "OpMemberDecorate %68 1 BuiltIn PointSize\n"
+			<< "OpMemberDecorate %68 2 BuiltIn ClipDistance\n"
+			<< "OpMemberDecorate %68 3 BuiltIn CullDistance\n"
+			<< "OpDecorate %68 Block\n"
+			<< "OpMemberDecorate %71 0 BuiltIn Position\n"
+			<< "OpMemberDecorate %71 1 BuiltIn PointSize\n"
+			<< "OpMemberDecorate %71 2 BuiltIn ClipDistance\n"
+			<< "OpMemberDecorate %71 3 BuiltIn CullDistance\n"
+			<< "OpDecorate %71 Block\n"
+			<< "%2 = OpTypeVoid\n"
+			<< "%3 = OpTypeFunction %2\n"
+			<< "%6 = OpTypeInt 32 0\n"
+			<< "%7 = OpTypePointer Function %6\n"
+			<< "%9 = OpConstant %6 0\n"
+			<< "%10 = OpTypeVector %6 4\n"
+			<< "%11 = OpConstantComposite %10 %9 %9 %9 %9\n"
+			<< "%12 = OpTypeBool\n"
+			<< "%13 = OpConstantTrue %12\n"
+			<< "%14 = OpConstant %6 3\n"
+			<< "%16 = OpTypeVector %12 4\n"
+			<< "%20 = OpTypeInt 32 1\n"
+			<< "%21 = OpConstant %20 1\n"
+			<< "%22 = OpConstant %20 0\n"
+			<< "%27 = OpTypePointer Function %12\n"
+			<< "%29 = OpConstant %6 " << subgroupSizeStr.str() << "\n"
+			<< "%30 = OpTypeArray %6 %29\n"
+			<< "%31 = OpTypeStruct %30\n"
+			<< "%32 = OpTypePointer Uniform %31\n"
+			<< "%33 = OpVariable %32 Uniform\n"
+			<< "%34 = OpTypePointer Input %6\n"
+			<< "%35 = OpVariable %34 Input\n"
+			<< "%37 = OpTypePointer Uniform %6\n"
+			<< "%46 = OpConstant %20 2\n"
+			<< "%51 = OpConstantFalse %12\n"
+			<< "%55 = OpConstant %20 4\n"
+			<< "%60 = OpTypeFloat 32\n"
+			<< "%61 = OpTypePointer Output %60\n"
+			<< "%62 = OpVariable %61 Output\n"
+			<< "%65 = OpTypeVector %60 4\n"
+			<< "%66 = OpConstant %6 1\n"
+			<< "%67 = OpTypeArray %60 %66\n"
+			<< "%68 = OpTypeStruct %65 %60 %67 %67\n"
+			<< "%69 = OpTypePointer Output %68\n"
+			<< "%70 = OpVariable %69 Output\n"
+			<< "%71 = OpTypeStruct %65 %60 %67 %67\n"
+			<< "%72 = OpTypeArray %71 %66\n"
+			<< "%73 = OpTypePointer Input %72\n"
+			<< "%74 = OpVariable %73 Input\n"
+			<< "%75 = OpTypePointer Input %65\n"
+			<< "%78 = OpTypePointer Output %65\n"
+			<< (*caseDef.geometryPointSizeSupported ?
+				"%80 = OpTypePointer Input %60\n"
+				"%81 = OpTypePointer Output %60\n" : "")
+			<< "%4 = OpFunction %2 None %3\n"
+			<< "%5 = OpLabel\n"
+			<< "%8 = OpVariable %7 Function\n"
+			<< "%28 = OpVariable %27 Function\n"
+			<< "OpStore %8 %9\n"
+			<< "%15 = OpGroupNonUniformBallot %10 %14 %13\n"
+			<< "%17 = OpIEqual %16 %11 %15\n"
+			<< "%18 = OpAll %12 %17\n"
+			<< "%19 = OpLogicalNot %12 %18\n"
+			<< "%23 = OpSelect %20 %19 %21 %22\n"
+			<< "%24 = OpBitcast %6 %23\n"
+			<< "%25 = OpLoad %6 %8\n"
+			<< "%26 = OpBitwiseOr %6 %25 %24\n"
+			<< "OpStore %8 %26\n"
+			<< "%36 = OpLoad %6 %35\n"
+			<< "%38 = OpAccessChain %37 %33 %22 %36\n"
+			<< "%39 = OpLoad %6 %38\n"
+			<< "%40 = OpINotEqual %12 %39 %9\n"
+			<< "OpStore %28 %40\n"
+			<< "%41 = OpLoad %12 %28\n"
+			<< "%42 = OpGroupNonUniformBallot %10 %14 %41\n"
+			<< "%43 = OpIEqual %16 %11 %42\n"
+			<< "%44 = OpAll %12 %43\n"
+			<< "%45 = OpLogicalNot %12 %44\n"
+			<< "%47 = OpSelect %20 %45 %46 %22\n"
+			<< "%48 = OpBitcast %6 %47\n"
+			<< "%49 = OpLoad %6 %8\n"
+			<< "%50 = OpBitwiseOr %6 %49 %48\n"
+			<< "OpStore %8 %50\n"
+			<< "%52 = OpGroupNonUniformBallot %10 %14 %51\n"
+			<< "%53 = OpIEqual %16 %11 %52\n"
+			<< "%54 = OpAll %12 %53\n"
+			<< "%56 = OpSelect %20 %54 %55 %22\n"
+			<< "%57 = OpBitcast %6 %56\n"
+			<< "%58 = OpLoad %6 %8\n"
+			<< "%59 = OpBitwiseOr %6 %58 %57\n"
+			<< "OpStore %8 %59\n"
+			<< "%63 = OpLoad %6 %8\n"
+			<< "%64 = OpConvertUToF %60 %63\n"
+			<< "OpStore %62 %64\n"
+			<< "%76 = OpAccessChain %75 %74 %22 %22\n"
+			<< "%77 = OpLoad %65 %76\n"
+			<< "%79 = OpAccessChain %78 %70 %22\n"
+			<< "OpStore %79 %77\n"
+			<< (*caseDef.geometryPointSizeSupported ?
+				"%82 = OpAccessChain %80 %74 %22 %21\n"
+				"%83 = OpLoad %60 %82\n"
+				"%84 = OpAccessChain %81 %70 %21\n"
+				"OpStore %84 %83\n" : "")
+			<< "OpEmitVertex\n"
+			<< "OpEndPrimitive\n"
+			<< "OpReturn\n"
+			<< "OpFunctionEnd\n";
+		programCollection.spirvAsmSources.add("geometry") << geometry.str() << buildOptionsSpr;
 	}
 	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
 	{
@@ -888,6 +901,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 	}
+
+	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
@@ -1005,18 +1020,18 @@ tcu::TestCaseGroup* createSubgroupsBallotTests(tcu::TestContext& testCtx)
 	};
 
 	{
-		const CaseDefinition caseDef = {VK_SHADER_STAGE_COMPUTE_BIT};
+		const CaseDefinition caseDef = {VK_SHADER_STAGE_COMPUTE_BIT, de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(computeGroup.get(), getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
 	}
 
 	{
-			const CaseDefinition caseDef = {VK_SHADER_STAGE_ALL_GRAPHICS};
-			addFunctionCaseWithPrograms(graphicGroup.get(), "graphic", "", supportedCheck, initPrograms, test, caseDef);
+		const CaseDefinition caseDef = {VK_SHADER_STAGE_ALL_GRAPHICS, de::SharedPtr<bool>(new bool)};
+		addFunctionCaseWithPrograms(graphicGroup.get(), "graphic", "", supportedCheck, initPrograms, test, caseDef);
 	}
 
 	for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 	{
-		const CaseDefinition caseDef = {stages[stageIndex]};
+		const CaseDefinition caseDef = {stages[stageIndex],de::SharedPtr<bool>(new bool)};
 		addFunctionCaseWithPrograms(framebufferGroup.get(), getShaderStageName(caseDef.shaderStage), "",
 					supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 	}

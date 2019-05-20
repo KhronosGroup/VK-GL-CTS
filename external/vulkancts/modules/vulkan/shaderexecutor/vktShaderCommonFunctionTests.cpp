@@ -589,7 +589,12 @@ public:
 		const int				scalarSize	= glu::getDataTypeScalarSize(type);
 
 		if (glu::isDataTypeFloatOrVec(type))
-			fillRandomScalars(rnd, floatRanges[precision].x(), floatRanges[precision].y(), values[0], numValues*scalarSize);
+		{
+			// Special case.
+			for (int ndx = 0; ndx < scalarSize; ++ndx)
+				((float*)values[0])[ndx] = -0.0f;
+			fillRandomScalars(rnd, floatRanges[precision].x(), floatRanges[precision].y(), (float*)values[0] + scalarSize, (numValues-1)*scalarSize);
+		}
 		else
 			fillRandomScalars(rnd, intRanges[precision].x(), intRanges[precision].y(), values[0], numValues*scalarSize);
 	}
@@ -609,7 +614,7 @@ public:
 			{
 				const float		in0			= ((const float*)inputs[0])[compNdx];
 				const float		out0		= ((const float*)outputs[0])[compNdx];
-				const float		ref0		= de::abs(in0);
+				const float		ref0		= fabsf(in0);
 				const deUint32	ulpDiff0	= getUlpDiff(out0, ref0);
 
 				if (ulpDiff0 > maxUlpDiff)
@@ -687,16 +692,16 @@ public:
 		if (glu::isDataTypeFloatOrVec(type))
 		{
 			// Special cases.
-			std::fill((float*)values[0], (float*)values[0] + scalarSize, +1.0f);
-			std::fill((float*)values[0], (float*)values[0] + scalarSize, -1.0f);
-			std::fill((float*)values[0], (float*)values[0] + scalarSize,  0.0f);
+			std::fill((float*)values[0] + scalarSize*0, (float*)values[0] + scalarSize*1, +1.0f);
+			std::fill((float*)values[0] + scalarSize*1, (float*)values[0] + scalarSize*2, -1.0f);
+			std::fill((float*)values[0] + scalarSize*2, (float*)values[0] + scalarSize*3,  0.0f);
 			fillRandomScalars(rnd, floatRanges[precision].x(), floatRanges[precision].y(), (float*)values[0] + scalarSize*3, (numValues-3)*scalarSize);
 		}
 		else
 		{
-			std::fill((int*)values[0], (int*)values[0] + scalarSize, +1);
-			std::fill((int*)values[0], (int*)values[0] + scalarSize, -1);
-			std::fill((int*)values[0], (int*)values[0] + scalarSize,  0);
+			std::fill((int*)values[0] + scalarSize*0, (int*)values[0] + scalarSize*1, +1);
+			std::fill((int*)values[0] + scalarSize*1, (int*)values[0] + scalarSize*2, -1);
+			std::fill((int*)values[0] + scalarSize*2, (int*)values[0] + scalarSize*3,  0);
 			fillRandomScalars(rnd, intRanges[precision].x(), intRanges[precision].y(), (int*)values[0] + scalarSize*3, (numValues-3)*scalarSize);
 		}
 	}
@@ -767,13 +772,8 @@ public:
 
 static float roundEven (float v)
 {
-	const float		q			= deFloatFrac(v);
-	const int		truncated	= int(v-q);
-	const int		rounded		= (q > 0.5f)							? (truncated + 1) :	// Rounded up
-									(q == 0.5f && (truncated % 2 != 0))	? (truncated + 1) :	// Round to nearest even at 0.5
-									truncated;												// Rounded down
-
-	return float(rounded);
+	tcu::ScopedRoundingMode mode(DE_ROUNDINGMODE_TO_NEAREST_EVEN);
+	return rintf(v);
 }
 
 class RoundEvenCaseInstance : public CommonFunctionTestInstance
@@ -806,7 +806,7 @@ public:
 			for (int ndx = 0; ndx < 20; ndx++)
 			{
 				const float v = de::clamp(float(ndx) - 10.5f, ranges[precision].x(), ranges[precision].y());
-				std::fill((float*)values[0], (float*)values[0] + scalarSize, v);
+				std::fill((float*)values[0] + scalarSize*ndx, (float*)values[0] + scalarSize*(ndx+1), v);
 				numSpecialCases += 1;
 			}
 		}
@@ -826,7 +826,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasSignedZero	= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		if (precision == glu::PRECISION_HIGHP || precision == glu::PRECISION_MEDIUMP)
@@ -838,7 +837,7 @@ public:
 				const float		out0		= ((const float*)outputs[0])[compNdx];
 				const float		ref			= roundEven(in0);
 
-				const deUint32	ulpDiff		= hasSignedZero ? getUlpDiff(out0, ref) : getUlpDiffIgnoreZeroSign(out0, ref);
+				const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, ref);
 
 				if (ulpDiff > 0)
 				{
@@ -930,7 +929,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasZeroSign		= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		const int				mantissaBits	= getMinMantissaBits(precision);
@@ -949,7 +947,7 @@ public:
 
 			const float		resSum		= out0 + out1;
 
-			const deUint32	ulpDiff		= hasZeroSign ? getUlpDiff(resSum, in0) : getUlpDiffIgnoreZeroSign(resSum, in0);
+			const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(resSum, in0);
 
 			if (ulpDiff > maxUlpDiff)
 			{
@@ -1316,7 +1314,7 @@ public:
 		{
 			const float		in0			= ((const float*)inputs[0])[compNdx];
 			const float		out0		= ((const float*)outputs[0])[compNdx];
-			const deUint32	ulpDiff		= getUlpDiff(in0, out0);
+			const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(in0, out0);
 
 			if (ulpDiff > maxUlpDiff)
 			{
@@ -1398,7 +1396,7 @@ public:
 				const float		out0		= ((const float*)outputs[0])[compNdx];
 				const float		ref			= deFloatFloor(in0);
 
-				const deUint32	ulpDiff		= getUlpDiff(out0, ref);
+				const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, ref);
 
 				if (ulpDiff > 0)
 				{
@@ -1613,7 +1611,7 @@ public:
 			for (int ndx = 0; ndx < 10; ndx++)
 			{
 				const float v = de::clamp(float(ndx) - 5.5f, ranges[precision].x(), ranges[precision].y());
-				std::fill((float*)values[0], (float*)values[0] + scalarSize, v);
+				std::fill((float*)values[0] + scalarSize*ndx, (float*)values[0] + scalarSize*(ndx+1), v);
 				numSpecialCases += 1;
 			}
 		}
@@ -1633,7 +1631,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasZeroSign		= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		if (precision == glu::PRECISION_HIGHP || precision == glu::PRECISION_MEDIUMP)
@@ -1648,8 +1645,8 @@ public:
 					// Allow both ceil(in) and floor(in)
 					const float		ref0		= deFloatFloor(in0);
 					const float		ref1		= deFloatCeil(in0);
-					const deUint32	ulpDiff0	= hasZeroSign ? getUlpDiff(out0, ref0) : getUlpDiffIgnoreZeroSign(out0, ref0);
-					const deUint32	ulpDiff1	= hasZeroSign ? getUlpDiff(out0, ref1) : getUlpDiffIgnoreZeroSign(out0, ref1);
+					const deUint32	ulpDiff0	= getUlpDiffIgnoreZeroSign(out0, ref0);
+					const deUint32	ulpDiff1	= getUlpDiffIgnoreZeroSign(out0, ref1);
 
 					if (ulpDiff0 > 0 && ulpDiff1 > 0)
 					{
@@ -1661,7 +1658,7 @@ public:
 				{
 					// Require exact result
 					const float		ref		= roundEven(in0);
-					const deUint32	ulpDiff	= hasZeroSign ? getUlpDiff(out0, ref) : getUlpDiffIgnoreZeroSign(out0, ref);
+					const deUint32	ulpDiff	= getUlpDiffIgnoreZeroSign(out0, ref);
 
 					if (ulpDiff > 0)
 					{
@@ -1762,7 +1759,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasZeroSign		= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		if (precision == glu::PRECISION_HIGHP || precision == glu::PRECISION_MEDIUMP)
@@ -1774,7 +1770,7 @@ public:
 				const float		out0		= ((const float*)outputs[0])[compNdx];
 				const float		ref			= deFloatCeil(in0);
 
-				const deUint32	ulpDiff		= hasZeroSign ? getUlpDiff(out0, ref) : getUlpDiffIgnoreZeroSign(out0, ref);
+				const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, ref);
 
 				if (ulpDiff > 0)
 				{
@@ -1874,7 +1870,7 @@ public:
 			for (int ndx = 0; ndx < 10; ndx++)
 			{
 				const float v = de::clamp(float(ndx) - 5.5f, ranges[precision].x(), ranges[precision].y());
-				std::fill((float*)values[0], (float*)values[0] + scalarSize, v);
+				std::fill((float*)values[0] + scalarSize*ndx, (float*)values[0] + scalarSize*(ndx+1), v);
 				numSpecialCases += 1;
 			}
 		}
@@ -1894,7 +1890,6 @@ public:
 	{
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const bool				hasZeroSign		= supportsSignedZero(precision);
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
 		if (precision == glu::PRECISION_HIGHP || precision == glu::PRECISION_MEDIUMP)
@@ -1906,7 +1901,7 @@ public:
 				const float		out0		= ((const float*)outputs[0])[compNdx];
 				const float		ref			= deFloatFrac(in0);
 
-				const deUint32	ulpDiff		= hasZeroSign ? getUlpDiff(out0, ref) : getUlpDiffIgnoreZeroSign(out0, ref);
+				const deUint32	ulpDiff		= getUlpDiffIgnoreZeroSign(out0, ref);
 
 				if (ulpDiff > 0)
 				{
@@ -2024,7 +2019,13 @@ public:
 		const glu::DataType		type						= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision					= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize					= glu::getDataTypeScalarSize(type);
-		const bool				transitSupportsSignedZero	= (m_shaderType != glu::SHADERTYPE_FRAGMENT); // executor cannot reliably transit negative zero to fragment stage
+
+		// Flat varyings (in this case passed from the vertex shader to the fragment shader as either inputs or outputs) are not
+		// required to preserve the signedness of zero. This limitation affects frexp tests because they check for -0.0 and 0.0
+		// explicitly.
+		const bool				transitSupportsSignedZero	= (m_shaderType != glu::SHADERTYPE_VERTEX
+																&& m_shaderType != glu::SHADERTYPE_GEOMETRY
+																&& m_shaderType != glu::SHADERTYPE_FRAGMENT);
 		const bool				signedZero					= supportsSignedZero(precision) && transitSupportsSignedZero;
 
 		const int				mantissaBits				= getMinMantissaBits(precision);

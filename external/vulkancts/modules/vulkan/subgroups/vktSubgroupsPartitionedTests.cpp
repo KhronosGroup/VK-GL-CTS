@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  * Copyright (c) 2018 NVIDIA Corporation
  *
@@ -396,6 +397,7 @@ struct CaseDefinition
 	int					opType;
 	VkShaderStageFlags	shaderStage;
 	VkFormat			format;
+	de::SharedPtr<bool>	geometryPointSizeSupported;
 };
 
 string getTestString(const CaseDefinition &caseDef)
@@ -544,6 +546,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< bdy.str()
 			<< "  out_color = float(tempResult);\n"
 			<< "  gl_Position = gl_in[0].gl_Position;\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
 			<< "  EmitVertex();\n"
 			<< "  EndPrimitive();\n"
 			<< "}\n";
@@ -812,6 +815,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
 	}
+
+	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
@@ -1021,7 +1026,7 @@ tcu::TestCaseGroup* createSubgroupsPartitionedTests(tcu::TestContext& testCtx)
 			std::string op = getOpTypeName(opTypeIndex);
 
 			{
-				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format};
+				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, de::SharedPtr<bool>(new bool)};
 				addFunctionCaseWithPrograms(group.get(),
 											de::toLower(op) + "_" +
 											subgroups::getFormatNameForGLSL(format) +
@@ -1030,7 +1035,7 @@ tcu::TestCaseGroup* createSubgroupsPartitionedTests(tcu::TestContext& testCtx)
 			}
 
 			{
-				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format};
+				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format, de::SharedPtr<bool>(new bool)};
 				addFunctionCaseWithPrograms(group.get(),
 											de::toLower(op) + "_" +
 											subgroups::getFormatNameForGLSL(format) +
@@ -1040,7 +1045,7 @@ tcu::TestCaseGroup* createSubgroupsPartitionedTests(tcu::TestContext& testCtx)
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
-				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format};
+				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, de::SharedPtr<bool>(new bool)};
 				addFunctionCaseWithPrograms(group.get(), de::toLower(op) + "_" + subgroups::getFormatNameForGLSL(format) +
 											"_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
 											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);

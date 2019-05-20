@@ -331,6 +331,7 @@ public:
 	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures;
 	VkPhysicalDeviceMemoryPriorityFeaturesEXT			memoryPriorityFeatures;
 	VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR	uniformBufferStandardLayoutFeatures;
+	VkPhysicalDeviceMultiviewFeatures					multiviewFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -362,6 +363,7 @@ public:
 		deMemset(&performanceCounterFeatures, 0, sizeof(performanceCounterFeatures));
 		deMemset(&memoryPriorityFeatures, 0, sizeof(memoryPriorityFeatures));
 		deMemset(&uniformBufferStandardLayoutFeatures, 0, sizeof(uniformBufferStandardLayoutFeatures));
+		deMemset(&multiviewFeatures, 0, sizeof(multiviewFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -386,6 +388,7 @@ public:
 		transformFeedbackFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
 		memoryPriorityFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
 		uniformBufferStandardLayoutFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
+		multiviewFeatures.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -509,6 +512,11 @@ public:
 				*nextPtr	= &uniformBufferStandardLayoutFeatures;
 				nextPtr		= &uniformBufferStandardLayoutFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_multiview"))
+			{
+				*nextPtr	= &multiviewFeatures;
+				nextPtr		= &multiviewFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -560,6 +568,8 @@ public:
 	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
 	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		getTransformFeedbackFeatures		(void) const	{ return m_deviceFeatures.transformFeedbackFeatures;		}
 	const VkPhysicalDevicePerformanceCounterFeaturesKHR&	getPerformanceCounterFeatures		(void) const	{ return m_deviceFeatures.performanceCounterFeatures;		}
+	const VkPhysicalDeviceMultiviewFeatures&				getMultiviewFeatures				(void) const	{ return m_deviceFeatures.multiviewFeatures;				}
+
 	const VkPhysicalDeviceMemoryPriorityFeaturesEXT&		getMemoryPriorityFeatures			(void) const	{ return m_deviceFeatures.memoryPriorityFeatures;			}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
@@ -722,6 +732,8 @@ const vk::VkPhysicalDevicePerformanceCounterFeaturesKHR&
 										Context::getPerformanceCounterFeatures	(void) const { return m_device->getPerformanceCounterFeatures();	}
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&
 										Context::getMemoryPriorityFeatures		(void) const { return m_device->getMemoryPriorityFeatures();	}
+const vk::VkPhysicalDeviceMultiviewFeatures&
+										Context::getMultiviewFeatures			(void) const { return m_device->getMultiviewFeatures();			}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

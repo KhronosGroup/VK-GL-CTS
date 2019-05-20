@@ -116,6 +116,8 @@ bool isVertexSSBOSupportedForDevice(Context& context);
 
 bool isDoubleSupportedForDevice(Context& context);
 
+bool isTessellationAndGeometryPointSizeSupported(Context& context);
+
 bool isDoubleFormat(vk::VkFormat format);
 
 std::string getFormatNameForGLSL(vk::VkFormat format);

@@ -424,6 +424,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT = 1000190000,
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT = 1000190001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT = 1000190002,
+    VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT = 1000192000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR = 1000196000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR = 1000197000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR = 1000199000,
@@ -8592,7 +8593,6 @@ VKAPI_ATTR void VKAPI_CALL vkResetQueryPoolEXT(
     deUint32                                    queryCount);
 #endif
 
-
 #define VK_EXT_pci_bus_info 1
 #define VK_EXT_PCI_BUS_INFO_SPEC_VERSION  2
 #define VK_EXT_PCI_BUS_INFO_EXTENSION_NAME "VK_EXT_pci_bus_info"
@@ -8634,6 +8634,7 @@ typedef struct VkMemoryPriorityAllocateInfoEXT {
     float              priority;
 } VkMemoryPriorityAllocateInfoEXT;
 
+
 #define VK_KHR_uniform_buffer_standard_layout 1
 #define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_SPEC_VERSION 1
 #define VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME "VK_KHR_uniform_buffer_standard_layout"
@@ -8645,6 +8646,29 @@ typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
 } VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
 
 
+#define VK_EXT_pipeline_creation_feedback 1
+#define VK_EXT_PIPELINE_CREATION_FEEDBACK_SPEC_VERSION 1
+#define VK_EXT_PIPELINE_CREATION_FEEDBACK_EXTENSION_NAME "VK_EXT_pipeline_creation_feedback"
+
+typedef enum VkPipelineCreationFeedbackFlagBitsEXT {
+    VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT_EXT = 0x00000001,
+    VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT = 0x00000002,
+    VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT = 0x00000004,
+    VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkPipelineCreationFeedbackFlagBitsEXT;
+typedef VkFlags VkPipelineCreationFeedbackFlagsEXT;
+typedef struct VkPipelineCreationFeedbackEXT {
+    VkPipelineCreationFeedbackFlagsEXT    flags;
+    deUint64                              duration;
+} VkPipelineCreationFeedbackEXT;
+
+typedef struct VkPipelineCreationFeedbackCreateInfoEXT {
+    VkStructureType                   sType;
+    const void*                       pNext;
+    VkPipelineCreationFeedbackEXT*    pPipelineCreationFeedback;
+    deUint32                          pipelineStageCreationFeedbackCount;
+    VkPipelineCreationFeedbackEXT*    pPipelineStageCreationFeedbacks;
+} VkPipelineCreationFeedbackCreateInfoEXT;
 
 #ifdef __cplusplus
 }

@@ -255,7 +255,8 @@ enum OcclusionQueryResultsMode
 {
 	RESULTS_MODE_GET,
 	RESULTS_MODE_GET_RESET,
-	RESULTS_MODE_COPY
+	RESULTS_MODE_COPY,
+	RESULTS_MODE_COPY_RESET
 };
 
 struct OcclusionQueryTestVector
@@ -419,7 +420,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 		"Occlusion query results");
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(queryResults); ++ndx)
 	{
-		log << tcu::TestLog::Message << "query[ slot == " << ndx
+		log << tcu::TestLog::Message << "query[slot == " << ndx
 			<< "] result == " << queryResults[ndx] << tcu::TestLog::EndMessage;
 	}
 
@@ -531,9 +532,9 @@ private:
 OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, const OcclusionQueryTestVector& testVector)
 	: vkt::TestInstance		(context)
 	, m_testVector			(testVector)
-	, m_queryResultFlags	((m_testVector.queryWait == WAIT_QUERY					? vk::VK_QUERY_RESULT_WAIT_BIT				: 0)
-							| (m_testVector.queryResultSize == RESULT_SIZE_64_BIT	? vk::VK_QUERY_RESULT_64_BIT				: 0)
-							| (m_testVector.queryResultsAvailability				? vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT	: 0))
+	, m_queryResultFlags	(((m_testVector.queryWait == WAIT_QUERY && m_testVector.queryResultsMode != RESULTS_MODE_COPY_RESET)? vk::VK_QUERY_RESULT_WAIT_BIT				: 0)
+							| (m_testVector.queryResultSize == RESULT_SIZE_64_BIT												? vk::VK_QUERY_RESULT_64_BIT				: 0)
+							| (m_testVector.queryResultsAvailability															? vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT	: 0))
 {
 	const vk::VkDevice			device				= m_context.getDevice();
 	const vk::DeviceInterface&	vk					= m_context.getDeviceInterface();
@@ -555,7 +556,7 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance (vkt::Context &context, c
 
 	VK_CHECK(vk.createQueryPool(device, &queryPoolCreateInfo, /*pAllocator*/ DE_NULL, &m_queryPool));
 
-	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
 	{
 		const vk::VkDeviceSize	resultsBufferSize			= m_testVector.queryResultsStride * NUM_QUERIES_IN_POOL;
 								m_queryPoolResultsBuffer	= Buffer::createAndAlloc(vk, device, BufferCreateInfo(resultsBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
@@ -689,7 +690,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 		vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
 	}
 
-	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
 	{
 		// In case of vkCmdCopyQueryResults is used, test must always wait for it
 		// to complete before we can read the result buffer.
@@ -712,7 +713,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 
 	log << tcu::TestLog::EndSection;
 
-	if (m_testVector.queryResultsMode != RESULTS_MODE_COPY)
+	if (m_testVector.queryResultsMode != RESULTS_MODE_COPY && m_testVector.queryResultsMode != RESULTS_MODE_COPY_RESET)
 	{
 		VK_CHECK(vk.queueWaitIdle(queue));
 	}
@@ -729,7 +730,7 @@ bool OcclusionQueryTestInstance::hasSeparateResetCmdBuf (void) const
 	// Determine if resetting query pool should be performed in separate command buffer
 	// to avoid race condition between host query access and device query reset.
 
-	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
 	{
 		// We copy query results on device, so there is no race condition between
 		// host and device
@@ -749,7 +750,8 @@ bool OcclusionQueryTestInstance::hasSeparateResetCmdBuf (void) const
 bool OcclusionQueryTestInstance::hasSeparateCopyCmdBuf (void) const
 {
 	// Copy query results must go into separate command buffer, if we want to wait on queue before that
-	return (m_testVector.queryResultsMode == RESULTS_MODE_COPY && m_testVector.queryWait == WAIT_QUEUE);
+	return ((m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
+			&& m_testVector.queryWait == WAIT_QUEUE);
 }
 
 vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordQueryPoolReset (vk::VkCommandPool cmdPool)
@@ -821,7 +823,13 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 
 	endRenderPass(vk, *cmdBuffer);
 
-	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY && !hasSeparateCopyCmdBuf())
+	if (m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
+	{
+		vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
+	}
+
+	if ((m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
+		&& !hasSeparateCopyCmdBuf())
 	{
 		vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
 	}
@@ -868,7 +876,7 @@ void OcclusionQueryTestInstance::captureResults (deUint64* retResults, deUint64*
 			VK_CHECK(queryResult);
 		}
 	}
-	else if (m_testVector.queryResultsMode == RESULTS_MODE_COPY)
+	else if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
 	{
 		const vk::Allocation& allocation = m_queryPoolResultsBuffer->getBoundMemory();
 		const void* allocationData = allocation.getHostPtr();
@@ -967,11 +975,11 @@ void OcclusionQueryTestInstance::logResults (const deUint64* results, const deUi
 	{
 		if (!m_testVector.queryResultsAvailability)
 		{
-			log << tcu::TestLog::Message << "query[ slot == " << ndx << "] result == " << results[ndx] << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "query[slot == " << ndx << "] result == " << results[ndx] << tcu::TestLog::EndMessage;
 		}
 		else
 		{
-			log << tcu::TestLog::Message << "query[ slot == " << ndx << "] result == " << results[ndx] << ", availability	== " << availability[ndx] << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "query[slot == " << ndx << "] result == " << results[ndx] << ", availability == " << availability[ndx] << tcu::TestLog::EndMessage;
 		}
 	}
 }
@@ -986,7 +994,22 @@ bool OcclusionQueryTestInstance::validateResults (const deUint64* results , cons
 		deUint64 expectedValueMin = 0;
 		deUint64 expectedValueMax = 0;
 
-		if (m_testVector.queryResultsAvailability && availability[queryNdx] == 0)
+		if (m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
+		{
+			DE_ASSERT(m_testVector.queryResultsAvailability);
+			if (availability[queryNdx] != 0)
+			{
+				// In copy-reset mode results should always be unavailable due to the reset command issued before copying results.
+				log << tcu::TestLog::Message << "query results availability was nonzero for index "
+					<< queryNdx << " when resetting the query before copying results"
+					<< tcu::TestLog::EndMessage;
+				passed = false;
+			}
+
+			// Not interested in the actual results.
+			continue;
+		}
+		else if (m_testVector.queryResultsAvailability && availability[queryNdx] == 0)
 		{
 			// query result was not available
 			if (!allowUnavailable)
@@ -1180,8 +1203,8 @@ void QueryPoolOcclusionTests::init (void)
 
 					for (int waitIdx = 0; waitIdx < DE_LENGTH_OF_ARRAY(wait); ++waitIdx)
 					{
-						const OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_GET_RESET,	RESULTS_MODE_COPY };
-						const char* const				resultsModeStr[]	= { "get",				"get_reset",			"copy" };
+						const OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_GET_RESET,	RESULTS_MODE_COPY,	RESULTS_MODE_COPY_RESET };
+						const char* const				resultsModeStr[]	= { "get",				"get_reset",			"copy",				"copy_reset" };
 
 						for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
 						{
@@ -1199,6 +1222,15 @@ void QueryPoolOcclusionTests::init (void)
 
 							for (int testAvailabilityIdx = 0; testAvailabilityIdx < DE_LENGTH_OF_ARRAY(testAvailability); ++testAvailabilityIdx)
 							{
+								if (resultsMode[resultsModeIdx] == RESULTS_MODE_COPY_RESET && (! testAvailability[testAvailabilityIdx]))
+								{
+									/* In RESULTS_MODE_COPY_RESET mode we will reset queries and make sure the availability flag is
+									 * set to zero. It does not make sense to run in this mode without obtaining the availability
+									 * flag.
+									 */
+									continue;
+								}
+
 								const bool			discardHalf[]		= { false, true };
 								const char* const	discardHalfStr[]	= { "", "_discard" };
 
@@ -1252,8 +1284,8 @@ void QueryPoolOcclusionTests::init (void)
 	}
 	// Test different strides
 	{
-		const OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_GET_RESET,	RESULTS_MODE_COPY	};
-		const char* const				resultsModeStr[]	= { "get",				"get_reset",			"copy"				};
+		const OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_GET_RESET,	RESULTS_MODE_COPY,	RESULTS_MODE_COPY_RESET	};
+		const char* const				resultsModeStr[]	= { "get",				"get_reset",			"copy",				"copy_reset"			};
 
 		for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
 		{
@@ -1265,6 +1297,14 @@ void QueryPoolOcclusionTests::init (void)
 
 			for (int testAvailabilityIdx = 0; testAvailabilityIdx < DE_LENGTH_OF_ARRAY(testAvailability); ++testAvailabilityIdx)
 			{
+				if (resultsMode[resultsModeIdx] == RESULTS_MODE_COPY_RESET && (! testAvailability[testAvailabilityIdx]))
+				{
+					/* In RESULTS_MODE_COPY_RESET mode we will reset queries and make sure the availability flag is set to zero. It
+					 * does not make sense to run in this mode without obtaining the availability flag.
+					 */
+					continue;
+				}
+
 				for (int resultSizeIdx = 0; resultSizeIdx < DE_LENGTH_OF_ARRAY(resultSizes); ++resultSizeIdx)
 				{
 					const vk::VkDeviceSize resultSize	= (resultSizes[resultSizeIdx] == RESULT_SIZE_32_BIT ? sizeof(deUint32) : sizeof(deUint64));

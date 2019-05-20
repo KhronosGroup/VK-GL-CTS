@@ -451,7 +451,7 @@ def parsePreprocDefinedValueOptional (src, name):
 	return value
 
 def parseEnum (name, src):
-	keyValuePtrn	= '(' + IDENT_PTRN + r')\s*=\s*([^\s,}]+)\s*[,}]'
+	keyValuePtrn	= '(' + IDENT_PTRN + r')\s*=\s*([^\s,\n}]+)\s*[,\n}]'
 	matches			= re.findall(keyValuePtrn, src)
 
 	return Enum(name, fixupEnumValues(matches))
@@ -750,7 +750,11 @@ def parseInt (value):
 def areEnumValuesLinear (enum):
 	curIndex = 0
 	for name, value in enum.values:
-		if parseInt(value) != curIndex:
+		intValue = parseInt(value)
+		if intValue != curIndex:
+			# consider enums containing *_MAX_ENUM = 0x7FFFFFFF as linear
+			if curIndex == len(enum.values)-1 and intValue == 0x7FFFFFFF:
+				return True
 			return False
 		curIndex += 1
 	return True
@@ -759,12 +763,19 @@ def genEnumSrc (enum):
 	yield "enum %s" % enum.name
 	yield "{"
 
-	for line in indentLines(["\t%s\t= %s," % v for v in enum.values]):
-		yield line
-
+	lines = ["\t%s\t= %s," % v for v in enum.values]
 	if areEnumValuesLinear(enum):
-		yield ""
-		yield "\t%s_LAST" % getEnumValuePrefix(enum)
+		lastItem = "\t%s_LAST," % getEnumValuePrefix(enum)
+		if parseInt(enum.values[-1][1]) == 0x7FFFFFFF:
+			# if last enum item is *_MAX_ENUM then we need to make sure
+			# it stays last entry also if we append *_LAST to generated
+			# source (without this value of *_LAST won't be correct)
+			lines.insert(-1, lastItem)
+		else:
+			lines.append(lastItem)
+
+	for line in indentLines(lines):
+		yield line
 
 	yield "};"
 

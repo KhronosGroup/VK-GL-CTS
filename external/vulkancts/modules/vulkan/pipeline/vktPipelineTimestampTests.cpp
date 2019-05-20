@@ -680,16 +680,11 @@ TimestampTestInstance::TimestampTestInstance(Context&                context,
 
 TimestampTestInstance::~TimestampTestInstance(void)
 {
-	if(m_timestampValues)
-	{
-		delete[] m_timestampValues;
-		m_timestampValues = NULL;
-	}
-	if(m_timestampValuesHostQueryReset)
-	{
-		delete[] m_timestampValuesHostQueryReset;
-		m_timestampValuesHostQueryReset = NULL;
-	}
+	delete[] m_timestampValues;
+	m_timestampValues = NULL;
+
+	delete[] m_timestampValuesHostQueryReset;
+	m_timestampValuesHostQueryReset = NULL;
 }
 
 void TimestampTestInstance::configCommandBuffer(void)
@@ -1975,6 +1970,120 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
+class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase
+{
+public:
+	ResetTimestampQueryBeforeCopyTest							(tcu::TestContext&	testContext,
+																 const std::string&	name,
+																 const std::string&	description)
+		: vkt::TestCase(testContext, name, description)
+		{ }
+	virtual               ~ResetTimestampQueryBeforeCopyTest	(void) { }
+	virtual void          initPrograms							(SourceCollections&	programCollection) const;
+	virtual TestInstance* createInstance						(Context&			context) const;
+};
+
+class ResetTimestampQueryBeforeCopyTestInstance : public vkt::TestInstance
+{
+public:
+							ResetTimestampQueryBeforeCopyTestInstance	(Context& context);
+	virtual					~ResetTimestampQueryBeforeCopyTestInstance	(void) { }
+	virtual tcu::TestStatus	iterate										(void);
+protected:
+	struct TimestampWithAvailability
+	{
+		deUint64 timestamp;
+		deUint64 availability;
+	};
+
+	Move<VkCommandPool>		m_cmdPool;
+	Move<VkCommandBuffer>	m_cmdBuffer;
+	Move<VkQueryPool>		m_queryPool;
+
+	Move<VkBuffer>			m_resultBuffer;
+	de::MovePtr<Allocation>	m_resultBufferMemory;
+};
+
+void ResetTimestampQueryBeforeCopyTest::initPrograms(SourceCollections& programCollection) const
+{
+	vkt::TestCase::initPrograms(programCollection);
+}
+
+TestInstance* ResetTimestampQueryBeforeCopyTest::createInstance(Context& context) const
+{
+	return new ResetTimestampQueryBeforeCopyTestInstance(context);
+}
+
+ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInstance(Context& context)
+	: vkt::TestInstance(context)
+{
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&				allocator			= m_context.getDefaultAllocator();
+
+	// Check support for timestamp queries
+	{
+		const std::vector<VkQueueFamilyProperties> queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+		DE_ASSERT(static_cast<size_t>(queueFamilyIndex) < queueProperties.size());
+		if (queueProperties[queueFamilyIndex].timestampValidBits == 0)
+			throw tcu::NotSupportedError("Universal queue does not support timestamps");
+	}
+
+	const VkQueryPoolCreateInfo queryPoolParams =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	// VkStructureType               sType;
+		DE_NULL,									// const void*                   pNext;
+		0u,											// VkQueryPoolCreateFlags        flags;
+		VK_QUERY_TYPE_TIMESTAMP,					// VkQueryType                   queryType;
+		1u,											// deUint32                      entryCount;
+		0u,											// VkQueryPipelineStatisticFlags pipelineStatistics;
+	};
+
+	m_queryPool		= createQueryPool(vk, vkDevice, &queryPoolParams);
+	m_cmdPool		= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdBuffer		= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Create results buffer.
+	const VkBufferCreateInfo bufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		sizeof(TimestampWithAvailability),			// VkDeviceSize			size;
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		1u,											// deUint32				queueFamilyIndexCount;
+		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+	};
+
+	m_resultBuffer			= createBuffer(vk, vkDevice, &bufferCreateInfo);
+	m_resultBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_resultBuffer), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *m_resultBuffer, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset()));
+
+	// Prepare command buffer.
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer, 0u, sizeof(TimestampWithAvailability), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+tcu::TestStatus ResetTimestampQueryBeforeCopyTestInstance::iterate(void)
+{
+	const DeviceInterface&      vk          = m_context.getDeviceInterface();
+	const VkDevice              vkDevice    = m_context.getDevice();
+	const VkQueue               queue       = m_context.getUniversalQueue();
+	TimestampWithAvailability	ta;
+
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	invalidateAlloc(vk, vkDevice, *m_resultBufferMemory);
+	deMemcpy(&ta, m_resultBufferMemory->getHostPtr(), sizeof(ta));
+	return ((ta.availability != 0)? tcu::TestStatus::fail("Availability bit nonzero after resetting query") : tcu::TestStatus::pass("Pass"));
+}
+
+
 class TwoCmdBuffersTest : public TimestampTest
 {
 public:
@@ -2290,6 +2399,12 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 												  "two_cmd_buffers_secondary_host_query_reset",
 												  "Issue query in a secondary command buffer and copy it on a primary command buffer",
 												  &twoCmdBuffersParamSecondaryHostQueryReset));
+
+		// Reset timestamp query before copying results.
+		miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx,
+																  "reset_query_before_copy",
+																  "Issue a timestamp query and reset it before copying results"));
+
 		timestampTests->addChild(miscTests.release());
 	}
 

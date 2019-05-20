@@ -1396,3 +1396,8 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandar
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPipelineCreationFeedbackCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT;
+}
+
