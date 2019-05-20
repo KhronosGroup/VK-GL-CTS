@@ -36,3 +36,5 @@ dEQP-VK.rasterization.interpolation.basic.lines_wide
 dEQP-VK.rasterization.interpolation.projected.line_strip_wide
 dEQP-VK.rasterization.flatshading.lines_wide
 
+dEQP-VK.pipeline.multisample.*.primitive_point_1px
+dEQP-VK.pipeline.multisample.*.primitive_point_1px_sparse
