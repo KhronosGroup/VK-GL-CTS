@@ -20,10 +20,15 @@
 #
 #-------------------------------------------------------------------------
 
-from common import *
+from egl.common import *
 from khr_util.format import indentLines, commandParams, commandArgs
 import khr_util.registry
-from itertools import imap, chain
+from itertools import chain
+
+try:
+	from itertools import imap
+except ImportError:
+	imap=map
 
 def virtualMemberDecl (command):
 	return "virtual %s\t%s\t(%s) const\t= 0;" % (

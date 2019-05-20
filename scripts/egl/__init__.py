@@ -20,15 +20,15 @@
 #
 #-------------------------------------------------------------------------
 
-from common import getEGLRegistry, getInterface, getDefaultInterface, VERSION
+from egl.common import getEGLRegistry, getInterface, getDefaultInterface, VERSION
 
-import str_util
-import call_log_wrapper
-import proc_address_tests
-import enums
-import func_ptrs
-import library
-import gtf_wrapper
+import egl.str_util
+import egl.call_log_wrapper
+import egl.proc_address_tests
+import egl.enums
+import egl.func_ptrs
+import egl.library
+import egl.gtf_wrapper
 
 def gen ():
 	registry	= getEGLRegistry()
