@@ -25,7 +25,7 @@ import sys
 from fnmatch import fnmatch
 
 def fail (msg):
-	print "ERROR: " + msg
+	print("ERROR: " + msg)
 	sys.exit(-1)
 
 # filename -> [case name]
@@ -64,7 +64,7 @@ def isResolutionOk (res):
 
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
-		print "%s: [caselist] [resolution list]" % sys.argv[0]
+		print("%s: [caselist] [resolution list]" % sys.argv[0])
 		sys.exit(-1)
 
 	caseList	= readCaseList(sys.argv[1])

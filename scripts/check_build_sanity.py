@@ -133,10 +133,10 @@ def getClangVersion ():
 def runSteps (steps):
 	for step in steps:
 		if step.isAvailable(env):
-			print "Run: %s" % step.getName()
+			print("Run: %s" % step.getName())
 			step.run(env)
 		else:
-			print "Skip: %s" % step.getName()
+			print("Skip: %s" % step.getName())
 
 COMMON_CFLAGS		= ["-Werror", "-Wno-error=unused-function"]
 COMMON_GCC_CFLAGS	= COMMON_CFLAGS + ["-Wno-implicit-fallthrough"]
@@ -276,15 +276,15 @@ if __name__ == "__main__":
 		for name, steps in RECIPES:
 			for step in steps:
 				if step.isAvailable(env):
-					print name
+					print(name)
 					break
 	else:
 		name, steps	= getAllRecipe(RECIPES) if args.recipe == "all" \
 					  else getRecipe(RECIPES, args.recipe)
 
-		print "Running %s" % name
+		print("Running %s" % name)
 
 		allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + steps + POST_CHECKS
 		runSteps(allSteps)
 
-		print "All steps completed successfully"
+		print("All steps completed successfully")

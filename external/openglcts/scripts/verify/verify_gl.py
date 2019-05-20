@@ -46,7 +46,7 @@ def getConfigCaseName (type):
 def verifyConfigFile (filename, type):
 	caseName = getConfigCaseName(type)
 
-	print "Verifying %s in %s" % (caseName, filename)
+	print("Verifying %s in %s" % (caseName, filename))
 
 	parser		= BatchResultParser()
 	results		= parser.parseFile(filename)
@@ -58,11 +58,11 @@ def verifyConfigFile (filename, type):
 			break
 
 	if caseResult == None:
-		print "FAIL: %s not found" % caseName
+		print("FAIL: %s not found" % caseName)
                 return False
 
 	if not isStatusCodeOk(caseResult.statusCode):
-		print "FAIL: %s" % caseResult
+		print("FAIL: %s" % caseResult)
                 return False
 
 	return True
@@ -73,7 +73,7 @@ def verifySubmission (dirname):
 
 	# Check Conformant attribute
 	if not summary.isConformant:
-		print "FAIL: Runner reported conformance failure (Conformant=\"False\" in <Summary>)"
+		print("FAIL: Runner reported conformance failure (Conformant=\"False\" in <Summary>)")
 
 	# Verify config list
 	if not verifyConfigFile(os.path.join(dirname, summary.configLogFilename), summary.type):
@@ -81,30 +81,30 @@ def verifySubmission (dirname):
 
 	# Verify that all run files passed
 	for runFilename in summary.runLogFilenames:
-		print "Verifying %s" % runFilename
+		print("Verifying %s" % runFilename)
 
 		logParser	= BatchResultParser()
 		batchResult	= logParser.parseFile(os.path.join(dirname, runFilename))
 
 		for result in batchResult:
 			if not isStatusCodeOk(result.statusCode):
-				print "FAIL: %s" % str(result)
+				print("FAIL: %s" % str(result))
 				allOk = False
 
 	return allOk
 
 def verifyGLSubmission(argv):
 	if len(argv) != 2:
-		print "%s: [extracted submission package directory]" % argv[0]
+		print("%s: [extracted submission package directory]" % argv[0])
 		sys.exit(-1)
 
 	try:
 		isOk = verifySubmission(argv[1])
-		print "Verification %s" % ("PASSED" if isOk else "FAILED!")
+		print("Verification %s" % ("PASSED" if isOk else "FAILED!"))
 		sys.exit(0 if isOk else 1)
 	except Exception, e:
-		print str(e)
-		print "Error occurred during verification"
+		print(str(e))
+		print("Error occurred during verification")
 		sys.exit(-1)
 
 if __name__ == "__main__":

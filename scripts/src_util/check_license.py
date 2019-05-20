@@ -60,11 +60,11 @@ def checkFileLicense (file):
 	license = getFileLicense(file)
 
 	if license == LICENSE_MIT:
-		print "%s: contains MIT license" % file
+		print("%s: contains MIT license" % file)
 	elif license == LICENSE_MULTIPLE:
-		print "%s: contains multiple licenses" % file
+		print("%s: contains multiple licenses" % file)
 	elif license == LICENSE_UNKNOWN:
-		print "%s: missing/unknown license" % file
+		print("%s: missing/unknown license" % file)
 
 	return license == LICENSE_APACHE2
 

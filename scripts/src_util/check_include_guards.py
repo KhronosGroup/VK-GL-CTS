@@ -52,7 +52,7 @@ def hasValidIncludeGuard (headerFile):
 			lastLine = line.strip()
 
 		if lastLine != expectedComment:
-#			print "'%s' != '%s'" % (lastLine, expectedComment)
+#			print("'%s' != '%s'" % (lastLine, expectedComment))
 			return False
 
 	f.close()
@@ -107,7 +107,7 @@ def checkIncludeGuards (files):
         if isHeader(file):
             if not hasValidIncludeGuard(file):
                 error = True
-                print "File %s contains invalid include guards" % file
+                print("File %s contains invalid include guards" % file)
     return not error
 
 if __name__ == "__main__":
@@ -122,26 +122,26 @@ if __name__ == "__main__":
 	for dir in args:
 		headers += getHeaderFileList(os.path.normpath(dir))
 
-	print "Checking..."
+	print("Checking...")
 	for header in headers:
-		print "  %s" % header
+		print("  %s" % header)
 		if not hasValidIncludeGuard(header):
 			invalidHeaders.append(header)
 
-	print ""
+	print("")
 	if len(invalidHeaders) > 0:
-		print "Found %d files with invalid include guards:" % len(invalidHeaders)
+		print("Found %d files with invalid include guards:" % len(invalidHeaders))
 
 		for header in invalidHeaders:
-			print "  %s" % header
+			print("  %s" % header)
 
 		if not fix:
 			sys.exit(-1)
 	else:
-		print "All headers have valid include guards."
+		print("All headers have valid include guards.")
 
 	if fix:
-		print ""
+		print("")
 		for header in invalidHeaders:
 			fixIncludeGuard(header)
-			print "Fixed %s" % header
+			print("Fixed %s" % header)

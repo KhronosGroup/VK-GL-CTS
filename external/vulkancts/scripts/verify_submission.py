@@ -76,7 +76,7 @@ def verifyPackage (package, mustpass):
 
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
-		print "%s: [extracted submission package] [mustpass]" % sys.argv[0]
+		print("%s: [extracted submission package] [mustpass]" % sys.argv[0])
 		sys.exit(-1)
 
 	packagePath		= os.path.normpath(sys.argv[1])
@@ -89,15 +89,15 @@ if __name__ == "__main__":
 	warnings		= [m for m in messages if m.type == ValidationMessage.TYPE_WARNING]
 
 	for message in messages:
-		print str(message)
+		print(str(message))
 
-	print ""
+	print("")
 
 	if len(errors) > 0:
-		print "Found %d validation errors and %d warnings!" % (len(errors), len(warnings))
+		print("Found %d validation errors and %d warnings!" % (len(errors), len(warnings)))
 		sys.exit(-2)
 	elif len(warnings) > 0:
-		print "Found %d warnings, manual review required" % len(warnings)
+		print("Found %d warnings, manual review required" % len(warnings))
 		sys.exit(-1)
 	else:
-		print "All validation checks passed"
+		print("All validation checks passed")

@@ -100,7 +100,7 @@ def checkoutFile (repository, revision, filename, cacheDir):
 		data	= f.read()
 		f.close()
 	except:
-		print(("Unexpected error:", sys.exc_info()[0]))
+		print("Unexpected error:", sys.exc_info()[0])
 
 	return data
 
@@ -113,7 +113,7 @@ def fetchFile (dstPath, repository, revision, filename, checksum, cacheDir):
 	if not os.path.exists(os.path.dirname(dstPath)):
 		os.makedirs(os.path.dirname(dstPath))
 
-	print(("Fetching %s/%s@%s" % (repository, filename, revision)))
+	print("Fetching %s/%s@%s" % (repository, filename, revision))
 	data		= checkoutFile(repository, revision, filename, cacheDir)
 	gotChecksum	= computeChecksum(data)
 

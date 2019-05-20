@@ -47,14 +47,14 @@ def genStrUtilProtos (iface, enumGroups, bitfieldGroups):
 			if anyValueDefined(definitions, values):
 				yield "const char*\tget%sName\t(int value);" % groupName
 			else:
-				print "Warning: Empty value set for %s, skipping" % groupName
+				print("Warning: Empty value set for %s, skipping" % groupName)
 
 	def genBitfieldProtos ():
 		for groupName, values in bitfieldGroups:
 			if anyValueDefined(definitions, values):
 				yield "tcu::Format::Bitfield<16>\tget%sStr\t(int value);" % groupName
 			else:
-				print "Warning: Empty value set for %s, skipping" % groupName
+				print("Warning: Empty value set for %s, skipping" % groupName)
 
 	def genStrImpl ():
 		for groupName, values in enumGroups:
@@ -82,7 +82,7 @@ def genEnumStrImpl (groupName, values, definitions):
 			if isValueDefined(definitions, value):
 				yield "case %s:\treturn \"%s\";" % (value, value)
 			else:
-				print "Warning: %s not defined, skipping" % value
+				print("Warning: %s not defined, skipping" % value)
 		yield "default:\treturn DE_NULL;"
 
 	for caseLine in indentLines(genCases()):
@@ -106,7 +106,7 @@ def genBitfieldStrImpl (groupName, values, definitions):
 			if isValueDefined(definitions, value):
 				yield "tcu::Format::BitDesc(%s,\t\"%s\")," % (value, value)
 			else:
-				print "Warning: %s not defined, skipping" % value
+				print("Warning: %s not defined, skipping" % value)
 
 	for fieldLine in indentLines(genFields()):
 		yield "\t\t" + fieldLine
@@ -137,7 +137,7 @@ def genQueryEnumUtilImpl (groupName, groupQueries, allEnums):
 			if enumName in allEnums:
 				yield "case %s:\treturn %s;" % (enumName, enumQueryNumOutputs)
 			else:
-				print "Warning: %s not defined, skipping" % enumName
+				print("Warning: %s not defined, skipping" % enumName)
 		yield "default:\treturn 1;"
 
 	for caseLine in indentLines(genCases()):
@@ -165,7 +165,7 @@ def genSetEnumUtilImpl (groupName, groupQueries, allEnums):
 			if enumName in allEnums:
 				yield "case %s:\treturn %s;" % (enumName, enumQueryNumOutputs)
 			else:
-				print "Warning: %s not defined, skipping" % enumName
+				print("Warning: %s not defined, skipping" % enumName)
 		yield "default:\treturn 1;"
 
 	for caseLine in indentLines(genCases()):

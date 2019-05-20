@@ -96,17 +96,17 @@ if False:
 			self.lists				= list(args)
 			self.numLists			= len(args)
 			self.numCombinations	= reduce(operator.mul, map(len, self.lists), 1)
-			print self.lists
-			print self.numCombinations
+			print(self.lists)
+			print(self.numCombinations)
 
 		def iterate(self):
 			return [tuple(map(lambda x: x[0], self.lists))]
 
 	combinations = Combinations(INPUT_TYPES, VECTOR_TYPES, PRECISION_TYPES)
-	print combinations.iterate()
+	print(combinations.iterate())
 	for (inputType, dataType, precision) in combinations.iterate():
 		scalarSize = getDataTypeScalarSize(dataType)
-		print inputType, precision, dataType
+		print(inputType, precision, dataType)
 
 def getSwizzlesForWidth(width):
 	if (width == 2):
@@ -258,7 +258,7 @@ for dataType in VECTOR_TYPES:
 	for swizzleComponents in SWIZZLE_NAMES:
 		for swizzleIndices in getSwizzlesForWidth(scalarSize):
 			swizzle = "".join(map(lambda x: swizzleComponents[x], swizzleIndices))
-			#print "%s %s .%s" % (precision, dataType, swizzle)
+			#print("%s %s .%s" % (precision, dataType, swizzle))
 			caseName = "%s_%s_%s" % (precision, dataType, swizzle)
 			inputs = INPUTS[dataType]
 			outputs = map(lambda x: x.swizzle(swizzleIndices), inputs)
@@ -271,7 +271,7 @@ for dataType in VECTOR_TYPES:
 #	for precision in PRECISION_TYPES:
 #		for swizzleIndices in getSwizzlesForWidth(scalarSize):
 #			swizzle = "".join(map(lambda x: "xyzw"[x], swizzleIndices))
-#			#print "%s %s .%s" % (precision, dataType, swizzle)
+#			#print("%s %s .%s" % (precision, dataType, swizzle))
 #			caseName = "%s_%s_%s" % (precision, dataType, swizzle)
 #			inputs = INPUTS[dataType]
 #			outputs = map(lambda x: x.swizzle(swizzleIndices), inputs)
@@ -296,5 +296,5 @@ allCases.append(CaseGroup("vector_swizzles", "Vector Swizzles", vectorSwizzleCas
 # Main program.
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("swizzles.test", allCases)

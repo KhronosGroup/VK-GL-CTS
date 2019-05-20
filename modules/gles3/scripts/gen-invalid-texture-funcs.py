@@ -162,5 +162,5 @@ INVALID_TEX_FUNC_CASES = [
 ]
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("invalid_texture_functions.test", INVALID_TEX_FUNC_CASES)

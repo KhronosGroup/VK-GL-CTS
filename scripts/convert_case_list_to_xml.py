@@ -52,7 +52,7 @@ def createAncestors(casePath):
 	return parentCase
 
 def exportCase (doc, parent, testCase):
-	#print testCase.name, testCase.caseType
+	#print(testCase.name, testCase.caseType)
 	element = doc.createElement("TestCase")
 	element.setAttribute("Name", testCase.casePath.rsplit(".", 2)[-1])
 	element.setAttribute("Description", testCase.description)
@@ -94,5 +94,5 @@ for testCase in rootCase.children:
 xml = doc.toprettyxml(indent="  ")
 open(packageName + "-cases.xml", "wt").write(xml)
 
-print "%d cases converted." % numMatches
+print("%d cases converted." % numMatches)
 
