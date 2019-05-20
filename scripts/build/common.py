@@ -105,7 +105,10 @@ def writeBinaryFile (filename, data):
 	f.close()
 
 def writeFile (filename, data):
-	f = open(filename, 'wt')
+	if (sys.version_info < (3, 0)):
+		f = open(filename, 'wt')
+	else:
+		f = open(filename, 'wt', newline='\n')
 	f.write(data)
 	f.close()
 
