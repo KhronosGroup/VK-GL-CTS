@@ -263,6 +263,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinTests.cpp \
+	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderClockTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderCommonFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp \

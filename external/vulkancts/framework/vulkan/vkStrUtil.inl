@@ -698,6 +698,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBlendOperationA
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorBlendAdvancedStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageToColorStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageModulationStateCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageDrmFormatModifierInfoEXT& value);

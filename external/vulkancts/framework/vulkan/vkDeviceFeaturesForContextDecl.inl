@@ -16,6 +16,7 @@ const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFea
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures		(void) const;
 const vk::VkPhysicalDevice8BitStorageFeaturesKHR&						get8BitStorageFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					getShaderAtomicInt64Features				(void) const;
+const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures						(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeatures			(void) const;
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&			getComputeShaderDerivativesFeatures			(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures						(void) const;

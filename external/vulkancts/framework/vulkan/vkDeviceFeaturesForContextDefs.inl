@@ -16,6 +16,7 @@ const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					Context::getShadingRat
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			Context::getRepresentativeFragmentTestFeatures			(void) const { return m_device->getRepresentativeFragmentTestFeatures();		}
 const vk::VkPhysicalDevice8BitStorageFeaturesKHR&						Context::get8BitStorageFeatures							(void) const { return m_device->get8BitStorageFeatures();						}
 const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					Context::getShaderAtomicInt64Features					(void) const { return m_device->getShaderAtomicInt64Features();					}
+const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						Context::getShaderClockFeatures							(void) const { return m_device->getShaderClockFeatures();						}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			Context::getVertexAttributeDivisorFeatures				(void) const { return m_device->getVertexAttributeDivisorFeatures();			}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&			Context::getComputeShaderDerivativesFeatures			(void) const { return m_device->getComputeShaderDerivativesFeatures();			}
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							Context::getMeshShaderFeatures							(void) const { return m_device->getMeshShaderFeatures();						}
