@@ -17,6 +17,8 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
 	vktOpaqueTypeIndexingTests.hpp
 	vktAtomicOperationTests.cpp
 	vktAtomicOperationTests.hpp
+	vktShaderClockTests.cpp
+	vktShaderClockTests.hpp
 )
 
 set(DEQP_VK_SHADEREXECUTOR_LIBS

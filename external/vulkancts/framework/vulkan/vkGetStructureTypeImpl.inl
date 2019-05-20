@@ -1356,6 +1356,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsFeat
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesListEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT;
