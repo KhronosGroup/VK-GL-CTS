@@ -526,6 +526,12 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT = 1000259002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT = 1000261000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT = 1000265000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR = 1000269000,
+    VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR = 1000269001,
+    VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR = 1000269002,
+    VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR = 1000269003,
+    VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR = 1000269004,
+    VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR = 1000269005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT = 1000276000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT = 1000281000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT = 1000281001,
@@ -1676,6 +1682,8 @@ typedef enum VkPipelineCreateFlagBits {
     VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT = 0x00000008,
     VK_PIPELINE_CREATE_DISPATCH_BASE = 0x00000010,
     VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV = 0x00000020,
+    VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR = 0x00000040,
+    VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR = 0x00000080,
     VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR = VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,
     VK_PIPELINE_CREATE_DISPATCH_BASE_KHR = VK_PIPELINE_CREATE_DISPATCH_BASE,
     VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -6513,6 +6521,100 @@ typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
     void*              pNext;
     VkBool32           uniformBufferStandardLayout;
 } VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
+
+
+
+#define VK_KHR_pipeline_executable_properties 1
+#define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_SPEC_VERSION 1
+#define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME "VK_KHR_pipeline_executable_properties"
+
+typedef enum VkPipelineExecutableStatisticFormatKHR {
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_BOOL32_KHR = 0,
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_INT64_KHR = 1,
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_UINT64_KHR = 2,
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR = 3,
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_BEGIN_RANGE_KHR = VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_BOOL32_KHR,
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_END_RANGE_KHR = VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR,
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_RANGE_SIZE_KHR = (VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR - VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_BOOL32_KHR + 1),
+    VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkPipelineExecutableStatisticFormatKHR;
+typedef struct VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           pipelineExecutableInfo;
+} VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR;
+
+typedef struct VkPipelineInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkPipeline         pipeline;
+} VkPipelineInfoKHR;
+
+typedef struct VkPipelineExecutablePropertiesKHR {
+    VkStructureType       sType;
+    void*                 pNext;
+    VkShaderStageFlags    stages;
+    char                  name[VK_MAX_DESCRIPTION_SIZE];
+    char                  description[VK_MAX_DESCRIPTION_SIZE];
+    deUint32              subgroupSize;
+} VkPipelineExecutablePropertiesKHR;
+
+typedef struct VkPipelineExecutableInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkPipeline         pipeline;
+    deUint32           executableIndex;
+} VkPipelineExecutableInfoKHR;
+
+typedef union VkPipelineExecutableStatisticValueKHR {
+    VkBool32    b32;
+    deInt64     i64;
+    deUint64    u64;
+    double      f64;
+} VkPipelineExecutableStatisticValueKHR;
+
+typedef struct VkPipelineExecutableStatisticKHR {
+    VkStructureType                           sType;
+    void*                                     pNext;
+    char                                      name[VK_MAX_DESCRIPTION_SIZE];
+    char                                      description[VK_MAX_DESCRIPTION_SIZE];
+    VkPipelineExecutableStatisticFormatKHR    format;
+    VkPipelineExecutableStatisticValueKHR     value;
+} VkPipelineExecutableStatisticKHR;
+
+typedef struct VkPipelineExecutableInternalRepresentationKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    char               name[VK_MAX_DESCRIPTION_SIZE];
+    char               description[VK_MAX_DESCRIPTION_SIZE];
+    VkBool32           isText;
+    deUintptr             dataSize;
+    void*              pData;
+} VkPipelineExecutableInternalRepresentationKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetPipelineExecutablePropertiesKHR)(VkDevice                        device, const VkPipelineInfoKHR*        pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties);
+typedef VkResult (VKAPI_PTR *PFN_vkGetPipelineExecutableStatisticsKHR)(VkDevice                        device, const VkPipelineExecutableInfoKHR*  pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics);
+typedef VkResult (VKAPI_PTR *PFN_vkGetPipelineExecutableInternalRepresentationsKHR)(VkDevice                        device, const VkPipelineExecutableInfoKHR*  pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutablePropertiesKHR(
+    VkDevice                                    device,
+    const VkPipelineInfoKHR*                    pPipelineInfo,
+    deUint32*                                   pExecutableCount,
+    VkPipelineExecutablePropertiesKHR*          pProperties);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableStatisticsKHR(
+    VkDevice                                    device,
+    const VkPipelineExecutableInfoKHR*          pExecutableInfo,
+    deUint32*                                   pStatisticCount,
+    VkPipelineExecutableStatisticKHR*           pStatistics);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR(
+    VkDevice                                    device,
+    const VkPipelineExecutableInfoKHR*          pExecutableInfo,
+    deUint32*                                   pInternalRepresentationCount,
+    VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
+#endif
 
 
 
