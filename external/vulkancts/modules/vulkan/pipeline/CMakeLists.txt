@@ -87,6 +87,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineCreationFeedbackTests.hpp
 	vktPipelineDepthRangeUnrestrictedTests.cpp
 	vktPipelineDepthRangeUnrestrictedTests.hpp
+	vktPipelineExecutablePropertiesTests.cpp
+	vktPipelineExecutablePropertiesTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS

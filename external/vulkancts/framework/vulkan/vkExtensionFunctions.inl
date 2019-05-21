@@ -265,6 +265,12 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdDrawIndirectCountKHR");
 		functions.push_back("vkCmdDrawIndexedIndirectCountKHR");
 	}
+	else if (extName == "VK_KHR_pipeline_executable_properties")
+	{
+		functions.push_back("vkGetPipelineExecutablePropertiesKHR");
+		functions.push_back("vkGetPipelineExecutableStatisticsKHR");
+		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
+	}
 	else if (extName == "VK_EXT_debug_marker")
 	{
 		functions.push_back("vkDebugMarkerSetObjectTagEXT");
@@ -507,6 +513,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_bind_memory2",
 	"VK_KHR_maintenance3",
 	"VK_KHR_draw_indirect_count",
+	"VK_KHR_pipeline_executable_properties",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
 	"VK_NVX_image_view_handle",

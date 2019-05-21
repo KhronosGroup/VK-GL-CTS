@@ -188,6 +188,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDerivativeTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicOffsetTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineEarlyDestroyTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineExecutablePropertiesTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineFramebufferAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageSamplingInstance.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineImageTests.cpp \
