@@ -178,6 +178,7 @@ public:
 												 const ImageMSParams&	imageMSParams)
 								: MSCaseBaseResolveAndPerSampleFetch(testCtx, name, imageMSParams) {}
 
+	virtual void				checkSupport	(Context&) const {}
 	void						init			(void);
 	void						initPrograms	(vk::SourceCollections& programCollection) const;
 	TestInstance*				createInstance	(Context&				context) const;
@@ -249,6 +250,12 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleID>::verifyImageData	(cons
 }
 
 class MSCaseSampleID;
+
+template<> void MSCase<MSCaseSampleID>::checkSupport (Context& context) const
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
 
 template<> void MSCase<MSCaseSampleID>::init (void)
 {
@@ -397,6 +404,12 @@ template<> tcu::TestStatus MSInstance<MSInstanceSamplePosDistribution>::verifyIm
 
 class MSCaseSamplePosDistribution;
 
+template<> void MSCase<MSCaseSamplePosDistribution>::checkSupport (Context& context) const
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
+
 template<> void MSCase<MSCaseSamplePosDistribution>::init (void)
 {
 	m_testCtx.getLog()
@@ -482,6 +495,12 @@ template<> tcu::TestStatus MSInstance<MSInstanceSamplePosCorrectness>::verifyIma
 }
 
 class MSCaseSamplePosCorrectness;
+
+template<> void MSCase<MSCaseSamplePosCorrectness>::checkSupport (Context& context) const
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
 
 template<> void MSCase<MSCaseSamplePosCorrectness>::init (void)
 {

@@ -112,5 +112,5 @@ invalidImplicitConversionCases = [
 ]
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("invalid_implicit_conversions.test", invalidImplicitConversionCases)

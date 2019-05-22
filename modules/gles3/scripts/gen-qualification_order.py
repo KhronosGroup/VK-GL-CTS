@@ -218,7 +218,7 @@ paramFormats = [
 	[PARAM_STORAGE, PARAM_PRECISION],
 	[PARAM_PARAMETER, PARAM_PRECISION]
 ]
-print len(paramFormats)
+print(len(paramFormats))
 
 for f in declFormats:
 	for p in itertools.permutations(f):
@@ -251,5 +251,5 @@ qualificationOrderCases = [
 # Main program
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("qualification_order.test", qualificationOrderCases)

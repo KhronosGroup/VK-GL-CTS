@@ -555,6 +555,9 @@ void StoreTestInstance::checkRequirements (void)
 
 	if (!m_declareImageFormatInShader && !features.shaderStorageImageWriteWithoutFormat)
 		throw tcu::NotSupportedError("shaderStorageImageWriteWithoutFormat feature not supported");
+
+    if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
+        TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
 }
 
 //! Store test for images
@@ -961,6 +964,9 @@ void LoadStoreTestInstance::checkRequirements (void)
 
 	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
 		throw tcu::NotSupportedError("shaderStorageImageReadWithoutFormat feature not supported");
+
+    if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
+        TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
 }
 
 

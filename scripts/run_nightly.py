@@ -329,7 +329,7 @@ def runNightly (config):
 		batchResults = [refBatchResult] + batchResults
 
 	writeFile(COMPARE_REPORT_NAME, genCompareReport(batchResults, config.name, config.ignore))
-	print "Comparison report written to %s" % COMPARE_REPORT_NAME
+	print("Comparison report written to %s" % COMPARE_REPORT_NAME)
 
 	# Compare to reference
 	if refBatchResult != None:
@@ -337,12 +337,12 @@ def runNightly (config):
 		curBatchResult.results = parseResultCsv(lastResultCsv)
 		failedCases			= compareBatchResults(refBatchResult, curBatchResult, config.ignore)
 
-		print ""
+		print("")
 		for result in failedCases:
-			print "MISMATCH: %s: expected %s, got %s" % (result.name, result.statusCodes[0], result.statusCodes[1])
+			print("MISMATCH: %s: expected %s, got %s" % (result.name, result.statusCodes[0], result.statusCodes[1]))
 
-		print ""
-		print "%d / %d cases passed, run %s" % (len(curBatchResult.results)-len(failedCases), len(curBatchResult.results), "FAILED" if len(failedCases) > 0 else "passed")
+		print("")
+		print("%d / %d cases passed, run %s" % (len(curBatchResult.results)-len(failedCases), len(curBatchResult.results), "FAILED" if len(failedCases) > 0 else "passed"))
 
 		if len(failedCases) > 0:
 			return False
@@ -488,9 +488,9 @@ if __name__ == "__main__":
 		if not isOk:
 			sys.exit(-1)
 	else:
-		print "%s: [config]" % sys.argv[0]
-		print ""
-		print "  Available configs:"
+		print("%s: [config]" % sys.argv[0])
+		print("")
+		print("  Available configs:")
 		for config in CONFIGS:
-			print "    %s" % config.name
+			print("    %s" % config.name)
 		sys.exit(-1)

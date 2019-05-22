@@ -31,7 +31,7 @@ from verify_gl import verifyGLSubmission
 
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
-		print "%s: [directory]" % sys.argv[0]
+		print("%s: [directory]" % sys.argv[0])
 		sys.exit(-1)
 
 	summary	= parseRunSummary(os.path.join(sys.argv[1], "cts-run-summary.xml"))

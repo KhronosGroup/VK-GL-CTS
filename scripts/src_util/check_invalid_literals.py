@@ -73,7 +73,7 @@ def checkFileInvalidLiterals (file):
 				found = re.search(pattern, line)
 				if found is not None:
 					error = True
-					print "%s:%i Unacceptable type found (pattern:%s)" % (file, lineNum+1, pattern)
+					print("%s:%i Unacceptable type found (pattern:%s)" % (file, lineNum+1, pattern))
 		f.close()
 
 	return not error
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 	error = not checkInvalidLiterals(files)
 
 	if error:
-		print "One or more checks failed"
+		print("One or more checks failed")
 		sys.exit(1)
 	if not args.onlyErrors:
-		print "All checks passed"
+		print("All checks passed")

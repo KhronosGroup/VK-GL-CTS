@@ -30,13 +30,13 @@ def checkFileWhitespace (file):
     for lineNum, line in enumerate(f):
         if line.endswith(" \n") or line.endswith("\t\n"):
             error = True
-            print "%s:%i trailing whitespace" % (file, lineNum+1)
+            print("%s:%i trailing whitespace" % (file, lineNum+1))
         if " \t" in line:
             error = True
-            print "%s:%i merged <space><tab>" % (file, lineNum+1)
+            print("%s:%i merged <space><tab>" % (file, lineNum+1))
         if line.endswith("\r") or line.endswith("\r\n"):
             error = True
-            print "%s:%i incorrect line ending" % (file, lineNum+1)
+            print("%s:%i incorrect line ending" % (file, lineNum+1))
     f.close()
 
     return not error
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     error = not checkWhitespace(files)
 
     if error:
-        print "One or more checks failed"
+        print("One or more checks failed")
         sys.exit(1)
     if not args.onlyErrors:
-        print "All checks passed"
+        print("All checks passed")

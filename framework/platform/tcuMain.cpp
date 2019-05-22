@@ -45,7 +45,7 @@ int main (int argc, char** argv)
 	{
 		tcu::CommandLine				cmdLine		(argc, argv);
 		tcu::DirArchive					archive		(".");
-		tcu::TestLog					log			(cmdLine.getLogFileName(), cmdLine.getLogFlags());
+		tcu::TestLog					log			(cmdLine.getLogFileName(), argc-1, argv+1, cmdLine.getLogFlags());
 		de::UniquePtr<tcu::Platform>	platform	(createPlatform());
 		de::UniquePtr<tcu::App>			app			(new tcu::App(*platform, archive, log, cmdLine));
 

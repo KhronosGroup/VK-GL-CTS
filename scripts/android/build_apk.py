@@ -211,11 +211,11 @@ class Configuration:
 
 def log (config, msg):
 	if config.verbose:
-		print msg
+		print(msg)
 
 def executeAndLog (config, args):
 	if config.verbose:
-		print " ".join(args)
+		print(" ".join(args))
 	execute(args)
 
 # Path components
@@ -309,7 +309,7 @@ class BuildStep:
 		if len(existingInputs) != len(expandedInputs):
 			for file in expandedInputs:
 				if file not in existingInputs:
-					print "ERROR: Missing input file: %s" % file
+					print("ERROR: Missing input file: %s" % file)
 			die("Missing input files")
 
 		if len(existingOutputs) != len(expandedOutputs):
@@ -750,7 +750,7 @@ class AddNativeLibsToAPK (BuildStep):
 					layerAbsPath = os.path.join(pkgPath, layerRelPath)
 					shutil.copyfile(layer, layerAbsPath)
 					libFiles.append(layerRelPath)
-					print "Adding layer binary: %s" % (layer,)
+					print("Adding layer binary: %s" % (layer,))
 
 			if config.angle:
 				angleGlob = os.path.join(config.angle, abi, "lib*_angle.so")
@@ -761,7 +761,7 @@ class AddNativeLibsToAPK (BuildStep):
 					libAbsPath = os.path.join(pkgPath, libRelPath)
 					shutil.copyfile(lib, libAbsPath)
 					libFiles.append(libRelPath)
-					print "Adding ANGLE binary: %s" % (lib,)
+					print("Adding ANGLE binary: %s" % (lib,))
 
 		shutil.copyfile(srcPath, dstPath)
 		addFilesToAPK(config, dstPath, pkgPath, libFiles)
@@ -967,7 +967,7 @@ def parseArgs ():
 		if len(args.abis) == 0:
 			raise Exception("--abis can't be empty")
 	except Exception as e:
-		print "ERROR: %s" % str(e)
+		print("ERROR: %s" % str(e))
 		parser.print_help()
 		sys.exit(-1)
 
@@ -986,11 +986,11 @@ if __name__ == "__main__":
 	try:
 		config.check()
 	except Exception as e:
-		print "ERROR: %s" % str(e)
-		print ""
-		print "Please check your configuration:"
-		print "  --sdk=%s" % args.sdkPath
-		print "  --ndk=%s" % args.ndkPath
+		print("ERROR: %s" % str(e))
+		print("")
+		print("Please check your configuration:")
+		print("  --sdk=%s" % args.sdkPath)
+		print("  --ndk=%s" % args.ndkPath)
 		sys.exit(-1)
 
 	pkg, libs	= getPackageAndLibrariesForTarget(args.target)
@@ -998,5 +998,5 @@ if __name__ == "__main__":
 
 	executeSteps(config, steps)
 
-	print ""
-	print "Built %s" % os.path.join(buildPath, getBuildRootRelativeAPKPath(pkg))
+	print("")
+	print("Built %s" % os.path.join(buildPath, getBuildRootRelativeAPKPath(pkg)))

@@ -191,5 +191,5 @@ for operator in OPERATORS:
 	allCases.append(CaseGroup("vector_" + operator, "Vector swizzle math operations", vectorSwizzleGroupCases[operator]))
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("swizzle_math_operations.test", allCases)

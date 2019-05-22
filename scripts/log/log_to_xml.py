@@ -87,15 +87,15 @@ class LogErrorHandler(xml.sax.handler.ErrorHandler):
 		pass
 
 	def error (self, err):
-		#print "error(%s)" % str(err)
+		#print("error(%s)" % str(err))
 		pass
 
 	def fatalError (self, err):
-		#print "fatalError(%s)" % str(err)
+		#print("fatalError(%s)" % str(err))
 		pass
 
 	def warning (self, warn):
-		#print "warning(%s)" % str(warn)
+		#print("warning(%s)" % str(warn))
 		pass
 
 def findFirstElementByName (nodes, name):
@@ -183,7 +183,7 @@ def logToXml (inFile, outFile):
 
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
-		print "%s: [test log] [dst file]" % sys.argv[0]
+		print("%s: [test log] [dst file]" % sys.argv[0])
 		sys.exit(-1)
 
 	logToXml(sys.argv[1], sys.argv[2])

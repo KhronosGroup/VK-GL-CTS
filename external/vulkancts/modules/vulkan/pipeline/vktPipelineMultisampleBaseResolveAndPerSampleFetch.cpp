@@ -81,6 +81,13 @@ void MSCaseBaseResolveAndPerSampleFetch::initPrograms (vk::SourceCollections& pr
 	programCollection.glslSources.add("per_sample_fetch_fs") << glu::FragmentSource(fs.str());
 }
 
+MSInstanceBaseResolveAndPerSampleFetch::MSInstanceBaseResolveAndPerSampleFetch (Context& context, const ImageMSParams& imageMSParams)
+	: MultisampleInstanceBase(context, imageMSParams)
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
+
 VkPipelineMultisampleStateCreateInfo MSInstanceBaseResolveAndPerSampleFetch::getMSStateCreateInfo (const ImageMSParams& imageMSParams) const
 {
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =

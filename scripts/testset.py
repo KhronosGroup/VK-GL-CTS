@@ -218,7 +218,7 @@ def selectRandomSubset (results, groups, limit, seed):
 	return getCasesInSet(results, selectedCases)
 
 def die (msg):
-	print msg
+	print(msg)
 	sys.exit(-1)
 
 # Named filter lists
@@ -242,9 +242,9 @@ if __name__ == "__main__":
 	(options, args)	= parser.parse_args()
 
 	if options.list:
-		print "Available filter rules:"
+		print("Available filter rules:")
 		for filter in FILTER_RULES:
-			print "  %s: %s" % (filter.name, filter.description)
+			print("  %s: %s" % (filter.name, filter.description))
 		sys.exit(0)
 
 	if len(args) == 0:
@@ -281,4 +281,4 @@ if __name__ == "__main__":
 
 	# Print test set
 	for result in results:
-		print result.name
+		print(result.name)

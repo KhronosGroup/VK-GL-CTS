@@ -183,7 +183,7 @@ def applyPatterns (caseList, patterns, filename, op):
 		curList = [c for c in curList if c not in matched]
 
 	for pattern, reason in errors:
-		print "ERROR: %s: %s" % (reason, pattern)
+		print("ERROR: %s: %s" % (reason, pattern))
 
 	if len(errors) > 0:
 		die("Found %s invalid patterns while processing file %s" % (len(errors), filename))
@@ -385,12 +385,12 @@ def genSpecCPPIncludes (mustpassLists):
 			specFilename	= os.path.join(mustpass.project.incpath, "glc%s.hpp" % convertToCamelcase(mustpass.project.name.lower().replace(' ','_')))
 			hpp = genSpecCPPIncludeFile(specFilename, mustpass)
 
-			print "  Writing spec: " + specFilename
+			print("  Writing spec: " + specFilename)
 			writeFile(specFilename, hpp)
-			print "Done!"
+			print("Done!")
 
 def genMustpass (mustpass, moduleCaseLists):
-	print "Generating mustpass '%s'" % mustpass.version
+	print("Generating mustpass '%s'" % mustpass.version)
 
 	patternLists = readPatternLists(mustpass)
 
@@ -401,16 +401,16 @@ def genMustpass (mustpass, moduleCaseLists):
 			filtered	= applyFilters(allCasesInPkg, patternLists, config.filters)
 			dstFile		= getDstCaseListPath(mustpass, package, config)
 
-			print "  Writing deqp caselist: " + dstFile
+			print("  Writing deqp caselist: " + dstFile)
 			writeFile(dstFile, "\n".join(filtered) + "\n")
 
 	specXML			= genSpecXML(mustpass)
 	specFilename	= os.path.join(mustpass.project.path, mustpass.version, "mustpass.xml")
 
-	print "  Writing spec: " + specFilename
+	print("  Writing spec: " + specFilename)
 	writeFile(specFilename, prettifyXML(specXML))
 
-	print "Done!"
+	print("Done!")
 
 def genMustpassLists (mustpassLists, generator, buildCfg):
 	moduleCaseLists = {}

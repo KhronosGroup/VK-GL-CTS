@@ -102,7 +102,7 @@ public:
 	typedef LogNumber<float>		Float;
 	typedef LogNumber<deInt64>		Integer;
 
-	explicit			TestLog					(const char* fileName, deUint32 flags = 0);
+	explicit			TestLog					(const char* fileName, int argc = 0, char** argv = DE_NULL, deUint32 flags = 0);
 						~TestLog				(void);
 
 	MessageBuilder		operator<<				(const BeginMessageToken&);

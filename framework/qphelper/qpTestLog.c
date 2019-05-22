@@ -289,7 +289,7 @@ DE_INLINE void doubleToString (double value, char* buf, size_t bufSize)
 	deSprintf(buf, bufSize, "%f", value);
 }
 
-static deBool beginSession (qpTestLog* log)
+static deBool beginSession (qpTestLog* log, int argc, char** argv)
 {
 	DE_ASSERT(log && !log->isSessionOpen);
 
@@ -297,6 +297,14 @@ static deBool beginSession (qpTestLog* log)
 	fprintf(log->outputFile, "#sessionInfo releaseName %s\n", qpGetReleaseName());
 	fprintf(log->outputFile, "#sessionInfo releaseId 0x%08x\n", qpGetReleaseId());
 	fprintf(log->outputFile, "#sessionInfo targetName \"%s\"\n", qpGetTargetName());
+	fprintf(log->outputFile, "#sessionInfo commandLineParameters \"");
+	for (int i = 0; i < argc && argv != NULL; ++i)
+	{
+		fprintf(log->outputFile, "%s", argv[i]);
+		if (i < argc-1)
+			fprintf(log->outputFile, " ");
+	}
+	fprintf(log->outputFile, "\"\n");
 
     /* Write out #beginSession. */
 	fprintf(log->outputFile, "#beginSession\n");
@@ -328,7 +336,7 @@ static deBool endSession (qpTestLog* log)
  * \param fileName Name of the file where to put logs
  * \return qpTestLog instance, or DE_NULL if cannot create file
  *//*--------------------------------------------------------------------*/
-qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
+qpTestLog* qpTestLog_createFileLog (const char* fileName, int argc, char** argv, deUint32 flags)
 {
 	qpTestLog* log = (qpTestLog*)deCalloc(sizeof(qpTestLog));
 	if (!log)
@@ -371,7 +379,7 @@ qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
 		return DE_NULL;
 	}
 
-	beginSession(log);
+	beginSession(log, argc, argv);
 
 	return log;
 }
