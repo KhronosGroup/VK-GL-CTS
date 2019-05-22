@@ -65,34 +65,6 @@ std::ostream& operator<< (std::ostream& str, const HexFloat& v)
 	return str << v.value << " / " << tcu::toHex(tcu::Float32(v.value).bits());
 }
 
-static const char* getPrecisionPostfix (glu::Precision precision)
-{
-	static const char* s_postfix[] =
-	{
-		"_lowp",
-		"_mediump",
-		"_highp"
-	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_postfix) == glu::PRECISION_LAST);
-	DE_ASSERT(de::inBounds<int>(precision, 0, DE_LENGTH_OF_ARRAY(s_postfix)));
-	return s_postfix[precision];
-}
-
-static const char* getShaderTypePostfix (glu::ShaderType shaderType)
-{
-	static const char* s_postfix[] =
-	{
-		"_vertex",
-		"_fragment",
-		"_geometry",
-		"_tess_control",
-		"_tess_eval",
-		"_compute"
-	};
-	DE_ASSERT(de::inBounds<int>(shaderType, 0, DE_LENGTH_OF_ARRAY(s_postfix)));
-	return s_postfix[shaderType];
-}
-
 } // anonymous
 
 // ShaderPackingFunctionCase

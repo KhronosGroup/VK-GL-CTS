@@ -96,15 +96,6 @@ const char* getSSBOTypeString (SSBOTestType type)
 	}
 }
 
-const char* getShaderTypeString (const glu::ShaderType shaderType)
-{
-	switch (shaderType) {
-		case glu::SHADERTYPE_FRAGMENT:	return "fragment";
-		case glu::SHADERTYPE_COMPUTE:	return "compute";
-		default: DE_FATAL("Invalid shader type"); return "";
-	}
-}
-
 const char* getSSBOAtomicTypeString (SSBOAtomicType type)
 {
 	switch (type)
@@ -717,7 +708,7 @@ tcu::TestCaseGroup* createRWStorageBufferTests (tcu::TestContext&							testCtx,
 	for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); ++shaderNdx)
 	{
 		const glu::ShaderType				shaderType			= shaderTypes[shaderNdx];
-		const std::string					shaderName			= getShaderTypeString(shaderType);
+		const std::string					shaderName			= glu::getShaderTypeName(shaderType);
 		const std::string					shaderGroupDesc		= "Storage buffer tests for shader type: " + shaderName;
 		de::MovePtr<tcu::TestCaseGroup>		testShaderGroup		(new tcu::TestCaseGroup(testCtx, shaderName.c_str(), shaderGroupDesc.c_str()));
 
@@ -854,7 +845,7 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testctx)
 	for (int shaderNdx = 0; shaderNdx < DE_LENGTH_OF_ARRAY(shaderTypes); ++shaderNdx)
 	{
 		const glu::ShaderType				shaderType			= shaderTypes[shaderNdx];
-		const std::string					shaderName			= getShaderTypeString(shaderType);
+		const std::string					shaderName			= glu::getShaderTypeName(shaderType);
 		const std::string					shaderDesc			= "Storage Buffer Atomic Tests for shader type: " + shaderName;
 		de::MovePtr<tcu::TestCaseGroup>		atomicShaderGroup	(new tcu::TestCaseGroup(testctx, shaderName.c_str(), shaderDesc.c_str()));
 

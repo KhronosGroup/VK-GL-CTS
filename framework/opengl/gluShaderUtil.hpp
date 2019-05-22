@@ -78,7 +78,8 @@ enum ShaderType
 	SHADERTYPE_LAST
 };
 
-const char*	getShaderTypeName (ShaderType shaderType);
+const char*		getShaderTypeName		(ShaderType shaderType);
+std::string		getShaderTypePostfix	(ShaderType shaderType);
 
 // Precision
 
@@ -91,7 +92,8 @@ enum Precision
 	PRECISION_LAST
 };
 
-const char* getPrecisionName (Precision precision);
+const char* getPrecisionName	(Precision precision);
+std::string getPrecisionPostfix	(Precision precision);
 
 // DataType
 

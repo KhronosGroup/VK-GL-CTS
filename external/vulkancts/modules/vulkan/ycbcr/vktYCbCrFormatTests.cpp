@@ -550,19 +550,15 @@ void initPrograms (SourceCollections& dst, TestParameters params)
 
 void populatePerFormatGroup (tcu::TestCaseGroup* group, VkFormat format)
 {
-	const UVec2	size	(66, 32);
-	const struct
+	const UVec2				size			(66, 32);
+	const glu::ShaderType	shaderTypes[]	=
 	{
-		const char*		name;
-		glu::ShaderType	value;
-	} shaderTypes[] =
-	{
-		{ "vertex",			glu::SHADERTYPE_VERTEX },
-		{ "fragment",		glu::SHADERTYPE_FRAGMENT },
-		{ "geometry",		glu::SHADERTYPE_GEOMETRY },
-		{ "tess_control",	glu::SHADERTYPE_TESSELLATION_CONTROL },
-		{ "tess_eval",		glu::SHADERTYPE_TESSELLATION_EVALUATION },
-		{ "compute",		glu::SHADERTYPE_COMPUTE }
+		glu::SHADERTYPE_VERTEX,
+		glu::SHADERTYPE_FRAGMENT,
+		glu::SHADERTYPE_GEOMETRY,
+		glu::SHADERTYPE_TESSELLATION_CONTROL,
+		glu::SHADERTYPE_TESSELLATION_EVALUATION,
+		glu::SHADERTYPE_COMPUTE
 	};
 	const struct
 	{
@@ -574,14 +570,13 @@ void populatePerFormatGroup (tcu::TestCaseGroup* group, VkFormat format)
 		{ "linear",		VK_IMAGE_TILING_LINEAR }
 	};
 
-	for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
+	for (glu::ShaderType shaderType : shaderTypes)
 	for (int tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(tilings); tilingNdx++)
 	for (int useArrayLayers = 0; useArrayLayers < 2; useArrayLayers++)
 	{
 		const VkImageTiling		tiling			= tilings[tilingNdx].value;
 		const char* const		tilingName		= tilings[tilingNdx].name;
-		const glu::ShaderType	shaderType		= shaderTypes[shaderTypeNdx].value;
-		const char* const		shaderTypeName	= shaderTypes[shaderTypeNdx].name;
+		const char* const		shaderTypeName	= glu::getShaderTypeName(shaderType);
 		const string			name			= string(shaderTypeName) + "_" + tilingName + ((useArrayLayers) ? "_array" : "");
 
 		addFunctionCaseWithPrograms(group, name, "", checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, false, useArrayLayers));
