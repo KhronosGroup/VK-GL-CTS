@@ -1182,7 +1182,7 @@ void rasterizePrimitive (const RenderState&					state,
 	if (msaa)
 		msaaRasterizer.init(line.v0->position, line.v1->position, state.line.lineWidth);
 	else
-		aliasedRasterizer.init(line.v0->position, line.v1->position, state.line.lineWidth);
+		aliasedRasterizer.init(line.v0->position, line.v1->position, state.line.lineWidth, 1, 0xFFFF);
 
 	for (;;)
 	{

@@ -181,10 +181,12 @@ public:
 									SingleSampleLineRasterizer	(const tcu::IVec4& viewport, const int subpixelBits);
 									~SingleSampleLineRasterizer	(void);
 
-	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth);
+	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth, deUint32 stippleFactor, deUint16 stipplePattern);
 
 	// only available after init()
 	void							rasterize					(FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized);
+
+	void							resetStipple				() { m_stippleCounter = 0; }
 
 private:
 									SingleSampleLineRasterizer	(const SingleSampleLineRasterizer&); // not allowed
@@ -202,6 +204,9 @@ private:
 	tcu::IVec2						m_curPos;			//!< Current rasterization position.
 	deInt32							m_curRowFragment;	//!< Current rasterization position of one fragment in column of lineWidth fragments
 	float							m_lineWidth;
+	deUint32						m_stippleFactor;
+	deUint16						m_stipplePattern;
+	deUint32						m_stippleCounter;
 } DE_WARN_UNUSED_TYPE;
 
 
