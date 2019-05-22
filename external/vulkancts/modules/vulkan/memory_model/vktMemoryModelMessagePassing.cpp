@@ -230,13 +230,28 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 		}
 	}
 
-    if (m_data.transitive &&
+	if (m_data.transitive &&
 		!context.getVulkanMemoryModelFeatures().vulkanMemoryModelAvailabilityVisibilityChains)
 		TCU_THROW(NotSupportedError, "vulkanMemoryModelAvailabilityVisibilityChains not supported");
 
-    if ((m_data.payloadSC == SC_PHYSBUFFER || m_data.guardSC == SC_PHYSBUFFER) &&
+	if ((m_data.payloadSC == SC_PHYSBUFFER || m_data.guardSC == SC_PHYSBUFFER) &&
 		!context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
+
+	if (m_data.stage == STAGE_VERTEX)
+	{
+		if (!context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+		{
+			TCU_THROW(NotSupportedError, "vertexPipelineStoresAndAtomics not supported");
+		}
+	}
+	if (m_data.stage == STAGE_FRAGMENT)
+	{
+		if (!context.getDeviceFeatures().fragmentStoresAndAtomics)
+		{
+			TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
+		}
+	}
 }
 
 
