@@ -1181,7 +1181,7 @@ tcu::TestStatus glc::subgroups::makeTessellationEvaluationFrameBufferTest(
 			gl.bindBuffer(GL_ARRAY_BUFFER, vertexBuffer.getId());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer");
 
-			gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), vertexBufferOffset);
+			gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), glu::BufferOffsetAsPointer(vertexBufferOffset));
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
 			gl.patchParameteri(GL_PATCH_VERTICES, 2u);
@@ -1377,7 +1377,7 @@ tcu::TestStatus glc::subgroups::makeGeometryFrameBufferTest(
 			gl.bindBuffer(GL_ARRAY_BUFFER, vertexBuffer.getId());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer");
 
-			gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), vertexBufferOffset);
+			gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), glu::BufferOffsetAsPointer(vertexBufferOffset));
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
 			gl.drawArrays(GL_POINTS, 0, width);
@@ -1831,7 +1831,7 @@ tcu::TestStatus glc::subgroups::makeVertexFrameBufferTest(Context& context, Form
 			gl.bindBuffer(GL_ARRAY_BUFFER, vertexBuffer.getId());
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer");
 
-			gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), vertexBufferOffset);
+			gl.vertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(tcu::Vec4), glu::BufferOffsetAsPointer(vertexBufferOffset));
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer");
 
 			gl.drawArrays(GL_POINTS, 0, width);
