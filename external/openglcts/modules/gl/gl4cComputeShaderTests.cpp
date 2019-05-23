@@ -2237,8 +2237,8 @@ class BasicMax : public ComputeShaderBase
 			if (i64 < static_cast<GLint64>(min_values[c]))
 			{
 				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Is " << static_cast<GLint>(i64) << " should be at least "
-					<< min_values[c] << "." << tcu::TestLog::EndMessage;
+					<< tcu::TestLog::Message << "Is " << i64 << " should be at least "
+					<< static_cast<GLint64>(min_values[c]) << "." << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -2248,8 +2248,8 @@ class BasicMax : public ComputeShaderBase
 			if (f < static_cast<GLfloat>(min_values[c]))
 			{
 				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Is " << static_cast<GLint>(f) << " should be at least "
-					<< min_values[c] << "." << tcu::TestLog::EndMessage;
+					<< tcu::TestLog::Message << "Is " << f << " should be at least "
+					<< static_cast<GLfloat>(min_values[c]) << "." << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -2259,18 +2259,19 @@ class BasicMax : public ComputeShaderBase
 			if (d < static_cast<GLdouble>(min_values[c]))
 			{
 				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Is " << static_cast<GLint>(d) << " should be at least "
-					<< min_values[c] << "." << tcu::TestLog::EndMessage;
+					<< tcu::TestLog::Message << "Is " << d << " should be at least "
+					<< static_cast<GLdouble>(min_values[c]) << "." << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
 		for (GLuint c = 0; c < 3; c++)
 		{
 			glGetBooleani_v(target, c, &b);
-			if (b == GL_FALSE)
+			if (b != (min_values[c] ? GL_TRUE : GL_FALSE))
 			{
 				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Is GL_FALSE should be at least GL_TRUE." << tcu::TestLog::EndMessage;
+					<< tcu::TestLog::Message << "Is " << b << " should be " << (min_values[c] ? GL_TRUE : GL_FALSE)
+					<< "." << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -2294,27 +2295,24 @@ class BasicMax : public ComputeShaderBase
 			return false;
 		}
 		glGetInteger64v(target, &i64);
-		if (static_cast<GLint>(i64) < min_value)
+		if (i64 < static_cast<GLint64>(min_value))
 		{
-			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "Is " << static_cast<GLint>(i64) << " should be at least " << min_value
-				<< "." << tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << i64 << " should be at least "
+												<< static_cast<GLint64>(min_value) << "." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetFloatv(target, &f);
 		if (f < static_cast<GLfloat>(min_value))
 		{
-			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "Is " << static_cast<GLint>(f) << " should be at least " << min_value << "."
-				<< tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << f << " should be at least "
+												<< static_cast<GLfloat>(min_value) << "." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetDoublev(target, &d);
 		if (d < static_cast<GLdouble>(min_value))
 		{
-			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "Is " << static_cast<GLint>(d) << " should be at least " << min_value << "."
-				<< tcu::TestLog::EndMessage;
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Is " << d << " should be at least "
+												<< static_cast<GLdouble>(min_value) << "." << tcu::TestLog::EndMessage;
 			return false;
 		}
 		glGetBooleanv(target, &b);
@@ -2937,27 +2935,27 @@ class BasicDispatchIndirect : public ComputeShaderBase
 		GLboolean b;
 
 		glGetIntegerv(GL_DISPATCH_INDIRECT_BUFFER_BINDING, &i);
-		if (static_cast<GLuint>(i) != expected)
+		if (i != static_cast<GLint>(expected))
 		{
 			return false;
 		}
 		glGetInteger64v(GL_DISPATCH_INDIRECT_BUFFER_BINDING, &i64);
-		if (static_cast<GLuint>(i64) != expected)
+		if (i64 != static_cast<GLint64>(expected))
 		{
 			return false;
 		}
 		glGetFloatv(GL_DISPATCH_INDIRECT_BUFFER_BINDING, &f);
-		if (static_cast<GLuint>(f) != expected)
+		if (f != static_cast<GLfloat>(expected))
 		{
 			return false;
 		}
 		glGetDoublev(GL_DISPATCH_INDIRECT_BUFFER_BINDING, &d);
-		if (static_cast<GLuint>(d) != expected)
+		if (d != static_cast<GLdouble>(expected))
 		{
 			return false;
 		}
 		glGetBooleanv(GL_DISPATCH_INDIRECT_BUFFER_BINDING, &b);
-		if (b != (expected != 0 ? GL_TRUE : GL_FALSE))
+		if (b != (expected ? GL_TRUE : GL_FALSE))
 		{
 			return false;
 		}
