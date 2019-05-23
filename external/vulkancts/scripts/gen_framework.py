@@ -1632,6 +1632,20 @@ def writeMandatoryFeatures(src, filename):
 	stream.append('}\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeExtensionList(src, filename, patternPart):
+	# in vulkan.h.in every KHR extension definition should end with
+	# a comment that specifies if this DEVICE or INSTANCE extension
+	# if this extension was added to core then its version should also
+	# be specified (this is used by parseExtensions)
+	stream = []
+	stream.append('static const char* s_allowed{0}KhrExtensions[] =\n{{'.format(patternPart.title()))
+	pattern = r'\/\/\s*([^\s]+)\s+{0}\s+[0-9_]*'.format(patternPart)
+	matches	= re.findall(pattern, src)
+	for m in matches:
+		stream.append('\t"' + m + '",')
+	stream.append('};\n')
+	writeInlFile(filename, INL_HEADER, stream)
+
 if __name__ == "__main__":
 	src				= readFile(VULKAN_H)
 	api				= parseAPI(src)
@@ -1639,6 +1653,12 @@ if __name__ == "__main__":
 	platformFuncs	= [Function.TYPE_PLATFORM]
 	instanceFuncs	= [Function.TYPE_INSTANCE]
 	deviceFuncs		= [Function.TYPE_DEVICE]
+
+	dfd							= generateDeviceFeaturesDefs(src)
+	writeDeviceFeatures         (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
+	writeDefaultDeviceDefs      (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
+	writeContextDecl            (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
+	writeContextDefs            (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
 
 	writeHandleType				(api, os.path.join(VULKAN_DIR, "vkHandleType.inl"))
 	writeBasicTypes				(api, os.path.join(VULKAN_DIR, "vkBasicTypes.inl"))
@@ -1670,9 +1690,5 @@ if __name__ == "__main__":
 	writeCoreFunctionalities	(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions		(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
 	writeMandatoryFeatures		(src, os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
-
-	dfd							= generateDeviceFeaturesDefs(src)
-	writeDeviceFeatures         (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
-	writeDefaultDeviceDefs      (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
-	writeContextDecl            (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
-	writeContextDefs            (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
+	writeExtensionList			(src, os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
+	writeExtensionList			(src, os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
