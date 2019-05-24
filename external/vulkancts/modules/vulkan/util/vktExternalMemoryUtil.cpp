@@ -340,6 +340,9 @@ const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBits typ
 		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID:
 			return "android_hardware_buffer";
 
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT:
+			return "dma_buf";
+
 		default:
 			DE_FATAL("Unknown external memory type");
 			return DE_NULL;
@@ -455,7 +458,8 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 						 vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 						 NativeHandle&								nativeHandle)
 {
-	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
+	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
+		|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 	{
 		const vk::VkMemoryGetFdInfoKHR	info	=
 		{
@@ -957,7 +961,8 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 	DE_ASSERT(!buffer || !image);
 
-	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
+	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
+		|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 	{
 		const vk::VkImportMemoryFdInfoKHR			importInfo		=
 		{

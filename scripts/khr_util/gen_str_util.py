@@ -21,7 +21,7 @@
 #-------------------------------------------------------------------------
 
 from itertools import chain
-from format import indentLines
+from khr_util.format import indentLines
 
 def isValueDefined (definitions, value):
 	return value in definitions

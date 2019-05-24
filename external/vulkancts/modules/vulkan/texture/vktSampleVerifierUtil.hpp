@@ -99,11 +99,11 @@ void		wrapCubemapCorner			(const tcu::IVec2&				coord,
 										 tcu::IVec2&					cornerCoord1,
 										 tcu::IVec2&					cornerCoord2);
 
-void		convertFormat				(const void*					pixelPtr,
-										 tcu::TextureFormat				texFormat,
-										 tcu::FloatFormat				internalFormat,
-										 tcu::Vec4&						resultMin,
-										 tcu::Vec4&						resultMax);
+void		convertFormat				(const void*							pixelPtr,
+										 tcu::TextureFormat						texFormat,
+										 const std::vector<tcu::FloatFormat>&	internalFormat,
+										 tcu::Vec4&								resultMin,
+										 tcu::Vec4&								resultMax);
 
 template <int Size>
 bool isEqualRelEpsilon (const tcu::Vector<float, Size>& a, const tcu::Vector<float, Size>& b, const float epsilon)

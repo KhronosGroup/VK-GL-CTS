@@ -38,6 +38,16 @@ namespace SpirVAssembly
 
 using namespace vk;
 
+std::string VariableLocation::toString() const
+{
+	return "set_" + de::toString(set) + "_binding_" + de::toString(binding);
+}
+
+std::string VariableLocation::toDescription() const
+{
+	return "Set " + de::toString(set) + " and Binding " + de::toString(binding);
+}
+
 bool is8BitStorageFeaturesSupported (const Context& context, Extension8BitStorageFeatures toCheck)
 {
 	VkPhysicalDevice8BitStorageFeaturesKHR extensionFeatures = context.get8BitStorageFeatures();
@@ -143,7 +153,7 @@ bool is16BitStorageFeaturesSupported (const Context& context, Extension16BitStor
 
 bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVariablePointersFeatures toCheck)
 {
-	const VkPhysicalDeviceVariablePointersFeatures& extensionFeatures = context.getVariablePointerFeatures();
+	const VkPhysicalDeviceVariablePointersFeatures& extensionFeatures = context.getVariablePointersFeatures();
 
 	if ((toCheck & EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER) != 0 && extensionFeatures.variablePointersStorageBuffer == VK_FALSE)
 		return false;
@@ -597,6 +607,52 @@ std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count)
 		float16.push_back(rnd.getUint16());
 
 	return float16;
+}
+
+std::string getOpCapabilityShader()
+{
+	return	"OpCapability Shader\n";
+}
+
+std::string getUnusedEntryPoint()
+{
+	return	"OpEntryPoint Vertex %unused_func \"unused_func\"\n";
+}
+
+std::string getUnusedDecorations(const VariableLocation& location)
+{
+	return	"OpMemberDecorate %UnusedBufferType 0 Offset 0\n"
+            "OpMemberDecorate %UnusedBufferType 1 Offset 4\n"
+            "OpDecorate %UnusedBufferType BufferBlock\n"
+            "OpDecorate %unused_buffer DescriptorSet " + de::toString(location.set) + "\n"
+            "OpDecorate %unused_buffer Binding " + de::toString(location.binding) + "\n";
+}
+
+std::string getUnusedTypesAndConstants()
+{
+	return	"%c_f32_101 = OpConstant %f32 101\n"
+			"%c_i32_201 = OpConstant %i32 201\n"
+			"%UnusedBufferType = OpTypeStruct %f32 %i32\n"
+			"%unused_ptr_Uniform_UnusedBufferType = OpTypePointer Uniform %UnusedBufferType\n"
+			"%unused_ptr_Uniform_float = OpTypePointer Uniform %f32\n"
+			"%unused_ptr_Uniform_int = OpTypePointer Uniform %i32\n";
+}
+
+std::string getUnusedBuffer()
+{
+	return	"%unused_buffer = OpVariable %unused_ptr_Uniform_UnusedBufferType Uniform\n";
+}
+
+std::string getUnusedFunctionBody()
+{
+	return	"%unused_func = OpFunction %void None %voidf\n"
+			"%unused_func_label = OpLabel\n"
+			"%unused_out_float_ptr = OpAccessChain %unused_ptr_Uniform_float %unused_buffer %c_i32_0\n"
+            "OpStore %unused_out_float_ptr %c_f32_101\n"
+			"%unused_out_int_ptr = OpAccessChain %unused_ptr_Uniform_int %unused_buffer %c_i32_1\n"
+            "OpStore %unused_out_int_ptr %c_i32_201\n"
+            "OpReturn\n"
+            "OpFunctionEnd\n";
 }
 
 } // SpirVAssembly

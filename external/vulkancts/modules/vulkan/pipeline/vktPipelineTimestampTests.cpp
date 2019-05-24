@@ -1918,6 +1918,22 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
 				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 8u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+				const vk::VkBufferMemoryBarrier bufferBarrier =
+				{
+					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+					DE_NULL,										// const void*		pNext;
+					vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+					vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+					VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+					*m_dstBuffer,									// VkBuffer			buffer;
+					0ull,											// VkDeviceSize		offset;
+					VK_WHOLE_SIZE									// VkDeviceSize		size;
+				};
+				vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+									  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+
 				vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
 				break;
 			}
@@ -2154,6 +2170,19 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		(const VkCommandBufferInheritanceInfo*)DE_NULL	// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 	};
 
+	const vk::VkBufferMemoryBarrier bufferBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+		*m_dstBuffer,									// VkBuffer			buffer;
+		0ull,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE									// VkDeviceSize		size;
+	};
+
 	if (m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 	{
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
@@ -2163,6 +2192,8 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 		VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdCopyQueryPoolResults(*m_secondCmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, 0u);
+		vk.cmdPipelineBarrier(*m_secondCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
 	}
 	else
@@ -2194,6 +2225,8 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdExecuteCommands(m_cmdBuffer.get(), 1u, &m_secondCmdBuffer.get());
 		vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, 0u);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
 }

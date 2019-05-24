@@ -23,7 +23,7 @@
 import os
 import string
 
-from common import *
+from egl.common import *
 from khr_util.format import indentLines
 from khr_util.gen_str_util import addValuePrefix, genStrUtilProtos, genStrUtilImpls
 

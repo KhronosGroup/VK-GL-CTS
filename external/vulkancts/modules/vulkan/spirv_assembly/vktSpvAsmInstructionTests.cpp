@@ -380,6 +380,128 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createUnusedVariableComputeTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "unused_variables", "Compute shaders with unused variables"));
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					positiveFloats	(numElements, 0);
+	vector<float>					negativeFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
+
+	const VariableLocation			testLocations[] =
+	{
+		// Set		Binding
+		{ 0,		5			},
+		{ 5,		5			},
+	};
+
+	for (size_t locationNdx = 0; locationNdx < DE_LENGTH_OF_ARRAY(testLocations); ++locationNdx)
+	{
+		const VariableLocation& location = testLocations[locationNdx];
+
+		// Unused variable.
+		{
+			ComputeShaderSpec				spec;
+
+			spec.assembly =
+				string(getComputeAsmShaderPreamble()) +
+
+				"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+				+ getUnusedDecorations(location)
+
+				+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes())
+
+				+ getUnusedTypesAndConstants()
+
+				+ string(getComputeAsmInputOutputBuffer())
+
+				+ getUnusedBuffer() +
+
+				"%id        = OpVariable %uvec3ptr Input\n"
+				"%zero      = OpConstant %i32 0\n"
+
+				"%main      = OpFunction %void None %voidf\n"
+				"%label     = OpLabel\n"
+				"%idval     = OpLoad %uvec3 %id\n"
+				"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+				"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+				"%inval     = OpLoad %f32 %inloc\n"
+				"%neg       = OpFNegate %f32 %inval\n"
+				"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+				"             OpStore %outloc %neg\n"
+				"             OpReturn\n"
+				"             OpFunctionEnd\n";
+			spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+			spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+			spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+			std::string testName		= "variable_" + location.toString();
+			std::string testDescription	= "Unused variable test with " + location.toDescription();
+
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDescription.c_str(), spec));
+		}
+
+		// Unused function.
+		{
+			ComputeShaderSpec				spec;
+
+			spec.assembly =
+				string(getComputeAsmShaderPreamble("", "", "", getUnusedEntryPoint())) +
+
+				"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+				+ getUnusedDecorations(location)
+
+				+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes())
+
+				+ getUnusedTypesAndConstants() +
+
+				"%c_i32_0 = OpConstant %i32 0\n"
+				"%c_i32_1 = OpConstant %i32 1\n"
+
+				+ string(getComputeAsmInputOutputBuffer())
+
+				+ getUnusedBuffer() +
+
+				"%id        = OpVariable %uvec3ptr Input\n"
+				"%zero      = OpConstant %i32 0\n"
+
+				"%main      = OpFunction %void None %voidf\n"
+				"%label     = OpLabel\n"
+				"%idval     = OpLoad %uvec3 %id\n"
+				"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+				"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+				"%inval     = OpLoad %f32 %inloc\n"
+				"%neg       = OpFNegate %f32 %inval\n"
+				"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+				"             OpStore %outloc %neg\n"
+				"             OpReturn\n"
+				"             OpFunctionEnd\n"
+
+				+ getUnusedFunctionBody();
+
+			spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+			spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+			spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+			std::string testName		= "function_" + location.toString();
+			std::string testDescription	= "Unused function test with " + location.toDescription();
+
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testDescription.c_str(), spec));
+		}
+	}
+
+	return group.release();
+}
+
 template<bool nanSupported>
 bool compareFUnord (const std::vector<Resource>& inputs, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog& log)
 {
@@ -8195,6 +8317,93 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 					createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
 		}
 	}
+	return moduleTests.release();
+}
+
+std::string getUnusedVarTestNamePiece(const std::string& prefix, ShaderTask task)
+{
+	switch (task)
+	{
+		case SHADER_TASK_NONE:			return "";
+		case SHADER_TASK_NORMAL:		return prefix + "_normal";
+		case SHADER_TASK_UNUSED_VAR:	return prefix + "_unused_var";
+		case SHADER_TASK_UNUSED_FUNC:	return prefix + "_unused_func";
+		default:						DE_ASSERT(DE_FALSE);
+	}
+	// unreachable
+	return "";
+}
+
+std::string getShaderTaskIndexName(ShaderTaskIndex index)
+{
+	switch (index)
+	{
+	case SHADER_TASK_INDEX_VERTEX:			return "vertex";
+	case SHADER_TASK_INDEX_GEOMETRY:		return "geom";
+	case SHADER_TASK_INDEX_TESS_CONTROL:	return "tessc";
+	case SHADER_TASK_INDEX_TESS_EVAL:		return "tesse";
+	case SHADER_TASK_INDEX_FRAGMENT:		return "frag";
+	default:								DE_ASSERT(DE_FALSE);
+	}
+	// unreachable
+	return "";
+}
+
+std::string getUnusedVarTestName(const ShaderTaskArray& shaderTasks, const VariableLocation& location)
+{
+	std::string testName = location.toString();
+
+	for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(shaderTasks); ++i)
+	{
+		if (shaderTasks[i] != SHADER_TASK_NONE)
+		{
+			testName += "_" + getUnusedVarTestNamePiece(getShaderTaskIndexName((ShaderTaskIndex)i), shaderTasks[i]);
+		}
+	}
+
+	return testName;
+}
+
+tcu::TestCaseGroup* createUnusedVariableTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		moduleTests				(new tcu::TestCaseGroup(testCtx, "unused_variables", "Graphics shaders with unused variables"));
+
+	ShaderTaskArray						shaderCombinations[]	=
+	{
+		// Vertex					Geometry					Tess. Control				Tess. Evaluation			Fragment
+		{ SHADER_TASK_UNUSED_VAR,	SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_UNUSED_FUNC,	SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_UNUSED_VAR	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_UNUSED_FUNC	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_UNUSED_VAR,		SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_UNUSED_FUNC,	SHADER_TASK_NONE,			SHADER_TASK_NONE,			SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_NONE,			SHADER_TASK_UNUSED_VAR,		SHADER_TASK_NORMAL,			SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_NONE,			SHADER_TASK_UNUSED_FUNC,	SHADER_TASK_NORMAL,			SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_NONE,			SHADER_TASK_NORMAL,			SHADER_TASK_UNUSED_VAR,		SHADER_TASK_NORMAL	},
+		{ SHADER_TASK_NORMAL,		SHADER_TASK_NONE,			SHADER_TASK_NORMAL,			SHADER_TASK_UNUSED_FUNC,	SHADER_TASK_NORMAL	}
+	};
+
+	const VariableLocation				testLocations[] =
+	{
+		// Set		Binding
+		{ 0,		5			},
+		{ 5,		5			},
+	};
+
+	for (size_t combNdx = 0; combNdx < DE_LENGTH_OF_ARRAY(shaderCombinations); ++combNdx)
+	{
+		for (size_t locationNdx = 0; locationNdx < DE_LENGTH_OF_ARRAY(testLocations); ++locationNdx)
+		{
+			const ShaderTaskArray&	shaderTasks		= shaderCombinations[combNdx];
+			const VariableLocation&	location		= testLocations[locationNdx];
+			std::string				testName		= getUnusedVarTestName(shaderTasks, location);
+
+			addFunctionCaseWithPrograms<UnusedVariableContext>(
+				moduleTests.get(), testName, "", createUnusedVariableModules, runAndVerifyUnusedVariablePipeline,
+				createUnusedVariableContext(shaderTasks, location));
+		}
+	}
+
 	return moduleTests.release();
 }
 
@@ -18450,6 +18659,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createWorkgroupMemoryComputeGroup(testCtx));
 	computeTests->addChild(createSpirvIdsAbuseGroup(testCtx));
 	computeTests->addChild(createSignedIntCompareGroup(testCtx));
+	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
@@ -18465,6 +18675,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createOpUndefTests(testCtx));
 	graphicsTests->addChild(createSelectionBlockOrderTests(testCtx));
 	graphicsTests->addChild(createModuleTests(testCtx));
+	graphicsTests->addChild(createUnusedVariableTests(testCtx));
 	graphicsTests->addChild(createSwitchBlockOrderTests(testCtx));
 	graphicsTests->addChild(createOpPhiTests(testCtx));
 	graphicsTests->addChild(createNoContractionTests(testCtx));

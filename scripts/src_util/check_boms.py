@@ -63,16 +63,16 @@ def getFileList (path):
 				yield os.path.join(root, file)
 
 def checkBOMs (files, fix):
-    correct = True
-    for file in files:
-        if hasBOM(file):
+	correct = True
+	for file in files:
+		if hasBOM(file):
 			if fix:
 				removeBOM(file)
 				print("File %s contained BOM and was fixed" % file)
 			else:
 				correct = False
 				print("File %s contains BOM" % file)
-    return correct
+	return correct
 
 if __name__ == "__main__":
 	parser = OptionParser()

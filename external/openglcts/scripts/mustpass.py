@@ -49,7 +49,7 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-    def __init__ (self, name, filters, glconfig = None, rotation = "unspecified", surfacetype = None, surfacewidth = None, surfaceheight = None, baseseed = None, fboconfig = None, required = False, runtime = None, os = "any"):
+	def __init__ (self, name, filters, glconfig = None, rotation = "unspecified", surfacetype = None, surfacewidth = None, surfaceheight = None, baseseed = None, fboconfig = None, required = False, runtime = None, os = "any"):
 		self.name				= name
 		self.glconfig			= glconfig
 		self.rotation			= rotation

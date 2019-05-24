@@ -174,7 +174,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 	}
 
 	if ((m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS || m_data.storageClass == SC_BUFFER_VARIABLE_POINTERS) &&
-		!context.getVariablePointerFeatures().variablePointers)
+		!context.getVariablePointersFeatures().variablePointers)
 	{
 		TCU_THROW(NotSupportedError, "variable pointers not supported");
 	}

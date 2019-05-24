@@ -23,7 +23,7 @@
 import os
 import string
 
-from common import *
+from egl.common import *
 from khr_util.format import indentLines
 
 class LogSpec:

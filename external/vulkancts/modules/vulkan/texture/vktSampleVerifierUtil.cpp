@@ -769,11 +769,11 @@ deUint64 readChannel (const void* ptr,
 	return result;
 }
 
-void convertNormalizedFormat (const void*	pixelPtr,
-							  TextureFormat	texFormat,
-							  FloatFormat	internalFormat,
-							  Vec4&			resultMin,
-							  Vec4&			resultMax)
+void convertNormalizedFormat (const void*						pixelPtr,
+							  TextureFormat						texFormat,
+							  const std::vector<FloatFormat>&	internalFormat,
+							  Vec4&								resultMin,
+							  Vec4&								resultMax)
 {
     TextureSwizzle				readSwizzle	= getChannelReadSwizzle(texFormat.order);
 	const TextureChannelClass	chanClass	= getTextureChannelClass(texFormat.type);
@@ -878,16 +878,37 @@ void convertNormalizedFormat (const void*	pixelPtr,
 				chanVal = (deInt64) chanUVal;
 			}
 
-			convertNormalizedInt(chanVal, chanBits, isSigned, internalFormat, resultMin[compNdx], resultMax[compNdx]);
+			convertNormalizedInt(chanVal, chanBits, isSigned, internalFormat[compNdx], resultMin[compNdx], resultMax[compNdx]);
+
+			// Special handling for components represented as 1 bit. In this case the only possible
+			// converted values are 0.0 and 1.0, even after using roundOut() to account for the min
+			// and max range of the converted value. For 1 bit values the min will always equal max.
+			// To better reflect actual implementations sampling and filtering of converted 1 bit
+			// values we need to modify the min/max range to include at least one ULP of the
+			// internalFormat we're using. So if we're using 8 bit fractional precision for the
+			// conversion instead a 1 bit value of "0" resulting in [0.0 .. 0.0] it will instead
+			// be [0.0 .. 0.00390625], and a value of "1" resulting in [1.0 .. 1.0] will instead
+			// be [0.99609375 .. 1.0]. Later when these values are used for calculating the
+			// reference sampled and filtered values there will be a range that implementations
+			// can fall between. Without this change, even after the reference sampling and filtering
+			// calculations, there will be zero tolerance in the acceptable range since min==max
+			// leaving zero room for rounding errors and arithmetic precision in the implementation.
+			if (chanBits == 1)
+			{
+				if (resultMin[compNdx] == 1.0f)
+					resultMin[compNdx] -= float(internalFormat[compNdx].ulp(1.0));
+				if (resultMax[compNdx] == 0.0f)
+					resultMax[compNdx] += float(internalFormat[compNdx].ulp(0.0));
+			}
 		}
 	}
 }
 
-void convertFloatFormat (const void*	pixelPtr,
-						 TextureFormat	texFormat,
-						 FloatFormat	internalFormat,
-						 Vec4&			resultMin,
-						 Vec4&			resultMax)
+void convertFloatFormat (const void*						pixelPtr,
+						 TextureFormat						texFormat,
+						 const std::vector<FloatFormat>&	internalFormat,
+						 Vec4&								resultMin,
+						 Vec4&								resultMax)
 {
 	DE_ASSERT(getTextureChannelClass(texFormat.type) == TEXTURECHANNELCLASS_FLOATING_POINT);
 
@@ -913,7 +934,7 @@ void convertFloatFormat (const void*	pixelPtr,
 		}
 		else if (texFormat.type == TextureFormat::HALF_FLOAT)
 		{
-			convertFP16((const deUint16*) pixelPtr + chan, internalFormat, resultMin[compNdx], resultMax[compNdx]);
+			convertFP16((const deUint16*) pixelPtr + chan, internalFormat[compNdx], resultMin[compNdx], resultMax[compNdx]);
 		}
 		else
 		{
@@ -924,11 +945,11 @@ void convertFloatFormat (const void*	pixelPtr,
 
 } // anonymous
 
-void convertFormat (const void*		pixelPtr,
-					TextureFormat	texFormat,
-					FloatFormat		internalFormat,
-					Vec4&			resultMin,
-					Vec4&			resultMax)
+void convertFormat (const void*						pixelPtr,
+					TextureFormat					texFormat,
+					const std::vector<FloatFormat>&	internalFormat,
+					Vec4&							resultMin,
+					Vec4&							resultMax)
 {
 	const TextureChannelClass	chanClass	 = getTextureChannelClass(texFormat.type);
 

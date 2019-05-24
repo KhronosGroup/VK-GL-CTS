@@ -22,7 +22,12 @@
 
 import os
 from src_util import *
-from itertools import imap, chain
+from itertools import chain
+
+try:
+	from itertools import imap
+except ImportError:
+	imap=map
 
 def getMangledName (funcName):
 	assert funcName[:2] == "gl"
