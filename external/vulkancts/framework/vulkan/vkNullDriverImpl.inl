@@ -139,42 +139,6 @@ VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createXlibSurfaceKHR (VkInstance instance, const VkXlibSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createXcbSurfaceKHR (VkInstance instance, const VkXcbSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createWaylandSurfaceKHR (VkInstance instance, const VkWaylandSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createMirSurfaceKHR (VkInstance instance, const VkMirSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createWin32SurfaceKHR (VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL createRenderPass2KHR (VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 {
 	DE_UNREF(pAllocator);
@@ -185,12 +149,6 @@ VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pCallback = allocateNonDispHandle<DebugReportCallbackEXT, VkDebugReportCallbackEXT>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createViSurfaceNN (VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutNVX (VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout)
@@ -205,6 +163,48 @@ VKAPI_ATTR VkResult VKAPI_CALL createObjectTableNVX (VkDevice device, const VkOb
 	VK_NULL_RETURN((*pObjectTable = allocateNonDispHandle<ObjectTableNVX, VkObjectTableNVX>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createDebugUtilsMessengerEXT (VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pMessenger = allocateNonDispHandle<DebugUtilsMessengerEXT, VkDebugUtilsMessengerEXT>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createValidationCacheEXT (VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pValidationCache = allocateNonDispHandle<ValidationCacheEXT, VkValidationCacheEXT>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createAccelerationStructureNV (VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pAccelerationStructure = allocateNonDispHandle<AccelerationStructureNV, VkAccelerationStructureNV>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createHeadlessSurfaceEXT (VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createImagePipeSurfaceFUCHSIA (VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createStreamDescriptorSurfaceGGP (VkInstance instance, const VkStreamDescriptorSurfaceCreateInfoGGP* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createIOSSurfaceMVK (VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -217,10 +217,40 @@ VKAPI_ATTR VkResult VKAPI_CALL createMacOSSurfaceMVK (VkInstance instance, const
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createValidationCacheEXT (VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache)
+VKAPI_ATTR VkResult VKAPI_CALL createMetalSurfaceEXT (VkInstance instance, const VkMetalSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pValidationCache = allocateNonDispHandle<ValidationCacheEXT, VkValidationCacheEXT>(device, pCreateInfo, pAllocator)));
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createViSurfaceNN (VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createWaylandSurfaceKHR (VkInstance instance, const VkWaylandSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createWin32SurfaceKHR (VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createXcbSurfaceKHR (VkInstance instance, const VkXcbSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createXlibSurfaceKHR (VkInstance instance, const VkXlibSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
@@ -389,10 +419,22 @@ VKAPI_ATTR void VKAPI_CALL destroyObjectTableNVX (VkDevice device, VkObjectTable
 	freeNonDispHandle<ObjectTableNVX, VkObjectTableNVX>(objectTable, pAllocator);
 }
 
+VKAPI_ATTR void VKAPI_CALL destroyDebugUtilsMessengerEXT (VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(instance);
+	freeNonDispHandle<DebugUtilsMessengerEXT, VkDebugUtilsMessengerEXT>(messenger, pAllocator);
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyValidationCacheEXT (VkDevice device, VkValidationCacheEXT validationCache, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
 	freeNonDispHandle<ValidationCacheEXT, VkValidationCacheEXT>(validationCache, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyAccelerationStructureNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<AccelerationStructureNV, VkAccelerationStructureNV>(accelerationStructure, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties)
@@ -1326,64 +1368,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilitiesKHR (VkPhysicalDevice 
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXlibPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XlibDisplayPtr dpy, pt::XlibVisualID visualID)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(queueFamilyIndex);
-	DE_UNREF(dpy);
-	DE_UNREF(visualID);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXcbPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XcbConnectionPtr connection, pt::XcbVisualid visual_id)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(queueFamilyIndex);
-	DE_UNREF(connection);
-	DE_UNREF(visual_id);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::WaylandDisplayPtr display)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(queueFamilyIndex);
-	DE_UNREF(display);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceMirPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::MirConnectionPtr connection)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(queueFamilyIndex);
-	DE_UNREF(connection);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWin32PresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(queueFamilyIndex);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
-{
-	DE_UNREF(device);
-	DE_UNREF(pGetWin32HandleInfo);
-	DE_UNREF(pHandle);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandlePropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties)
-{
-	DE_UNREF(device);
-	DE_UNREF(handleType);
-	DE_UNREF(handle);
-	DE_UNREF(pMemoryWin32HandleProperties);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd)
 {
 	DE_UNREF(device);
@@ -1398,21 +1382,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryFdPropertiesKHR (VkDevice device, VkExte
 	DE_UNREF(handleType);
 	DE_UNREF(fd);
 	DE_UNREF(pMemoryFdProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreWin32HandleKHR (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pImportSemaphoreWin32HandleInfo);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreWin32HandleKHR (VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
-{
-	DE_UNREF(device);
-	DE_UNREF(pGetWin32HandleInfo);
-	DE_UNREF(pHandle);
 	return VK_SUCCESS;
 }
 
@@ -1474,21 +1443,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapcha
 {
 	DE_UNREF(device);
 	DE_UNREF(swapchain);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pImportFenceWin32HandleInfo);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
-{
-	DE_UNREF(device);
-	DE_UNREF(pGetWin32HandleInfo);
-	DE_UNREF(pHandle);
 	return VK_SUCCESS;
 }
 
@@ -1555,6 +1509,28 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilities2KHR (VkPhysicalDevice
 	DE_UNREF(pDisplayPlaneInfo);
 	DE_UNREF(pCapabilities);
 	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
 }
 
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
@@ -1656,6 +1632,13 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectByteCountEXT (VkCommandBuffer commandB
 	DE_UNREF(vertexStride);
 }
 
+VKAPI_ATTR uint32_t VKAPI_CALL getImageViewHandleNVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
 {
 	DE_UNREF(commandBuffer);
@@ -1678,26 +1661,15 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer comma
 	DE_UNREF(stride);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+VKAPI_ATTR VkResult VKAPI_CALL getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo)
 {
-	DE_UNREF(commandBuffer);
-	DE_UNREF(buffer);
-	DE_UNREF(offset);
-	DE_UNREF(countBuffer);
-	DE_UNREF(countBufferOffset);
-	DE_UNREF(maxDrawCount);
-	DE_UNREF(stride);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(buffer);
-	DE_UNREF(offset);
-	DE_UNREF(countBuffer);
-	DE_UNREF(countBufferOffset);
-	DE_UNREF(maxDrawCount);
-	DE_UNREF(stride);
+	DE_UNREF(device);
+	DE_UNREF(pipeline);
+	DE_UNREF(shaderStage);
+	DE_UNREF(infoType);
+	DE_UNREF(pInfoSize);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceExternalImageFormatPropertiesNV (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
@@ -1710,15 +1682,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceExternalImageFormatPropertiesNV 
 	DE_UNREF(flags);
 	DE_UNREF(externalHandleType);
 	DE_UNREF(pExternalImageFormatProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle)
-{
-	DE_UNREF(device);
-	DE_UNREF(memory);
-	DE_UNREF(handleType);
-	DE_UNREF(pHandle);
 	return VK_SUCCESS;
 }
 
@@ -1784,23 +1747,6 @@ VKAPI_ATTR VkResult VKAPI_CALL releaseDisplayEXT (VkPhysicalDevice physicalDevic
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(display);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL acquireXlibDisplayEXT (VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, VkDisplayKHR display)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(dpy);
-	DE_UNREF(display);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getRandROutputDisplayEXT (VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, pt::RROutput rrOutput, VkDisplayKHR* pDisplay)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(dpy);
-	DE_UNREF(rrOutput);
-	DE_UNREF(pDisplay);
 	return VK_SUCCESS;
 }
 
@@ -1881,6 +1827,62 @@ VKAPI_ATTR void VKAPI_CALL setHdrMetadataEXT (VkDevice device, deUint32 swapchai
 	DE_UNREF(pMetadata);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL setDebugUtilsObjectNameEXT (VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pNameInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL setDebugUtilsObjectTagEXT (VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pTagInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL queueBeginDebugUtilsLabelEXT (VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pLabelInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL queueEndDebugUtilsLabelEXT (VkQueue queue)
+{
+	DE_UNREF(queue);
+}
+
+VKAPI_ATTR void VKAPI_CALL queueInsertDebugUtilsLabelEXT (VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pLabelInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLabelInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndDebugUtilsLabelEXT (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdInsertDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pLabelInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL submitDebugUtilsMessageEXT (VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
+{
+	DE_UNREF(instance);
+	DE_UNREF(messageSeverity);
+	DE_UNREF(messageTypes);
+	DE_UNREF(pCallbackData);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -1892,6 +1894,14 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceMultisamplePropertiesEXT (VkPhysical
 	DE_UNREF(physicalDevice);
 	DE_UNREF(samples);
 	DE_UNREF(pMultisampleProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getImageDrmFormatModifierPropertiesEXT (VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(image);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL mergeValidationCachesEXT (VkDevice device, VkValidationCacheEXT dstCache, deUint32 srcCacheCount, const VkValidationCacheEXT* pSrcCaches)
@@ -1912,6 +1922,122 @@ VKAPI_ATTR VkResult VKAPI_CALL getValidationCacheDataEXT (VkDevice device, VkVal
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBindShadingRateImageNV (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(imageView);
+	DE_UNREF(imageLayout);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportShadingRatePaletteNV (VkCommandBuffer commandBuffer, deUint32 firstViewport, deUint32 viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstViewport);
+	DE_UNREF(viewportCount);
+	DE_UNREF(pShadingRatePalettes);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCoarseSampleOrderNV (VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, deUint32 customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(sampleOrderType);
+	DE_UNREF(customSampleOrderCount);
+	DE_UNREF(pCustomSampleOrders);
+}
+
+VKAPI_ATTR void VKAPI_CALL getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryNV (VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(bindInfoCount);
+	DE_UNREF(pBindInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureNV (VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pInfo);
+	DE_UNREF(instanceData);
+	DE_UNREF(instanceOffset);
+	DE_UNREF(update);
+	DE_UNREF(dst);
+	DE_UNREF(src);
+	DE_UNREF(scratch);
+	DE_UNREF(scratchOffset);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyAccelerationStructureNV (VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeNV mode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(dst);
+	DE_UNREF(src);
+	DE_UNREF(mode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, deUint32 width, deUint32 height, deUint32 depth)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(raygenShaderBindingTableBuffer);
+	DE_UNREF(raygenShaderBindingOffset);
+	DE_UNREF(missShaderBindingTableBuffer);
+	DE_UNREF(missShaderBindingOffset);
+	DE_UNREF(missShaderBindingStride);
+	DE_UNREF(hitShaderBindingTableBuffer);
+	DE_UNREF(hitShaderBindingOffset);
+	DE_UNREF(hitShaderBindingStride);
+	DE_UNREF(callableShaderBindingTableBuffer);
+	DE_UNREF(callableShaderBindingOffset);
+	DE_UNREF(callableShaderBindingStride);
+	DE_UNREF(width);
+	DE_UNREF(height);
+	DE_UNREF(depth);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice device, VkPipeline pipeline, deUint32 firstGroup, deUint32 groupCount, deUintptr dataSize, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pipeline);
+	DE_UNREF(firstGroup);
+	DE_UNREF(groupCount);
+	DE_UNREF(dataSize);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, deUintptr dataSize, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(accelerationStructure);
+	DE_UNREF(dataSize);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(accelerationStructureCount);
+	DE_UNREF(pAccelerationStructures);
+	DE_UNREF(queryType);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL compileDeferredNV (VkDevice device, VkPipeline pipeline, deUint32 shader)
+{
+	DE_UNREF(device);
+	DE_UNREF(pipeline);
+	DE_UNREF(shader);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryHostPointerPropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties)
 {
 	DE_UNREF(device);
@@ -1921,35 +2047,13 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryHostPointerPropertiesEXT (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
+VKAPI_ATTR void VKAPI_CALL cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, deUint32 marker)
 {
-	DE_UNREF(device);
-	DE_UNREF(buffer);
-	DE_UNREF(pProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pPropertyCount);
-	DE_UNREF(pProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
-{
-	DE_UNREF(device);
-	DE_UNREF(queryPool);
-	DE_UNREF(firstQuery);
-	DE_UNREF(queryCount);
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pipelineStage);
+	DE_UNREF(dstBuffer);
+	DE_UNREF(dstOffset);
+	DE_UNREF(marker);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCalibrateableTimeDomainsEXT (VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
@@ -1970,6 +2074,237 @@ VKAPI_ATTR VkResult VKAPI_CALL getCalibratedTimestampsEXT (VkDevice device, deUi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksNV (VkCommandBuffer commandBuffer, deUint32 taskCount, deUint32 firstTask)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(taskCount);
+	DE_UNREF(firstTask);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, deUint32 drawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(drawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, deUint32 firstExclusiveScissor, deUint32 exclusiveScissorCount, const VkRect2D* pExclusiveScissors)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstExclusiveScissor);
+	DE_UNREF(exclusiveScissorCount);
+	DE_UNREF(pExclusiveScissors);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetCheckpointNV (VkCommandBuffer commandBuffer, const void* pCheckpointMarker)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCheckpointMarker);
+}
+
+VKAPI_ATTR void VKAPI_CALL getQueueCheckpointDataNV (VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData)
+{
+	DE_UNREF(queue);
+	DE_UNREF(pCheckpointDataCount);
+	DE_UNREF(pCheckpointData);
+}
+
+VKAPI_ATTR void VKAPI_CALL setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapChain);
+	DE_UNREF(localDimmingEnable);
+}
+
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV (VkPhysicalDevice physicalDevice, deUint32* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pCombinationCount);
+	DE_UNREF(pCombinations);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
+{
+	DE_UNREF(device);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+	DE_UNREF(queryCount);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::WaylandDisplayPtr display)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(display);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWin32PresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandlePropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(handle);
+	DE_UNREF(pMemoryWin32HandleProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importSemaphoreWin32HandleKHR (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportSemaphoreWin32HandleInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreWin32HandleKHR (VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pImportFenceWin32HandleInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(pGetWin32HandleInfo);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle)
+{
+	DE_UNREF(device);
+	DE_UNREF(memory);
+	DE_UNREF(handleType);
+	DE_UNREF(pHandle);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModes2EXT (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, deUint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pSurfaceInfo);
+	DE_UNREF(pPresentModeCount);
+	DE_UNREF(pPresentModes);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL releaseFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupSurfacePresentModes2EXT (VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes)
+{
+	DE_UNREF(device);
+	DE_UNREF(pSurfaceInfo);
+	DE_UNREF(pModes);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXcbPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XcbConnectionPtr connection, pt::XcbVisualid visual_id)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(connection);
+	DE_UNREF(visual_id);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceXlibPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::XlibDisplayPtr dpy, pt::XlibVisualID visualID)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(dpy);
+	DE_UNREF(visualID);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireXlibDisplayEXT (VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, VkDisplayKHR display)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(dpy);
+	DE_UNREF(display);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getRandROutputDisplayEXT (VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, pt::RROutput rrOutput, VkDisplayKHR* pDisplay)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(dpy);
+	DE_UNREF(rrOutput);
+	DE_UNREF(pDisplay);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1981,314 +2316,358 @@ static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkDestroyInstance,									destroyInstance),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,							enumeratePhysicalDevices),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,							getPhysicalDeviceFeatures),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,					getPhysicalDeviceFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,			getPhysicalDeviceImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,						getPhysicalDeviceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,			getPhysicalDeviceQueueFamilyProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,					getPhysicalDeviceMemoryProperties),
-	VK_NULL_FUNC_ENTRY(vkCreateDevice,										createDevice),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,				enumerateDeviceExtensionProperties),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,					enumerateDeviceLayerProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,		getPhysicalDeviceSparseImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,						enumeratePhysicalDeviceGroups),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2,						getPhysicalDeviceFeatures2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2,						getPhysicalDeviceProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2,				getPhysicalDeviceFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2,			getPhysicalDeviceImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2,			getPhysicalDeviceQueueFamilyProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2,				getPhysicalDeviceMemoryProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2,		getPhysicalDeviceSparseImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferProperties,			getPhysicalDeviceExternalBufferProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,			getPhysicalDeviceExternalFenceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphoreProperties,		getPhysicalDeviceExternalSemaphoreProperties),
-	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,									destroySurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,				getPhysicalDeviceSurfaceSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,			getPhysicalDeviceSurfaceCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,				getPhysicalDeviceSurfaceFormatsKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,			getPhysicalDeviceSurfacePresentModesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,				getPhysicalDevicePresentRectanglesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,				getPhysicalDeviceDisplayPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,		getPhysicalDeviceDisplayPlanePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,				getDisplayPlaneSupportedDisplaysKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,						getDisplayModePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,								createDisplayModeKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,					getDisplayPlaneCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,						createDisplayPlaneSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,								createXlibSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,		getPhysicalDeviceXlibPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,								createXcbSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,		getPhysicalDeviceXcbPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,							createWaylandSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,	getPhysicalDeviceWaylandPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateMirSurfaceKHR,								createMirSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMirPresentationSupportKHR,		getPhysicalDeviceMirPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,							createAndroidSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,								createWin32SurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,		getPhysicalDeviceWin32PresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2KHR,						getPhysicalDeviceFeatures2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2KHR,				getPhysicalDeviceFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2KHR,		getPhysicalDeviceImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2KHR,				getPhysicalDeviceMemoryProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2KHR,					getPhysicalDeviceProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2KHR,		getPhysicalDeviceQueueFamilyProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,	getPhysicalDeviceSparseImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroupsKHR,					enumeratePhysicalDeviceGroups),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,		getPhysicalDeviceExternalBufferProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,	getPhysicalDeviceExternalSemaphoreProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,		getPhysicalDeviceExternalFenceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,			getPhysicalDeviceSurfaceCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,				getPhysicalDeviceSurfaceFormats2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,			getPhysicalDeviceDisplayProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,		getPhysicalDeviceDisplayPlaneProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,						getDisplayModeProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,					getDisplayPlaneCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,	getPhysicalDeviceExternalImageFormatPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,									createViSurfaceNN),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,	getPhysicalDeviceGeneratedCommandsPropertiesNVX),
-	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,									releaseDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkAcquireXlibDisplayEXT,								acquireXlibDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetRandROutputDisplayEXT,							getRandROutputDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,			getPhysicalDeviceSurfaceCapabilities2EXT),
-	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,								createIOSSurfaceMVK),
-	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,								createMacOSSurfaceMVK),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,			getPhysicalDeviceMultisamplePropertiesEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,	getPhysicalDeviceCooperativeMatrixPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,		getPhysicalDeviceCalibrateableTimeDomainsEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyInstance,													destroyInstance),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,											enumeratePhysicalDevices),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,											getPhysicalDeviceFeatures),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,									getPhysicalDeviceFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,							getPhysicalDeviceImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,										getPhysicalDeviceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,							getPhysicalDeviceQueueFamilyProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,									getPhysicalDeviceMemoryProperties),
+	VK_NULL_FUNC_ENTRY(vkCreateDevice,														createDevice),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,								enumerateDeviceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,									enumerateDeviceLayerProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,						getPhysicalDeviceSparseImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,										enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2,										getPhysicalDeviceFeatures2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2,										getPhysicalDeviceProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2,								getPhysicalDeviceFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2,							getPhysicalDeviceImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2,							getPhysicalDeviceQueueFamilyProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2,								getPhysicalDeviceMemoryProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2,						getPhysicalDeviceSparseImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferProperties,							getPhysicalDeviceExternalBufferProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,							getPhysicalDeviceExternalFenceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphoreProperties,						getPhysicalDeviceExternalSemaphoreProperties),
+	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,													destroySurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,								getPhysicalDeviceSurfaceSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,							getPhysicalDeviceSurfaceCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,								getPhysicalDeviceSurfaceFormatsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,							getPhysicalDeviceSurfacePresentModesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,								getPhysicalDevicePresentRectanglesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,								getPhysicalDeviceDisplayPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,						getPhysicalDeviceDisplayPlanePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,								getDisplayPlaneSupportedDisplaysKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,										getDisplayModePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,												createDisplayModeKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,									getDisplayPlaneCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,										createDisplayPlaneSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2KHR,										getPhysicalDeviceFeatures2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2KHR,									getPhysicalDeviceProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2KHR,								getPhysicalDeviceFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2KHR,						getPhysicalDeviceImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2KHR,						getPhysicalDeviceQueueFamilyProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2KHR,								getPhysicalDeviceMemoryProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,					getPhysicalDeviceSparseImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroupsKHR,									enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,						getPhysicalDeviceExternalBufferProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,					getPhysicalDeviceExternalSemaphoreProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,						getPhysicalDeviceExternalFenceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,							getPhysicalDeviceSurfaceCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,								getPhysicalDeviceSurfaceFormats2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,							getPhysicalDeviceDisplayProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,						getPhysicalDeviceDisplayPlaneProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,										getDisplayModeProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,									getDisplayPlaneCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,										createDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,										destroyDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,												debugReportMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,					getPhysicalDeviceExternalImageFormatPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,					getPhysicalDeviceGeneratedCommandsPropertiesNVX),
+	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,													releaseDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,							getPhysicalDeviceSurfaceCapabilities2EXT),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugUtilsMessengerEXT,										createDebugUtilsMessengerEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugUtilsMessengerEXT,										destroyDebugUtilsMessengerEXT),
+	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,										submitDebugUtilsMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,							getPhysicalDeviceMultisamplePropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,						getPhysicalDeviceCalibrateableTimeDomainsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,					getPhysicalDeviceCooperativeMatrixPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV,	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV),
+	VK_NULL_FUNC_ENTRY(vkCreateHeadlessSurfaceEXT,											createHeadlessSurfaceEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,											createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateImagePipeSurfaceFUCHSIA,										createImagePipeSurfaceFUCHSIA),
+	VK_NULL_FUNC_ENTRY(vkCreateStreamDescriptorSurfaceGGP,									createStreamDescriptorSurfaceGGP),
+	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,												createIOSSurfaceMVK),
+	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,												createMacOSSurfaceMVK),
+	VK_NULL_FUNC_ENTRY(vkCreateMetalSurfaceEXT,												createMetalSurfaceEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,													createViSurfaceNN),
+	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,											createWaylandSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,					getPhysicalDeviceWaylandPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,												createWin32SurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,						getPhysicalDeviceWin32PresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModes2EXT,							getPhysicalDeviceSurfacePresentModes2EXT),
+	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,												createXcbSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,						getPhysicalDeviceXcbPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,												createXlibSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,						getPhysicalDeviceXlibPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireXlibDisplayEXT,												acquireXlibDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetRandROutputDisplayEXT,											getRandROutputDisplayEXT),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,							getDeviceProcAddr),
-	VK_NULL_FUNC_ENTRY(vkDestroyDevice,								destroyDevice),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue,							getDeviceQueue),
-	VK_NULL_FUNC_ENTRY(vkQueueSubmit,								queueSubmit),
-	VK_NULL_FUNC_ENTRY(vkQueueWaitIdle,								queueWaitIdle),
-	VK_NULL_FUNC_ENTRY(vkDeviceWaitIdle,							deviceWaitIdle),
-	VK_NULL_FUNC_ENTRY(vkAllocateMemory,							allocateMemory),
-	VK_NULL_FUNC_ENTRY(vkFreeMemory,								freeMemory),
-	VK_NULL_FUNC_ENTRY(vkMapMemory,									mapMemory),
-	VK_NULL_FUNC_ENTRY(vkUnmapMemory,								unmapMemory),
-	VK_NULL_FUNC_ENTRY(vkFlushMappedMemoryRanges,					flushMappedMemoryRanges),
-	VK_NULL_FUNC_ENTRY(vkInvalidateMappedMemoryRanges,				invalidateMappedMemoryRanges),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryCommitment,					getDeviceMemoryCommitment),
-	VK_NULL_FUNC_ENTRY(vkBindBufferMemory,							bindBufferMemory),
-	VK_NULL_FUNC_ENTRY(vkBindImageMemory,							bindImageMemory),
-	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements,				getBufferMemoryRequirements),
-	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements,				getImageMemoryRequirements),
-	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements,			getImageSparseMemoryRequirements),
-	VK_NULL_FUNC_ENTRY(vkQueueBindSparse,							queueBindSparse),
-	VK_NULL_FUNC_ENTRY(vkCreateFence,								createFence),
-	VK_NULL_FUNC_ENTRY(vkDestroyFence,								destroyFence),
-	VK_NULL_FUNC_ENTRY(vkResetFences,								resetFences),
-	VK_NULL_FUNC_ENTRY(vkGetFenceStatus,							getFenceStatus),
-	VK_NULL_FUNC_ENTRY(vkWaitForFences,								waitForFences),
-	VK_NULL_FUNC_ENTRY(vkCreateSemaphore,							createSemaphore),
-	VK_NULL_FUNC_ENTRY(vkDestroySemaphore,							destroySemaphore),
-	VK_NULL_FUNC_ENTRY(vkCreateEvent,								createEvent),
-	VK_NULL_FUNC_ENTRY(vkDestroyEvent,								destroyEvent),
-	VK_NULL_FUNC_ENTRY(vkGetEventStatus,							getEventStatus),
-	VK_NULL_FUNC_ENTRY(vkSetEvent,									setEvent),
-	VK_NULL_FUNC_ENTRY(vkResetEvent,								resetEvent),
-	VK_NULL_FUNC_ENTRY(vkCreateQueryPool,							createQueryPool),
-	VK_NULL_FUNC_ENTRY(vkDestroyQueryPool,							destroyQueryPool),
-	VK_NULL_FUNC_ENTRY(vkGetQueryPoolResults,						getQueryPoolResults),
-	VK_NULL_FUNC_ENTRY(vkCreateBuffer,								createBuffer),
-	VK_NULL_FUNC_ENTRY(vkDestroyBuffer,								destroyBuffer),
-	VK_NULL_FUNC_ENTRY(vkCreateBufferView,							createBufferView),
-	VK_NULL_FUNC_ENTRY(vkDestroyBufferView,							destroyBufferView),
-	VK_NULL_FUNC_ENTRY(vkCreateImage,								createImage),
-	VK_NULL_FUNC_ENTRY(vkDestroyImage,								destroyImage),
-	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout,					getImageSubresourceLayout),
-	VK_NULL_FUNC_ENTRY(vkCreateImageView,							createImageView),
-	VK_NULL_FUNC_ENTRY(vkDestroyImageView,							destroyImageView),
-	VK_NULL_FUNC_ENTRY(vkCreateShaderModule,						createShaderModule),
-	VK_NULL_FUNC_ENTRY(vkDestroyShaderModule,						destroyShaderModule),
-	VK_NULL_FUNC_ENTRY(vkCreatePipelineCache,						createPipelineCache),
-	VK_NULL_FUNC_ENTRY(vkDestroyPipelineCache,						destroyPipelineCache),
-	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,						getPipelineCacheData),
-	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,						mergePipelineCaches),
-	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,					createGraphicsPipelines),
-	VK_NULL_FUNC_ENTRY(vkCreateComputePipelines,					createComputePipelines),
-	VK_NULL_FUNC_ENTRY(vkDestroyPipeline,							destroyPipeline),
-	VK_NULL_FUNC_ENTRY(vkCreatePipelineLayout,						createPipelineLayout),
-	VK_NULL_FUNC_ENTRY(vkDestroyPipelineLayout,						destroyPipelineLayout),
-	VK_NULL_FUNC_ENTRY(vkCreateSampler,								createSampler),
-	VK_NULL_FUNC_ENTRY(vkDestroySampler,							destroySampler),
-	VK_NULL_FUNC_ENTRY(vkCreateDescriptorSetLayout,					createDescriptorSetLayout),
-	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorSetLayout,				destroyDescriptorSetLayout),
-	VK_NULL_FUNC_ENTRY(vkCreateDescriptorPool,						createDescriptorPool),
-	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorPool,						destroyDescriptorPool),
-	VK_NULL_FUNC_ENTRY(vkResetDescriptorPool,						resetDescriptorPool),
-	VK_NULL_FUNC_ENTRY(vkAllocateDescriptorSets,					allocateDescriptorSets),
-	VK_NULL_FUNC_ENTRY(vkFreeDescriptorSets,						freeDescriptorSets),
-	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSets,						updateDescriptorSets),
-	VK_NULL_FUNC_ENTRY(vkCreateFramebuffer,							createFramebuffer),
-	VK_NULL_FUNC_ENTRY(vkDestroyFramebuffer,						destroyFramebuffer),
-	VK_NULL_FUNC_ENTRY(vkCreateRenderPass,							createRenderPass),
-	VK_NULL_FUNC_ENTRY(vkDestroyRenderPass,							destroyRenderPass),
-	VK_NULL_FUNC_ENTRY(vkGetRenderAreaGranularity,					getRenderAreaGranularity),
-	VK_NULL_FUNC_ENTRY(vkCreateCommandPool,							createCommandPool),
-	VK_NULL_FUNC_ENTRY(vkDestroyCommandPool,						destroyCommandPool),
-	VK_NULL_FUNC_ENTRY(vkResetCommandPool,							resetCommandPool),
-	VK_NULL_FUNC_ENTRY(vkAllocateCommandBuffers,					allocateCommandBuffers),
-	VK_NULL_FUNC_ENTRY(vkFreeCommandBuffers,						freeCommandBuffers),
-	VK_NULL_FUNC_ENTRY(vkBeginCommandBuffer,						beginCommandBuffer),
-	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,							endCommandBuffer),
-	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,						resetCommandBuffer),
-	VK_NULL_FUNC_ENTRY(vkCmdBindPipeline,							cmdBindPipeline),
-	VK_NULL_FUNC_ENTRY(vkCmdSetViewport,							cmdSetViewport),
-	VK_NULL_FUNC_ENTRY(vkCmdSetScissor,								cmdSetScissor),
-	VK_NULL_FUNC_ENTRY(vkCmdSetLineWidth,							cmdSetLineWidth),
-	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias,							cmdSetDepthBias),
-	VK_NULL_FUNC_ENTRY(vkCmdSetBlendConstants,						cmdSetBlendConstants),
-	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBounds,							cmdSetDepthBounds),
-	VK_NULL_FUNC_ENTRY(vkCmdSetStencilCompareMask,					cmdSetStencilCompareMask),
-	VK_NULL_FUNC_ENTRY(vkCmdSetStencilWriteMask,					cmdSetStencilWriteMask),
-	VK_NULL_FUNC_ENTRY(vkCmdSetStencilReference,					cmdSetStencilReference),
-	VK_NULL_FUNC_ENTRY(vkCmdBindDescriptorSets,						cmdBindDescriptorSets),
-	VK_NULL_FUNC_ENTRY(vkCmdBindIndexBuffer,						cmdBindIndexBuffer),
-	VK_NULL_FUNC_ENTRY(vkCmdBindVertexBuffers,						cmdBindVertexBuffers),
-	VK_NULL_FUNC_ENTRY(vkCmdDraw,									cmdDraw),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexed,							cmdDrawIndexed),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirect,							cmdDrawIndirect),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirect,					cmdDrawIndexedIndirect),
-	VK_NULL_FUNC_ENTRY(vkCmdDispatch,								cmdDispatch),
-	VK_NULL_FUNC_ENTRY(vkCmdDispatchIndirect,						cmdDispatchIndirect),
-	VK_NULL_FUNC_ENTRY(vkCmdCopyBuffer,								cmdCopyBuffer),
-	VK_NULL_FUNC_ENTRY(vkCmdCopyImage,								cmdCopyImage),
-	VK_NULL_FUNC_ENTRY(vkCmdBlitImage,								cmdBlitImage),
-	VK_NULL_FUNC_ENTRY(vkCmdCopyBufferToImage,						cmdCopyBufferToImage),
-	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer,						cmdCopyImageToBuffer),
-	VK_NULL_FUNC_ENTRY(vkCmdUpdateBuffer,							cmdUpdateBuffer),
-	VK_NULL_FUNC_ENTRY(vkCmdFillBuffer,								cmdFillBuffer),
-	VK_NULL_FUNC_ENTRY(vkCmdClearColorImage,						cmdClearColorImage),
-	VK_NULL_FUNC_ENTRY(vkCmdClearDepthStencilImage,					cmdClearDepthStencilImage),
-	VK_NULL_FUNC_ENTRY(vkCmdClearAttachments,						cmdClearAttachments),
-	VK_NULL_FUNC_ENTRY(vkCmdResolveImage,							cmdResolveImage),
-	VK_NULL_FUNC_ENTRY(vkCmdSetEvent,								cmdSetEvent),
-	VK_NULL_FUNC_ENTRY(vkCmdResetEvent,								cmdResetEvent),
-	VK_NULL_FUNC_ENTRY(vkCmdWaitEvents,								cmdWaitEvents),
-	VK_NULL_FUNC_ENTRY(vkCmdPipelineBarrier,						cmdPipelineBarrier),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginQuery,								cmdBeginQuery),
-	VK_NULL_FUNC_ENTRY(vkCmdEndQuery,								cmdEndQuery),
-	VK_NULL_FUNC_ENTRY(vkCmdResetQueryPool,							cmdResetQueryPool),
-	VK_NULL_FUNC_ENTRY(vkCmdWriteTimestamp,							cmdWriteTimestamp),
-	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResults,					cmdCopyQueryPoolResults),
-	VK_NULL_FUNC_ENTRY(vkCmdPushConstants,							cmdPushConstants),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass,						cmdBeginRenderPass),
-	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass,							cmdNextSubpass),
-	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass,							cmdEndRenderPass),
-	VK_NULL_FUNC_ENTRY(vkCmdExecuteCommands,						cmdExecuteCommands),
-	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2,							bindBufferMemory2),
-	VK_NULL_FUNC_ENTRY(vkBindImageMemory2,							bindImageMemory2),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeatures,			getDeviceGroupPeerMemoryFeatures),
-	VK_NULL_FUNC_ENTRY(vkCmdSetDeviceMask,							cmdSetDeviceMask),
-	VK_NULL_FUNC_ENTRY(vkCmdDispatchBase,							cmdDispatchBase),
-	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2,				getImageMemoryRequirements2),
-	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2,				getBufferMemoryRequirements2),
-	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2,			getImageSparseMemoryRequirements2),
-	VK_NULL_FUNC_ENTRY(vkTrimCommandPool,							trimCommandPool),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue2,							getDeviceQueue2),
-	VK_NULL_FUNC_ENTRY(vkCreateSamplerYcbcrConversion,				createSamplerYcbcrConversion),
-	VK_NULL_FUNC_ENTRY(vkDestroySamplerYcbcrConversion,				destroySamplerYcbcrConversion),
-	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplate,			createDescriptorUpdateTemplate),
-	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplate,			destroyDescriptorUpdateTemplate),
-	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplate,			updateDescriptorSetWithTemplate),
-	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,				getDescriptorSetLayoutSupport),
-	VK_NULL_FUNC_ENTRY(vkCreateSwapchainKHR,						createSwapchainKHR),
-	VK_NULL_FUNC_ENTRY(vkDestroySwapchainKHR,						destroySwapchainKHR),
-	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,						getSwapchainImagesKHR),
-	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,						acquireNextImageKHR),
-	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,							queuePresentKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPresentCapabilitiesKHR,		getDeviceGroupPresentCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModesKHR,		getDeviceGroupSurfacePresentModesKHR),
-	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHR,						acquireNextImage2KHR),
-	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,					createSharedSwapchainsKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdDispatchBaseKHR,						cmdDispatchBase),
-	VK_NULL_FUNC_ENTRY(vkCmdSetDeviceMaskKHR,						cmdSetDeviceMask),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeaturesKHR,		getDeviceGroupPeerMemoryFeatures),
-	VK_NULL_FUNC_ENTRY(vkTrimCommandPoolKHR,						trimCommandPool),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,					getMemoryWin32HandleKHR),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHR,			getMemoryWin32HandlePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHR,							getMemoryFdKHR),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryFdPropertiesKHR,					getMemoryFdPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHR,				importSemaphoreWin32HandleKHR),
-	VK_NULL_FUNC_ENTRY(vkGetSemaphoreWin32HandleKHR,				getSemaphoreWin32HandleKHR),
-	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHR,						importSemaphoreFdKHR),
-	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHR,							getSemaphoreFdKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetKHR,					cmdPushDescriptorSetKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,		cmdPushDescriptorSetWithTemplateKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplateKHR,			createDescriptorUpdateTemplate),
-	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplateKHR,		destroyDescriptorUpdateTemplate),
-	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,		updateDescriptorSetWithTemplate),
-	VK_NULL_FUNC_ENTRY(vkCreateRenderPass2KHR,						createRenderPass2KHR),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass2KHR,					cmdBeginRenderPass2KHR),
-	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass2KHR,						cmdNextSubpass2KHR),
-	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass2KHR,						cmdEndRenderPass2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,						getSwapchainStatusKHR),
-	VK_NULL_FUNC_ENTRY(vkImportFenceWin32HandleKHR,					importFenceWin32HandleKHR),
-	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,					getFenceWin32HandleKHR),
-	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,							importFenceFdKHR),
-	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,								getFenceFdKHR),
-	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,			getBufferMemoryRequirements2),
-	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,			getImageMemoryRequirements2),
-	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,		getImageSparseMemoryRequirements2),
-	VK_NULL_FUNC_ENTRY(vkCreateSamplerYcbcrConversionKHR,			createSamplerYcbcrConversion),
-	VK_NULL_FUNC_ENTRY(vkDestroySamplerYcbcrConversionKHR,			destroySamplerYcbcrConversion),
-	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2KHR,						bindBufferMemory2),
-	VK_NULL_FUNC_ENTRY(vkBindImageMemory2KHR,						bindImageMemory2),
-	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupportKHR,			getDescriptorSetLayoutSupport),
-	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,				debugMarkerSetObjectTagEXT),
-	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,				debugMarkerSetObjectNameEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,					cmdDebugMarkerBeginEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,						cmdDebugMarkerEndEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,					cmdDebugMarkerInsertEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdBindTransformFeedbackBuffersEXT,		cmdBindTransformFeedbackBuffersEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginTransformFeedbackEXT,				cmdBeginTransformFeedbackEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdEndTransformFeedbackEXT,				cmdEndTransformFeedbackEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginQueryIndexedEXT,					cmdBeginQueryIndexedEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,						cmdEndQueryIndexedEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCountEXT,				cmdDrawIndirectByteCountEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,					cmdDrawIndirectCountAMD),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,			cmdDrawIndexedIndirectCountAMD),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,					cmdDrawIndirectCountKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,			cmdDrawIndexedIndirectCountKHR),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,					getMemoryWin32HandleNV),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRenderingEXT,			cmdBeginConditionalRenderingEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdEndConditionalRenderingEXT,				cmdEndConditionalRenderingEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdProcessCommandsNVX,						cmdProcessCommandsNVX),
-	VK_NULL_FUNC_ENTRY(vkCmdReserveSpaceForCommandsNVX,				cmdReserveSpaceForCommandsNVX),
-	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNVX,			createIndirectCommandsLayoutNVX),
-	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutNVX,			destroyIndirectCommandsLayoutNVX),
-	VK_NULL_FUNC_ENTRY(vkCreateObjectTableNVX,						createObjectTableNVX),
-	VK_NULL_FUNC_ENTRY(vkDestroyObjectTableNVX,						destroyObjectTableNVX),
-	VK_NULL_FUNC_ENTRY(vkRegisterObjectsNVX,						registerObjectsNVX),
-	VK_NULL_FUNC_ENTRY(vkUnregisterObjectsNVX,						unregisterObjectsNVX),
-	VK_NULL_FUNC_ENTRY(vkCmdSetViewportWScalingNV,					cmdSetViewportWScalingNV),
-	VK_NULL_FUNC_ENTRY(vkDisplayPowerControlEXT,					displayPowerControlEXT),
-	VK_NULL_FUNC_ENTRY(vkRegisterDeviceEventEXT,					registerDeviceEventEXT),
-	VK_NULL_FUNC_ENTRY(vkRegisterDisplayEventEXT,					registerDisplayEventEXT),
-	VK_NULL_FUNC_ENTRY(vkGetSwapchainCounterEXT,					getSwapchainCounterEXT),
-	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,				getRefreshCycleDurationGOOGLE),
-	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,			getPastPresentationTimingGOOGLE),
-	VK_NULL_FUNC_ENTRY(vkCmdSetDiscardRectangleEXT,					cmdSetDiscardRectangleEXT),
-	VK_NULL_FUNC_ENTRY(vkSetHdrMetadataEXT,							setHdrMetadataEXT),
-	VK_NULL_FUNC_ENTRY(vkCmdSetSampleLocationsEXT,					cmdSetSampleLocationsEXT),
-	VK_NULL_FUNC_ENTRY(vkCreateValidationCacheEXT,					createValidationCacheEXT),
-	VK_NULL_FUNC_ENTRY(vkDestroyValidationCacheEXT,					destroyValidationCacheEXT),
-	VK_NULL_FUNC_ENTRY(vkMergeValidationCachesEXT,					mergeValidationCachesEXT),
-	VK_NULL_FUNC_ENTRY(vkGetValidationCacheDataEXT,					getValidationCacheDataEXT),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryHostPointerPropertiesEXT,			getMemoryHostPointerPropertiesEXT),
-	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,	getAndroidHardwareBufferPropertiesANDROID),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,		getMemoryAndroidHardwareBufferANDROID),
-	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressEXT,					getBufferDeviceAddressEXT),
-	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,							resetQueryPoolEXT),
-	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsEXT,				getCalibratedTimestampsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,								getDeviceProcAddr),
+	VK_NULL_FUNC_ENTRY(vkDestroyDevice,									destroyDevice),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue,								getDeviceQueue),
+	VK_NULL_FUNC_ENTRY(vkQueueSubmit,									queueSubmit),
+	VK_NULL_FUNC_ENTRY(vkQueueWaitIdle,									queueWaitIdle),
+	VK_NULL_FUNC_ENTRY(vkDeviceWaitIdle,								deviceWaitIdle),
+	VK_NULL_FUNC_ENTRY(vkAllocateMemory,								allocateMemory),
+	VK_NULL_FUNC_ENTRY(vkFreeMemory,									freeMemory),
+	VK_NULL_FUNC_ENTRY(vkMapMemory,										mapMemory),
+	VK_NULL_FUNC_ENTRY(vkUnmapMemory,									unmapMemory),
+	VK_NULL_FUNC_ENTRY(vkFlushMappedMemoryRanges,						flushMappedMemoryRanges),
+	VK_NULL_FUNC_ENTRY(vkInvalidateMappedMemoryRanges,					invalidateMappedMemoryRanges),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryCommitment,						getDeviceMemoryCommitment),
+	VK_NULL_FUNC_ENTRY(vkBindBufferMemory,								bindBufferMemory),
+	VK_NULL_FUNC_ENTRY(vkBindImageMemory,								bindImageMemory),
+	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements,					getBufferMemoryRequirements),
+	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements,					getImageMemoryRequirements),
+	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements,				getImageSparseMemoryRequirements),
+	VK_NULL_FUNC_ENTRY(vkQueueBindSparse,								queueBindSparse),
+	VK_NULL_FUNC_ENTRY(vkCreateFence,									createFence),
+	VK_NULL_FUNC_ENTRY(vkDestroyFence,									destroyFence),
+	VK_NULL_FUNC_ENTRY(vkResetFences,									resetFences),
+	VK_NULL_FUNC_ENTRY(vkGetFenceStatus,								getFenceStatus),
+	VK_NULL_FUNC_ENTRY(vkWaitForFences,									waitForFences),
+	VK_NULL_FUNC_ENTRY(vkCreateSemaphore,								createSemaphore),
+	VK_NULL_FUNC_ENTRY(vkDestroySemaphore,								destroySemaphore),
+	VK_NULL_FUNC_ENTRY(vkCreateEvent,									createEvent),
+	VK_NULL_FUNC_ENTRY(vkDestroyEvent,									destroyEvent),
+	VK_NULL_FUNC_ENTRY(vkGetEventStatus,								getEventStatus),
+	VK_NULL_FUNC_ENTRY(vkSetEvent,										setEvent),
+	VK_NULL_FUNC_ENTRY(vkResetEvent,									resetEvent),
+	VK_NULL_FUNC_ENTRY(vkCreateQueryPool,								createQueryPool),
+	VK_NULL_FUNC_ENTRY(vkDestroyQueryPool,								destroyQueryPool),
+	VK_NULL_FUNC_ENTRY(vkGetQueryPoolResults,							getQueryPoolResults),
+	VK_NULL_FUNC_ENTRY(vkCreateBuffer,									createBuffer),
+	VK_NULL_FUNC_ENTRY(vkDestroyBuffer,									destroyBuffer),
+	VK_NULL_FUNC_ENTRY(vkCreateBufferView,								createBufferView),
+	VK_NULL_FUNC_ENTRY(vkDestroyBufferView,								destroyBufferView),
+	VK_NULL_FUNC_ENTRY(vkCreateImage,									createImage),
+	VK_NULL_FUNC_ENTRY(vkDestroyImage,									destroyImage),
+	VK_NULL_FUNC_ENTRY(vkGetImageSubresourceLayout,						getImageSubresourceLayout),
+	VK_NULL_FUNC_ENTRY(vkCreateImageView,								createImageView),
+	VK_NULL_FUNC_ENTRY(vkDestroyImageView,								destroyImageView),
+	VK_NULL_FUNC_ENTRY(vkCreateShaderModule,							createShaderModule),
+	VK_NULL_FUNC_ENTRY(vkDestroyShaderModule,							destroyShaderModule),
+	VK_NULL_FUNC_ENTRY(vkCreatePipelineCache,							createPipelineCache),
+	VK_NULL_FUNC_ENTRY(vkDestroyPipelineCache,							destroyPipelineCache),
+	VK_NULL_FUNC_ENTRY(vkGetPipelineCacheData,							getPipelineCacheData),
+	VK_NULL_FUNC_ENTRY(vkMergePipelineCaches,							mergePipelineCaches),
+	VK_NULL_FUNC_ENTRY(vkCreateGraphicsPipelines,						createGraphicsPipelines),
+	VK_NULL_FUNC_ENTRY(vkCreateComputePipelines,						createComputePipelines),
+	VK_NULL_FUNC_ENTRY(vkDestroyPipeline,								destroyPipeline),
+	VK_NULL_FUNC_ENTRY(vkCreatePipelineLayout,							createPipelineLayout),
+	VK_NULL_FUNC_ENTRY(vkDestroyPipelineLayout,							destroyPipelineLayout),
+	VK_NULL_FUNC_ENTRY(vkCreateSampler,									createSampler),
+	VK_NULL_FUNC_ENTRY(vkDestroySampler,								destroySampler),
+	VK_NULL_FUNC_ENTRY(vkCreateDescriptorSetLayout,						createDescriptorSetLayout),
+	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorSetLayout,					destroyDescriptorSetLayout),
+	VK_NULL_FUNC_ENTRY(vkCreateDescriptorPool,							createDescriptorPool),
+	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorPool,							destroyDescriptorPool),
+	VK_NULL_FUNC_ENTRY(vkResetDescriptorPool,							resetDescriptorPool),
+	VK_NULL_FUNC_ENTRY(vkAllocateDescriptorSets,						allocateDescriptorSets),
+	VK_NULL_FUNC_ENTRY(vkFreeDescriptorSets,							freeDescriptorSets),
+	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSets,							updateDescriptorSets),
+	VK_NULL_FUNC_ENTRY(vkCreateFramebuffer,								createFramebuffer),
+	VK_NULL_FUNC_ENTRY(vkDestroyFramebuffer,							destroyFramebuffer),
+	VK_NULL_FUNC_ENTRY(vkCreateRenderPass,								createRenderPass),
+	VK_NULL_FUNC_ENTRY(vkDestroyRenderPass,								destroyRenderPass),
+	VK_NULL_FUNC_ENTRY(vkGetRenderAreaGranularity,						getRenderAreaGranularity),
+	VK_NULL_FUNC_ENTRY(vkCreateCommandPool,								createCommandPool),
+	VK_NULL_FUNC_ENTRY(vkDestroyCommandPool,							destroyCommandPool),
+	VK_NULL_FUNC_ENTRY(vkResetCommandPool,								resetCommandPool),
+	VK_NULL_FUNC_ENTRY(vkAllocateCommandBuffers,						allocateCommandBuffers),
+	VK_NULL_FUNC_ENTRY(vkFreeCommandBuffers,							freeCommandBuffers),
+	VK_NULL_FUNC_ENTRY(vkBeginCommandBuffer,							beginCommandBuffer),
+	VK_NULL_FUNC_ENTRY(vkEndCommandBuffer,								endCommandBuffer),
+	VK_NULL_FUNC_ENTRY(vkResetCommandBuffer,							resetCommandBuffer),
+	VK_NULL_FUNC_ENTRY(vkCmdBindPipeline,								cmdBindPipeline),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewport,								cmdSetViewport),
+	VK_NULL_FUNC_ENTRY(vkCmdSetScissor,									cmdSetScissor),
+	VK_NULL_FUNC_ENTRY(vkCmdSetLineWidth,								cmdSetLineWidth),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias,								cmdSetDepthBias),
+	VK_NULL_FUNC_ENTRY(vkCmdSetBlendConstants,							cmdSetBlendConstants),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBounds,								cmdSetDepthBounds),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilCompareMask,						cmdSetStencilCompareMask),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilWriteMask,						cmdSetStencilWriteMask),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilReference,						cmdSetStencilReference),
+	VK_NULL_FUNC_ENTRY(vkCmdBindDescriptorSets,							cmdBindDescriptorSets),
+	VK_NULL_FUNC_ENTRY(vkCmdBindIndexBuffer,							cmdBindIndexBuffer),
+	VK_NULL_FUNC_ENTRY(vkCmdBindVertexBuffers,							cmdBindVertexBuffers),
+	VK_NULL_FUNC_ENTRY(vkCmdDraw,										cmdDraw),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexed,								cmdDrawIndexed),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirect,								cmdDrawIndirect),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirect,						cmdDrawIndexedIndirect),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatch,									cmdDispatch),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchIndirect,							cmdDispatchIndirect),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyBuffer,									cmdCopyBuffer),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyImage,									cmdCopyImage),
+	VK_NULL_FUNC_ENTRY(vkCmdBlitImage,									cmdBlitImage),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyBufferToImage,							cmdCopyBufferToImage),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer,							cmdCopyImageToBuffer),
+	VK_NULL_FUNC_ENTRY(vkCmdUpdateBuffer,								cmdUpdateBuffer),
+	VK_NULL_FUNC_ENTRY(vkCmdFillBuffer,									cmdFillBuffer),
+	VK_NULL_FUNC_ENTRY(vkCmdClearColorImage,							cmdClearColorImage),
+	VK_NULL_FUNC_ENTRY(vkCmdClearDepthStencilImage,						cmdClearDepthStencilImage),
+	VK_NULL_FUNC_ENTRY(vkCmdClearAttachments,							cmdClearAttachments),
+	VK_NULL_FUNC_ENTRY(vkCmdResolveImage,								cmdResolveImage),
+	VK_NULL_FUNC_ENTRY(vkCmdSetEvent,									cmdSetEvent),
+	VK_NULL_FUNC_ENTRY(vkCmdResetEvent,									cmdResetEvent),
+	VK_NULL_FUNC_ENTRY(vkCmdWaitEvents,									cmdWaitEvents),
+	VK_NULL_FUNC_ENTRY(vkCmdPipelineBarrier,							cmdPipelineBarrier),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginQuery,									cmdBeginQuery),
+	VK_NULL_FUNC_ENTRY(vkCmdEndQuery,									cmdEndQuery),
+	VK_NULL_FUNC_ENTRY(vkCmdResetQueryPool,								cmdResetQueryPool),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteTimestamp,								cmdWriteTimestamp),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResults,						cmdCopyQueryPoolResults),
+	VK_NULL_FUNC_ENTRY(vkCmdPushConstants,								cmdPushConstants),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass,							cmdBeginRenderPass),
+	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass,								cmdNextSubpass),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass,								cmdEndRenderPass),
+	VK_NULL_FUNC_ENTRY(vkCmdExecuteCommands,							cmdExecuteCommands),
+	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2,								bindBufferMemory2),
+	VK_NULL_FUNC_ENTRY(vkBindImageMemory2,								bindImageMemory2),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeatures,				getDeviceGroupPeerMemoryFeatures),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDeviceMask,								cmdSetDeviceMask),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchBase,								cmdDispatchBase),
+	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2,					getImageMemoryRequirements2),
+	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2,					getBufferMemoryRequirements2),
+	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2,				getImageSparseMemoryRequirements2),
+	VK_NULL_FUNC_ENTRY(vkTrimCommandPool,								trimCommandPool),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue2,								getDeviceQueue2),
+	VK_NULL_FUNC_ENTRY(vkCreateSamplerYcbcrConversion,					createSamplerYcbcrConversion),
+	VK_NULL_FUNC_ENTRY(vkDestroySamplerYcbcrConversion,					destroySamplerYcbcrConversion),
+	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplate,				createDescriptorUpdateTemplate),
+	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplate,				destroyDescriptorUpdateTemplate),
+	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplate,				updateDescriptorSetWithTemplate),
+	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,					getDescriptorSetLayoutSupport),
+	VK_NULL_FUNC_ENTRY(vkCreateSwapchainKHR,							createSwapchainKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroySwapchainKHR,							destroySwapchainKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,							getSwapchainImagesKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,							acquireNextImageKHR),
+	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,								queuePresentKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPresentCapabilitiesKHR,			getDeviceGroupPresentCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModesKHR,			getDeviceGroupSurfacePresentModesKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHR,							acquireNextImage2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,						createSharedSwapchainsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPeerMemoryFeaturesKHR,			getDeviceGroupPeerMemoryFeatures),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDeviceMaskKHR,							cmdSetDeviceMask),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchBaseKHR,							cmdDispatchBase),
+	VK_NULL_FUNC_ENTRY(vkTrimCommandPoolKHR,							trimCommandPool),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdKHR,								getMemoryFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryFdPropertiesKHR,						getMemoryFdPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreFdKHR,							importSemaphoreFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreFdKHR,								getSemaphoreFdKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetKHR,						cmdPushDescriptorSetKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,			cmdPushDescriptorSetWithTemplateKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplateKHR,				createDescriptorUpdateTemplate),
+	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplateKHR,			destroyDescriptorUpdateTemplate),
+	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,			updateDescriptorSetWithTemplate),
+	VK_NULL_FUNC_ENTRY(vkCreateRenderPass2KHR,							createRenderPass2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass2KHR,						cmdBeginRenderPass2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass2KHR,							cmdNextSubpass2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass2KHR,							cmdEndRenderPass2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,							getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,								importFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,									getFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,				getImageMemoryRequirements2),
+	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,				getBufferMemoryRequirements2),
+	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,			getImageSparseMemoryRequirements2),
+	VK_NULL_FUNC_ENTRY(vkCreateSamplerYcbcrConversionKHR,				createSamplerYcbcrConversion),
+	VK_NULL_FUNC_ENTRY(vkDestroySamplerYcbcrConversionKHR,				destroySamplerYcbcrConversion),
+	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2KHR,							bindBufferMemory2),
+	VK_NULL_FUNC_ENTRY(vkBindImageMemory2KHR,							bindImageMemory2),
+	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupportKHR,				getDescriptorSetLayoutSupport),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,						cmdDrawIndirectCountKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,				cmdDrawIndexedIndirectCountKHR),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,					debugMarkerSetObjectTagEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,					debugMarkerSetObjectNameEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,						cmdDebugMarkerBeginEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,							cmdDebugMarkerEndEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,						cmdDebugMarkerInsertEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindTransformFeedbackBuffersEXT,			cmdBindTransformFeedbackBuffersEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginTransformFeedbackEXT,					cmdBeginTransformFeedbackEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndTransformFeedbackEXT,					cmdEndTransformFeedbackEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginQueryIndexedEXT,						cmdBeginQueryIndexedEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,							cmdEndQueryIndexedEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCountEXT,					cmdDrawIndirectByteCountEXT),
+	VK_NULL_FUNC_ENTRY(vkGetImageViewHandleNVX,							getImageViewHandleNVX),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,						cmdDrawIndirectCountAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,				cmdDrawIndexedIndirectCountAMD),
+	VK_NULL_FUNC_ENTRY(vkGetShaderInfoAMD,								getShaderInfoAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRenderingEXT,				cmdBeginConditionalRenderingEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndConditionalRenderingEXT,					cmdEndConditionalRenderingEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdProcessCommandsNVX,							cmdProcessCommandsNVX),
+	VK_NULL_FUNC_ENTRY(vkCmdReserveSpaceForCommandsNVX,					cmdReserveSpaceForCommandsNVX),
+	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNVX,				createIndirectCommandsLayoutNVX),
+	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutNVX,				destroyIndirectCommandsLayoutNVX),
+	VK_NULL_FUNC_ENTRY(vkCreateObjectTableNVX,							createObjectTableNVX),
+	VK_NULL_FUNC_ENTRY(vkDestroyObjectTableNVX,							destroyObjectTableNVX),
+	VK_NULL_FUNC_ENTRY(vkRegisterObjectsNVX,							registerObjectsNVX),
+	VK_NULL_FUNC_ENTRY(vkUnregisterObjectsNVX,							unregisterObjectsNVX),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewportWScalingNV,						cmdSetViewportWScalingNV),
+	VK_NULL_FUNC_ENTRY(vkDisplayPowerControlEXT,						displayPowerControlEXT),
+	VK_NULL_FUNC_ENTRY(vkRegisterDeviceEventEXT,						registerDeviceEventEXT),
+	VK_NULL_FUNC_ENTRY(vkRegisterDisplayEventEXT,						registerDisplayEventEXT),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainCounterEXT,						getSwapchainCounterEXT),
+	VK_NULL_FUNC_ENTRY(vkGetRefreshCycleDurationGOOGLE,					getRefreshCycleDurationGOOGLE),
+	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,				getPastPresentationTimingGOOGLE),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDiscardRectangleEXT,						cmdSetDiscardRectangleEXT),
+	VK_NULL_FUNC_ENTRY(vkSetHdrMetadataEXT,								setHdrMetadataEXT),
+	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectNameEXT,					setDebugUtilsObjectNameEXT),
+	VK_NULL_FUNC_ENTRY(vkSetDebugUtilsObjectTagEXT,						setDebugUtilsObjectTagEXT),
+	VK_NULL_FUNC_ENTRY(vkQueueBeginDebugUtilsLabelEXT,					queueBeginDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkQueueEndDebugUtilsLabelEXT,					queueEndDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkQueueInsertDebugUtilsLabelEXT,					queueInsertDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginDebugUtilsLabelEXT,					cmdBeginDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndDebugUtilsLabelEXT,						cmdEndDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdInsertDebugUtilsLabelEXT,					cmdInsertDebugUtilsLabelEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetSampleLocationsEXT,						cmdSetSampleLocationsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetImageDrmFormatModifierPropertiesEXT,		getImageDrmFormatModifierPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkCreateValidationCacheEXT,						createValidationCacheEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyValidationCacheEXT,						destroyValidationCacheEXT),
+	VK_NULL_FUNC_ENTRY(vkMergeValidationCachesEXT,						mergeValidationCachesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetValidationCacheDataEXT,						getValidationCacheDataEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindShadingRateImageNV,						cmdBindShadingRateImageNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewportShadingRatePaletteNV,			cmdSetViewportShadingRatePaletteNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCoarseSampleOrderNV,						cmdSetCoarseSampleOrderNV),
+	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureNV,					createAccelerationStructureNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureNV,				destroyAccelerationStructureNV),
+	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureMemoryRequirementsNV,	getAccelerationStructureMemoryRequirementsNV),
+	VK_NULL_FUNC_ENTRY(vkBindAccelerationStructureMemoryNV,				bindAccelerationStructureMemoryNV),
+	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructureNV,				cmdBuildAccelerationStructureNV),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyAccelerationStructureNV,				cmdCopyAccelerationStructureNV),
+	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysNV,								cmdTraceRaysNV),
+	VK_NULL_FUNC_ENTRY(vkCreateRayTracingPipelinesNV,					createRayTracingPipelinesNV),
+	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupHandlesNV,				getRayTracingShaderGroupHandlesNV),
+	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureHandleNV,				getAccelerationStructureHandleNV),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteAccelerationStructuresPropertiesNV,	cmdWriteAccelerationStructuresPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkCompileDeferredNV,								compileDeferredNV),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryHostPointerPropertiesEXT,				getMemoryHostPointerPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteBufferMarkerAMD,						cmdWriteBufferMarkerAMD),
+	VK_NULL_FUNC_ENTRY(vkGetCalibratedTimestampsEXT,					getCalibratedTimestampsEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksNV,							cmdDrawMeshTasksNV),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectNV,					cmdDrawMeshTasksIndirectNV),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawMeshTasksIndirectCountNV,				cmdDrawMeshTasksIndirectCountNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetExclusiveScissorNV,						cmdSetExclusiveScissorNV),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCheckpointNV,							cmdSetCheckpointNV),
+	VK_NULL_FUNC_ENTRY(vkGetQueueCheckpointDataNV,						getQueueCheckpointDataNV),
+	VK_NULL_FUNC_ENTRY(vkSetLocalDimmingAMD,							setLocalDimmingAMD),
+	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressEXT,						getBufferDeviceAddressEXT),
+	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,								resetQueryPoolEXT),
+	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,		getAndroidHardwareBufferPropertiesANDROID),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,			getMemoryAndroidHardwareBufferANDROID),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,						getMemoryWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHR,				getMemoryWin32HandlePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHR,					importSemaphoreWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreWin32HandleKHR,					getSemaphoreWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkImportFenceWin32HandleKHR,						importFenceWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,						getFenceWin32HandleKHR),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,						getMemoryWin32HandleNV),
+	VK_NULL_FUNC_ENTRY(vkAcquireFullScreenExclusiveModeEXT,				acquireFullScreenExclusiveModeEXT),
+	VK_NULL_FUNC_ENTRY(vkReleaseFullScreenExclusiveModeEXT,				releaseFullScreenExclusiveModeEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModes2EXT,			getDeviceGroupSurfacePresentModes2EXT),
 };
 

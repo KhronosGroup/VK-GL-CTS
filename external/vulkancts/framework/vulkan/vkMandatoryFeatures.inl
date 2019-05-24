@@ -12,24 +12,6 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	coreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	void** nextPtr = &coreFeatures.pNext;
 
-	vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT physicalDeviceInlineUniformBlockFeaturesEXT;
-	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
-	{
-		deMemset(&physicalDeviceInlineUniformBlockFeaturesEXT, 0, sizeof(physicalDeviceInlineUniformBlockFeaturesEXT));
-		physicalDeviceInlineUniformBlockFeaturesEXT.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
-		*nextPtr = &physicalDeviceInlineUniformBlockFeaturesEXT;
-		nextPtr  = &physicalDeviceInlineUniformBlockFeaturesEXT.pNext;
-	}
-
-	vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT physicalDeviceScalarBlockLayoutFeaturesEXT;
-	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_scalar_block_layout"))
-	{
-		deMemset(&physicalDeviceScalarBlockLayoutFeaturesEXT, 0, sizeof(physicalDeviceScalarBlockLayoutFeaturesEXT));
-		physicalDeviceScalarBlockLayoutFeaturesEXT.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		*nextPtr = &physicalDeviceScalarBlockLayoutFeaturesEXT;
-		nextPtr  = &physicalDeviceScalarBlockLayoutFeaturesEXT.pNext;
-	}
-
 	vk::VkPhysicalDevice8BitStorageFeaturesKHR physicalDevice8BitStorageFeaturesKHR;
 	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_8bit_storage"))
 	{
@@ -48,13 +30,13 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeaturesEXT.pNext;
 	}
 
-	vk::VkPhysicalDeviceVariablePointersFeatures physicalDeviceVariablePointersFeatures;
-	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_variable_pointers"))
+	vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT physicalDeviceInlineUniformBlockFeaturesEXT;
+	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
 	{
-		deMemset(&physicalDeviceVariablePointersFeatures, 0, sizeof(physicalDeviceVariablePointersFeatures));
-		physicalDeviceVariablePointersFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES;
-		*nextPtr = &physicalDeviceVariablePointersFeatures;
-		nextPtr  = &physicalDeviceVariablePointersFeatures.pNext;
+		deMemset(&physicalDeviceInlineUniformBlockFeaturesEXT, 0, sizeof(physicalDeviceInlineUniformBlockFeaturesEXT));
+		physicalDeviceInlineUniformBlockFeaturesEXT.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
+		*nextPtr = &physicalDeviceInlineUniformBlockFeaturesEXT;
+		nextPtr  = &physicalDeviceInlineUniformBlockFeaturesEXT.pNext;
 	}
 
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures;
@@ -66,6 +48,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMultiviewFeatures.pNext;
 	}
 
+	vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT physicalDeviceScalarBlockLayoutFeaturesEXT;
+	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_scalar_block_layout"))
+	{
+		deMemset(&physicalDeviceScalarBlockLayoutFeaturesEXT, 0, sizeof(physicalDeviceScalarBlockLayoutFeaturesEXT));
+		physicalDeviceScalarBlockLayoutFeaturesEXT.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+		*nextPtr = &physicalDeviceScalarBlockLayoutFeaturesEXT;
+		nextPtr  = &physicalDeviceScalarBlockLayoutFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR physicalDeviceUniformBufferStandardLayoutFeaturesKHR;
 	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_uniform_buffer_standard_layout"))
 	{
@@ -73,6 +64,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceUniformBufferStandardLayoutFeaturesKHR.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 		*nextPtr = &physicalDeviceUniformBufferStandardLayoutFeaturesKHR;
 		nextPtr  = &physicalDeviceUniformBufferStandardLayoutFeaturesKHR.pNext;
+	}
+
+	vk::VkPhysicalDeviceVariablePointersFeatures physicalDeviceVariablePointersFeatures;
+	if (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_variable_pointers"))
+	{
+		deMemset(&physicalDeviceVariablePointersFeatures, 0, sizeof(physicalDeviceVariablePointersFeatures));
+		physicalDeviceVariablePointersFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES;
+		*nextPtr = &physicalDeviceVariablePointersFeatures;
+		nextPtr  = &physicalDeviceVariablePointersFeatures.pNext;
 	}
 
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);

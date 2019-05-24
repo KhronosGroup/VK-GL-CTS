@@ -127,7 +127,6 @@ enum Type
 	TYPE_XLIB = 0,
 	TYPE_XCB,
 	TYPE_WAYLAND,
-	TYPE_MIR,
 	TYPE_ANDROID,
 	TYPE_WIN32,
 	TYPE_MACOS,
@@ -167,6 +166,11 @@ typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebu
 																				 const char*				pLayerPrefix,
 																				 const char*				pMessage,
 																				 void*						pUserData);
+
+typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
+																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
+																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
+																				 void*												pUserData);
 
 #include "vkStructTypes.inl"
 

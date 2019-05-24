@@ -99,6 +99,9 @@ if __name__ == "__main__":
 	else:
 		files = getAllProjectFiles()
 
+	# filter out original Vulkan header sources
+	files = [f for f in files if "vulkancts/scripts/src" not in f]
+
 	error = not checkInvalidLiterals(files)
 
 	if error:

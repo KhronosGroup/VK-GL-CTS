@@ -1937,7 +1937,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	{
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		&deviceGroupSwapchainInfo,
-		VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,
+		VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,
 		*surface,
 		de::clamp(desiredImageCount, capabilities.minImageCount, capabilities.maxImageCount > 0 ? capabilities.maxImageCount : capabilities.minImageCount + desiredImageCount),
 		formats[0].format,
@@ -1973,23 +1973,23 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		&imageSwapchainCreateInfo,
-		VK_IMAGE_CREATE_BIND_SFR_BIT,			// flags
-		VK_IMAGE_TYPE_2D,						// imageType
-		formats[0].format,						// format
-		{										// extent
-			desiredSize.x(),					//   width
-			desiredSize.y(),					//   height
-			1u									//   depth
+		VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,		// flags
+		VK_IMAGE_TYPE_2D,											// imageType
+		formats[0].format,											// format
+		{															// extent
+			desiredSize.x(),										//   width
+			desiredSize.y(),										//   height
+			1u														//   depth
 		},
-		1u,										// mipLevels
-		1u,										// arrayLayers
-		VK_SAMPLE_COUNT_1_BIT,					// samples
-		VK_IMAGE_TILING_OPTIMAL,				// tiling
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	// usage
-		VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
-		0u,										// queueFamilyIndexCount
-		DE_NULL,								// pQueueFamilyIndices
-		VK_IMAGE_LAYOUT_UNDEFINED				// initialLayout
+		1u,															// mipLevels
+		1u,															// arrayLayers
+		VK_SAMPLE_COUNT_1_BIT,										// samples
+		VK_IMAGE_TILING_OPTIMAL,									// tiling
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,						// usage
+		VK_SHARING_MODE_EXCLUSIVE,									// sharingMode
+		0u,															// queueFamilyIndexCount
+		DE_NULL,													// pQueueFamilyIndices
+		VK_IMAGE_LAYOUT_UNDEFINED									// initialLayout
 	};
 
 	typedef vk::Unique<VkImage>			UniqueImage;
