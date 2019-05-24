@@ -1660,6 +1660,10 @@ typedef struct VkPhysicalDeviceFeatures {
     VkBool32    inheritedQueries;
 } VkPhysicalDeviceFeatures;
 
+// MANDATORY_FEATURE VkPhysicalDeviceFeatures robustBufferAccess						not_used	WHEN_EXTENSIONS_PRESENT ()
+// MANDATORY_FEATURE VkPhysicalDeviceFeatures shaderSampledImageArrayDynamicIndexing	not_used	WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceFeatures shaderStorageBufferArrayDynamicIndexing	not_used	WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+
 typedef struct VkFormatProperties {
     VkFormatFeatureFlags    linearTilingFeatures;
     VkFormatFeatureFlags    optimalTilingFeatures;
@@ -3790,6 +3794,8 @@ typedef struct VkPhysicalDevice8BitStorageFeaturesKHR {
     VkBool32           storagePushConstant8;
 } VkPhysicalDevice8BitStorageFeaturesKHR;
 
+// MANDATORY_FEATURE VkPhysicalDevice8BitStorageFeaturesKHR storageBuffer8BitAccess VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR WHEN_EXTENSIONS_PRESENT ( VK_KHR_8bit_storage )
+
 typedef struct VkPhysicalDevice16BitStorageFeatures {
     VkStructureType    sType;
     void*              pNext;
@@ -4025,6 +4031,8 @@ typedef struct VkPhysicalDeviceMultiviewFeatures {
     VkBool32           multiviewTessellationShader;
 } VkPhysicalDeviceMultiviewFeatures;
 
+// MANDATORY_FEATURE VkPhysicalDeviceMultiviewFeatures multiview VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES WHEN_EXTENSIONS_PRESENT ( VK_KHR_multiview )
+
 typedef struct VkPhysicalDeviceMultiviewProperties {
     VkStructureType    sType;
     void*              pNext;
@@ -4038,6 +4046,8 @@ typedef struct VkPhysicalDeviceVariablePointersFeatures {
     VkBool32           variablePointersStorageBuffer;
     VkBool32           variablePointers;
 } VkPhysicalDeviceVariablePointersFeatures;
+
+// MANDATORY_FEATURE VkPhysicalDeviceVariablePointersFeatures variablePointersStorageBuffer VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES WHEN_EXTENSIONS_PRESENT ( VK_KHR_variable_pointers )
 
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeatures;
 
@@ -8134,6 +8144,20 @@ typedef struct VkPhysicalDeviceDescriptorIndexingFeaturesEXT {
     VkBool32           runtimeDescriptorArray;
 } VkPhysicalDeviceDescriptorIndexingFeaturesEXT;
 
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT shaderUniformTexelBufferArrayDynamicIndexing			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT shaderStorageTexelBufferArrayDynamicIndexing			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT shaderSampledImageArrayNonUniformIndexing			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT shaderStorageBufferArrayNonUniformIndexing			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT shaderUniformTexelBufferArrayNonUniformIndexing		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingSampledImageUpdateAfterBind			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingStorageImageUpdateAfterBind			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingStorageBufferUpdateAfterBind		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingUniformTexelBufferUpdateAfterBind	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingStorageTexelBufferUpdateAfterBind	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingUpdateUnusedWhilePending			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorBindingPartiallyBound						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+// MANDATORY_FEATURE VkPhysicalDeviceDescriptorIndexingFeaturesEXT runtimeDescriptorArray								VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT	 WHEN_EXTENSIONS_PRESENT ( VK_EXT_descriptor_indexing )
+
 typedef struct VkPhysicalDeviceDescriptorIndexingPropertiesEXT {
     VkStructureType    sType;
     void*              pNext;
@@ -8186,6 +8210,9 @@ typedef struct VkPhysicalDeviceInlineUniformBlockFeaturesEXT {
     VkBool32           inlineUniformBlock;
     VkBool32           descriptorBindingInlineUniformBlockUpdateAfterBind;
 } VkPhysicalDeviceInlineUniformBlockFeaturesEXT;
+
+// MANDATORY_FEATURE VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformBlock									VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT	WHEN_EXTENSIONS_PRESENT ( VK_EXT_inline_uniform_block )
+// MANDATORY_FEATURE VkPhysicalDeviceInlineUniformBlockFeaturesEXT descriptorBindingInlineUniformBlockUpdateAfterBind	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT	WHEN_EXTENSIONS_PRESENT ( VK_EXT_inline_uniform_block VK_EXT_descriptor_indexing )
 
 typedef struct VkPhysicalDeviceInlineUniformBlockPropertiesEXT {
     VkStructureType    sType;
@@ -8246,6 +8273,7 @@ typedef struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT {
     VkBool32           scalarBlockLayout;
 } VkPhysicalDeviceScalarBlockLayoutFeaturesEXT;
 
+// MANDATORY_FEATURE VkPhysicalDeviceScalarBlockLayoutFeaturesEXT scalarBlockLayout VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT	WHEN_EXTENSIONS_PRESENT ( VK_EXT_scalar_block_layout )
 
 #define VK_EXT_depth_clip_enable 1
 #define VK_EXT_DEPTH_CLIP_ENABLE_SPEC_VERSION 1
@@ -8458,6 +8486,7 @@ typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
     VkBool32           uniformBufferStandardLayout;
 } VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
 
+// MANDATORY_FEATURE VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR uniformBufferStandardLayout VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR	WHEN_EXTENSIONS_PRESENT ( VK_KHR_uniform_buffer_standard_layout )
 
 #define VK_EXT_pipeline_creation_feedback 1
 #define VK_EXT_PIPELINE_CREATION_FEEDBACK_SPEC_VERSION 1

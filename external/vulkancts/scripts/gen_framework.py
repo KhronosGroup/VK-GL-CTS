@@ -1571,6 +1571,67 @@ def writeContextDefs(dfDefs, filename):
 	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
 	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
 
+def writeMandatoryFeatures(src, filename):
+	stream = []
+	pattern = r'\/\/\s*MANDATORY_FEATURE\s*([\w]+)\s+([\w]+)\s+([\w]+)\s+WHEN_EXTENSIONS_PRESENT\s*\(([\s\w]*)\)'
+	matches	= re.findall(pattern, src)
+	dictStructs = {}
+	dictData = []
+	for m in matches:
+		allExtensions = m[3].split()
+		dictData.append( [ m[0], m[1], allExtensions ] )
+		if m[0] != 'VkPhysicalDeviceFeatures' :
+			dictStructs[m[0]] = [ m[0][2:3].lower() + m[0][3:], m[2], allExtensions[0] ]
+
+	stream.append('bool checkMandatoryFeatures(const vkt::Context& context)\n{')
+	stream.append('\tif ( !vk::isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2") )')
+	stream.append('\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");')
+	stream.append('')
+	stream.append('\ttcu::TestLog& log = context.getTestContext().getLog();')
+	stream.append('\tvk::VkPhysicalDeviceFeatures2 coreFeatures;')
+	stream.append('\tdeMemset(&coreFeatures, 0, sizeof(coreFeatures));');
+	stream.append('\tcoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;');
+	stream.append('\tvoid** nextPtr = &coreFeatures.pNext;')
+	stream.append('')
+	for k, v in dictStructs.items():
+		stream.append('\tvk::' + k + ' ' + v[0]+ ';')
+		stream.append('\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[2] + '"))')
+		stream.append('\t{')
+		stream.append('\t\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));' );
+		stream.append('\t\t' + v[0] + '.sType = ' + v[1] + ';' )
+		stream.append('\t\t*nextPtr = &' + v[0] + ';' )
+		stream.append('\t\tnextPtr  = &' + v[0] + '.pNext;')
+		stream.append('\t}')
+		stream.append('')
+	stream.append('\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);')
+	stream.append('\tbool result = true;')
+	stream.append('')
+
+	for v in dictData:
+		structType = v[0];
+		structName = 'coreFeatures.features';
+		if v[0] != 'VkPhysicalDeviceFeatures' :
+			structName = dictStructs[v[0]][0]
+		if len(v[2]) > 0 :
+			condition = 'if ( '
+			for i, ext in enumerate(v[2]) :
+				condition = condition + 'vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + ext + '")'
+				if i+1 < len(v[2]) :
+					condition = condition + ' && '
+			condition = condition + ' )'
+			stream.append('\t' + condition)
+		stream.append('\t{')
+		stream.append('\t\tif ( ' + structName + '.' + v[1] + ' == VK_FALSE )' )
+		stream.append('\t\t{')
+		stream.append('\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + v[1] + ' not supported" << tcu::TestLog::EndMessage;')
+		stream.append('\t\t\tresult = false;')
+		stream.append('\t\t}')
+		stream.append('\t}')
+		stream.append('')
+	stream.append('\treturn result;')
+	stream.append('}\n')
+	writeInlFile(filename, INL_HEADER, stream)
+
 if __name__ == "__main__":
 	src				= readFile(VULKAN_H)
 	api				= parseAPI(src)
@@ -1608,6 +1669,7 @@ if __name__ == "__main__":
 	writeSupportedExtenions		(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities	(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions		(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
+	writeMandatoryFeatures		(src, os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
 
 	dfd							= generateDeviceFeaturesDefs(src)
 	writeDeviceFeatures         (dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
