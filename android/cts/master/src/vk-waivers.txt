@@ -57,3 +57,12 @@ dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_2
 # is incorrectly disabled when the viewport minDepth is equal to maxDepth.
 #
 dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltazero
+
+
+#
+# VK-GL-CTS Issue #1356
+#
+# This occurs on NVIDIA Kepler GPUs. The affected GPUs are unable to reliably synchronize memory
+# accesses at device scope.
+#
+dEQP-VK.memory_model.*core11*.device.*
