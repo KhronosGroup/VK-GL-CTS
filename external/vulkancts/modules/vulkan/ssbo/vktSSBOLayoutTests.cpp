@@ -812,7 +812,7 @@ struct UnsizedArrayCaseParams
 {
 	int					elementSize;
 	vk::VkDeviceSize	bufferSize;
-	vk::VkDeviceSize	bufferBindOffset;
+	bool				useMinBufferOffset;
 	vk::VkDeviceSize	bufferBindLength;
 	const char*			name;
 };
@@ -938,7 +938,14 @@ tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCasePa
 	VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 
 	// Build descriptor set
-	const VkDescriptorBufferInfo			inputBufferDesc			= makeDescriptorBufferInfo(*inputBuffer, params.bufferBindOffset, params.bufferBindLength);
+	vk::VkDeviceSize bufferBindOffset = 0;
+	if (params.useMinBufferOffset)
+	{
+		const VkPhysicalDeviceLimits	deviceLimits				= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
+		bufferBindOffset											= deviceLimits.minStorageBufferOffsetAlignment;
+	}
+
+	const VkDescriptorBufferInfo			inputBufferDesc			= makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, params.bufferBindLength);
 	const VkDescriptorBufferInfo			outputBufferDesc		= makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
 
 	const VkDescriptorSetAllocateInfo		descAllocInfo			=
@@ -1001,7 +1008,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCasePa
 
 	// Expected number of elements in array at end of storage buffer
 	const VkDeviceSize						boundLength				= params.bufferBindLength == VK_WHOLE_SIZE
-																	? params.bufferSize - params.bufferBindOffset
+																	? params.bufferSize - bufferBindOffset
 																	: params.bufferBindLength;
 	const int								expectedResult			= (int)(boundLength / params.elementSize);
 	const int								actualResult			= *outputBufferPtr;
@@ -1009,7 +1016,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCasePa
 	context.getTestContext().getLog()
 	<< tcu::TestLog::Message
 	<< "Buffer size " << params.bufferSize
-	<< " offset " << params.bufferBindOffset
+	<< " offset " << bufferBindOffset
 	<< " length " << params.bufferBindLength
 	<< " element size " << params.elementSize
 	<< " expected array size: " << expectedResult
@@ -1728,10 +1735,10 @@ void createUnsizedArrayTests (tcu::TestCaseGroup* testGroup)
 {
 	const UnsizedArrayCaseParams subcases[] =
 	{
-		{ 4, 256, 0, 256,			  "float_no_offset_explicit_size" },
-		{ 4, 256, 0, VK_WHOLE_SIZE,	  "float_no_offset_whole_size" },
-		{ 4, 256, 128, 32,			  "float_offset_explicit_size" },
-		{ 4, 256, 128, VK_WHOLE_SIZE, "float_offset_whole_size" },
+		{ 4, 256, false, 256,			"float_no_offset_explicit_size" },
+		{ 4, 256, false, VK_WHOLE_SIZE,	"float_no_offset_whole_size" },
+		{ 4, 512, true, 32,				"float_offset_explicit_size" },
+		{ 4, 512, true, VK_WHOLE_SIZE,	"float_offset_whole_size" },
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(subcases); ndx++)
