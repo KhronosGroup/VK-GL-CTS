@@ -43,10 +43,10 @@ struct SpirVAsmBuildOptions
 	SpirvVersion	targetVersion;
 	bool			supports_VK_KHR_spirv_1_4;
 
-	SpirVAsmBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_)
+	SpirVAsmBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, bool allowSpirv14 = false)
 		: vulkanVersion				(vulkanVersion_)
 		, targetVersion				(targetVersion_)
-		, supports_VK_KHR_spirv_1_4	(false)
+		, supports_VK_KHR_spirv_1_4	(allowSpirv14)
 	{}
 
 	SpirVAsmBuildOptions (void)

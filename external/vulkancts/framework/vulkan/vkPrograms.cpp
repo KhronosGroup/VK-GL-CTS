@@ -109,6 +109,7 @@ void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, c
 		case SPIRV_VERSION_1_1:
 		case SPIRV_VERSION_1_2:
 		case SPIRV_VERSION_1_3: targetEnv = SPV_ENV_VULKAN_1_1;	break;
+		case SPIRV_VERSION_1_4: targetEnv = SPV_ENV_VULKAN_1_1_SPIRV_1_4;	break;
 		default:
 			TCU_THROW(InternalError, "Unexpected SPIR-V version requested");
 	}
