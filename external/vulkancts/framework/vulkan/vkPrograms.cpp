@@ -114,6 +114,7 @@ void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, c
 		case SPIRV_VERSION_1_2:
 		case SPIRV_VERSION_1_3: targetEnv = SPV_ENV_VULKAN_1_1;	break;
 		case SPIRV_VERSION_1_4: targetEnv = SPV_ENV_VULKAN_1_1_SPIRV_1_4;	break;
+		//case SPIRV_VERSION_1_5: targetEnv = SPV_ENV_VULKAN_1_2;	break;
 		default:
 			TCU_THROW(InternalError, "Unexpected SPIR-V version requested");
 	}
@@ -775,6 +776,8 @@ vk::SpirvVersion getMaxSpirvVersionForVulkan (const deUint32 vulkanVersion)
 		result = vk::SPIRV_VERSION_1_0;
 	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_1)
 		result = vk::SPIRV_VERSION_1_3;
+	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_2)
+		result = vk::SPIRV_VERSION_1_5;
 
 	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
 
@@ -793,7 +796,7 @@ vk::SpirvVersion getMaxSpirvVersionForGlsl (const deUint32 vulkanVersion)
 
 SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 {
-	DE_STATIC_ASSERT(SPIRV_VERSION_1_4 + 1 == SPIRV_VERSION_LAST);
+	DE_STATIC_ASSERT(SPIRV_VERSION_1_5 + 1 == SPIRV_VERSION_LAST);
 
 	if (binary.getFormat() != PROGRAM_FORMAT_SPIRV)
 		TCU_THROW(InternalError, "Binary is not in SPIR-V format");
@@ -806,6 +809,7 @@ SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 	const deUint32				spirvBinaryVersion12	= 0x00010200;
 	const deUint32				spirvBinaryVersion13	= 0x00010300;
 	const deUint32				spirvBinaryVersion14	= 0x00010400;
+	const deUint32				spirvBinaryVersion15	= 0x00010500;
 	const SpirvBinaryHeader*	header					= reinterpret_cast<const SpirvBinaryHeader*>(binary.getBinary());
 	const deUint32				spirvVersion			= isNativeSpirVBinaryEndianness()
 														? header->version
@@ -819,6 +823,7 @@ SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 		case spirvBinaryVersion12:	result = SPIRV_VERSION_1_2; break; //!< SPIR-V 1.2
 		case spirvBinaryVersion13:	result = SPIRV_VERSION_1_3; break; //!< SPIR-V 1.3
 		case spirvBinaryVersion14:	result = SPIRV_VERSION_1_4; break; //!< SPIR-V 1.4
+		case spirvBinaryVersion15:	result = SPIRV_VERSION_1_5; break; //!< SPIR-V 1.5
 		default:					TCU_THROW(InternalError, "Unknown SPIR-V version detected in binary");
 	}
 
@@ -827,7 +832,7 @@ SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 
 std::string getSpirvVersionName (const SpirvVersion spirvVersion)
 {
-	DE_STATIC_ASSERT(SPIRV_VERSION_1_4 + 1 == SPIRV_VERSION_LAST);
+	DE_STATIC_ASSERT(SPIRV_VERSION_1_5 + 1 == SPIRV_VERSION_LAST);
 	DE_ASSERT(spirvVersion < SPIRV_VERSION_LAST);
 
 	std::string result;
@@ -839,6 +844,7 @@ std::string getSpirvVersionName (const SpirvVersion spirvVersion)
 		case SPIRV_VERSION_1_2: result = "1.2"; break; //!< SPIR-V 1.2
 		case SPIRV_VERSION_1_3: result = "1.3"; break; //!< SPIR-V 1.3
 		case SPIRV_VERSION_1_4: result = "1.4"; break; //!< SPIR-V 1.4
+		case SPIRV_VERSION_1_5: result = "1.5"; break; //!< SPIR-V 1.5
 		default:				result = "Unknown";
 	}
 
