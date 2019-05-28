@@ -1077,6 +1077,7 @@ void addGraphicsPointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* gro
 		expectedOutput.push_back(2.0f);
 
 	extensions.push_back("VK_KHR_variable_pointers");
+	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
