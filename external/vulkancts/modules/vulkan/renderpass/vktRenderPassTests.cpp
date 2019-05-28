@@ -731,18 +731,19 @@ struct TestConfig
 		IMAGEMEMORY_LAZY		= (1<<1)
 	};
 
-						TestConfig (const RenderPass&	renderPass_,
-									RenderTypes			renderTypes_,
-									CommandBufferTypes	commandBufferTypes_,
-									ImageMemory			imageMemory_,
-									const UVec2&		targetSize_,
-									const UVec2&		renderPos_,
-									const UVec2&		renderSize_,
-									deBool				useFormatCompCount_,
-									deUint32			seed_,
-									deUint32			drawStartNdx_,
-									AllocationKind		allocationKind_,
-									RenderPassType		renderPassType_)
+						TestConfig (const RenderPass&			renderPass_,
+									RenderTypes					renderTypes_,
+									CommandBufferTypes			commandBufferTypes_,
+									ImageMemory					imageMemory_,
+									const UVec2&				targetSize_,
+									const UVec2&				renderPos_,
+									const UVec2&				renderSize_,
+									deBool						useFormatCompCount_,
+									deUint32					seed_,
+									deUint32					drawStartNdx_,
+									AllocationKind				allocationKind_,
+									RenderPassType				renderPassType_,
+									vector<DeviceCoreFeature>	requiredFeatures_ = vector<DeviceCoreFeature>())
 		: renderPass			(renderPass_)
 		, renderTypes			(renderTypes_)
 		, commandBufferTypes	(commandBufferTypes_)
@@ -755,21 +756,23 @@ struct TestConfig
 		, drawStartNdx			(drawStartNdx_)
 		, allocationKind		(allocationKind_)
 		, renderPassType		(renderPassType_)
+		, requiredFeatures		(requiredFeatures_)
 	{
 	}
 
-	RenderPass			renderPass;
-	RenderTypes			renderTypes;
-	CommandBufferTypes	commandBufferTypes;
-	ImageMemory			imageMemory;
-	UVec2				targetSize;
-	UVec2				renderPos;
-	UVec2				renderSize;
-	deBool				useFormatCompCount;
-	deUint32			seed;
-	deUint32			drawStartNdx;
-	AllocationKind		allocationKind;
-	RenderPassType		renderPassType;
+	RenderPass					renderPass;
+	RenderTypes					renderTypes;
+	CommandBufferTypes			commandBufferTypes;
+	ImageMemory					imageMemory;
+	UVec2						targetSize;
+	UVec2						renderPos;
+	UVec2						renderSize;
+	deBool						useFormatCompCount;
+	deUint32					seed;
+	deUint32					drawStartNdx;
+	AllocationKind				allocationKind;
+	RenderPassType				renderPassType;
+	vector<DeviceCoreFeature>	requiredFeatures;
 };
 
 TestConfig::RenderTypes operator| (TestConfig::RenderTypes a, TestConfig::RenderTypes b)
@@ -785,6 +788,12 @@ TestConfig::CommandBufferTypes operator| (TestConfig::CommandBufferTypes a, Test
 TestConfig::ImageMemory operator| (TestConfig::ImageMemory a, TestConfig::ImageMemory b)
 {
 	return (TestConfig::ImageMemory)(((deUint32)a) | ((deUint32)b));
+}
+
+void checkSupport (Context& context, TestConfig config)
+{
+	for (size_t featureNdx = 0; featureNdx < config.requiredFeatures.size(); featureNdx++)
+		context.requireDeviceCoreFeature(config.requiredFeatures[featureNdx]);
 }
 
 void logRenderPassInfo (TestLog&			log,
@@ -4912,7 +4921,7 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 	}
 }
 
-void addAttachmentWriteMaskTests(tcu::TestCaseGroup* group, const TestConfigExternal testConfigExternal)
+void addAttachmentWriteMaskTests (tcu::TestCaseGroup* group, const TestConfigExternal testConfigExternal)
 {
 	const deUint32 attachmentCounts[]	= { 1, 2, 3, 4, 8 };
 
@@ -4973,6 +4982,7 @@ void addAttachmentWriteMaskTests(tcu::TestCaseGroup* group, const TestConfigExte
 				const UVec2								renderPos			= UVec2(0, 0);
 				const UVec2								renderSize			= UVec2(64, 64);
 				const deBool							useFormatCompCount	= DE_TRUE;
+				const vector<DeviceCoreFeature>			requiredFeatures	= {DEVICE_CORE_FEATURE_INDEPENDENT_BLEND};
 				const TestConfig						testConfig			(renderPass,
 																			 render,
 																			 commandBuffer,
@@ -4984,9 +4994,10 @@ void addAttachmentWriteMaskTests(tcu::TestCaseGroup* group, const TestConfigExte
 																			 1293809,
 																			 drawStartNdx,
 																			 testConfigExternal.allocationKind,
-																			 testConfigExternal.renderPassType);
+																			 testConfigExternal.renderPassType,
+																			 requiredFeatures);
 
-				addFunctionCaseWithPrograms<TestConfig>(attachmentCountGroup.get(), testCaseName.c_str(), testCaseName.c_str(), createTestShaders, renderPassTest, testConfig);
+				addFunctionCaseWithPrograms<TestConfig>(attachmentCountGroup.get(), testCaseName.c_str(), testCaseName.c_str(), checkSupport, createTestShaders, renderPassTest, testConfig);
 			}
 		}
 
