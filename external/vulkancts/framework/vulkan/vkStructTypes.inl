@@ -3511,6 +3511,13 @@ struct VkPipelineCreationFeedbackCreateInfoEXT
 	VkPipelineCreationFeedbackEXT*	pPipelineStageCreationFeedbacks;
 };
 
+struct VkCalibratedTimestampInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkTimeDomainEXT	timeDomain;
+};
+
 
 
 

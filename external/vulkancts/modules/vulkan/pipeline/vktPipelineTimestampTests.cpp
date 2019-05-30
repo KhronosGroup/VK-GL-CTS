@@ -48,6 +48,17 @@
 #include <vector>
 #include <cctype>
 #include <locale>
+#include <limits>
+#include <thread>
+#include <chrono>
+#include <time.h>
+
+#if (DE_OS == DE_OS_WIN32)
+#	define VC_EXTRALEAN
+#	define WIN32_LEAN_AND_MEAN
+#	define NOMINMAX
+#	include <windows.h>
+#endif
 
 namespace vkt
 {
@@ -162,6 +173,9 @@ std::string getTransferMethodStr(const TransferMethod method,
 
 	return desc.str();
 }
+
+constexpr deUint32 MIN_TIMESTAMP_VALID_BITS = 36;
+constexpr deUint32 MAX_TIMESTAMP_VALID_BITS = 64;
 
 // helper classes
 class TimestampTestParam
@@ -707,9 +721,10 @@ void TimestampTestInstance::configCommandBuffer(void)
 
 tcu::TestStatus TimestampTestInstance::iterate(void)
 {
-	const DeviceInterface&      vk          = m_context.getDeviceInterface();
-	const VkDevice              vkDevice    = m_context.getDevice();
-	const VkQueue               queue       = m_context.getUniversalQueue();
+	const DeviceInterface&      vk					= m_context.getDeviceInterface();
+	const VkDevice              vkDevice			= m_context.getDevice();
+	const VkQueue               queue				= m_context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	configCommandBuffer();
 
@@ -723,17 +738,23 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 	// Generate the timestamp mask
 	deUint64                    timestampMask;
 	const std::vector<VkQueueFamilyProperties>   queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-	if(queueProperties[0].timestampValidBits == 0)
+	if(queueProperties[queueFamilyIndex].timestampValidBits == 0)
 	{
 		return tcu::TestStatus::fail("Device does not support timestamp!");
 	}
-	else if(queueProperties[0].timestampValidBits == 64)
+	else if (queueProperties[queueFamilyIndex].timestampValidBits < MIN_TIMESTAMP_VALID_BITS || queueProperties[queueFamilyIndex].timestampValidBits > MAX_TIMESTAMP_VALID_BITS)
+	{
+		std::ostringstream msg;
+		msg << "Invalid value for timestampValidBits in queue index " << queueFamilyIndex;
+		return tcu::TestStatus::fail(msg.str());
+	}
+	else if(queueProperties[queueFamilyIndex].timestampValidBits == MAX_TIMESTAMP_VALID_BITS)
 	{
 		timestampMask = 0xFFFFFFFFFFFFFFFF;
 	}
 	else
 	{
-		timestampMask = ((deUint64)1 << queueProperties[0].timestampValidBits) - 1;
+		timestampMask = ((deUint64)1 << queueProperties[queueFamilyIndex].timestampValidBits) - 1;
 	}
 
 	// Get timestamp value from query pool
@@ -882,6 +903,519 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat        
 	*pAlloc = colorImageAlloc;
 
 	return image;
+}
+
+template <class T>
+class CalibratedTimestampTest : public vkt::TestCase
+{
+public:
+								CalibratedTimestampTest		(tcu::TestContext&		testContext,
+															 const std::string&		name,
+															 const std::string&		description)
+									: vkt::TestCase{testContext, name, description}
+									{ }
+	virtual						~CalibratedTimestampTest	(void) override { }
+	virtual void				initPrograms				(SourceCollections&		programCollection) const override;
+	virtual vkt::TestInstance*	createInstance				(Context&				context) const override;
+};
+
+class CalibratedTimestampTestInstance : public vkt::TestInstance
+{
+public:
+							CalibratedTimestampTestInstance		(Context&	context);
+	virtual                 ~CalibratedTimestampTestInstance	(void) override { }
+	virtual tcu::TestStatus iterate								(void) override;
+	virtual tcu::TestStatus runTest								(void) = 0;
+protected:
+	struct CalibratedTimestamp
+	{
+		CalibratedTimestamp(deUint64 timestamp_, deUint64 deviation_) : timestamp{timestamp_}, deviation(deviation_) { }
+		CalibratedTimestamp() : timestamp{}, deviation{} { }
+		deUint64 timestamp;
+		deUint64 deviation;
+	};
+
+	tcu::Maybe<VkTimeDomainEXT>			getBestDomain(const std::vector<VkTimeDomainEXT>& avail, const std::vector<VkTimeDomainEXT>& preferred) const;
+	deUint64							getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const;
+	deUint64							getHostNanoseconds(deUint64 hostTimestamp) const;
+	deUint64							getDeviceNanoseconds(deUint64 devTicksDelta) const;
+	std::vector<CalibratedTimestamp>	getCalibratedTimestamps(const std::vector<VkTimeDomainEXT>& domains);
+	CalibratedTimestamp					getCalibratedTimestamp(VkTimeDomainEXT domain);
+	void								appendQualityMessage(const std::string& message);
+
+	void								verifyDevTimestampMask(deUint64 value) const;
+	deUint64							absDiffWithOverflow(deUint64 a, deUint64 b, deUint64 mask = std::numeric_limits<deUint64>::max()) const;
+	deUint64							positiveDiffWithOverflow(deUint64 before, deUint64 after, deUint64 mask = std::numeric_limits<deUint64>::max()) const;
+	bool								outOfRange(deUint64 begin, deUint64 middle, deUint64 end) const;
+
+	static constexpr deUint64	kBatchTimeLimitNanos		= 1000000000u;	// 1 sec.
+	static constexpr deUint64	kDeviationErrorLimitNanos	=  100000000u;	// 100 ms.
+	static constexpr deUint64	kDeviationWarningLimitNanos =   50000000u;	// 50 ms.
+	static constexpr deUint64	kDefaultToleranceNanos		=   10000000u;	// 10 ms.
+
+#if (DE_OS == DE_OS_WIN32)
+    // Preprocessor used to avoid warning about unused variable.
+	static constexpr deUint64	kNanosecondsPerSecond		= 1000000000u;
+#endif
+	static constexpr deUint64	kNanosecondsPerMillisecond	=    1000000u;
+
+	std::string					m_qualityMessage;
+	float						m_timestampPeriod;
+	tcu::Maybe<VkTimeDomainEXT>	m_devDomain;
+	tcu::Maybe<VkTimeDomainEXT>	m_hostDomain;
+#if (DE_OS == DE_OS_WIN32)
+	deUint64					m_frequency;
+#endif
+
+	Move<VkCommandPool>			m_cmdPool;
+	Move<VkCommandBuffer>		m_cmdBuffer;
+	Move<VkQueryPool>			m_queryPool;
+	deUint64					m_devTimestampMask;
+};
+
+class CalibratedTimestampDevDomainTestInstance : public CalibratedTimestampTestInstance
+{
+public:
+							CalibratedTimestampDevDomainTestInstance	(Context&	context)
+								: CalibratedTimestampTestInstance{context}
+								{ }
+	virtual                 ~CalibratedTimestampDevDomainTestInstance	(void) { }
+	virtual tcu::TestStatus runTest										(void) override;
+};
+
+class CalibratedTimestampHostDomainTestInstance : public CalibratedTimestampTestInstance
+{
+public:
+							CalibratedTimestampHostDomainTestInstance	(Context&	context)
+								: CalibratedTimestampTestInstance{context}
+								{ }
+	virtual                 ~CalibratedTimestampHostDomainTestInstance	(void) { }
+	virtual tcu::TestStatus runTest										(void) override;
+};
+
+class CalibratedTimestampCalibrationTestInstance : public CalibratedTimestampTestInstance
+{
+public:
+							CalibratedTimestampCalibrationTestInstance	(Context&	context)
+								: CalibratedTimestampTestInstance{context}
+								{ }
+	virtual                 ~CalibratedTimestampCalibrationTestInstance	(void) { }
+	virtual tcu::TestStatus runTest										(void) override;
+};
+
+template <class T>
+void CalibratedTimestampTest<T>::initPrograms(SourceCollections& programCollection) const
+{
+	vkt::TestCase::initPrograms(programCollection);
+}
+
+template <class T>
+vkt::TestInstance* CalibratedTimestampTest<T>::createInstance(Context& context) const
+{
+	return new T{context};
+}
+
+CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& context)
+	: TestInstance{context}
+{
+	context.requireDeviceExtension("VK_EXT_calibrated_timestamps");
+
+#if (DE_OS == DE_OS_WIN32)
+	LARGE_INTEGER freq;
+	if (!QueryPerformanceFrequency(&freq))
+	{
+		throw tcu::ResourceError("Unable to get clock frequency with QueryPerformanceFrequency");
+	}
+	if (freq.QuadPart <= 0)
+	{
+		throw tcu::ResourceError("QueryPerformanceFrequency did not return a positive number");
+	}
+	m_frequency = static_cast<deUint64>(freq.QuadPart);
+#endif
+
+	const InstanceInterface&	vki			= context.getInstanceInterface();
+	const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
+
+	// Get timestamp mask.
+	const deUint32								queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const std::vector<VkQueueFamilyProperties>	queueProperties		= vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+
+	DE_ASSERT(queueFamilyIndex < queueProperties.size());
+
+	const deUint32								validBits			= queueProperties[queueFamilyIndex].timestampValidBits;
+
+	if (validBits == 0)
+		throw tcu::NotSupportedError("Universal queue does not support timestamps");
+
+	if (validBits < MIN_TIMESTAMP_VALID_BITS || validBits > MAX_TIMESTAMP_VALID_BITS)
+	{
+		std::ostringstream msg;
+		msg << "Invalid value for timestampValidBits in queue index " << queueFamilyIndex;
+		TCU_FAIL(msg.str());
+	}
+
+	if (validBits == MAX_TIMESTAMP_VALID_BITS)
+		m_devTimestampMask = std::numeric_limits<deUint64>::max();
+	else
+		m_devTimestampMask = ((1ULL << validBits) - 1);
+
+	// Get calibreatable time domains.
+	m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
+
+	deUint32 domainCount;
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, DE_NULL));
+	if (domainCount == 0)
+	{
+		throw tcu::NotSupportedError("No calibrateable time domains found");
+	}
+
+	std::vector<VkTimeDomainEXT> domains;
+	domains.resize(domainCount);
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, domains.data()));
+
+	// Find the dev domain.
+	std::vector<VkTimeDomainEXT> preferredDevDomains;
+	preferredDevDomains.push_back(VK_TIME_DOMAIN_DEVICE_EXT);
+	m_devDomain = getBestDomain(domains, preferredDevDomains);
+
+	// Find the host domain.
+	std::vector<VkTimeDomainEXT> preferredHostDomains;
+#if (DE_OS == DE_OS_WIN32)
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
+#else
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT);
+#endif
+	m_hostDomain = getBestDomain(domains, preferredHostDomains);
+
+	// Initialize command buffers and queries.
+	const DeviceInterface&      vk                  = context.getDeviceInterface();
+	const VkDevice				vkDevice			= context.getDevice();
+
+	const VkQueryPoolCreateInfo queryPoolParams =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,    // VkStructureType               sType;
+		DE_NULL,                                     // const void*                   pNext;
+		0u,                                          // VkQueryPoolCreateFlags        flags;
+		VK_QUERY_TYPE_TIMESTAMP,                     // VkQueryType                   queryType;
+		1u,                                          // deUint32                      entryCount;
+		0u,                                          // VkQueryPipelineStatisticFlags pipelineStatistics;
+	};
+
+	m_queryPool	= createQueryPool(vk, vkDevice, &queryPoolParams);
+	m_cmdPool	= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+tcu::Maybe<VkTimeDomainEXT> CalibratedTimestampTestInstance::getBestDomain(const std::vector<VkTimeDomainEXT>& avail, const std::vector<VkTimeDomainEXT>& preferred) const
+{
+	for (auto domain : preferred)
+	{
+		if (find(avail.begin(), avail.end(), domain) != avail.end())
+			return tcu::just(domain);
+	}
+	return tcu::nothing<VkTimeDomainEXT>();
+}
+
+deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const
+{
+#if (DE_OS == DE_OS_WIN32)
+	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
+	LARGE_INTEGER result;
+	if (!QueryPerformanceCounter(&result))
+	{
+		throw tcu::ResourceError("Unable to obtain host native timestamp for Win32");
+	}
+	if (result.QuadPart < 0)
+	{
+		throw tcu::ResourceError("Host-native timestamp for Win32 less than zero");
+	}
+	return static_cast<deUint64>(result.QuadPart);
+#else
+	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT ||
+			  hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
+
+	clockid_t id = ((hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT) ? CLOCK_MONOTONIC : CLOCK_MONOTONIC_RAW);
+	struct timespec ts;
+	if (clock_gettime(id, &ts) != 0)
+	{
+		throw tcu::ResourceError("Unable to obtain host native timestamp for POSIX");
+	}
+	return (static_cast<deUint64>(ts.tv_sec) * 1000000000ULL + ts.tv_nsec);
+#endif
+}
+
+deUint64 CalibratedTimestampTestInstance::getHostNanoseconds(deUint64 hostTimestamp) const
+{
+#if (DE_OS == DE_OS_WIN32)
+	deUint64 secs	= hostTimestamp / m_frequency;
+	deUint64 nanos	= ((hostTimestamp % m_frequency) * kNanosecondsPerSecond) / m_frequency;
+	return ((secs * kNanosecondsPerSecond) + nanos);
+#else
+	return hostTimestamp;
+#endif
+}
+
+// This method will be used when devTicksDelta is (supposedly) a small amount of ticks between two events. We will check
+// devTicksDelta is reasonably small for the calculation below to succeed without losing precision.
+deUint64 CalibratedTimestampTestInstance::getDeviceNanoseconds(deUint64 devTicksDelta) const
+{
+	if (devTicksDelta > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
+	{
+		std::ostringstream msg;
+		msg << "Number of device ticks too big for conversion to nanoseconds: " << devTicksDelta;
+		throw tcu::InternalError(msg.str());
+	}
+	return static_cast<deUint64>(static_cast<double>(devTicksDelta) * m_timestampPeriod);
+}
+
+tcu::TestStatus CalibratedTimestampTestInstance::iterate(void)
+{
+	// Notes:
+	//	1) Clocks may overflow.
+	//	2) Because m_timestampPeriod is a floating point value, there may be less than one nano per tick.
+
+	const tcu::TestStatus result = runTest();
+	if (result.getCode() != QP_TEST_RESULT_PASS)
+		return result;
+
+	if (!m_qualityMessage.empty())
+	{
+		const std::string msg = "Warnings found: " + m_qualityMessage;
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, msg);
+	}
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Verify all invalid timestamp bits are zero.
+void CalibratedTimestampTestInstance::verifyDevTimestampMask(deUint64 value) const
+{
+	// The spec says:
+	// timestampValidBits is the unsigned integer count of meaningful bits in
+	// the timestamps written via vkCmdWriteTimestamp. The valid range for the
+	// count is 36..64 bits, or a value of 0, indicating no support for
+	// timestamps. Bits outside the valid range are guaranteed to be zeros.
+	if (value > m_devTimestampMask)
+	{
+		std::ostringstream msg;
+		msg << std::hex << "Invalid device timestamp value 0x" << value << " according to device timestamp mask 0x" << m_devTimestampMask;
+		TCU_FAIL(msg.str());
+	}
+}
+
+// Absolute difference between two timestamps A and B taking overflow into account. Pick the smallest difference between the two
+// possibilities. We don't know beforehand if B > A or vice versa. Take the valid bit mask into account.
+deUint64 CalibratedTimestampTestInstance::absDiffWithOverflow(deUint64 a, deUint64 b, deUint64 mask) const
+{
+	//	<---------+ range +-------->
+	//
+	//	+--------------------------+
+	//	|         deUint64         |
+	//	+------^-----------^-------+
+	//	       +           +
+	//	       a           b
+	//	       +----------->
+	//	       ccccccccccccc
+	//	------>             +-------
+	//	ddddddd             dddddddd
+
+	DE_ASSERT(a <= mask);
+	DE_ASSERT(b <= mask);
+
+	const deUint64 c = ((a >= b) ? (a - b) : (b - a));
+	if (c == 0u)
+		return c;
+	const deUint64 d = (mask - c) + 1;
+	return ((c < d) ? c : d);
+}
+
+// Positive difference between both marks, advancing from before to after, taking overflow and the valid bit mask into account.
+deUint64 CalibratedTimestampTestInstance::positiveDiffWithOverflow(deUint64 before, deUint64 after, deUint64 mask) const
+{
+	DE_ASSERT(before <= mask);
+	DE_ASSERT(after  <= mask);
+
+	return ((before <= after) ? (after - before) : ((mask - (before - after)) + 1));
+}
+
+// Return true if middle is not between begin and end, taking overflow into account.
+bool CalibratedTimestampTestInstance::outOfRange(deUint64 begin, deUint64 middle, deUint64 end) const
+{
+	return (((begin <= end) && (middle < begin || middle > end	)) ||
+			((begin >  end) && (middle > end   && middle < begin)));
+}
+
+std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTimestampTestInstance::getCalibratedTimestamps(const std::vector<VkTimeDomainEXT>& domains)
+{
+	std::vector<VkCalibratedTimestampInfoEXT> infos;
+	for (auto domain : domains)
+	{
+		VkCalibratedTimestampInfoEXT info;
+		info.sType = getStructureType<VkCalibratedTimestampInfoEXT>();
+		info.pNext = DE_NULL;
+		info.timeDomain = domain;
+		infos.push_back(info);
+	}
+
+	std::vector<deUint64> timestamps(domains.size());
+	deUint64			  deviation;
+
+	const DeviceInterface&      vk          = m_context.getDeviceInterface();
+	const VkDevice              vkDevice    = m_context.getDevice();
+
+	VK_CHECK(vk.getCalibratedTimestampsEXT(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
+
+	if (deviation > kDeviationErrorLimitNanos)
+	{
+		throw tcu::InternalError("Calibrated maximum deviation too big");
+	}
+	else if (deviation > kDeviationWarningLimitNanos)
+	{
+		appendQualityMessage("Calibrated maximum deviation beyond desirable limits");
+	}
+	else if (deviation == 0 && domains.size() > 1)
+	{
+		appendQualityMessage("Calibrated maximum deviation reported as zero");
+	}
+
+	// Pack results.
+	std::vector<CalibratedTimestamp> results;
+	for (size_t i = 0; i < domains.size(); ++i)
+	{
+		if (domains[i] == VK_TIME_DOMAIN_DEVICE_EXT)
+			verifyDevTimestampMask(timestamps[i]);
+		results.emplace_back(timestamps[i], deviation);
+	}
+	return results;
+}
+
+CalibratedTimestampTestInstance::CalibratedTimestamp CalibratedTimestampTestInstance::getCalibratedTimestamp(VkTimeDomainEXT domain)
+{
+	// Single domain, single result.
+	return getCalibratedTimestamps(std::vector<VkTimeDomainEXT>(1, domain))[0];
+}
+
+void CalibratedTimestampTestInstance::appendQualityMessage(const std::string& message)
+{
+	if (!m_qualityMessage.empty())
+		m_qualityMessage += "; ";
+	m_qualityMessage += message;
+}
+
+// Test device domain makes sense and is consistent with vkCmdWriteTimestamp().
+tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest()
+{
+	if (!m_devDomain)
+		throw tcu::NotSupportedError("No suitable device time domain found");
+
+	const VkTimeDomainEXT		devDomain	= *m_devDomain;
+	const DeviceInterface&      vk          = m_context.getDeviceInterface();
+	const VkDevice              vkDevice    = m_context.getDevice();
+	const VkQueue               queue       = m_context.getUniversalQueue();
+
+	const CalibratedTimestamp	before		= getCalibratedTimestamp(devDomain);
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	const CalibratedTimestamp	after		= getCalibratedTimestamp(devDomain);
+	const deUint64				diffNanos	= getDeviceNanoseconds(positiveDiffWithOverflow(before.timestamp, after.timestamp, m_devTimestampMask));
+	deUint64					written;
+	VK_CHECK(vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, 1u, sizeof(written), &written, sizeof(written), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)));
+	verifyDevTimestampMask(written);
+
+	if (diffNanos > kBatchTimeLimitNanos)
+	{
+		return tcu::TestStatus::fail("Batch of work took too long to execute");
+	}
+
+	if (outOfRange(before.timestamp, written, after.timestamp))
+	{
+		return tcu::TestStatus::fail("vkCmdWriteTimestamp() inconsistent with vkGetCalibratedTimestampsEXT()");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Test host domain makes sense and is consistent with native host values.
+tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest()
+{
+	if (!m_hostDomain)
+		throw tcu::NotSupportedError("No suitable host time domain found");
+
+	const VkTimeDomainEXT		hostDomain	= *m_hostDomain;
+	const deUint64				before		= getHostNativeTimestamp(hostDomain);
+	const CalibratedTimestamp	vkTS		= getCalibratedTimestamp(hostDomain);
+	const deUint64				after		= getHostNativeTimestamp(hostDomain);
+	const deUint64				diffNanos	= getHostNanoseconds(positiveDiffWithOverflow(before, after));
+
+	if (diffNanos > kBatchTimeLimitNanos)
+	{
+		return tcu::TestStatus::fail("Querying host domain took too long to execute");
+	}
+
+	if (outOfRange(before, vkTS.timestamp, after))
+	{
+		return tcu::TestStatus::fail("vkGetCalibratedTimestampsEXT() inconsistent with native host API");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Verify predictable timestamps and calibration possible.
+tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest()
+{
+	if (!m_devDomain)
+		throw tcu::NotSupportedError("No suitable device time domain found");
+	if (!m_hostDomain)
+		throw tcu::NotSupportedError("No suitable host time domain found");
+
+	VkTimeDomainEXT					devDomain	= *m_devDomain;
+	VkTimeDomainEXT					hostDomain	= *m_hostDomain;
+
+	std::vector<VkTimeDomainEXT>	domains;
+	domains.push_back(devDomain);		// Device results at index 0.
+	domains.push_back(hostDomain);	// Host results at index 1.
+
+	// Measure time.
+	constexpr deUint32	kSleepMilliseconds	= 200;
+	constexpr deUint32	kSleepNanoseconds	= kSleepMilliseconds * kNanosecondsPerMillisecond;
+
+	const std::vector<CalibratedTimestamp> before	= getCalibratedTimestamps(domains);
+	std::this_thread::sleep_for(std::chrono::nanoseconds(kSleepNanoseconds));
+	const std::vector<CalibratedTimestamp> after	= getCalibratedTimestamps(domains);
+
+	// Check device timestamp is as expected.
+	const deUint64 devBeforeTicks	= before[0].timestamp;
+	const deUint64 devAfterTicks	= after[0].timestamp;
+	const deUint64 devExpectedTicks	= ((devBeforeTicks + static_cast<deUint64>(static_cast<double>(kSleepNanoseconds) / m_timestampPeriod)) & m_devTimestampMask);
+	const deUint64 devDiffNanos		= getDeviceNanoseconds(absDiffWithOverflow(devAfterTicks, devExpectedTicks, m_devTimestampMask));
+	const deUint64 maxDevDiffNanos	= std::max({ kDefaultToleranceNanos, before[0].deviation + after[0].deviation });
+
+	if (devDiffNanos > maxDevDiffNanos)
+	{
+		std::ostringstream msg;
+		msg << "Device expected timestamp differs " << devDiffNanos << " nanoseconds (expect value <= " << maxDevDiffNanos << ")";
+		return tcu::TestStatus::fail(msg.str());
+	}
+
+	// Check host timestamp is as expected.
+	const deUint64 hostBefore		= getHostNanoseconds(before[1].timestamp);
+	const deUint64 hostAfter		= getHostNanoseconds(after[1].timestamp);
+	const deUint64 hostExpected		= hostBefore + kSleepNanoseconds;
+	const deUint64 hostDiff			= absDiffWithOverflow(hostAfter, hostExpected);
+	const deUint64 maxHostDiff		= std::max({ kDefaultToleranceNanos, before[1].deviation + after[1].deviation });
+
+	if (hostDiff > maxHostDiff)
+	{
+		std::ostringstream msg;
+		msg << "Host expected timestamp differs " << hostDiff << " nanoseconds (expected value <= " << maxHostDiff << ")";
+		return tcu::TestStatus::fail(msg.str());
+	}
+
+	return tcu::TestStatus::pass("Pass");
 }
 
 class BasicGraphicsTest : public TimestampTest
@@ -2391,6 +2925,17 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		}
 
 		timestampTests->addChild(transferTests.release());
+	}
+
+	// Calibrated Timestamp Tests.
+	{
+		de::MovePtr<tcu::TestCaseGroup> calibratedTimestampTests (new tcu::TestCaseGroup(testCtx, "calibrated", "VK_EXT_calibrated_timestamps tests"));
+
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampDevDomainTestInstance>	(testCtx, "dev_domain_test",	"Test device domain"));
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampHostDomainTestInstance>	(testCtx, "host_domain_test",	"Test host domain"));
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampCalibrationTestInstance>	(testCtx, "calibration_test",	"Test calibration using device and host domains"));
+
+		timestampTests->addChild(calibratedTimestampTests.release());
 	}
 
 	// Misc Tests

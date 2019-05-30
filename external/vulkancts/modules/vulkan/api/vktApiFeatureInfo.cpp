@@ -1600,6 +1600,20 @@ tcu::TestStatus deviceMemoryBudgetProperties (Context& context)
 	return tcu::TestStatus::pass("Querying memory budget properties succeeded");
 }
 
+namespace
+{
+
+#include "vkMandatoryFeatures.inl"
+
+}
+
+tcu::TestStatus deviceMandatoryFeatures(Context& context)
+{
+	if( checkMandatoryFeatures(context) )
+		return tcu::TestStatus::pass("Passed");
+	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: chapter 35.1 )");
+}
+
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 {
 	struct Formatpair
@@ -3719,6 +3733,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
 		addFunctionCase(deviceInfoTests.get(), "no_khx_extensions",			"KHX extensions",			testNoKhxExtensions);
 		addFunctionCase(deviceInfoTests.get(), "memory_budget",				"Memory budget",			deviceMemoryBudgetProperties);
+		addFunctionCase(deviceInfoTests.get(), "mandatory_features",		"Mandatory features",		deviceMandatoryFeatures);
 
 		infoTests->addChild(deviceInfoTests.release());
 	}

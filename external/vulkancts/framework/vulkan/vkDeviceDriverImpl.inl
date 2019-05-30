@@ -1061,3 +1061,8 @@ void DeviceDriver::resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, de
 {
 	m_vk.resetQueryPoolEXT(device, queryPool, firstQuery, queryCount);
 }
+
+VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation) const
+{
+	return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
+}

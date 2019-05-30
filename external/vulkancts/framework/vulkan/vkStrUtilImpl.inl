@@ -368,6 +368,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT:									return "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT";
@@ -1571,6 +1572,19 @@ const char* getScopeNVName (VkScopeNV value)
 		case VK_SCOPE_QUEUE_FAMILY_NV:	return "VK_SCOPE_QUEUE_FAMILY_NV";
 		case VK_SCOPE_MAX_ENUM_NV:		return "VK_SCOPE_MAX_ENUM_NV";
 		default:						return DE_NULL;
+	}
+}
+
+const char* getTimeDomainEXTName (VkTimeDomainEXT value)
+{
+	switch (value)
+	{
+		case VK_TIME_DOMAIN_DEVICE_EXT:						return "VK_TIME_DOMAIN_DEVICE_EXT";
+		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT:			return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT";
+		case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT:		return "VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT";
+		case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT:	return "VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT";
+		case VK_TIME_DOMAIN_MAX_ENUM_EXT:					return "VK_TIME_DOMAIN_MAX_ENUM_EXT";
+		default:											return DE_NULL;
 	}
 }
 
@@ -7279,6 +7293,16 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineCreationFeedbackCreat
 	s << "\tpPipelineCreationFeedback = " << value.pPipelineCreationFeedback << '\n';
 	s << "\tpipelineStageCreationFeedbackCount = " << value.pipelineStageCreationFeedbackCount << '\n';
 	s << "\tpPipelineStageCreationFeedbacks = " << value.pPipelineStageCreationFeedbacks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCalibratedTimestampInfoEXT& value)
+{
+	s << "VkCalibratedTimestampInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttimeDomain = " << value.timeDomain << '\n';
 	s << '}';
 	return s;
 }

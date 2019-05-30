@@ -213,3 +213,4 @@ GetAndroidHardwareBufferPropertiesANDROIDFunc	getAndroidHardwareBufferProperties
 GetMemoryAndroidHardwareBufferANDROIDFunc		getMemoryAndroidHardwareBufferANDROID;
 GetBufferDeviceAddressEXTFunc					getBufferDeviceAddressEXT;
 ResetQueryPoolEXTFunc							resetQueryPoolEXT;
+GetCalibratedTimestampsEXTFunc					getCalibratedTimestampsEXT;
