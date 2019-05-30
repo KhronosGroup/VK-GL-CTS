@@ -1420,134 +1420,144 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 	}
 
 	const VkQueue				queue				= m_context.getUniversalQueue();
-	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
+	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	beginCommandBuffer(vk, *cmdBuffer, 0u);
-
-	vk.cmdFillBuffer(*cmdBuffer, **buffers[2], 0, bufferSizes[2], 0);
-
-	for (deUint32 i = 0; i < 2; ++i)
-	{
-		if (!images[i])
-			continue;
-
-		const VkImageMemoryBarrier imageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-			DE_NULL,											// const void*			pNext
-			0u,													// VkAccessFlags		srcAccessMask
-			VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout		oldLayout
-			VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout		newLayout
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-			**images[i],										// VkImage				image
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-				0u,										// uint32_t				baseMipLevel
-				1u,										// uint32_t				mipLevels,
-				0u,										// uint32_t				baseArray
-				1u,										// uint32_t				arraySize
-			}
-		};
-
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-							 (VkDependencyFlags)0,
-							  0, (const VkMemoryBarrier*)DE_NULL,
-							  0, (const VkBufferMemoryBarrier*)DE_NULL,
-							  1, &imageBarrier);
-	}
-
-	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
-	vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
-
 	VkBufferDeviceAddressInfoEXT addrInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
-		DE_NULL,											// const void*		 pNext;
-		0,													// VkBuffer			buffer
-	};
-	if (m_data.payloadSC == SC_PHYSBUFFER)
-	{
-		addrInfo.buffer = **buffers[0];
-		VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
-		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
-							0, sizeof(VkDeviceSize), &addr);
-	}
-	if (m_data.guardSC == SC_PHYSBUFFER)
-	{
-		addrInfo.buffer = **buffers[1];
-		VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
-		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
-							8, sizeof(VkDeviceSize), &addr);
-	}
+		{
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
+			DE_NULL,											// const void*		 pNext;
+			0,													// VkBuffer			buffer
+		};
 
 	VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 	VkClearValue clearColor = makeClearValueColorU32(0,0,0,0);
 
 	VkMemoryBarrier					memBarrier =
-	{
-		VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// sType
-		DE_NULL,							// pNext
-		0u,									// srcAccessMask
-		0u,									// dstAccessMask
-	};
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// sType
+			DE_NULL,							// pNext
+			0u,									// srcAccessMask
+			0u,									// dstAccessMask
+		};
 
-	for (deUint32 iters = 0; iters < 200; ++iters)
+	const VkBufferCopy	copyParams =
+		{
+			(VkDeviceSize)0u,						// srcOffset
+			(VkDeviceSize)0u,						// dstOffset
+			bufferSizes[2]							// size
+		};
+
+    deUint32 NUM_SUBMITS = 2;
+
+	for (deUint32 x = 0; x < NUM_SUBMITS; ++x)
 	{
+		beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+		if (x == 0)
+			vk.cmdFillBuffer(*cmdBuffer, **buffers[2], 0, bufferSizes[2], 0);
+
 		for (deUint32 i = 0; i < 2; ++i)
 		{
-			if (buffers[i])
-				vk.cmdFillBuffer(*cmdBuffer, **buffers[i], 0, bufferSizes[i], 0);
-			if (images[i])
-				vk.cmdClearColorImage(*cmdBuffer, **images[i], VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
-		}
+			if (!images[i])
+				continue;
 
-		memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
-			0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
-
-		if (m_data.stage == STAGE_COMPUTE)
-		{
-			vk.cmdDispatch(*cmdBuffer, NUM_WORKGROUP_EACH_DIM, NUM_WORKGROUP_EACH_DIM, 1);
-		}
-		else
-		{
-			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
-							makeRect2D(DIM*NUM_WORKGROUP_EACH_DIM, DIM*NUM_WORKGROUP_EACH_DIM),
-							0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
-			// Draw a point cloud for vertex shader testing, and a single quad for fragment shader testing
-			if (m_data.stage == STAGE_VERTEX)
+			const VkImageMemoryBarrier imageBarrier =
 			{
-				vk.cmdDraw(*cmdBuffer, DIM*DIM*NUM_WORKGROUP_EACH_DIM*NUM_WORKGROUP_EACH_DIM, 1u, 0u, 0u);
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
+				DE_NULL,											// const void*			pNext
+				0u,													// VkAccessFlags		srcAccessMask
+				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout		oldLayout
+				VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout		newLayout
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
+				**images[i],										// VkImage				image
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
+					0u,										// uint32_t				baseMipLevel
+					1u,										// uint32_t				mipLevels,
+					0u,										// uint32_t				baseArray
+					1u,										// uint32_t				arraySize
+				}
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+								 (VkDependencyFlags)0,
+								  0, (const VkMemoryBarrier*)DE_NULL,
+								  0, (const VkBufferMemoryBarrier*)DE_NULL,
+								  1, &imageBarrier);
+		}
+
+		vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0u, 1, &*descriptorSet, 0u, DE_NULL);
+		vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
+
+		if (m_data.payloadSC == SC_PHYSBUFFER)
+		{
+			addrInfo.buffer = **buffers[0];
+			VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
+								0, sizeof(VkDeviceSize), &addr);
+		}
+		if (m_data.guardSC == SC_PHYSBUFFER)
+		{
+			addrInfo.buffer = **buffers[1];
+			VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
+								8, sizeof(VkDeviceSize), &addr);
+		}
+
+		for (deUint32 iters = 0; iters < 100; ++iters)
+		{
+			for (deUint32 i = 0; i < 2; ++i)
+			{
+				if (buffers[i])
+					vk.cmdFillBuffer(*cmdBuffer, **buffers[i], 0, bufferSizes[i], 0);
+				if (images[i])
+					vk.cmdClearColorImage(*cmdBuffer, **images[i], VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+			}
+
+			memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
+				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+
+			if (m_data.stage == STAGE_COMPUTE)
+			{
+				vk.cmdDispatch(*cmdBuffer, NUM_WORKGROUP_EACH_DIM, NUM_WORKGROUP_EACH_DIM, 1);
 			}
 			else
 			{
-				vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+				beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
+								makeRect2D(DIM*NUM_WORKGROUP_EACH_DIM, DIM*NUM_WORKGROUP_EACH_DIM),
+								0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+				// Draw a point cloud for vertex shader testing, and a single quad for fragment shader testing
+				if (m_data.stage == STAGE_VERTEX)
+				{
+					vk.cmdDraw(*cmdBuffer, DIM*DIM*NUM_WORKGROUP_EACH_DIM*NUM_WORKGROUP_EACH_DIM, 1u, 0u, 0u);
+				}
+				else
+				{
+					vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+				}
+				endRenderPass(vk, *cmdBuffer);
 			}
-			endRenderPass(vk, *cmdBuffer);
+
+			memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+			memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+			vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 		}
 
-		memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-		memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-		vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+		if (x == NUM_SUBMITS - 1)
+			vk.cmdCopyBuffer(*cmdBuffer, **buffers[2], **copyBuffer, 1, &copyParams);
+
+		endCommandBuffer(vk, *cmdBuffer);
+
+		submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+		vk.resetCommandBuffer(*cmdBuffer, 0x00000000);
 	}
-
-	const VkBufferCopy	copyParams =
-	{
-		(VkDeviceSize)0u,						// srcOffset
-		(VkDeviceSize)0u,						// dstOffset
-		bufferSizes[2]							// size
-	};
-
-	vk.cmdCopyBuffer(*cmdBuffer, **buffers[2], **copyBuffer, 1, &copyParams);
-
-	endCommandBuffer(vk, *cmdBuffer);
-
-	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	tcu::TestLog& log = m_context.getTestContext().getLog();
 
