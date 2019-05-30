@@ -34,7 +34,7 @@ def getIncludeGuardName (headerFile):
 
 def hasValidIncludeGuard (headerFile):
 	includeGuard	= getIncludeGuardName(headerFile)
-	f				= open(headerFile, 'rb')
+	f				= open(headerFile, 'rt')
 	isHpp			= headerFile[-4:] == ".hpp"
 
 	line0 = f.readline().strip()
@@ -59,7 +59,7 @@ def hasValidIncludeGuard (headerFile):
 	return True
 
 def fixIncludeGuard (headerFile):
-	f				= open(headerFile, 'rb')
+	f				= open(headerFile, 'rt')
 	lines			= []
 	isHpp			= headerFile[-4:] == ".hpp"
 	includeGuard	=  getIncludeGuardName(headerFile)
@@ -75,7 +75,7 @@ def fixIncludeGuard (headerFile):
 	if CHECK_END_COMMENT:
 		lines[len(lines)-1] = ("#endif // %s\n" if isHpp else "#endif /* %s */\n") % includeGuard
 
-	f = open(headerFile, 'wb')
+	f = open(headerFile, 'wt')
 	for line in lines:
 		f.write(line)
 	f.close()

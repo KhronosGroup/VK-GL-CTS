@@ -38,7 +38,7 @@ LICENSE_KEYS	= [
 SOURCE_FILES	= ["*.py", "*.java", "*.c", "*.h", "*.cpp", "*.hpp"]
 
 def readFile (file):
-	f = open(file, 'rb')
+	f = open(file, 'rt')
 	c = f.read()
 	f.close()
 	return c
