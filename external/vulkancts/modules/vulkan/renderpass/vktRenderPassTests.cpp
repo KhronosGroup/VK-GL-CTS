@@ -4269,26 +4269,6 @@ void initializeRenderPassClearValues (de::Random& rng, vector<Maybe<VkClearValue
 	}
 }
 
-void initializeSubpassClearValues (de::Random& rng, vector<vector<VkClearColorValue> >& clearValues, const RenderPass& renderPass, deBool useFormatCompCount)
-{
-	clearValues.resize(renderPass.getSubpasses().size());
-
-	for (size_t subpassNdx = 0; subpassNdx < renderPass.getSubpasses().size(); subpassNdx++)
-	{
-		const Subpass&						subpass				= renderPass.getSubpasses()[subpassNdx];
-		const vector<AttachmentReference>&	colorAttachments	= subpass.getColorAttachments();
-
-		clearValues[subpassNdx].resize(colorAttachments.size());
-
-		for (size_t attachmentRefNdx = 0; attachmentRefNdx < colorAttachments.size(); attachmentRefNdx++)
-		{
-			const Attachment& attachment = renderPass.getAttachments()[getAttachmentNdx(colorAttachments, attachmentRefNdx)];
-
-			clearValues[subpassNdx][attachmentRefNdx] = randomColorClearValue(attachment, rng, useFormatCompCount);
-		}
-	}
-}
-
 void logSubpassRenderInfo (TestLog& log, const SubpassRenderInfo& info, TestConfig config)
 {
 	log << TestLog::Message << "Viewport, offset: " << info.getViewportOffset() << ", size: " << info.getViewportSize() << TestLog::EndMessage;
@@ -4491,7 +4471,6 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 	vector<bool>						subpassIsSecondary;
 	vector<SubpassRenderInfo>			subpassRenderInfo;
-	vector<vector<VkClearColorValue> >	subpassColorClearValues;
 
 	if (config.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
 		context.requireDeviceExtension("VK_KHR_create_renderpass2");
@@ -4575,7 +4554,6 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 	initializeRenderPassClearValues(rng, renderPassClearValues, renderPassInfo.getAttachments(), config.useFormatCompCount);
 
 	initializeSubpassIsSecondary(subpassIsSecondary, renderPassInfo.getSubpasses(), config.commandBufferTypes);
-	initializeSubpassClearValues(rng, subpassColorClearValues, renderPassInfo, config.useFormatCompCount);
 	initializeSubpassRenderInfo(subpassRenderInfo, rng, renderPassInfo, config);
 
 	logTestCaseInfo(log, config, attachmentIsLazy, imageClearValues, renderPassClearValues, subpassRenderInfo);
