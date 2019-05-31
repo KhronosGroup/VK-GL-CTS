@@ -4580,12 +4580,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
     deUint32*                                   pPresentModeCount,
     VkPresentModeKHR*                           pPresentModes);
 #endif
+// VK_KHR_surface INSTANCE
 
 #define VK_KHR_swapchain 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSwapchainKHR)
 
 #define VK_KHR_SWAPCHAIN_SPEC_VERSION     69
 #define VK_KHR_SWAPCHAIN_EXTENSION_NAME   "VK_KHR_swapchain"
+// VK_KHR_swapchain DEVICE
 
 #define VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_SPEC_VERSION    1
 #define VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME  "VK_KHR_swapchain_mutable_format"
@@ -4744,6 +4746,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImage2KHR(
     const VkAcquireNextImageInfoKHR*            pAcquireInfo,
     deUint32*                                   pImageIndex);
 #endif
+// VK_KHR_swapchain_mutable_format DEVICE
 
 #define VK_KHR_display 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDisplayKHR)
@@ -4872,6 +4875,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDisplayPlaneSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface);
 #endif
+// VK_KHR_display INSTANCE
 
 #define VK_KHR_display_swapchain 1
 #define VK_KHR_DISPLAY_SWAPCHAIN_SPEC_VERSION 9
@@ -4896,6 +4900,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSharedSwapchainsKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSwapchainKHR*                             pSwapchains);
 #endif
+// VK_KHR_display_swapchain DEVICE
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #define VK_KHR_xlib_surface 1
@@ -4931,6 +4936,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceXlibPresentationSupportKHR(
     Display*                                    dpy,
     VisualID                                    visualID);
 #endif
+// VK_KHR_xlib_surface INSTANCE
 #endif /* VK_USE_PLATFORM_XLIB_KHR */
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
@@ -4967,6 +4973,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceXcbPresentationSupportKHR(
     xcb_connection_t*                           connection,
     xcb_visualid_t                              visual_id);
 #endif
+// VK_KHR_xcb_surface INSTANCE
 #endif /* VK_USE_PLATFORM_XCB_KHR */
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
@@ -5002,6 +5009,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceWaylandPresentationSupportKHR(
     deUint32                                    queueFamilyIndex,
     struct wl_display*                          display);
 #endif
+// VK_KHR_wayland_surface INSTANCE
 #endif /* VK_USE_PLATFORM_WAYLAND_KHR */
 
 #ifdef VK_USE_PLATFORM_MIR_KHR
@@ -5037,6 +5045,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceMirPresentationSupportKHR(
     deUint32                                    queueFamilyIndex,
     MirConnection*                              connection);
 #endif
+// VK_KHR_mir_surface INSTANCE
 #endif /* VK_USE_PLATFORM_MIR_KHR */
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
@@ -5065,6 +5074,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateAndroidSurfaceKHR(
     const VkAllocationCallbacks*                pAllocator,
     VkSurfaceKHR*                               pSurface);
 #endif
+// VK_KHR_android_surface INSTANCE
 #endif /* VK_USE_PLATFORM_ANDROID_KHR */
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
@@ -5099,12 +5109,13 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceWin32PresentationSupportKHR(
     VkPhysicalDevice                            physicalDevice,
     deUint32                                    queueFamilyIndex);
 #endif
+// VK_KHR_win32_surface INSTANCE
 #endif /* VK_USE_PLATFORM_WIN32_KHR */
 
 #define VK_KHR_sampler_mirror_clamp_to_edge 1
 #define VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_SPEC_VERSION 1
 #define VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME "VK_KHR_sampler_mirror_clamp_to_edge"
-
+// VK_KHR_sampler_mirror_clamp_to_edge DEVICE
 
 #define VK_KHR_multiview 1
 typedef VkPhysicalDeviceMultiviewFeatures VkPhysicalDeviceMultiviewFeaturesKHR;
@@ -5400,6 +5411,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryWin32HandlePropertiesKHR(
     HANDLE                                      handle,
     VkMemoryWin32HandlePropertiesKHR*           pMemoryWin32HandleProperties);
 #endif
+// VK_KHR_external_memory_win32 DEVICE
 #endif /* VK_USE_PLATFORM_WIN32_KHR */
 
 #define VK_KHR_external_memory_fd 1
@@ -5442,6 +5454,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryFdPropertiesKHR(
     int                                         fd,
     VkMemoryFdPropertiesKHR*                    pMemoryFdProperties);
 #endif
+// VK_KHR_external_memory_fd DEVICE
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #define VK_KHR_win32_keyed_mutex 1
@@ -5459,7 +5472,7 @@ typedef struct VkWin32KeyedMutexAcquireReleaseInfoKHR {
     const VkDeviceMemory*    pReleaseSyncs;
     const deUint64*          pReleaseKeys;
 } VkWin32KeyedMutexAcquireReleaseInfoKHR;
-
+// VK_KHR_win32_keyed_mutex DEVICE
 
 #endif /* VK_USE_PLATFORM_WIN32_KHR */
 
@@ -5559,6 +5572,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSemaphoreWin32HandleKHR(
     HANDLE*                                     pHandle);
 #endif
 #endif /* VK_USE_PLATFORM_WIN32_KHR */
+// VK_KHR_external_semaphore_win32 DEVICE
 
 #define VK_KHR_external_semaphore_fd 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_FD_SPEC_VERSION 1
@@ -5594,6 +5608,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSemaphoreFdKHR(
     const VkSemaphoreGetFdInfoKHR*              pGetFdInfo,
     int*                                        pFd);
 #endif
+// VK_KHR_external_semaphore_fd DEVICE
 
 #define VK_KHR_push_descriptor 1
 #define VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION 2
@@ -5625,6 +5640,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushDescriptorSetWithTemplateKHR(
     deUint32                                    set,
     const void*                                 pData);
 #endif
+// VK_KHR_push_descriptor DEVICE
 
 #define VK_KHR_shader_float16_int8 1
 #define VK_KHR_SHADER_FLOAT16_INT8_SPEC_VERSION 1
@@ -5636,8 +5652,7 @@ typedef struct VkPhysicalDeviceFloat16Int8FeaturesKHR {
     VkBool32           shaderFloat16;
     VkBool32           shaderInt8;
 } VkPhysicalDeviceFloat16Int8FeaturesKHR;
-
-
+// VK_KHR_shader_float16_int8 DEVICE
 
 #define VK_KHR_16bit_storage 1
 typedef VkPhysicalDevice16BitStorageFeatures VkPhysicalDevice16BitStorageFeaturesKHR;
@@ -5650,6 +5665,7 @@ typedef VkPhysicalDevice16BitStorageFeatures VkPhysicalDevice16BitStorageFeature
 #define VK_KHR_incremental_present 1
 #define VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION 1
 #define VK_KHR_INCREMENTAL_PRESENT_EXTENSION_NAME "VK_KHR_incremental_present"
+// VK_KHR_incremental_present DEVICE
 
 #define VK_KHR_8bit_storage 1
 #define VK_KHR_8BIT_STORAGE_SPEC_VERSION 1
@@ -5672,8 +5688,7 @@ typedef struct VkPresentRegionsKHR {
     deUint32                     swapchainCount;
     const VkPresentRegionKHR*    pRegions;
 } VkPresentRegionsKHR;
-
-
+// VK_KHR_8bit_storage DEVICE
 
 #define VK_KHR_descriptor_update_template 1
 typedef VkDescriptorUpdateTemplateCreateFlags VkDescriptorUpdateTemplateCreateFlagsKHR;
@@ -5858,6 +5873,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndRenderPass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassEndInfoKHR*                  pSubpassEndInfo);
 #endif
+// VK_KHR_create_renderpass2 DEVICE
 
 #define VK_KHR_shared_presentable_image 1
 #define VK_KHR_SHARED_PRESENTABLE_IMAGE_SPEC_VERSION 1
@@ -5877,6 +5893,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainStatusKHR(
     VkDevice                                    device,
     VkSwapchainKHR                              swapchain);
 #endif
+// VK_KHR_shared_presentable_image DEVICE
 
 #define VK_KHR_external_fence_capabilities 1
 typedef VkExternalFenceFeatureFlagBits VkExternalFenceFeatureFlagBitsKHR;
@@ -5917,7 +5934,6 @@ typedef VkFenceImportFlags VkFenceImportFlagsKHR;
 #define VK_FENCE_IMPORT_TEMPORARY_BIT_KHR VK_FENCE_IMPORT_TEMPORARY_BIT
 #define VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO
 //VK_KHR_external_fence DEVICE 1_1_0
-
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #define VK_KHR_external_fence_win32 1
@@ -5963,6 +5979,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceWin32HandleKHR(
     const VkFenceGetWin32HandleInfoKHR*         pGetWin32HandleInfo,
     HANDLE*                                     pHandle);
 #endif
+// VK_KHR_external_fence_win32 DEVICE
 #endif /* VK_USE_PLATFORM_WIN32_KHR */
 
 #define VK_KHR_external_fence_fd 1
@@ -5999,6 +6016,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceFdKHR(
     const VkFenceGetFdInfoKHR*                  pGetFdInfo,
     int*                                        pFd);
 #endif
+// VK_KHR_external_fence_fd DEVICE
 
 #define VK_KHR_performance_query 1
 #define VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION 1
@@ -6207,6 +6225,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormats2KHR(
     deUint32*                                   pSurfaceFormatCount,
     VkSurfaceFormat2KHR*                        pSurfaceFormats);
 #endif
+// VK_KHR_get_surface_capabilities2 INSTANCE
 
 #define VK_KHR_get_display_properties2 1
 #define VK_KHR_GET_DISPLAY_PROPERTIES_2_SPEC_VERSION 1
@@ -6271,7 +6290,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDisplayPlaneCapabilities2KHR(
 		        const VkDisplayPlaneInfo2KHR*               pDisplayPlaneInfo,
 			    VkDisplayPlaneCapabilities2KHR*             pCapabilities);
 #endif
-
+// VK_KHR_get_display_properties2 INSTANCE
 
 #define VK_KHR_variable_pointers 1
 
@@ -6355,8 +6374,7 @@ typedef struct VkImageFormatListCreateInfoKHR {
     deUint32           viewFormatCount;
     const VkFormat*    pViewFormats;
 } VkImageFormatListCreateInfoKHR;
-
-
+// VK_KHR_image_format_list DEVICE
 
 #define VK_KHR_sampler_ycbcr_conversion 1
 typedef VkBindImagePlaneMemoryInfo VkBindImagePlaneMemoryInfoKHR;
@@ -6518,6 +6536,7 @@ typedef struct VkPhysicalDeviceDriverPropertiesKHR {
     char                       driverInfo[VK_MAX_DRIVER_INFO_SIZE_KHR];
     VkConformanceVersionKHR    conformanceVersion;
 } VkPhysicalDeviceDriverPropertiesKHR;
+// VK_KHR_driver_properties DEVICE
 
 #define VK_KHR_shader_float_controls 1
 #define VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION 1
@@ -6544,6 +6563,7 @@ typedef struct VkPhysicalDeviceFloatControlsPropertiesKHR {
     VkBool32           shaderRoundingModeRTZFloat32;
     VkBool32           shaderRoundingModeRTZFloat64;
 } VkPhysicalDeviceFloatControlsPropertiesKHR;
+// VK_KHR_shader_float_controls DEVICE
 
 #define VK_KHR_depth_stencil_resolve 1
 #define VK_KHR_DEPTH_STENCIL_RESOLVE_SPEC_VERSION 1
@@ -6576,7 +6596,7 @@ typedef struct VkPhysicalDeviceDepthStencilResolvePropertiesKHR {
     VkBool32                 independentResolveNone;
     VkBool32                 independentResolve;
 } VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
-
+// VK_KHR_depth_stencil_resolve DEVICE
 
 #define VK_KHR_surface_protected_capabilities 1
 #define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_SPEC_VERSION 1
@@ -6587,7 +6607,7 @@ typedef struct VkSurfaceProtectedCapabilitiesKHR {
     const void*        pNext;
     VkBool32           supportsProtected;
 } VkSurfaceProtectedCapabilitiesKHR;
-
+// VK_KHR_surface_protected_capabilities INSTANCE
 
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
@@ -6974,6 +6994,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirectCountKHR(
     deUint32                                    maxDrawCount,
     deUint32                                    stride);
 #endif
+// VK_KHR_draw_indirect_count DEVICE
 
 #define VK_AMD_negative_viewport_height 1
 #define VK_AMD_NEGATIVE_VIEWPORT_HEIGHT_SPEC_VERSION 1
@@ -8450,7 +8471,7 @@ typedef struct VkPhysicalDeviceShaderAtomicInt64FeaturesKHR {
     VkBool32           shaderBufferInt64Atomics;
     VkBool32           shaderSharedInt64Atomics;
 } VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
-
+// VK_KHR_shader_atomic_int64 DEVICE
 
 #define VK_KHR_vulkan_memory_model 1
 #define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 3
@@ -8463,6 +8484,7 @@ typedef struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
     VkBool32           vulkanMemoryModelDeviceScope;
     VkBool32           vulkanMemoryModelAvailabilityVisibilityChains;
 } VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
+// VK_KHR_vulkan_memory_model DEVICE
 
 
 #define VK_EXT_scalar_block_layout 1
@@ -8686,7 +8708,7 @@ typedef struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR {
     void*              pNext;
     VkBool32           uniformBufferStandardLayout;
 } VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR;
-
+// VK_KHR_uniform_buffer_standard_layout DEVICE
 // MANDATORY_FEATURE VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR uniformBufferStandardLayout VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR	WHEN_EXTENSIONS_PRESENT ( VK_KHR_uniform_buffer_standard_layout )
 
 #define VK_EXT_pipeline_creation_feedback 1
