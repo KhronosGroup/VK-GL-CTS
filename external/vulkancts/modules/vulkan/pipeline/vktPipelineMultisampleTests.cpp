@@ -333,6 +333,7 @@ protected:
 
 	virtual TestInstance*						createMultisampleTestInstance				(Context&										context,
 																							 VkPrimitiveTopology							topology,
+																							 float											pointSize,
 																							 const std::vector<Vertex4RGBA>&				vertices,
 																							 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																							 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
@@ -1389,7 +1390,7 @@ AlphaToCoverageColorUnusedAttachmentTest::AlphaToCoverageColorUnusedAttachmentTe
 																					VkSampleCountFlagBits	rasterizationSamples,
 																					GeometryType			geometryType,
 																					ImageBackingMode		backingMode)
-	: MultisampleTest	(testContext, name, description, getStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType, backingMode)
+	: MultisampleTest	(testContext, name, description, getStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType, 1.0f, backingMode)
 	, m_geometryType	(geometryType)
 	, m_backingMode		(backingMode)
 {
@@ -1402,10 +1403,12 @@ void AlphaToCoverageColorUnusedAttachmentTest::initPrograms (SourceCollections& 
 
 TestInstance* AlphaToCoverageColorUnusedAttachmentTest::createMultisampleTestInstance (Context&										context,
 																					   VkPrimitiveTopology							topology,
+																					   float										pointSize,
 																					   const std::vector<Vertex4RGBA>&				vertices,
 																					   const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																					   const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
+	DE_UNREF(pointSize);
 	return new AlphaToCoverageColorUnusedAttachmentInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_geometryType, m_backingMode);
 }
 
