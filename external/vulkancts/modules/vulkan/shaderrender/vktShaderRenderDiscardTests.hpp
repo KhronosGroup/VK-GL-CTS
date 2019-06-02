@@ -33,6 +33,7 @@ namespace sr
 {
 
 tcu::TestCaseGroup*	createDiscardTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createDemoteTests	(tcu::TestContext& testCtx);
 
 } // sr
 } // vkt

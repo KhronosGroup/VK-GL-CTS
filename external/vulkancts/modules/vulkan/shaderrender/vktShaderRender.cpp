@@ -548,6 +548,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	, m_uniformSetup		(DE_NULL)
 	, m_attribFunc			(DE_NULL)
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
+	, m_fuzzyCompare		(true)
 {
 }
 
@@ -558,7 +559,8 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const UniformSetup&			uniformSetup,
 													const AttributeSetupFunc	attribFunc,
 													const ImageBackingMode		imageBackingMode,
-													const deUint32				gridSize)
+													const deUint32				gridSize,
+													const bool					fuzzyCompare)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(imageBackingMode)
 	, m_quadGridSize		(gridSize == static_cast<deUint32>(GRID_SIZE_DEFAULTS)
@@ -577,6 +579,7 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 	, m_uniformSetup		(&uniformSetup)
 	, m_attribFunc			(attribFunc)
 	, m_sampleCount			(VK_SAMPLE_COUNT_1_BIT)
+	, m_fuzzyCompare		(fuzzyCompare)
 {
 }
 
@@ -2430,7 +2433,10 @@ void ShaderRenderCaseInstance::computeFragmentReference (tcu::Surface& result, c
 
 bool ShaderRenderCaseInstance::compareImages (const tcu::Surface& resImage, const tcu::Surface& refImage, float errorThreshold)
 {
-	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_EVERYTHING);
+	if (m_fuzzyCompare)
+		return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_EVERYTHING);
+	else
+		return tcu::pixelThresholdCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, tcu::RGBA(1, 1, 1, 1), tcu::COMPARE_LOG_EVERYTHING);
 }
 
 } // sr
