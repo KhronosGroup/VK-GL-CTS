@@ -448,6 +448,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	// ShaderRenderCase-based tests
 	glslTests->addChild(sr::createDerivateTests			(testCtx));
 	glslTests->addChild(sr::createDiscardTests			(testCtx));
+	glslTests->addChild(sr::createDemoteTests			(testCtx));
 	glslTests->addChild(sr::createIndexingTests			(testCtx));
 	glslTests->addChild(sr::createLimitTests			(testCtx));
 	glslTests->addChild(sr::createLoopTests				(testCtx));

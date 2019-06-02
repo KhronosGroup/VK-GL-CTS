@@ -66,7 +66,8 @@ public:
 													bool					isVertexCase,
 													const ShaderEvaluator&	evaluator,
 													const UniformSetup&		uniformSetup,
-													bool					usesTexture);
+													bool					usesTexture,
+													bool					fuzzyCompare);
 	virtual				~ShaderDiscardCaseInstance	(void);
 };
 
@@ -74,8 +75,9 @@ ShaderDiscardCaseInstance::ShaderDiscardCaseInstance (Context&					context,
 													 bool						isVertexCase,
 													 const ShaderEvaluator&		evaluator,
 													 const UniformSetup&		uniformSetup,
-													 bool						usesTexture)
-	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL)
+													 bool						usesTexture,
+													 bool						fuzzyCompare)
+	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL, IMAGE_BACKING_MODE_REGULAR, static_cast<deUint32>(GRID_SIZE_DEFAULTS), fuzzyCompare)
 {
 	if (usesTexture)
 	{
@@ -103,16 +105,22 @@ public:
 														 const char*			description,
 														 const char*			shaderSource,
 														 const ShaderEvalFunc	evalFunc,
-														 bool					usesTexture);
+														 bool					usesTexture,
+														 bool					fuzzyCompare,
+														 bool					demote);
 	virtual TestInstance*	createInstance				(Context& context) const
 							{
 								DE_ASSERT(m_evaluator != DE_NULL);
 								DE_ASSERT(m_uniformSetup != DE_NULL);
-								return new ShaderDiscardCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_usesTexture);
+								return new ShaderDiscardCaseInstance(context, m_isVertexCase, *m_evaluator, *m_uniformSetup, m_usesTexture, m_fuzzyCompare);
 							}
+
+	virtual void				checkSupport					(Context& context) const;
 
 private:
 	const bool				m_usesTexture;
+	const bool				m_fuzzyCompare;
+	const bool				m_demote;
 };
 
 ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
@@ -120,25 +128,37 @@ ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 									  const char*			description,
 									  const char*			shaderSource,
 									  const ShaderEvalFunc	evalFunc,
-									  bool					usesTexture)
+									  bool					usesTexture,
+									  bool					fuzzyCompare,
+									  bool					demote)
 	: ShaderRenderCase	(testCtx, name, description, false, evalFunc, new SamplerUniformSetup(usesTexture), DE_NULL)
 	, m_usesTexture		(usesTexture)
+	, m_fuzzyCompare	(fuzzyCompare)
+	, m_demote			(demote)
 {
 	m_fragShaderSource	= shaderSource;
 	m_vertShaderSource	=
 		"#version 310 es\n"
 		"layout(location=0) in  highp   vec4 a_position;\n"
 		"layout(location=1) in  highp   vec4 a_coords;\n"
+		"layout(location=2) in  highp   vec4 a_one;\n"
 		"layout(location=0) out mediump vec4 v_color;\n"
 		"layout(location=1) out mediump vec4 v_coords;\n\n"
+		"layout(location=2) out mediump vec4 v_one;\n"
 		"void main (void)\n"
 		"{\n"
 		"    gl_Position = a_position;\n"
 		"    v_color = vec4(a_coords.xyz, 1.0);\n"
 		"    v_coords = a_coords;\n"
+		"    v_one = a_one;\n"
 		"}\n";
 }
 
+void ShaderDiscardCase::checkSupport(Context& context) const
+{
+	if (m_demote && !context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
+		TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported");
+}
 
 enum DiscardMode
 {
@@ -147,6 +167,7 @@ enum DiscardMode
 	DISCARDMODE_UNIFORM,
 	DISCARDMODE_DYNAMIC,
 	DISCARDMODE_TEXTURE,
+	DISCARDMODE_DERIV,
 
 	DISCARDMODE_LAST
 };
@@ -183,6 +204,7 @@ static ShaderEvalFunc getEvalFunc (DiscardMode mode)
 		case DISCARDMODE_UNIFORM:	return evalDiscardAlways;
 		case DISCARDMODE_DYNAMIC:	return evalDiscardDynamic;
 		case DISCARDMODE_TEXTURE:	return evalDiscardTexture;
+		case DISCARDMODE_DERIV:		return evalDiscardAlways;
 		default:
 			DE_ASSERT(DE_FALSE);
 			return evalDiscardAlways;
@@ -193,8 +215,10 @@ static const char* getTemplate (DiscardTemplate variant)
 {
 	#define GLSL_SHADER_TEMPLATE_HEADER \
 				"#version 310 es\n"	\
+				"#extension GL_EXT_demote_to_helper_invocation : enable\n"	\
 				"layout(location = 0) in mediump vec4 v_color;\n"	\
 				"layout(location = 1) in mediump vec4 v_coords;\n"	\
+				"layout(location = 2) in mediump vec4 a_one;\n"	\
 				"layout(location = 0) out mediump vec4 o_color;\n"	\
 				"layout(set = 0, binding = 2) uniform sampler2D    ut_brick;\n"	\
 				"layout(set = 0, binding = 0) uniform block0 { mediump int  ui_one; };\n\n"
@@ -228,8 +252,9 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "    o_color = v_color;\n"
 				   "    for (int i = 0; i < 2; i++)\n"
 				   "    {\n"
-				   "        if (i > 0)\n"
+				   "        if (i > 0) {\n"
 				   "            ${DISCARD};\n"
+				   "        }\n"
 				   "    }\n"
 				   "}\n";
 
@@ -241,8 +266,9 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "    o_color = v_color;\n"
 				   "    for (int i = 0; i < ui_two; i++)\n"
 				   "    {\n"
-				   "        if (i > 0)\n"
+				   "        if (i > 0) {\n"
 				   "            ${DISCARD};\n"
+				   "        }\n"
 				   "    }\n"
 				   "}\n";
 
@@ -252,8 +278,9 @@ static const char* getTemplate (DiscardTemplate variant)
 				   "{\n"
 				   "    for (int i = 0; i < 2; i++)\n"
 				   "    {\n"
-				   "        if (i > 0)\n"
+				   "        if (i > 0) {\n"
 				   "            ${DISCARD};\n"
+				   "        }\n"
 				   "    }\n"
 				   "}\n\n"
 				   "void main (void)\n"
@@ -294,6 +321,7 @@ static const char* getModeName (DiscardMode mode)
 		case DISCARDMODE_UNIFORM:	return "uniform";
 		case DISCARDMODE_DYNAMIC:	return "dynamic";
 		case DISCARDMODE_TEXTURE:	return "texture";
+		case DISCARDMODE_DERIV:		return "deriv";
 		default:
 			DE_ASSERT(DE_FALSE);
 			return DE_NULL;
@@ -324,13 +352,14 @@ static const char* getModeDesc (DiscardMode mode)
 		case DISCARDMODE_UNIFORM:	return "Discard based on uniform value";
 		case DISCARDMODE_DYNAMIC:	return "Discard based on varying values";
 		case DISCARDMODE_TEXTURE:	return "Discard based on texture value";
+		case DISCARDMODE_DERIV:		return "Discard based on derivatives after an earlier discard";
 		default:
 			DE_ASSERT(DE_FALSE);
 			return DE_NULL;
 	}
 }
 
-de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate tmpl, DiscardMode mode)
+de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, DiscardTemplate tmpl, DiscardMode mode, const std::string& discardStr)
 {
 	StringTemplate shaderTemplate(getTemplate(tmpl));
 
@@ -338,11 +367,29 @@ de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, Disca
 
 	switch (mode)
 	{
-		case DISCARDMODE_ALWAYS:	params["DISCARD"] = "discard";										break;
-		case DISCARDMODE_NEVER:		params["DISCARD"] = "if (false) discard";							break;
-		case DISCARDMODE_UNIFORM:	params["DISCARD"] = "if (ui_one > 0) discard";						break;
-		case DISCARDMODE_DYNAMIC:	params["DISCARD"] = "if (v_coords.x+v_coords.y > 0.0) discard";		break;
-		case DISCARDMODE_TEXTURE:	params["DISCARD"] = "if (texture(ut_brick, v_coords.xy*0.25+0.5).x < 0.7) discard";	break;
+		case DISCARDMODE_ALWAYS:	params["DISCARD"] = discardStr;																break;
+		case DISCARDMODE_NEVER:		params["DISCARD"] = "if (false) " + discardStr;												break;
+		case DISCARDMODE_UNIFORM:	params["DISCARD"] = "if (ui_one > 0) " + discardStr;										break;
+		case DISCARDMODE_DYNAMIC:	params["DISCARD"] = "if (v_coords.x+v_coords.y > 0.0) " + discardStr;						break;
+		case DISCARDMODE_TEXTURE:	params["DISCARD"] = "if (texture(ut_brick, v_coords.xy*0.25+0.5).x < 0.7) " + discardStr;	break;
+		case DISCARDMODE_DERIV:		params["DISCARD"] =
+										// First demote pixels where fragCoord.xy LSBs are not both zero, leaving only one
+										// non-helper pixel per quad. Then compute derivatives of "one+fragCoord" and check they
+										// are 0 or 1 as appropriate. Also check that helperInvocationEXT varies in the quad and
+										// is false on non-helper pixels. Demote the pixel if it gets the right values, so the final
+										// image should be entirely the clear color. If we don't get the right values, output red.
+										// This test case would not work for discard, because derivatives become undefined.
+										"  ivec2 f = ivec2(gl_FragCoord.xy);\n"
+										"  int lsb = (f.x | f.y)&1;\n"
+										"  if (lsb != 0) demote;\n"
+										"  bool isHelper = helperInvocationEXT();\n"
+										"  highp vec2 dx = dFdx(a_one.xy + gl_FragCoord.xy);\n"
+										"  highp vec2 dy = dFdy(a_one.xy + gl_FragCoord.xy);\n"
+										"  highp float dh = dFdx(float(isHelper));\n"
+										"  bool valid = abs(dx.x-1.0) < 0.01 && dx.y == 0.0 && dy.x == 0.0 && abs(dy.y-1.0) < 0.01 && abs(dh-1.0) < 0.1 && !isHelper;\n"
+										"  if (valid) demote;\n"
+										"  o_color = vec4(1,0,0,1);\n";
+										break;
 		default:
 			DE_ASSERT(DE_FALSE);
 			break;
@@ -351,13 +398,19 @@ de::MovePtr<ShaderDiscardCase> makeDiscardCase (tcu::TestContext& testCtx, Disca
 	std::string name		= std::string(getTemplateName(tmpl)) + "_" + getModeName(mode);
 	std::string description	= std::string(getModeDesc(mode)) + " in " + getTemplateDesc(tmpl);
 
-	return de::MovePtr<ShaderDiscardCase>(new ShaderDiscardCase(testCtx, name.c_str(), description.c_str(), shaderTemplate.specialize(params).c_str(), getEvalFunc(mode), mode == DISCARDMODE_TEXTURE));
+	return de::MovePtr<ShaderDiscardCase>(new ShaderDiscardCase(testCtx, name.c_str(),
+																description.c_str(),
+																shaderTemplate.specialize(params).c_str(),
+																getEvalFunc(mode),
+																mode == DISCARDMODE_TEXTURE,		// usesTexture
+																mode != DISCARDMODE_DERIV,			// fuzzyCompare
+																discardStr == "demote"));			// demote
 }
 
 class ShaderDiscardTests : public tcu::TestCaseGroup
 {
 public:
-							ShaderDiscardTests		(tcu::TestContext& textCtx);
+							ShaderDiscardTests		(tcu::TestContext& textCtx, const char *groupName);
 	virtual					~ShaderDiscardTests		(void);
 
 	virtual void			init					(void);
@@ -365,10 +418,12 @@ public:
 private:
 							ShaderDiscardTests		(const ShaderDiscardTests&);		// not allowed!
 	ShaderDiscardTests&		operator=				(const ShaderDiscardTests&);		// not allowed!
+	const std::string		m_groupName;
 };
 
-ShaderDiscardTests::ShaderDiscardTests (tcu::TestContext& testCtx)
-	: TestCaseGroup(testCtx, "discard", "Discard statement tests")
+ShaderDiscardTests::ShaderDiscardTests (tcu::TestContext& testCtx, const char *groupName)
+	: TestCaseGroup(testCtx, groupName, "Discard statement tests")
+	, m_groupName(groupName)
 {
 }
 
@@ -379,15 +434,26 @@ ShaderDiscardTests::~ShaderDiscardTests (void)
 void ShaderDiscardTests::init (void)
 {
 	for (int tmpl = 0; tmpl < DISCARDTEMPLATE_LAST; tmpl++)
+	{
 		for (int mode = 0; mode < DISCARDMODE_LAST; mode++)
-			addChild(makeDiscardCase(m_testCtx, (DiscardTemplate)tmpl, (DiscardMode)mode).release());
+		{
+			if (mode == DISCARDMODE_DERIV && m_groupName == "discard")
+				continue;
+			addChild(makeDiscardCase(m_testCtx, (DiscardTemplate)tmpl, (DiscardMode)mode, m_groupName).release());
+		}
+	}
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createDiscardTests (tcu::TestContext& testCtx)
 {
-	return new ShaderDiscardTests(testCtx);
+	return new ShaderDiscardTests(testCtx, "discard");
+}
+
+tcu::TestCaseGroup* createDemoteTests (tcu::TestContext& testCtx)
+{
+	return new ShaderDiscardTests(testCtx, "demote");
 }
 
 } // sr

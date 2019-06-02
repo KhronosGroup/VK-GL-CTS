@@ -459,7 +459,8 @@ public:
 																					const UniformSetup&			uniformSetup,
 																					const AttributeSetupFunc	attribFunc,
 																					const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR,
-																					const deUint32				gridSize = static_cast<deUint32>(GRID_SIZE_DEFAULTS));
+																					const deUint32				gridSize = static_cast<deUint32>(GRID_SIZE_DEFAULTS),
+																					const bool					fuzzyCompare = true);
 
 	virtual												~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus								iterate						(void);
@@ -655,6 +656,8 @@ private:
 
 	vk::VkSampleCountFlagBits							m_sampleCount;
 	std::vector<vk::VkPushConstantRange>				m_pushConstantRanges;
+
+	bool												m_fuzzyCompare;
 
 	vk::VkDevice										getDevice						(void) const;
 	deUint32											getUniversalQueueFamilyIndex	(void) const;
