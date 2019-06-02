@@ -500,6 +500,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT = 1000256000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT = 1000261000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT = 1000265000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT = 1000276000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR = 1000269000,
     VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR = 1000269001,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR = 1000269002,
@@ -9439,6 +9440,16 @@ typedef struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT {
     void*              pNext;
     VkBool32           indexTypeUint8;
 } VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
+
+
+#define VK_EXT_shader_demote_to_helper_invocation 1
+#define VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_SPEC_VERSION 1
+#define VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME "VK_EXT_shader_demote_to_helper_invocation"
+typedef struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderDemoteToHelperInvocation;
+} VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT;
 
 
 #ifdef __cplusplus

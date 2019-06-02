@@ -3873,6 +3873,13 @@ struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
 	VkBool32		indexTypeUint8;
 };
 
+struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderDemoteToHelperInvocation;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;

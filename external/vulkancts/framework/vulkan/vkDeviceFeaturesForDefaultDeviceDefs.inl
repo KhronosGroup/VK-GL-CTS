@@ -34,6 +34,7 @@ const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeatur
 const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		getUniformBufferStandardLayoutFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR>();		}
 const VkPhysicalDeviceHostQueryResetFeaturesEXT&					getHostQueryResetFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceHostQueryResetFeaturesEXT>();						}
 const VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8Features					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>();						}
+const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeatures	(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>();		}
 const VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>();		}
 const VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMultiviewFeatures>();								}
 const VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice16BitStorageFeatures>();							}
