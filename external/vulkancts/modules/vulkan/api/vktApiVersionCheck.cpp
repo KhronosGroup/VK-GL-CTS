@@ -201,7 +201,7 @@ public:
 					vector<const char*> instanceExtFunctions;
 
 					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], apiVersion))
-						getInstanceExtensionFunctions(instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
+						getInstanceExtensionFunctions(apiVersion, instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
 
 					for (size_t instanceFuncNdx = 0; instanceFuncNdx < instanceExtFunctions.size(); instanceFuncNdx++)
 						extFunctions.push_back(FunctionInfo(instanceExtFunctions[instanceFuncNdx], FUNCTIONORIGIN_INSTANCE));
@@ -213,7 +213,7 @@ public:
 					vector<const char*> deviceExtFunctions;
 
 					if (isSupportedDeviceExt(deviceExtensionNames[deviceExtNdx], apiVersion))
-						getDeviceExtensionFunctions(deviceExtensionNames[deviceExtNdx], deviceExtFunctions);
+						getDeviceExtensionFunctions(apiVersion, deviceExtensionNames[deviceExtNdx], deviceExtFunctions);
 
 					for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
 						extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));

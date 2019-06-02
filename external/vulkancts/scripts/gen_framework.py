@@ -1392,10 +1392,13 @@ def writeExtensionFunctions (api, filename):
 
 	def writeExtensionFunctions (functionType):
 		isFirstWrite = True
+		dg_list = []	# Device groups functions need special casing, as Vulkan 1.0 keeps them in VK_KHR_device_groups whereas 1.1 moved them into VK_KHR_swapchain
 		if functionType == Function.TYPE_INSTANCE:
-			yield 'void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield 'void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::std::vector<const char*>& functions)\n{'
+			dg_list = ["vkGetPhysicalDevicePresentRectanglesKHR"]
 		elif functionType == Function.TYPE_DEVICE:
-			yield 'void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const char*>& functions)\n{'
+			yield 'void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::std::vector<const char*>& functions)\n{'
+			dg_list = ["vkGetDeviceGroupPresentCapabilitiesKHR", "vkGetDeviceGroupSurfacePresentModesKHR", "vkAcquireNextImage2KHR"]
 		for ext in api.extensions:
 			funcNames = []
 			if ext.name:
@@ -1404,11 +1407,17 @@ def writeExtensionFunctions (api, filename):
 						funcNames.append(func.name)
 			if (funcNames):
 				yield ('\tif (extName == "%s")' % ext.name) if isFirstWrite else  ('\telse if (extName == "%s")' % ext.name)
-				if (len(funcNames) > 1):
+				if (len(funcNames) > 0):
 					yield "\t{"
 				for funcName in funcNames:
-					yield '\t\tfunctions.push_back("%s");' % funcName
-				if (len(funcNames) > 1):
+					if funcName in dg_list:
+						yield '\t\tif(apiVersion >= VK_API_VERSION_1_1) functions.push_back("%s");' % funcName
+					else:
+						yield '\t\tfunctions.push_back("%s");' % funcName
+				if ext.name == "VK_KHR_device_group":
+					for dg_func in dg_list:
+						yield '\t\tif(apiVersion < VK_API_VERSION_1_1) functions.push_back("%s");' % dg_func
+				if (len(funcNames) > 0):
 					yield '\t}'
 				isFirstWrite = False
 		if not isFirstWrite:
