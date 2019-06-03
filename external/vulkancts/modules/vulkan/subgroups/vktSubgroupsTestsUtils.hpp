@@ -90,6 +90,8 @@ struct SSBOData
 
 std::string getSharedMemoryBallotHelper();
 
+std::string getSharedMemoryBallotHelperARB();
+
 deUint32 getSubgroupSize(Context& context);
 
 vk::VkDeviceSize maxSupportedSubgroupSize();
@@ -116,6 +118,8 @@ bool isFragmentSSBOSupportedForDevice(Context& context);
 bool isVertexSSBOSupportedForDevice(Context& context);
 
 bool isFormatSupportedForDevice(Context& context, vk::VkFormat format);
+
+bool isInt64SupportedForDevice(Context& context);
 
 bool isTessellationAndGeometryPointSizeSupported(Context& context);
 
