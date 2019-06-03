@@ -2018,6 +2018,9 @@ void MultisampleRenderer::initialize (Context&									context,
 	const VkSharingMode			sharingMode				= (sparse && context.getUniversalQueueFamilyIndex() != context.getSparseQueueFamilyIndex()) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 	Allocator&					memAlloc				= m_context.getDefaultAllocator();
 
+	if (sparse && !context.getDeviceFeatures().sparseBinding)
+		throw tcu::NotSupportedError("No sparseBinding support");
+
 	// Create color image
 	{
 		const VkImageUsageFlags	imageUsageFlags		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
