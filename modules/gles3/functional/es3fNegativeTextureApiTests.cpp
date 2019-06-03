@@ -2133,6 +2133,7 @@ void NegativeTextureApiTests::init (void)
 		{
 			int max3DTextureSize	= m_context.getContextInfo().getInt(GL_MAX_3D_TEXTURE_SIZE) + 1;
 			int maxTextureSize		= m_context.getContextInfo().getInt(GL_MAX_TEXTURE_SIZE) + 1;
+			int maxTextureLayers	= m_context.getContextInfo().getInt(GL_MAX_ARRAY_TEXTURE_LAYERS) + 1;
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_3D_TEXTURE_SIZE.");
 			glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, max3DTextureSize, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -2150,9 +2151,9 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_VALUE);
 			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 1, maxTextureSize, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 1, 1, maxTextureSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 1, 1, maxTextureLayers, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, maxTextureSize, maxTextureSize, maxTextureSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, maxTextureSize, maxTextureSize, maxTextureLayers, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 		});
@@ -2605,15 +2606,16 @@ void NegativeTextureApiTests::init (void)
 	ES3F_ADD_API_CASE(compressedteximage3d_max_width_height_depth, "Invalid glCompressedTexImage3D() usage",
 		{
 			int maxTextureSize = m_context.getContextInfo().getInt(GL_MAX_TEXTURE_SIZE) + 1;
+			int maxTextureLayers = m_context.getContextInfo().getInt(GL_MAX_ARRAY_TEXTURE_LAYERS) + 1;
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_TEXTURE_SIZE.");
 			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, 0, 0, 0, 0, 0);
 			expectError(GL_INVALID_VALUE);
 			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, maxTextureSize, 0, 0, 0, 0);
 			expectError(GL_INVALID_VALUE);
-			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, maxTextureSize, 0, 0, 0);
+			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, maxTextureLayers, 0, 0, 0);
 			expectError(GL_INVALID_VALUE);
-			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, maxTextureSize, maxTextureSize, 0, 0, 0);
+			glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, maxTextureSize, maxTextureLayers, 0, 0, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 		});

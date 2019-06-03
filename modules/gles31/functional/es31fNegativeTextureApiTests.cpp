@@ -2780,6 +2780,7 @@ void teximage3d_max_width_height_depth (NegativeTestContext& ctx)
 {
 	int max3DTextureSize	= ctx.getInteger(GL_MAX_3D_TEXTURE_SIZE) + 1;
 	int maxTextureSize		= ctx.getInteger(GL_MAX_TEXTURE_SIZE) + 1;
+	int maxTextureLayers	= ctx.getInteger(GL_MAX_ARRAY_TEXTURE_LAYERS) + 1;
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_3D_TEXTURE_SIZE.");
 	ctx.glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, max3DTextureSize, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -2797,9 +2798,9 @@ void teximage3d_max_width_height_depth (NegativeTestContext& ctx)
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 1, maxTextureSize, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 1, 1, maxTextureSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, 1, 1, maxTextureLayers, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, maxTextureSize, maxTextureSize, maxTextureSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, maxTextureSize, maxTextureSize, maxTextureLayers, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }
@@ -3342,15 +3343,16 @@ void compressedteximage3d_neg_width_height_depth (NegativeTestContext& ctx)
 void compressedteximage3d_max_width_height_depth (NegativeTestContext& ctx)
 {
 	int maxTextureSize = ctx.getInteger(GL_MAX_TEXTURE_SIZE) + 1;
+	int maxTextureLayers = ctx.getInteger(GL_MAX_ARRAY_TEXTURE_LAYERS) + 1;
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_TEXTURE_SIZE.");
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, 0, 0, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, maxTextureSize, 0, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, maxTextureSize, 0, 0, 0);
+	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, 0, 0, maxTextureLayers, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, maxTextureSize, maxTextureSize, 0, 0, 0);
+	ctx.glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, maxTextureSize, maxTextureSize, maxTextureLayers, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 }
