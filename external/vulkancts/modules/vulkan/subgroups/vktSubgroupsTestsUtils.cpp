@@ -529,6 +529,35 @@ std::string vkt::subgroups::getSharedMemoryBallotHelper()
 			"}\n";
 }
 
+std::string vkt::subgroups::getSharedMemoryBallotHelperARB()
+{
+	return	"shared uvec4 superSecretComputeShaderHelper[gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z];\n"
+			"uint sharedMemoryBallot(bool vote)\n"
+			"{\n"
+			"  uint groupOffset = gl_SubgroupID;\n"
+			"  // One invocation in the group 0's the whole group's data\n"
+			"  if (subgroupElect())\n"
+			"  {\n"
+			"    superSecretComputeShaderHelper[groupOffset] = uvec4(0);\n"
+			"  }\n"
+			"  subgroupMemoryBarrierShared();\n"
+			"  if (vote)\n"
+			"  {\n"
+			"    const highp uint invocationId = gl_SubgroupInvocationID % 32;\n"
+			"    const highp uint bitToSet = 1u << invocationId;\n"
+			"    switch (gl_SubgroupInvocationID / 32)\n"
+			"    {\n"
+			"    case 0: atomicOr(superSecretComputeShaderHelper[groupOffset].x, bitToSet); break;\n"
+			"    case 1: atomicOr(superSecretComputeShaderHelper[groupOffset].y, bitToSet); break;\n"
+			"    case 2: atomicOr(superSecretComputeShaderHelper[groupOffset].z, bitToSet); break;\n"
+			"    case 3: atomicOr(superSecretComputeShaderHelper[groupOffset].w, bitToSet); break;\n"
+			"    }\n"
+			"  }\n"
+			"  subgroupMemoryBarrierShared();\n"
+			"  return superSecretComputeShaderHelper[groupOffset].x;\n"
+			"}\n";
+}
+
 deUint32 vkt::subgroups::getSubgroupSize(Context& context)
 {
 	VkPhysicalDeviceSubgroupProperties subgroupProperties;
@@ -950,6 +979,13 @@ bool vkt::subgroups::isDoubleSupportedForDevice(Context& context)
 	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(
 				context.getInstanceInterface(), context.getPhysicalDevice());
 	return features.shaderFloat64 ? true : false;
+}
+
+bool vkt::subgroups::isInt64SupportedForDevice(Context& context)
+{
+	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(
+				context.getInstanceInterface(), context.getPhysicalDevice());
+	return features.shaderInt64 ? true : false;
 }
 
 bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& context)
@@ -1618,8 +1654,10 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 
 	if (0 < failedIterations)
 	{
+		unsigned valuesPassed = (failedIterations > totalIterations) ? 0u : (totalIterations - failedIterations);
+
 		context.getTestContext().getLog()
-				<< TestLog::Message << (totalIterations - failedIterations) << " / "
+				<< TestLog::Message << valuesPassed << " / "
 				<< totalIterations << " values passed" << TestLog::EndMessage;
 		return tcu::TestStatus::fail("Failed!");
 	}
@@ -1836,9 +1874,12 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 	if (0 < failedIterations)
 	{
+		unsigned valuesPassed = (failedIterations > totalIterations) ? 0u : (totalIterations - failedIterations);
+
 		context.getTestContext().getLog()
-				<< TestLog::Message << (totalIterations - failedIterations) << " / "
+				<< TestLog::Message << valuesPassed << " / "
 				<< totalIterations << " values passed" << TestLog::EndMessage;
+
 		return tcu::TestStatus::fail("Failed!");
 	}
 
@@ -2138,9 +2179,12 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 		if (0 < failedIterations)
 		{
+			unsigned valuesPassed = (failedIterations > totalIterations) ? 0u : (totalIterations - failedIterations);
+
 			context.getTestContext().getLog()
-					<< TestLog::Message << (totalIterations - failedIterations) << " / "
-					<< totalIterations << " values passed" << TestLog::EndMessage;
+				<< TestLog::Message << valuesPassed << " / "
+				<< totalIterations << " values passed" << TestLog::EndMessage;
+
 			return tcu::TestStatus::fail("Failed!");
 		}
 	}
@@ -2341,9 +2385,12 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 	if (0 < failedIterations)
 	{
+		unsigned valuesPassed = (failedIterations > totalIterations) ? 0u : (totalIterations - failedIterations);
+
 		context.getTestContext().getLog()
-				<< TestLog::Message << (totalIterations - failedIterations) << " / "
-				<< totalIterations << " values passed" << TestLog::EndMessage;
+			<< TestLog::Message << valuesPassed << " / "
+			<< totalIterations << " values passed" << TestLog::EndMessage;
+
 		return tcu::TestStatus::fail("Failed!");
 	}
 
@@ -2543,9 +2590,12 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 	if (0 < failedIterations)
 	{
+		unsigned valuesPassed = (failedIterations > totalIterations) ? 0u : (totalIterations - failedIterations);
+
 		context.getTestContext().getLog()
-				<< TestLog::Message << (totalIterations - failedIterations) << " / "
-				<< totalIterations << " values passed" << TestLog::EndMessage;
+			<< TestLog::Message << valuesPassed << " / "
+			<< totalIterations << " values passed" << TestLog::EndMessage;
+
 		return tcu::TestStatus::fail("Failed!");
 	}
 
@@ -2761,9 +2811,12 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 
 	if (0 < failedIterations)
 	{
+		unsigned valuesPassed = (failedIterations > totalIterations) ? 0u : (totalIterations - failedIterations);
+
 		context.getTestContext().getLog()
-				<< TestLog::Message << (totalIterations - failedIterations) << " / "
-				<< totalIterations << " values passed" << TestLog::EndMessage;
+			<< TestLog::Message << valuesPassed << " / "
+			<< totalIterations << " values passed" << TestLog::EndMessage;
+
 		return tcu::TestStatus::fail("Failed!");
 	}
 
