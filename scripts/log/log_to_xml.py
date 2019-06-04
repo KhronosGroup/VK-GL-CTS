@@ -137,49 +137,60 @@ def normalizeToXml (result, doc):
 
 	return rootNodes
 
-def logToXml (inFile, outFile):
-	parser	= BatchResultParser()
-	results	= parser.parseFile(inFile)
-
-	dstDoc			= xml.dom.minidom.Document()
+def logToXml (logFilePath, outFilePath):
+	# Initialize Xml Document
+	dstDoc = xml.dom.minidom.Document()
 	batchResultNode	= dstDoc.createElement('BatchResult')
-	batchResultNode.setAttribute("FileName", os.path.basename(inFile))
-
+	batchResultNode.setAttribute("FileName", os.path.basename(logFilePath))
 	dstDoc.appendChild(batchResultNode)
 
-	for result in results:
-		# Normalize log to valid XML
-		rootNodes = normalizeToXml(result, dstDoc)
-		for node in rootNodes:
-			batchResultNode.appendChild(node)
-
-	# Summary
+	# Initialize dictionary for counting status codes
 	countByStatusCode = {}
 	for code in StatusCode.STATUS_CODES:
 		countByStatusCode[code] = 0
 
-	for result in results:
-		countByStatusCode[result.statusCode] += 1
-
-	summaryElem = dstDoc.createElement('ResultTotals')
-	for code in StatusCode.STATUS_CODES:
-		summaryElem.setAttribute(code, "%d" % countByStatusCode[code])
-	summaryElem.setAttribute('All', "%d" % len(results))
-	batchResultNode.appendChild(summaryElem)
-
-	text = dstDoc.toprettyxml()
-
-	out = codecs.open(outFile, "wb", encoding="utf-8")
-
 	# Write custom headers
+	out = codecs.open(outFilePath, "wb", encoding="utf-8")
 	out.write("<?xml version=\"1.0\"?>\n")
 	out.write("<?xml-stylesheet href=\"%s\" type=\"text/xsl\"?>\n" % STYLESHEET_FILENAME)
 
-	for line in text.splitlines()[1:]:
-		out.write(line)
-		out.write("\n")
+	summaryElem = dstDoc.createElement('ResultTotals')
+	batchResultNode.appendChild(summaryElem)
+
+	# Print the first line manually <BatchResult FileName=something.xml>
+	out.write(dstDoc.toprettyxml().splitlines()[1])
+	out.write("\n")
+
+	parser = BatchResultParser()
+	parser.init(logFilePath)
+	logFile = open(logFilePath, 'rb')
+
+	result = parser.getNextTestCaseResult(logFile)
+	while result is not None:
+
+		countByStatusCode[result.statusCode] += 1
+		rootNodes = normalizeToXml(result, dstDoc)
+
+		for node in rootNodes:
+
+			# Do not append TestResults to dstDoc to save memory.
+			# Instead print them directly to the file and add tabs manually.
+			for line in node.toprettyxml().splitlines():
+				out.write("\t" + line + "\n")
+
+		result = parser.getNextTestCaseResult(logFile)
+
+	# Calculate the totals to add at the end of the Xml file
+	for code in StatusCode.STATUS_CODES:
+		summaryElem.setAttribute(code, "%d" % countByStatusCode[code])
+	summaryElem.setAttribute('All', "%d" % sum(countByStatusCode.values()))
+
+	# Print the test totals and finish the Xml Document"
+	for line in dstDoc.toprettyxml().splitlines()[2:]:
+		out.write(line + "\n")
 
 	out.close()
+	logFile.close()
 
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
