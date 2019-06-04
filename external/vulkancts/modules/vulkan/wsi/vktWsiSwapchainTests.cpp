@@ -1280,7 +1280,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
 				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
-				VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
+				VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 			}
 		}
 
@@ -1429,7 +1429,7 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 
 					renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
 					VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, (VkFence)0));
-					VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
+					VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 				}
 			}
 

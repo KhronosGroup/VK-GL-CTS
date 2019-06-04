@@ -1027,8 +1027,8 @@ void IncrementalPresentTestInstance::render (void)
 			&result
 		};
 
-		VK_CHECK(m_vkd.queuePresentKHR(m_queue, &presentInfo));
-		VK_CHECK(result);
+		VK_CHECK_WSI(m_vkd.queuePresentKHR(m_queue, &presentInfo));
+		VK_CHECK_WSI(result);
 	}
 	else
 	{
@@ -1045,8 +1045,8 @@ void IncrementalPresentTestInstance::render (void)
 			&result
 		};
 
-		VK_CHECK(m_vkd.queuePresentKHR(m_queue, &presentInfo));
-		VK_CHECK(result);
+		VK_CHECK_WSI(m_vkd.queuePresentKHR(m_queue, &presentInfo));
+		VK_CHECK_WSI(result);
 	}
 
 	{

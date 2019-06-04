@@ -1197,7 +1197,7 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
 				VK_CHECK(vkd.queueSubmit(context.getQueue(), 1u, &submitInfo, imageReadyFence));
-				VK_CHECK(vkd.queuePresentKHR(context.getQueue(), &presentInfo));
+				VK_CHECK_WSI(vkd.queuePresentKHR(context.getQueue(), &presentInfo));
 			}
 		}
 
