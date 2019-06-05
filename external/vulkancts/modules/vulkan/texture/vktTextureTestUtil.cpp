@@ -298,7 +298,7 @@ void initializePrograms (vk::SourceCollections& programCollection, glu::Precisio
 		params["SAMPLER_TYPE"]	= sampler;
 		params["LOOKUP"]		= lookup;
 
-		programCollection.glslSources.add("vertext_" + std::string(getProgramName(program))) << glu::VertexSource(vertexSource.specialize(params));
+		programCollection.glslSources.add("vertex_" + std::string(getProgramName(program))) << glu::VertexSource(vertexSource.specialize(params));
 		programCollection.glslSources.add("fragment_" + std::string(getProgramName(program))) << glu::FragmentSource(fragmentSource.specialize(params));
 	}
 }
@@ -1122,7 +1122,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	else
 		DE_ASSERT(DE_FALSE);
 
-	Unique<VkShaderModule>					vertexShaderModule			(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("vertext_" + std::string(getProgramName(progSpec))), 0));
+	Unique<VkShaderModule>					vertexShaderModule			(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("vertex_" + std::string(getProgramName(progSpec))), 0));
 	Unique<VkShaderModule>					fragmentShaderModule		(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("fragment_" + std::string(getProgramName(progSpec))), 0));
 
 	Move<VkSampler>							sampler;

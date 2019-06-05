@@ -25,7 +25,7 @@ from argparse import ArgumentParser
 from common import getChangedFiles, getAllProjectFiles, isTextFile
 
 def checkFileWhitespace (file):
-    f = open(file, 'rb')
+    f = open(file, 'rt')
     error = False
     for lineNum, line in enumerate(f):
         if line.endswith(" \n") or line.endswith("\t\n"):

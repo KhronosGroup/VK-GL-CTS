@@ -113,7 +113,7 @@ class NDKEnv:
 		try:
 			with open(propFilePath) as propFile:
 				for line in propFile:
-					keyValue = map(lambda x: string.strip(x), line.split("="))
+					keyValue = list(map(lambda x: x.strip(), line.split("=")))
 					if keyValue[0] == "Pkg.Revision":
 						versionParts = keyValue[1].split(".")
 						return tuple(map(int, versionParts[0:2]))
@@ -303,8 +303,8 @@ class BuildStep:
 		expandedInputs		= BuildStep.expandPathsToFiles(inputs)
 		expandedOutputs		= BuildStep.expandPathsToFiles(outputs)
 
-		existingInputs		= filter(os.path.exists, expandedInputs)
-		existingOutputs		= filter(os.path.exists, expandedOutputs)
+		existingInputs		= list(filter(os.path.exists, expandedInputs))
+		existingOutputs		= list(filter(os.path.exists, expandedOutputs))
 
 		if len(existingInputs) != len(expandedInputs):
 			for file in expandedInputs:

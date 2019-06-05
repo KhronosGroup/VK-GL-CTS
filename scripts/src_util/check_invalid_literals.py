@@ -57,7 +57,7 @@ def checkFileInvalidLiterals (file):
 	error = False
 
 	if checkEnds(file.replace("\\", "/"), CHECK_LIST) and not checkEnds(file.replace("\\", "/"), EXCLUSION_LIST):
-		f = open(file, 'rb')
+		f = open(file, 'rt')
 		for lineNum, line in enumerate(f):
 			# Remove inline comments
 			idx = line.find("//")
