@@ -234,12 +234,12 @@ class VecLexLessThan : public LexCompare<tcu::Vector<float, Size>, Size, std::le
 //! Creates multiple shader programs for combinations of winding and point mode.
 //! mirrorCoords - special mode where some tessellation coordinates are mirrored in tessellation evaluation shader.
 //!                This is used by symmetric outer edge test.
-void addDefaultPrograms (vk::SourceCollections&  programCollection,
-						 const TessPrimitiveType primitiveType,
-						 const SpacingMode       spacingMode,
-						 const WindingUsage      windingUsage,
-						 const PointModeUsage    pointModeUsage,
-						 const bool				 mirrorCoords = false)
+void addDefaultPrograms (vk::SourceCollections&		programCollection,
+						 const TessPrimitiveType	primitiveType,
+						 const SpacingMode			spacingMode,
+						 const WindingUsage			windingUsage,
+						 const PointModeUsage		pointModeUsage,
+						 const bool					mirrorCoords = false)
 {
 	// Vertex shader
 	{
@@ -607,11 +607,11 @@ BaseTestInstance::BaseTestInstance (Context& context, const CaseDefinition caseD
 											.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 											.build(m_context.getDeviceInterface(), m_context.getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u))
 	, m_descriptorSet						(makeDescriptorSet(m_context.getDeviceInterface(), m_context.getDevice(), *m_descriptorPool, *m_descriptorSetLayout))
-	, m_renderPass							(makeRenderPassWithoutAttachments (m_context.getDeviceInterface(), m_context.getDevice()))
-	, m_framebuffer							(makeFramebufferWithoutAttachments(m_context.getDeviceInterface(), m_context.getDevice(), *m_renderPass))
-	, m_pipelineLayout						(makePipelineLayout               (m_context.getDeviceInterface(), m_context.getDevice(), *m_descriptorSetLayout))
-	, m_cmdPool								(makeCommandPool                  (m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueueFamilyIndex()))
-	, m_cmdBuffer							(allocateCommandBuffer            (m_context.getDeviceInterface(), m_context.getDevice(), *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))
+	, m_renderPass							(makeRenderPassWithoutAttachments	(m_context.getDeviceInterface(), m_context.getDevice()))
+	, m_framebuffer							(makeFramebuffer					(m_context.getDeviceInterface(), m_context.getDevice(), *m_renderPass, 0u, DE_NULL, 1u, 1u))
+	, m_pipelineLayout						(makePipelineLayout					(m_context.getDeviceInterface(), m_context.getDevice(), *m_descriptorSetLayout))
+	, m_cmdPool								(makeCommandPool					(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueueFamilyIndex()))
+	, m_cmdBuffer							(allocateCommandBuffer				(m_context.getDeviceInterface(), m_context.getDevice(), *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(),
 					FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER | FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
@@ -732,8 +732,8 @@ tcu::TestStatus OuterEdgeDivisionTestInstance::iterate (void)
 	for (int outerEdgeIndex = 0; outerEdgeIndex < static_cast<int>(m_edgeDescriptions.size()); ++outerEdgeIndex)
 	for (int outerEdgeLevelCaseNdx = 0; outerEdgeLevelCaseNdx < DE_LENGTH_OF_ARRAY(m_singleOuterEdgeLevels); ++outerEdgeLevelCaseNdx)
 	{
-		const OuterEdgeDescription& edgeDesc        = m_edgeDescriptions[outerEdgeIndex];
-		const std::vector<float>    patchTessLevels = generatePatchTessLevels(m_numPatchesToDraw, outerEdgeIndex, m_singleOuterEdgeLevels[outerEdgeLevelCaseNdx]);
+		const OuterEdgeDescription&	edgeDesc		= m_edgeDescriptions[outerEdgeIndex];
+		const std::vector<float>	patchTessLevels	= generatePatchTessLevels(m_numPatchesToDraw, outerEdgeIndex, m_singleOuterEdgeLevels[outerEdgeLevelCaseNdx]);
 
 		Vec3Set firstOuterEdgeVertices; // Vertices of the outer edge of the first patch of the first program's draw call; used for comparison with other patches.
 
@@ -743,9 +743,9 @@ tcu::TestStatus OuterEdgeDivisionTestInstance::iterate (void)
 		for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
 		for (int usePointModeNdx = 0; usePointModeNdx <= 1; ++usePointModeNdx)
 		{
-			const Winding winding	     = static_cast<Winding>(windingNdx);
-			const bool	  usePointMode   = (usePointModeNdx != 0);
-			const bool    isFirstProgram = (windingNdx == 0 && usePointModeNdx == 0);
+			const Winding	winding				= static_cast<Winding>(windingNdx);
+			const bool		usePointMode		= (usePointModeNdx != 0);
+			const bool		isFirstProgram		= (windingNdx == 0 && usePointModeNdx == 0);
 
 			const DrawResult result = draw(static_cast<deUint32>(patchTessLevels.size()), patchTessLevels, winding, usePointMode);
 
@@ -1360,17 +1360,17 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 	// Vertex input attributes buffer: to pass tessellation levels
 
-	const VkFormat     vertexFormat        = VK_FORMAT_R32_SFLOAT;
-	const deUint32     vertexStride        = tcu::getPixelSize(mapVkFormat(vertexFormat));
-	const VkDeviceSize vertexDataSizeBytes = NUM_TESS_LEVELS * numPatchesPerDrawCall * vertexStride;
-	const Buffer       vertexBuffer        (vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkFormat		vertexFormat		= VK_FORMAT_R32_SFLOAT;
+	const deUint32		vertexStride		= tcu::getPixelSize(mapVkFormat(vertexFormat));
+	const VkDeviceSize	vertexDataSizeBytes	= NUM_TESS_LEVELS * numPatchesPerDrawCall * vertexStride;
+	const Buffer		vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Output buffer: number of primitives and an array of PerPrimitive structures
 
-	const int		   resultBufferMaxVertices		= numPatchesPerDrawCall * maxNumPrimitivesPerPatch * numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
-	const int		   resultBufferTessCoordsOffset = (int)sizeof(deInt32) * 4;
-	const VkDeviceSize resultBufferSizeBytes        = resultBufferTessCoordsOffset + resultBufferMaxVertices * sizeof(PerPrimitive);
-	const Buffer       resultBuffer                 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int			resultBufferMaxVertices			= numPatchesPerDrawCall * maxNumPrimitivesPerPatch * numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
+	const int			resultBufferTessCoordsOffset	= (int)sizeof(deInt32) * 4;
+	const VkDeviceSize	resultBufferSizeBytes			= resultBufferTessCoordsOffset + resultBufferMaxVertices * sizeof(PerPrimitive);
+	const Buffer		resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 
@@ -1389,11 +1389,11 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultBufferInfo)
 		.update(vk, device);
 
-	const Unique<VkRenderPass>     renderPass    (makeRenderPassWithoutAttachments (vk, device));
-	const Unique<VkFramebuffer>    framebuffer   (makeFramebufferWithoutAttachments(vk, device, *renderPass));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout               (vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>    cmdPool       (makeCommandPool                  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer     (allocateCommandBuffer            (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkRenderPass>		renderPass		(makeRenderPassWithoutAttachments	(vk, device));
+	const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer					(vk, device, *renderPass, 0u, DE_NULL, 1u, 1u));
+	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout					(vk, device, *descriptorSetLayout));
+	const Unique<VkCommandPool>		cmdPool			(makeCommandPool					(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer				(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (int tessLevelCaseNdx = 0; tessLevelCaseNdx < static_cast<int>(tessLevelCases.size()); ++tessLevelCaseNdx)
 	{
@@ -1429,13 +1429,13 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 			for (std::vector<Winding>::const_iterator windingIter = windingCases.begin(); windingIter != windingCases.end(); ++windingIter)
 			{
 				const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
-					.setPatchControlPoints        (NUM_TESS_LEVELS)
-					.setVertexInputSingleAttribute(vertexFormat, vertexStride)
-					.setShader                    (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
-					.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	m_context.getBinaryCollection().get("tesc"), DE_NULL)
-					.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get(getProgramName("tese", *windingIter, m_caseDef.usePointMode)), DE_NULL)
-					.setShader                    (vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,                m_context.getBinaryCollection().get(getProgramName("geom", m_caseDef.usePointMode)), DE_NULL)
-					.build                        (vk, device, *pipelineLayout, *renderPass));
+					.setPatchControlPoints			(NUM_TESS_LEVELS)
+					.setVertexInputSingleAttribute	(vertexFormat, vertexStride)
+					.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
+					.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
+					.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get(getProgramName("tese", *windingIter, m_caseDef.usePointMode)), DE_NULL)
+					.setShader						(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", m_caseDef.usePointMode)), DE_NULL)
+					.build							(vk, device, *pipelineLayout, *renderPass));
 
 				{
 					const Allocation& alloc = resultBuffer.getAllocation();
@@ -1799,8 +1799,8 @@ TestInstance* InvarianceTestCase::createInstance (Context& context) const
 {
 	switch (m_caseDef.caseType)
 	{
-		case CASETYPE_INVARIANT_PRIMITIVE_SET:			return new InvariantPrimitiveSetTestInstance    (context, m_caseDef);
-		case CASETYPE_INVARIANT_TRIANGLE_SET:			return new InvariantTriangleSetTestInstance     (context, m_caseDef);
+		case CASETYPE_INVARIANT_PRIMITIVE_SET:			return new InvariantPrimitiveSetTestInstance	(context, m_caseDef);
+		case CASETYPE_INVARIANT_TRIANGLE_SET:			return new InvariantTriangleSetTestInstance		(context, m_caseDef);
 		case CASETYPE_INVARIANT_OUTER_TRIANGLE_SET:		return new InvariantOuterTriangleSetTestInstance(context, m_caseDef);
 		case CASETYPE_INVARIANT_INNER_TRIANGLE_SET:		return new InvariantInnerTriangleSetTestInstance(context, m_caseDef);
 		default:
@@ -2012,18 +2012,18 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 	// Vertex input attributes buffer: to pass tessellation levels
 
-	const VkFormat		vertexFormat        = VK_FORMAT_R32_SFLOAT;
-	const deUint32		vertexStride        = tcu::getPixelSize(mapVkFormat(vertexFormat));
-	const VkDeviceSize	vertexDataSizeBytes = NUM_TESS_LEVELS * vertexStride;
-	const Buffer		vertexBuffer        (vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const VkFormat		vertexFormat		= VK_FORMAT_R32_SFLOAT;
+	const deUint32		vertexStride		= tcu::getPixelSize(mapVkFormat(vertexFormat));
+	const VkDeviceSize	vertexDataSizeBytes	= NUM_TESS_LEVELS * vertexStride;
+	const Buffer		vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	DE_ASSERT(vertexDataSizeBytes == sizeof(TessLevels));
 
 	// Output buffer: number of invocations and array of tess coords
 
-	const int		   resultBufferTessCoordsOffset = (int)sizeof(deInt32) * 4;
-	const VkDeviceSize resultBufferSizeBytes        = resultBufferTessCoordsOffset + maxNumVerticesInDrawCall * sizeof(tcu::Vec4);
-	const Buffer       resultBuffer                 (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int			resultBufferTessCoordsOffset	= (int)sizeof(deInt32) * 4;
+	const VkDeviceSize	resultBufferSizeBytes			= resultBufferTessCoordsOffset + maxNumVerticesInDrawCall * sizeof(tcu::Vec4);
+	const Buffer		resultBuffer					(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	// Descriptors
 
@@ -2042,11 +2042,11 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultBufferInfo)
 		.update(vk, device);
 
-	const Unique<VkRenderPass>     renderPass    (makeRenderPassWithoutAttachments (vk, device));
-	const Unique<VkFramebuffer>    framebuffer   (makeFramebufferWithoutAttachments(vk, device, *renderPass));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout               (vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>    cmdPool       (makeCommandPool                  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer     (allocateCommandBuffer            (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkRenderPass>		renderPass		(makeRenderPassWithoutAttachments	(vk, device));
+	const Unique<VkFramebuffer>		framebuffer		(makeFramebuffer					(vk, device, *renderPass, 0u, DE_NULL, 1u, 1u));
+	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout					(vk, device, *descriptorSetLayout));
+	const Unique<VkCommandPool>		cmdPool			(makeCommandPool					(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer				(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
 		.setPatchControlPoints        (NUM_TESS_LEVELS)
@@ -2158,7 +2158,7 @@ tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "invariance", "Test tessellation invariance rules"));
 
-	de::MovePtr<tcu::TestCaseGroup> invariantPrimitiveSetGroup              (new tcu::TestCaseGroup(testCtx, "primitive_set",					"Test invariance rule #1"));
+	de::MovePtr<tcu::TestCaseGroup> invariantPrimitiveSetGroup				(new tcu::TestCaseGroup(testCtx, "primitive_set",					"Test invariance rule #1"));
 	de::MovePtr<tcu::TestCaseGroup> invariantOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_division",				"Test invariance rule #2"));
 	de::MovePtr<tcu::TestCaseGroup> symmetricOuterEdgeGroup					(new tcu::TestCaseGroup(testCtx, "outer_edge_symmetry",				"Test invariance rule #3"));
 	de::MovePtr<tcu::TestCaseGroup> outerEdgeVertexSetIndexIndependenceGroup(new tcu::TestCaseGroup(testCtx, "outer_edge_index_independence",	"Test invariance rule #4"));
@@ -2179,23 +2179,23 @@ tcu::TestCaseGroup* createInvarianceTests (tcu::TestContext& testCtx)
 
 		if (triOrQuad)
 		{
-			invariantOuterEdgeGroup->addChild       (    InvariantOuterEdge::makeOuterEdgeDivisionTest        (testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantTriangleSetGroup->addChild     (PrimitiveSetInvariance::makeInvariantTriangleSetTest     (testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantInnerTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantInnerTriangleSetTest(testCtx, primSpacName, "", primitiveType, spacingMode));
-			invariantOuterTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantOuterTriangleSetTest(testCtx, primSpacName, "", primitiveType, spacingMode));
+			invariantOuterEdgeGroup->addChild		(    InvariantOuterEdge::makeOuterEdgeDivisionTest			(testCtx, primSpacName, "", primitiveType, spacingMode));
+			invariantTriangleSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantTriangleSetTest		(testCtx, primSpacName, "", primitiveType, spacingMode));
+			invariantInnerTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantInnerTriangleSetTest	(testCtx, primSpacName, "", primitiveType, spacingMode));
+			invariantOuterTriangleSetGroup->addChild(PrimitiveSetInvariance::makeInvariantOuterTriangleSetTest	(testCtx, primSpacName, "", primitiveType, spacingMode));
 		}
 
 		for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
 		for (int usePointModeNdx = 0; usePointModeNdx <= 1; ++usePointModeNdx)
 		{
-			const Winding     winding               = static_cast<Winding>(windingNdx);
-			const bool        usePointMode          = (usePointModeNdx != 0);
-			const std::string primSpacWindPointName = primSpacName + "_" + getWindingShaderName(winding) + (usePointMode ? "_point_mode" : "");
+			const Winding		winding					= static_cast<Winding>(windingNdx);
+			const bool			usePointMode			= (usePointModeNdx != 0);
+			const std::string	primSpacWindPointName	= primSpacName + "_" + getWindingShaderName(winding) + (usePointMode ? "_point_mode" : "");
 
-			invariantPrimitiveSetGroup->addChild     (PrimitiveSetInvariance::makeInvariantPrimitiveSetTest(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			tessCoordComponentRangeGroup->addChild   (    TessCoordComponent::makeTessCoordRangeTest       (testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			oneMinusTessCoordComponentGroup->addChild(    TessCoordComponent::makeOneMinusTessCoordTest    (testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
-			symmetricOuterEdgeGroup->addChild        (    InvariantOuterEdge::makeSymmetricOuterEdgeTest   (testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+			invariantPrimitiveSetGroup->addChild		(PrimitiveSetInvariance::makeInvariantPrimitiveSetTest	(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+			tessCoordComponentRangeGroup->addChild		(    TessCoordComponent::makeTessCoordRangeTest			(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+			oneMinusTessCoordComponentGroup->addChild	(    TessCoordComponent::makeOneMinusTessCoordTest		(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
+			symmetricOuterEdgeGroup->addChild			(    InvariantOuterEdge::makeSymmetricOuterEdgeTest		(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));
 
 			if (triOrQuad)
 				outerEdgeVertexSetIndexIndependenceGroup->addChild(InvariantOuterEdge::makeOuterEdgeIndexIndependenceTest(testCtx, primSpacWindPointName, "", primitiveType, spacingMode, winding, usePointMode));

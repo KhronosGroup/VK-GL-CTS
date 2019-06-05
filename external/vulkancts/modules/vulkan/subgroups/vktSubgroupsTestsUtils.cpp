@@ -150,22 +150,6 @@ deUint32 getElementSizeInBytes(
 		return bytes;
 }
 
-Move<VkPipelineLayout> makePipelineLayout(
-	Context& context, const VkDescriptorSetLayout descriptorSetLayout)
-{
-	const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams = {
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-		DE_NULL,			  // const void*            pNext;
-		0u,					  // VkPipelineLayoutCreateFlags    flags;
-		1u,					  // deUint32             setLayoutCount;
-		&descriptorSetLayout, // const VkDescriptorSetLayout*   pSetLayouts;
-		0u,					  // deUint32             pushConstantRangeCount;
-		DE_NULL, // const VkPushConstantRange*   pPushConstantRanges;
-	};
-	return createPipelineLayout(context.getDeviceInterface(),
-								context.getDevice(), &pipelineLayoutParams);
-}
-
 Move<VkRenderPass> makeRenderPass(Context& context, VkFormat format)
 {
 	VkAttachmentReference colorReference = {
@@ -206,19 +190,6 @@ Move<VkRenderPass> makeRenderPass(Context& context, VkFormat format)
 
 	return createRenderPass(context.getDeviceInterface(), context.getDevice(),
 							&renderPassCreateInfo);
-}
-
-Move<VkFramebuffer> makeFramebuffer(Context& context,
-									const VkRenderPass renderPass, const VkImageView imageView, deUint32 width,
-									deUint32 height)
-{
-	const VkFramebufferCreateInfo framebufferCreateInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, DE_NULL, 0u, renderPass, 1,
-		&imageView, width, height, 1
-	};
-
-	return createFramebuffer(context.getDeviceInterface(), context.getDevice(),
-							 &framebufferCreateInfo);
 }
 
 Move<VkPipeline> makeGraphicsPipeline(Context&									context,
@@ -339,21 +310,6 @@ Move<VkPipeline> makeComputePipeline(Context& context,
 
 	return createComputePipeline(context.getDeviceInterface(),
 								 context.getDevice(), DE_NULL, &pipelineCreateInfo);
-}
-
-Move<VkCommandPool> makeCommandPool(Context& context)
-{
-	const VkCommandPoolCreateInfo commandPoolParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // VkStructureType sType;
-		DE_NULL,									// const void*        pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // VkCommandPoolCreateFlags
-		// flags;
-		context.getUniversalQueueFamilyIndex(), // deUint32 queueFamilyIndex;
-	};
-
-	return createCommandPool(
-			   context.getDeviceInterface(), context.getDevice(), &commandPoolParams);
 }
 
 Move<VkCommandBuffer> makeCommandBuffer(
@@ -485,8 +441,9 @@ struct Image : public BufferOrImage
 				   VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT)
 		: BufferOrImage(true)
 	{
-		const DeviceInterface&			vkd					= context.getDeviceInterface();
+		const DeviceInterface&			vk					= context.getDeviceInterface();
 		const VkDevice					device				= context.getDevice();
+		const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
 		const VkImageCreateInfo			imageCreateInfo		=
 		{
@@ -534,14 +491,14 @@ struct Image : public BufferOrImage
 			VK_FALSE,
 		};
 
-		m_image			= createImage(vkd, device, &imageCreateInfo);
+		m_image			= createImage(vk, device, &imageCreateInfo);
 
-		VkMemoryRequirements			req					= getImageMemoryRequirements(vkd, device, *m_image);
+		VkMemoryRequirements			req					= getImageMemoryRequirements(vk, device, *m_image);
 
 		req.size		*= 2;
 		m_allocation	= context.getDefaultAllocator().allocate(req, MemoryRequirement::Any);
 
-		VK_CHECK(vkd.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+		VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
 
 		const VkImageViewCreateInfo		imageViewCreateInfo	=
 		{
@@ -550,24 +507,24 @@ struct Image : public BufferOrImage
 			subresourceRange
 		};
 
-		m_imageView		= createImageView(vkd, device, &imageViewCreateInfo);
-		m_sampler		= createSampler(vkd, device, &samplerCreateInfo);
+		m_imageView		= createImageView(vk, device, &imageViewCreateInfo);
+		m_sampler		= createSampler(vk, device, &samplerCreateInfo);
 
 		// Transition input image layouts
 		{
-			const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
-			const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(context, *cmdPool));
+			const Unique<VkCommandPool>		cmdPool			(makeCommandPool(vk, device, queueFamilyIndex));
+			const Unique<VkCommandBuffer>	cmdBuffer		(makeCommandBuffer(context, *cmdPool));
 
-			beginCommandBuffer(vkd, *cmdBuffer);
+			beginCommandBuffer(vk, *cmdBuffer);
 
-			const VkImageMemoryBarrier		imageBarrier		= makeImageMemoryBarrier((VkAccessFlags)0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+			const VkImageMemoryBarrier		imageBarrier	= makeImageMemoryBarrier((VkAccessFlags)0u, VK_ACCESS_TRANSFER_WRITE_BIT,
 																	VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *m_image, subresourceRange);
 
-			vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &imageBarrier);
 
-			endCommandBuffer(vkd, *cmdBuffer);
-			submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
+			submitCommandsAndWait(vk, device, context.getUniversalQueue(), *cmdBuffer);
 		}
 	}
 
@@ -1931,7 +1888,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 
 	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(vk, device));
 
-	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(context, *descriptorSetLayout));
+	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(context, *pipelineLayout,
 																	VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT |
@@ -1976,7 +1933,8 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 	updateBuilder.update(vk, device);
 
 	const VkQueue							queue					= context.getUniversalQueue();
-	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(context));
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(vk, device, queueFamilyIndex));
 	const deUint32							subgroupSize			= getSubgroupSize(context);
 	const Unique<VkCommandBuffer>			cmdBuffer				(makeCommandBuffer(context, *cmdPool));
 	const vk::VkDeviceSize					vertexBufferSize		= 2ull * maxWidth * sizeof(tcu::Vec4);
@@ -2002,7 +1960,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 		flushAlloc(vk, device, alloc);
 	}
 
-	const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
+	const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(vk, device, *renderPass, discardableImage.getImageView(), maxWidth, 1u));
 	const VkViewport			viewport			= makeViewport(maxWidth, 1u);
 	const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 	const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
@@ -2144,7 +2102,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(vk, device));
 
-	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(context, *descriptorSetLayout));
+	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(context, *pipelineLayout,
 																	VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT,
@@ -2188,7 +2146,8 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	updateBuilder.update(vk, device);
 
 	const VkQueue							queue					= context.getUniversalQueue();
-	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(context));
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(vk, device, queueFamilyIndex));
 	const deUint32							subgroupSize			= getSubgroupSize(context);
 	const Unique<VkCommandBuffer>			cmdBuffer				(makeCommandBuffer(context, *cmdPool));
 	const vk::VkDeviceSize					vertexBufferSize		= maxWidth * sizeof(tcu::Vec4);
@@ -2213,7 +2172,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 		flushAlloc(vk, device, alloc);
 	}
 
-	const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
+	const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(vk, device, *renderPass, discardableImage.getImageView(), maxWidth, 1u));
 	const VkViewport			viewport			= makeViewport(maxWidth, 1u);
 	const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 	const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
@@ -2393,7 +2352,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout> pipelineLayout(
-		makePipelineLayout(context, *descriptorSetLayout));
+		makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkRenderPass> renderPass(makeRenderPass(context, format));
 	const Unique<VkPipeline> pipeline(makeGraphicsPipeline(context, *pipelineLayout,
@@ -2454,13 +2413,14 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 	{
 		const VkQueue					queue					= context.getUniversalQueue();
-		const Unique<VkCommandPool>		cmdPool					(makeCommandPool(context));
+		const deUint32					queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+		const Unique<VkCommandPool>		cmdPool					(makeCommandPool(vk, device, queueFamilyIndex));
 		const deUint32					subgroupSize			= getSubgroupSize(context);
 		const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer(context, *cmdPool));
 		unsigned						totalIterations			= 0u;
 		unsigned						failedIterations		= 0u;
 		Image							resultImage				(context, maxWidth, 1, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-		const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(context, *renderPass, resultImage.getImageView(), maxWidth, 1));
+		const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, resultImage.getImageView(), maxWidth, 1u));
 		const VkViewport				viewport				= makeViewport(maxWidth, 1u);
 		const VkRect2D					scissor					= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize			imageResultSize			= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
@@ -2591,6 +2551,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	const VkDevice							device					= context.getDevice();
 	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							maxWidth				= getMaxWidth();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 	DescriptorSetLayoutBuilder				layoutBuilder;
 	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
@@ -2632,7 +2593,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(vk, device));
 
-	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(context, *descriptorSetLayout));
+	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(context, *pipelineLayout,
 																		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -2687,7 +2648,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	}
 	updateBuilder.update(vk, device);
 
-	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(context));
+	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(vk, device, queueFamilyIndex));
 
 	const deUint32							subgroupSize			= getSubgroupSize(context);
 
@@ -2717,7 +2678,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 		flushAlloc(vk, device, alloc);
 	}
 
-	const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
+	const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(vk, device, *renderPass, discardableImage.getImageView(), maxWidth, 1u));
 	const VkViewport			viewport			= makeViewport(maxWidth, 1u);
 	const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 	const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
@@ -2794,6 +2755,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
 	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule
 																		(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule
@@ -2831,7 +2793,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 		layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout> pipelineLayout(
-		makePipelineLayout(context, *descriptorSetLayout));
+		makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkRenderPass> renderPass(makeRenderPass(context, format));
 	const Unique<VkPipeline> pipeline(makeGraphicsPipeline(context, *pipelineLayout,
@@ -2888,7 +2850,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	if (extraDatasCount > 0)
 		updateBuilder.update(vk, device);
 
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
 
 	const deUint32					subgroupSize		= getSubgroupSize(context);
 
@@ -2921,8 +2883,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 			Buffer resultBuffer(context, resultImageSizeInBytes,
 								VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-			const Unique<VkFramebuffer> framebuffer(makeFramebuffer(context,
-													*renderPass, resultImage.getImageView(), width, height));
+			const Unique<VkFramebuffer> framebuffer(makeFramebuffer(vk, device, *renderPass, resultImage.getImageView(), width, height));
 
 			beginCommandBuffer(vk, *cmdBuffer);
 
@@ -2996,6 +2957,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
 	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	VkDeviceSize							elementSize				= getFormatSizeInBytes(format);
 
 	const VkDeviceSize resultBufferSize = maxSupportedSubgroupSize() *
@@ -3043,7 +3005,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		createShaderModule(vk, device,
 						   context.getBinaryCollection().get("comp"), 0u));
 	const Unique<VkPipelineLayout> pipelineLayout(
-		makePipelineLayout(context, *descriptorSetLayout));
+		makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	DescriptorPoolBuilder poolBuilder;
 
@@ -3098,7 +3060,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 
 	updateBuilder.update(vk, device);
 
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
 
 	unsigned totalIterations = 0;
 	unsigned failedIterations = 0;

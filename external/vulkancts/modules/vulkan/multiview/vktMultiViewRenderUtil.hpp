@@ -37,8 +37,6 @@ vk::VkImageAspectFlags				getAspectFlags					(tcu::TextureFormat format);
 vk::VkFormat						getStencilBufferFormat			(const vk::VkFormat depthStencilImageFormat);
 vk::VkFormat						getDepthBufferFormat			(const vk::VkFormat depthStencilImageFormat);
 vk::VkImageCreateInfo				makeImageCreateInfo				(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkSampleCountFlagBits samples);
-vk::Move<vk::VkFramebuffer>			makeFramebuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const std::vector<vk::VkImageView>& attachments, const deUint32 width, const deUint32 height, const deUint32 layers);
-vk::Move<vk::VkPipelineLayout>		makePipelineLayout				(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout* pSetLayouts = DE_NULL);
 vk::Move<vk::VkDescriptorSetLayout>	makeDescriptorSetLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device);
 
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>

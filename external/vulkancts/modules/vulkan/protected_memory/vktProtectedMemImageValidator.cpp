@@ -34,6 +34,7 @@
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "vktProtectedMemUtils.hpp"
 #include "vktProtectedMemContext.hpp"

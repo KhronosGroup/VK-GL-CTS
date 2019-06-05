@@ -1002,7 +1002,7 @@ public:
 
 		m_colorAttachmentView	= makeImageView		(vk, device, **m_colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorImageSubresourceRange);
 		m_renderPass			= makeRenderPass	(vk, device, m_colorFormat);
-		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_colorImageExtent.width, m_colorImageExtent.height, 1u);
+		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_colorImageExtent.width, m_colorImageExtent.height);
 		m_pipelineLayout		= makePipelineLayout(vk, device, descriptorSetLayout);
 
 		GraphicsPipelineBuilder pipelineBuilder;
@@ -2316,10 +2316,10 @@ public:
 
 		// Pipeline
 
-		m_colorAttachmentView	= makeImageView						  (vk, device, m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
-		m_renderPass			= makeRenderPass					  (vk, device, m_colorFormat);
-		m_framebuffer			= makeFramebuffer					  (vk, device, *m_renderPass, *m_colorAttachmentView, m_attachmentExtent.width, m_attachmentExtent.height, 1u);
-		m_pipelineLayout		= makePipelineLayoutWithoutDescriptors(vk, device);
+		m_colorAttachmentView	= makeImageView		(vk, device, m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
+		m_renderPass			= makeRenderPass	(vk, device, m_colorFormat);
+		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_attachmentExtent.width, m_attachmentExtent.height);
+		m_pipelineLayout		= makePipelineLayout(vk, device);
 
 		GraphicsPipelineBuilder pipelineBuilder;
 		pipelineBuilder
@@ -2552,7 +2552,7 @@ public:
 			break;
 		}
 
-		m_frameBuffer	= makeFramebuffer(vk, device, *m_renderPass, *m_attachmentView, m_resource.getImage().extent.width, m_resource.getImage().extent.height, 1u);
+		m_frameBuffer	= makeFramebuffer(vk, device, *m_renderPass, *m_attachmentView, m_resource.getImage().extent.width, m_resource.getImage().extent.height);
 	}
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
@@ -2698,7 +2698,7 @@ public:
 
 		m_colorAttachmentView	= makeImageView		(vk, device, **m_colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorImageSubresourceRange);
 		m_renderPass			= makeRenderPass	(vk, device, m_colorFormat);
-		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_colorImageExtent.width, m_colorImageExtent.height, 1u);
+		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_colorImageExtent.width, m_colorImageExtent.height);
 		m_pipelineLayout		= makePipelineLayout(vk, device, descriptorSetLayout);
 
 		GraphicsPipelineBuilder pipelineBuilder;
@@ -3162,7 +3162,7 @@ public:
 		// Pipeline
 		m_colorAttachmentView	= makeImageView		(vk, device, **m_colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorImageSubresourceRange);
 		m_renderPass			= makeRenderPass	(vk, device, m_colorFormat);
-		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_colorImageExtent.width, m_colorImageExtent.height, 1u);
+		m_framebuffer			= makeFramebuffer	(vk, device, *m_renderPass, *m_colorAttachmentView, m_colorImageExtent.width, m_colorImageExtent.height);
 		m_pipelineLayout		= makePipelineLayout(vk, device, *m_descriptorSetLayout);
 
 		m_pipeline = GraphicsPipelineBuilder()

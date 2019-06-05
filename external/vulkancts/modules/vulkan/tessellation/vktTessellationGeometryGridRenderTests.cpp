@@ -554,12 +554,12 @@ tcu::TestStatus GridRenderTestInstance::iterate (void)
 
 	// Pipeline: no vertex input attributes nor descriptors.
 
-	const Unique<VkImageView>		colorAttachmentView(makeImageView						(vk, device, *colorAttachmentImage, colorAttachmentViewType, colorFormat, colorImageAllLayersRange));
-	const Unique<VkRenderPass>		renderPass		   (makeRenderPass						(vk, device, colorFormat));
-	const Unique<VkFramebuffer>		framebuffer		   (makeFramebuffer						(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), m_params.numLayers));
-	const Unique<VkPipelineLayout>	pipelineLayout	   (makePipelineLayoutWithoutDescriptors(vk, device));
-	const Unique<VkCommandPool>		cmdPool			   (makeCommandPool						(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer		   (allocateCommandBuffer				(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkImageView>		colorAttachmentView	(makeImageView			(vk, device, *colorAttachmentImage, colorAttachmentViewType, colorFormat, colorImageAllLayersRange));
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat));
+	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), m_params.numLayers));
+	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool		(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const Unique<VkPipeline> pipeline (GraphicsPipelineBuilder()
 		.setRenderSize	(renderSize)

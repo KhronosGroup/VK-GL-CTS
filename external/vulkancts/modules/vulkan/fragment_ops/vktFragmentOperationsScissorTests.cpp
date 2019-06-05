@@ -376,7 +376,7 @@ public:
 		m_vertexModule				= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
 		m_fragmentModule			= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
 		m_renderPass				= makeRenderPass		(vk, device, m_colorFormat);
-		m_framebuffer				= makeFramebuffer		(vk, device, *m_renderPass, 1u, &m_colorAttachment.get(),
+		m_framebuffer				= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
 															 static_cast<deUint32>(m_renderSize.x()),  static_cast<deUint32>(m_renderSize.y()));
 		m_pipelineLayout			= makePipelineLayout	(vk, device);
 		m_cmdPool					= createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);

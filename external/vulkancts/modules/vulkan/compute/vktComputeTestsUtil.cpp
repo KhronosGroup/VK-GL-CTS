@@ -69,51 +69,6 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
 	return copyParams;
 }
 
-Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice device, const deUint32 queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo commandPoolParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
-		queueFamilyIndex,									// deUint32					queueFamilyIndex;
-	};
-	return createCommandPool(vk, device, &commandPoolParams);
-}
-
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device)
-{
-	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		static_cast<VkPipelineLayoutCreateFlags>(0u),		// VkPipelineLayoutCreateFlags		flags;
-		0u,													// deUint32							setLayoutCount;
-		DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
-		0u,													// deUint32							pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &pipelineLayoutParams);
-}
-
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		static_cast<VkPipelineLayoutCreateFlags>(0u),		// VkPipelineLayoutCreateFlags		flags;
-		1u,													// deUint32							setLayoutCount;
-		&descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
-		0u,													// deUint32							pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &pipelineLayoutParams);
-}
-
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
 									  const VkDevice							device,
 									  const VkPipelineLayout					pipelineLayout,

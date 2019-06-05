@@ -545,4 +545,81 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 	return bufferCreateInfo;
 }
 
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
+										   const VkDevice				device,
+										   const VkDescriptorSetLayout	descriptorSetLayout)
+{
+	return makePipelineLayout(vk, device, (descriptorSetLayout == DE_NULL) ? 0u : 1u, &descriptorSetLayout);
+}
+
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
+										   const VkDevice				device,
+										   const deUint32				setLayoutCount,
+										   const VkDescriptorSetLayout*	descriptorSetLayout)
+{
+	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
+		DE_NULL,											// const void*						pNext;
+		0u,													// VkPipelineLayoutCreateFlags		flags;
+		setLayoutCount,										// deUint32							setLayoutCount;
+		descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
+		0u,													// deUint32							pushConstantRangeCount;
+		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
+	};
+
+	return createPipelineLayout(vk, device, &pipelineLayoutParams);
+}
+
+Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
+									 const VkDevice			device,
+									 const VkRenderPass		renderPass,
+									 const VkImageView		colorAttachment,
+									 const deUint32			width,
+									 const deUint32			height,
+									 const deUint32			layers)
+{
+	return makeFramebuffer(vk, device, renderPass, 1u, &colorAttachment, width, height, layers);
+}
+
+Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
+									 const VkDevice			device,
+									 const VkRenderPass		renderPass,
+									 const deUint32			attachmentCount,
+									 const VkImageView*		colorAttachments,
+									 const deUint32			width,
+									 const deUint32			height,
+									 const deUint32			layers)
+{
+	const VkFramebufferCreateInfo framebufferInfo =
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		(VkFramebufferCreateFlags)0,				// VkFramebufferCreateFlags	flags;
+		renderPass,									// VkRenderPass				renderPass;
+		attachmentCount,							// uint32_t					attachmentCount;
+		colorAttachments,							// const VkImageView*		pAttachments;
+		width,										// uint32_t					width;
+		height,										// uint32_t					height;
+		layers,										// uint32_t					layers;
+	};
+
+	return createFramebuffer(vk, device, &framebufferInfo);
+}
+
+Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk,
+									 const VkDevice			device,
+									 const deUint32			queueFamilyIndex)
+{
+	const VkCommandPoolCreateInfo commandPoolParams =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
+		DE_NULL,											// const void*				pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
+		queueFamilyIndex,									// deUint32					queueFamilyIndex;
+	};
+
+	return createCommandPool(vk, device, &commandPoolParams);
+}
+
 } // vk

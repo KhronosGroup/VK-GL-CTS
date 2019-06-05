@@ -426,47 +426,6 @@ VkBufferImageCopy makeBufferImageCopy (const vk::VkDeviceSize&				bufferOffset,
 	return copyParams;
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,							// VkStructureType				sType;
-		DE_NULL,																// const void*					pNext;
-		(VkPipelineLayoutCreateFlags)0,											// VkPipelineLayoutCreateFlags	flags;
-		(descriptorSetLayout != DE_NULL ? 1u : 0u),								// deUint32						setLayoutCount;
-		(descriptorSetLayout != DE_NULL ? &descriptorSetLayout : DE_NULL),		// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,																		// deUint32						pushConstantRangeCount;
-		DE_NULL,																// const VkPushConstantRange*	pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &info);
-}
-
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
-									 const VkDevice			device,
-									 const VkRenderPass		renderPass,
-									 const VkImageView		colorAttachment,
-									 const deUint32			width,
-									 const deUint32			height,
-									 const deUint32			layers)
-{
-	const VkFramebufferCreateInfo framebufferInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		1u,												// uint32_t                                    attachmentCount;
-		&colorAttachment,								// const VkImageView*                          pAttachments;
-		width,											// uint32_t                                    width;
-		height,											// uint32_t                                    height;
-		layers,											// uint32_t                                    layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
-
 bool compareWithFileImage (Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string testName)
 {
 	tcu::TextureLevel referenceImage;

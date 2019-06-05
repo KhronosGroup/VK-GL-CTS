@@ -90,28 +90,6 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 	return makeRenderPass(vk, device, colorFormat, useDepthStencilAttachment ? depthStencilFormat : VK_FORMAT_UNDEFINED);
 }
 
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
-									 const VkDevice				device,
-									 const VkRenderPass			renderPass,
-									 const deUint32				attachmentCount,
-									 const VkImageView*			pAttachments,
-									 const tcu::IVec2			size)
-{
-	const VkFramebufferCreateInfo framebufferInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		attachmentCount,								// uint32_t                                    attachmentCount;
-		pAttachments,									// const VkImageView*                          pAttachments;
-		static_cast<deUint32>(size.x()),				// uint32_t                                    width;
-		static_cast<deUint32>(size.y()),				// uint32_t                                    height;
-		1u,												// uint32_t                                    layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 									   const VkDevice			device,
 									   const VkPipelineLayout	pipelineLayout,
@@ -432,7 +410,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	const Unique<VkShaderModule>	vertexModule  (createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragmentModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 	const Unique<VkRenderPass>		renderPass	  (makeRenderPass(vk, device, colorFormat, m_useTestAttachment, testFormat));
-	const Unique<VkFramebuffer>		framebuffer	  (makeFramebuffer(vk, device, *renderPass, numUsedAttachmentImages, attachmentImages, renderSize));
+	const Unique<VkFramebuffer>		framebuffer	  (makeFramebuffer(vk, device, *renderPass, numUsedAttachmentImages, attachmentImages, renderSize.x(), renderSize.y()));
 	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>		pipeline	  (makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *fragmentModule, renderSize,
 												  (m_testMode == MODE_DEPTH), (m_testMode == MODE_STENCIL)));

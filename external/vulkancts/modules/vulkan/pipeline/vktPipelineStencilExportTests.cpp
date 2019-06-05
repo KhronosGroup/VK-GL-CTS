@@ -435,29 +435,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
 }
 
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
-									 const VkDevice				device,
-									 const VkRenderPass			renderPass,
-									 const deUint32				attachmentCount,
-									 const VkImageView*			pAttachments,
-									 const deUint32				width,
-									 const deUint32				height)
-{
-	const VkFramebufferCreateInfo framebufferInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		attachmentCount,								// uint32_t                                    attachmentCount;
-		pAttachments,									// const VkImageView*                          pAttachments;
-		width,											// uint32_t                                    width;
-		height,											// uint32_t                                    height;
-		1u,												// uint32_t                                    layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
 tcu::TextureLevel generateReferenceImage (const tcu::TextureFormat	format,
 										  const UVec2&				renderSize,
 										  const deUint32			patternSize,

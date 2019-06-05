@@ -590,23 +590,6 @@ Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 	return createSampler(vk, device, &samplerParams);
 }
 
-
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&	vk,
-										   const VkDevice			device)
-{
-	const VkPipelineLayoutCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(VkPipelineLayoutCreateFlags)0,
-		0u,
-		DE_NULL,
-		0u,
-		DE_NULL,
-	};
-	return createPipelineLayout(vk, device, &info);
-}
-
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkDevice				device,
 									   const VkPipelineLayout		pipelineLayout,
@@ -764,29 +747,6 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 	};
 
 	return createRenderPass(vk, device, &renderPassInfo);
-}
-
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
-									 const VkDevice			device,
-									 const VkRenderPass		renderPass,
-									 const deUint32			attachmentCount,
-									 const VkImageView*		pAttachments,
-									 const IVec2			size)
-{
-	const VkFramebufferCreateInfo framebufferInfo =
-	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		DE_NULL,
-		(VkFramebufferCreateFlags)0,
-		renderPass,
-		attachmentCount,
-		pAttachments,
-		static_cast<deUint32>(size.x()),
-		static_cast<deUint32>(size.y()),
-		1u,
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
 Move<VkCommandBuffer> makeCommandBuffer	(const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
@@ -1392,7 +1352,11 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 	}
 
 	// Create framebuffer
-	m_uDraw.framebuffer	= makeFramebuffer(m_vk, m_device, *m_uDraw.renderPass, static_cast<deUint32>(m_uDraw.attachmentHandles.size()), &m_uDraw.attachmentHandles[0], m_caseDef.size.swizzle(0, 1));
+	{
+		const IVec2 size = m_caseDef.size.swizzle(0, 1);
+
+		m_uDraw.framebuffer = makeFramebuffer(m_vk, m_device, *m_uDraw.renderPass, static_cast<deUint32>(m_uDraw.attachmentHandles.size()), &m_uDraw.attachmentHandles[0], static_cast<deUint32>(size.x()), static_cast<deUint32>(size.y()));
+	}
 
 	// Create command buffer
 	{

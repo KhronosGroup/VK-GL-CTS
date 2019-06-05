@@ -513,39 +513,6 @@ vk::VkResult queueSubmit (ProtectedContext&		context,
 	return vk.waitForFences(device, 1u, &fence, DE_TRUE, timeout);
 }
 
-vk::Move<vk::VkDescriptorSet> makeDescriptorSet (const vk::DeviceInterface&			vk,
-												 const vk::VkDevice					device,
-												 const vk::VkDescriptorPool			descriptorPool,
-												 const vk::VkDescriptorSetLayout	setLayout)
-{
-	const vk::VkDescriptorSetAllocateInfo allocateParams =
-	{
-		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		descriptorPool,										// VkDescriptorPool				descriptorPool;
-		1u,													// deUint32						setLayoutCount;
-		&setLayout,											// const VkDescriptorSetLayout*	pSetLayouts;
-	};
-	return vk::allocateDescriptorSet(vk, device, &allocateParams);
-}
-
-vk::Move<vk::VkPipelineLayout> makePipelineLayout (const vk::DeviceInterface&		vk,
-												   const vk::VkDevice				device,
-												   const vk::VkDescriptorSetLayout	descriptorSetLayout)
-{
-	const vk::VkPipelineLayoutCreateInfo info =
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		(vk::VkPipelineLayoutCreateFlags)0,					// VkPipelineLayoutCreateFlags	flags;
-		1u,													// deUint32						setLayoutCount;
-		&descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													// deUint32						pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
-	};
-	return vk::createPipelineLayout(vk, device, &info);
-}
-
 vk::Move<vk::VkPipeline> makeComputePipeline (const vk::DeviceInterface&		vk,
 											  const vk::VkDevice				device,
 											  const vk::VkPipelineLayout		pipelineLayout,

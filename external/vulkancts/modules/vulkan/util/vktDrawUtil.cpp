@@ -85,18 +85,6 @@ rr::PrimitiveType mapVkPrimitiveToRRPrimitive(const vk::VkPrimitiveTopology& pri
 	return de::getSizedArrayElement<vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST>(primitiveTypeTable, primitiveTopology);
 }
 
-Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice device, const deUint32 queueFamilyIndex)
-{
-	const VkCommandPoolCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// VkCommandPoolCreateFlags	flags;
-		queueFamilyIndex,									// deUint32					queueFamilyIndex;
-	};
-	return createCommandPool(vk, device, &info);
-}
-
 Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
 {
 	const VkCommandBufferAllocateInfo info =
@@ -108,39 +96,6 @@ Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevi
 		1u,													// deUint32				commandBufferCount;
 	};
 	return allocateCommandBuffer(vk, device, &info);
-}
-
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
-		1u,													// deUint32						setLayoutCount;
-		&descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													// deUint32						pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &info);
-}
-
-Move<VkPipelineLayout> makePipelineLayoutWithoutDescriptors (const DeviceInterface&		vk,
-															 const VkDevice				device)
-{
-	const VkPipelineLayoutCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
-		0u,													// deUint32						setLayoutCount;
-		DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													// deUint32						pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &info);
 }
 
 VkBufferImageCopy makeBufferImageCopy (const VkImageSubresourceLayers	subresourceLayers,
@@ -225,7 +180,7 @@ tcu::ConstPixelBufferAccess ReferenceDrawContext::getColorPixels (void) const
 										m_refImage.getAccess().getDataPtr());
 }
 
-VulkanDrawContext::VulkanDrawContext ( Context&				context,
+VulkanDrawContext::VulkanDrawContext (Context&				context,
 									  const DrawState&		drawState,
 									  const DrawCallData&	drawCallData,
 									  const VulkanProgram&	vulkanProgram)
@@ -297,10 +252,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 
 	// bind descriptor sets
 	{
-		if (!vulkanProgram.descriptorSetLayout)
-			m_pipelineLayout = makePipelineLayoutWithoutDescriptors(vk, device);
-		else
-			m_pipelineLayout = makePipelineLayout(vk, device, vulkanProgram.descriptorSetLayout);
+		m_pipelineLayout = makePipelineLayout(vk, device, vulkanProgram.descriptorSetLayout);
 	}
 
 	// Renderpass
@@ -344,8 +296,8 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
 			},
 			{
-				VK_ATTACHMENT_UNUSED,								// deUint32         attachment;
-				VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout    layout;
+				VK_ATTACHMENT_UNUSED,								// deUint32			attachment;
+				VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout	layout;
 			}
 		};
 

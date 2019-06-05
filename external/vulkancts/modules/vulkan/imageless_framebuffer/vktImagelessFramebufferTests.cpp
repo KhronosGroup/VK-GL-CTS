@@ -155,25 +155,6 @@ std::vector<VkAttachmentDescription2KHR> convertAttachmentDescriptions (const st
 	return attachmentDescriptions2;
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const deUint32				setLayoutCount	= 0,
-										   const VkDescriptorSetLayout*	pSetLayouts		= DE_NULL)
-{
-	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//  VkStructureType					sType;
-		DE_NULL,										//  const void*						pNext;
-		(VkPipelineLayoutCreateFlags)0,					//  VkPipelineLayoutCreateFlags		flags;
-		setLayoutCount,									//  deUint32						setLayoutCount;
-		pSetLayouts,									//  const VkDescriptorSetLayout*	pSetLayouts;
-		0u,												//  deUint32						pushConstantRangeCount;
-		DE_NULL,										//  const VkPushConstantRange*		pPushConstantRanges;
-	};
-
-	return createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
-}
-
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkDevice				device,
 									   const VkPipelineLayout		pipelineLayout,

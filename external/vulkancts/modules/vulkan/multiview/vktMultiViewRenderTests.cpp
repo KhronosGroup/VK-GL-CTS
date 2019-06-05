@@ -351,9 +351,7 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	// FrameBuffer & renderPass
 	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_parameters.renderPassType));
 
-	vector<VkImageView>							attachments;
-	attachments.push_back(m_colorAttachment->getImageView());
-	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, m_colorAttachment->getImageView(), m_parameters.extent.width, m_parameters.extent.height));
 
 	// pipelineLayout
 	Unique<VkPipelineLayout>					pipelineLayout				(makePipelineLayout(*m_device, *m_logicalDevice));
@@ -1492,11 +1490,11 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate (void)
 	vector<VkImageView>							attachments;
 	attachments.push_back(m_colorAttachment->getImageView());
 	attachments.push_back(m_inputAttachment->getImageView());
-	Unique<VkFramebuffer>						frameBuffer				(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+	Unique<VkFramebuffer>						frameBuffer				(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height));
 
 	// pipelineLayout
 	m_descriptorSetLayout	= makeDescriptorSetLayout(*m_device, *m_logicalDevice);
-	m_pipelineLayout		= makePipelineLayout(*m_device, *m_logicalDevice, &m_descriptorSetLayout.get());
+	m_pipelineLayout		= makePipelineLayout(*m_device, *m_logicalDevice, m_descriptorSetLayout.get());
 
 	// pipelines
 	map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
@@ -2289,9 +2287,7 @@ tcu::TestStatus MultiViewMultsampleTestInstance::iterate (void)
 	// FrameBuffer & renderPass
 	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_parameters.renderPassType, VK_SAMPLE_COUNT_4_BIT));
 
-	vector<VkImageView>							attachments;
-	attachments.push_back(m_colorAttachment->getImageView());
-	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, m_colorAttachment->getImageView(), m_parameters.extent.width, m_parameters.extent.height));
 
 	// pipelineLayout
 	Unique<VkPipelineLayout>					pipelineLayout				(makePipelineLayout(*m_device, *m_logicalDevice));
@@ -2482,8 +2478,7 @@ tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
 {
 	const deUint32								subpassCount			= static_cast<deUint32>(m_parameters.viewMasks.size());
 	Unique<VkRenderPass>						renderPass				(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_parameters.renderPassType));
-	vector<VkImageView>							attachments				(1u, m_colorAttachment->getImageView());
-	Unique<VkFramebuffer>						frameBuffer				(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+	Unique<VkFramebuffer>						frameBuffer				(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, m_colorAttachment->getImageView(), m_parameters.extent.width, m_parameters.extent.height));
 	Unique<VkPipelineLayout>					pipelineLayout			(makePipelineLayout(*m_device, *m_logicalDevice));
 	vector<PipelineSp>							pipelines				(subpassCount);
 	deUint64									occlusionValue			= 0;
@@ -2793,8 +2788,7 @@ tcu::TestStatus MultiViewReadbackTestInstance::iterate (void)
 																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE :
 																	  VK_ATTACHMENT_LOAD_OP_LAST;
 		Unique<VkRenderPass>						renderPass		(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_parameters.renderPassType, VK_SAMPLE_COUNT_1_BIT, loadOp));
-		vector<VkImageView>							attachments		(1u, m_colorAttachment->getImageView());
-		Unique<VkFramebuffer>						frameBuffer		(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+		Unique<VkFramebuffer>						frameBuffer		(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, m_colorAttachment->getImageView(), m_parameters.extent.width, m_parameters.extent.height));
 		Unique<VkPipelineLayout>					pipelineLayout	(makePipelineLayout(*m_device, *m_logicalDevice));
 		vector<PipelineSp>							pipelines		(subpassCount);
 		map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
@@ -3087,7 +3081,7 @@ tcu::TestStatus MultiViewDepthStencilTestInstance::iterate (void)
 	const deUint32								subpassCount				= static_cast<deUint32>(m_parameters.viewMasks.size());
 	Unique<VkRenderPass>						renderPass					(makeRenderPassWithDepth (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, m_dsFormat, m_parameters.renderPassType));
 	vector<VkImageView>							attachments					(makeAttachmentsVector());
-	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, static_cast<deUint32>(attachments.size()), attachments.data(), m_parameters.extent.width, m_parameters.extent.height, 1u));
 	Unique<VkPipelineLayout>					pipelineLayout				(makePipelineLayout(*m_device, *m_logicalDevice));
 	map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
 	vector<PipelineSp>							pipelines(subpassCount);

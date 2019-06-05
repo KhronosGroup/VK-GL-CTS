@@ -1577,23 +1577,6 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 	return bufferCreateInfo;
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device)
-{
-	const VkPipelineLayoutCreateInfo	pipelineLayoutCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//  VkStructureType					sType;
-		DE_NULL,										//  const void*						pNext;
-		(VkPipelineLayoutCreateFlags)0,					//  VkPipelineLayoutCreateFlags		flags;
-		0u,												//  deUint32						setLayoutCount;
-		DE_NULL,										//  const VkDescriptorSetLayout*	pSetLayouts;
-		0u,												//  deUint32						pushConstantRangeCount;
-		DE_NULL,										//  const VkPushConstantRange*		pPushConstantRanges;
-	};
-
-	return createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
-}
-
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkDevice				device,
 									   const VkPipelineLayout		pipelineLayout,
@@ -1630,27 +1613,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 								0u,									// const deUint32								subpass
 								0u,									// const deUint32								patchControlPoints
 								&vertexInputStateCreateInfo);		// const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo
-}
-
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
-									 const VkDevice			device,
-									 const VkRenderPass		renderPass,
-									 const VkExtent2D&      renderSize)
-{
-	const VkFramebufferCreateInfo framebufferInfo	=
-	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		//  VkStructureType				sType;
-		DE_NULL,										//  const void*					pNext;
-		(VkFramebufferCreateFlags)0,					//  VkFramebufferCreateFlags	flags;
-		renderPass,										//  VkRenderPass				renderPass;
-		0u,												//  deUint32					attachmentCount;
-		DE_NULL,										//  const VkImageView*			pAttachments;
-		renderSize.width,								//  deUint32					width;
-		renderSize.height,								//  deUint32					height;
-		1u,												//  deUint32					layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
 // InterfaceBlockCaseInstance
@@ -1787,7 +1749,7 @@ tcu::TestStatus InterfaceBlockCaseInstance::iterate (void)
 	const Move<VkShaderModule>		vertModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Move<VkShaderModule>		geomModule			(getGeometryShaderModule(vk, device));
 	const Move<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
-	const Move<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D));
+	const Move<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
 	const Move<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
 	const Move<VkPipeline>			pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *geomModule, m_imageExtent2D));
 	const Move<VkCommandPool>		cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));

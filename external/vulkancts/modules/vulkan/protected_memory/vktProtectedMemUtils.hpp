@@ -122,14 +122,6 @@ vk::VkResult						queueSubmit							(ProtectedContext&					context,
 																		 vk::VkFence						fence,
 																		 deUint64							timeout);
 
-vk::Move<vk::VkDescriptorSet>		makeDescriptorSet					(const vk::DeviceInterface&			vk,
-																		 const vk::VkDevice					device,
-																		 const vk::VkDescriptorPool			descriptorPool,
-																		 const vk::VkDescriptorSetLayout	setLayout);
-vk::Move<vk::VkPipelineLayout>		makePipelineLayout					(const vk::DeviceInterface&			vk,
-																		 const vk::VkDevice					device,
-																		 const vk::VkDescriptorSetLayout	descriptorSetLayout);
-
 vk::Move<vk::VkPipeline>			makeComputePipeline					(const vk::DeviceInterface&			vk,
 																		 const vk::VkDevice					device,
 																		 const vk::VkPipelineLayout			pipelineLayout,

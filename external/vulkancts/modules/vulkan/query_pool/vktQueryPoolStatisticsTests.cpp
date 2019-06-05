@@ -32,6 +32,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "deMath.h"
 
@@ -159,21 +160,6 @@ Move<VkQueryPool> makeQueryPool (const DeviceInterface& vk, const VkDevice devic
 	return createQueryPool(vk, device, &queryPoolCreateInfo);
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface& vk, const VkDevice device, const VkDescriptorSetLayout* descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		0u,												// VkPipelineLayoutCreateFlags		flags;
-		1u,												// deUint32							setLayoutCount;
-		descriptorSetLayout,							// const VkDescriptorSetLayout*		pSetLayouts;
-		0u,												// deUint32							pushConstantRangeCount;
-		DE_NULL,										// const VkPushConstantRange*		pPushConstantRanges;
-	};
-	return (createPipelineLayout(vk, device, &pipelineLayoutParams));
-}
-
 void clearBuffer (const DeviceInterface& vk, const VkDevice device, const de::SharedPtr<Buffer> buffer, const VkDeviceSize bufferSizeBytes)
 {
 	const std::vector<deUint8>	data			((size_t)bufferSizeBytes, 0u);
@@ -285,7 +271,7 @@ tcu::TestStatus	ComputeInvocationsTestInstance::iterate (void)
 			.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 			.build(vk, device));
 
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, &(*descriptorSetLayout)));
+	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkDescriptorPool>		descriptorPool			(DescriptorPoolBuilder()
 			.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)

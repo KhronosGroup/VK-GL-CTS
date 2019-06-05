@@ -79,17 +79,6 @@ private:
 	Image&							operator=		(const Image&);
 };
 
-vk::Move<vk::VkCommandPool>			makeCommandPool				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const deUint32								queueFamilyIndex);
-
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device);
-
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkDescriptorSetLayout			descriptorSetLayout);
-
 vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
 																 const vk::VkDevice							device,
 																 const vk::VkPipelineLayout					pipelineLayout,
