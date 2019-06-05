@@ -6601,7 +6601,7 @@ void addScalarFactory (BuiltinFuncs& funcs, string name = "")
 	funcs.addFactory(SharedPtr<const CaseFactory>(new GenFuncCaseFactory<typename F::Sig>(makeVectorizedFuncs<F>(), name)));
 }
 
-MovePtr<const CaseFactories> createComputeOnlyBuiltinCases (bool is16BitTest = false)
+MovePtr<const CaseFactories> createBuiltinCases (bool is16BitTest = false)
 {
 	MovePtr<BuiltinFuncs>	funcs	(new BuiltinFuncs());
 
@@ -6689,10 +6689,14 @@ MovePtr<const CaseFactories> createComputeOnlyBuiltinCases (bool is16BitTest = f
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
 
+	addScalarFactory<FrExp <Signature<float, float, int> > >(*funcs);
+	addScalarFactory<LdExp <Signature<float, float, int> > >(*funcs);
+	addScalarFactory<Fma  <Signature<float, float, float, float> > >(*funcs);
+
 	return MovePtr<const CaseFactories>(funcs.release());
 }
 
-MovePtr<const CaseFactories> createComputeOnlyBuiltinCases16Bit(void)
+MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 {
 	MovePtr<BuiltinFuncs>	funcs(new BuiltinFuncs());
 
@@ -6764,26 +6768,6 @@ MovePtr<const CaseFactories> createComputeOnlyBuiltinCases16Bit(void)
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
 
-	return MovePtr<const CaseFactories>(funcs.release());
-}
-
-MovePtr<const CaseFactories> createCompleteBuiltinCases (void)
-{
-	MovePtr<BuiltinFuncs>	funcs	(new BuiltinFuncs());
-
-	// Tests for ES31 builtins
-	addScalarFactory<FrExp <Signature<float, float, int> > >(*funcs);
-	addScalarFactory<LdExp <Signature<float, float, int> > >(*funcs);
-	addScalarFactory<Fma  <Signature<float, float, float, float> > >(*funcs);
-
-	return MovePtr<const CaseFactories>(funcs.release());
-}
-
-MovePtr<const CaseFactories> createCompleteBuiltinCases16Bit (void)
-{
-	MovePtr<BuiltinFuncs>	funcs	(new BuiltinFuncs());
-
-	// Tests for ES31 builtins
 	addScalarFactory<FrExp <Signature<deFloat16, deFloat16, int> > >(*funcs);
 	addScalarFactory<LdExp <Signature<deFloat16, deFloat16, int> > >(*funcs);
 	addScalarFactory<Fma <Signature<deFloat16, deFloat16, deFloat16, deFloat16> > >(*funcs);
@@ -6791,136 +6775,63 @@ MovePtr<const CaseFactories> createCompleteBuiltinCases16Bit (void)
 	return MovePtr<const CaseFactories>(funcs.release());
 }
 
-struct PrecisionTestContext
+TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, int numRandoms)
 {
-							PrecisionTestContext	(TestContext&				testCtx_,
-													 const FloatFormat&			highp_,
-													 const FloatFormat&			mediump_,
-													 const FloatFormat&			lowp_,
-													 const vector<ShaderType>&	shaderTypes_,
-													 int						numRandoms_)
-								: testCtx				(testCtx_)
-								, shaderTypes			(shaderTypes_)
-								, numRandoms			(numRandoms_)
-								{
-									formats[glu::PRECISION_HIGHP]	= &highp_;
-									formats[glu::PRECISION_MEDIUMP]	= &mediump_;
-									formats[glu::PRECISION_LOWP]	= &lowp_;
-								}
-
-							PrecisionTestContext(TestContext&				testCtx_,
-												 const FloatFormat&			floatFormat,
-												 const vector<ShaderType>&	shaderTypes_,
-												 int						numRandoms_)
-								: testCtx(testCtx_)
-								, shaderTypes(shaderTypes_)
-								, numRandoms(numRandoms_)
-								{
-									formats[glu::PRECISION_HIGHP] = formats[glu::PRECISION_LOWP] = formats[glu::PRECISION_MEDIUMP] = &floatFormat;
-								}
-
-	TestContext&			testCtx;
-	const FloatFormat*		formats[glu::PRECISION_LAST];
-	vector<ShaderType>		shaderTypes;
-	int						numRandoms;
-};
-
-TestCaseGroup* createFuncGroup (const PrecisionTestContext& ctx, const CaseFactory& factory)
-{
-	TestCaseGroup* const	group	= new TestCaseGroup(ctx.testCtx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group	= new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
+	const FloatFormat		highp		(-126, 127, 23, true,
+										 tcu::MAYBE,	// subnormals
+										 tcu::YES,		// infinities
+										 tcu::MAYBE);	// NaN
+	const FloatFormat       mediump		(-13, 13, 9, false, tcu::MAYBE);
 
 	for (int precNdx = glu::PRECISION_MEDIUMP; precNdx < glu::PRECISION_LAST; ++precNdx)
 	{
 		const Precision		precision	= Precision(precNdx);
 		const string		precName	(glu::getPrecisionName(precision));
-		const FloatFormat&	fmt			= *de::getSizedArrayElement<glu::PRECISION_LAST>(ctx.formats, precNdx);
-		const FloatFormat&	highpFmt	= *de::getSizedArrayElement<glu::PRECISION_LAST>(ctx.formats, glu::PRECISION_HIGHP);
+		const FloatFormat&	fmt			= precNdx == glu::PRECISION_MEDIUMP ? mediump : highp;
 
-		for (size_t shaderNdx = 0; shaderNdx < ctx.shaderTypes.size(); ++shaderNdx)
-		{
-			const ShaderType	shaderType	= ctx.shaderTypes[shaderNdx];
-			const string		shaderName	(glu::getShaderTypeName(shaderType));
-			const string		name		= precName + "_" + shaderName;
-			const CaseContext	caseCtx		(name, ctx.testCtx, fmt, highpFmt, precision, shaderType, ctx.numRandoms);
+		const CaseContext	caseCtx		(precName, ctx, fmt, highp, precision, glu::SHADERTYPE_COMPUTE, numRandoms);
 
-			group->addChild(factory.createCase(caseCtx).release());
-		}
-	}
-
-	return group;
-}
-
-TestCaseGroup* createFuncGroup16Bit (const PrecisionTestContext& ctx, const CaseFactory& factory)
-{
-	TestCaseGroup* const	group		= new TestCaseGroup(ctx.testCtx, factory.getName().c_str(), factory.getDesc().c_str());
-	const Precision			precision	= Precision(glu::PRECISION_LAST);
-	const FloatFormat&		fmt			= *ctx.formats[0];
-
-	for (size_t shaderNdx = 0; shaderNdx < ctx.shaderTypes.size(); ++shaderNdx)
-	{
-		const  ShaderType					shaderType				= ctx.shaderTypes[shaderNdx];
-		const Extension16BitStorageFeatures	extension16BitStorage	= (glu::SHADERTYPE_COMPUTE == shaderType ? EXT16BITSTORAGEFEATURES_UNIFORM : EXT16BITSTORAGEFEATURES_INPUT_OUTPUT) | EXTSHADER_FLOAT16_INT8;
-		const CaseContext					caseCtx					(glu::getShaderTypeName(shaderType), ctx.testCtx, fmt, fmt, precision, shaderType, ctx.numRandoms, extension16BitStorage);
 		group->addChild(factory.createCase(caseCtx).release());
 	}
 
 	return group;
 }
 
-TestCaseGroup* createFuncGroup16BitStorage32Bit(const PrecisionTestContext& ctx, const CaseFactory& factory)
+TestCaseGroup* createFuncGroup16Bit(TestContext& ctx, const CaseFactory& factory, int numRandoms, bool storage32)
 {
-	TestCaseGroup* const	group = new TestCaseGroup(ctx.testCtx, factory.getName().c_str(), factory.getDesc().c_str());
+	TestCaseGroup* const	group = new TestCaseGroup(ctx, factory.getName().c_str(), factory.getDesc().c_str());
 	const Precision			precision = Precision(glu::PRECISION_LAST);
-	const FloatFormat&		fmt = *ctx.formats[0];
+	const FloatFormat		float16	(-14, 15, 10, true, tcu::MAYBE);
 
-	for (size_t shaderNdx = 0; shaderNdx < ctx.shaderTypes.size(); ++shaderNdx)
-	{
-		const  ShaderType					shaderType = ctx.shaderTypes[shaderNdx];
-		const Extension16BitStorageFeatures	extension16BitStorage = EXTSHADER_FLOAT16_INT8;
-		const CaseContext					caseCtx(glu::getShaderTypeName(shaderType), ctx.testCtx, fmt, fmt, precision, shaderType, ctx.numRandoms, extension16BitStorage, true);
-		group->addChild(factory.createCase(caseCtx).release());
-	}
+	Extension16BitStorageFeatures extension16BitStorage = EXTSHADER_FLOAT16_INT8;
+	if (!storage32)
+		extension16BitStorage |= EXT16BITSTORAGEFEATURES_UNIFORM;
+
+	const CaseContext caseCtx("compute", ctx, float16, float16, precision, glu::SHADERTYPE_COMPUTE, numRandoms, extension16BitStorage, storage32);
+	group->addChild(factory.createCase(caseCtx).release());
 
 	return group;
 }
 
-void addBuiltinPrecisionTests (TestContext&					testCtx,
-							   const CaseFactories&			cases,
-							   const vector<ShaderType>&	shaderTypes,
-							   TestCaseGroup&				dstGroup)
+void addBuiltinPrecisionTests (TestContext&				ctx,
+								TestCaseGroup&			dstGroup,
+								const bool				test16Bit = false,
+								const bool				storage32Bit = false)
 {
-	const int						userRandoms	= testCtx.getCommandLine().getTestIterationCount();
-	const int						defRandoms	= 16384;
-	const int						numRandoms	= userRandoms > 0 ? userRandoms : defRandoms;
-	const FloatFormat				highp		(-126, 127, 23, true,
-												 tcu::MAYBE,	// subnormals
-												 tcu::YES,		// infinities
-												 tcu::MAYBE);	// NaN
-	// \todo [2014-04-01 lauri] Check these once Khronos bug 11840 is resolved.
-	FloatFormat						mediump		(-13, 13, 9, false, tcu::MAYBE);
-	// A fixed-point format is just a floating point format with a fixed
-	// exponent and support for subnormals.
-	FloatFormat						lowp		(0, 0, 7, false, tcu::MAYBE);
-	const PrecisionTestContext		ctx			(testCtx, highp, mediump, lowp, shaderTypes, numRandoms);
+	const int userRandoms	= ctx.getCommandLine().getTestIterationCount();
+	const int defRandoms	= 16384;
+	const int numRandoms	= userRandoms > 0 ? userRandoms : defRandoms;
 
-	for (size_t ndx = 0; ndx < cases.getFactories().size(); ++ndx)
-		dstGroup.addChild(createFuncGroup(ctx, *cases.getFactories()[ndx]));
-}
-
-void addBuiltinPrecision16BitTests (TestContext&				testCtx,
-									const CaseFactories&		cases,
-									const vector<ShaderType>&	shaderTypes,
-									TestCaseGroup&				dstGroup,
-									const bool					storage32Bit = false)
-{
-	const int						userRandoms	= testCtx.getCommandLine().getTestIterationCount();
-	const int						defRandoms	= 16384;
-	const int						numRandoms	= userRandoms > 0 ? userRandoms : defRandoms;
-	const FloatFormat				float16		(-14, 15, 10, true, tcu::MAYBE);
-	const PrecisionTestContext		ctx			(testCtx, float16, shaderTypes, numRandoms);
-
-	for (size_t ndx = 0; ndx < cases.getFactories().size(); ++ndx)
-		dstGroup.addChild((storage32Bit ? createFuncGroup16BitStorage32Bit : createFuncGroup16Bit) (ctx, *cases.getFactories()[ndx]));
+	MovePtr<const CaseFactories> cases = (test16Bit && !storage32Bit)	? createBuiltinCases16Bit()
+																		: createBuiltinCases(storage32Bit);
+	for (size_t ndx = 0; ndx < cases->getFactories().size(); ++ndx)
+	{
+		if (!test16Bit)
+			dstGroup.addChild(createFuncGroup(ctx, *cases->getFactories()[ndx], numRandoms));
+		else
+			dstGroup.addChild(createFuncGroup16Bit(ctx, *cases->getFactories()[ndx], numRandoms, storage32Bit));
+	}
 }
 
 BuiltinPrecisionTests::BuiltinPrecisionTests (tcu::TestContext& testCtx)
@@ -6934,26 +6845,7 @@ BuiltinPrecisionTests::~BuiltinPrecisionTests (void)
 
 void BuiltinPrecisionTests::init (void)
 {
-	std::vector<glu::ShaderType>		shaderTypes;
-	de::MovePtr<const CaseFactories>	computeOnlyCases	= createComputeOnlyBuiltinCases();
-	de::MovePtr<const CaseFactories>	completeCases		= createCompleteBuiltinCases();
-
-	shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
-
-	addBuiltinPrecisionTests(m_testCtx,
-							 *computeOnlyCases,
-							 shaderTypes,
-							 *this);
-
-	shaderTypes.clear();
-	shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
-	shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
-	shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
-
-	addBuiltinPrecisionTests(m_testCtx,
-							 *completeCases,
-							 shaderTypes,
-							 *this);
+	addBuiltinPrecisionTests(m_testCtx, *this);
 }
 
 BuiltinPrecision16BitTests::BuiltinPrecision16BitTests (tcu::TestContext& testCtx)
@@ -6967,24 +6859,7 @@ BuiltinPrecision16BitTests::~BuiltinPrecision16BitTests (void)
 
 void BuiltinPrecision16BitTests::init (void)
 {
-	std::vector<glu::ShaderType>		shaderTypes;
-	de::MovePtr<const CaseFactories>	computeOnlyCases	= createComputeOnlyBuiltinCases16Bit();
-	de::MovePtr<const CaseFactories>	completeCases		= createCompleteBuiltinCases16Bit();
-
-	shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
-
-	addBuiltinPrecision16BitTests(m_testCtx,
-								  *computeOnlyCases,
-								  shaderTypes,
-								  *this);
-
-	shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
-	shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
-
-	addBuiltinPrecision16BitTests(m_testCtx,
-								  *completeCases,
-								  shaderTypes,
-								  *this);
+	addBuiltinPrecisionTests(m_testCtx, *this, true);
 }
 
 BuiltinPrecision16Storage32BitTests::BuiltinPrecision16Storage32BitTests(tcu::TestContext& testCtx)
@@ -6998,26 +6873,7 @@ BuiltinPrecision16Storage32BitTests::~BuiltinPrecision16Storage32BitTests(void)
 
 void BuiltinPrecision16Storage32BitTests::init(void)
 {
-	std::vector<glu::ShaderType>		shaderTypes;
-	de::MovePtr<const CaseFactories>	computeOnlyCases	= createComputeOnlyBuiltinCases(true);
-	de::MovePtr<const CaseFactories>	completeCases		= createCompleteBuiltinCases();
-
-	shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
-
-	addBuiltinPrecision16BitTests(m_testCtx,
-		*computeOnlyCases,
-		shaderTypes,
-		*this,
-		true);
-
-	shaderTypes.push_back(glu::SHADERTYPE_VERTEX);
-	shaderTypes.push_back(glu::SHADERTYPE_FRAGMENT);
-
-	addBuiltinPrecision16BitTests(m_testCtx,
-		*completeCases,
-		shaderTypes,
-		*this,
-		true);
+	addBuiltinPrecisionTests(m_testCtx, *this, true, true);
 }
 
 } // shaderexecutor
