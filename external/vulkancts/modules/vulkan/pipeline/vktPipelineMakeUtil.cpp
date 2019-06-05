@@ -60,39 +60,6 @@ Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevi
 	return allocateCommandBuffer(vk, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device)
-{
-	const VkPipelineLayoutCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
-		0u,													// deUint32						setLayoutCount;
-		DE_NULL,											// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													// deUint32						pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &info);
-}
-
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo info =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		(VkPipelineLayoutCreateFlags)0,						// VkPipelineLayoutCreateFlags	flags;
-		1u,													// deUint32						setLayoutCount;
-		&descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													// deUint32						pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &info);
-}
-
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 									  const VkDevice				device,
 									  const VkPipelineLayout		pipelineLayout,
@@ -120,29 +87,6 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 		0,													// deInt32							basePipelineIndex;
 	};
 	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
-}
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
-									 const VkDevice				device,
-									 const VkRenderPass			renderPass,
-									 const deUint32				attachmentCount,
-									 const VkImageView*			pAttachments,
-									 const deUint32				width,
-									 const deUint32				height,
-									 const deUint32				layers)
-{
-	const VkFramebufferCreateInfo framebufferInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		attachmentCount,								// uint32_t                                    attachmentCount;
-		pAttachments,									// const VkImageView*                          pAttachments;
-		width,											// uint32_t                                    width;
-		height,											// uint32_t                                    height;
-		layers,											// uint32_t                                    layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
 MovePtr<Allocation> bindImage (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkImage image, const MemoryRequirement requirement)

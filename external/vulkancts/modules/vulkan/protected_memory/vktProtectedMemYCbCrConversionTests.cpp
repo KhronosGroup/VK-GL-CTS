@@ -34,6 +34,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkYCbCrImageWithMemory.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"

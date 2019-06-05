@@ -263,28 +263,6 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 	return createRenderPass(vk, device, &renderPassInfo);
 }
 
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
-									 const VkDevice			device,
-									 const VkRenderPass		renderPass,
-									 const VkExtent2D&		renderSize,
-									 const VkImageView*		colorAttachment)
-{
-	const VkFramebufferCreateInfo framebufferInfo	=
-	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		//  VkStructureType				sType;
-		DE_NULL,										//  const void*					pNext;
-		(VkFramebufferCreateFlags)0,					//  VkFramebufferCreateFlags	flags;
-		renderPass,										//  VkRenderPass				renderPass;
-		colorAttachment == DE_NULL ? 0u : 1u,			//  deUint32					attachmentCount;
-		colorAttachment,								//  const VkImageView*			pAttachments;
-		renderSize.width,								//  deUint32					width;
-		renderSize.height,								//  deUint32					height;
-		1u,												//  deUint32					layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
 VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask,
 											 const VkAccessFlags			dstAccessMask,
 											 const VkImageLayout			oldLayout,
@@ -583,13 +561,13 @@ tcu::TestStatus TransformFeedbackBasicTestInstance::iterate (void)
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
-	const Unique<VkShaderModule>		vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
-	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
 	const Move<VkBuffer>				tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);
@@ -653,14 +631,14 @@ tcu::TestStatus TransformFeedbackResumeTestInstance::iterate (void)
 	const VkQueue							queue					= m_context.getUniversalQueue();
 	Allocator&								allocator				= m_context.getDefaultAllocator();
 
-	const Unique<VkShaderModule>			vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkRenderPass>				renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
-	const Unique<VkFramebuffer>				framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkShaderModule>			vertexModule			(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>				renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>				framebuffer				(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>			pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
 
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>			cmdBuffer				(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferCreateInfo				tfBufCreateInfo			= makeBufferCreateInfo(m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
 	const Move<VkBuffer>					tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);
@@ -746,13 +724,13 @@ tcu::TestStatus TransformFeedbackTriangleStripWithAdjacencyTestInstance::iterate
 	DE_ASSERT(m_parameters.partCount >= 6);
 
 	const VkPrimitiveTopology			topology				(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY);
-	const Unique<VkShaderModule>		vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
-	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u, DE_NULL, topology));
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u, DE_NULL, topology));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const deUint32						numPrimitives			= m_parameters.partCount / 2u - 2u;
 	const deUint32						numPoints				= 3u * numPrimitives;
@@ -877,13 +855,13 @@ tcu::TestStatus TransformFeedbackBuiltinTestInstance::iterate (void)
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
-	const Unique<VkShaderModule>		vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
-	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkDeviceSize					tfBufSize				= m_parameters.bufferSize * m_parameters.partCount;
 	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(tfBufSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
@@ -1013,16 +991,16 @@ tcu::TestStatus TransformFeedbackMultistreamTestInstance::iterate (void)
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	Allocator&							allocator				= m_context.getDefaultAllocator();
 
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
 
-	const Unique<VkShaderModule>		vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>		geomModule				(createShaderModule		(vk, device, m_context.getBinaryCollection().get("geom"), 0u));
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>		geomModule				(createShaderModule						(vk, device, m_context.getBinaryCollection().get("geom"), 0u));
 
-	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geomModule, DE_NULL, m_imageExtent2D, 0u));
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geomModule, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
 	const Move<VkBuffer>				tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);
@@ -1175,17 +1153,17 @@ tcu::TestStatus TransformFeedbackStreamsTestInstance::iterate (void)
 	const tcu::RGBA						clearColor			(tcu::RGBA::black());
 	const VkImageSubresourceRange		colorSubresRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 	const VkDeviceSize					colorBufferSize		(m_imageExtent2D.width * m_imageExtent2D.height * tcu::getPixelSize(mapVkFormat(colorFormat)));
-	const Unique<VkImage>				colorImage			(makeImage				(vk, device, makeImageCreateInfo(0u, VK_IMAGE_TYPE_2D, colorFormat, m_imageExtent2D, 1u, imageUsageFlags)));
-	const UniquePtr<Allocation>			colorImageAlloc		(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
-	const Unique<VkImageView>			colorAttachment		(makeImageView			(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange));
-	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
-	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+	const Unique<VkImage>				colorImage			(makeImage								(vk, device, makeImageCreateInfo(0u, VK_IMAGE_TYPE_2D, colorFormat, m_imageExtent2D, 1u, imageUsageFlags)));
+	const UniquePtr<Allocation>			colorImageAlloc		(bindImage								(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	const Unique<VkImageView>			colorAttachment		(makeImageView							(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange));
+	const Unique<VkBuffer>				colorBuffer			(makeBuffer								(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer								(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
-	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &*colorAttachment));
-	const Unique<VkPipelineLayout>		pipelineLayout		(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *geomModule, *fragModule, m_imageExtent2D, 0u, &m_parameters.streamId));
-	const Unique<VkCommandPool>			cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer						(vk, device, *renderPass, *colorAttachment, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout		(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertModule, *geomModule, *fragModule, m_imageExtent2D, 0u, &m_parameters.streamId));
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkImageMemoryBarrier			preCopyBarrier		= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 																					 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1318,14 +1296,14 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	const deUint32						counterBufferValue	= m_parameters.vertexStride * vertexCount;
 	const VkDeviceSize					counterBufferSize	= sizeof(counterBufferValue);
 	const VkBufferUsageFlags			counterBufferUsage	= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	const Unique<VkBuffer>				counterBuffer		(makeBuffer				(vk, device, makeBufferCreateInfo(counterBufferSize, counterBufferUsage)));
-	const UniquePtr<Allocation>			counterBufferAlloc	(bindBuffer				(vk, device, allocator, *counterBuffer, MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>				counterBuffer		(makeBuffer								(vk, device, makeBufferCreateInfo(counterBufferSize, counterBufferUsage)));
+	const UniquePtr<Allocation>			counterBufferAlloc	(bindBuffer								(vk, device, allocator, *counterBuffer, MemoryRequirement::HostVisible));
 
-	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &*colorAttachment));
-	const Unique<VkPipelineLayout>		pipelineLayout		(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, DE_NULL, *fragModule, m_imageExtent2D, 0u, DE_NULL, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true));
-	const Unique<VkCommandPool>			cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer						(vk, device, *renderPass, *colorAttachment, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout		(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertModule, DE_NULL, *fragModule, m_imageExtent2D, 0u, DE_NULL, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, true));
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkImageMemoryBarrier			preCopyBarrier		= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 																					 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1399,13 +1377,13 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate (void)
 	const VkQueue						queue				= m_context.getUniversalQueue();
 	Allocator&							allocator			= m_context.getDefaultAllocator();
 
-	const Unique<VkShaderModule>		vertexModule		(createShaderModule					(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkRenderPass>			renderPass			(TransformFeedback::makeRenderPass	(vk, device));
-	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer					(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>		pipelineLayout		(makePipelineLayout					(vk, device));
-	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline				(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
-	const Unique<VkCommandPool>			cmdPool				(createCommandPool					(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer				(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkShaderModule>		vertexModule		(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>			renderPass			(TransformFeedback::makeRenderPass		(vk, device));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout		(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferCreateInfo			tfBufCreateInfo		= makeBufferCreateInfo(m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
 	const Move<VkBuffer>				tfBuf				= createBuffer(vk, device, &tfBufCreateInfo);
@@ -1527,16 +1505,16 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	const deUint32						bytesPerVertex			= static_cast<deUint32>(4 * sizeof(float));
 	const deUint32						numVerticesInBuffer		= m_parameters.bufferSize / bytesPerVertex;
 	const deUint32						numVerticesToWrite		= numVerticesInBuffer + overflowVertices;
-	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
 
-	const Unique<VkShaderModule>		vertModule				(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>		geomModule				(createShaderModule		(vk, device, m_context.getBinaryCollection().get("geom"), 0u));
+	const Unique<VkShaderModule>		vertModule				(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>		geomModule				(createShaderModule						(vk, device, m_context.getBinaryCollection().get("geom"), 0u));
 
-	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
-	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
-	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *geomModule, DE_NULL, m_imageExtent2D, 0u));
-	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer						(vk, device, *renderPass, 0u, DE_NULL, m_imageExtent2D.width, m_imageExtent2D.height));
+	const Unique<VkPipelineLayout>		pipelineLayout			(TransformFeedback::makePipelineLayout	(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline					(vk, device, *pipelineLayout, *renderPass, *vertModule, *geomModule, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool						(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer					(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
 	const Move<VkBuffer>				tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);

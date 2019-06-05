@@ -371,7 +371,7 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 																		makeImageCreateInfo(VK_IMAGE_TYPE_2D, colorImageExtent, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
 																		MemoryRequirement::Any));
 		Move<VkImageView>				colorAttachmentView			= makeImageView(vk, device, **colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange);
-		Move<VkFramebuffer>				framebuffer					= makeFramebuffer(vk, device, renderPass, *colorAttachmentView, colorImageExtent.width, colorImageExtent.height, 1u);
+		Move<VkFramebuffer>				framebuffer					= makeFramebuffer(vk, device, renderPass, *colorAttachmentView, colorImageExtent.width, colorImageExtent.height);
 		const Unique<VkCommandPool>		cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 		const Unique<VkCommandBuffer>	cmdBuffer					(makeCommandBuffer(vk, device, *cmdPool));
 		const VkDescriptorBufferInfo	outputBufferDescriptorInfo	= makeDescriptorBufferInfo(*resultBuffer, 0ull, BUFFER_SIZE);

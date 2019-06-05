@@ -105,6 +105,36 @@ Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
 VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
 										 const VkBufferUsageFlags	usage);
 
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
+										   const VkDevice				device,
+										   const VkDescriptorSetLayout	descriptorSetLayout = DE_NULL);
+
+Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
+										   const VkDevice				device,
+										   const deUint32				setLayoutCount,
+										   const VkDescriptorSetLayout*	descriptorSetLayout);
+
+Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
+									 const VkDevice			device,
+									 const VkRenderPass		renderPass,
+									 const VkImageView		colorAttachment,
+									 const deUint32			width,
+									 const deUint32			height,
+									 const deUint32			layers = 1u);
+
+Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
+									 const VkDevice			device,
+									 const VkRenderPass		renderPass,
+									 const deUint32			attachmentCount,
+									 const VkImageView*		colorAttachments,
+									 const deUint32			width,
+									 const deUint32			height,
+									 const deUint32			layers = 1u);
+
+Move<VkCommandPool> makeCommandPool (const DeviceInterface&	vk,
+									 const VkDevice			device,
+									 const deUint32			queueFamilyIndex);
+
 } // vk
 
 #endif // _VKOBJUTIL_HPP

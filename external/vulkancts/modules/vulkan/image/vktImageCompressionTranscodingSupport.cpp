@@ -1722,7 +1722,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 
 			const VkImageView				attachmentBindInfos[]	= { *srcImageView, *dstImageView };
 			const VkExtent2D				framebufferSize			(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
-			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, DE_LENGTH_OF_ARRAY(attachmentBindInfos), attachmentBindInfos, framebufferSize, SINGLE_LAYER));
+			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, DE_LENGTH_OF_ARRAY(attachmentBindInfos), attachmentBindInfos, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
 
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
@@ -1856,7 +1856,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 
 			const VkImageView				attachmentBindInfos[]	= { *srcImageView, *dstImageView };
 			const VkExtent2D				framebufferSize			(renderSize);
-			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, DE_LENGTH_OF_ARRAY(attachmentBindInfos), attachmentBindInfos, framebufferSize, SINGLE_LAYER));
+			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, DE_LENGTH_OF_ARRAY(attachmentBindInfos), attachmentBindInfos, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
 
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
@@ -2084,7 +2084,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkImageMemoryBarrier			refSrcCopyImageBarrierPost	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, refSrcImage->get(), subresourceRange);
 	const VkImageMemoryBarrier			resCompressedImageBarrier	= makeImageMemoryBarrier(0, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, resCompressedImage->get(), resSubresourceRange);
 
-	const Move<VkFramebuffer>			framebuffer					(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, renderSize, getLayerCount()));
+	const Move<VkFramebuffer>			framebuffer					(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, renderSize.width, renderSize.height, getLayerCount()));
 
 	// Upload source image data
 	{
@@ -2306,7 +2306,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			const VkImageMemoryBarrier		dstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), dstSubresourceRange);
 
 			const VkExtent2D				framebufferSize			(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
-			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, framebufferSize, SINGLE_LAYER));
+			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
 
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
@@ -2446,7 +2446,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 			const VkImageMemoryBarrier		dstInitImageBarrier		= makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, dstImage->get(), dstSubresourceRange);
 
 			const VkExtent2D				framebufferSize			(makeExtent2D(dstImageResolution[0], dstImageResolution[1]));
-			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, framebufferSize, SINGLE_LAYER));
+			const Move<VkFramebuffer>		framebuffer				(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, framebufferSize.width, framebufferSize.height, SINGLE_LAYER));
 
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();

@@ -358,30 +358,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									&pipelineDepthStencilStateInfo);	// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
 }
 
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
-									 const VkDevice			device,
-									 const VkRenderPass		renderPass,
-									 const VkImageView*		pAttachments,
-									 const deUint32			attachmentsCount,
-									 const deUint32			width,
-									 const deUint32			height,
-									 const deUint32			layers)
-{
-	const VkFramebufferCreateInfo framebufferInfo = {
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		attachmentsCount,								// uint32_t                                    attachmentCount;
-		pAttachments,									// const VkImageView*                          pAttachments;
-		width,											// uint32_t                                    width;
-		height,											// uint32_t                                    height;
-		layers,											// uint32_t                                    layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
 void copyLayeredImageToBuffer(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkImage image, VkBuffer buffer, const ImageParams& imageParams)
 {
 	// Image read barrier
@@ -1244,7 +1220,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	const Unique<VkShaderModule>	fragmentModule			(createShaderModule		(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkRenderPass>		renderPass				(makeRenderPass			(vk, device, colorFormat));
-	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, &*colorAttachment, 1u, params.image.size.width,  params.image.size.height, numLayers));
+	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, *colorAttachment, params.image.size.width,  params.image.size.height, numLayers));
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule,
 																					 makeExtent2D(params.image.size.width, params.image.size.height)));
@@ -1339,7 +1315,7 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const Unique<VkShaderModule>		fragmentModule		(createShaderModule		(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkRenderPass>			renderPass			(makeRenderPass			(vk, device, colorFormat, dsFormat, dsUsed));
-	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer		(vk, device, *renderPass, attachments, attachmentsCount, params.image.size.width, params.image.size.height, numLayers));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer		(vk, device, *renderPass, attachmentsCount, attachments, params.image.size.width, params.image.size.height, numLayers));
 
 	const Move<VkDescriptorPool>		descriptorPool		= DescriptorPoolBuilder()
 															  .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, passCount)
@@ -1594,7 +1570,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 	const Unique<VkShaderModule>		fragmentModule		(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkRenderPass>			renderPass			(makeRenderPassWithSelfDependency(vk, device, colorFormat));
-	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer(vk, device, *renderPass, &*colorImageView, 1u, params.image.size.width, params.image.size.height, numLayers));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer(vk, device, *renderPass, *colorImageView, params.image.size.width, params.image.size.height, numLayers));
 	const Unique<VkPipelineLayout>		pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule,
 																				  makeExtent2D(params.image.size.width, params.image.size.height)));

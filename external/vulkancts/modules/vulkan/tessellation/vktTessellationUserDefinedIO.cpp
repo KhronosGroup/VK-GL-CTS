@@ -830,22 +830,22 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 
 	// Pipeline
 
-	const Unique<VkImageView>      colorAttachmentView(makeImageView(vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange));
-	const Unique<VkRenderPass>     renderPass         (makeRenderPass(vk, device, colorFormat));
-	const Unique<VkFramebuffer>    framebuffer        (makeFramebuffer(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y(), 1u));
-	const Unique<VkPipelineLayout> pipelineLayout     (makePipelineLayout(vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>    cmdPool            (makeCommandPool(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>  cmdBuffer          (allocateCommandBuffer (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkImageView>		colorAttachmentView	(makeImageView(vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorImageSubresourceRange));
+	const Unique<VkRenderPass>		renderPass			(makeRenderPass(vk, device, colorFormat));
+	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer(vk, device, *renderPass, *colorAttachmentView, renderSize.x(), renderSize.y()));
+	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer (vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
-		.setRenderSize                (renderSize)
-		.setPatchControlPoints        (numAttributes)
-		.setVertexInputSingleAttribute(vertexFormat, vertexStride)
-		.setShader                    (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	m_context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				m_context.getBinaryCollection().get("frag"), DE_NULL)
-		.build                        (vk, device, *pipelineLayout, *renderPass));
+	const Unique<VkPipeline> pipeline	(GraphicsPipelineBuilder()
+		.setRenderSize					(renderSize)
+		.setPatchControlPoints			(numAttributes)
+		.setVertexInputSingleAttribute	(vertexFormat, vertexStride)
+		.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,					m_context.getBinaryCollection().get("frag"), DE_NULL)
+		.build							(vk, device, *pipelineLayout, *renderPass));
 
 	// Begin draw
 

@@ -207,23 +207,6 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D extent,
 	return copyParams;
 }
 
-Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
-										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout)
-{
-	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
-		1u,													// deUint32							setLayoutCount;
-		&descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
-		0u,													// deUint32							pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
-	};
-	return createPipelineLayout(vk, device, &pipelineLayoutParams);
-}
-
 Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
 									  const VkDevice			device,
 									  const VkPipelineLayout	pipelineLayout,
@@ -999,30 +982,6 @@ void beginRenderPass (const DeviceInterface&	vk,
 	};
 
 	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, tcu::Vec4(0.0f), 0.0f, 0u);
-}
-
-Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
-									 const VkDevice			device,
-									 const VkRenderPass		renderPass,
-									 const deUint32			attachmentCount,
-									 const VkImageView*		pAttachments,
-									 const VkExtent2D&		size,
-									 const deUint32			layersCount)
-{
-	const vk::VkFramebufferCreateInfo framebufferInfo =
-	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags	flags;
-		renderPass,										// VkRenderPass				renderPass;
-		attachmentCount,								// uint32_t					attachmentCount;
-		pAttachments,									// const VkImageView*		pAttachments;
-		static_cast<deUint32>(size.width),				// uint32_t					width;
-		static_cast<deUint32>(size.height),				// uint32_t					height;
-		layersCount,									// uint32_t					layers;
-	};
-
-	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
 } // image

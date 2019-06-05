@@ -133,28 +133,11 @@ deUint32						getImageSizeInBytes					(const vk::VkExtent3D&				baseExtents,
 																	 const deUint32						mipmapLevelsCount		= 1u,
 																	 const deUint32						mipmapMemoryAlignment	= 1u);
 
-vk::Move<vk::VkCommandPool>		makeCommandPool						(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const deUint32						queueFamilyIndex);
-
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout					(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkDescriptorSetLayout	descriptorSetLayout = DE_NULL);
-
 vk::Move<vk::VkPipeline>		makeComputePipeline					(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
 																	 const vk::VkPipelineLayout			pipelineLayout,
 																	 const vk::VkShaderModule			shaderModule,
 																	 const vk::VkSpecializationInfo*	specializationInfo	= 0);
-
-vk::Move<vk::VkFramebuffer>		makeFramebuffer						(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 const vk::VkRenderPass				renderPass,
-																	 const deUint32						attachmentCount,
-																	 const vk::VkImageView*				pAttachments,
-																	 const deUint32						width,
-																	 const deUint32						height,
-																	 const deUint32						layers = 1u);
 
 de::MovePtr<vk::Allocation>		bindImage							(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,

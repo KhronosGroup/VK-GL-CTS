@@ -624,7 +624,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 	// Pipeline
 
 	const Unique<VkRenderPass>     renderPass    (makeRenderPass    (vk, device, imageFormat));
-	const Unique<VkFramebuffer>    framebuffer   (makeFramebuffer	(vk, device, *renderPass, 1u, &colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
+	const Unique<VkFramebuffer>    framebuffer   (makeFramebuffer	(vk, device, *renderPass, colorImageView.get(), static_cast<deUint32>(renderSize.x()), static_cast<deUint32>(renderSize.y())));
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkCommandPool>    cmdPool       (createCommandPool (vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>  cmdBuffer     (makeCommandBuffer (vk, device, *cmdPool));

@@ -114,10 +114,6 @@ deUint32				getNumPixels		(const ImageType imageType, const tcu::UVec3& imageSiz
 deUint32				getDimensions		(const ImageType imageType);								//!< Coordinate dimension used for addressing (e.g. 3 (x,y,z) for 2d array)
 deUint32				getLayerDimensions	(const ImageType imageType);								//!< Coordinate dimension used for addressing a single layer (e.g. 2 (x,y) for 2d array)
 
-vk::Move<vk::VkPipelineLayout>		makePipelineLayout				(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device,
-																	 const vk::VkDescriptorSetLayout			descriptorSetLayout);
-
 vk::Move<vk::VkPipeline>			makeComputePipeline				(const vk::DeviceInterface&					vk,
 																	 const vk::VkDevice							device,
 																	 const vk::VkPipelineLayout					pipelineLayout,
@@ -167,14 +163,6 @@ void beginRenderPass (const vk::DeviceInterface&	vk,
 					  const vk::VkRenderPass		renderPass,
 					  const vk::VkFramebuffer		framebuffer,
 					  const vk::VkExtent2D&			renderSize);
-
-vk::Move<vk::VkFramebuffer> makeFramebuffer (const vk::DeviceInterface&	vk,
-											 const vk::VkDevice			device,
-											 const vk::VkRenderPass		renderPass,
-											 const deUint32				attachmentCount,
-											 const vk::VkImageView*		pAttachments,
-											 const vk::VkExtent2D&		size,
-											 const deUint32				layersCount);
 
 } // image
 } // vkt

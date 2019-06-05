@@ -526,7 +526,7 @@ public:
 		};
 
 		m_renderPass		= makeRenderPass		(vk, device, m_colorFormat);
-		m_framebuffer		= makeFramebuffer		(vk, device, *m_renderPass, 1u, &m_colorAttachment.get(),
+		m_framebuffer		= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
 													 static_cast<deUint32>(m_renderSize.x()), static_cast<deUint32>(m_renderSize.y()));
 		m_pipelineLayout	= makePipelineLayout	(vk, device, m_descriptorSetLayout);
 		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, m_renderSize, m_topology, DE_LENGTH_OF_ARRAY(pShaderStages), pShaderStages);

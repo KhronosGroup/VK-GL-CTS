@@ -170,7 +170,7 @@ void draw (Context&					context,
 	const Unique<VkShaderModule>	fragmentModule			(createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u));
 
 	const Unique<VkRenderPass>		renderPass				(vk::makeRenderPass		(vk, device, colorFormat));
-	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, *colorAttachment, renderSize.x(), renderSize.y(), 1u));
+	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, *colorAttachment, renderSize.x(), renderSize.y()));
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule, renderExtent));
 
