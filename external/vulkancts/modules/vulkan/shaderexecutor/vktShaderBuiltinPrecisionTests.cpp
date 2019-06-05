@@ -5308,7 +5308,6 @@ public:
 	virtual void	genFixeds			(const FloatFormat&, const Precision, vector<T>&, const Interval&)	const {}
 	virtual T		genRandom			(const FloatFormat&,const Precision, Random&, const Interval&)		const { return T(); }
 	virtual void	removeNotInRange	(vector<T>&, const Interval&, const Precision)					const {};
-	virtual double	getWeight			(void)																const { return 0.0; }
 };
 
 template <>
@@ -5347,7 +5346,6 @@ public:
 		dst.push_back(-1);
 		dst.push_back(1);
 	}
-	double	getWeight	(void) const { return 1.0; }
 
 private:
 	static inline int getNumBits (Precision prec)
@@ -5372,7 +5370,6 @@ public:
 	float	genRandom			(const FloatFormat& format, const Precision prec, Random& rnd, const Interval& inputRange)			const;
 	void	genFixeds			(const FloatFormat& format, const Precision prec, vector<float>& dst, const Interval& inputRange)	const;
 	void	removeNotInRange	(vector<float>& dst, const Interval& inputRange, const Precision prec)								const;
-	double	getWeight			(void) const { return 1.0; }
 };
 
 //! Generate a random float from a reasonable general-purpose distribution.
@@ -5384,6 +5381,7 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
 	const bool		haveSubnormal	= format.hasSubnormal() != tcu::NO;
+	const float		midpoint		= static_cast<float>(inputRange.midpoint());
 
 	// Choose exponent so that the cumulative distribution is cubic.
 	// This makes the probability distribution quadratic, with the peak centered on zero.
@@ -5401,42 +5399,39 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 	// Generate some occasional special numbers
 	switch (rnd.getInt(0, 64))
 	{
-		case 0:		value = inputRange.contains(0) ? 0 : static_cast<float>(inputRange.midpoint()); break;
-		case 1:		value = inputRange.contains(TCU_INFINITY) ? TCU_INFINITY : static_cast<float>(inputRange.midpoint()); break;
-		case 2:		value = inputRange.contains(-TCU_INFINITY) ? -TCU_INFINITY : static_cast<float>(inputRange.midpoint()); break;
-		case 3:		value = inputRange.contains(TCU_NAN) ? TCU_NAN : static_cast<float>(inputRange.midpoint()); break;
+		case 0:		return inputRange.contains(0)				? 0				: midpoint; break;
+		case 1:		return inputRange.contains(TCU_INFINITY)	? TCU_INFINITY	: midpoint; break;
+		case 2:		return inputRange.contains(-TCU_INFINITY)	? -TCU_INFINITY	: midpoint; break;
+		case 3:		return inputRange.contains(TCU_NAN)			? TCU_NAN		: midpoint; break;
 		default:	break;
 	}
 
-	if(value != -1.0f)
+	// Normal number
+	base = deFloatLdExp(1.0f, exp);
+	quantum = deFloatLdExp(1.0f, exp - fractionBits);
+
+	switch (rnd.getInt(0, 16))
 	{
-		// Normal number
-		base = deFloatLdExp(1.0f, exp);
-		quantum = deFloatLdExp(1.0f, exp - fractionBits);
-
-		switch (rnd.getInt(0, 16))
+		case 0: // The highest number in this binade, significand is all bits one.
+			significand = base - quantum;
+			break;
+		case 1: // Significand is one.
+			significand = quantum;
+			break;
+		case 2: // Significand is zero.
+			significand = 0.0;
+			break;
+		default: // Random (evenly distributed) significand.
 		{
-			case 0: // The highest number in this binade, significand is all bits one.
-				significand = base - quantum;
-				break;
-			case 1: // Significand is one.
-				significand = quantum;
-				break;
-			case 2: // Significand is zero.
-				significand = 0.0;
-				break;
-			default: // Random (evenly distributed) significand.
-			{
-				deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
-				significand = float(intFraction) * quantum;
-			}
+			deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
+			significand = float(intFraction) * quantum;
 		}
-
-		// Produce positive numbers more often than negative.
-		value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 	}
 
-	value = inputRange.contains(static_cast<double>(value)) ? value : static_cast<float>(inputRange.midpoint());
+	// Produce positive numbers more often than negative.
+	value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
+
+	value = inputRange.contains(static_cast<double>(value)) ? value : midpoint;
 
 	//not denormalized values
 	{
@@ -5513,7 +5508,6 @@ class DefaultSampling<deFloat16> : public Sampling<deFloat16>
 public:
 	deFloat16	genRandom			(const FloatFormat& format, const Precision prec, Random& rnd, const Interval& inputRange) const;
 	void		genFixeds			(const FloatFormat& format, const Precision prec, vector<deFloat16>& dst, const Interval& inputRange) const;
-	double		getWeight			(void) const { return 1.0; }
 private:
 	void		removeNotInRange(vector<deFloat16>& dst, const Interval& inputRange, const Precision prec) const;
 };
@@ -5678,11 +5672,6 @@ public:
 		for (size_t scalarNdx = 0; scalarNdx < scalars.size(); ++scalarNdx)
 			dst.push_back(Value(scalars[scalarNdx]));
 	}
-
-	double	getWeight	(void) const
-	{
-		return dePow(instance<DefaultSampling<T> >().getWeight(), Size);
-	}
 };
 
 template <typename T, int Rows, int Columns>
@@ -5723,11 +5712,6 @@ public:
 			}
 			dst.push_back(mat);
 		}
-	}
-
-	double	getWeight	(void) const
-	{
-		return dePow(instance<DefaultSampling<T> >().getWeight(), Rows * Columns);
 	}
 };
 
