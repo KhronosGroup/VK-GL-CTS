@@ -3370,6 +3370,17 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 				TCU_FAIL("Mismatch in reported property count");
 			}
 
+			if (!context.getDeviceFeatures().sparseBinding)
+			{
+				// There is no support for sparse binding, getPhysicalDeviceSparseImageFormatProperties* MUST report no properties
+				// Only have to check one of the entrypoints as a mismatch in count is already caught.
+				if (numCoreProperties > 0)
+				{
+					log << TestLog::Message << "ERROR: device does not support sparse binding but claims support for " << numCoreProperties << " properties in vkGetPhysicalDeviceSparseImageFormatProperties with parameters " << imageFormatInfo << TestLog::EndMessage;
+					TCU_FAIL("Claimed format properties inconsistent with overall sparseBinding feature");
+				}
+			}
+
 			if (numCoreProperties > 0)
 			{
 				std::vector<VkSparseImageFormatProperties>		coreProperties	(numCoreProperties);
