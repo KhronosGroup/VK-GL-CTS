@@ -53,6 +53,7 @@ enum ImageType
 vk::VkImageType			mapImageType					(const ImageType imageType);
 vk::VkImageViewType		mapImageViewType				(const ImageType imageType);
 std::string				getImageTypeName				(const ImageType imageType);
+std::string				getFormatPrefix					(const tcu::TextureFormat& format);
 std::string				getShaderImageType				(const tcu::TextureFormat& format, const ImageType imageType, const bool multisample = false);
 std::string				getShaderImageFormatQualifier	(const tcu::TextureFormat& format);
 std::string				getGlslSamplerType				(const tcu::TextureFormat& format, vk::VkImageViewType type);
