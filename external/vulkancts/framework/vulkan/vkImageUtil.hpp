@@ -35,6 +35,8 @@ namespace vk
 {
 
 bool						isFloatFormat				(VkFormat format);
+bool						isUfloatFormat				(VkFormat format);
+bool						isSfloatFormat				(VkFormat format);
 bool						isUnormFormat				(VkFormat format);
 bool						isSnormFormat				(VkFormat format);
 bool						isIntFormat					(VkFormat format);
