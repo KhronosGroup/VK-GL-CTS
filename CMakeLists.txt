@@ -1,7 +1,7 @@
 # dEQP cmake file
 
 # Module FindGit requires cmake >= 2.8.2
-cmake_minimum_required(VERSION 2.8.2)
+cmake_minimum_required(VERSION 3.0)
 
 find_package(Git)
 find_package(PythonInterp 3)

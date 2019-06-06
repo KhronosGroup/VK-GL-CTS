@@ -16,7 +16,7 @@ The following tools must be installed and present in the PATH variable:
 
  * Git (for checking out sources)
  * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
- * CMake 2.8 (3.6 for Android NDK r17+ builds) or newer
+ * CMake 3.0 (3.6 for Android NDK r17+ builds) or newer
 
 ### Win32
 
