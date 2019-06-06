@@ -623,7 +623,7 @@ VkPipelineMultisampleStateCreateInfo MSInstanceSampleMaskPattern::getMSStateCrea
 		DE_NULL,														// const void*								pNext;
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSParams.numSamples,										// VkSampleCountFlagBits					rasterizationSamples;
-		VK_TRUE,														// VkBool32									sampleShadingEnable;
+		VK_FALSE,														// VkBool32									sampleShadingEnable;
 		1.0f,															// float									minSampleShading;
 		&m_sampleMask,													// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
@@ -794,6 +794,12 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskBitCount>::verifyImage
 
 class MSCaseSampleMaskBitCount;
 
+template<> void MSCase<MSCaseSampleMaskBitCount>::checkSupport (Context& context) const
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
+
 template<> void MSCase<MSCaseSampleMaskBitCount>::init (void)
 {
 	m_testCtx.getLog()
@@ -882,6 +888,12 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskCorrectBit>::verifyIma
 }
 
 class MSCaseSampleMaskCorrectBit;
+
+template<> void MSCase<MSCaseSampleMaskCorrectBit>::checkSupport (Context& context) const
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
 
 template<> void MSCase<MSCaseSampleMaskCorrectBit>::init (void)
 {
@@ -984,6 +996,12 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskWrite>::verifyImageDat
 }
 
 class MSCaseSampleMaskWrite;
+
+template<> void MSCase<MSCaseSampleMaskWrite>::checkSupport (Context& context) const
+{
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+}
 
 template<> void MSCase<MSCaseSampleMaskWrite>::init (void)
 {
