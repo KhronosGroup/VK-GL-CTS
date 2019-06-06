@@ -341,11 +341,63 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 		case TEST_DIMENSION_IMAGE_FORMAT:
 		{
+			const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
+			vk::VkDevice							device				= context.getDevice();
+			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
+			vk::VkDeviceSize						protectedHeapSize	= 0;
+			vk::VkDeviceSize						maxMemoryUsage		= 0;
+
+			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
+			{
+				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
+				if (memoryProperties.memoryTypes[memType].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+				{
+					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
+					maxMemoryUsage	  = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
+				}
+			}
+
 			for (std::vector<vk::VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 			{
-				cases.push_back(baseParameters);
-				cases.back().imageFormat		= curFmt->format;
-				cases.back().imageColorSpace	= curFmt->colorSpace;
+			    vk::VkMemoryRequirements memoryRequirements;
+			    {
+					const vk::VkImageCreateInfo imageInfo =
+					{
+						vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+						DE_NULL,
+						vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+						vk::VK_IMAGE_TYPE_2D,
+						curFmt->format,
+						{
+							platformProperties.swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE
+								? capabilities.minImageExtent.width : capabilities.currentExtent.width,
+							platformProperties.swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE
+							? capabilities.minImageExtent.height : capabilities.currentExtent.height,
+							1,
+						},
+						1,	// mipLevels
+						baseParameters.imageArrayLayers,
+						vk::VK_SAMPLE_COUNT_1_BIT,
+						vk::VK_IMAGE_TILING_OPTIMAL,
+						baseParameters.imageUsage,
+						baseParameters.imageSharingMode,
+						baseParameters.queueFamilyIndexCount,
+						baseParameters.pQueueFamilyIndices,
+						vk::VK_IMAGE_LAYOUT_UNDEFINED
+					};
+
+						vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+
+						memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+					}
+
+					// Check for the image size requirement based on double/triple buffering
+					if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+					{
+						cases.push_back(baseParameters);
+						cases.back().imageFormat		= curFmt->format;
+						cases.back().imageColorSpace	= curFmt->colorSpace;
+					}
 			}
 
 			break;
@@ -1197,7 +1249,7 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
 				VK_CHECK(vkd.queueSubmit(context.getQueue(), 1u, &submitInfo, imageReadyFence));
-				VK_CHECK(vkd.queuePresentKHR(context.getQueue(), &presentInfo));
+				VK_CHECK_WSI(vkd.queuePresentKHR(context.getQueue(), &presentInfo));
 			}
 		}
 

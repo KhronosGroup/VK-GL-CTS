@@ -58,6 +58,7 @@ struct NAME {											\
 
 #define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
+#define VK_CHECK_WSI(EXPR)						vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
 
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan utilities
@@ -242,6 +243,7 @@ private:
 };
 
 void			checkResult			(VkResult result, const char* message, const char* file, int line);
+void			checkWsiResult		(VkResult result, const char* message, const char* file, int line);
 
 } // vk
 

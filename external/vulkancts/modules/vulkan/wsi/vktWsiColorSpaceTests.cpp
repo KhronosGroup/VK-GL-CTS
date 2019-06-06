@@ -950,7 +950,7 @@ tcu::TestStatus surfaceFormatRenderTest (Context& context,
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
 				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
-				VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
+				VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 			}
 		}
 
