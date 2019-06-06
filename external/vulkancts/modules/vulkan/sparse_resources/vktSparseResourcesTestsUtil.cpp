@@ -216,23 +216,6 @@ bool isImageSizeSupported (const InstanceInterface& instance, const VkPhysicalDe
 	}
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
-										 const VkBufferUsageFlags	usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		0u,										// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
 VkBufferImageCopy makeBufferImageCopy (const VkExtent3D		extent,
 									   const deUint32		layerCount,
 									   const deUint32		mipmapLevel,
@@ -306,63 +289,6 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 		0,													// deInt32							basePipelineIndex;
 	};
 	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
-}
-
-Move<VkBufferView> makeBufferView (const DeviceInterface&	vk,
-								   const VkDevice			vkDevice,
-								   const VkBuffer			buffer,
-								   const VkFormat			format,
-								   const VkDeviceSize		offset,
-								   const VkDeviceSize		size)
-{
-	const VkBufferViewCreateInfo bufferViewParams =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,	// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		0u,											// VkBufferViewCreateFlags	flags;
-		buffer,										// VkBuffer					buffer;
-		format,										// VkFormat					format;
-		offset,										// VkDeviceSize				offset;
-		size,										// VkDeviceSize				range;
-	};
-	return createBufferView(vk, vkDevice, &bufferViewParams);
-}
-
-Move<VkImageView> makeImageView (const DeviceInterface&			vk,
-								 const VkDevice					vkDevice,
-								 const VkImage					image,
-								 const VkImageViewType			imageViewType,
-								 const VkFormat					format,
-								 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageViewCreateInfo imageViewParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		0u,												// VkImageViewCreateFlags	flags;
-		image,											// VkImage					image;
-		imageViewType,									// VkImageViewType			viewType;
-		format,											// VkFormat					format;
-		makeComponentMappingRGBA(),						// VkComponentMapping		components;
-		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
-	};
-	return createImageView(vk, vkDevice, &imageViewParams);
-}
-
-Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
-										 const VkDevice					device,
-										 const VkDescriptorPool			descriptorPool,
-										 const VkDescriptorSetLayout	setLayout)
-{
-	const VkDescriptorSetAllocateInfo allocateParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		descriptorPool,										// VkDescriptorPool				descriptorPool;
-		1u,													// deUint32						setLayoutCount;
-		&setLayout,											// const VkDescriptorSetLayout*	pSetLayouts;
-	};
-	return allocateDescriptorSet(vk, device, &allocateParams);
 }
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,

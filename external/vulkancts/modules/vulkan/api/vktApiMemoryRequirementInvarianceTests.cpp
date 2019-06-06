@@ -26,6 +26,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkImageUtil.hpp"
 
 
 namespace vkt
@@ -166,16 +167,20 @@ ImageAllocator::ImageAllocator (deRandom& random, deBool dedicated, std::vector<
 	m_dedicated		= dedicated && deRandom_getBool(&random);
 	// If linear formats are supported, pick it randomly
 	m_linear		= (linearformats.size() > 0) && deRandom_getBool(&random);
-	// Random small size for causing potential alignment issues
-	m_size			= tcu::IVec2(deRandom_getUint32(&random) % 16 + 3,
-								 deRandom_getUint32(&random) % 16 + 3);
-	// Pick random memory type from the supported set
-	m_memoryType	= memoryTypes[deRandom_getUint32(&random) % memoryTypes.size()];
 
 	if (m_linear)
 		m_colorFormat = (VkFormat)linearformats[deRandom_getUint32(&random) % linearformats.size()];
 	else
 		m_colorFormat = (VkFormat)optimalformats[deRandom_getUint32(&random) % optimalformats.size()];
+
+	int	widthAlignment	= (isYCbCr420Format(m_colorFormat) || isYCbCr422Format(m_colorFormat)) ? 2 : 1;
+	int	heightAlignment	= isYCbCr420Format(m_colorFormat) ? 2 : 1;
+
+	// Random small size for causing potential alignment issues
+	m_size			= tcu::IVec2((deRandom_getUint32(&random) % 16 + 3) & ~(widthAlignment - 1),
+								 (deRandom_getUint32(&random) % 16 + 3) & ~(heightAlignment - 1));
+	// Pick random memory type from the supported set
+	m_memoryType	= memoryTypes[deRandom_getUint32(&random) % memoryTypes.size()];
 }
 
 ImageAllocator::~ImageAllocator ()

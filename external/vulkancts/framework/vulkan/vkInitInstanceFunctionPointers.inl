@@ -100,3 +100,4 @@ m_vk.createIOSSurfaceMVK									= (CreateIOSSurfaceMVKFunc)									GET_PROC_AD
 m_vk.createMacOSSurfaceMVK									= (CreateMacOSSurfaceMVKFunc)								GET_PROC_ADDR("vkCreateMacOSSurfaceMVK");
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT				= (GetPhysicalDeviceMultisamplePropertiesEXTFunc)			GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesNV			= (GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
+m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT			= (GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");

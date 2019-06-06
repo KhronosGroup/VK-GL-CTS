@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -86,6 +87,17 @@ deUint32 getFormatSizeInBytes(const VkFormat format)
 		case VK_FORMAT_R8G8B8A8_USCALED:
 			return static_cast<deUint32>(sizeof(deInt32) * 4);
 	}
+}
+
+deUint32 getElementSizeInBytes(
+	const VkFormat format,
+	const subgroups::SSBOData::InputDataLayoutType layout)
+{
+	deUint32 bytes = getFormatSizeInBytes(format);
+	if (layout == subgroups::SSBOData::LayoutStd140)
+		return bytes < 16 ? 16 : bytes;
+	else
+		return bytes;
 }
 
 Move<VkPipelineLayout> makePipelineLayout(
@@ -279,23 +291,6 @@ Move<VkPipeline> makeComputePipeline(Context& context,
 								 context.getDevice(), DE_NULL, &pipelineCreateInfo);
 }
 
-Move<VkDescriptorSet> makeDescriptorSet(Context& context,
-										const VkDescriptorPool descriptorPool,
-										const VkDescriptorSetLayout setLayout)
-{
-	const VkDescriptorSetAllocateInfo allocateParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, // VkStructureType
-		// sType;
-		DE_NULL,		// const void*          pNext;
-		descriptorPool, // VkDescriptorPool       descriptorPool;
-		1u,				// deUint32           setLayoutCount;
-		&setLayout,		// const VkDescriptorSetLayout* pSetLayouts;
-	};
-	return allocateDescriptorSet(
-			   context.getDeviceInterface(), context.getDevice(), &allocateParams);
-}
-
 Move<VkCommandPool> makeCommandPool(Context& context)
 {
 	const VkCommandPoolCreateInfo commandPoolParams =
@@ -324,45 +319,6 @@ Move<VkCommandBuffer> makeCommandBuffer(
 	};
 	return allocateCommandBuffer(context.getDeviceInterface(),
 								 context.getDevice(), &bufferAllocateParams);
-}
-
-Move<VkFence> submitCommandBuffer(
-	Context& context, const VkCommandBuffer commandBuffer)
-{
-	const VkFenceCreateInfo fenceParams =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType    sType;
-		DE_NULL,							 // const void*      pNext;
-		0u,									 // VkFenceCreateFlags flags;
-	};
-
-	Move<VkFence> fence(createFence(
-							context.getDeviceInterface(), context.getDevice(), &fenceParams));
-
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType      sType;
-		DE_NULL,					   // const void*        pNext;
-		0u,							   // deUint32         waitSemaphoreCount;
-		DE_NULL,					   // const VkSemaphore*   pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,				// deUint32         commandBufferCount;
-		&commandBuffer, // const VkCommandBuffer* pCommandBuffers;
-		0u,				// deUint32         signalSemaphoreCount;
-		DE_NULL,		// const VkSemaphore*   pSignalSemaphores;
-	};
-
-	vk::VkResult result = (context.getDeviceInterface().queueSubmit(
-							   context.getUniversalQueue(), 1u, &submitInfo, *fence));
-	VK_CHECK(result);
-
-	return Move<VkFence>(fence);
-}
-
-void waitFence(Context& context, Move<VkFence> fence)
-{
-	VK_CHECK(context.getDeviceInterface().waitForFences(
-				 context.getDevice(), 1u, &fence.get(), DE_TRUE, ~0ull));
 }
 
 struct Buffer;
@@ -421,27 +377,26 @@ struct Buffer : public BufferOrImage
 		, m_sizeInBytes		(sizeInBytes)
 		, m_usage			(usage)
 	{
-		const vk::VkBufferCreateInfo bufferCreateInfo =
+		const DeviceInterface&			vkd					= context.getDeviceInterface();
+		const VkDevice					device				= context.getDevice();
+
+		const vk::VkBufferCreateInfo	bufferCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			DE_NULL,
 			0u,
-			sizeInBytes,
+			m_sizeInBytes,
 			m_usage,
 			VK_SHARING_MODE_EXCLUSIVE,
 			0u,
 			DE_NULL,
 		};
-		m_buffer = createBuffer(context.getDeviceInterface(),
-								context.getDevice(), &bufferCreateInfo);
-		vk::VkMemoryRequirements req = getBufferMemoryRequirements(
-										   context.getDeviceInterface(), context.getDevice(), *m_buffer);
-		req.size *= 4;
-		m_allocation = context.getDefaultAllocator().allocate(
-						   req, MemoryRequirement::HostVisible);
-		VK_CHECK(context.getDeviceInterface().bindBufferMemory(
-					 context.getDevice(), *m_buffer, m_allocation->getMemory(),
-					 m_allocation->getOffset()));
+		m_buffer		= createBuffer(vkd, device, &bufferCreateInfo);
+
+		VkMemoryRequirements			req					= getBufferMemoryRequirements(vkd, device, *m_buffer);
+
+		m_allocation	= context.getDefaultAllocator().allocate(req, MemoryRequirement::HostVisible);
+		VK_CHECK(vkd.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
 	}
 
 	virtual VkDescriptorType getType() const
@@ -453,15 +408,18 @@ struct Buffer : public BufferOrImage
 		return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	}
 
-	VkBuffer getBuffer() const {
+	VkBuffer getBuffer () const
+	{
 		return *m_buffer;
 	}
 
-	const VkBuffer* getBufferPtr() const {
+	const VkBuffer* getBufferPtr () const
+	{
 		return &(*m_buffer);
 	}
 
-	VkDeviceSize getSize() const {
+	VkDeviceSize getSize () const
+	{
 		return m_sizeInBytes;
 	}
 
@@ -477,7 +435,10 @@ struct Image : public BufferOrImage
 				   VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT)
 		: BufferOrImage(true)
 	{
-		const VkImageCreateInfo imageCreateInfo =
+		const DeviceInterface&			vkd					= context.getDeviceInterface();
+		const VkDevice					device				= context.getDevice();
+
+		const VkImageCreateInfo			imageCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, DE_NULL, 0, VK_IMAGE_TYPE_2D,
 			format, {width, height, 1}, 1, 1, VK_SAMPLE_COUNT_1_BIT,
@@ -485,36 +446,23 @@ struct Image : public BufferOrImage
 			VK_SHARING_MODE_EXCLUSIVE, 0u, DE_NULL,
 			VK_IMAGE_LAYOUT_UNDEFINED
 		};
-		m_image = createImage(context.getDeviceInterface(), context.getDevice(),
-							  &imageCreateInfo);
-		vk::VkMemoryRequirements req = getImageMemoryRequirements(
-										   context.getDeviceInterface(), context.getDevice(), *m_image);
-		req.size *= 2;
-		m_allocation =
-			context.getDefaultAllocator().allocate(req, MemoryRequirement::Any);
-		VK_CHECK(context.getDeviceInterface().bindImageMemory(
-					 context.getDevice(), *m_image, m_allocation->getMemory(),
-					 m_allocation->getOffset()));
 
-		const VkComponentMapping componentMapping =
+		const VkComponentMapping		componentMapping	=
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY
 		};
 
-		const VkImageViewCreateInfo imageViewCreateInfo =
+		const VkImageSubresourceRange	subresourceRange	=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, DE_NULL, 0, *m_image,
-			VK_IMAGE_VIEW_TYPE_2D, imageCreateInfo.format, componentMapping,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
-			}
+			VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask
+			0u,							//deUint32				baseMipLevel
+			1u,							//deUint32				levelCount
+			0u,							//deUint32				baseArrayLayer
+			1u							//deUint32				layerCount
 		};
 
-		m_imageView = createImageView(context.getDeviceInterface(),
-									  context.getDevice(), &imageViewCreateInfo);
-
-		const struct VkSamplerCreateInfo samplerCreateInfo =
+		const VkSamplerCreateInfo		samplerCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 			DE_NULL,
@@ -536,18 +484,55 @@ struct Image : public BufferOrImage
 			VK_FALSE,
 		};
 
-		m_sampler = createSampler(context.getDeviceInterface(), context.getDevice(), &samplerCreateInfo);
+		m_image			= createImage(vkd, device, &imageCreateInfo);
+
+		VkMemoryRequirements			req					= getImageMemoryRequirements(vkd, device, *m_image);
+
+		req.size		*= 2;
+		m_allocation	= context.getDefaultAllocator().allocate(req, MemoryRequirement::Any);
+
+		VK_CHECK(vkd.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+
+		const VkImageViewCreateInfo		imageViewCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, DE_NULL, 0, *m_image,
+			VK_IMAGE_VIEW_TYPE_2D, imageCreateInfo.format, componentMapping,
+			subresourceRange
+		};
+
+		m_imageView		= createImageView(vkd, device, &imageViewCreateInfo);
+		m_sampler		= createSampler(vkd, device, &samplerCreateInfo);
+
+		// Transition input image layouts
+		{
+			const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
+			const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(context, *cmdPool));
+
+			beginCommandBuffer(vkd, *cmdBuffer);
+
+			const VkImageMemoryBarrier		imageBarrier		= makeImageMemoryBarrier((VkAccessFlags)0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+																	VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *m_image, subresourceRange);
+
+			vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &imageBarrier);
+
+			endCommandBuffer(vkd, *cmdBuffer);
+			submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer);
+		}
 	}
 
-	VkImage getImage() const {
+	VkImage getImage () const
+	{
 		return *m_image;
 	}
 
-	VkImageView getImageView() const {
+	VkImageView getImageView () const
+	{
 		return *m_imageView;
 	}
 
-	VkSampler getSampler() const {
+	VkSampler getSampler () const
+	{
 		return *m_sampler;
 	}
 
@@ -1010,6 +995,13 @@ bool vkt::subgroups::isDoubleSupportedForDevice(Context& context)
 	return features.shaderFloat64 ? true : false;
 }
 
+bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& context)
+{
+	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(
+		context.getInstanceInterface(), context.getPhysicalDevice());
+	return features.shaderTessellationAndGeometryPointSize ? true : false;
+}
+
 bool vkt::subgroups::isDoubleFormat(VkFormat format)
 {
 	switch (format)
@@ -1081,13 +1073,14 @@ void vkt::subgroups::setVertexShaderFrameBuffer (SourceCollections& programColle
 		"void main (void)\n"
 		"{\n"
 		"  gl_Position = in_position;\n"
+		"  gl_PointSize = 1.0f;\n"
 		"}\n";
 	*/
 	programCollection.spirvAsmSources.add("vert") <<
 		"; SPIR-V\n"
 		"; Version: 1.3\n"
-		"; Generator: Khronos Glslang Reference Front End; 2\n"
-		"; Bound: 21\n"
+		"; Generator: Khronos Glslang Reference Front End; 7\n"
+		"; Bound: 25\n"
 		"; Schema: 0\n"
 		"OpCapability Shader\n"
 		"%1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -1114,11 +1107,16 @@ void vkt::subgroups::setVertexShaderFrameBuffer (SourceCollections& programColle
 		"%16 = OpTypePointer Input %7\n"
 		"%17 = OpVariable %16 Input\n"
 		"%19 = OpTypePointer Output %7\n"
+		"%21 = OpConstant %14 1\n"
+		"%22 = OpConstant %6 1\n"
+		"%23 = OpTypePointer Output %6\n"
 		"%4 = OpFunction %2 None %3\n"
 		"%5 = OpLabel\n"
 		"%18 = OpLoad %7 %17\n"
 		"%20 = OpAccessChain %19 %13 %15\n"
 		"OpStore %20 %18\n"
+		"%24 = OpAccessChain %23 %13 %21\n"
+		"OpStore %24 %22\n"
 		"OpReturn\n"
 		"OpFunctionEnd\n";
 }
@@ -1378,7 +1376,8 @@ void vkt::subgroups::addGeometryShadersFromTemplate (const std::string& spirvTem
 void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBOData& data)
 {
 	const vk::VkFormat format = data.format;
-	const vk::VkDeviceSize size = getFormatSizeInBytes(format) * data.numElements;
+	const vk::VkDeviceSize size = data.numElements *
+		(data.isImage ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
 	if (subgroups::SSBOData::InitializeNonZero == data.initializeType)
 	{
 		de::Random rnd(context.getTestContext().getCommandLine().getBaseSeed());
@@ -1477,12 +1476,14 @@ deUint32 getResultBinding (const VkShaderStageFlagBits shaderStage)
 	return -1;
 }
 
-tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
+tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 	Context& context, VkFormat format, SSBOData* extraData,
 	deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
 	const VkShaderStageFlags shaderStage)
 {
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
 	const deUint32							maxWidth				= 1024u;
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 	DescriptorSetLayoutBuilder				layoutBuilder;
@@ -1491,13 +1492,13 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	Move <VkDescriptorPool>					descriptorPool;
 	Move <VkDescriptorSet>					descriptorSet;
 
-	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule(context.getDeviceInterface(), context.getDevice(),
+	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule(vk, device,
 																		context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>			teCtrlShaderModule		(createShaderModule(context.getDeviceInterface(), context.getDevice(),
+	const Unique<VkShaderModule>			teCtrlShaderModule		(createShaderModule(vk, device,
 																		context.getBinaryCollection().get("tesc"), 0u));
-	const Unique<VkShaderModule>			teEvalShaderModule		(createShaderModule(context.getDeviceInterface(), context.getDevice(),
+	const Unique<VkShaderModule>			teEvalShaderModule		(createShaderModule(vk, device,
 																		context.getBinaryCollection().get("tese"), 0u));
-	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule(context.getDeviceInterface(), context.getDevice(),
+	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule(vk, device,
 																	context.getBinaryCollection().get("fragment"), 0u));
 	const Unique<VkRenderPass>				renderPass				(makeRenderPass(context, format));
 
@@ -1524,7 +1525,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 		}
 		else
 		{
-			vk::VkDeviceSize size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -1534,7 +1535,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	for (deUint32 ndx = 0u; ndx < extraDataCount; ndx++)
 		layoutBuilder.addBinding(inputBuffers[ndx]->getType(), 1u, shaderStage, DE_NULL);
 
-	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(context.getDeviceInterface(), context.getDevice()));
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(context, *descriptorSetLayout));
 
@@ -1549,9 +1550,9 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 
 	if (extraDataCount > 0)
 	{
-		descriptorPool = poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
+		descriptorPool = poolBuilder.build(vk, device,
 							VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		descriptorSet = makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout);
+		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 	}
 
 	for (deUint32 buffersNdx = 0u; buffersNdx < inputBuffers.size(); buffersNdx++)
@@ -1578,8 +1579,9 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 		}
 	}
 
-	updateBuilder.update(context.getDeviceInterface(), context.getDevice());
+	updateBuilder.update(vk, device);
 
+	const VkQueue							queue					= context.getUniversalQueue();
 	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(context));
 	const deUint32							subgroupSize			= getSubgroupSize(context);
 	const Unique<VkCommandBuffer>			cmdBuffer				(makeCommandBuffer(context, *cmdPool));
@@ -1603,7 +1605,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 		}
 
 		deMemcpy(alloc.getHostPtr(), &data[0], data.size() * sizeof(tcu::Vec4));
-		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
+		flushAlloc(vk, device, alloc);
 	}
 
 	for (deUint32 width = 1u; width < maxWidth; ++width)
@@ -1617,38 +1619,37 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 
 		totalIterations++;
 
-		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+		beginCommandBuffer(vk, *cmdBuffer);
 		{
 
-			context.getDeviceInterface().cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
-			context.getDeviceInterface().cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
+			vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
+			vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
-			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
-			context.getDeviceInterface().cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 			if (extraDataCount > 0)
 			{
-				context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
+				vk.cmdBindDescriptorSets(*cmdBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
 					&descriptorSet.get(), 0u, DE_NULL);
 			}
 
-			context.getDeviceInterface().cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
-			context.getDeviceInterface().cmdDraw(*cmdBuffer, 2 * width, 1, 0, 0);
+			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
+			vk.cmdDraw(*cmdBuffer, 2 * width, 1, 0, 0);
 
-			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
-			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+			copyImageToBuffer(vk, *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			endCommandBuffer(vk, *cmdBuffer);
 
-			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
-			waitFence(context, fence);
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
-			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), allocResult);
+			invalidateAlloc(vk, device, allocResult);
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
@@ -1700,6 +1701,8 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize))
 {
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
 	const deUint32							maxWidth				= 1024u;
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 	DescriptorSetLayoutBuilder				layoutBuilder;
@@ -1708,12 +1711,9 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	Move <VkDescriptorPool>					descriptorPool;
 	Move <VkDescriptorSet>					descriptorSet;
 
-	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule(context.getDeviceInterface(), context.getDevice(),
-																		context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>			geometryShaderModule	(createShaderModule(context.getDeviceInterface(), context.getDevice(),
-																		context.getBinaryCollection().get("geometry"), 0u));
-	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule(context.getDeviceInterface(), context.getDevice(),
-																	context.getBinaryCollection().get("fragment"), 0u));
+	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>			geometryShaderModule	(createShaderModule(vk, device, context.getBinaryCollection().get("geometry"), 0u));
+	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0u));
 	const Unique<VkRenderPass>				renderPass				(makeRenderPass(context, format));
 	const VkVertexInputBindingDescription	vertexInputBinding		=
 	{
@@ -1738,7 +1738,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 		}
 		else
 		{
-			vk::VkDeviceSize size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -1748,7 +1748,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	for (deUint32 ndx = 0u; ndx < extraDataCount; ndx++)
 		layoutBuilder.addBinding(inputBuffers[ndx]->getType(), 1u, VK_SHADER_STAGE_GEOMETRY_BIT, DE_NULL);
 
-	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(context.getDeviceInterface(), context.getDevice()));
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(context, *descriptorSetLayout));
 
@@ -1762,9 +1762,9 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 	if (extraDataCount > 0)
 	{
-		descriptorPool = poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
+		descriptorPool = poolBuilder.build(vk, device,
 							VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		descriptorSet = makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout);
+		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 	}
 
 	for (deUint32 buffersNdx = 0u; buffersNdx < inputBuffers.size(); buffersNdx++)
@@ -1791,8 +1791,9 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 		}
 	}
 
-	updateBuilder.update(context.getDeviceInterface(), context.getDevice());
+	updateBuilder.update(vk, device);
 
+	const VkQueue							queue					= context.getUniversalQueue();
 	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(context));
 	const deUint32							subgroupSize			= getSubgroupSize(context);
 	const Unique<VkCommandBuffer>			cmdBuffer				(makeCommandBuffer(context, *cmdPool));
@@ -1815,7 +1816,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 		}
 
 		deMemcpy(alloc.getHostPtr(), &data[0], maxWidth * sizeof(tcu::Vec4));
-		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
+		flushAlloc(vk, device, alloc);
 	}
 
 	for (deUint32 width = 1u; width < maxWidth; width++)
@@ -1834,42 +1835,38 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 			initializeMemory(context, alloc, extraData[ndx]);
 		}
 
-		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+		beginCommandBuffer(vk, *cmdBuffer);
 		{
-			context.getDeviceInterface().cmdSetViewport(
-				*cmdBuffer, 0, 1, &viewport);
+			vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
 
-			context.getDeviceInterface().cmdSetScissor(
-				*cmdBuffer, 0, 1, &scissor);
+			vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
-			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
-			context.getDeviceInterface().cmdBindPipeline(
-				*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 			if (extraDataCount > 0)
 			{
-				context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
-					VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
 					&descriptorSet.get(), 0u, DE_NULL);
 			}
 
-			context.getDeviceInterface().cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
+			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
 
-			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1u, 0u, 0u);
+			vk.cmdDraw(*cmdBuffer, width, 1u, 0u, 0u);
 
-			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
-			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			copyImageToBuffer(vk, *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
-			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
-			waitFence(context, fence);
+			endCommandBuffer(vk, *cmdBuffer);
+
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
-			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), allocResult);
+			invalidateAlloc(vk, device, allocResult);
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
@@ -1896,6 +1893,8 @@ tcu::TestStatus vkt::subgroups::allStages(
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
 	const VkShaderStageFlags shaderStageTested)
 {
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
 	const deUint32					maxWidth			= 1024u;
 	vector<VkShaderStageFlagBits>	stagesVector;
 	VkShaderStageFlags				shaderStageRequired	= (VkShaderStageFlags)0ull;
@@ -1941,27 +1940,27 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 	shaderStageRequired = shaderStageTested | shaderStageRequired;
 
-	vertexShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get(vert), 0u);
+	vertexShaderModule = createShaderModule(vk, device, context.getBinaryCollection().get(vert), 0u);
 	if (shaderStageRequired & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 	{
-		teCtrlShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get(tesc), 0u);
-		teEvalShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get(tese), 0u);
+		teCtrlShaderModule = createShaderModule(vk, device, context.getBinaryCollection().get(tesc), 0u);
+		teEvalShaderModule = createShaderModule(vk, device, context.getBinaryCollection().get(tese), 0u);
 	}
 	if (shaderStageRequired & VK_SHADER_STAGE_GEOMETRY_BIT)
 	{
 		if (shaderStageRequired & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 		{
 			// tessellation shaders output line primitives
-			geometryShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("geometry_lines"), 0u);
+			geometryShaderModule = createShaderModule(vk, device, context.getBinaryCollection().get("geometry_lines"), 0u);
 		}
 		else
 		{
 			// otherwise points are processed by geometry shader
-			geometryShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("geometry_points"), 0u);
+			geometryShaderModule = createShaderModule(vk, device, context.getBinaryCollection().get("geometry_points"), 0u);
 		}
 	}
 	if (shaderStageRequired & VK_SHADER_STAGE_FRAGMENT_BIT)
-		fragmentShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("fragment"), 0u);
+		fragmentShaderModule = createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0u);
 
 	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(stagesCount + extraDatasCount);
 
@@ -1970,7 +1969,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 	for (deUint32 ndx = 0u; ndx < stagesCount; ++ndx)
 	{
 		const VkDeviceSize shaderSize = (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? maxWidth * 2 : maxWidth;
-		const VkDeviceSize size = getFormatSizeInBytes(format) * shaderSize;
+		const VkDeviceSize size = getElementSizeInBytes(format, SSBOData::LayoutStd430) * shaderSize;
 		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 
 		layoutBuilder.addIndexedBinding(inputBuffers[ndx]->getType(), 1, stagesVector[ndx], getResultBinding(stagesVector[ndx]), DE_NULL);
@@ -1985,7 +1984,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 		}
 		else
 		{
-			const vk::VkDeviceSize size = getFormatSizeInBytes(extraDatas[datasNdx].format) * extraDatas[datasNdx].numElements;
+			const vk::VkDeviceSize size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
 			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
@@ -1996,8 +1995,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 								extraDatas[datasNdx].stages, extraDatas[datasNdx].binding, DE_NULL);
 	}
 
-	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-		layoutBuilder.build(context.getDeviceInterface(), context.getDevice()));
+	const Unique<VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout> pipelineLayout(
 		makePipelineLayout(context, *descriptorSetLayout));
@@ -2021,12 +2019,10 @@ tcu::TestStatus vkt::subgroups::allStages(
 			poolBuilder.addType(inputBuffers[ndx]->getType());
 		}
 
-		descriptorPool =
-			poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
-				VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 		// Create descriptor set
-		descriptorSet = makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout);
+		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
 		DescriptorSetUpdateBuilder updateBuilder;
 
@@ -2058,10 +2054,11 @@ tcu::TestStatus vkt::subgroups::allStages(
 			}
 		}
 
-		updateBuilder.update(context.getDeviceInterface(), context.getDevice());
+		updateBuilder.update(vk, device);
 	}
 
 	{
+		const VkQueue					queue					= context.getUniversalQueue();
 		const Unique<VkCommandPool>		cmdPool					(makeCommandPool(context));
 		const deUint32					subgroupSize			= getSubgroupSize(context);
 		const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer(context, *cmdPool));
@@ -2098,33 +2095,32 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 			totalIterations++;
 
-			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+			beginCommandBuffer(vk, *cmdBuffer);
 
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &colorAttachmentBarrier);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &colorAttachmentBarrier);
 
-			context.getDeviceInterface().cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
+			vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
 
-			context.getDeviceInterface().cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
+			vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
-			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
-			context.getDeviceInterface().cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 			if (stagesCount + extraDatasCount > 0)
-				context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
+				vk.cmdBindDescriptorSets(*cmdBuffer,
 						VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
 						&descriptorSet.get(), 0u, DE_NULL);
 
-			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1, 0, 0);
+			vk.cmdDraw(*cmdBuffer, width, 1, 0, 0);
 
-			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
-			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, resultImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(width, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			copyImageToBuffer(vk, *cmdBuffer, resultImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(width, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
 
-			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
-			waitFence(context, fence);
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 			for (deUint32 ndx = 0u; ndx < stagesCount; ++ndx)
 			{
@@ -2132,7 +2128,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 				if (!inputBuffers[ndx]->isImage())
 				{
 					const Allocation& resultAlloc = inputBuffers[ndx]->getAllocation();
-					invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
+					invalidateAlloc(vk, device, resultAlloc);
 					// we always have our result data first
 					datas.push_back(resultAlloc.getHostPtr());
 				}
@@ -2143,7 +2139,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					if ((stagesVector[ndx] & extraDatas[datasNdx].stages) && (!inputBuffers[index]->isImage()))
 					{
 						const Allocation& resultAlloc = inputBuffers[index]->getAllocation();
-						invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
+						invalidateAlloc(vk, device, resultAlloc);
 						// we always have our result data first
 						datas.push_back(resultAlloc.getHostPtr());
 					}
@@ -2156,7 +2152,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 			{
 				std::vector<const void*> datas;
 				const Allocation& resultAlloc = imageBufferResult.getAllocation();
-				invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
+				invalidateAlloc(vk, device, resultAlloc);
 
 				// we always have our result data first
 				datas.push_back(resultAlloc.getHostPtr());
@@ -2167,7 +2163,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					if (VK_SHADER_STAGE_FRAGMENT_BIT & extraDatas[datasNdx].stages && (!inputBuffers[index]->isImage()))
 					{
 						const Allocation& alloc = inputBuffers[index]->getAllocation();
-						invalidateAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
+						invalidateAlloc(vk, device, alloc);
 						// we always have our result data first
 						datas.push_back(alloc.getHostPtr());
 					}
@@ -2177,7 +2173,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					failedIterations++;
 			}
 
-			context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
+			vk.resetCommandBuffer(*cmdBuffer, 0);
 		}
 
 		if (0 < failedIterations)
@@ -2196,13 +2192,14 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	SSBOData* extraData, deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize))
 {
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
+	const VkQueue							queue					= context.getUniversalQueue();
 	const deUint32							maxWidth				= 1024u;
 	vector<de::SharedPtr<BufferOrImage> >	inputBuffers			(extraDataCount);
 	DescriptorSetLayoutBuilder				layoutBuilder;
-	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule
-																		(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("vert"), 0u));
-	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule
-																		(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("fragment"), 0u));
+	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0u));
 	const Unique<VkRenderPass>				renderPass				(makeRenderPass(context, format));
 
 	const VkVertexInputBindingDescription	vertexInputBinding		=
@@ -2228,7 +2225,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 		}
 		else
 		{
-			vk::VkDeviceSize size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -2238,7 +2235,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	for (deUint32 ndx = 0u; ndx < extraDataCount; ndx++)
 		layoutBuilder.addBinding(inputBuffers[ndx]->getType(), 1u, VK_SHADER_STAGE_VERTEX_BIT, DE_NULL);
 
-	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(context.getDeviceInterface(), context.getDevice()));
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(context, *descriptorSetLayout));
 
@@ -2260,9 +2257,8 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 	if (extraDataCount > 0)
 	{
-		descriptorPool = poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
-							VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-		descriptorSet = makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout);
+		descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 	}
 
 	for (deUint32 ndx = 0u; ndx < extraDataCount; ndx++)
@@ -2294,7 +2290,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 										inputBuffers[buffersNdx]->getType(), &info);
 		}
 	}
-	updateBuilder.update(context.getDeviceInterface(), context.getDevice());
+	updateBuilder.update(vk, device);
 
 	const Unique<VkCommandPool>				cmdPool					(makeCommandPool(context));
 
@@ -2323,7 +2319,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 		}
 
 		deMemcpy(alloc.getHostPtr(), &data[0], maxWidth * sizeof(tcu::Vec4));
-		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
+		flushAlloc(vk, device, alloc);
 	}
 
 	for (deUint32 width = 1u; width < maxWidth; width++)
@@ -2342,42 +2338,38 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 			initializeMemory(context, alloc, extraData[ndx]);
 		}
 
-		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+		beginCommandBuffer(vk, *cmdBuffer);
 		{
-			context.getDeviceInterface().cmdSetViewport(
-				*cmdBuffer, 0, 1, &viewport);
+			vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
 
-			context.getDeviceInterface().cmdSetScissor(
-				*cmdBuffer, 0, 1, &scissor);
+			vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
-			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
-			context.getDeviceInterface().cmdBindPipeline(
-				*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 			if (extraDataCount > 0)
 			{
-				context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
-					VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+				vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
 					&descriptorSet.get(), 0u, DE_NULL);
 			}
 
-			context.getDeviceInterface().cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
+			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
 
-			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1u, 0u, 0u);
+			vk.cmdDraw(*cmdBuffer, width, 1u, 0u, 0u);
 
-			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
-			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			copyImageToBuffer(vk, *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
-			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
-			waitFence(context, fence);
+			endCommandBuffer(vk, *cmdBuffer);
+
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 		}
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
-			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), allocResult);
+			invalidateAlloc(vk, device, allocResult);
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
@@ -2403,10 +2395,13 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width,
 						deUint32 height, deUint32 subgroupSize))
 {
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
+	const VkQueue							queue					= context.getUniversalQueue();
 	const Unique<VkShaderModule>			vertexShaderModule		(createShaderModule
-																		(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("vert"), 0u));
+																		(vk, device, context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>			fragmentShaderModule	(createShaderModule
-																		(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("fragment"), 0u));
+																		(vk, device, context.getBinaryCollection().get("fragment"), 0u));
 
 	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(extraDatasCount);
 
@@ -2420,7 +2415,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 		else
 		{
 			vk::VkDeviceSize size =
-				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
+				getElementSizeInBytes(extraDatas[i].format, extraDatas[i].layout) * extraDatas[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 
@@ -2437,7 +2432,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	}
 
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-		layoutBuilder.build(context.getDeviceInterface(), context.getDevice()));
+		layoutBuilder.build(vk, device));
 
 	const Unique<VkPipelineLayout> pipelineLayout(
 		makePipelineLayout(context, *descriptorSetLayout));
@@ -2463,10 +2458,9 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 	if (extraDatasCount > 0)
 	{
-		descriptorPool = poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
-													VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-		descriptorSet	= makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout);
+		descriptorSet	= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 	}
 
 	DescriptorSetUpdateBuilder updateBuilder;
@@ -2496,14 +2490,13 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	}
 
 	if (extraDatasCount > 0)
-		updateBuilder.update(context.getDeviceInterface(), context.getDevice());
+		updateBuilder.update(vk, device);
 
-	const Unique<VkCommandPool> cmdPool(makeCommandPool(context));
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
 
-	const deUint32 subgroupSize = getSubgroupSize(context);
+	const deUint32					subgroupSize		= getSubgroupSize(context);
 
-	const Unique<VkCommandBuffer> cmdBuffer(
-		makeCommandBuffer(context, *cmdPool));
+	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(context, *cmdPool));
 
 	unsigned totalIterations = 0;
 	unsigned failedIterations = 0;
@@ -2535,46 +2528,44 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 			const Unique<VkFramebuffer> framebuffer(makeFramebuffer(context,
 													*renderPass, resultImage.getImageView(), width, height));
 
-			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+			beginCommandBuffer(vk, *cmdBuffer);
 
 			VkViewport viewport = makeViewport(width, height);
 
-			context.getDeviceInterface().cmdSetViewport(
+			vk.cmdSetViewport(
 				*cmdBuffer, 0, 1, &viewport);
 
 			VkRect2D scissor = {{0, 0}, {width, height}};
 
-			context.getDeviceInterface().cmdSetScissor(
+			vk.cmdSetScissor(
 				*cmdBuffer, 0, 1, &scissor);
 
-			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, width, height), tcu::Vec4(0.0f));
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, width, height), tcu::Vec4(0.0f));
 
-			context.getDeviceInterface().cmdBindPipeline(
+			vk.cmdBindPipeline(
 				*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
 			if (extraDatasCount > 0)
 			{
-				context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
+				vk.cmdBindDescriptorSets(*cmdBuffer,
 						VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
 						&descriptorSet.get(), 0u, DE_NULL);
 			}
 
-			context.getDeviceInterface().cmdDraw(*cmdBuffer, 4, 1, 0, 0);
+			vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
-			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
-			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, resultImage.getImage(), resultBuffer.getBuffer(), tcu::IVec2(width, height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			copyImageToBuffer(vk, *cmdBuffer, resultImage.getImage(), resultBuffer.getBuffer(), tcu::IVec2(width, height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
 
-			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
-
-			waitFence(context, fence);
+			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 			std::vector<const void*> datas;
 			{
 				const Allocation& resultAlloc = resultBuffer.getAllocation();
-				invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
+				invalidateAlloc(vk, device, resultAlloc);
 
 				// we always have our result data first
 				datas.push_back(resultAlloc.getHostPtr());
@@ -2585,7 +2576,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 				failedIterations++;
 			}
 
-			context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
+			vk.resetCommandBuffer(*cmdBuffer, 0);
 		}
 	}
 
@@ -2606,7 +2597,10 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 						const deUint32 numWorkgroups[3], const deUint32 localSize[3],
 						deUint32 subgroupSize))
 {
-	VkDeviceSize elementSize = getFormatSizeInBytes(format);
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
+	const VkQueue							queue					= context.getUniversalQueue();
+	VkDeviceSize							elementSize				= getFormatSizeInBytes(format);
 
 	const VkDeviceSize resultBufferSize = maxSupportedSubgroupSize() *
 										  maxSupportedSubgroupSize() *
@@ -2628,7 +2622,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		else
 		{
 			vk::VkDeviceSize size =
-				getFormatSizeInBytes(inputs[i].format) * inputs[i].numElements;
+				getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
@@ -2647,10 +2641,10 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	}
 
 	const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-		layoutBuilder.build(context.getDeviceInterface(), context.getDevice()));
+		layoutBuilder.build(vk, device));
 
 	const Unique<VkShaderModule> shaderModule(
-		createShaderModule(context.getDeviceInterface(), context.getDevice(),
+		createShaderModule(vk, device,
 						   context.getBinaryCollection().get("comp"), 0u));
 	const Unique<VkPipelineLayout> pipelineLayout(
 		makePipelineLayout(context, *descriptorSetLayout));
@@ -2665,12 +2659,11 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	}
 
 	const Unique<VkDescriptorPool> descriptorPool(
-		poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
-						  VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+		poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
 	// Create descriptor set
 	const Unique<VkDescriptorSet> descriptorSet(
-		makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout));
+		makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	DescriptorSetUpdateBuilder updateBuilder;
 
@@ -2697,7 +2690,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		else
 		{
 			vk::VkDeviceSize size =
-				getFormatSizeInBytes(inputs[i].format) * inputs[i].numElements;
+				getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
 			VkDescriptorBufferInfo info =
 				makeDescriptorBufferInfo(inputBuffers[i]->getAsBuffer()->getBuffer(), 0ull, size);
 
@@ -2707,9 +2700,9 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		}
 	}
 
-	updateBuilder.update(context.getDeviceInterface(), context.getDevice());
+	updateBuilder.update(vk, device);
 
-	const Unique<VkCommandPool> cmdPool(makeCommandPool(context));
+	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
 
 	unsigned totalIterations = 0;
 	unsigned failedIterations = 0;
@@ -2754,33 +2747,29 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		// we are running one test
 		totalIterations++;
 
-		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
+		beginCommandBuffer(vk, *cmdBuffer);
 
-		context.getDeviceInterface().cmdBindPipeline(
-			*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *lastPipeline);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *lastPipeline);
 
-		context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
+		vk.cmdBindDescriptorSets(*cmdBuffer,
 				VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
 				&descriptorSet.get(), 0u, DE_NULL);
 
-		context.getDeviceInterface().cmdDispatch(*cmdBuffer,
-				numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
+		vk.cmdDispatch(*cmdBuffer,numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
 
-		endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
-
-		Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		Move<VkPipeline> nextPipeline(
 			makeComputePipeline(context, *pipelineLayout, *shaderModule,
 								nextX, nextY, nextZ));
 
-		waitFence(context, fence);
+		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 		std::vector<const void*> datas;
 
 		{
 			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
+			invalidateAlloc(vk, device, resultAlloc);
 
 			// we always have our result data first
 			datas.push_back(resultAlloc.getHostPtr());
@@ -2791,7 +2780,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 			if (!inputBuffers[i]->isImage())
 			{
 				const Allocation& resultAlloc = inputBuffers[i]->getAllocation();
-				invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
+				invalidateAlloc(vk, device, resultAlloc);
 
 				// we always have our result data first
 				datas.push_back(resultAlloc.getHostPtr());
@@ -2803,7 +2792,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 			failedIterations++;
 		}
 
-		context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
+		vk.resetCommandBuffer(*cmdBuffer, 0);
 
 		lastPipeline = nextPipeline;
 	}

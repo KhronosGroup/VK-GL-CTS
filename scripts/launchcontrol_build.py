@@ -57,7 +57,7 @@ def buildWithMake (workingDir):
 	pushWorkingDir(workingDir)
 	# CMake docs advised this to be the best magic formula...
 	threadCount = multiprocessing.cpu_count() + 1
-	print "Invoke make with %d threads" % threadCount
+	print("Invoke make with %d threads" % threadCount)
 	execute(["make", "-j%d" % threadCount])
 	popWorkingDir()
 
@@ -92,9 +92,9 @@ def parseOptions ():
 if __name__ == "__main__":
 	options = parseOptions()
 
-	print "\n############################################################"
-	print "# %s %s BUILD" % (options.config.upper(), options.buildType.upper())
-	print "############################################################\n"
+	print("\n############################################################")
+	print("# %s %s BUILD" % (options.config.upper(), options.buildType.upper()))
+	print("############################################################\n")
 
 	launchControlConfig = BUILD_CONFIGS[options.config]
 	buildDir = os.path.realpath(os.path.normpath(options.buildDir))
@@ -106,4 +106,4 @@ if __name__ == "__main__":
 		genMustpassLists(MUSTPASS_LISTS, MAKEFILE_GENERATOR, config)
 		checkForChanges()
 
-	print "\n--- BUILD SCRIPT COMPLETE"
+	print("\n--- BUILD SCRIPT COMPLETE")

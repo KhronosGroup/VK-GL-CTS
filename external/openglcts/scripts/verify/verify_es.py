@@ -91,7 +91,7 @@ def verifyConfigFile (filename, type):
 
 	for caseName in caseNames:
 		caseResult	= None
-		print "Verifying %s in %s" % (caseName, filename)
+		print("Verifying %s in %s" % (caseName, filename))
 		for result in results:
 			if result.name == caseName:
 				caseResult = result
@@ -169,9 +169,9 @@ def verifyTestLogs (package):
 
 	try:
 		execute(['git', 'checkout', '--quiet', package.conformVersion])
-	except Exception, e:
-		print str(e)
-		print "Failed to checkout release tag %s." % package.conformVersion
+	except Exception as e:
+		print(str(e))
+		print("Failed to checkout release tag %s." % package.conformVersion)
 		return messages
 
 	messages = []
@@ -251,8 +251,8 @@ def verifyGitLogFile (package):
 		for log, path in package.gitLog:
 			try:
 				isEmpty = isGitLogFileEmpty(package, path, log)
-			except Exception, e:
-				print str(e)
+			except Exception as e:
+				print(str(e))
 				isEmpty = False
 
 			if not isEmpty:
@@ -308,13 +308,13 @@ def verifyPackage (package):
 
 def verifyESSubmission(argv):
 	if len(argv) != 2:
-		print "%s: [extracted submission package directory]" % sys.argv[0]
+		print("%s: [extracted submission package directory]" % sys.argv[0])
 		sys.exit(-1)
 	try:
 		execute(['git', 'ls-remote', 'origin', '--quiet'])
-	except Exception, e:
-		print str(e)
-		print "This script must be executed inside VK-GL-CTS directory."
+	except Exception as e:
+		print(str(e))
+		print("This script must be executed inside VK-GL-CTS directory.")
 		sys.exit(-1)
 
 	packagePath		=  os.path.normpath(sys.argv[1])
@@ -326,18 +326,18 @@ def verifyESSubmission(argv):
 	warnings		= [m for m in messages if m.type == ValidationMessage.TYPE_WARNING]
 
 	for message in messages:
-		print str(message)
+		print(str(message))
 
-	print ""
+	print("")
 
 	if len(errors) > 0:
-		print "Found %d validation errors and %d warnings!" % (len(errors), len(warnings))
+		print("Found %d validation errors and %d warnings!" % (len(errors), len(warnings)))
 		sys.exit(-2)
 	elif len(warnings) > 0:
-		print "Found %d warnings, manual review required" % len(warnings)
+		print("Found %d warnings, manual review required" % len(warnings))
 		sys.exit(-1)
 	else:
-		print "All validation checks passed"
+		print("All validation checks passed")
 
 if __name__ == "__main__":
 	verifyESSubmission(sys.argv)

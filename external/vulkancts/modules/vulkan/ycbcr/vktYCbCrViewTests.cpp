@@ -175,23 +175,17 @@ Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 	return createImage(vkd, device, &createInfo);
 }
 
-Move<VkImageView> createImageView (const DeviceInterface&		vkd,
-								   VkDevice						device,
-								   VkImage						image,
-								   VkFormat						format,
-								   VkImageAspectFlagBits		imageAspect,
-								   VkSamplerYcbcrConversion		conversion)
+Move<VkImageView> createImageView (const DeviceInterface&				vkd,
+								   VkDevice								device,
+								   VkImage								image,
+								   VkFormat								format,
+								   VkImageAspectFlagBits				imageAspect,
+								   const VkSamplerYcbcrConversionInfo*	samplerConversionInfo)
 {
-	const VkSamplerYcbcrConversionInfo	samplerConversionInfo	=
-	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-		DE_NULL,
-		conversion
-	};
 	const VkImageViewCreateInfo				viewInfo	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		&samplerConversionInfo,
+		samplerConversionInfo,
 		(VkImageViewCreateFlags)0,
 		image,
 		VK_IMAGE_VIEW_TYPE_2D,
@@ -511,20 +505,20 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 		VK_FALSE,									// forceExplicitReconstruction
 	};
 	const Unique<VkSamplerYcbcrConversion>		conversion	(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
-	const Unique<VkImageView>					wholeView	(createImageView(vkd, device, *image, format, VK_IMAGE_ASPECT_COLOR_BIT, *conversion));
-	const Unique<VkImageView>					planeView	(createImageView(vkd,
-																			 device,
-																			 !imageAlias ? *image : *imageAlias,
-																			 planeViewFormat,
-																			 !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT,
-																			 *conversion));
-
 	const VkSamplerYcbcrConversionInfo			samplerConversionInfo	=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		*conversion,
 	};
+	const Unique<VkImageView>					wholeView	(createImageView(vkd, device, *image, format, VK_IMAGE_ASPECT_COLOR_BIT, &samplerConversionInfo));
+	const Unique<VkImageView>					planeView	(createImageView(vkd,
+																			 device,
+																			 !imageAlias ? *image : *imageAlias,
+																			 planeViewFormat,
+																			 !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT,
+																			 DE_NULL));
+
 	const VkSamplerCreateInfo					wholeSamplerInfo		=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,

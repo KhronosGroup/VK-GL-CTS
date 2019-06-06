@@ -45,7 +45,7 @@ def findSrcFiles (dir):
 	return srcFiles
 
 def processFile (filename):
-	print filename
+	print(filename)
 	file = open(filename, "rb")
 	data = file.read()
 	file.close()
@@ -61,6 +61,6 @@ def processDir (dir):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
-		print sys.argv[0] + ": [directory]"
+		print(sys.argv[0] + ": [directory]")
 	else:
 		processDir(sys.argv[1])

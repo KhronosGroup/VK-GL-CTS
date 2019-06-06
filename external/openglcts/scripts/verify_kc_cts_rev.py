@@ -69,12 +69,12 @@ class GitRepo (Source):
 	def compare_rev(self):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 		pushWorkingDir(fullDstPath)
-                try:
+		try:
 			out = subprocess.check_output(["git", "rev-parse", "HEAD"])
 			if out.replace('\n', '') != SHA1:
 				raise Exception ("KC CTS checkout revision %s in external/fetch_kc_cts.py doesn't match KC CTS master HEAD revision %s" % (SHA1, out))
-                finally:
-                        popWorkingDir()
+		finally:
+			popWorkingDir()
 
 PACKAGES = [
 	GitRepo(

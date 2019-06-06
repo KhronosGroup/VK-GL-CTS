@@ -1014,6 +1014,9 @@ BuiltinFragCoordMsaaCaseInstance::BuiltinFragCoordMsaaCaseInstance (Context& con
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
 
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+
 	try
 	{
 		VkImageFormatProperties		imageFormatProperties;
@@ -2314,7 +2317,7 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 			{ "8_bit",	"Test FragCoord locations with 8 samples", VK_SAMPLE_COUNT_8_BIT },
 			{ "16_bit",	"Test FragCoord locations with 16 samples", VK_SAMPLE_COUNT_16_BIT },
 			{ "32_bit", "Test FragCoord locations with 32 samples", VK_SAMPLE_COUNT_32_BIT },
-			{ "64-bit", "Test FragCoord locaitons with 64 samples", VK_SAMPLE_COUNT_64_BIT }
+			{ "64_bit", "Test FragCoord locaitons with 64 samples", VK_SAMPLE_COUNT_64_BIT }
 		};
 
 		for (deUint32 caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(fragCoordMsaaCaseList); caseNdx++)

@@ -177,6 +177,11 @@ void Random::shuffle (Iterator first, Iterator last)
 	}
 }
 
+template<typename T>	T			randomScalar	(de::Random& rnd, T minValue, T maxValue);
+template<> inline		float		randomScalar	(de::Random& rnd, float minValue, float maxValue)		{ return rnd.getFloat(minValue, maxValue); }
+template<> inline		deInt32		randomScalar	(de::Random& rnd, deInt32 minValue, deInt32 maxValue)	{ return rnd.getInt(minValue, maxValue); }
+template<> inline		deUint32	randomScalar	(de::Random& rnd, deUint32 minValue, deUint32 maxValue)	{ return minValue + rnd.getUint32() % (maxValue - minValue + 1); }
+
 } // de
 
 #endif // _DERANDOM_HPP

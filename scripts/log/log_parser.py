@@ -121,7 +121,7 @@ class BatchResultParser:
 		args = splitContainerLine(line)
 		if args[0] == "#sessionInfo":
 			if len(args) < 3:
-				print args
+				print(args)
 				self.parseError("Invalid #sessionInfo")
 			self.sessionInfo.append((args[1], ' '.join(args[2:])))
 		elif args[0] == "#beginSession" or args[0] == "#endSession":

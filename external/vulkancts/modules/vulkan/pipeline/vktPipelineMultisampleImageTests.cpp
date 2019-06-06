@@ -36,6 +36,7 @@
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"

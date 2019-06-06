@@ -227,5 +227,5 @@ qualificationOrderCases = [
 # Main program
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("qualification_order.test", qualificationOrderCases)

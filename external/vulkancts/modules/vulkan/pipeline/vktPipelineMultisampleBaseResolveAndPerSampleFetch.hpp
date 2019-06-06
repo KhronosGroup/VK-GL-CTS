@@ -50,8 +50,7 @@ class MSInstanceBaseResolveAndPerSampleFetch : public MultisampleInstanceBase
 {
 public:
 							MSInstanceBaseResolveAndPerSampleFetch					(Context&											context,
-																					 const ImageMSParams&								imageMSParams)
-							: MultisampleInstanceBase(context, imageMSParams) {}
+																					 const ImageMSParams&								imageMSParams);
 
 protected:
 

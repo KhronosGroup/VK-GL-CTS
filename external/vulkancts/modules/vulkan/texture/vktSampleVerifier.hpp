@@ -127,8 +127,8 @@ public:
 										 const SampleLookupSettings&						sampleLookupSettings,
 										 int												coordBits,
 										 int												mipmapBits,
-										 const tcu::FloatFormat&							conversionPrecision,
-										 const tcu::FloatFormat&							filteringPrecision,
+										 const std::vector<tcu::FloatFormat>&				conversionPrecision,
+										 const std::vector<tcu::FloatFormat>&				filteringPrecision,
 										 const std::vector<tcu::ConstPixelBufferAccess>&	levels);
 
 	bool verifySample					(const SampleArguments&								args,
@@ -235,8 +235,8 @@ private:
 
     const int										m_coordBits;
 	const int										m_mipmapBits;
-	const tcu::FloatFormat							m_conversionPrecision;
-	const tcu::FloatFormat							m_filteringPrecision;
+	const std::vector<tcu::FloatFormat>				m_conversionPrecision;
+	const std::vector<tcu::FloatFormat>				m_filteringPrecision;
 
 	const int										m_unnormalizedDim;
 

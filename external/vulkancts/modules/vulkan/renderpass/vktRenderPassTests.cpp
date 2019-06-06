@@ -731,18 +731,19 @@ struct TestConfig
 		IMAGEMEMORY_LAZY		= (1<<1)
 	};
 
-						TestConfig (const RenderPass&	renderPass_,
-									RenderTypes			renderTypes_,
-									CommandBufferTypes	commandBufferTypes_,
-									ImageMemory			imageMemory_,
-									const UVec2&		targetSize_,
-									const UVec2&		renderPos_,
-									const UVec2&		renderSize_,
-									deBool				useFormatCompCount_,
-									deUint32			seed_,
-									deUint32			drawStartNdx_,
-									AllocationKind		allocationKind_,
-									RenderPassType		renderPassType_)
+						TestConfig (const RenderPass&			renderPass_,
+									RenderTypes					renderTypes_,
+									CommandBufferTypes			commandBufferTypes_,
+									ImageMemory					imageMemory_,
+									const UVec2&				targetSize_,
+									const UVec2&				renderPos_,
+									const UVec2&				renderSize_,
+									deBool						useFormatCompCount_,
+									deUint32					seed_,
+									deUint32					drawStartNdx_,
+									AllocationKind				allocationKind_,
+									RenderPassType				renderPassType_,
+									vector<DeviceCoreFeature>	requiredFeatures_ = vector<DeviceCoreFeature>())
 		: renderPass			(renderPass_)
 		, renderTypes			(renderTypes_)
 		, commandBufferTypes	(commandBufferTypes_)
@@ -755,21 +756,23 @@ struct TestConfig
 		, drawStartNdx			(drawStartNdx_)
 		, allocationKind		(allocationKind_)
 		, renderPassType		(renderPassType_)
+		, requiredFeatures		(requiredFeatures_)
 	{
 	}
 
-	RenderPass			renderPass;
-	RenderTypes			renderTypes;
-	CommandBufferTypes	commandBufferTypes;
-	ImageMemory			imageMemory;
-	UVec2				targetSize;
-	UVec2				renderPos;
-	UVec2				renderSize;
-	deBool				useFormatCompCount;
-	deUint32			seed;
-	deUint32			drawStartNdx;
-	AllocationKind		allocationKind;
-	RenderPassType		renderPassType;
+	RenderPass					renderPass;
+	RenderTypes					renderTypes;
+	CommandBufferTypes			commandBufferTypes;
+	ImageMemory					imageMemory;
+	UVec2						targetSize;
+	UVec2						renderPos;
+	UVec2						renderSize;
+	deBool						useFormatCompCount;
+	deUint32					seed;
+	deUint32					drawStartNdx;
+	AllocationKind				allocationKind;
+	RenderPassType				renderPassType;
+	vector<DeviceCoreFeature>	requiredFeatures;
 };
 
 TestConfig::RenderTypes operator| (TestConfig::RenderTypes a, TestConfig::RenderTypes b)
@@ -785,6 +788,12 @@ TestConfig::CommandBufferTypes operator| (TestConfig::CommandBufferTypes a, Test
 TestConfig::ImageMemory operator| (TestConfig::ImageMemory a, TestConfig::ImageMemory b)
 {
 	return (TestConfig::ImageMemory)(((deUint32)a) | ((deUint32)b));
+}
+
+void checkSupport (Context& context, TestConfig config)
+{
+	for (size_t featureNdx = 0; featureNdx < config.requiredFeatures.size(); featureNdx++)
+		context.requireDeviceCoreFeature(config.requiredFeatures[featureNdx]);
 }
 
 void logRenderPassInfo (TestLog&			log,
@@ -4743,6 +4752,13 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	};
 
+	const VkImageLayout initialAndFinalColorLayoutsLazy[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	};
+
 	const VkImageLayout initialAndFinalDepthStencilLayouts[] =
 	{
 		VK_IMAGE_LAYOUT_GENERAL,
@@ -4751,6 +4767,14 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+	};
+
+	const VkImageLayout initialAndFinalDepthStencilLayoutsLazy[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	};
 
 	const VkImageLayout subpassLayouts[] =
@@ -4816,10 +4840,11 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 
 		for (size_t testCaseNdx = 0; testCaseNdx < testCaseCount; testCaseNdx++)
 		{
-			const bool					useDepthStencil		= rng.getBool();
-			VkImageLayout				depthStencilLayout	= VK_IMAGE_LAYOUT_GENERAL;
-			vector<Attachment>			attachments;
-			vector<AttachmentReference>	colorAttachmentReferences;
+			const bool						useDepthStencil		= rng.getBool();
+			const TestConfig::ImageMemory	imageMemory			= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
+			VkImageLayout					depthStencilLayout	= VK_IMAGE_LAYOUT_GENERAL;
+			vector<Attachment>				attachments;
+			vector<AttachmentReference>		colorAttachmentReferences;
 
 			for (size_t attachmentNdx = 0; attachmentNdx < attachmentCount; attachmentNdx++)
 			{
@@ -4828,8 +4853,12 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
-				const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts));
+				const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
+				const VkImageLayout			finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayouts), DE_ARRAY_END(initialAndFinalColorLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalColorLayoutsLazy), DE_ARRAY_END(initialAndFinalColorLayoutsLazy));
 				const VkImageLayout			subpassLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
@@ -4846,8 +4875,12 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 				const VkAttachmentLoadOp	loadOp			= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	storeOp			= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
 
-				const VkImageLayout			initialLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts));
-				const VkImageLayout			finalizeLayout	= rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts));
+				const VkImageLayout			initialLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy));
+				const VkImageLayout			finalizeLayout	= (imageMemory == TestConfig::IMAGEMEMORY_STRICT)
+															? rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayouts), DE_ARRAY_END(initialAndFinalDepthStencilLayouts))
+															: rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(initialAndFinalDepthStencilLayoutsLazy), DE_ARRAY_END(initialAndFinalDepthStencilLayoutsLazy));
 
 				const VkAttachmentLoadOp	stencilLoadOp	= rng.choose<VkAttachmentLoadOp>(DE_ARRAY_BEGIN(loadOps), DE_ARRAY_END(loadOps));
 				const VkAttachmentStoreOp	stencilStoreOp	= rng.choose<VkAttachmentStoreOp>(DE_ARRAY_BEGIN(storeOps), DE_ARRAY_END(storeOps));
@@ -4859,7 +4892,6 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 			{
 				const TestConfig::RenderTypes			render			= rng.choose<TestConfig::RenderTypes>(DE_ARRAY_BEGIN(renderCommands), DE_ARRAY_END(renderCommands));
 				const TestConfig::CommandBufferTypes	commandBuffer	= rng.choose<TestConfig::CommandBufferTypes>(DE_ARRAY_BEGIN(commandBuffers), DE_ARRAY_END(commandBuffers));
-				const TestConfig::ImageMemory			imageMemory		= rng.choose<TestConfig::ImageMemory>(DE_ARRAY_BEGIN(imageMemories), DE_ARRAY_END(imageMemories));
 				const vector<Subpass>					subpasses		(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, vector<AttachmentReference>(), colorAttachmentReferences, vector<AttachmentReference>(), AttachmentReference((useDepthStencil ? (deUint32)(attachments.size() - 1) : VK_ATTACHMENT_UNUSED), depthStencilLayout), vector<deUint32>()));
 				const vector<SubpassDependency>			deps;
 
@@ -4889,7 +4921,7 @@ void addAttachmentTests (tcu::TestCaseGroup* group, const TestConfigExternal tes
 	}
 }
 
-void addAttachmentWriteMaskTests(tcu::TestCaseGroup* group, const TestConfigExternal testConfigExternal)
+void addAttachmentWriteMaskTests (tcu::TestCaseGroup* group, const TestConfigExternal testConfigExternal)
 {
 	const deUint32 attachmentCounts[]	= { 1, 2, 3, 4, 8 };
 
@@ -4950,6 +4982,7 @@ void addAttachmentWriteMaskTests(tcu::TestCaseGroup* group, const TestConfigExte
 				const UVec2								renderPos			= UVec2(0, 0);
 				const UVec2								renderSize			= UVec2(64, 64);
 				const deBool							useFormatCompCount	= DE_TRUE;
+				const vector<DeviceCoreFeature>			requiredFeatures	= {DEVICE_CORE_FEATURE_INDEPENDENT_BLEND};
 				const TestConfig						testConfig			(renderPass,
 																			 render,
 																			 commandBuffer,
@@ -4961,9 +4994,10 @@ void addAttachmentWriteMaskTests(tcu::TestCaseGroup* group, const TestConfigExte
 																			 1293809,
 																			 drawStartNdx,
 																			 testConfigExternal.allocationKind,
-																			 testConfigExternal.renderPassType);
+																			 testConfigExternal.renderPassType,
+																			 requiredFeatures);
 
-				addFunctionCaseWithPrograms<TestConfig>(attachmentCountGroup.get(), testCaseName.c_str(), testCaseName.c_str(), createTestShaders, renderPassTest, testConfig);
+				addFunctionCaseWithPrograms<TestConfig>(attachmentCountGroup.get(), testCaseName.c_str(), testCaseName.c_str(), checkSupport, createTestShaders, renderPassTest, testConfig);
 			}
 		}
 

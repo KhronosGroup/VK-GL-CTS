@@ -35,6 +35,7 @@
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"

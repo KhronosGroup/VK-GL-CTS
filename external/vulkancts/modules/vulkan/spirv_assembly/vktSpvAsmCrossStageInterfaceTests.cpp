@@ -82,22 +82,6 @@ struct TestParameters
 	TestType		qualifier;
 };
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
 VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage, deUint32 queueFamilyIndex)
 {
 	const VkImageCreateInfo imageInfo	=
@@ -119,27 +103,6 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExte
 		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout;
 	};
 	return imageInfo;
-}
-
-Move<VkImageView> makeImageView (const DeviceInterface&			vk,
-								 const VkDevice					device,
-								 const VkImage					image,
-								 const VkImageViewType			viewType,
-								 const VkFormat					format,
-								 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageViewCreateInfo imageViewParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		(VkImageViewCreateFlags)0,						// VkImageViewCreateFlags	flags;
-		image,											// VkImage					image;
-		viewType,										// VkImageViewType			viewType;
-		format,											// VkFormat					format;
-		makeComponentMappingRGBA(),						// VkComponentMapping		components;
-		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
-	};
-	return createImageView(vk, device, &imageViewParams);
 }
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
@@ -732,6 +695,7 @@ vkt::TestInstance* CrossStageBasicTestsCase::createInstance (vkt::Context& conte
 void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollection) const
 {
 	vector<Decorations> decorations;
+	string epsilon = "6e-8";
 	switch(m_parameters.qualifier)
 	{
 	case TEST_TYPE_FLAT:
@@ -767,6 +731,7 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 								"OpDecorate %rgb_float_out Flat\n"
 								"OpDecorate %rgba_float_out Flat\n",
 								""));
+		epsilon = "0.0";
 		break;
 	case TEST_TYPE_NOPERSPECTIVE:
 		decorations.push_back(Decorations("",
@@ -956,14 +921,15 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		layout(location = 4) in vec4   rgba_float_in;
 		void main()
 		{
+			float epsilon = 6e-8; // or 0.0 for flat
 			out_color = in_color;
-		if(r_float_in != in_color.r)
+		if(abs(r_float_in - in_color.r) > epsilon)
 			out_color.r = 1.0f;
-		if(rg_float_in != in_color.rg)
+		if(any(greaterThan(abs(rg_float_in - in_color.rg), vec2(epsilon))))
 			out_color.rg = vec2(1.0f);
-		if(rgb_float_in != in_color.rgb)
+		if(any(greaterThan(abs(rgb_float_in - in_color.rgb), vec3(epsilon))))
 			out_color.rgb = vec3(1.0f);
-		 if(rgba_float_in != in_color.rgba)
+		if(any(greaterThan(abs(rgba_float_in - in_color.rgba), vec4(epsilon))))
 			out_color.rgba = vec4(1.0f);
 		}
 		*/
@@ -999,19 +965,23 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%16 = OpTypeInt 32 0\n"
 		"%17 = OpConstant %16 0\n"
 		"%20 = OpTypeBool\n"
+		"%ep = OpConstant %6 " + epsilon + "\n"
 		"%24 = OpConstant %6 1\n"
 		"%25 = OpTypePointer Output %6\n"
 		"%27 = OpTypeVector %6 2\n"
 		"%28 = OpTypePointer Input %27\n"
 		"%rg_float_in = OpVariable %28 Input\n"
+		"%ep2 = OpConstantComposite %27 %ep %ep\n"
 		"%33 = OpTypeVector %20 2\n"
 		"%38 = OpConstantComposite %27 %24 %24\n"
 		"%41 = OpTypeVector %6 3\n"
 		"%42 = OpTypePointer Input %41\n"
 		"%rgb_float_in = OpVariable %42 Input\n"
+		"%ep3 = OpConstantComposite %41 %ep %ep %ep\n"
 		"%47 = OpTypeVector %20 3\n"
 		"%52 = OpConstantComposite %41 %24 %24 %24\n"
 		"%rgba_float_in = OpVariable %10 Input\n"
+		"%ep4 = OpConstantComposite %7 %ep %ep %ep %ep\n"
 		"%58 = OpTypeVector %20 4\n"
 		"%63 = OpConstantComposite %7 %24 %24 %24 %24\n"
 		"%4 = OpFunction %2 None %3\n"
@@ -1021,9 +991,11 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%15 = OpLoad %6 %r_float_in\n"
 		"%18 = OpAccessChain %13 %color_in %17\n"
 		"%19 = OpLoad %6 %18\n"
-		"%21 = OpFOrdNotEqual %20 %15 %19\n"
+		"%sub = OpFSub %6 %15 %19\n"
+		"%abs = OpExtInst %6 %1 FAbs %sub\n"
+		"%cmp = OpFOrdGreaterThan %20 %abs %ep\n"
 		"OpSelectionMerge %23 None\n"
-		"OpBranchConditional %21 %22 %23\n"
+		"OpBranchConditional %cmp %22 %23\n"
 		"%22 = OpLabel\n"
 		"%26 = OpAccessChain %25 %color_out %17\n"
 		"OpStore %26 %24\n"
@@ -1032,8 +1004,10 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%30 = OpLoad %27 %rg_float_in\n"
 		"%31 = OpLoad %7 %color_in\n"
 		"%32 = OpVectorShuffle %27 %31 %31 0 1\n"
-		"%34 = OpFOrdNotEqual %33 %30 %32\n"
-		"%35 = OpAny %20 %34\n"
+		"%sub2 = OpFSub %27 %30 %32\n"
+		"%abs2 = OpExtInst %27 %1 FAbs %sub2\n"
+		"%cmp2 = OpFOrdGreaterThan %33 %abs2 %ep2\n"
+		"%35 = OpAny %20 %cmp2\n"
 		"OpSelectionMerge %37 None\n"
 		"OpBranchConditional %35 %36 %37\n"
 		"%36 = OpLabel\n"
@@ -1045,8 +1019,10 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%44 = OpLoad %41 %rgb_float_in\n"
 		"%45 = OpLoad %7 %color_in\n"
 		"%46 = OpVectorShuffle %41 %45 %45 0 1 2\n"
-		"%48 = OpFOrdNotEqual %47 %44 %46\n"
-		"%49 = OpAny %20 %48\n"
+		"%sub3 = OpFSub %41 %44 %46\n"
+		"%abs3 = OpExtInst %41 %1 FAbs %sub3\n"
+		"%cmp3 = OpFOrdGreaterThan %47 %abs3 %ep3\n"
+		"%49 = OpAny %20 %cmp3\n"
 		"OpSelectionMerge %51 None\n"
 		"OpBranchConditional %49 %50 %51\n"
 		"%50 = OpLabel\n"
@@ -1057,8 +1033,10 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%51 = OpLabel\n"
 		"%56 = OpLoad %7 %rgba_float_in\n"
 		"%57 = OpLoad %7 %color_in\n"
-		"%59 = OpFOrdNotEqual %58 %56 %57\n"
-		"%60 = OpAny %20 %59\n"
+		"%sub4 = OpFSub %7 %56 %57\n"
+		"%abs4 = OpExtInst %7 %1 FAbs %sub4\n"
+		"%cmp4 = OpFOrdGreaterThan %58 %abs4 %ep4\n"
+		"%60 = OpAny %20 %cmp4\n"
 		"OpSelectionMerge %62 None\n"
 		"OpBranchConditional %60 %61 %62\n"
 		"%61 = OpLabel\n"
@@ -1815,6 +1793,7 @@ vkt::TestInstance* CrossStageInterfaceTestsCase::createInstance (vkt::Context& c
 void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programCollection) const
 {
 	vector<Decorations> decorations;
+	string epsilon = "6e-8";
 	switch(m_parameters.qualifier)
 	{
 	case TEST_TYPE_FLAT:
@@ -1842,6 +1821,7 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 								"OpMemberDecorate %block_out 0 Flat\n"
 								"OpMemberDecorate %block_out 1 Flat\n",
 								""));
+		epsilon = "0.0";
 		break;
 	case TEST_TYPE_NOPERSPECTIVE:
 		decorations.push_back(Decorations("",
@@ -2002,12 +1982,13 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		} inData;
 		void main()
 		{
+		  float epsilon = 6e-8; // or 0.0 for flat
 		  out_color = in_color;
-		 if(inData.colorVec != in_color)
+		  if(any(greaterThan(abs(inData.colorVec - in_color), vec4(epsilon))))
 		    out_color.rgba = vec4(1.0f);
-		 if(inData.colorMat[0][0] != in_color.r)
+		  if(abs(inData.colorMat[0][0] - in_color.r) > epsilon)
 		    out_color.rgba = vec4(1.0f);
-		 if(inData.colorMat[1][1] != in_color.a)
+		  if(abs(inData.colorMat[1][1] - in_color.a) > epsilon)
 		    out_color.rgba = vec4(1.0f);
 		}
 		*/
@@ -2044,6 +2025,8 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		"%19 = OpConstant %18 0\n"
 		"%23 = OpTypeBool\n"
 		"%24 = OpTypeVector %23 4\n"
+		"%ep = OpConstant %6 " + epsilon + "\n"
+		"%ep4 = OpConstantComposite %7 %ep %ep %ep %ep\n"
 		"%29 = OpConstant %6 1\n"
 		"%30 = OpConstantComposite %7 %29 %29 %29 %29\n"
 		"%31 = OpConstant %18 1\n"
@@ -2059,8 +2042,10 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		"%20 = OpAccessChain %10 %17 %19\n"
 		"%21 = OpLoad %7 %20\n"
 		"%22 = OpLoad %7 %color_in\n"
-		"%25 = OpFOrdNotEqual %24 %21 %22\n"
-		"%26 = OpAny %23 %25\n"
+		"%sub4 = OpFSub %7 %21 %22\n"
+		"%abs4 = OpExtInst %7 %1 FAbs %sub4\n"
+		"%cmp4 = OpFOrdGreaterThan %24 %abs4 %ep4\n"
+		"%26 = OpAny %23 %cmp4\n"
 		"OpSelectionMerge %28 None\n"
 		"OpBranchConditional %26 %27 %28\n"
 		"%27 = OpLabel\n"
@@ -2071,9 +2056,11 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		"%36 = OpLoad %6 %35\n"
 		"%37 = OpAccessChain %34 %color_in %33\n"
 		"%38 = OpLoad %6 %37\n"
-		"%39 = OpFOrdNotEqual %23 %36 %38\n"
+		"%subr = OpFSub %6 %36 %38\n"
+		"%absr = OpExtInst %6 %1 FAbs %subr\n"
+		"%cmpr = OpFOrdGreaterThan %23 %absr %ep\n"
 		"OpSelectionMerge %41 None\n"
-		"OpBranchConditional %39 %40 %41\n"
+		"OpBranchConditional %cmpr %40 %41\n"
 		"%40 = OpLabel\n"
 		"OpStore %color_out %30\n"
 		"OpBranch %41\n"
@@ -2082,9 +2069,11 @@ void CrossStageInterfaceTestsCase::initPrograms (SourceCollections& programColle
 		"%44 = OpLoad %6 %43\n"
 		"%46 = OpAccessChain %34 %color_in %45\n"
 		"%47 = OpLoad %6 %46\n"
-		"%48 = OpFOrdNotEqual %23 %44 %47\n"
+		"%suba = OpFSub %6 %44 %47\n"
+		"%absa = OpExtInst %6 %1 FAbs %suba\n"
+		"%cmpa = OpFOrdGreaterThan %23 %absa %ep\n"
 		"OpSelectionMerge %50 None\n"
-		"OpBranchConditional %48 %49 %50\n"
+		"OpBranchConditional %cmpa %49 %50\n"
 		"%49 = OpLabel\n"
 		"OpStore %color_out %30\n"
 		"OpBranch %50\n"

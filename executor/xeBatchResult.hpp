@@ -42,6 +42,7 @@ public:
 	std::string			releaseName;
 	std::string			releaseId;
 	std::string			targetName;
+	std::string			qpaCommandLineParameters;
 
 	// Produced by Candy.
 	std::string			candyTargetName;

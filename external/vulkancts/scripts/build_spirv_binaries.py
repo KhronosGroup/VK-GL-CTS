@@ -57,7 +57,7 @@ def cleanDstDir (dstPath):
 	binFiles = [f for f in os.listdir(dstPath) if os.path.isfile(os.path.join(dstPath, f)) and fnmatch.fnmatch(f, "*.spv")]
 
 	for binFile in binFiles:
-		print "Removing %s" % os.path.join(dstPath, binFile)
+		print("Removing %s" % os.path.join(dstPath, binFile))
 		os.remove(os.path.join(dstPath, binFile))
 
 def execBuildPrograms (buildCfg, generator, module, dstPath, vulkanVersion):

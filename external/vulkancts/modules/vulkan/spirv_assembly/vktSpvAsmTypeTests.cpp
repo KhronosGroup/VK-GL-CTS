@@ -26,6 +26,7 @@
 #include "tcuRGBA.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
@@ -2822,8 +2823,8 @@ public:
 		}
 		else
 		{
-			const T mask = static_cast<T>(~(T)0 << (sizeof(T) * 8 - (y)));
-			return static_cast<T>((x >> y) & (~mask));
+			const T	mask = de::leftZeroMask(y);
+			return static_cast<T>((x >> y) & mask);
 		}
 	}
 
@@ -2833,8 +2834,8 @@ public:
 
 		if ((x & bitmask) && y > 0)
 		{
-			const T	mask	= static_cast<T>(~(T)0 << (sizeof(T) * 8 - (y)));
-			const T	result	= static_cast<T>((x >> y) | (mask));
+			const T	mask	= de::leftSetMask(y);
+			const T	result	= static_cast<T>((x >> y) | mask);
 			return result;
 		}
 		else
@@ -2938,39 +2939,37 @@ public:
 
 	static inline T test_bitFieldInsert (T base, T insert, T offset, T count)
 	{
-		const T insertMask = static_cast<T>(~(~(static_cast<T>(0)) << count));
+		const T	insertMask	= de::rightSetMask(count);
 
 		return static_cast<T>((base & ~(insertMask << offset)) | ((insert & insertMask) << offset));
 	}
 
 	static inline T test_bitFieldSExtract (T x, T y, T z)
 	{
-		const T allZeros	= (static_cast<T>(0));
-		const T allOnes		= ~allZeros;
+		const T allZeros	= static_cast<T>(0);
 
 		// Count can be 0, in which case the result will be 0
 		if (z == allZeros)
 			return allZeros;
 
-		const T extractMask	= static_cast<T>((allOnes << z));
+		const T extractMask	= de::rightSetMask(z);
 		const T signBit		= static_cast<T>(x & (1 << (y + z - 1)));
-		const T signMask	= static_cast<T>(signBit ? allOnes : allZeros);
+		const T signMask	= static_cast<T>(signBit ? ~extractMask : allZeros);
 
-		return static_cast<T>((signMask & extractMask) | ((x >> y) & ~extractMask));
+		return static_cast<T>((signMask & ~extractMask) | ((x >> y) & extractMask));
 	}
 
 	static inline T test_bitFieldUExtract (T x, T y, T z)
 	{
 		const T allZeros	= (static_cast<T>(0));
-		const T allOnes		= ~allZeros;
 
 		// Count can be 0, in which case the result will be 0
 		if (z == allZeros)
 			return allZeros;
 
-		const T extractMask	= static_cast<T>((allOnes << z));
+		const T extractMask	= de::rightSetMask(z);
 
-		return static_cast<T>((x >> y) & ~extractMask);
+		return static_cast<T>((x >> y) & extractMask);
 	}
 
 	static inline T test_bitReverse (T x)

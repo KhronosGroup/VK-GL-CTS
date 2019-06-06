@@ -348,5 +348,5 @@ allConversionCases.append(CaseGroup("matrix_combine", "Matrix Combine Constructo
 # Main program.
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("conversions.test", allConversionCases)

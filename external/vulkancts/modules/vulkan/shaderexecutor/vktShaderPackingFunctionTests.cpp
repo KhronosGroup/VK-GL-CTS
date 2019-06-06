@@ -28,6 +28,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuVectorUtil.hpp"
 #include "deRandom.hpp"
 #include "deMath.h"
 #include "deString.h"
@@ -62,34 +63,6 @@ struct HexFloat
 std::ostream& operator<< (std::ostream& str, const HexFloat& v)
 {
 	return str << v.value << " / " << tcu::toHex(tcu::Float32(v.value).bits());
-}
-
-static const char* getPrecisionPostfix (glu::Precision precision)
-{
-	static const char* s_postfix[] =
-	{
-		"_lowp",
-		"_mediump",
-		"_highp"
-	};
-	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_postfix) == glu::PRECISION_LAST);
-	DE_ASSERT(de::inBounds<int>(precision, 0, DE_LENGTH_OF_ARRAY(s_postfix)));
-	return s_postfix[precision];
-}
-
-static const char* getShaderTypePostfix (glu::ShaderType shaderType)
-{
-	static const char* s_postfix[] =
-	{
-		"_vertex",
-		"_fragment",
-		"_geometry",
-		"_tess_control",
-		"_tess_eval",
-		"_compute"
-	};
-	DE_ASSERT(de::inBounds<int>(shaderType, 0, DE_LENGTH_OF_ARRAY(s_postfix)));
-	return s_postfix[shaderType];
 }
 
 } // anonymous
@@ -179,17 +152,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*2.5f - 1.25f;
-			const float y = rnd.getFloat()*2.5f - 1.25f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(-1.25f), tcu::Vec2(1.25f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 0.5e6f;
-			const float y = rnd.getFloat()*1e6f - 0.5e6f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(-0.5e6f), tcu::Vec2(0.5e6f)));
 		}
 
 		outputs.resize(inputs.size());
@@ -402,17 +371,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*1.25f;
-			const float y = rnd.getFloat()*1.25f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(0.0f), tcu::Vec2(1.25f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 1e5f;
-			const float y = rnd.getFloat()*1e6f - 1e5f;
-			inputs.push_back(tcu::Vec2(x, y));
+			inputs.push_back(tcu::randomVector<float, 2>(rnd, tcu::Vec2(-1e5f), tcu::Vec2(0.9e6f)));
 		}
 
 		outputs.resize(inputs.size());
@@ -949,21 +914,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*2.5f - 1.25f;
-			const float y = rnd.getFloat()*2.5f - 1.25f;
-			const float z = rnd.getFloat()*2.5f - 1.25f;
-			const float w = rnd.getFloat()*2.5f - 1.25f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-1.25f), tcu::Vec4(1.25f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 0.5e6f;
-			const float y = rnd.getFloat()*1e6f - 0.5e6f;
-			const float z = rnd.getFloat()*1e6f - 0.5e6f;
-			const float w = rnd.getFloat()*1e6f - 0.5e6f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-0.5e6f), tcu::Vec4(0.5e6f)));
 		}
 
 		outputs.resize(inputs.size());
@@ -1192,21 +1149,13 @@ public:
 		// Random values, mostly in range.
 		for (int ndx = 0; ndx < 15; ndx++)
 		{
-			const float x = rnd.getFloat()*1.25f - 0.125f;
-			const float y = rnd.getFloat()*1.25f - 0.125f;
-			const float z = rnd.getFloat()*1.25f - 0.125f;
-			const float w = rnd.getFloat()*1.25f - 0.125f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-0.125f), tcu::Vec4(1.125f)));
 		}
 
 		// Large random values.
 		for (int ndx = 0; ndx < 80; ndx++)
 		{
-			const float x = rnd.getFloat()*1e6f - 1e5f;
-			const float y = rnd.getFloat()*1e6f - 1e5f;
-			const float z = rnd.getFloat()*1e6f - 1e5f;
-			const float w = rnd.getFloat()*1e6f - 1e5f;
-			inputs.push_back(tcu::Vec4(x, y, z, w));
+			inputs.push_back(tcu::randomVector<float, 4>(rnd, tcu::Vec4(-1e5f), tcu::Vec4(0.9e6f)));
 		}
 
 		outputs.resize(inputs.size());

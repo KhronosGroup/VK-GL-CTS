@@ -69,6 +69,8 @@ struct TestParams
 
 	deBool					testAttribDivisor;
 	deUint32				attribDivisor;
+
+	deBool					testMultiview;
 };
 
 struct VertexPositionAndColor
@@ -108,6 +110,9 @@ std::ostream & operator<<(std::ostream & str, TestParams const & v)
 
 	if (v.testAttribDivisor)
 		string << "_attrib_divisor_" << v.attribDivisor;
+
+	if (v.testMultiview)
+		string << "_multiview";
 
 	return str << string.str();
 }
@@ -294,6 +299,14 @@ public:
 
 			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+			if (m_params.testMultiview)
+			{
+				if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
+					TCU_THROW(NotSupportedError, "Implementation does not support VK_KHR_multiview");
+				const vk::VkPhysicalDeviceMultiviewFeatures& multiviewFeatures = context.getMultiviewFeatures();
+				if (!multiviewFeatures.multiview)
+					TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
+			}
 		}
 
 		return new InstancedDrawInstance(context, m_params);
@@ -329,13 +342,20 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 	const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(0, DE_NULL, 1, &pushConstantRange);
 	m_pipelineLayout						= vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
+	deUint32 arrayLayers = m_params.testMultiview ? 2 : 1;
 	const vk::VkExtent3D targetImageExtent	= { WIDTH, HEIGHT, 1 };
-	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
+	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, arrayLayers, vk::VK_SAMPLE_COUNT_1_BIT,
 		vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	m_colorTargetImage						= Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 
-	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
+	const enum vk::VkImageViewType imageViewType = m_params.testMultiview ? vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY : vk::VK_IMAGE_VIEW_TYPE_2D;
+	ImageSubresourceRange subresourceRange = ImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
+
+	if (m_params.testMultiview)
+		subresourceRange.layerCount = 2;
+
+	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), imageViewType, m_colorAttachmentFormat, subresourceRange);
 	m_colorTargetView						= vk::createImageView(m_vk, device, &colorTargetViewInfo);
 
 	RenderPassCreateInfo renderPassCreateInfo;
@@ -364,6 +384,32 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 													   AttachmentReference(),
 													   0,
 													   DE_NULL));
+
+	vk::VkRenderPassMultiviewCreateInfo renderPassMultiviewCreateInfo;
+	// Bit mask that specifies which view rendering is broadcast to
+	// 0011 = Broadcast to first and second view (layer)
+	const deUint32 viewMask = 0x3;
+	// Bit mask that specifices correlation between views
+	// An implementation may use this for optimizations (concurrent render)
+	const deUint32 correlationMask = 0x3;
+
+	if (m_params.testMultiview)
+	{
+		DE_ASSERT(renderPassCreateInfo.subpassCount == 1);
+
+
+
+		renderPassMultiviewCreateInfo.sType = vk::VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
+		renderPassMultiviewCreateInfo.pNext = DE_NULL;
+		renderPassMultiviewCreateInfo.subpassCount = renderPassCreateInfo.subpassCount;
+		renderPassMultiviewCreateInfo.pViewMasks = &viewMask;
+		renderPassMultiviewCreateInfo.correlationMaskCount = 1u;
+		renderPassMultiviewCreateInfo.pCorrelationMasks = &correlationMask;
+		renderPassMultiviewCreateInfo.pViewOffsets = DE_NULL;
+		renderPassMultiviewCreateInfo.dependencyCount = 0u;
+
+		renderPassCreateInfo.pNext = &renderPassMultiviewCreateInfo;
+	}
 
 	m_renderPass		= vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
 
@@ -456,6 +502,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	const vk::VkDevice		device					= m_context.getDevice();
 	static const deUint32	instanceCounts[]		= { 0, 1, 2, 4, 20 };
 	static const deUint32	firstInstanceIndices[]	= { 0, 1, 3, 4, 20 };
+	const deUint32			numLayers				= m_params.testMultiview ? 2 : 1;
 
 	qpTestResult			res						= QP_TEST_RESULT_PASS;
 
@@ -482,10 +529,35 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			de::SharedPtr<Buffer>		indirectBuffer;
 			beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
-			initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
-										  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+			if (m_params.testMultiview)
+			{
+				vk::VkImageMemoryBarrier barrier;
+				barrier.sType							= vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				barrier.pNext							= DE_NULL;
+				barrier.srcAccessMask					= 0u;
+				barrier.dstAccessMask					= vk::VK_ACCESS_TRANSFER_WRITE_BIT;
+				barrier.oldLayout						= vk::VK_IMAGE_LAYOUT_UNDEFINED;
+				barrier.newLayout						= vk::VK_IMAGE_LAYOUT_GENERAL;
+				barrier.srcQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;
+				barrier.dstQueueFamilyIndex				= VK_QUEUE_FAMILY_IGNORED;
+				barrier.image							= m_colorTargetImage->object();
+				barrier.subresourceRange.aspectMask		= vk::VK_IMAGE_ASPECT_COLOR_BIT;
+				barrier.subresourceRange.baseMipLevel	= 0;
+				barrier.subresourceRange.levelCount		= 1;
+				barrier.subresourceRange.baseArrayLayer = 0;
+				barrier.subresourceRange.layerCount		= numLayers;
 
-			const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
+				m_vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL,
+										0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
+
+			}
+			else
+			{
+				initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+											  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+			}
+
+			const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, numLayers);
 			m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),
 				vk::VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
 
@@ -629,30 +701,33 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			}
 
 			const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
-			const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
-				vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
-
-			tcu::TestLog &log		= m_context.getTestContext().getLog();
-
-			std::ostringstream resultDesc;
-			resultDesc << "Image comparison result. Instance count: " << instanceCount << " first instance index: " << firstInstance;
-
-			if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+			for (deUint32 i = 0; i < numLayers; i++)
 			{
-				const bool ok = tcu::intThresholdPositionDeviationCompare(
-					log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame,
-					tcu::UVec4(4u),					// color threshold
-					tcu::IVec3(1, 1, 0),			// position deviation tolerance
-					true,							// don't check the pixels at the boundary
-					tcu::COMPARE_LOG_RESULT);
+				const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
+					vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, i);
 
-				if (!ok)
-					res = QP_TEST_RESULT_FAIL;
-			}
-			else
-			{
-				if (!tcu::fuzzyCompare(log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))
-					res = QP_TEST_RESULT_FAIL;
+				tcu::TestLog &log		= m_context.getTestContext().getLog();
+
+				std::ostringstream resultDesc;
+				resultDesc << "Image layer " << i << " comparison result. Instance count: " << instanceCount << " first instance index: " << firstInstance;
+
+				if (m_params.topology == vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+				{
+					const bool ok = tcu::intThresholdPositionDeviationCompare(
+						log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame,
+						tcu::UVec4(4u),					// color threshold
+						tcu::IVec3(1, 1, 0),			// position deviation tolerance
+						true,							// don't check the pixels at the boundary
+						tcu::COMPARE_LOG_RESULT);
+
+					if (!ok)
+						res = QP_TEST_RESULT_FAIL;
+				}
+				else
+				{
+					if (!tcu::fuzzyCompare(log, "Result", resultDesc.str().c_str(), refImage.getAccess(), renderedFrame, 0.05f, tcu::COMPARE_LOG_RESULT))
+						res = QP_TEST_RESULT_FAIL;
+				}
 			}
 		}
 	}
@@ -753,6 +828,8 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx)
 		TestParams::FUNCTION_DRAW_INDEXED_INDIRECT,
 	};
 
+	static const deBool multiviews[] = { DE_FALSE, DE_TRUE };
+
 	static const deUint32 divisors[] = { 0, 1, 2, 4, 20 };
 
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); topologyNdx++)
@@ -763,19 +840,27 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx)
 			{
 				for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
 				{
-					// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
-					if (!testAttribDivisor && divisors[divisorNdx] != 1)
-						continue;
+					for (int multiviewNdx = 0; multiviewNdx < DE_LENGTH_OF_ARRAY(multiviews); multiviewNdx++)
+					{
+						// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
+						if (!testAttribDivisor && divisors[divisorNdx] != 1)
+							continue;
 
-					TestParams param;
-					param.function = functions[functionNdx];
-					param.topology = topologies[topologyNdx];
-					param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
-					param.attribDivisor = divisors[divisorNdx];
+						TestParams param;
+						param.function = functions[functionNdx];
+						param.topology = topologies[topologyNdx];
+						param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
+						param.attribDivisor = divisors[divisorNdx];
+						param.testMultiview = multiviews[multiviewNdx];
 
-					std::string testName = de::toString(param);
+						// Add multiview tests only when vertex attribute divisor is enabled.
+						if (param.testMultiview && !testAttribDivisor)
+							continue;
 
-					addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+						std::string testName = de::toString(param);
+
+						addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+					}
 				}
 			}
 		}

@@ -2555,6 +2555,8 @@ private:
  *
  *   Modify VaryingLocations to test all possible combinations of components
  *   layout:
+ *       - g64vec2
+ *       - g64scalar, g64scalar
  *       - gvec4
  *       - scalar, gvec3
  *       - gvec3, scalar
@@ -2595,6 +2597,8 @@ private:
 	/* Private enums */
 	enum COMPONENTS_LAYOUT
 	{
+		G64VEC2,
+		G64SCALAR_G64SCALAR,
 		GVEC4,
 		SCALAR_GVEC3,
 		GVEC3_SCALAR,
@@ -2672,9 +2676,10 @@ protected:
 	virtual glw::GLuint getArrayLength();
 };
 
-/** Implementation of test VaryingExceedingComponents. Description follows:
+/** Implementation of test VaryingInvalidValueComponent. Description follows:
  *
- * Test verifies that it is not allowed to exceed components.
+ * Test verifies that it is not allowed to use some component values
+ * with specific types.
  *
  * Test following code snippets:
  *
@@ -2684,8 +2689,63 @@ protected:
  *
  *     layout (location = 1, component = COMPONENT) in type gohan[LENGTH];
  *
- * Select COMPONENT so as to exceed space available at location, eg. 2 for
- * vec4. Select array length so as to not exceed limits of available locations.
+ * Select COMPONENT so it is an invalid value either due the specific
+ * restrictions of each type, eg. 2 for vec4, which overflows the
+ * amount of components in a location. Select array length so as to
+ * not exceed limits of available locations.
+ *
+ * Test all types. Test all shader stages. Test both in and out varyings.
+ *
+ * It is expected that build process will fail.
+ **/
+class VaryingInvalidValueComponentTest : public NegativeTestBase
+{
+public:
+	/* Public methods */
+	VaryingInvalidValueComponentTest(deqp::Context& context);
+
+	virtual ~VaryingInvalidValueComponentTest()
+	{
+	}
+
+protected:
+	/* Methods to be implemented by child class */
+	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage);
+
+	virtual std::string getTestCaseName(glw::GLuint test_case_index);
+	virtual glw::GLuint getTestCaseNumber();
+	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+	virtual void testInit();
+
+private:
+	/* Private types */
+	struct testCase
+	{
+		glw::GLuint			  m_component;
+		bool				  m_is_input;
+		bool				  m_is_array;
+		Utils::Shader::STAGES m_stage;
+		Utils::Type			  m_type;
+	};
+
+	/* Private fields */
+	std::vector<testCase> m_test_cases;
+};
+
+/** Implementation of test VaryingExceedingComponents. Description follows:
+ *
+ * Test verifies that it is not allowed to use a value that exceeds
+ * the amount of possible components in a location.
+ *
+ * Test following code snippets:
+ *
+ *     layout (location = 1, component = 4) in type gohan;
+ *
+ * and
+ *
+ *     layout (location = 1, component = 4) in type gohan[LENGTH];
+ *
+ * Select array length so as to not exceed limits of available locations.
  *
  * Test all types. Test all shader stages. Test both in and out varyings.
  *
@@ -2714,7 +2774,6 @@ private:
 	/* Private types */
 	struct testCase
 	{
-		glw::GLuint			  m_component;
 		bool				  m_is_input;
 		bool				  m_is_array;
 		Utils::Shader::STAGES m_stage;
@@ -2847,6 +2906,7 @@ private:
 	enum CASES
 	{
 		MATRIX = 0,
+		DVEC3_DVEC4,
 		BLOCK,
 		STRUCT,
 

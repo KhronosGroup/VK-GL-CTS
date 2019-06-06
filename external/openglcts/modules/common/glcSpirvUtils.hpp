@@ -28,8 +28,6 @@
 #include <map>
 #include <vector>
 
-using namespace glu;
-
 namespace glc
 {
 typedef std::map<std::string, std::vector<std::string> > SpirVMapping;
@@ -39,11 +37,11 @@ namespace spirvUtils
 
 void checkGlSpirvSupported(deqp::Context& m_context);
 
-ShaderBinary makeSpirV(tcu::TestLog& log, ShaderSource source);
+glu::ShaderBinary makeSpirV(tcu::TestLog& log, glu::ShaderSource source);
 
-void spirvAssemble(ShaderBinaryDataType& dst, const std::string& src);
-void spirvDisassemble(std::string& dst, const ShaderBinaryDataType& src);
-bool spirvValidate(ShaderBinaryDataType& dst, bool throwOnError);
+void spirvAssemble(glu::ShaderBinaryDataType& dst, const std::string& src);
+void spirvDisassemble(std::string& dst, const glu::ShaderBinaryDataType& src);
+bool spirvValidate(glu::ShaderBinaryDataType& dst, bool throwOnError);
 
 bool verifyMappings(std::string glslSource, std::string spirVSource, SpirVMapping& mappings, bool anyOf);
 }

@@ -1943,8 +1943,11 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 						testParameters.wrapT			= wrapModes[wrapMode].mode;
 						testParameters.format			= VK_FORMAT_R8G8B8A8_UNORM;
 						testParameters.size				= cubeMapSize;
-						testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
-						testParameters.programs.push_back(PROGRAM_CUBE_FLOAT_BIAS);
+
+						if (testParameters.coordType == COORDTYPE_BASIC_BIAS)
+							testParameters.programs.push_back(PROGRAM_CUBE_FLOAT_BIAS);
+						else
+							testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
 						std::ostringstream name;
 						name << minFilterModes[minFilter].name
@@ -2082,7 +2085,6 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 				testParameters.height				= tex3DSizes[0].height;
 				testParameters.depth				= tex3DSizes[0].depth;
 
-				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT_BIAS);
 
 				biasGroup3D->addChild(new TextureTestCase<Texture3DMipmapTestInstance>(testCtx, minFilterModes[minFilter].name, "", testParameters));

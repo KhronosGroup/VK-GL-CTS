@@ -371,23 +371,6 @@ size_t calcOutputVertices (const VkPrimitiveTopology&  inputType)
 	}
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
-										 const VkBufferUsageFlags	usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
 VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat format, const VkImageUsageFlags usage, const deUint32 numArrayLayers)
 {
 	const VkImageCreateInfo imageInfo =
@@ -409,43 +392,6 @@ VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat fo
 		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
 	};
 	return imageInfo;
-}
-
-Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
-										 const VkDevice					device,
-										 const VkDescriptorPool			descriptorPool,
-										 const VkDescriptorSetLayout	setLayout)
-{
-	const VkDescriptorSetAllocateInfo info =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		descriptorPool,										// VkDescriptorPool				descriptorPool;
-		1u,													// deUint32						descriptorSetCount;
-		&setLayout,											// const VkDescriptorSetLayout*	pSetLayouts;
-	};
-	return allocateDescriptorSet(vk, device, &info);
-}
-
-Move<VkImageView> makeImageView (const DeviceInterface&			vk,
-								 const VkDevice					vkDevice,
-								 const VkImage					image,
-								 const VkImageViewType			viewType,
-								 const VkFormat					format,
-								 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageViewCreateInfo imageViewParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		(VkImageViewCreateFlags)0,					// VkImageViewCreateFlags	flags;
-		image,										// VkImage					image;
-		viewType,									// VkImageViewType			viewType;
-		format,										// VkFormat					format;
-		makeComponentMappingRGBA(),					// VkComponentMapping		components;
-		subresourceRange,							// VkImageSubresourceRange	subresourceRange;
-	};
-	return createImageView(vk, vkDevice, &imageViewParams);
 }
 
 VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,

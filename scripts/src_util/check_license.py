@@ -38,7 +38,7 @@ LICENSE_KEYS	= [
 SOURCE_FILES	= ["*.py", "*.java", "*.c", "*.h", "*.cpp", "*.hpp"]
 
 def readFile (file):
-	f = open(file, 'rb')
+	f = open(file, 'rt')
 	c = f.read()
 	f.close()
 	return c
@@ -60,11 +60,11 @@ def checkFileLicense (file):
 	license = getFileLicense(file)
 
 	if license == LICENSE_MIT:
-		print "%s: contains MIT license" % file
+		print("%s: contains MIT license" % file)
 	elif license == LICENSE_MULTIPLE:
-		print "%s: contains multiple licenses" % file
+		print("%s: contains multiple licenses" % file)
 	elif license == LICENSE_UNKNOWN:
-		print "%s: missing/unknown license" % file
+		print("%s: missing/unknown license" % file)
 
 	return license == LICENSE_APACHE2
 

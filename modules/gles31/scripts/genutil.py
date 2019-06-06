@@ -49,7 +49,7 @@ def indentTextBlock(text, indent):
 	return "\n".join(lines)
 
 def writeCase(f, case, indent, prefix):
-	print "    %s" % (prefix + case.name)
+	print("    %s" % (prefix + case.name))
 	if isinstance(case, CaseGroup):
 		f.write(indentTextBlock('group %s "%s"\n\n' % (case.name, case.description), indent))
 		for child in case.children:
@@ -64,14 +64,14 @@ def writeCase(f, case, indent, prefix):
 
 def writeAllCases(fileName, caseList):
 	# Write all cases to file.
-	print "  %s.." % fileName
+	print("  %s.." % fileName)
 	f = file(fileName, "wb")
 	f.write(PREAMBLE + "\n")
 	for case in caseList:
 		writeCase(f, case, 0, "")
 	f.close()
 
-	print "done! (%d cases written)" % len(g_processedCases)
+	print("done! (%d cases written)" % len(g_processedCases))
 
 # Template operations.
 
@@ -304,7 +304,7 @@ class Scalar(object):
 
 	def __add__(self, val):
 		if not isinstance(val, Scalar):
-			print val
+			print(val)
 		assert isinstance(val, Scalar)
 		return Scalar(self.x + val.x)
 

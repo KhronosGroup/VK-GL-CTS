@@ -50,6 +50,18 @@ template<typename T> inline bool	inBounds	(T x, T a, T b)	{ return a <= x && x <
 //! Test if x is in range a <= x <= b.
 template<typename T> inline bool	inRange		(T x, T a, T b)	{ return a <= x && x <= b; }
 
+//! Return T with low n bits set
+template<typename T> inline T		rightSetMask	(T n)		{ DE_ASSERT(n < T(sizeof(T) * 8)); T one = T(1); return T((one << n) - one); }
+
+//! Return T with low n bits reset
+template<typename T> inline T		rightZeroMask	(T n)		{ return T(~rightSetMask(n)); }
+
+//! Return T with high n bits set
+template<typename T> inline T		leftSetMask		(T n)		{ const T tlen = T(sizeof(T) * 8); return T(~rightSetMask(tlen >= n ? tlen - n : T(0))); }
+
+//! Return T with high n bits reset
+template<typename T> inline T		leftZeroMask	(T n)		{ return T(~leftSetMask(n)); }
+
 //! Helper for DE_CHECK() macros.
 void throwRuntimeError (const char* message, const char* expr, const char* file, int line);
 

@@ -51,6 +51,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <limits>
 
 namespace vkt
 {
@@ -67,6 +68,8 @@ using std::set;
 using std::string;
 using tcu::TestLog;
 using tcu::ScopedLogSection;
+
+const deUint32 DEUINT32_MAX = std::numeric_limits<deUint32>::max();
 
 enum
 {
@@ -689,25 +692,7 @@ void checkKhrExtensions (tcu::ResultCollector&		results,
 
 void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string>& extensions)
 {
-	static const char* s_allowedInstanceKhrExtensions[] =
-	{
-		"VK_KHR_surface",
-		"VK_KHR_display",
-		"VK_KHR_android_surface",
-		"VK_KHR_mir_surface",
-		"VK_KHR_wayland_surface",
-		"VK_KHR_win32_surface",
-		"VK_KHR_xcb_surface",
-		"VK_KHR_xlib_surface",
-		"VK_KHR_get_physical_device_properties2",
-		"VK_KHR_get_surface_capabilities2",
-		"VK_KHR_external_memory_capabilities",
-		"VK_KHR_external_semaphore_capabilities",
-		"VK_KHR_external_fence_capabilities",
-		"VK_KHR_device_group_creation",
-		"VK_KHR_get_display_properties2",
-		"VK_KHR_surface_protected_capabilities",
-	};
+#include "vkInstanceExtensions.inl"
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
 	checkDuplicateExtensions(results, extensions);
@@ -715,52 +700,7 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 
 void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>& extensions)
 {
-	static const char* s_allowedDeviceKhrExtensions[] =
-	{
-		"VK_KHR_swapchain",
-		"VK_KHR_display_swapchain",
-		"VK_KHR_sampler_mirror_clamp_to_edge",
-		"VK_KHR_shader_draw_parameters",
-		"VK_KHR_shader_float_controls",
-		"VK_KHR_shader_float16_int8",
-		"VK_KHR_maintenance1",
-		"VK_KHR_push_descriptor",
-		"VK_KHR_descriptor_update_template",
-		"VK_KHR_incremental_present",
-		"VK_KHR_shared_presentable_image",
-		"VK_KHR_storage_buffer_storage_class",
-		"VK_KHR_8bit_storage",
-		"VK_KHR_16bit_storage",
-		"VK_KHR_get_memory_requirements2",
-		"VK_KHR_external_memory",
-		"VK_KHR_external_memory_fd",
-		"VK_KHR_external_memory_win32",
-		"VK_KHR_external_semaphore",
-		"VK_KHR_external_semaphore_fd",
-		"VK_KHR_external_semaphore_win32",
-		"VK_KHR_external_fence",
-		"VK_KHR_external_fence_fd",
-		"VK_KHR_external_fence_win32",
-		"VK_KHR_win32_keyed_mutex",
-		"VK_KHR_dedicated_allocation",
-		"VK_KHR_variable_pointers",
-		"VK_KHR_relaxed_block_layout",
-		"VK_KHR_bind_memory2",
-		"VK_KHR_maintenance2",
-		"VK_KHR_image_format_list",
-		"VK_KHR_sampler_ycbcr_conversion",
-		"VK_KHR_device_group",
-		"VK_KHR_multiview",
-		"VK_KHR_maintenance3",
-		"VK_KHR_draw_indirect_count",
-		"VK_KHR_create_renderpass2",
-		"VK_KHR_depth_stencil_resolve",
-		"VK_KHR_driver_properties",
-		"VK_KHR_swapchain_mutable_format",
-		"VK_KHR_shader_atomic_int64",
-		"VK_KHR_vulkan_memory_model",
-		"VK_KHR_swapchain_mutable_format",
-	};
+#include "vkDeviceExtensions.inl"
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
 	checkDuplicateExtensions(results, extensions);
@@ -1536,195 +1476,157 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	return tcu::TestStatus::pass("Querying deviceGroup peer memory features succeeded");
 }
 
-// \todo [2016-01-22 pyry] Optimize by doing format -> flags mapping instead
+tcu::TestStatus deviceMemoryBudgetProperties (Context& context)
+{
+	TestLog&							log			= context.getTestContext().getLog();
+	deUint8								buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
+
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_memory_budget"))
+		TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
+
+	VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps = reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
+	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
+
+	budgetProps->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
+	budgetProps->pNext = DE_NULL;
+
+	VkPhysicalDeviceMemoryProperties2	memProps;
+	deMemset(&memProps, 0, sizeof(memProps));
+	memProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
+	memProps.pNext = budgetProps;
+
+	context.getInstanceInterface().getPhysicalDeviceMemoryProperties2(context.getPhysicalDevice(), &memProps);
+
+	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
+		<< TestLog::Message << *budgetProps << TestLog::EndMessage;
+
+	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+	{
+		if (buffer[ndx + sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT)] != GUARD_VALUE)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties buffer overflow");
+		}
+	}
+
+	for (deUint32 i = 0; i < memProps.memoryProperties.memoryHeapCount; ++i)
+	{
+		if (budgetProps->heapBudget[i] == 0)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Supported heaps must report nonzero budget" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid heap budget (zero)");
+		}
+		if (budgetProps->heapBudget[i] > memProps.memoryProperties.memoryHeaps[i].size)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Heap budget must be less than or equal to heap size" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid heap budget (too large)");
+		}
+	}
+
+	for (deUint32 i = memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
+	{
+		if (budgetProps->heapBudget[i] != 0 || budgetProps->heapUsage[i] != 0)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Unused heaps must report budget/usage of zero" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid unused heaps");
+		}
+	}
+
+	return tcu::TestStatus::pass("Querying memory budget properties succeeded");
+}
+
+namespace
+{
+
+#include "vkMandatoryFeatures.inl"
+
+}
+
+tcu::TestStatus deviceMandatoryFeatures(Context& context)
+{
+	if( checkMandatoryFeatures(context) )
+		return tcu::TestStatus::pass("Passed");
+	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: chapter 35.1 )");
+}
 
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 {
-	static const VkFormat s_requiredSampledImageBlitSrcFormats[] =
+	struct Formatpair
 	{
-		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8_SNORM,
-		VK_FORMAT_R8_UINT,
-		VK_FORMAT_R8_SINT,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8_SNORM,
-		VK_FORMAT_R8G8_UINT,
-		VK_FORMAT_R8G8_SINT,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R8G8B8A8_SNORM,
-		VK_FORMAT_R8G8B8A8_UINT,
-		VK_FORMAT_R8G8B8A8_SINT,
-		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_B8G8R8A8_UNORM,
-		VK_FORMAT_B8G8R8A8_SRGB,
-		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_UINT_PACK32,
-		VK_FORMAT_A8B8G8R8_SINT_PACK32,
-		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_UINT_PACK32,
-		VK_FORMAT_R16_UINT,
-		VK_FORMAT_R16_SINT,
-		VK_FORMAT_R16_SFLOAT,
-		VK_FORMAT_R16G16_UINT,
-		VK_FORMAT_R16G16_SINT,
-		VK_FORMAT_R16G16_SFLOAT,
-		VK_FORMAT_R16G16B16A16_UINT,
-		VK_FORMAT_R16G16B16A16_SINT,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_R32_UINT,
-		VK_FORMAT_R32_SINT,
-		VK_FORMAT_R32_SFLOAT,
-		VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32_SINT,
-		VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-		VK_FORMAT_D16_UNORM,
-		VK_FORMAT_D32_SFLOAT
-	};
-	static const VkFormat s_requiredSampledImageFilterLinearFormats[] =
-	{
-		VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8_SNORM,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8_SNORM,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R8G8B8A8_SNORM,
-		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_B8G8R8A8_UNORM,
-		VK_FORMAT_B8G8R8A8_SRGB,
-		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_R16_SFLOAT,
-		VK_FORMAT_R16G16_SFLOAT,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-	};
-	static const VkFormat s_requiredStorageImageFormats[] =
-	{
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R8G8B8A8_SNORM,
-		VK_FORMAT_R8G8B8A8_UINT,
-		VK_FORMAT_R8G8B8A8_SINT,
-		VK_FORMAT_R16G16B16A16_UINT,
-		VK_FORMAT_R16G16B16A16_SINT,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_R32_UINT,
-		VK_FORMAT_R32_SINT,
-		VK_FORMAT_R32_SFLOAT,
-		VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32_SINT,
-		VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT
-	};
-	static const VkFormat s_requiredStorageImageAtomicFormats[] =
-	{
-		VK_FORMAT_R32_UINT,
-		VK_FORMAT_R32_SINT
-	};
-	static const VkFormat s_requiredColorAttachmentBlitDstFormats[] =
-	{
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8_UINT,
-		VK_FORMAT_R8_SINT,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8_UINT,
-		VK_FORMAT_R8G8_SINT,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R8G8B8A8_UINT,
-		VK_FORMAT_R8G8B8A8_SINT,
-		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_B8G8R8A8_UNORM,
-		VK_FORMAT_B8G8R8A8_SRGB,
-		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_UINT_PACK32,
-		VK_FORMAT_A8B8G8R8_SINT_PACK32,
-		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_A2B10G10R10_UINT_PACK32,
-		VK_FORMAT_R16_UINT,
-		VK_FORMAT_R16_SINT,
-		VK_FORMAT_R16_SFLOAT,
-		VK_FORMAT_R16G16_UINT,
-		VK_FORMAT_R16G16_SINT,
-		VK_FORMAT_R16G16_SFLOAT,
-		VK_FORMAT_R16G16B16A16_UINT,
-		VK_FORMAT_R16G16B16A16_SINT,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_R32_UINT,
-		VK_FORMAT_R32_SINT,
-		VK_FORMAT_R32_SFLOAT,
-		VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32_SINT,
-		VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT
-	};
-	static const VkFormat s_requiredColorAttachmentBlendFormats[] =
-	{
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_FORMAT_B8G8R8A8_UNORM,
-		VK_FORMAT_B8G8R8A8_SRGB,
-		VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-		VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-		VK_FORMAT_R16_SFLOAT,
-		VK_FORMAT_R16G16_SFLOAT,
-		VK_FORMAT_R16G16B16A16_SFLOAT
-	};
-	static const VkFormat s_requiredDepthStencilAttachmentFormats[] =
-	{
-		VK_FORMAT_D16_UNORM
+		VkFormat				format;
+		VkFormatFeatureFlags	flags;
 	};
 
-	VkFormatFeatureFlags	flags	= (VkFormatFeatureFlags)0;
+	enum
+	{
+		SAIM = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
+		BLSR = VK_FORMAT_FEATURE_BLIT_SRC_BIT,
+		SIFL = VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT,
+		COAT = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,
+		BLDS = VK_FORMAT_FEATURE_BLIT_DST_BIT,
+		CABL = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,
+		STIM = VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+		STIA = VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,
+		DSAT = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+	};
 
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageBlitSrcFormats), DE_ARRAY_END(s_requiredSampledImageBlitSrcFormats), format))
-		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT|VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+	static const Formatpair formatflags[] =
+	{
+		{ VK_FORMAT_B4G4R4A4_UNORM_PACK16,		SAIM | BLSR |               SIFL },
+		{ VK_FORMAT_R5G6B5_UNORM_PACK16,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A1R5G5B5_UNORM_PACK16,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R8_UNORM,					SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R8_SNORM,					SAIM | BLSR |               SIFL },
+		{ VK_FORMAT_R8_UINT,					SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R8_SINT,					SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R8G8_UNORM,					SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R8G8_SNORM,					SAIM | BLSR |               SIFL },
+		{ VK_FORMAT_R8G8_UINT,					SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R8G8_SINT,					SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R8G8B8A8_UNORM,				SAIM | BLSR | COAT | BLDS | SIFL | STIM | CABL },
+		{ VK_FORMAT_R8G8B8A8_SNORM,				SAIM | BLSR |               SIFL | STIM },
+		{ VK_FORMAT_R8G8B8A8_UINT,				SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R8G8B8A8_SINT,				SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R8G8B8A8_SRGB,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_B8G8R8A8_UNORM,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_B8G8R8A8_SRGB,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A8B8G8R8_UNORM_PACK32,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A8B8G8R8_SNORM_PACK32,		SAIM | BLSR |               SIFL },
+		{ VK_FORMAT_A8B8G8R8_UINT_PACK32,		SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_A8B8G8R8_SINT_PACK32,		SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_A8B8G8R8_SRGB_PACK32,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R16_UINT,					SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R16_SINT,					SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R16_SFLOAT,					SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R16G16_UINT,				SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R16G16_SINT,				SAIM | BLSR | COAT | BLDS },
+		{ VK_FORMAT_R16G16_SFLOAT,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R16G16B16A16_UINT,			SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R16G16B16A16_SINT,			SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R16G16B16A16_SFLOAT,		SAIM | BLSR | COAT | BLDS | SIFL | STIM | CABL },
+		{ VK_FORMAT_R32_UINT,					SAIM | BLSR | COAT | BLDS |        STIM |        STIA },
+		{ VK_FORMAT_R32_SINT,					SAIM | BLSR | COAT | BLDS |        STIM |        STIA },
+		{ VK_FORMAT_R32_SFLOAT,					SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32_UINT,				SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32_SINT,				SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32_SFLOAT,				SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32B32A32_UINT,			SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32B32A32_SINT,			SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32B32A32_SFLOAT,		SAIM | BLSR | COAT | BLDS |        STIM },
+		{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	SAIM | BLSR |               SIFL },
+		{ VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,		SAIM | BLSR |               SIFL },
+		{ VK_FORMAT_D16_UNORM,					SAIM | BLSR |                                           DSAT },
+		{ VK_FORMAT_D32_SFLOAT,					SAIM | BLSR }
+	};
 
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterLinearFormats), DE_ARRAY_END(s_requiredSampledImageFilterLinearFormats), format))
-		flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+	size_t formatpairs = sizeof(formatflags) / sizeof(Formatpair);
 
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageImageFormats), DE_ARRAY_END(s_requiredStorageImageFormats), format))
-		flags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
-
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredStorageImageAtomicFormats), DE_ARRAY_END(s_requiredStorageImageAtomicFormats), format))
-		flags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT;
-
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredColorAttachmentBlitDstFormats), DE_ARRAY_END(s_requiredColorAttachmentBlitDstFormats), format))
-		flags |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT|VK_FORMAT_FEATURE_BLIT_DST_BIT;
-
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredColorAttachmentBlendFormats), DE_ARRAY_END(s_requiredColorAttachmentBlendFormats), format))
-		flags |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
-
-	if (de::contains(DE_ARRAY_BEGIN(s_requiredDepthStencilAttachmentFormats), DE_ARRAY_END(s_requiredDepthStencilAttachmentFormats), format))
-		flags |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-	return flags;
+	for (unsigned int i = 0; i < formatpairs; i++)
+		if (formatflags[i].format == format)
+			return formatflags[i].flags;
+	return 0;
 }
 
 VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context, VkFormat format, VkFormatFeatureFlags queriedFlags)
@@ -2722,6 +2624,19 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 // VK_KHR_get_physical_device_properties2
 
+string toString(const VkPhysicalDevicePCIBusInfoPropertiesEXT& value)
+{
+	std::ostringstream  s;
+	s << "VkPhysicalDevicePCIBusInfoPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpciDomain = " << value.pciDomain << '\n';
+	s << "\tpciBus = " << value.pciBus << '\n';
+	s << "\tpciDevice = " << value.pciDevice << '\n';
+	s << "\tpciFunction = " << value.pciFunction << '\n';
+	s << '}';
+	return s.str();
+}
+
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -2785,7 +2700,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
-	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures[count];
+	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures[count];
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
@@ -2796,7 +2711,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&deviceMultiviewFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
 		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
-		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointersFeatures));
 		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
@@ -2881,7 +2796,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		variablePointerFeatures[0].variablePointers					!= variablePointerFeatures[1].variablePointers)
 		)
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointerFeatures");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures");
 	}
 	if (scalar_block_layout &&
 		(scalarBlockLayoutFeatures[0].scalarBlockLayout	!= scalarBlockLayoutFeatures[1].scalarBlockLayout))
@@ -3150,6 +3065,54 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 
 		log << TestLog::Message << dsResolveProperties[0] << TestLog::EndMessage;
+	}
+
+	if (isExtensionSupported(extensions, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
+	{
+		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			// Each PCI device is identified by an 8-bit domain number, 5-bit
+			// device number and 3-bit function number[1][2].
+			//
+			// In addition, because PCI systems can be interconnected and
+			// divided in segments, Linux assigns a 16-bit number to the device
+			// as the "domain". In Windows, the segment or domain is stored in
+			// the higher 24-bit section of the bus number.
+			//
+			// This means the maximum unsigned 32-bit integer for these members
+			// are invalid values and should change after querying properties.
+			//
+			// [1] https://en.wikipedia.org/wiki/PCI_configuration_space
+			// [2] PCI Express Base Specification Revision 3.0, section 2.2.4.2.
+			deMemset(pciBusInfoProperties + ndx, 0, sizeof(pciBusInfoProperties[ndx]));
+			pciBusInfoProperties[ndx].pciDomain   = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciBus      = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciDevice   = DEUINT32_MAX;
+			pciBusInfoProperties[ndx].pciFunction = DEUINT32_MAX;
+
+			pciBusInfoProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
+			pciBusInfoProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = pciBusInfoProperties + ndx;
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		if (deMemCmp(pciBusInfoProperties + 0, pciBusInfoProperties + 1, sizeof(pciBusInfoProperties[0])) != 0)
+		{
+			TCU_FAIL("Mismatch in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
+
+		log << TestLog::Message << toString(pciBusInfoProperties[0]) << TestLog::EndMessage;
+
+		if (pciBusInfoProperties[0].pciDomain   == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciBus      == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciDevice   == DEUINT32_MAX ||
+		    pciBusInfoProperties[0].pciFunction == DEUINT32_MAX)
+		{
+		    TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
@@ -3668,6 +3631,8 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(deviceInfoTests.get(), "layers",					"Layers",					enumerateDeviceLayers);
 		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
 		addFunctionCase(deviceInfoTests.get(), "no_khx_extensions",			"KHX extensions",			testNoKhxExtensions);
+		addFunctionCase(deviceInfoTests.get(), "memory_budget",				"Memory budget",			deviceMemoryBudgetProperties);
+		addFunctionCase(deviceInfoTests.get(), "mandatory_features",		"Mandatory features",		deviceMandatoryFeatures);
 
 		infoTests->addChild(deviceInfoTests.release());
 	}

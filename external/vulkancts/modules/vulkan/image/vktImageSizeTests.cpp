@@ -37,6 +37,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -250,6 +251,7 @@ public:
 																 const VkFormat			format);
 
 	tcu::TestStatus                 iterate						(void);
+	void							checkRequirements			(void) const;
 
 	virtual							~SizeTestInstance			(void) {}
 
@@ -282,12 +284,22 @@ SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, co
 		MemoryRequirement::HostVisible));
 }
 
+void SizeTestInstance::checkRequirements (void) const
+{
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !m_context.getDeviceFeatures().imageCubeArray)
+	{
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+	}
+}
+
 tcu::TestStatus SizeTestInstance::iterate (void)
 {
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	checkRequirements();
 
 	// Create memory barriers.
 

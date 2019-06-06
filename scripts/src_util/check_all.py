@@ -52,7 +52,7 @@ if __name__ == "__main__":
 		])
 
 	if	error:
-		print	"One or more checks failed"
+		print("One or more checks failed")
 		sys.exit(1)
 	if	not	args.onlyErrors:
-		print	"All checks passed"
+		print("All checks passed")

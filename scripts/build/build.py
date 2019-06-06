@@ -24,8 +24,8 @@ import os
 import sys
 import shutil
 
-from common import *
-from config import *
+from . common import *
+from . config import *
 
 def initBuildDir (config, generator):
 	cfgArgs = []
@@ -51,8 +51,8 @@ def build (config, generator, targets = None):
 		try:
 			initBuildDir(config, generator)
 		except Exception as e:
-			print e
-			print "WARNING: Using existing build directory failed; re-creating build directory"
+			print(e)
+			print("WARNING: Using existing build directory failed; re-creating build directory")
 			shutil.rmtree(config.buildDir)
 			initBuildDir(config, generator)
 	else:

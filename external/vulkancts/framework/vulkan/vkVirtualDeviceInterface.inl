@@ -171,6 +171,12 @@ virtual VkResult			debugMarkerSetObjectNameEXT					(VkDevice device, const VkDeb
 virtual void				cmdDebugMarkerBeginEXT						(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
 virtual void				cmdDebugMarkerEndEXT						(VkCommandBuffer commandBuffer) const = 0;
 virtual void				cmdDebugMarkerInsertEXT						(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
+virtual void				cmdBindTransformFeedbackBuffersEXT			(VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes) const = 0;
+virtual void				cmdBeginTransformFeedbackEXT				(VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const = 0;
+virtual void				cmdEndTransformFeedbackEXT					(VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const = 0;
+virtual void				cmdBeginQueryIndexedEXT						(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index) const = 0;
+virtual void				cmdEndQueryIndexedEXT						(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index) const = 0;
+virtual void				cmdDrawIndirectByteCountEXT					(VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride) const = 0;
 virtual void				cmdDrawIndirectCountAMD						(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
 virtual void				cmdDrawIndexedIndirectCountAMD				(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
 virtual void				cmdDrawIndirectCountKHR						(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
@@ -204,3 +210,5 @@ virtual VkResult			getMemoryHostPointerPropertiesEXT			(VkDevice device, VkExter
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID	(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const = 0;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID		(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const = 0;
 virtual VkDeviceAddress		getBufferDeviceAddressEXT					(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const = 0;
+virtual void				resetQueryPoolEXT							(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const = 0;
+virtual VkResult			getCalibratedTimestampsEXT					(VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation) const = 0;

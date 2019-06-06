@@ -115,5 +115,5 @@ for dataType in DATA_TYPES:
 allCases.append(CaseGroup("indexing", "Large constant array indexing", largeConstantArrayCases))
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("large_constant_arrays.test", allCases)

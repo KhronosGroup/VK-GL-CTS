@@ -252,22 +252,17 @@ void createBarrierMultiQueue (const DeviceInterface&	vk,
 					0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
 		}
 	}
-	else if ((resource.getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(resource.getType()))	&&
-			 writeFamily != readFamily																&&
-			 VK_SHARING_MODE_EXCLUSIVE == sharingMode)
+	else if (resource.getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(resource.getType()))
 	{
-		const VkBufferMemoryBarrier barrier =
+		VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(secondQueue ? 0u : writeSync.accessMask, !secondQueue ? 0u : readSync.accessMask,
+			resource.getBuffer().handle, resource.getBuffer().offset, resource.getBuffer().size);
+
+		if (writeFamily != readFamily && VK_SHARING_MODE_EXCLUSIVE == sharingMode)
 		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-			DE_NULL,									// const void*		pNext;
-			secondQueue ? 0u : writeSync.accessMask ,	// VkAccessFlags	srcAccessMask;
-			!secondQueue ? 0u : readSync.accessMask,	// VkAccessFlags	dstAccessMask;
-			writeFamily,								// deUint32			srcQueueFamilyIndex;
-			readFamily,									// deUint32			destQueueFamilyIndex;
-			resource.getBuffer().handle,				// VkBuffer			buffer;
-			resource.getBuffer().offset,				// VkDeviceSize		offset;
-			resource.getBuffer().size,					// VkDeviceSize		size;
-		};
+			barrier.srcQueueFamilyIndex = writeFamily;
+			barrier.dstQueueFamilyIndex = readFamily;
+		}
+
 		vk.cmdPipelineBarrier(cmdBuffer, secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT) : writeSync.stageMask, !secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) : readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, (const VkBufferMemoryBarrier*)&barrier, 0u, (const VkImageMemoryBarrier *)DE_NULL);
 	}
 }

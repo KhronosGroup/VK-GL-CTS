@@ -222,7 +222,7 @@ static OutputIter namedBindingsToProgramLocations (const glw::Functions& gl, deU
 	for (InputIter cur = first; cur != end; ++cur)
 	{
 		const BindingPoint& binding = cur->binding;
-		if (binding.type == BindingPoint::TYPE_NAME)
+		if (binding.type == BindingPoint::BPTYPE_NAME)
 		{
 			DE_ASSERT(binding.location >= 0);
 			int location = gl.getAttribLocation(program, binding.name.c_str());
@@ -258,7 +258,7 @@ static bool areVertexArrayLocationsValid (BindingIter first, BindingIter end)
 	{
 		const BindingPoint& binding = cur->binding;
 
-		if (binding.type != BindingPoint::TYPE_LOCATION)
+		if (binding.type != BindingPoint::BPTYPE_LOCATION)
 			return false;
 
 		if (usedLocations.find(binding.location) != usedLocations.end())
@@ -279,7 +279,7 @@ static void appendAttributeNonStrided (VertexBufferLayout& layout, const VertexA
 	const int	size		= elementSize*va.pointer.numElements;
 
 	// Must be assigned to location at this point.
-	DE_ASSERT(va.binding.type == BindingPoint::TYPE_LOCATION);
+	DE_ASSERT(va.binding.type == BindingPoint::BPTYPE_LOCATION);
 
 	layout.attributes.push_back(VertexAttributeDescriptor(va.binding.location,
 														  va.pointer.componentType,
@@ -388,7 +388,7 @@ IndexBuffer::~IndexBuffer (void)
 
 static inline VertexAttributeDescriptor getUserPointerDescriptor (const VertexArrayBinding& vertexArray)
 {
-	DE_ASSERT(vertexArray.binding.type == BindingPoint::TYPE_LOCATION);
+	DE_ASSERT(vertexArray.binding.type == BindingPoint::BPTYPE_LOCATION);
 
 	return VertexAttributeDescriptor(vertexArray.binding.location,
 									 vertexArray.pointer.componentType,
@@ -433,7 +433,7 @@ static void disableVertexArrays (const glw::Functions& gl, const std::vector<Ver
 {
 	for (std::vector<VertexArrayBinding>::const_iterator vaIter = bindings.begin(); vaIter != bindings.end(); ++vaIter)
 	{
-		DE_ASSERT(vaIter->binding.type == BindingPoint::TYPE_LOCATION);
+		DE_ASSERT(vaIter->binding.type == BindingPoint::BPTYPE_LOCATION);
 		gl.disableVertexAttribArray(vaIter->binding.location);
 	}
 }

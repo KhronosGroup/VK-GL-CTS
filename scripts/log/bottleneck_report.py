@@ -63,12 +63,12 @@ class XMLLogHandlerTests(xml.sax.handler.ContentHandler) :
 			self.list.append(copy.deepcopy(self.element))
 
 	def bottleneck (self, resultCount) :
-		print "The biggest tests time of execution"
-		print '%-4s%12s\t%12s' % ("Index", "Time", "Full name")
+		print("The biggest tests time of execution")
+		print('%-4s%12s\t%12s' % ("Index", "Time", "Full name"))
 		self.list.sort(key = sortKey, reverse = True)
 		ndx = 1
 		for test in self.list :
-			print '%-4i%12i\t%12s' % (int(ndx), int(test.timeOfExecution), test.path)
+			print('%-4i%12i\t%12s' % (int(ndx), int(test.timeOfExecution), test.path))
 			ndx+=1
 			if int(ndx) > int(resultCount) :
 				break
@@ -101,27 +101,27 @@ class XMLLogHandlerGroups(xml.sax.handler.ContentHandler) :
 
 	def bottleneck (self, resultCount) :
 		self.list.sort(key = sortKey, reverse = True)
-		print "\nGroups Statistics"
-		print "Total time of execution:\t", self.list[0].timeOfExecution
-		print "Number of executed tests:\t", self.list[0].numberOfTests
-		print "\nThe biggest total time of execution"
-		print '%-4s%15s%15s\t%-30s' % ("Index", "Time", "Test count", "Full name")
+		print("\nGroups Statistics")
+		print("Total time of execution:\t", self.list[0].timeOfExecution)
+		print("Number of executed tests:\t", self.list[0].numberOfTests)
+		print("\nThe biggest total time of execution")
+		print('%-4s%15s%15s\t%-30s' % ("Index", "Time", "Test count", "Full name"))
 		ndx = 1
 		for test in self.list :
 			if test.path == "dEQP-VK" :
 				continue
-			print '%-4s%15s%15s\t%-30s' % (ndx, test.timeOfExecution, test.numberOfTests, test.path)
+			print('%-4s%15s%15s\t%-30s' % (ndx, test.timeOfExecution, test.numberOfTests, test.path))
 			ndx+=1
 			if int(ndx) > int(resultCount) :
 				break
 		self.list.sort(key = sortKeyTimePerTest, reverse = True)
-		print "\nThe biggest time of execution per test"
-		print '%-4s%15s%15s%15s\t%-30s' % ("Index", "Time", "Test count", "\tAvg. test time", "Full name")
+		print("\nThe biggest time of execution per test")
+		print('%-4s%15s%15s%15s\t%-30s' % ("Index", "Time", "Test count", "\tAvg. test time", "Full name"))
 		ndx = 1
 		for test in self.list :
 			if test.path == "dEQP-VK" :
 				continue
-			print '%-4s%15s%15s%15i\t%-30s' % (ndx, test.timeOfExecution, test.numberOfTests, int(test.timeOfExecution)/int(test.numberOfTests), test.path)
+			print('%-4s%15s%15s%15i\t%-30s' % (ndx, test.timeOfExecution, test.numberOfTests, int(test.timeOfExecution)/int(test.numberOfTests), test.path))
 			ndx+=1
 			if int(ndx) > int(resultCount) :
 				break
@@ -131,15 +131,15 @@ class LogErrorHandler(xml.sax.handler.ErrorHandler) :
 		pass
 
 	def error (self, err) :
-		#print "error(%s)" % str(err)
+		#print("error(%s)" % str(err))
 		pass
 
 	def fatalError (self, err) :
-		#print "fatalError(%s)" % str(err)
+		#print("fatalError(%s)" % str(err))
 		pass
 
 	def warning (self, warn) :
-		#print "warning(%s)" % str(warn)
+		#print("warning(%s)" % str(warn))
 		pass
 
 def findFirstElementByName (nodes, name) :
@@ -179,7 +179,7 @@ def printTimes (inFile, resultCount) :
 
 if __name__ == "__main__" :
 	if len(sys.argv) != 3:
-		print "%s: [test log] [count of result to display]" % sys.argv[0]
-		print "example: python %s TestResults.qpa 10" % sys.argv[0]
+		print("%s: [test log] [count of result to display]" % sys.argv[0])
+		print("example: python %s TestResults.qpa 10" % sys.argv[0])
 		sys.exit(-1)
 	printTimes(sys.argv[1], sys.argv[2])

@@ -40,6 +40,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorType.hpp"
 #include "deSharedPtr.hpp"
+#include <limits>
 
 namespace vkt
 {
@@ -65,6 +66,112 @@ struct TestParams
 	deUint32						testData[TEST_DATA_SIZE];
 	de::SharedPtr<IBufferAllocator>	bufferAllocator;
 };
+
+
+class FillWholeBufferTestInstance : public vkt::TestInstance
+{
+public:
+							FillWholeBufferTestInstance	(Context& context, const TestParams& testParams);
+	virtual tcu::TestStatus iterate						(void) override;
+protected:
+	// dstSize will be used as the buffer size.
+	// dstOffset will be used as the offset for vkCmdFillBuffer.
+	// size in vkCmdFillBuffer will always be VK_WHOLE_SIZE.
+	const TestParams		m_params;
+
+	Move<VkCommandPool>		m_cmdPool;
+	Move<VkCommandBuffer>	m_cmdBuffer;
+
+	Move<VkBuffer>			m_destination;
+	de::MovePtr<Allocation>	m_destinationBufferAlloc;
+};
+
+FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context& context, const TestParams& testParams)
+	: vkt::TestInstance(context), m_params(testParams)
+{
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&				memAlloc			= context.getDefaultAllocator();
+
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	testParams.bufferAllocator->createTestBuffer(m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, memAlloc, m_destination, MemoryRequirement::HostVisible, m_destinationBufferAlloc);
+}
+
+tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
+{
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const VkQueue				queue				= m_context.getUniversalQueue();
+
+	// Make sure some stuff below will work.
+	DE_ASSERT(m_params.dstSize >= sizeof(deUint32));
+	DE_ASSERT(m_params.dstSize <  static_cast<VkDeviceSize>(std::numeric_limits<size_t>::max()));
+	DE_ASSERT(m_params.dstOffset < m_params.dstSize);
+
+	// Fill buffer from the host and flush buffer memory.
+	deUint8* bytes = reinterpret_cast<deUint8*>(m_destinationBufferAlloc->getHostPtr());
+	deMemset(bytes, 0xff, static_cast<size_t>(m_params.dstSize));
+	flushAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+
+	const VkBufferMemoryBarrier	gpuToHostBarrier	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType			sType;
+		DE_NULL,									// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags			dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+		*m_destination,								// VkBuffer					buffer;
+		0u,											// VkDeviceSize				offset;
+		VK_WHOLE_SIZE								// VkDeviceSize				size;
+	};
+
+	// Fill buffer using VK_WHOLE_SIZE.
+	beginCommandBuffer(vk, *m_cmdBuffer);
+	vk.cmdFillBuffer(*m_cmdBuffer, *m_destination, m_params.dstOffset, VK_WHOLE_SIZE, deUint32{0x01010101});
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL, 1, &gpuToHostBarrier, 0, DE_NULL);
+	endCommandBuffer(vk, *m_cmdBuffer);
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+
+	// Invalidate buffer memory and check the buffer contains the expected results.
+	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
+
+	const VkDeviceSize startOfExtra = (m_params.dstSize / sizeof(deUint32)) * sizeof(deUint32);
+	for (VkDeviceSize i = 0; i < m_params.dstSize; ++i)
+	{
+		const deUint8 expectedByte = ((i >= m_params.dstOffset && i < startOfExtra)? 0x01 : 0xff);
+		if (bytes[i] != expectedByte)
+		{
+			std::ostringstream msg;
+			msg << "Invalid byte at position " << i << " in the buffer (found 0x"
+				<< std::hex << static_cast<int>(bytes[i]) << " but expected 0x" << static_cast<int>(expectedByte) << ")";
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+class FillWholeBufferTestCase : public vkt::TestCase
+{
+public:
+							FillWholeBufferTestCase	(tcu::TestContext&	testCtx,
+													 const std::string&	name,
+													 const std::string&	description,
+													 const TestParams	params)
+		: vkt::TestCase(testCtx, name, description), m_params(params)
+	{}
+
+	virtual TestInstance*	createInstance			(Context&			context) const override
+	{
+		return static_cast<TestInstance*>(new FillWholeBufferTestInstance(context, m_params));
+	}
+private:
+	const TestParams		m_params;
+};
+
 
 class FillBufferTestInstance : public vkt::TestInstance
 {
@@ -366,17 +473,17 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 		}
 		fillAndUpdateBufferTests->addChild(bufferViewAllocationGroupTests[subgroupNdx]);
 	}
-	TestParams						params;
-	params.dstSize = TestParams::TEST_DATA_SIZE;
 
+	TestParams						params;
 
 	for (deUint32 buffersAllocationNdx = 0u; buffersAllocationNdx < DE_LENGTH_OF_ARRAY(bufferAllocators); ++buffersAllocationNdx)
 	{
-		DE_ASSERT(params.dstSize <= TestParams::TEST_DATA_SIZE);
+		params.dstSize			= TestParams::TEST_DATA_SIZE;
+		params.bufferAllocator	= bufferAllocators[buffersAllocationNdx];
+
 		deUint8* data = (deUint8*) params.testData;
 		for (deUint32 b = 0u; b < (params.dstSize * sizeof(params.testData[0])); b++)
 			data[b] = (deUint8) (b % 255);
-		params.bufferAllocator = bufferAllocators[buffersAllocationNdx];
 		const deUint32				testCaseGroupNdx					= buffersAllocationNdx;
 		tcu::TestCaseGroup*			currentTestsGroup					= bufferViewAllocationGroupTests[testCaseGroupNdx];
 
@@ -422,6 +529,25 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 
 			currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_" + testName, "Fill " + description, params));
 			currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, "Update " + description, params));
+		}
+
+		// VK_WHOLE_SIZE tests.
+		{
+			for (VkDeviceSize i = 0; i < sizeof(deUint32); ++i)
+			{
+				for (VkDeviceSize j = 0; j < sizeof(deUint32); ++j)
+				{
+					params.dstSize		= TestParams::TEST_DATA_SIZE + i;
+					params.dstOffset	= j * sizeof(deUint32);
+					params.size			= VK_WHOLE_SIZE;
+
+					const VkDeviceSize	extraBytes	= params.dstSize % sizeof(deUint32);
+					const std::string	name		= "fill_buffer_vk_whole_size_" + de::toString(extraBytes) + "_extra_bytes_offset_" + de::toString(params.dstOffset);
+					const std::string	description	= "vkCmdFillBuffer with VK_WHOLE_SIZE, " + de::toString(extraBytes) + " extra bytes and offset " + de::toString(params.dstOffset);
+
+					currentTestsGroup->addChild(new FillWholeBufferTestCase{testCtx, name, description, params});
+				}
+			}
 		}
 	}
 

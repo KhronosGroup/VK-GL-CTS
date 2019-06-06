@@ -180,8 +180,8 @@ TestLog& SampleBuilder::operator<< (const TestLog::EndSampleToken&)
 
 // TestLog
 
-TestLog::TestLog (const char* fileName, deUint32 flags)
-	: m_log(qpTestLog_createFileLog(fileName, flags))
+TestLog::TestLog (const char* fileName, int argc, char** argv, deUint32 flags)
+	: m_log(qpTestLog_createFileLog(fileName, argc, argv, flags))
 {
 	if (!m_log)
 		throw ResourceError(std::string("Failed to open test log file '") + fileName + "'");

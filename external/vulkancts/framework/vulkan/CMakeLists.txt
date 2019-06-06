@@ -57,8 +57,6 @@ set(VKUTILNOSHADER_SRCS
 	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
-	vkBufferWithMemory.cpp
-	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
 	vkShaderProgram.cpp
@@ -70,6 +68,9 @@ set(VKUTILNOSHADER_SRCS
 	vkObjUtil.hpp
 	${VKRENDERDOC_SRC}
 	vkRenderDocUtil.hpp
+	vkDeviceFeatures.hpp
+	vkDeviceFeatures.cpp
+	vkDeviceFeatures.inl
 	)
 
 set(VKUTIL_SRCS
@@ -103,7 +104,7 @@ if (DEQP_HAVE_GLSLANG)
 	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		set_source_files_properties(
 			FILES vkShaderToSpirV.cpp
-			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
+			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 	endif ()
 
 	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARIES})
@@ -118,7 +119,7 @@ if(DEQP_HAVE_SPIRV_TOOLS)
 	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		set_source_files_properties(
 			FILES vkPrograms.cpp
-			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
+			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 	endif ()
 
 	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)

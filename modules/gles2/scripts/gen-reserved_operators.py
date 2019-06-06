@@ -98,5 +98,5 @@ for operator in RESERVED_OPERATORS:
 # Main program
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("reserved_operators.test",	reservedOperatorCases)

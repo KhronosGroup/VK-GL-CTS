@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 2.8.2)
 
 find_package(Git)
-find_package(PythonInterp 2)
+find_package(PythonInterp 3)
 
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")
@@ -87,10 +87,6 @@ add_subdirectory(external/glslang)
 
 # spirv-tools
 add_subdirectory(external/spirv-tools)
-
-# VkRunner
-add_subdirectory(external/vkrunner)
-include_directories(external/vkrunner/src)
 
 # spirv-headers
 set(SPIRV_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/spirv-headers/src/include")

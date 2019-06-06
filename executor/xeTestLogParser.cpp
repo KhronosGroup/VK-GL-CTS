@@ -103,6 +103,8 @@ void TestLogParser::parse (const deUint8* bytes, size_t numBytes)
 					m_sessionInfo.resultName = value;
 				else if (deStringEqual(attribute, "timestamp"))
 					m_sessionInfo.timestamp = value;
+				else if (deStringEqual(attribute, "commandLineParameters"))
+					m_sessionInfo.qpaCommandLineParameters = value;
 
 				// \todo [2012-06-09 pyry] What to do with unknown/duplicate attributes? Currently just ignored.
 				break;

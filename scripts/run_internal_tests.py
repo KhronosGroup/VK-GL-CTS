@@ -27,7 +27,7 @@ import random
 import subprocess
 
 def die (msg):
-	print msg
+	print(msg)
 	exit(-1)
 
 def shellquote(s):
@@ -67,7 +67,7 @@ def prepareBuildDir (config):
 		try:
 			execute(["cmake", "."], workDir = config.buildPath)
 		except:
-			print "WARNING: Failed to refresh build dir, recreating"
+			print("WARNING: Failed to refresh build dir, recreating")
 			initBuildDir(config)
 	else:
 		initBuildDir(config)

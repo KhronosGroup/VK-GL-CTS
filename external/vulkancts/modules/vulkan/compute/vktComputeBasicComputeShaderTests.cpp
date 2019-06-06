@@ -40,6 +40,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"

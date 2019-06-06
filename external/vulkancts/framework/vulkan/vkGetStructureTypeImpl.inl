@@ -421,9 +421,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewProperties>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceVariablePointerFeatures> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceVariablePointersFeatures> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceProtectedMemoryFeatures> (void)
@@ -561,9 +561,9 @@ template<> VkStructureType getStructureType<VkDescriptorSetLayoutSupport> (void)
 	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParameterFeatures> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParametersFeatures> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
 }
 
 template<> VkStructureType getStructureType<VkSwapchainCreateInfoKHR> (void)
@@ -909,6 +909,21 @@ template<> VkStructureType getStructureType<VkDedicatedAllocationBufferCreateInf
 template<> VkStructureType getStructureType<VkDedicatedAllocationMemoryAllocateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTransformFeedbackFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTransformFeedbackPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineRasterizationStateStreamCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkTextureLODGatherFormatPropertiesAMD> (void)
@@ -1266,9 +1281,9 @@ template<> VkStructureType getStructureType<VkPipelineRasterizationDepthClipStat
 	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceBufferAddressFeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoEXT> (void)
@@ -1279,6 +1294,11 @@ template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoEXT> (void)
 template<> VkStructureType getStructureType<VkBufferDeviceAddressCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkImageStencilUsageCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkCooperativeMatrixPropertiesNV> (void)
@@ -1294,5 +1314,45 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeMatrixPro
 template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeMatrixFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceHostQueryResetFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePCIBusInfoPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryBudgetPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryPriorityFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryPriorityAllocateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineCreationFeedbackCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCalibratedTimestampInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
 }
 

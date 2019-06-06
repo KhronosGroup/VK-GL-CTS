@@ -21,11 +21,16 @@
 #-------------------------------------------------------------------------
 
 import os
-from itertools import imap, chain
-from common import *
-from enums import enumValue
-from library import getExtOnlyIface
+from egl.common import *
+from egl.enums import enumValue
+from egl.library import getExtOnlyIface
 from khr_util.format import indentLines
+from itertools import chain
+
+try:
+	from itertools import imap
+except ImportError:
+	imap=map
 
 def getMangledName (funcName):
 	assert funcName[:3] == "egl"

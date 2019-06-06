@@ -910,5 +910,5 @@ allCases.append(CaseGroup("valid", "Valid uniform interface block syntax tests."
 allCases.append(CaseGroup("invalid", "Invalid uniform interface block syntax tests.", invalidCases))
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	writeAllCases("uniform_block.test", allCases)

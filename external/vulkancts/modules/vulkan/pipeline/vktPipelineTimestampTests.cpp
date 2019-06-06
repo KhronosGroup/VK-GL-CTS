@@ -48,6 +48,17 @@
 #include <vector>
 #include <cctype>
 #include <locale>
+#include <limits>
+#include <thread>
+#include <chrono>
+#include <time.h>
+
+#if (DE_OS == DE_OS_WIN32)
+#	define VC_EXTRALEAN
+#	define WIN32_LEAN_AND_MEAN
+#	define NOMINMAX
+#	include <windows.h>
+#endif
 
 namespace vkt
 {
@@ -163,28 +174,37 @@ std::string getTransferMethodStr(const TransferMethod method,
 	return desc.str();
 }
 
+constexpr deUint32 MIN_TIMESTAMP_VALID_BITS = 36;
+constexpr deUint32 MAX_TIMESTAMP_VALID_BITS = 64;
+
 // helper classes
 class TimestampTestParam
 {
 public:
 							  TimestampTestParam      (const VkPipelineStageFlagBits* stages,
 													   const deUint32                 stageCount,
-													   const bool                     inRenderPass);
+													   const bool                     inRenderPass,
+													   const bool                     hostQueryReset);
 							  ~TimestampTestParam     (void);
 	virtual const std::string generateTestName        (void) const;
 	virtual const std::string generateTestDescription (void) const;
 	StageFlagVector           getStageVector          (void) const { return m_stageVec; }
 	bool                      getInRenderPass         (void) const { return m_inRenderPass; }
+	bool                      getHostQueryReset       (void) const { return m_hostQueryReset; }
 	void                      toggleInRenderPass      (void)       { m_inRenderPass = !m_inRenderPass; }
+	void                      toggleHostQueryReset    (void)       { m_hostQueryReset = !m_hostQueryReset; }
 protected:
 	StageFlagVector           m_stageVec;
 	bool                      m_inRenderPass;
+	bool					  m_hostQueryReset;
 };
 
 TimestampTestParam::TimestampTestParam(const VkPipelineStageFlagBits* stages,
 									   const deUint32                 stageCount,
-									   const bool                     inRenderPass)
+									   const bool                     inRenderPass,
+									   const bool                     hostQueryReset)
 	: m_inRenderPass(inRenderPass)
+	, m_hostQueryReset(hostQueryReset)
 {
 	for (deUint32 ndx = 0; ndx < stageCount; ndx++)
 	{
@@ -212,6 +232,9 @@ const std::string TimestampTestParam::generateTestName(void) const
 	else
 		result += "out_of_render_pass";
 
+	if(m_hostQueryReset)
+		result += "_host_query_reset";
+
 	return result;
 }
 
@@ -231,6 +254,9 @@ const std::string TimestampTestParam::generateTestDescription(void) const
 	else
 		result += " out of the render pass";
 
+	if(m_hostQueryReset)
+		result += "and the host resets query pool";
+
 	return result;
 }
 
@@ -240,6 +266,7 @@ public:
 					  TransferTimestampTestParam  (const VkPipelineStageFlagBits* stages,
 												   const deUint32                 stageCount,
 												   const bool                     inRenderPass,
+												   const bool                     hostQueryReset,
 												   const deUint32                 methodNdx);
 					  ~TransferTimestampTestParam (void)       { }
 	const std::string generateTestName            (void) const;
@@ -252,8 +279,9 @@ protected:
 TransferTimestampTestParam::TransferTimestampTestParam(const VkPipelineStageFlagBits* stages,
 													   const deUint32                 stageCount,
 													   const bool                     inRenderPass,
+													   const bool                     hostQueryReset,
 													   const deUint32                 methodNdx)
-	: TimestampTestParam(stages, stageCount, inRenderPass)
+	: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset)
 {
 	DE_ASSERT(methodNdx < (deUint32)TRANSFER_METHOD_LAST);
 
@@ -274,6 +302,9 @@ const std::string TransferTimestampTestParam::generateTestName(void) const
 
 	result += "with_" + getTransferMethodStr(m_method, false);
 
+	if(m_hostQueryReset)
+		result += "_host_query_reset";
+
 	return result;
 }
 
@@ -291,6 +322,9 @@ const std::string TransferTimestampTestParam::generateTestDescription(void) cons
 
 	result += "with " + getTransferMethodStr(m_method, true);
 
+	if(m_hostQueryReset)
+		result += "and the host resets query pool";
+
 	return result;
 }
 
@@ -300,6 +334,7 @@ public:
 							TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	stages,
 													 const deUint32					stageCount,
 													 const bool						inRenderPass,
+													 const bool						hostQueryReset,
 													 const VkCommandBufferLevel		cmdBufferLevel);
 							~TwoCmdBuffersTestParam	(void) { }
 	VkCommandBufferLevel	getCmdBufferLevel		(void) const { return m_cmdBufferLevel; }
@@ -310,8 +345,9 @@ protected:
 TwoCmdBuffersTestParam::TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	stages,
 												 const deUint32					stageCount,
 												 const bool						inRenderPass,
+												 const bool						hostQueryReset,
 												 const VkCommandBufferLevel		cmdBufferLevel)
-: TimestampTestParam(stages, stageCount, inRenderPass), m_cmdBufferLevel(cmdBufferLevel)
+: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset), m_cmdBufferLevel(cmdBufferLevel)
 {
 }
 
@@ -541,6 +577,7 @@ public:
 							  : vkt::TestCase  (testContext, name, description)
 							  , m_stages       (param->getStageVector())
 							  , m_inRenderPass (param->getInRenderPass())
+							  , m_hostQueryReset (param->getHostQueryReset())
 							  { }
 	virtual               ~TimestampTest (void) { }
 	virtual void          initPrograms   (SourceCollections&      programCollection) const;
@@ -548,6 +585,7 @@ public:
 protected:
 	const StageFlagVector m_stages;
 	const bool            m_inRenderPass;
+	const bool            m_hostQueryReset;
 };
 
 class TimestampTestInstance : public vkt::TestInstance
@@ -555,7 +593,8 @@ class TimestampTestInstance : public vkt::TestInstance
 public:
 							TimestampTestInstance      (Context&                 context,
 														const StageFlagVector&   stages,
-														const bool               inRenderPass);
+														const bool               inRenderPass,
+														const bool               hostQueryReset);
 	virtual                 ~TimestampTestInstance     (void);
 	virtual tcu::TestStatus iterate                    (void);
 protected:
@@ -573,11 +612,13 @@ protected:
 protected:
 	const StageFlagVector   m_stages;
 	bool                    m_inRenderPass;
+	bool                    m_hostQueryReset;
 
 	Move<VkCommandPool>     m_cmdPool;
 	Move<VkCommandBuffer>   m_cmdBuffer;
 	Move<VkQueryPool>       m_queryPool;
 	deUint64*               m_timestampValues;
+	deUint64*               m_timestampValuesHostQueryReset;
 };
 
 void TimestampTest::initPrograms(SourceCollections& programCollection) const
@@ -587,15 +628,17 @@ void TimestampTest::initPrograms(SourceCollections& programCollection) const
 
 TestInstance* TimestampTest::createInstance(Context& context) const
 {
-	return new TimestampTestInstance(context,m_stages,m_inRenderPass);
+	return new TimestampTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
 }
 
 TimestampTestInstance::TimestampTestInstance(Context&                context,
 											 const StageFlagVector&  stages,
-											 const bool              inRenderPass)
-	: TestInstance  (context)
-	, m_stages      (stages)
-	, m_inRenderPass(inRenderPass)
+											 const bool              inRenderPass,
+											 const bool              hostQueryReset)
+	: TestInstance     (context)
+	, m_stages         (stages)
+	, m_inRenderPass   (inRenderPass)
+	, m_hostQueryReset (hostQueryReset)
 {
 	const DeviceInterface&      vk                  = context.getDeviceInterface();
 	const VkDevice              vkDevice            = context.getDevice();
@@ -609,6 +652,14 @@ TimestampTestInstance::TimestampTestInstance(Context&                context,
 
 		if (!queueProperties[queueFamilyIndex].timestampValidBits)
 			throw tcu::NotSupportedError("Universal queue does not support timestamps");
+	}
+
+	if (m_hostQueryReset)
+	{
+		// Check VK_EXT_host_query_reset is supported
+		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
+		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
+			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
 	}
 
 	// Create Query Pool
@@ -634,15 +685,20 @@ TimestampTestInstance::TimestampTestInstance(Context&                context,
 
 	// alloc timestamp values
 	m_timestampValues = new deUint64[m_stages.size()];
+
+	if (m_hostQueryReset)
+		m_timestampValuesHostQueryReset = new deUint64[m_stages.size() * 2];
+	else
+		m_timestampValuesHostQueryReset = DE_NULL;
 }
 
 TimestampTestInstance::~TimestampTestInstance(void)
 {
-	if(m_timestampValues)
-	{
-		delete[] m_timestampValues;
-		m_timestampValues = NULL;
-	}
+	delete[] m_timestampValues;
+	m_timestampValues = NULL;
+
+	delete[] m_timestampValuesHostQueryReset;
+	m_timestampValuesHostQueryReset = NULL;
 }
 
 void TimestampTestInstance::configCommandBuffer(void)
@@ -651,7 +707,8 @@ void TimestampTestInstance::configCommandBuffer(void)
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	if (!m_hostQueryReset)
+		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	deUint32 timestampEntry = 0;
 	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
@@ -664,28 +721,40 @@ void TimestampTestInstance::configCommandBuffer(void)
 
 tcu::TestStatus TimestampTestInstance::iterate(void)
 {
-	const DeviceInterface&      vk          = m_context.getDeviceInterface();
-	const VkDevice              vkDevice    = m_context.getDevice();
-	const VkQueue               queue       = m_context.getUniversalQueue();
+	const DeviceInterface&      vk					= m_context.getDeviceInterface();
+	const VkDevice              vkDevice			= m_context.getDevice();
+	const VkQueue               queue				= m_context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	configCommandBuffer();
+
+	if (m_hostQueryReset)
+	{
+		vk.resetQueryPoolEXT(vkDevice, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	}
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Generate the timestamp mask
 	deUint64                    timestampMask;
 	const std::vector<VkQueueFamilyProperties>   queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-	if(queueProperties[0].timestampValidBits == 0)
+	if(queueProperties[queueFamilyIndex].timestampValidBits == 0)
 	{
 		return tcu::TestStatus::fail("Device does not support timestamp!");
 	}
-	else if(queueProperties[0].timestampValidBits == 64)
+	else if (queueProperties[queueFamilyIndex].timestampValidBits < MIN_TIMESTAMP_VALID_BITS || queueProperties[queueFamilyIndex].timestampValidBits > MAX_TIMESTAMP_VALID_BITS)
+	{
+		std::ostringstream msg;
+		msg << "Invalid value for timestampValidBits in queue index " << queueFamilyIndex;
+		return tcu::TestStatus::fail(msg.str());
+	}
+	else if(queueProperties[queueFamilyIndex].timestampValidBits == MAX_TIMESTAMP_VALID_BITS)
 	{
 		timestampMask = 0xFFFFFFFFFFFFFFFF;
 	}
 	else
 	{
-		timestampMask = ((deUint64)1 << queueProperties[0].timestampValidBits) - 1;
+		timestampMask = ((deUint64)1 << queueProperties[queueFamilyIndex].timestampValidBits) - 1;
 	}
 
 	// Get timestamp value from query pool
@@ -696,6 +765,38 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 	for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 	{
 		m_timestampValues[ndx] &= timestampMask;
+	}
+
+	if(m_hostQueryReset)
+	{
+		// Initialize timestampValuesHostQueryReset values
+		deMemset(m_timestampValuesHostQueryReset, 0, sizeof(deUint64) * stageSize * 2);
+		for (deUint32 ndx = 0; ndx < stageSize; ndx++)
+		{
+			m_timestampValuesHostQueryReset[2 * ndx] = m_timestampValues[ndx];
+		}
+
+		// Host resets the query pool
+		vk.resetQueryPoolEXT(vkDevice, *m_queryPool, 0u, stageSize);
+		// Get timestamp value from query pool
+		vk::VkResult res = vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, stageSize, sizeof(deUint64) * stageSize * 2, (void*)m_timestampValuesHostQueryReset, sizeof(deUint64) * 2, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+
+		/* From Vulkan spec:
+		 *
+		 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+		 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+		 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+		 */
+		if (res != vk::VK_NOT_READY)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+
+		for (deUint32 ndx = 0; ndx < stageSize; ndx++)
+		{
+			if ((m_timestampValuesHostQueryReset[2 * ndx] & timestampMask) != m_timestampValues[ndx])
+				return tcu::TestStatus::fail("QueryPoolResults returned value was modified");
+			if (m_timestampValuesHostQueryReset[2 * ndx + 1] != 0u)
+				return tcu::TestStatus::fail("QueryPoolResults availability status is not zero");
+		}
 	}
 
 	return verifyTimestamp();
@@ -804,6 +905,519 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat        
 	return image;
 }
 
+template <class T>
+class CalibratedTimestampTest : public vkt::TestCase
+{
+public:
+								CalibratedTimestampTest		(tcu::TestContext&		testContext,
+															 const std::string&		name,
+															 const std::string&		description)
+									: vkt::TestCase{testContext, name, description}
+									{ }
+	virtual						~CalibratedTimestampTest	(void) override { }
+	virtual void				initPrograms				(SourceCollections&		programCollection) const override;
+	virtual vkt::TestInstance*	createInstance				(Context&				context) const override;
+};
+
+class CalibratedTimestampTestInstance : public vkt::TestInstance
+{
+public:
+							CalibratedTimestampTestInstance		(Context&	context);
+	virtual                 ~CalibratedTimestampTestInstance	(void) override { }
+	virtual tcu::TestStatus iterate								(void) override;
+	virtual tcu::TestStatus runTest								(void) = 0;
+protected:
+	struct CalibratedTimestamp
+	{
+		CalibratedTimestamp(deUint64 timestamp_, deUint64 deviation_) : timestamp{timestamp_}, deviation(deviation_) { }
+		CalibratedTimestamp() : timestamp{}, deviation{} { }
+		deUint64 timestamp;
+		deUint64 deviation;
+	};
+
+	tcu::Maybe<VkTimeDomainEXT>			getBestDomain(const std::vector<VkTimeDomainEXT>& avail, const std::vector<VkTimeDomainEXT>& preferred) const;
+	deUint64							getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const;
+	deUint64							getHostNanoseconds(deUint64 hostTimestamp) const;
+	deUint64							getDeviceNanoseconds(deUint64 devTicksDelta) const;
+	std::vector<CalibratedTimestamp>	getCalibratedTimestamps(const std::vector<VkTimeDomainEXT>& domains);
+	CalibratedTimestamp					getCalibratedTimestamp(VkTimeDomainEXT domain);
+	void								appendQualityMessage(const std::string& message);
+
+	void								verifyDevTimestampMask(deUint64 value) const;
+	deUint64							absDiffWithOverflow(deUint64 a, deUint64 b, deUint64 mask = std::numeric_limits<deUint64>::max()) const;
+	deUint64							positiveDiffWithOverflow(deUint64 before, deUint64 after, deUint64 mask = std::numeric_limits<deUint64>::max()) const;
+	bool								outOfRange(deUint64 begin, deUint64 middle, deUint64 end) const;
+
+	static constexpr deUint64	kBatchTimeLimitNanos		= 1000000000u;	// 1 sec.
+	static constexpr deUint64	kDeviationErrorLimitNanos	=  100000000u;	// 100 ms.
+	static constexpr deUint64	kDeviationWarningLimitNanos =   50000000u;	// 50 ms.
+	static constexpr deUint64	kDefaultToleranceNanos		=   10000000u;	// 10 ms.
+
+#if (DE_OS == DE_OS_WIN32)
+    // Preprocessor used to avoid warning about unused variable.
+	static constexpr deUint64	kNanosecondsPerSecond		= 1000000000u;
+#endif
+	static constexpr deUint64	kNanosecondsPerMillisecond	=    1000000u;
+
+	std::string					m_qualityMessage;
+	float						m_timestampPeriod;
+	tcu::Maybe<VkTimeDomainEXT>	m_devDomain;
+	tcu::Maybe<VkTimeDomainEXT>	m_hostDomain;
+#if (DE_OS == DE_OS_WIN32)
+	deUint64					m_frequency;
+#endif
+
+	Move<VkCommandPool>			m_cmdPool;
+	Move<VkCommandBuffer>		m_cmdBuffer;
+	Move<VkQueryPool>			m_queryPool;
+	deUint64					m_devTimestampMask;
+};
+
+class CalibratedTimestampDevDomainTestInstance : public CalibratedTimestampTestInstance
+{
+public:
+							CalibratedTimestampDevDomainTestInstance	(Context&	context)
+								: CalibratedTimestampTestInstance{context}
+								{ }
+	virtual                 ~CalibratedTimestampDevDomainTestInstance	(void) { }
+	virtual tcu::TestStatus runTest										(void) override;
+};
+
+class CalibratedTimestampHostDomainTestInstance : public CalibratedTimestampTestInstance
+{
+public:
+							CalibratedTimestampHostDomainTestInstance	(Context&	context)
+								: CalibratedTimestampTestInstance{context}
+								{ }
+	virtual                 ~CalibratedTimestampHostDomainTestInstance	(void) { }
+	virtual tcu::TestStatus runTest										(void) override;
+};
+
+class CalibratedTimestampCalibrationTestInstance : public CalibratedTimestampTestInstance
+{
+public:
+							CalibratedTimestampCalibrationTestInstance	(Context&	context)
+								: CalibratedTimestampTestInstance{context}
+								{ }
+	virtual                 ~CalibratedTimestampCalibrationTestInstance	(void) { }
+	virtual tcu::TestStatus runTest										(void) override;
+};
+
+template <class T>
+void CalibratedTimestampTest<T>::initPrograms(SourceCollections& programCollection) const
+{
+	vkt::TestCase::initPrograms(programCollection);
+}
+
+template <class T>
+vkt::TestInstance* CalibratedTimestampTest<T>::createInstance(Context& context) const
+{
+	return new T{context};
+}
+
+CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& context)
+	: TestInstance{context}
+{
+	context.requireDeviceExtension("VK_EXT_calibrated_timestamps");
+
+#if (DE_OS == DE_OS_WIN32)
+	LARGE_INTEGER freq;
+	if (!QueryPerformanceFrequency(&freq))
+	{
+		throw tcu::ResourceError("Unable to get clock frequency with QueryPerformanceFrequency");
+	}
+	if (freq.QuadPart <= 0)
+	{
+		throw tcu::ResourceError("QueryPerformanceFrequency did not return a positive number");
+	}
+	m_frequency = static_cast<deUint64>(freq.QuadPart);
+#endif
+
+	const InstanceInterface&	vki			= context.getInstanceInterface();
+	const VkPhysicalDevice		physDevice	= context.getPhysicalDevice();
+
+	// Get timestamp mask.
+	const deUint32								queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const std::vector<VkQueueFamilyProperties>	queueProperties		= vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+
+	DE_ASSERT(queueFamilyIndex < queueProperties.size());
+
+	const deUint32								validBits			= queueProperties[queueFamilyIndex].timestampValidBits;
+
+	if (validBits == 0)
+		throw tcu::NotSupportedError("Universal queue does not support timestamps");
+
+	if (validBits < MIN_TIMESTAMP_VALID_BITS || validBits > MAX_TIMESTAMP_VALID_BITS)
+	{
+		std::ostringstream msg;
+		msg << "Invalid value for timestampValidBits in queue index " << queueFamilyIndex;
+		TCU_FAIL(msg.str());
+	}
+
+	if (validBits == MAX_TIMESTAMP_VALID_BITS)
+		m_devTimestampMask = std::numeric_limits<deUint64>::max();
+	else
+		m_devTimestampMask = ((1ULL << validBits) - 1);
+
+	// Get calibreatable time domains.
+	m_timestampPeriod = getPhysicalDeviceProperties(vki, physDevice).limits.timestampPeriod;
+
+	deUint32 domainCount;
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, DE_NULL));
+	if (domainCount == 0)
+	{
+		throw tcu::NotSupportedError("No calibrateable time domains found");
+	}
+
+	std::vector<VkTimeDomainEXT> domains;
+	domains.resize(domainCount);
+	VK_CHECK(vki.getPhysicalDeviceCalibrateableTimeDomainsEXT(physDevice, &domainCount, domains.data()));
+
+	// Find the dev domain.
+	std::vector<VkTimeDomainEXT> preferredDevDomains;
+	preferredDevDomains.push_back(VK_TIME_DOMAIN_DEVICE_EXT);
+	m_devDomain = getBestDomain(domains, preferredDevDomains);
+
+	// Find the host domain.
+	std::vector<VkTimeDomainEXT> preferredHostDomains;
+#if (DE_OS == DE_OS_WIN32)
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
+#else
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
+	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT);
+#endif
+	m_hostDomain = getBestDomain(domains, preferredHostDomains);
+
+	// Initialize command buffers and queries.
+	const DeviceInterface&      vk                  = context.getDeviceInterface();
+	const VkDevice				vkDevice			= context.getDevice();
+
+	const VkQueryPoolCreateInfo queryPoolParams =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,    // VkStructureType               sType;
+		DE_NULL,                                     // const void*                   pNext;
+		0u,                                          // VkQueryPoolCreateFlags        flags;
+		VK_QUERY_TYPE_TIMESTAMP,                     // VkQueryType                   queryType;
+		1u,                                          // deUint32                      entryCount;
+		0u,                                          // VkQueryPipelineStatisticFlags pipelineStatistics;
+	};
+
+	m_queryPool	= createQueryPool(vk, vkDevice, &queryPoolParams);
+	m_cmdPool	= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+tcu::Maybe<VkTimeDomainEXT> CalibratedTimestampTestInstance::getBestDomain(const std::vector<VkTimeDomainEXT>& avail, const std::vector<VkTimeDomainEXT>& preferred) const
+{
+	for (auto domain : preferred)
+	{
+		if (find(avail.begin(), avail.end(), domain) != avail.end())
+			return tcu::just(domain);
+	}
+	return tcu::nothing<VkTimeDomainEXT>();
+}
+
+deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const
+{
+#if (DE_OS == DE_OS_WIN32)
+	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
+	LARGE_INTEGER result;
+	if (!QueryPerformanceCounter(&result))
+	{
+		throw tcu::ResourceError("Unable to obtain host native timestamp for Win32");
+	}
+	if (result.QuadPart < 0)
+	{
+		throw tcu::ResourceError("Host-native timestamp for Win32 less than zero");
+	}
+	return static_cast<deUint64>(result.QuadPart);
+#else
+	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT ||
+			  hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
+
+	clockid_t id = ((hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT) ? CLOCK_MONOTONIC : CLOCK_MONOTONIC_RAW);
+	struct timespec ts;
+	if (clock_gettime(id, &ts) != 0)
+	{
+		throw tcu::ResourceError("Unable to obtain host native timestamp for POSIX");
+	}
+	return (static_cast<deUint64>(ts.tv_sec) * 1000000000ULL + ts.tv_nsec);
+#endif
+}
+
+deUint64 CalibratedTimestampTestInstance::getHostNanoseconds(deUint64 hostTimestamp) const
+{
+#if (DE_OS == DE_OS_WIN32)
+	deUint64 secs	= hostTimestamp / m_frequency;
+	deUint64 nanos	= ((hostTimestamp % m_frequency) * kNanosecondsPerSecond) / m_frequency;
+	return ((secs * kNanosecondsPerSecond) + nanos);
+#else
+	return hostTimestamp;
+#endif
+}
+
+// This method will be used when devTicksDelta is (supposedly) a small amount of ticks between two events. We will check
+// devTicksDelta is reasonably small for the calculation below to succeed without losing precision.
+deUint64 CalibratedTimestampTestInstance::getDeviceNanoseconds(deUint64 devTicksDelta) const
+{
+	if (devTicksDelta > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
+	{
+		std::ostringstream msg;
+		msg << "Number of device ticks too big for conversion to nanoseconds: " << devTicksDelta;
+		throw tcu::InternalError(msg.str());
+	}
+	return static_cast<deUint64>(static_cast<double>(devTicksDelta) * m_timestampPeriod);
+}
+
+tcu::TestStatus CalibratedTimestampTestInstance::iterate(void)
+{
+	// Notes:
+	//	1) Clocks may overflow.
+	//	2) Because m_timestampPeriod is a floating point value, there may be less than one nano per tick.
+
+	const tcu::TestStatus result = runTest();
+	if (result.getCode() != QP_TEST_RESULT_PASS)
+		return result;
+
+	if (!m_qualityMessage.empty())
+	{
+		const std::string msg = "Warnings found: " + m_qualityMessage;
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, msg);
+	}
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Verify all invalid timestamp bits are zero.
+void CalibratedTimestampTestInstance::verifyDevTimestampMask(deUint64 value) const
+{
+	// The spec says:
+	// timestampValidBits is the unsigned integer count of meaningful bits in
+	// the timestamps written via vkCmdWriteTimestamp. The valid range for the
+	// count is 36..64 bits, or a value of 0, indicating no support for
+	// timestamps. Bits outside the valid range are guaranteed to be zeros.
+	if (value > m_devTimestampMask)
+	{
+		std::ostringstream msg;
+		msg << std::hex << "Invalid device timestamp value 0x" << value << " according to device timestamp mask 0x" << m_devTimestampMask;
+		TCU_FAIL(msg.str());
+	}
+}
+
+// Absolute difference between two timestamps A and B taking overflow into account. Pick the smallest difference between the two
+// possibilities. We don't know beforehand if B > A or vice versa. Take the valid bit mask into account.
+deUint64 CalibratedTimestampTestInstance::absDiffWithOverflow(deUint64 a, deUint64 b, deUint64 mask) const
+{
+	//	<---------+ range +-------->
+	//
+	//	+--------------------------+
+	//	|         deUint64         |
+	//	+------^-----------^-------+
+	//	       +           +
+	//	       a           b
+	//	       +----------->
+	//	       ccccccccccccc
+	//	------>             +-------
+	//	ddddddd             dddddddd
+
+	DE_ASSERT(a <= mask);
+	DE_ASSERT(b <= mask);
+
+	const deUint64 c = ((a >= b) ? (a - b) : (b - a));
+	if (c == 0u)
+		return c;
+	const deUint64 d = (mask - c) + 1;
+	return ((c < d) ? c : d);
+}
+
+// Positive difference between both marks, advancing from before to after, taking overflow and the valid bit mask into account.
+deUint64 CalibratedTimestampTestInstance::positiveDiffWithOverflow(deUint64 before, deUint64 after, deUint64 mask) const
+{
+	DE_ASSERT(before <= mask);
+	DE_ASSERT(after  <= mask);
+
+	return ((before <= after) ? (after - before) : ((mask - (before - after)) + 1));
+}
+
+// Return true if middle is not between begin and end, taking overflow into account.
+bool CalibratedTimestampTestInstance::outOfRange(deUint64 begin, deUint64 middle, deUint64 end) const
+{
+	return (((begin <= end) && (middle < begin || middle > end	)) ||
+			((begin >  end) && (middle > end   && middle < begin)));
+}
+
+std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTimestampTestInstance::getCalibratedTimestamps(const std::vector<VkTimeDomainEXT>& domains)
+{
+	std::vector<VkCalibratedTimestampInfoEXT> infos;
+	for (auto domain : domains)
+	{
+		VkCalibratedTimestampInfoEXT info;
+		info.sType = getStructureType<VkCalibratedTimestampInfoEXT>();
+		info.pNext = DE_NULL;
+		info.timeDomain = domain;
+		infos.push_back(info);
+	}
+
+	std::vector<deUint64> timestamps(domains.size());
+	deUint64			  deviation;
+
+	const DeviceInterface&      vk          = m_context.getDeviceInterface();
+	const VkDevice              vkDevice    = m_context.getDevice();
+
+	VK_CHECK(vk.getCalibratedTimestampsEXT(vkDevice, static_cast<deUint32>(domains.size()), infos.data(), timestamps.data(), &deviation));
+
+	if (deviation > kDeviationErrorLimitNanos)
+	{
+		throw tcu::InternalError("Calibrated maximum deviation too big");
+	}
+	else if (deviation > kDeviationWarningLimitNanos)
+	{
+		appendQualityMessage("Calibrated maximum deviation beyond desirable limits");
+	}
+	else if (deviation == 0 && domains.size() > 1)
+	{
+		appendQualityMessage("Calibrated maximum deviation reported as zero");
+	}
+
+	// Pack results.
+	std::vector<CalibratedTimestamp> results;
+	for (size_t i = 0; i < domains.size(); ++i)
+	{
+		if (domains[i] == VK_TIME_DOMAIN_DEVICE_EXT)
+			verifyDevTimestampMask(timestamps[i]);
+		results.emplace_back(timestamps[i], deviation);
+	}
+	return results;
+}
+
+CalibratedTimestampTestInstance::CalibratedTimestamp CalibratedTimestampTestInstance::getCalibratedTimestamp(VkTimeDomainEXT domain)
+{
+	// Single domain, single result.
+	return getCalibratedTimestamps(std::vector<VkTimeDomainEXT>(1, domain))[0];
+}
+
+void CalibratedTimestampTestInstance::appendQualityMessage(const std::string& message)
+{
+	if (!m_qualityMessage.empty())
+		m_qualityMessage += "; ";
+	m_qualityMessage += message;
+}
+
+// Test device domain makes sense and is consistent with vkCmdWriteTimestamp().
+tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest()
+{
+	if (!m_devDomain)
+		throw tcu::NotSupportedError("No suitable device time domain found");
+
+	const VkTimeDomainEXT		devDomain	= *m_devDomain;
+	const DeviceInterface&      vk          = m_context.getDeviceInterface();
+	const VkDevice              vkDevice    = m_context.getDevice();
+	const VkQueue               queue       = m_context.getUniversalQueue();
+
+	const CalibratedTimestamp	before		= getCalibratedTimestamp(devDomain);
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	const CalibratedTimestamp	after		= getCalibratedTimestamp(devDomain);
+	const deUint64				diffNanos	= getDeviceNanoseconds(positiveDiffWithOverflow(before.timestamp, after.timestamp, m_devTimestampMask));
+	deUint64					written;
+	VK_CHECK(vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, 1u, sizeof(written), &written, sizeof(written), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)));
+	verifyDevTimestampMask(written);
+
+	if (diffNanos > kBatchTimeLimitNanos)
+	{
+		return tcu::TestStatus::fail("Batch of work took too long to execute");
+	}
+
+	if (outOfRange(before.timestamp, written, after.timestamp))
+	{
+		return tcu::TestStatus::fail("vkCmdWriteTimestamp() inconsistent with vkGetCalibratedTimestampsEXT()");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Test host domain makes sense and is consistent with native host values.
+tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest()
+{
+	if (!m_hostDomain)
+		throw tcu::NotSupportedError("No suitable host time domain found");
+
+	const VkTimeDomainEXT		hostDomain	= *m_hostDomain;
+	const deUint64				before		= getHostNativeTimestamp(hostDomain);
+	const CalibratedTimestamp	vkTS		= getCalibratedTimestamp(hostDomain);
+	const deUint64				after		= getHostNativeTimestamp(hostDomain);
+	const deUint64				diffNanos	= getHostNanoseconds(positiveDiffWithOverflow(before, after));
+
+	if (diffNanos > kBatchTimeLimitNanos)
+	{
+		return tcu::TestStatus::fail("Querying host domain took too long to execute");
+	}
+
+	if (outOfRange(before, vkTS.timestamp, after))
+	{
+		return tcu::TestStatus::fail("vkGetCalibratedTimestampsEXT() inconsistent with native host API");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+// Verify predictable timestamps and calibration possible.
+tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest()
+{
+	if (!m_devDomain)
+		throw tcu::NotSupportedError("No suitable device time domain found");
+	if (!m_hostDomain)
+		throw tcu::NotSupportedError("No suitable host time domain found");
+
+	VkTimeDomainEXT					devDomain	= *m_devDomain;
+	VkTimeDomainEXT					hostDomain	= *m_hostDomain;
+
+	std::vector<VkTimeDomainEXT>	domains;
+	domains.push_back(devDomain);		// Device results at index 0.
+	domains.push_back(hostDomain);	// Host results at index 1.
+
+	// Measure time.
+	constexpr deUint32	kSleepMilliseconds	= 200;
+	constexpr deUint32	kSleepNanoseconds	= kSleepMilliseconds * kNanosecondsPerMillisecond;
+
+	const std::vector<CalibratedTimestamp> before	= getCalibratedTimestamps(domains);
+	std::this_thread::sleep_for(std::chrono::nanoseconds(kSleepNanoseconds));
+	const std::vector<CalibratedTimestamp> after	= getCalibratedTimestamps(domains);
+
+	// Check device timestamp is as expected.
+	const deUint64 devBeforeTicks	= before[0].timestamp;
+	const deUint64 devAfterTicks	= after[0].timestamp;
+	const deUint64 devExpectedTicks	= ((devBeforeTicks + static_cast<deUint64>(static_cast<double>(kSleepNanoseconds) / m_timestampPeriod)) & m_devTimestampMask);
+	const deUint64 devDiffNanos		= getDeviceNanoseconds(absDiffWithOverflow(devAfterTicks, devExpectedTicks, m_devTimestampMask));
+	const deUint64 maxDevDiffNanos	= std::max({ kDefaultToleranceNanos, before[0].deviation + after[0].deviation });
+
+	if (devDiffNanos > maxDevDiffNanos)
+	{
+		std::ostringstream msg;
+		msg << "Device expected timestamp differs " << devDiffNanos << " nanoseconds (expect value <= " << maxDevDiffNanos << ")";
+		return tcu::TestStatus::fail(msg.str());
+	}
+
+	// Check host timestamp is as expected.
+	const deUint64 hostBefore		= getHostNanoseconds(before[1].timestamp);
+	const deUint64 hostAfter		= getHostNanoseconds(after[1].timestamp);
+	const deUint64 hostExpected		= hostBefore + kSleepNanoseconds;
+	const deUint64 hostDiff			= absDiffWithOverflow(hostAfter, hostExpected);
+	const deUint64 maxHostDiff		= std::max({ kDefaultToleranceNanos, before[1].deviation + after[1].deviation });
+
+	if (hostDiff > maxHostDiff)
+	{
+		std::ostringstream msg;
+		msg << "Host expected timestamp differs " << hostDiff << " nanoseconds (expected value <= " << maxHostDiff << ")";
+		return tcu::TestStatus::fail(msg.str());
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 class BasicGraphicsTest : public TimestampTest
 {
 public:
@@ -827,7 +1441,8 @@ public:
 	};
 				 BasicGraphicsTestInstance  (Context&              context,
 											 const StageFlagVector stages,
-											 const bool            inRenderPass);
+											 const bool            inRenderPass,
+											 const bool            hostQueryReset);
 	virtual      ~BasicGraphicsTestInstance (void);
 protected:
 	virtual void configCommandBuffer        (void);
@@ -885,7 +1500,7 @@ void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) cons
 
 TestInstance* BasicGraphicsTest::createInstance(Context& context) const
 {
-	return new BasicGraphicsTestInstance(context,m_stages,m_inRenderPass);
+	return new BasicGraphicsTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
 }
 
 void BasicGraphicsTestInstance::buildVertexBuffer(void)
@@ -1034,8 +1649,9 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 
 BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context&              context,
 													 const StageFlagVector stages,
-													 const bool            inRenderPass)
-													 : TimestampTestInstance (context,stages,inRenderPass)
+													 const bool            inRenderPass,
+													 const bool            hostQueryReset)
+													 : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset)
 													 , m_renderSize  (32, 32)
 													 , m_colorFormat (VK_FORMAT_R8G8B8A8_UNORM)
 													 , m_depthFormat (VK_FORMAT_D16_UNORM)
@@ -1073,7 +1689,8 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	if (!m_hostQueryReset)
+		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
@@ -1124,7 +1741,8 @@ class AdvGraphicsTestInstance : public BasicGraphicsTestInstance
 public:
 				 AdvGraphicsTestInstance  (Context&              context,
 										   const StageFlagVector stages,
-										   const bool            inRenderPass);
+										   const bool            inRenderPass,
+										   const bool            hostQueryReset);
 	virtual      ~AdvGraphicsTestInstance (void);
 	virtual void configCommandBuffer      (void);
 protected:
@@ -1202,7 +1820,7 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 
 TestInstance* AdvGraphicsTest::createInstance(Context& context) const
 {
-	return new AdvGraphicsTestInstance(context,m_stages,m_inRenderPass);
+	return new AdvGraphicsTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
 }
 
 void AdvGraphicsTestInstance::featureSupportCheck(void)
@@ -1233,8 +1851,9 @@ void AdvGraphicsTestInstance::featureSupportCheck(void)
 
 AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
 												 const StageFlagVector stages,
-												 const bool            inRenderPass)
-	: BasicGraphicsTestInstance(context, stages, inRenderPass)
+												 const bool            inRenderPass,
+												 const bool            hostQueryReset)
+	: BasicGraphicsTestInstance(context, stages, inRenderPass, hostQueryReset)
 {
 	m_features = m_context.getDeviceFeatures();
 
@@ -1309,7 +1928,8 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	if (!m_hostQueryReset)
+		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
@@ -1362,7 +1982,8 @@ class BasicComputeTestInstance : public TimestampTestInstance
 public:
 				 BasicComputeTestInstance  (Context&              context,
 											const StageFlagVector stages,
-											const bool            inRenderPass);
+											const bool            inRenderPass,
+											const bool            hostQueryReset);
 	virtual      ~BasicComputeTestInstance (void);
 	virtual void configCommandBuffer       (void);
 protected:
@@ -1405,13 +2026,14 @@ void BasicComputeTest::initPrograms(SourceCollections& programCollection) const
 
 TestInstance* BasicComputeTest::createInstance(Context& context) const
 {
-	return new BasicComputeTestInstance(context,m_stages,m_inRenderPass);
+	return new BasicComputeTestInstance(context,m_stages,m_inRenderPass, m_hostQueryReset);
 }
 
 BasicComputeTestInstance::BasicComputeTestInstance(Context&              context,
 												   const StageFlagVector stages,
-												   const bool            inRenderPass)
-	: TimestampTestInstance(context, stages, inRenderPass)
+												   const bool            inRenderPass,
+												   const bool            hostQueryReset)
+	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset)
 {
 	const DeviceInterface&      vk                  = context.getDeviceInterface();
 	const VkDevice              vkDevice            = context.getDevice();
@@ -1531,7 +2153,8 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	if (!m_hostQueryReset)
+		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelines);
 	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
@@ -1566,6 +2189,7 @@ public:
 					TransferTestInstance	(Context&					context,
 											 const StageFlagVector		stages,
 											 const bool					inRenderPass,
+											 const bool					hostQueryReset,
 											 const TransferMethod		method);
 	virtual         ~TransferTestInstance	(void);
 	virtual void    configCommandBuffer		(void);
@@ -1613,14 +2237,15 @@ void TransferTest::initPrograms(SourceCollections& programCollection) const
 
 TestInstance* TransferTest::createInstance(Context& context) const
 {
-  return new TransferTestInstance(context, m_stages, m_inRenderPass, m_method);
+  return new TransferTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_method);
 }
 
 TransferTestInstance::TransferTestInstance(Context&              context,
 										   const StageFlagVector stages,
 										   const bool            inRenderPass,
+										   const bool            hostQueryReset,
 										   const TransferMethod  method)
-	: TimestampTestInstance(context, stages, inRenderPass)
+	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset)
 	, m_method(method)
 	, m_bufSize(256u)
 	, m_imageFormat(VK_FORMAT_R8G8B8A8_UNORM)
@@ -1636,7 +2261,7 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 
 	// Init the source buffer memory
 	char* pBuf = reinterpret_cast<char*>(m_srcBufferAlloc->getHostPtr());
-	memset(pBuf, 0xFF, sizeof(char)*(size_t)m_bufSize);
+	deMemset(pBuf, 0xFF, sizeof(char)*(size_t)m_bufSize);
 	flushAlloc(vk, vkDevice, *m_srcBufferAlloc);
 
 	// Create dst buffer
@@ -1705,7 +2330,8 @@ void TransferTestInstance::configCommandBuffer(void)
 	vk.cmdClearColorImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
 	vk.cmdClearColorImage(*m_cmdBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, &dstClearValue, 1u, &subRangeColor);
 
-	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	if (!m_hostQueryReset)
+		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
 	// Copy Operations
 	const VkImageSubresourceLayers imgSubResCopy =
@@ -1826,6 +2452,22 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
 				vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 8u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+				const vk::VkBufferMemoryBarrier bufferBarrier =
+				{
+					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+					DE_NULL,										// const void*		pNext;
+					vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+					vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+					VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+					*m_dstBuffer,									// VkBuffer			buffer;
+					0ull,											// VkDeviceSize		offset;
+					VK_WHOLE_SIZE									// VkDeviceSize		size;
+				};
+				vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+									  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+
 				vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
 				break;
 			}
@@ -1878,6 +2520,120 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
+class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase
+{
+public:
+	ResetTimestampQueryBeforeCopyTest							(tcu::TestContext&	testContext,
+																 const std::string&	name,
+																 const std::string&	description)
+		: vkt::TestCase(testContext, name, description)
+		{ }
+	virtual               ~ResetTimestampQueryBeforeCopyTest	(void) { }
+	virtual void          initPrograms							(SourceCollections&	programCollection) const;
+	virtual TestInstance* createInstance						(Context&			context) const;
+};
+
+class ResetTimestampQueryBeforeCopyTestInstance : public vkt::TestInstance
+{
+public:
+							ResetTimestampQueryBeforeCopyTestInstance	(Context& context);
+	virtual					~ResetTimestampQueryBeforeCopyTestInstance	(void) { }
+	virtual tcu::TestStatus	iterate										(void);
+protected:
+	struct TimestampWithAvailability
+	{
+		deUint64 timestamp;
+		deUint64 availability;
+	};
+
+	Move<VkCommandPool>		m_cmdPool;
+	Move<VkCommandBuffer>	m_cmdBuffer;
+	Move<VkQueryPool>		m_queryPool;
+
+	Move<VkBuffer>			m_resultBuffer;
+	de::MovePtr<Allocation>	m_resultBufferMemory;
+};
+
+void ResetTimestampQueryBeforeCopyTest::initPrograms(SourceCollections& programCollection) const
+{
+	vkt::TestCase::initPrograms(programCollection);
+}
+
+TestInstance* ResetTimestampQueryBeforeCopyTest::createInstance(Context& context) const
+{
+	return new ResetTimestampQueryBeforeCopyTestInstance(context);
+}
+
+ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInstance(Context& context)
+	: vkt::TestInstance(context)
+{
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	Allocator&				allocator			= m_context.getDefaultAllocator();
+
+	// Check support for timestamp queries
+	{
+		const std::vector<VkQueueFamilyProperties> queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+		DE_ASSERT(static_cast<size_t>(queueFamilyIndex) < queueProperties.size());
+		if (queueProperties[queueFamilyIndex].timestampValidBits == 0)
+			throw tcu::NotSupportedError("Universal queue does not support timestamps");
+	}
+
+	const VkQueryPoolCreateInfo queryPoolParams =
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	// VkStructureType               sType;
+		DE_NULL,									// const void*                   pNext;
+		0u,											// VkQueryPoolCreateFlags        flags;
+		VK_QUERY_TYPE_TIMESTAMP,					// VkQueryType                   queryType;
+		1u,											// deUint32                      entryCount;
+		0u,											// VkQueryPipelineStatisticFlags pipelineStatistics;
+	};
+
+	m_queryPool		= createQueryPool(vk, vkDevice, &queryPoolParams);
+	m_cmdPool		= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdBuffer		= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Create results buffer.
+	const VkBufferCreateInfo bufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		sizeof(TimestampWithAvailability),			// VkDeviceSize			size;
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+		1u,											// deUint32				queueFamilyIndexCount;
+		&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+	};
+
+	m_resultBuffer			= createBuffer(vk, vkDevice, &bufferCreateInfo);
+	m_resultBufferMemory	= allocator.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_resultBuffer), MemoryRequirement::HostVisible);
+	VK_CHECK(vk.bindBufferMemory(vkDevice, *m_resultBuffer, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset()));
+
+	// Prepare command buffer.
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
+	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
+	vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer, 0u, sizeof(TimestampWithAvailability), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+tcu::TestStatus ResetTimestampQueryBeforeCopyTestInstance::iterate(void)
+{
+	const DeviceInterface&      vk          = m_context.getDeviceInterface();
+	const VkDevice              vkDevice    = m_context.getDevice();
+	const VkQueue               queue       = m_context.getUniversalQueue();
+	TimestampWithAvailability	ta;
+
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	invalidateAlloc(vk, vkDevice, *m_resultBufferMemory);
+	deMemcpy(&ta, m_resultBufferMemory->getHostPtr(), sizeof(ta));
+	return ((ta.availability != 0)? tcu::TestStatus::fail("Availability bit nonzero after resetting query") : tcu::TestStatus::pass("Pass"));
+}
+
+
 class TwoCmdBuffersTest : public TimestampTest
 {
 public:
@@ -1899,6 +2655,7 @@ public:
 							TwoCmdBuffersTestInstance	(Context&				context,
 														 const StageFlagVector	stages,
 														 const bool				inRenderPass,
+														 const bool             hostQueryReset,
 														 VkCommandBufferLevel	cmdBufferLevel);
 	virtual					~TwoCmdBuffersTestInstance	(void);
 	virtual tcu::TestStatus	iterate						(void);
@@ -1914,14 +2671,15 @@ protected:
 
 TestInstance* TwoCmdBuffersTest::createInstance (Context& context) const
 {
-	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_cmdBufferLevel);
+	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_cmdBufferLevel);
 }
 
 TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance (Context&					context,
 													  const StageFlagVector		stages,
 													  const bool				inRenderPass,
+													  const bool                hostQueryReset,
 													  VkCommandBufferLevel		cmdBufferLevel)
-: TimestampTestInstance (context, stages, inRenderPass), m_cmdBufferLevel(cmdBufferLevel)
+: TimestampTestInstance (context, stages, inRenderPass, hostQueryReset), m_cmdBufferLevel(cmdBufferLevel)
 {
 	const DeviceInterface&	vk			= context.getDeviceInterface();
 	const VkDevice			vkDevice	= context.getDevice();
@@ -1946,14 +2704,30 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		(const VkCommandBufferInheritanceInfo*)DE_NULL	// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 	};
 
+	const vk::VkBufferMemoryBarrier bufferBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,										// const void*		pNext;
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+		*m_dstBuffer,									// VkBuffer			buffer;
+		0ull,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE									// VkDeviceSize		size;
+	};
+
 	if (m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 	{
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+		if (!m_hostQueryReset)
+			vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 		vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, *m_queryPool, 0);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 		VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdCopyQueryPoolResults(*m_secondCmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, 0u);
+		vk.cmdPipelineBarrier(*m_secondCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
 	}
 	else
@@ -1985,6 +2759,8 @@ void TwoCmdBuffersTestInstance::configCommandBuffer (void)
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 		vk.cmdExecuteCommands(m_cmdBuffer.get(), 1u, &m_secondCmdBuffer.get());
 		vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, 0u);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+							  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
 }
@@ -2010,6 +2786,12 @@ tcu::TestStatus TwoCmdBuffersTestInstance::iterate (void)
 		0u,																// deUint32                       signalSemaphoreCount;
 		DE_NULL,														// const VkSemaphore*             pSignalSemaphores;
 	};
+
+	if (m_hostQueryReset)
+	{
+		// Only reset the pool for the primary command buffer, the secondary command buffer will reset the pool by itself.
+		vk.resetQueryPoolEXT(m_context.getDevice(), *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+	}
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
 	VK_CHECK(vk.queueWaitIdle(queue));
@@ -2041,7 +2823,12 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(basicGraphicsStages0); stageNdx++)
 		{
-			TimestampTestParam param(basicGraphicsStages0[stageNdx], 2u, true);
+			TimestampTestParam param(basicGraphicsStages0[stageNdx], 2u, true, false);
+			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			param.toggleInRenderPass();
+			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			// Host Query reset tests
+			param.toggleHostQueryReset();
 			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
 			param.toggleInRenderPass();
 			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
@@ -2054,7 +2841,12 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(basicGraphicsStages1); stageNdx++)
 		{
-			TimestampTestParam param(basicGraphicsStages1[stageNdx], 3u, true);
+			TimestampTestParam param(basicGraphicsStages1[stageNdx], 3u, true, false);
+			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			param.toggleInRenderPass();
+			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
+			// Host Query reset tests
+			param.toggleHostQueryReset();
 			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
 			param.toggleInRenderPass();
 			basicGraphicsTests->addChild(newTestCase<BasicGraphicsTest>(testCtx, &param));
@@ -2076,7 +2868,12 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(advGraphicsStages); stageNdx++)
 		{
-			TimestampTestParam param(advGraphicsStages[stageNdx], 2u, true);
+			TimestampTestParam param(advGraphicsStages[stageNdx], 2u, true, false);
+			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+			param.toggleInRenderPass();
+			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
+			// Host Query reset tests
+			param.toggleHostQueryReset();
 			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
 			param.toggleInRenderPass();
 			advGraphicsTests->addChild(newTestCase<AdvGraphicsTest>(testCtx, &param));
@@ -2096,7 +2893,10 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		};
 		for (deUint32 stageNdx = 0u; stageNdx < DE_LENGTH_OF_ARRAY(basicComputeStages); stageNdx++)
 		{
-			TimestampTestParam param(basicComputeStages[stageNdx], 2u, false);
+			TimestampTestParam param(basicComputeStages[stageNdx], 2u, false, false);
+			basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
+			// Host Query reset test
+			param.toggleHostQueryReset();
 			basicComputeTests->addChild(newTestCase<BasicComputeTest>(testCtx, &param));
 		}
 
@@ -2116,7 +2916,10 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		{
 			for (deUint32 method = 0u; method < TRANSFER_METHOD_LAST; method++)
 			{
-				TransferTimestampTestParam param(transferStages[stageNdx], 2u, false, method);
+				TransferTimestampTestParam param(transferStages[stageNdx], 2u, false, false, method);
+				transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
+				// Host Query reset test
+				param.toggleHostQueryReset();
 				transferTests->addChild(newTestCase<TransferTest>(testCtx, &param));
 			}
 		}
@@ -2124,28 +2927,61 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 		timestampTests->addChild(transferTests.release());
 	}
 
+	// Calibrated Timestamp Tests.
+	{
+		de::MovePtr<tcu::TestCaseGroup> calibratedTimestampTests (new tcu::TestCaseGroup(testCtx, "calibrated", "VK_EXT_calibrated_timestamps tests"));
+
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampDevDomainTestInstance>	(testCtx, "dev_domain_test",	"Test device domain"));
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampHostDomainTestInstance>	(testCtx, "host_domain_test",	"Test host domain"));
+		calibratedTimestampTests->addChild(new CalibratedTimestampTest<CalibratedTimestampCalibrationTestInstance>	(testCtx, "calibration_test",	"Test calibration using device and host domains"));
+
+		timestampTests->addChild(calibratedTimestampTests.release());
+	}
+
 	// Misc Tests
 	{
 		de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
 
 		const VkPipelineStageFlagBits miscStages[] = {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-		TimestampTestParam param(miscStages, 1u, false);
+		TimestampTestParam param(miscStages, 1u, false, false);
 		miscTests->addChild(new TimestampTest(testCtx,
 											  "timestamp_only",
 											  "Only write timestamp command in the commmand buffer",
 											  &param));
 
-		TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(miscStages, 1u, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
 												  "two_cmd_buffers_primary",
 												  "Issue query in a command buffer and copy it on another primary command buffer",
 												  &twoCmdBuffersParamPrimary));
 
-		TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(miscStages, 1u, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(miscStages, 1u, false, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
 		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
 												  "two_cmd_buffers_secondary",
 												  "Issue query in a secondary command buffer and copy it on a primary command buffer",
 												  &twoCmdBuffersParamSecondary));
+		// Misc: Host Query Reset tests
+		param.toggleHostQueryReset();
+		miscTests->addChild(new TimestampTest(testCtx,
+											  "timestamp_only_host_query_reset",
+											  "Only write timestamp command in the commmand buffer",
+											  &param));
+		TwoCmdBuffersTestParam twoCmdBuffersParamPrimaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+												  "two_cmd_buffers_primary_host_query_reset",
+												  "Issue query in a command buffer and copy it on another primary command buffer",
+												  &twoCmdBuffersParamPrimaryHostQueryReset));
+
+		TwoCmdBuffersTestParam twoCmdBuffersParamSecondaryHostQueryReset(miscStages, 1u, false, true, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+												  "two_cmd_buffers_secondary_host_query_reset",
+												  "Issue query in a secondary command buffer and copy it on a primary command buffer",
+												  &twoCmdBuffersParamSecondaryHostQueryReset));
+
+		// Reset timestamp query before copying results.
+		miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx,
+																  "reset_query_before_copy",
+																  "Issue a timestamp query and reset it before copying results"));
 
 		timestampTests->addChild(miscTests.release());
 	}

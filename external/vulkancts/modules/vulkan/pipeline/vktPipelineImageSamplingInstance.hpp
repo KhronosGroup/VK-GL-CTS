@@ -59,6 +59,7 @@ public:
 																		 const vk::VkSamplerCreateInfo&		samplerParams,
 																		 float								samplerLod,
 																		 const std::vector<Vertex4Tex4>&	vertices,
+																		 bool								separateStencilUsage = false,
 																		 vk::VkDescriptorType				samplingType = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 																		 int								imageCount = 1,
 																		 AllocationKind						allocationKind = ALLOCATION_KIND_SUBALLOCATED);
@@ -123,6 +124,8 @@ private:
 
 	vk::Move<vk::VkCommandPool>					m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;
+
+	const bool									m_separateStencilUsage;
 };
 
 } // pipeline

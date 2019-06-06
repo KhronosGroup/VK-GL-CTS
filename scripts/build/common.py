@@ -87,14 +87,28 @@ def execute (args):
 	if retcode != 0:
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
-def readFile (filename):
+def readBinaryFile (filename):
 	f = open(filename, 'rb')
 	data = f.read()
 	f.close()
 	return data
 
-def writeFile (filename, data):
+def readFile (filename):
+	f = open(filename, 'rt')
+	data = f.read()
+	f.close()
+	return data
+
+def writeBinaryFile (filename, data):
 	f = open(filename, 'wb')
+	f.write(data)
+	f.close()
+
+def writeFile (filename, data):
+	if (sys.version_info < (3, 0)):
+		f = open(filename, 'wt')
+	else:
+		f = open(filename, 'wt', newline='\n')
 	f.write(data)
 	f.close()
 

@@ -110,7 +110,7 @@ static Value findValueByTag (const xe::ri::List& items, const string& tagName)
 		if (item.getType() == xe::ri::TYPE_SECTION)
 		{
 			const Value value = findValueByTag(static_cast<const xe::ri::Section&>(item).items, tagName);
-			if (value.getType() != Value::TYPE_EMPTY)
+			if (value.getType() != Value::NUMVALTYPE_EMPTY)
 				return value;
 		}
 		else if (item.getType() == xe::ri::TYPE_NUMBER)

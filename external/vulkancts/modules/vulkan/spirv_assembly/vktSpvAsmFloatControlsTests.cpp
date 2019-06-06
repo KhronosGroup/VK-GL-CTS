@@ -57,9 +57,9 @@ enum FloatType
 // Enum containing float behaviors that its possible to test.
 enum BehaviorFlagBits
 {
-	B_DENORM_PERSERVE	= 0x00000001,		// DenormPreserve
+	B_DENORM_PRESERVE	= 0x00000001,		// DenormPreserve
 	B_DENORM_FLUSH		= 0x00000002,		// DenormFlushToZero
-	B_ZIN_PERSERVE		= 0x00000004,		// SignedZeroInfNanPreserve
+	B_ZIN_PRESERVE		= 0x00000004,		// SignedZeroInfNanPreserve
 	B_RTE_ROUNDING		= 0x00000008,		// RoundingModeRTE
 	B_RTZ_ROUNDING		= 0x00000010		// RoundingModeRTZ
 };
@@ -1714,8 +1714,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		OperationId			operation	= binaryCase.operationId;
 		testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult));
 		testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PERSERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PERSERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
+		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
+		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
 	}
 
 	// Denorm - FlushToZero - unary operations
@@ -1731,10 +1731,10 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		const BinaryCase&	binaryCase	= typeTestResults->binaryOpDenormPreserve[i];
 		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PERSERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PERSERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PERSERVE | B_ZIN_PERSERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PERSERVE | B_ZIN_PERSERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
+		testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult));
+		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
+		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
+		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
 	}
 
 	// Denom - Preserve - unary operations
@@ -1742,7 +1742,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		const UnaryCase&	unaryCase	= typeTestResults->unaryOpDenormPreserve[i];
 		OperationId			operation	= unaryCase.operationId;
-		testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PERSERVE, operation, V_DENORM, V_UNUSED, unaryCase.result));
+		testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result));
 	}
 
 	struct ZINCase
@@ -1788,11 +1788,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		if (isFP64 && !zc.supportedByFP64)
 			continue;
 
-		testCases.push_back(OTC("zero_op_var_preserve",				B_ZIN_PERSERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult));
-		testCases.push_back(OTC("signed_zero_op_var_preserve",		B_ZIN_PERSERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult));
-		testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PERSERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult));
-		testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PERSERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult));
-		testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PERSERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult));
+		testCases.push_back(OTC("zero_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult));
+		testCases.push_back(OTC("signed_zero_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult));
+		testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult));
+		testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult));
+		testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult));
 	}
 
 	// Signed Zero Inf Nan - Preserve - unary operations
@@ -1802,11 +1802,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		if (isFP64 && !zc.supportedByFP64)
 			continue;
 
-		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PERSERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult));
-		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PERSERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult));
-		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PERSERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult));
-		testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PERSERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult));
-		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PERSERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult));
+		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult));
+		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult));
+		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult));
+		testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult));
+		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult));
 	}
 
 	// comparison operations - tested differently because they return true/false
@@ -1834,7 +1834,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	for (int op = 0 ; op < DE_LENGTH_OF_ARRAY(comparisonCases) ; ++op)
 	{
 		const ComparisonCase& cc = comparisonCases[op];
-		testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PERSERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
+		testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
 	}
 
 	if (argumentsFromInput)
@@ -1915,11 +1915,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		else
 		{
 			// PackHalf2x16 - verification done in SPIR-V
-			testCases.push_back(OTC("pack_half_denorm_preserve",		B_DENORM_PERSERVE,	O_PH_DENORM,	V_UNUSED, V_UNUSED, V_ONE));
+			testCases.push_back(OTC("pack_half_denorm_preserve",		B_DENORM_PRESERVE,	O_PH_DENORM,	V_UNUSED, V_UNUSED, V_ONE));
 
 			// UnpackHalf2x16 - custom arguments defined as constants
 			testCases.push_back(OTC("upack_half_denorm_flush_to_zero",	B_DENORM_FLUSH,		O_UPH_DENORM,	V_UNUSED, V_UNUSED, V_ZERO));
-			testCases.push_back(OTC("upack_half_denorm_preserve",		B_DENORM_PERSERVE,	O_UPH_DENORM,	V_UNUSED, V_UNUSED, V_CONV_DENORM_SMALLER));
+			testCases.push_back(OTC("upack_half_denorm_preserve",		B_DENORM_PRESERVE,	O_UPH_DENORM,	V_UNUSED, V_UNUSED, V_CONV_DENORM_SMALLER));
 		}
 
 		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32);
@@ -1930,11 +1930,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		if (!argumentsFromInput)
 		{
 			// PackDouble2x32 - custom arguments defined as constants
-			testCases.push_back(OTC("pack_double_denorm_preserve",			B_DENORM_PERSERVE,	O_PD_DENORM,			V_UNUSED, V_UNUSED, V_DENORM));
+			testCases.push_back(OTC("pack_double_denorm_preserve",			B_DENORM_PRESERVE,	O_PD_DENORM,			V_UNUSED, V_UNUSED, V_DENORM));
 
 			// UnpackDouble2x32 - verification done in SPIR-V
 			testCases.push_back(OTC("upack_double_denorm_flush_to_zero",	B_DENORM_FLUSH,		O_UPD_DENORM_FLUSH,		V_DENORM, V_UNUSED, V_ONE));
-			testCases.push_back(OTC("upack_double_denorm_preserve",			B_DENORM_PERSERVE,	O_UPD_DENORM_PRESERVE,	V_DENORM, V_UNUSED, V_ONE));
+			testCases.push_back(OTC("upack_double_denorm_preserve",			B_DENORM_PRESERVE,	O_UPD_DENORM_PRESERVE,	V_DENORM, V_UNUSED, V_ONE));
 		}
 
 		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64);
@@ -1950,16 +1950,16 @@ const Operation& TestCasesBuilder::getOperation(OperationId id) const
 void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult) const
 {
 	// Denom - Preserve
-	testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PERSERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult));
+	testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult));
 
 	// Denorm - FlushToZero
 	testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult));
 
 	// Signed Zero Inf Nan - Preserve
-	testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PERSERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO));
-	testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PERSERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO));
-	testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PERSERVE,		operationId, V_INF,			V_UNUSED, V_INF));
-	testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PERSERVE,		operationId, V_NAN,			V_UNUSED, V_NAN));
+	testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO));
+	testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO));
+	testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF));
+	testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN));
 }
 
 template <typename TYPE, typename FLOAT_TYPE>
@@ -2213,9 +2213,9 @@ TestGroupBuilderBase::TestGroupBuilderBase()
 	m_typeData[FP64].snippets		= TypeSnippetsSP(new TypeSnippets<double>);
 	m_typeData[FP64].testResults	= TypeTestResultsSP(new TypeTestResults<double>);
 
-	m_behaviorToName[B_DENORM_PERSERVE]	= "DenormPreserve";
+	m_behaviorToName[B_DENORM_PRESERVE]	= "DenormPreserve";
 	m_behaviorToName[B_DENORM_FLUSH]	= "DenormFlushToZero";
-	m_behaviorToName[B_ZIN_PERSERVE]	= "SignedZeroInfNanPreserve";
+	m_behaviorToName[B_ZIN_PRESERVE]	= "SignedZeroInfNanPreserve";
 	m_behaviorToName[B_RTE_ROUNDING]	= "RoundingModeRTE";
 	m_behaviorToName[B_RTZ_ROUNDING]	= "RoundingModeRTZ";
 }
@@ -2340,19 +2340,19 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 	switch(inFloatType)
 	{
 	case FP16:
-		floatControls.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PERSERVE;
+		floatControls.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PRESERVE;
 		floatControls.shaderDenormFlushToZeroFloat16		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PERSERVE;
+		floatControls.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case FP32:
-		floatControls.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PERSERVE;
+		floatControls.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PRESERVE;
 		floatControls.shaderDenormFlushToZeroFloat32		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PERSERVE;
+		floatControls.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	case FP64:
-		floatControls.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PERSERVE;
+		floatControls.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PRESERVE;
 		floatControls.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PERSERVE;
+		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PRESERVE;
 		return;
 	}
 }

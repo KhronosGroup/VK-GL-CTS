@@ -57,7 +57,7 @@ TestInstance* AmberTestCase::createInstance(Context& ctx) const
 	return new AmberTestInstance(ctx, m_recipe);
 }
 
-bool AmberTestCase::parse(const char* category, const char* filename)
+bool AmberTestCase::parse(const char* category, const std::string& filename)
 {
 	std::string readFilename("vulkan/amber/");
 	readFilename.append(category);
@@ -76,9 +76,14 @@ bool AmberTestCase::parse(const char* category, const char* filename)
 	{
 		getTestContext().getLog()
 			<< tcu::TestLog::Message
+			<< "Failed to parse Amber test "
+			<< readFilename
+			<< ": "
 			<< r.Error()
 			<< "\n"
 			<< tcu::TestLog::EndMessage;
+		// TODO(dneto): Enhance Amber to not require this.
+		m_recipe->SetImpl(DE_NULL);
 		return false;
 	}
 	return true;
@@ -174,12 +179,12 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 			m_context.getDeviceExtensions(), m_context.getUniversalQueueFamilyIndex(),
 			m_context.getUniversalQueue(), m_context.getInstanceProcAddr());
 
-	amber::Amber			am;
-	amber::Options			amber_options;
-	amber_options.engine	= amber::kEngineTypeVulkan;
-	amber_options.config	= vkConfig;
-	amber_options.delegate	= DE_NULL;
-
+	amber::Amber						am;
+	amber::Options						amber_options;
+	amber_options.engine				= amber::kEngineTypeVulkan;
+	amber_options.config				= vkConfig;
+	amber_options.delegate				= DE_NULL;
+	amber_options.pipeline_create_only	= false;
 
 	amber::Result r = am.ExecuteWithShaderData(m_recipe, &amber_options, shaderMap);
 	if (!r.IsSuccess()) {

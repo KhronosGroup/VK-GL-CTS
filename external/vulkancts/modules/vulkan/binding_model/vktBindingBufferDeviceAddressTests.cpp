@@ -30,6 +30,8 @@
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkObjUtil.hpp"
+
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 
@@ -432,23 +434,6 @@ VkBufferCreateInfo makeBufferCreateInfo (const void*				pNext,
 	return bufferCreateInfo;
 }
 
-Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
-										 const VkDevice					device,
-										 const void*					pNext,
-										 const VkDescriptorPool			descriptorPool,
-										 const VkDescriptorSetLayout	setLayout)
-{
-	const VkDescriptorSetAllocateInfo allocateParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// VkStructureType				sType;
-		pNext,												// const void*					pNext;
-		descriptorPool,										// VkDescriptorPool				descriptorPool;
-		1u,													// deUint32						setLayoutCount;
-		&setLayout,											// const VkDescriptorSetLayout*	pSetLayouts;
-	};
-	return allocateDescriptorSet(vk, device, &allocateParams);
-}
-
 VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
 									   const VkImageSubresourceLayers	subresourceLayers)
 {
@@ -551,7 +536,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1);
 
 	descriptorPool = poolBuilder.build(vk, device, poolCreateFlags, 1u);
-	descriptorSet = makeDescriptorSet(vk, device, DE_NULL, *descriptorPool, *descriptorSetLayout);
+	descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 
 	VkDeviceSize	align = de::max(de::max(properties.properties.limits.minUniformBufferOffsetAlignment,
 											properties.properties.limits.minStorageBufferOffsetAlignment),

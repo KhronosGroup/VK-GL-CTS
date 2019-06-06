@@ -154,6 +154,7 @@ public:
 	// Operators.
 	Vector<T, Size>&		operator+=	(const Vector<T, Size>& v);
 	Vector<T, Size>&		operator-=	(const Vector<T, Size>& v);
+	Vector<T, Size>&		operator=	(const Vector<T, Size>& v);
 
 	const T&				operator[]	(int ndx) const		{ DE_ASSERT(de::inBounds(ndx, 0, Size)); return m_data[ndx]; }
 	T&						operator[]	(int ndx)			{ DE_ASSERT(de::inBounds(ndx, 0, Size)); return m_data[ndx]; }
@@ -215,6 +216,14 @@ inline Vector<T, Size>::Vector (const Vector<T, Size>& v)
 {
 	for (int i = 0; i < Size; i++)
 		m_data[i] = v.m_data[i];
+}
+
+template <typename T, int Size>
+inline Vector<T, Size>& Vector<T, Size>::operator=(const Vector<T, Size>& v)
+{
+	for (int i = 0; i < Size; i++)
+		m_data[i] = v.m_data[i];
+	return *this;
 }
 
 template <typename T, int Size>

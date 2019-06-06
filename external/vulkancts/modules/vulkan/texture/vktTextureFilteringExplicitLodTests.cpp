@@ -67,87 +67,43 @@ using std::string;
 namespace
 {
 
-tcu::FloatFormat getConversionPrecision (VkFormat format)
+std::vector<tcu::FloatFormat> getPrecision (VkFormat format)
 {
-	const tcu::FloatFormat	reallyLow	(0, 0, 8, false, tcu::YES);
-	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
-	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
+	std::vector<tcu::FloatFormat>	floatFormats;
+	const tcu::FloatFormat			fp16			(-14, 15, 10, false);
+	const tcu::FloatFormat			fp32			(-126, 127, 23, true);
+	const tcu::TextureFormat		tcuFormat		= mapVkFormat(format);
+	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(tcuFormat.type);
+	const tcu::IVec4				channelDepth	= tcu::getTextureFormatBitDepth(tcuFormat);
 
-	switch (format)
+	for (int channelIdx = 0; channelIdx < 4; channelIdx++)
 	{
-	    case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			return reallyLow;
+		switch(channelClass)
+		{
+			case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+			case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+				floatFormats.push_back(tcu::FloatFormat(0, 0, channelDepth[channelIdx], false, tcu::YES));
+				break;
 
-		case VK_FORMAT_R8_UNORM:
-		case VK_FORMAT_R8_SNORM:
-		case VK_FORMAT_R8G8_UNORM:
-		case VK_FORMAT_R8G8_SNORM:
-		case VK_FORMAT_R8G8B8A8_UNORM:
-		case VK_FORMAT_R8G8B8A8_SNORM:
-		case VK_FORMAT_B8G8R8A8_UNORM:
-		case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case VK_FORMAT_A8B8G8R8_SNORM_PACK32:
-		case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-			return fp16;
+			case TEXTURECHANNELCLASS_FLOATING_POINT:
+				if (channelDepth[channelIdx] == 16)
+				{
+					floatFormats.push_back(fp16);
+				}
+				else
+				{
+					DE_ASSERT(channelDepth[channelIdx] == 32 || channelDepth[channelIdx] == 0);
+					floatFormats.push_back(fp32);
+				}
+				break;
 
-		case VK_FORMAT_R16_SFLOAT:
-		case VK_FORMAT_R16G16_SFLOAT:
-		case VK_FORMAT_R16G16B16A16_SFLOAT:
-			return fp16;
-
-		case VK_FORMAT_R32_SFLOAT:
-		case VK_FORMAT_R32G32_SFLOAT:
-		case VK_FORMAT_R32G32B32A32_SFLOAT:
-			return fp32;
-
-		default:
-			DE_FATAL("Precision not defined for format");
-			return fp32;
+			default:
+				DE_FATAL("Unexpected channel class.");
+			break;
+		};
 	}
-}
 
-tcu::FloatFormat getFilteringPrecision (VkFormat format)
-{
-	const tcu::FloatFormat	reallyLow	(0, 0, 6, false, tcu::YES);
-	const tcu::FloatFormat	low			(0, 0, 7, false, tcu::YES);
-	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
-	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
-
-	switch (format)
-	{
-	    case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			return reallyLow;
-
-		case VK_FORMAT_R8_UNORM:
-		case VK_FORMAT_R8_SNORM:
-		case VK_FORMAT_R8G8_UNORM:
-		case VK_FORMAT_R8G8_SNORM:
-		case VK_FORMAT_R8G8B8A8_UNORM:
-		case VK_FORMAT_R8G8B8A8_SNORM:
-		case VK_FORMAT_B8G8R8A8_UNORM:
-		case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case VK_FORMAT_A8B8G8R8_SNORM_PACK32:
-		case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-			return low;
-
-		case VK_FORMAT_R16_SFLOAT:
-		case VK_FORMAT_R16G16_SFLOAT:
-		case VK_FORMAT_R16G16B16A16_SFLOAT:
-			return fp16;
-
-		case VK_FORMAT_R32_SFLOAT:
-		case VK_FORMAT_R32G32_SFLOAT:
-		case VK_FORMAT_R32G32B32A32_SFLOAT:
-			return fp32;
-
-		default:
-			DE_FATAL("Precision not defined for format");
-			return fp32;
-	}
+	return floatFormats;
 }
 
 using namespace shaderexecutor;
@@ -665,8 +621,8 @@ bool TextureFilteringTestInstance::verify (void)
 												 m_sampleLookupSettings,
 												 coordBits,
 												 mipmapBits,
-												 getConversionPrecision(m_imParams.format),
-												 getFilteringPrecision(m_imParams.format),
+												 getPrecision(m_imParams.format),
+												 getPrecision(m_imParams.format),
 												 m_levels);
 
 

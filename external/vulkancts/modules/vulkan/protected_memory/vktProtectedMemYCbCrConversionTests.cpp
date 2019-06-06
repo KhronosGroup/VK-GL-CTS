@@ -994,13 +994,13 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 						std::vector<tcu::Vec4>&			ycbcrMinBounds,
 						std::vector<tcu::Vec4>&			ycbcrMaxBounds)
 {
-	tcu::TestLog&							log						(ctx.getTestContext().getLog());
-	const tcu::FloatFormat					filteringPrecision		(ycbcr::getYCbCrFilteringPrecision(config.format));
-	const tcu::FloatFormat					conversionPrecision		(ycbcr::getYCbCrConversionPrecision(config.format));
-	const tcu::UVec4						bitDepth				(ycbcr::getYCbCrBitDepth(config.format));
-	bool									explicitReconstruction	= config.explicitReconstruction;
-	const deUint32							subTexelPrecisionBits	(vk::getPhysicalDeviceProperties(ctx.getInstanceDriver(),
-																									 ctx.getPhysicalDevice()).limits.subTexelPrecisionBits);
+	tcu::TestLog&						log						(ctx.getTestContext().getLog());
+	const std::vector<tcu::FloatFormat>	filteringPrecision		(ycbcr::getPrecision(config.format));
+	const std::vector<tcu::FloatFormat>	conversionPrecision		(ycbcr::getPrecision(config.format));
+	const tcu::UVec4					bitDepth				(ycbcr::getYCbCrBitDepth(config.format));
+	bool								explicitReconstruction	= config.explicitReconstruction;
+	const deUint32						subTexelPrecisionBits	(vk::getPhysicalDeviceProperties(ctx.getInstanceDriver(),
+																								 ctx.getPhysicalDevice()).limits.subTexelPrecisionBits);
 
 
 	const vk::PlanarFormatDescription	planeInfo				(vk::getPlanarFormatDescription(config.format));

@@ -574,3 +574,11 @@ inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDe
 	res.divisor	= divisor;
 	return res;
 }
+
+inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipelineCreationFeedbackFlagsEXT flags, deUint64 duration)
+{
+	VkPipelineCreationFeedbackEXT res;
+	res.flags		= flags;
+	res.duration	= duration;
+	return res;
+}

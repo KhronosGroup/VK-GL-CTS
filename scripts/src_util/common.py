@@ -53,9 +53,14 @@ BINARY_FILE_EXTENSION = [
     ".png",
     ".pkm",
     ".xcf",
+    ".nspv",
     ]
 
 def isTextFile (filePath):
+    # Special case for a preprocessor test file that uses a non-ascii/utf8 encoding
+    if filePath.endswith("preprocessor.test"):
+        return False
+
     ext = os.path.splitext(filePath)[1]
     if ext in TEXT_FILE_EXTENSION:
         return True
@@ -104,6 +109,6 @@ def getChangedFiles ():
     return [getAbsolutePathPathFromProjectRelativePath(path) for path in relativePaths]
 
 def getAllProjectFiles ():
-    output = git('ls-files', '--cached', '-z')
+    output = git('ls-files', '--cached', '-z').decode()
     relativePaths = output.split('\0')[:-1] # remove trailing ''
     return [getAbsolutePathPathFromProjectRelativePath(path) for path in relativePaths]

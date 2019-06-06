@@ -1030,7 +1030,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.height		= 64;
 
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
-				testParameters.programs.push_back(PROGRAM_2D_UINT);
 
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1149,7 +1148,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.height		= 64;
 
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
-				testParameters.programs.push_back(PROGRAM_2D_UINT);
 
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1228,7 +1226,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.size						= 64;
 
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
-				testParameters.programs.push_back(PROGRAM_CUBE_UINT);
 
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1367,7 +1364,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.numLayers	= 8;
 
 				testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
-				testParameters.programs.push_back(PROGRAM_2D_ARRAY_UINT);
 
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1488,7 +1484,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.depth		= 64;
 
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
-				testParameters.programs.push_back(PROGRAM_3D_UINT);
 
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))

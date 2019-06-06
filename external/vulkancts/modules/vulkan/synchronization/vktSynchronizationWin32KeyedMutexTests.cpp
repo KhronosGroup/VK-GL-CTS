@@ -1500,7 +1500,10 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 				0u,
 			}
 		};
-		VK_CHECK(m_vki.getPhysicalDeviceImageFormatProperties2(m_physicalDevice, &imageFormatInfo, &formatProperties));
+		const vk::VkResult res = m_vki.getPhysicalDeviceImageFormatProperties2(m_physicalDevice, &imageFormatInfo, &formatProperties);
+		if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Handle type is not compatible");
+		VK_CHECK(res);
 
 		// \todo How to log this nicely?
 		log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"<< externalProperties << TestLog::EndMessage;

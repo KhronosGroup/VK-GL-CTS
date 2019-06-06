@@ -852,6 +852,36 @@ void DeviceDriver::cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, const
 	m_vk.cmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
 }
 
+void DeviceDriver::cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes) const
+{
+	m_vk.cmdBindTransformFeedbackBuffersEXT(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes);
+}
+
+void DeviceDriver::cmdBeginTransformFeedbackEXT (VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const
+{
+	m_vk.cmdBeginTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets);
+}
+
+void DeviceDriver::cmdEndTransformFeedbackEXT (VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const
+{
+	m_vk.cmdEndTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets);
+}
+
+void DeviceDriver::cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index) const
+{
+	m_vk.cmdBeginQueryIndexedEXT(commandBuffer, queryPool, query, flags, index);
+}
+
+void DeviceDriver::cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index) const
+{
+	m_vk.cmdEndQueryIndexedEXT(commandBuffer, queryPool, query, index);
+}
+
+void DeviceDriver::cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride) const
+{
+	m_vk.cmdDrawIndirectByteCountEXT(commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride);
+}
+
 void DeviceDriver::cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const
 {
 	m_vk.cmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
@@ -1015,4 +1045,14 @@ VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, c
 VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const
 {
 	return m_vk.getBufferDeviceAddressEXT(device, pInfo);
+}
+
+void DeviceDriver::resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const
+{
+	m_vk.resetQueryPoolEXT(device, queryPool, firstQuery, queryCount);
+}
+
+VkResult DeviceDriver::getCalibratedTimestampsEXT (VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation) const
+{
+	return m_vk.getCalibratedTimestampsEXT(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
 }

@@ -25,6 +25,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkObjUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktTestCase.hpp"
 #include "deSharedPtr.hpp"

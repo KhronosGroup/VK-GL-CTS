@@ -2,7 +2,7 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -427,9 +427,37 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Core features
 	{
-		const char* unsupportedFeature = DE_NULL;
+		const char*						unsupportedFeature			= DE_NULL;
+		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures	= m_shaderSpec.requestedVulkanFeatures.coreFeatures;
 
-		if (!isCoreFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.coreFeatures, &unsupportedFeature))
+		// Skip check features not targeted to compute
+		localRequiredCoreFeatures.fullDrawIndexUint32						= DE_FALSE;
+		localRequiredCoreFeatures.independentBlend							= DE_FALSE;
+		localRequiredCoreFeatures.geometryShader							= DE_FALSE;
+		localRequiredCoreFeatures.tessellationShader						= DE_FALSE;
+		localRequiredCoreFeatures.sampleRateShading							= DE_FALSE;
+		localRequiredCoreFeatures.dualSrcBlend								= DE_FALSE;
+		localRequiredCoreFeatures.logicOp									= DE_FALSE;
+		localRequiredCoreFeatures.multiDrawIndirect							= DE_FALSE;
+		localRequiredCoreFeatures.drawIndirectFirstInstance					= DE_FALSE;
+		localRequiredCoreFeatures.depthClamp								= DE_FALSE;
+		localRequiredCoreFeatures.depthBiasClamp							= DE_FALSE;
+		localRequiredCoreFeatures.fillModeNonSolid							= DE_FALSE;
+		localRequiredCoreFeatures.depthBounds								= DE_FALSE;
+		localRequiredCoreFeatures.wideLines									= DE_FALSE;
+		localRequiredCoreFeatures.largePoints								= DE_FALSE;
+		localRequiredCoreFeatures.alphaToOne								= DE_FALSE;
+		localRequiredCoreFeatures.multiViewport								= DE_FALSE;
+		localRequiredCoreFeatures.occlusionQueryPrecise						= DE_FALSE;
+		localRequiredCoreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
+		localRequiredCoreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
+		localRequiredCoreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
+		localRequiredCoreFeatures.shaderClipDistance						= DE_FALSE;
+		localRequiredCoreFeatures.shaderCullDistance						= DE_FALSE;
+		localRequiredCoreFeatures.sparseBinding								= DE_FALSE;
+		localRequiredCoreFeatures.variableMultisampleRate					= DE_FALSE;
+
+		if (!isCoreFeaturesSupported(m_context, localRequiredCoreFeatures, &unsupportedFeature))
 			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
 	}
 
@@ -641,12 +669,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					0,											// VkDeviceSize				offset;
 					VK_WHOLE_SIZE,								// VkDeviceSize				size;
 				};
+
 				descriptorInfos.push_back(bufInfo);
 				break;
 			}
 
 			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 			{
 				const VkDescriptorImageInfo	imgInfo	=
 				{
@@ -654,6 +682,20 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					**inputImageViews.back(),					// VkImageView				imageView;
 					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
 				};
+
+				descriptorImageInfos.push_back(imgInfo);
+				break;
+			}
+
+			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			{
+				const VkDescriptorImageInfo	imgInfo	=
+				{
+					DE_NULL,									// VkSampler				sampler;
+					**inputImageViews.back(),					// VkImageView				imageView;
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout			imageLayout;
+				};
+
 				descriptorImageInfos.push_back(imgInfo);
 				break;
 			}
@@ -666,19 +708,20 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					DE_NULL,									// VkImageView				imageView;
 					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
 				};
+
 				descriptorImageInfos.push_back(imgInfo);
 				break;
 			}
 
 			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 			{
-
 				const VkDescriptorImageInfo	imgInfo	=
 				{
 					**inputSamplers.back(),						// VkSampler				sampler;
 					**inputImageViews.back(),					// VkImageView				imageView;
-					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout			imageLayout;
 				};
+
 				descriptorImageInfos.push_back(imgInfo);
 				break;
 			}

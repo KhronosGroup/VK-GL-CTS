@@ -80,6 +80,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineCacheTests.hpp
 	vktPipelineMakeUtil.cpp
 	vktPipelineMakeUtil.hpp
+	vktPipelineCreationFeedbackTests.cpp
+	vktPipelineCreationFeedbackTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS

@@ -975,5 +975,5 @@ def genAllCases():
 
 
 if __name__ == "__main__":
-	print "Generating shader case files."
+	print("Generating shader case files.")
 	genutil.writeAllCases("implicit_conversions.test", genAllCases())

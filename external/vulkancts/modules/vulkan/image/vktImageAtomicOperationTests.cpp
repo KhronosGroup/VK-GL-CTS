@@ -36,6 +36,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -419,6 +420,7 @@ public:
 	virtual void				commandsAfterCompute	 (const VkCommandBuffer			cmdBuffer) const = 0;
 
 	virtual bool				verifyResult			 (Allocation&					outputBufferAllocation) const = 0;
+	void						checkRequirements		 (void) const;
 
 protected:
 	const string				m_name;
@@ -450,6 +452,14 @@ BinaryAtomicInstanceBase::BinaryAtomicInstanceBase (Context&				context,
 {
 }
 
+void BinaryAtomicInstanceBase::checkRequirements (void) const
+{
+	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY && !m_context.getDeviceFeatures().imageCubeArray)
+	{
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+	}
+}
+
 tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 {
 	const VkDevice			device				= m_context.getDevice();
@@ -459,6 +469,8 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 	const VkDeviceSize		imageSizeInBytes	= tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 	const VkDeviceSize		outBuffSizeInBytes	= getOutputBufferSize();
+
+	checkRequirements();
 
 	const VkImageCreateInfo imageParams	=
 	{

@@ -158,5 +158,5 @@ if __name__ == "__main__":
 		modules = getBuiltModules(buildCfg)
 
 	for module in modules:
-		print "Generating test case list for %s" % module.name
+		print("Generating test case list for %s" % module.name)
 		genAndCopyCaseList(buildCfg, generator, module, args.dst, args.caseListType)

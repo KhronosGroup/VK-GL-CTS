@@ -21,6 +21,7 @@
 #-------------------------------------------------------------------------
 
 import os
+import sys
 from itertools import chain
 
 INL_HEADER_TMPL = """\
@@ -79,7 +80,10 @@ def readFile (filename):
 
 def writeFileIfChanged (filename, data):
 	if not os.path.exists(filename) or readFile(filename) != data:
-		f = open(filename, 'wb')
+		if (sys.version_info < (3, 0)):
+			f = open(filename, 'wt')
+		else:
+			f = open(filename, 'wt', newline='\n')
 		f.write(data)
 		f.close()
 
@@ -90,7 +94,7 @@ def writeLines (filename, lines):
 		text += "\n"
 
 	writeFileIfChanged(filename, text)
-	print filename
+	print(filename)
 
 def writeInlFile (filename, header, source):
 	writeLines(filename, chain([header], source))

@@ -39,6 +39,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"

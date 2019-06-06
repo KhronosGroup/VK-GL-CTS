@@ -88,9 +88,10 @@
 #include "vktProtectedMemTests.hpp"
 #include "vktDeviceGroupTests.hpp"
 #include "vktMemoryModelTests.hpp"
-#include "vktVkRunnerExampleTests.hpp"
-#include "vktVkRunnerGraphicsFuzzTests.hpp"
 #include "vktAmberExampleTests.hpp"
+#include "vktAmberGraphicsFuzzTests.hpp"
+#include "vktTransformFeedbackTests.hpp"
+#include "vktDescriptorIndexingTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -499,9 +500,10 @@ void TestPackage::init (void)
 	addChild(DeviceGroup::createTests			(m_testCtx));
 	addChild(MemoryModel::createTests			(m_testCtx));
 	addChild(conditional::createTests			(m_testCtx));
-	addChild(vkrunner::createTests				(m_testCtx));
-	addChild(vkrunner::createGraphicsFuzzTests	(m_testCtx));
 	addChild(cts_amber::createExampleTests		(m_testCtx));
+	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
+	addChild(TransformFeedback::createTests		(m_testCtx));
+	addChild(DescriptorIndexing::createTests	(m_testCtx));
 }
 
 } // vkt

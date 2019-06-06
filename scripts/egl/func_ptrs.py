@@ -20,7 +20,7 @@
 #
 #-------------------------------------------------------------------------
 
-from common import *
+from egl.common import *
 from khr_util.format import commandParams
 
 def commandTypedefDecl (command):

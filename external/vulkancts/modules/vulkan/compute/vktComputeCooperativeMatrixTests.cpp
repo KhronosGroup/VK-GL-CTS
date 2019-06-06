@@ -30,6 +30,8 @@
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkObjUtil.hpp"
+
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 
@@ -172,7 +174,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 	}
 
 	if ((m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS || m_data.storageClass == SC_BUFFER_VARIABLE_POINTERS) &&
-		!context.getVariablePointerFeatures().variablePointers)
+		!context.getVariablePointersFeatures().variablePointers)
 	{
 		TCU_THROW(NotSupportedError, "variable pointers not supported");
 	}
@@ -557,23 +559,6 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 	};
 	return bufferCreateInfo;
 }
-
-Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
-										 const VkDevice					device,
-										 const VkDescriptorPool			descriptorPool,
-										 const VkDescriptorSetLayout	setLayout)
-{
-	const VkDescriptorSetAllocateInfo allocateParams =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		descriptorPool,										// VkDescriptorPool				descriptorPool;
-		1u,													// deUint32						setLayoutCount;
-		&setLayout,											// const VkDescriptorSetLayout*	pSetLayouts;
-	};
-	return allocateDescriptorSet(vk, device, &allocateParams);
-}
-
 static void setData(void *base, VkComponentTypeNV dt, deUint32 i, float value)
 {
 	if (dt == VK_COMPONENT_TYPE_FLOAT32_NV)

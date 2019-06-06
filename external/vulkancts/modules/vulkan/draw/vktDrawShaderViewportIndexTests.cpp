@@ -76,23 +76,6 @@ inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 	return vec.size() * sizeof(vec[0]);
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
-										 const VkBufferUsageFlags	usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device)
 {
@@ -107,27 +90,6 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
 	};
 	return createPipelineLayout(vk, device, &info);
-}
-
-Move<VkImageView> makeImageView (const DeviceInterface&			vk,
-								 const VkDevice					vkDevice,
-								 const VkImage					image,
-								 const VkImageViewType			viewType,
-								 const VkFormat					format,
-								 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageViewCreateInfo imageViewParams =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		(VkImageViewCreateFlags)0,						// VkImageViewCreateFlags	flags;
-		image,											// VkImage					image;
-		viewType,										// VkImageViewType			viewType;
-		format,											// VkFormat					format;
-		makeComponentMappingRGBA(),						// VkComponentMapping		components;
-		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
-	};
-	return createImageView(vk, vkDevice, &imageViewParams);
 }
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,

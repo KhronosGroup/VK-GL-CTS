@@ -118,9 +118,9 @@ DrawTest::DrawTest (Context &context, TestSpec testSpec)
 		if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
 		{
 			// Check if shader draw parameters is supported on the physical device.
-			vk::VkPhysicalDeviceShaderDrawParameterFeatures	drawParameters =
+			vk::VkPhysicalDeviceShaderDrawParametersFeatures	drawParameters =
 			{
-				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES,	// sType
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,	// sType
 				DE_NULL,																// pNext
 				VK_FALSE																// shaderDrawParameters
 			};

@@ -44,7 +44,7 @@ from build.build import *
 pythonExecutable = sys.executable or "python"
 
 def die (msg):
-	print msg
+	print(msg)
 	sys.exit(-1)
 
 def removeLeadingPath (path, basePath):
@@ -143,7 +143,7 @@ class GenCMake (DstFile):
 
 	def make (self, packageBuildInfo):
 		self.makeDir()
-		print "    GenCMake: %s" % removeLeadingPath(self.dstFile, packageBuildInfo.dstBasePath)
+		print("    GenCMake: %s" % removeLeadingPath(self.dstFile, packageBuildInfo.dstBasePath))
 		src = readFile(self.srcFile)
 		for var, value in self.replaceVars:
 			src = re.sub('set\(%s\s+"[^"]*"' % re.escape(var),
@@ -208,7 +208,7 @@ class BuildTarget:
 		self.targets	= targets
 
 	def make (self, packageBuildInfo):
-		print "    Building %s" % self.baseConfig.getBuildDir()
+		print("    Building %s" % self.baseConfig.getBuildDir())
 
 		# Create config with full build dir path
 		config = BuildConfig(os.path.join(packageBuildInfo.getTmpBasePath(), self.baseConfig.getBuildDir()),
@@ -224,7 +224,7 @@ class BuildAndroidTarget:
 		self.dstFile = dstFile
 
 	def make (self, packageBuildInfo):
-		print "    Building Android binary"
+		print("    Building Android binary")
 
 		buildRoot = os.path.join(packageBuildInfo.tmpBasePath, "android-build")
 
@@ -338,7 +338,7 @@ def makeRelease (releaseConfig):
 	packageBuildInfo	= PackageBuildInfo(releaseConfig, srcBasePath, dstBasePath, tmpBasePath)
 	dstArchiveName		= releaseName + ".tar.bz2"
 
-	print "Creating release %s to %s" % (releaseName, tmpPath)
+	print("Creating release %s to %s" % (releaseName, tmpPath))
 
 	# Remove old temporary dirs
 	for path in [dstBasePath, tmpBasePath]:
@@ -347,7 +347,7 @@ def makeRelease (releaseConfig):
 
 	# Make all modules
 	for module in releaseConfig.getModules():
-		print "  Processing module %s" % module.name
+		print("  Processing module %s" % module.name)
 		module.make(packageBuildInfo)
 
 	# Remove sources?
@@ -355,7 +355,7 @@ def makeRelease (releaseConfig):
 		shutil.rmtree(os.path.join(dstBasePath, "src"), ignore_errors=False)
 
 	# Create archive
-	print "Creating %s" % dstArchiveName
+	print("Creating %s" % dstArchiveName)
 	archive	= tarfile.open(dstArchiveName, 'w:bz2')
 	archive.add(dstBasePath, arcname=releaseName)
 	archive.close()
@@ -365,7 +365,7 @@ def makeRelease (releaseConfig):
 		if os.path.exists(path):
 			shutil.rmtree(path, ignore_errors=False)
 
-	print "Done!"
+	print("Done!")
 
 # Module declarations
 

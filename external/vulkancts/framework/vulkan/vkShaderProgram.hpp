@@ -43,7 +43,8 @@ struct ShaderBuildOptions
 	{
 		FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS	= (1u<<0),
 		FLAG_ALLOW_RELAXED_OFFSETS				= (1u<<1),	// allow block offsets to follow VK_KHR_relaxed_block_layout
-		FLAG_ALLOW_SCALAR_OFFSETS				= (1u<<2)	// allow block offsets to follow VK_EXT_scalar_block_layout
+		FLAG_ALLOW_SCALAR_OFFSETS				= (1u<<2),	// allow block offsets to follow VK_EXT_scalar_block_layout
+		FLAG_ALLOW_STD430_UBOS					= (1u<<3)	// allow block offsets to follow VK_EXT_uniform_buffer_standard_layout
 	};
 
 	deUint32		vulkanVersion;
@@ -69,6 +70,10 @@ struct ShaderBuildOptions
 		if (flags & FLAG_ALLOW_SCALAR_OFFSETS)
 		{
 			rules = SpirvValidatorOptions::kScalarBlockLayout;
+		}
+		else if (flags & FLAG_ALLOW_STD430_UBOS)
+		{
+			rules = SpirvValidatorOptions::kUniformStandardLayout;
 		}
 		else if (flags & FLAG_ALLOW_RELAXED_OFFSETS)
 		{

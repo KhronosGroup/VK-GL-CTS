@@ -72,6 +72,14 @@ public:
 		*this = value;
 	}
 
+	inline GenericVec4 (const GenericVec4& other)
+	{
+		v.iData[0] = other.v.iData[0];
+		v.iData[1] = other.v.iData[1];
+		v.iData[2] = other.v.iData[2];
+		v.iData[3] = other.v.iData[3];
+	}
+
 	GenericVec4& operator= (const GenericVec4& value)
 	{
 		v.iData[0] = value.v.iData[0];

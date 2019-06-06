@@ -258,6 +258,12 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* DebugMarkerSetObjectNameEXTFunc)				
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerBeginEXTFunc)							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerEndEXTFunc)								(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDebugMarkerInsertEXTFunc)							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindTransformFeedbackBuffersEXTFunc)				(VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginTransformFeedbackEXTFunc)						(VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndTransformFeedbackEXTFunc)						(VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginQueryIndexedEXTFunc)							(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndQueryIndexedEXTFunc)								(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectByteCountEXTFunc)						(VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCountAMDFunc)							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCountAMDFunc)					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCountKHRFunc)							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
@@ -302,3 +308,6 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAndroidHardwareBufferPropertiesAN
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryAndroidHardwareBufferANDROIDFunc)				(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressEXTFunc)							(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)	(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties);
+typedef VKAPI_ATTR void					(VKAPI_CALL* ResetQueryPoolEXTFunc)									(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)		(VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetCalibratedTimestampsEXTFunc)						(VkDevice device, deUint32 timestampCount, const VkCalibratedTimestampInfoEXT* pTimestampInfos, deUint64* pTimestamps, deUint64* pMaxDeviation);

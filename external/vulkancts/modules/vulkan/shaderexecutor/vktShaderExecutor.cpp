@@ -426,7 +426,7 @@ static std::string generatePassthroughFragmentShader (const ShaderSpec& shaderSp
 	return src.str();
 }
 
-static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const std::string& inputPrefix, const std::string& outputPrefix)
+static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const std::string& inputPrefix, const std::string& outputPrefix, const bool pointSizeSupported)
 {
 	DE_ASSERT(!inputPrefix.empty() && !outputPrefix.empty());
 
@@ -468,7 +468,7 @@ static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const s
 		<< "void main (void)\n"
 		<< "{\n"
 		<< "	gl_Position = gl_in[0].gl_Position;\n"
-		<< "	gl_PointSize = gl_in[0].gl_PointSize;\n\n";
+		<< (pointSizeSupported ? "	gl_PointSize = gl_in[0].gl_PointSize;\n\n" : "");
 
 	// Fetch input variables
 	for (vector<Symbol>::const_iterator input = shaderSpec.inputs.begin(); input != shaderSpec.inputs.end(); ++input)
@@ -1178,7 +1178,10 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 		if (useGeometryShader)
 		{
-			geometryShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("geom"), 0);
+			if (m_context.getDeviceFeatures().shaderTessellationAndGeometryPointSize)
+				geometryShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("geom_point_size"), 0);
+			else
+				geometryShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("geom"), 0);
 		}
 	}
 
@@ -1450,7 +1453,8 @@ void GeometryShaderExecutor::generateSources (const ShaderSpec& shaderSpec, Sour
 
 	programCollection.glslSources.add("vert") << glu::VertexSource(generatePassthroughVertexShader(shaderSpec, "a_", "vtx_out_")) << shaderSpec.buildOptions;
 
-	programCollection.glslSources.add("geom") << glu::GeometrySource(generateGeometryShader(shaderSpec, "vtx_out_", "geom_out_")) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("geom") << glu::GeometrySource(generateGeometryShader(shaderSpec, "vtx_out_", "geom_out_", false)) << shaderSpec.buildOptions;
+	programCollection.glslSources.add("geom_point_size") << glu::GeometrySource(generateGeometryShader(shaderSpec, "vtx_out_", "geom_out_", true)) << shaderSpec.buildOptions;
 
 	/* \todo [2015-09-18 rsipka] set useIntOutputs parameter if needed. */
 	programCollection.glslSources.add("frag") << glu::FragmentSource(generatePassthroughFragmentShader(shaderSpec, false, outputLayout.locationMap, "geom_out_", "o_")) << shaderSpec.buildOptions;
@@ -2140,7 +2144,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%ip_v3u32 = OpTypePointer Input %v3u32\n"
 		"%up_float   = OpTypePointer Uniform " << inputType1 << "\n"
 		"\n"
-		"%fun     = OpTypeFunction %void\n"
+		"%voidf   = OpTypeFunction %void\n"
 		"%fp_u32  = OpTypePointer Function %u32\n"
 		"%fp_i32  = OpTypePointer Function " << outputType << "\n"
 		"%fp_f32  = OpTypePointer Function " << inputType1 << "\n"
@@ -2177,7 +2181,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%up_ssboOUT  = OpTypePointer Uniform %ssboOUT\n"
 		"%ssbo_dst    = OpVariable %up_ssboOUT Uniform\n"
 		"\n"
-		"%BP_main = OpFunction %void None %fun\n"
+		"%BP_main = OpFunction %void None %voidf\n"
 		"%BP_label = OpLabel\n"
 		"%invocationNdx = OpVariable  %fp_u32 Function\n";
 

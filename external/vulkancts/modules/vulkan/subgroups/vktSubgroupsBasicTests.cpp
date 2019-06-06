@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,8 +40,8 @@ static const deUint32			ELECTED_VALUE		= 42u;
 static const deUint32			UNELECTED_VALUE		= 13u;
 static const vk::VkDeviceSize	SHADER_BUFFER_SIZE	= 4096ull; // min(maxUniformBufferRange, maxImageDimension1D)
 
-static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
-		deUint32 width, deUint32 height, deUint32)
+static bool _checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, bool withImage)
 {
 	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
 
@@ -49,7 +50,11 @@ static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 		for (deUint32 y = 0u; y < height; ++y)
 		{
 			const deUint32 ndx = (x * height + y) * 4u;
-			if (1.0f == resultData[ndx +2])
+			if (!withImage && 0.0f == resultData[ndx])
+			{
+				return false;
+			}
+			else if (1.0f == resultData[ndx +2])
 			{
 				if(resultData[ndx] != resultData[ndx +1])
 				{
@@ -64,6 +69,18 @@ static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 	}
 
 	return true;
+}
+
+static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, deUint32)
+{
+	return _checkFragmentSubgroupBarriersNoSSBO(datas, width, height, false);
+}
+
+static bool checkFragmentSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, deUint32)
+{
+	return _checkFragmentSubgroupBarriersNoSSBO(datas, width, height, true);
 }
 
 static bool checkVertexPipelineStagesSubgroupElectNoSSBO(std::vector<const void*> datas,
@@ -143,15 +160,19 @@ static bool checkVertexPipelineStagesSubgroupBarriers(std::vector<const void*> d
 	return true;
 }
 
-static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
-		deUint32 width, deUint32)
+static bool _checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, bool withImage)
 {
 	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
 
 	for (deUint32 x = 0u; x < width; ++x)
 	{
 		const deUint32 ndx = x*4u;
-		if (1.0f == resultData[ndx +2])
+		if (!withImage && 0.0f == resultData[ndx])
+		{
+			return false;
+		}
+		else if (1.0f == resultData[ndx +2])
 		{
 			if(resultData[ndx] != resultData[ndx +1])
 				return false;
@@ -164,20 +185,48 @@ static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const vo
 	return true;
 }
 
-static bool checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
 		deUint32 width, deUint32)
+{
+	return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, false);
+}
+
+static bool checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32)
+{
+	return _checkVertexPipelineStagesSubgroupBarriersNoSSBO(datas, width, true);
+}
+
+static bool _checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32, bool withImage)
 {
 	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
 
 	for (deUint32 x = 0u; x < width; ++x)
 	{
 		const deUint32 ndx = x*4u;
-		if (0.0f == resultData[ndx +2] && resultData[ndx] != resultData[ndx +3])
+		if (!withImage && 0.0f == resultData[ndx])
+		{
+			return false;
+		}
+		else if (0.0f == resultData[ndx +2] && resultData[ndx] != resultData[ndx +3])
 		{
 			return false;
 		}
 	}
 	return true;
+}
+
+static bool checkTessellationEvaluationSubgroupBarriersWithImageNoSSBO(std::vector<const void*> datas,
+	deUint32 width, deUint32 height)
+{
+	return _checkTessellationEvaluationSubgroupBarriersNoSSBO(datas, width, height, true);
+}
+
+static bool checkTessellationEvaluationSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height)
+{
+	return _checkTessellationEvaluationSubgroupBarriersNoSSBO(datas, width, height, false);
 }
 
 static bool checkComputeSubgroupElect(std::vector<const void*> datas,
@@ -233,6 +282,7 @@ struct CaseDefinition
 {
 	int					opType;
 	VkShaderStageFlags	shaderStage;
+	de::SharedPtr<bool>	geometryPointSizeSupported;
 };
 
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
@@ -481,90 +531,103 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"    out_color.g = 0.0f;\n"
 				"  }\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
+				"  gl_PointSize = gl_in[0].gl_PointSize;\n"
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";
 			*/
-			const string geometry =
-				"; SPIR-V\n"
-				"; Version: 1.3\n"
-				"; Generator: Khronos Glslang Reference Front End; 2\n"
-				"; Bound: 42\n"
-				"; Schema: 0\n"
-				"OpCapability Geometry\n"
-				"OpCapability GroupNonUniform\n"
-				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
-				"OpMemoryModel Logical GLSL450\n"
-				"OpEntryPoint Geometry %4 \"main\" %15 %31 %37\n"
-				"OpExecutionMode %4 InputPoints\n"
-				"OpExecutionMode %4 Invocations 1\n"
-				"OpExecutionMode %4 OutputPoints\n"
-				"OpExecutionMode %4 OutputVertices 1\n"
-				"OpDecorate %15 Location 0\n"
-				"OpMemberDecorate %29 0 BuiltIn Position\n"
-				"OpMemberDecorate %29 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %29 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %29 3 BuiltIn CullDistance\n"
-				"OpDecorate %29 Block\n"
-				"OpMemberDecorate %34 0 BuiltIn Position\n"
-				"OpMemberDecorate %34 1 BuiltIn PointSize\n"
-				"OpMemberDecorate %34 2 BuiltIn ClipDistance\n"
-				"OpMemberDecorate %34 3 BuiltIn CullDistance\n"
-				"OpDecorate %34 Block\n"
-				"%2 = OpTypeVoid\n"
-				"%3 = OpTypeFunction %2\n"
-				"%6 = OpTypeBool\n"
-				"%7 = OpTypeInt 32 0\n"
-				"%8 = OpConstant %7 3\n"
-				"%12 = OpTypeFloat 32\n"
-				"%13 = OpTypeVector %12 4\n"
-				"%14 = OpTypePointer Output %13\n"
-				"%15 = OpVariable %14 Output\n"
-				"%16 = OpConstant %12 " + electedValue.str() + "\n"
-				"%17 = OpConstant %7 0\n"
-				"%18 = OpTypePointer Output %12\n"
-				"%20 = OpConstant %12 1\n"
-				"%21 = OpConstant %7 1\n"
-				"%24 = OpConstant %12 " + unelectedValue.str() + "\n"
-				"%26 = OpConstant %12 0\n"
-				"%28 = OpTypeArray %12 %21\n"
-				"%29 = OpTypeStruct %13 %12 %28 %28\n"
-				"%30 = OpTypePointer Output %29\n"
-				"%31 = OpVariable %30 Output\n"
-				"%32 = OpTypeInt 32 1\n"
-				"%33 = OpConstant %32 0\n"
-				"%34 = OpTypeStruct %13 %12 %28 %28\n"
-				"%35 = OpTypeArray %34 %21\n"
-				"%36 = OpTypePointer Input %35\n"
-				"%37 = OpVariable %36 Input\n"
-				"%38 = OpTypePointer Input %13\n"
-				"%4 = OpFunction %2 None %3\n"
-				"%5 = OpLabel\n"
-				"%9 = OpGroupNonUniformElect %6 %8\n"
-				"OpSelectionMerge %11 None\n"
-				"OpBranchConditional %9 %10 %23\n"
-				"%10 = OpLabel\n"
-				"%19 = OpAccessChain %18 %15 %17\n"
-				"OpStore %19 %16\n"
-				"%22 = OpAccessChain %18 %15 %21\n"
-				"OpStore %22 %20\n"
-				"OpBranch %11\n"
-				"%23 = OpLabel\n"
-				"%25 = OpAccessChain %18 %15 %17\n"
-				"OpStore %25 %24\n"
-				"%27 = OpAccessChain %18 %15 %21\n"
-				"OpStore %27 %26\n"
-				"OpBranch %11\n"
-				"%11 = OpLabel\n"
-				"%39 = OpAccessChain %38 %37 %33 %33\n"
-				"%40 = OpLoad %13 %39\n"
-				"%41 = OpAccessChain %14 %31 %33\n"
-				"OpStore %41 %40\n"
-				"OpEmitVertex\n"
-				"OpEndPrimitive\n"
-				"OpReturn\n"
-				"OpFunctionEnd\n";
-			programCollection.spirvAsmSources.add("geometry") << geometry << buildOptionsSpr;
+			std::ostringstream geometry;
+			geometry
+				<< "; SPIR-V\n"
+				<< "; Version: 1.3\n"
+				<< "; Generator: Khronos Glslang Reference Front End; 2\n"
+				<< "; Bound: 42\n"
+				<< "; Schema: 0\n"
+				<< "OpCapability Geometry\n"
+				<< (*caseDef.geometryPointSizeSupported ?
+					"OpCapability GeometryPointSize\n" : "")
+				<< "OpCapability GroupNonUniform\n"
+				<< "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+				<< "OpMemoryModel Logical GLSL450\n"
+				<< "OpEntryPoint Geometry %4 \"main\" %15 %31 %37\n"
+				<< "OpExecutionMode %4 InputPoints\n"
+				<< "OpExecutionMode %4 Invocations 1\n"
+				<< "OpExecutionMode %4 OutputPoints\n"
+				<< "OpExecutionMode %4 OutputVertices 1\n"
+				<< "OpDecorate %15 Location 0\n"
+				<< "OpMemberDecorate %29 0 BuiltIn Position\n"
+				<< "OpMemberDecorate %29 1 BuiltIn PointSize\n"
+				<< "OpMemberDecorate %29 2 BuiltIn ClipDistance\n"
+				<< "OpMemberDecorate %29 3 BuiltIn CullDistance\n"
+				<< "OpDecorate %29 Block\n"
+				<< "OpMemberDecorate %34 0 BuiltIn Position\n"
+				<< "OpMemberDecorate %34 1 BuiltIn PointSize\n"
+				<< "OpMemberDecorate %34 2 BuiltIn ClipDistance\n"
+				<< "OpMemberDecorate %34 3 BuiltIn CullDistance\n"
+				<< "OpDecorate %34 Block\n"
+				<< "%2 = OpTypeVoid\n"
+				<< "%3 = OpTypeFunction %2\n"
+				<< "%6 = OpTypeBool\n"
+				<< "%7 = OpTypeInt 32 0\n"
+				<< "%8 = OpConstant %7 3\n"
+				<< "%12 = OpTypeFloat 32\n"
+				<< "%13 = OpTypeVector %12 4\n"
+				<< "%14 = OpTypePointer Output %13\n"
+				<< "%15 = OpVariable %14 Output\n"
+				<< "%16 = OpConstant %12 " << electedValue.str() << "\n"
+				<< "%17 = OpConstant %7 0\n"
+				<< "%18 = OpTypePointer Output %12\n"
+				<< "%20 = OpConstant %12 1\n"
+				<< "%21 = OpConstant %7 1\n"
+				<< "%24 = OpConstant %12 " << unelectedValue.str() << "\n"
+				<< "%26 = OpConstant %12 0\n"
+				<< "%28 = OpTypeArray %12 %21\n"
+				<< "%29 = OpTypeStruct %13 %12 %28 %28\n"
+				<< "%30 = OpTypePointer Output %29\n"
+				<< "%31 = OpVariable %30 Output\n"
+				<< "%32 = OpTypeInt 32 1\n"
+				<< "%33 = OpConstant %32 0\n"
+				<< "%34 = OpTypeStruct %13 %12 %28 %28\n"
+				<< "%35 = OpTypeArray %34 %21\n"
+				<< "%36 = OpTypePointer Input %35\n"
+				<< "%37 = OpVariable %36 Input\n"
+				<< "%38 = OpTypePointer Input %13\n"
+				<< (*caseDef.geometryPointSizeSupported ?
+					"%42 = OpConstant %32 1\n"
+					"%43 = OpTypePointer Input %12\n"
+					"%44 = OpTypePointer Output %12\n" : "")
+				<< "%4 = OpFunction %2 None %3\n"
+				<< "%5 = OpLabel\n"
+				<< "%9 = OpGroupNonUniformElect %6 %8\n"
+				<< "OpSelectionMerge %11 None\n"
+				<< "OpBranchConditional %9 %10 %23\n"
+				<< "%10 = OpLabel\n"
+				<< "%19 = OpAccessChain %18 %15 %17\n"
+				<< "OpStore %19 %16\n"
+				<< "%22 = OpAccessChain %18 %15 %21\n"
+				<< "OpStore %22 %20\n"
+				<< "OpBranch %11\n"
+				<< "%23 = OpLabel\n"
+				<< "%25 = OpAccessChain %18 %15 %17\n"
+				<< "OpStore %25 %24\n"
+				<< "%27 = OpAccessChain %18 %15 %21\n"
+				<< "OpStore %27 %26\n"
+				<< "OpBranch %11\n"
+				<< "%11 = OpLabel\n"
+				<< "%39 = OpAccessChain %38 %37 %33 %33\n"
+				<< "%40 = OpLoad %13 %39\n"
+				<< "%41 = OpAccessChain %14 %31 %33\n"
+				<< "OpStore %41 %40\n"
+				<< (*caseDef.geometryPointSizeSupported ?
+					"%45 = OpAccessChain %43 %37 %33 %42\n"
+					"%46 = OpLoad %12 %45\n"
+					"%47 = OpAccessChain %44 %31 %42\n"
+					"OpStore %47 %46\n" : "" )
+				<< "OpEmitVertex\n"
+				<< "OpEndPrimitive\n"
+				<< "OpReturn\n"
+				<< "OpFunctionEnd\n";
+			programCollection.spirvAsmSources.add("geometry") << geometry.str() << buildOptionsSpr;
 		}
 		else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
 		{
@@ -1160,6 +1223,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 					<< "  out_color.g = float(value);\n"
 					<< "  out_color.a = float(tempResult2);\n"
 					<< "  gl_Position = gl_in[0].gl_Position;\n"
+					<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
 					<< "  EmitVertex();\n"
 					<< "  EndPrimitive();\n"
 					<< "}\n";
@@ -1795,6 +1859,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	DE_UNREF(caseDef);
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+
+	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
@@ -1836,16 +1902,19 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
 
 	inputDatas[0].format = VK_FORMAT_R32_UINT;
+	inputDatas[0].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
 	inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 	inputDatas[1].format = VK_FORMAT_R32_UINT;
+	inputDatas[1].layout = subgroups::SSBOData::LayoutStd140;
 	inputDatas[1].numElements = 1ull;
 	inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 	if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
 	{
 		inputDatas[2].format = VK_FORMAT_R32_UINT;
+		inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 		inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 		inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 		inputDatas[2].isImage = true;
@@ -1856,25 +1925,43 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 		if (OPTYPE_ELECT == caseDef.opType)
 			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
 		else
-			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+				(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+					checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
+					checkVertexPipelineStagesSubgroupBarriersNoSSBO
+			);
 	}
 	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 	{
-		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkFragmentSubgroupBarriersNoSSBO);
+		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+			(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+				checkFragmentSubgroupBarriersWithImageNoSSBO :
+				checkFragmentSubgroupBarriersNoSSBO
+		);
 	}
 	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
 		if (OPTYPE_ELECT == caseDef.opType)
 			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
 		else
-			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
+				(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+					checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
+					checkVertexPipelineStagesSubgroupBarriersNoSSBO
+			);
 	}
 
 	if (OPTYPE_ELECT == caseDef.opType)
 		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT, DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO, caseDef.shaderStage);
 
 	return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT, &inputDatas[0], inputDatasCount,
-		(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)? checkVertexPipelineStagesSubgroupBarriersNoSSBO : checkTessellationEvaluationSubgroupBarriersNoSSBO,
+		(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage) ?
+			((OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+				checkVertexPipelineStagesSubgroupBarriersWithImageNoSSBO :
+				checkVertexPipelineStagesSubgroupBarriersNoSSBO) :
+			((OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType) ?
+				checkTessellationEvaluationSubgroupBarriersWithImageNoSSBO :
+				checkTessellationEvaluationSubgroupBarriersNoSSBO),
 		caseDef.shaderStage);
 }
 
@@ -1914,14 +2001,17 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 3;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
+			inputDatas[0].layout = subgroups::SSBOData::LayoutStd430;
 			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNone;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
+			inputDatas[1].layout = subgroups::SSBOData::LayoutStd430;
 			inputDatas[1].numElements = 1;
 			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[2].format = VK_FORMAT_R32_UINT;
+			inputDatas[2].layout = subgroups::SSBOData::LayoutPacked;
 			inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[2].isImage = true;
@@ -1965,30 +2055,35 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData inputData[inputCount];
 
 			inputData[0].format			= VK_FORMAT_R32_UINT;
+			inputData[0].layout			 = subgroups::SSBOData::LayoutStd430;
 			inputData[0].numElements	= 1;
 			inputData[0].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[0].binding		= 4u;
 			inputData[0].stages			= VK_SHADER_STAGE_VERTEX_BIT;
 
 			inputData[1].format			= VK_FORMAT_R32_UINT;
+			inputData[1].layout			 = subgroups::SSBOData::LayoutStd430;
 			inputData[1].numElements	= 1;
 			inputData[1].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[1].binding		= 5u;
 			inputData[1].stages			= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
 			inputData[2].format			= VK_FORMAT_R32_UINT;
+			inputData[2].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[2].numElements	= 1;
 			inputData[2].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[2].binding		= 6u;
 			inputData[2].stages			= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 			inputData[3].format			= VK_FORMAT_R32_UINT;
+			inputData[3].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[3].numElements	= 1;
 			inputData[3].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[3].binding		= 7u;
 			inputData[3].stages			= VK_SHADER_STAGE_GEOMETRY_BIT;
 
 			inputData[4].format			= VK_FORMAT_R32_UINT;
+			inputData[4].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[4].numElements	= 1;
 			inputData[4].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[4].binding		= 8u;
@@ -2014,24 +2109,28 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			{
 				const deUint32 index = ndx*4;
 				inputDatas[index].format				= VK_FORMAT_R32_UINT;
+				inputDatas[index].layout				= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index].numElements			= SHADER_BUFFER_SIZE;
 				inputDatas[index].initializeType		= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index].binding				= index + 4u;
 				inputDatas[index].stages				= stagesBits[ndx];
 
 				inputDatas[index + 1].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 1].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 1].numElements		= 1;
 				inputDatas[index + 1].initializeType	= subgroups::SSBOData::InitializeZero;
 				inputDatas[index + 1].binding			= index + 5u;
 				inputDatas[index + 1].stages			= stagesBits[ndx];
 
 				inputDatas[index + 2].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 2].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 2].numElements		= 1;
 				inputDatas[index + 2].initializeType	= subgroups::SSBOData::InitializeNonZero;
 				inputDatas[index + 2].binding			= index + 6u;
 				inputDatas[index + 2].stages			= stagesBits[ndx];
 
 				inputDatas[index + 3].format			= VK_FORMAT_R32_UINT;
+				inputDatas[index + 3].layout			= subgroups::SSBOData::LayoutStd430;
 				inputDatas[index + 3].numElements		= SHADER_BUFFER_SIZE;
 				inputDatas[index + 3].initializeType	= subgroups::SSBOData::InitializeNone;
 				inputDatas[index + 3].isImage			= true;
@@ -2073,7 +2172,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 		const std::string op = de::toLower(getOpTypeName(opTypeIndex));
 
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
+			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, de::SharedPtr<bool>(new bool)};
 			addFunctionCaseWithPrograms(computeGroup.get(), op, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
@@ -2085,7 +2184,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 		}
 
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS};
+			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, de::SharedPtr<bool>(new bool)};
 			addFunctionCaseWithPrograms(graphicGroup.get(),
 										op, "",
 										supportedCheck, initPrograms, test, caseDef);
@@ -2095,7 +2194,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 		{
 			for (int stageIndex = 1; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
-				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
+				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], de::SharedPtr<bool>(new bool)};
 				addFunctionCaseWithPrograms(framebufferGroup.get(),
 							op + "_" + getShaderStageName(caseDef.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
@@ -2105,7 +2204,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 		{
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
-				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex]};
+				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex], de::SharedPtr<bool>(new bool)};
 				addFunctionCaseWithPrograms(framebufferGroup.get(),
 							op + "_" + getShaderStageName(caseDefFrag.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDefFrag);

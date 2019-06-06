@@ -46,10 +46,12 @@ bool RenderDocUtil::isValid (void)
 
 void RenderDocUtil::startFrame (vk::VkInstance instance)
 {
+	DE_UNREF(instance);
 }
 
 void RenderDocUtil::endFrame (vk::VkInstance instance)
 {
+	DE_UNREF(instance);
 }
 
 } // vk

@@ -64,7 +64,7 @@ namespace SpirVAssembly
 																											\
 	"%v4f32_v4f32_function = OpTypeFunction %v4f32 %v4f32\n"									\
 	"%bool_function = OpTypeFunction %bool\n"																\
-	"%fun = OpTypeFunction %void\n"																			\
+	"%voidf = OpTypeFunction %void\n"																			\
 																											\
 	"%ip_f32 = OpTypePointer Input %f32\n"																	\
 	"%ip_i32 = OpTypePointer Input %i32\n"																	\
@@ -271,6 +271,18 @@ struct VulkanFeatures
 	}
 };
 
+struct VariableLocation
+{
+	deUint32 set;
+	deUint32 binding;
+
+	// Returns a string representation of the structure suitable for test names.
+	std::string toString() const ;
+
+	// Returns a string representation of the structure suitable for test descriptions.
+	std::string toDescription() const;
+};
+
 // Returns true if the given 8bit storage extension features in `toCheck` are all supported.
 bool is8BitStorageFeaturesSupported (const Context&						context,
 									  Extension8BitStorageFeatures		toCheck);
@@ -352,6 +364,24 @@ std::vector<float> getFloat32s (de::Random& rnd, deUint32 count);
 // The first 14 number pairs are manually picked, while the rest are randomly generated.
 // Expected count to be at least 14 (numPicks).
 std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count);
+
+// Generate an OpCapability Shader line.
+std::string getOpCapabilityShader();
+
+// Generate an unused Vertex entry point.
+std::string getUnusedEntryPoint();
+
+// Generate unused decorations for an input/output buffer.
+std::string getUnusedDecorations(const VariableLocation& location);
+
+// Generate unused types and constants, including a buffer type.
+std::string getUnusedTypesAndConstants();
+
+// Generate the declaration of an unused buffer variable.
+std::string getUnusedBuffer();
+
+// Generate the body of an unused function that uses the previous buffer.
+std::string getUnusedFunctionBody();
 
 } // SpirVAssembly
 } // vkt

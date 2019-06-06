@@ -184,7 +184,7 @@ def diffCaseLists (old, new):
 
 if __name__ == "__main__":
 	if len(sys.argv) != 3:
-		print "%s [old caselist] [new caselist]" % sys.argv[0]
+		print("%s [old caselist] [new caselist]" % sys.argv[0])
 		sys.exit(-1)
 
 	oldCases	= readCaseList(sys.argv[1])
@@ -195,13 +195,13 @@ if __name__ == "__main__":
 	added, removed				= diffCaseLists(renamedCases, newCases)
 
 #	for src, dst in rename:
-#		print "RENAME: %s -> %s" % (src, dst)
+#		print("RENAME: %s -> %s" % (src, dst))
 
 	for case in added:
-		print "ADD: %s" % case
+		print("ADD: %s" % case)
 
 	for src, dst in renameList:
-		print "RENAME: %s -> %s" % (src, dst)
+		print("RENAME: %s -> %s" % (src, dst))
 
 	for case in removed:
-		print "REMOVE: %s" % case
+		print("REMOVE: %s" % case)

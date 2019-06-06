@@ -36,6 +36,9 @@
 #include "vktDrawDifferingInterpolationTests.hpp"
 #include "vktDrawShaderLayerTests.hpp"
 #include "vktDrawShaderViewportIndexTests.hpp"
+#include "vktDrawScissorTests.hpp"
+#include "vktDrawMultipleInterpolationTests.hpp"
+#include "vktDrawDiscardRectanglesTests.hpp"
 
 namespace vkt
 {
@@ -61,6 +64,9 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createDifferingInterpolationTests	(testCtx));
 	group->addChild(createShaderLayerTests				(testCtx));
 	group->addChild(createShaderViewportIndexTests		(testCtx));
+	group->addChild(createScissorTests					(testCtx));
+	group->addChild(createMultipleInterpolationTests	(testCtx));
+	group->addChild(createDiscardRectanglesTests		(testCtx));
 }
 
 } // anonymous

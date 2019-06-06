@@ -34,6 +34,7 @@
 #include "vkDefs.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkObjUtil.hpp"
 
 namespace vkt
 {
@@ -179,7 +180,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	// Create a buffer and host-visible memory for it
 
 	const vk::VkDeviceSize bufferSizeBytes = sizeof(deUint32);
-	const compute::Buffer outputBuffer(vk, device, allocator, compute::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), vk::MemoryRequirement::HostVisible);
+	const compute::Buffer outputBuffer(vk, device, allocator, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), vk::MemoryRequirement::HostVisible);
 
 	{
 		const vk::Allocation& alloc = outputBuffer.getAllocation();
@@ -200,7 +201,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 		.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 		.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
 
-	const vk::Unique<vk::VkDescriptorSet> descriptorSet(compute::makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+	const vk::Unique<vk::VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
 
 	const vk::VkDescriptorBufferInfo descriptorInfo = vk::makeDescriptorBufferInfo(*outputBuffer, 0ull, bufferSizeBytes);
 	vk::DescriptorSetUpdateBuilder()
@@ -222,7 +223,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 	compute::Buffer indirectBuffer(
 		vk, device, allocator,
-		compute::makeBufferCreateInfo(sizeof(dispatchCommands), vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+		vk::makeBufferCreateInfo(sizeof(dispatchCommands), vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
 
 	deUint8* indirectBufferPtr = reinterpret_cast<deUint8*>(indirectBuffer.getAllocation().getHostPtr());
