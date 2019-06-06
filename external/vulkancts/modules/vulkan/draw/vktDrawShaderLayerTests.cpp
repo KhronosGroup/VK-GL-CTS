@@ -755,29 +755,22 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-void checkRequirements (const Context& context)
+void checkRequirements (Context& context, const int)
 {
-	const VkPhysicalDeviceFeatures	features		= getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
-	const VkPhysicalDeviceLimits	limits			= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+	context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
 
-	if (!features.multiViewport)
-		TCU_THROW(NotSupportedError, "Required feature is not supported: multiViewport");
+	const VkPhysicalDeviceLimits	limits	= context.getDeviceProperties().limits;
 
 	if (limits.maxFramebufferLayers < MIN_MAX_FRAMEBUFFER_LAYERS)
 		TCU_FAIL("maxFramebuffersLayers is less than the minimum required");
 
 	if (limits.maxViewports < MIN_MAX_VIEWPORTS)
 		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
-
-	const std::vector<std::string>&	extensions		= context.getDeviceExtensions();
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_EXT_shader_viewport_index_layer"))
-		TCU_THROW(NotSupportedError, "Extension VK_EXT_shader_viewport_index_layer not supported");
 }
 
 tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 {
-	checkRequirements(context);
-
 	const DeviceInterface&					vk					= context.getDeviceInterface();
 	const VkDevice							device				= context.getDevice();
 	Allocator&								allocator			= context.getDefaultAllocator();
@@ -834,8 +827,6 @@ tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 
 tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
 {
-	checkRequirements(context);
-
 	const VkPhysicalDeviceFeatures&			features			= context.getDeviceFeatures();
 	if (!features.tessellationShader)
 		TCU_THROW(NotSupportedError, "Required feature is not supported: tessellationShader");
@@ -915,13 +906,13 @@ tcu::TestCaseGroup* createShaderLayerTests	(tcu::TestContext& testCtx)
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
 	{
 		int numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numLayers), "", initVertexTestPrograms, testVertexShader, numLayers);
+		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numLayers), "", checkRequirements, initVertexTestPrograms, testVertexShader, numLayers);
 	}
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
 	{
 		int numLayers = numLayersToTest[i];
-		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numLayers), "", initTessellationTestPrograms, testTessellationShader, numLayers);
+		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numLayers), "", checkRequirements, initTessellationTestPrograms, testTessellationShader, numLayers);
 	}
 
 	return group.release();

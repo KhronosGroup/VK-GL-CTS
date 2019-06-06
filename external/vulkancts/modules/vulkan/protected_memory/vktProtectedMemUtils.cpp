@@ -111,6 +111,30 @@ vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& 
 	return vk::createDefaultInstance(vkp, context.getUsedApiVersion(), enabledLayers, requiredExtensions);
 }
 
+void checkProtectedQueueSupport (Context& context)
+{
+#ifdef NOT_PROTECTED
+	return;
+#endif
+
+	const vk::InstanceInterface&				vkd				= context.getInstanceInterface();
+	vk::VkPhysicalDevice						physDevice		= context.getPhysicalDevice();
+	std::vector<vk::VkQueueFamilyProperties>	properties;
+	deUint32									numFamilies		= 0;
+
+	vkd.getPhysicalDeviceQueueFamilyProperties(physDevice, &numFamilies, DE_NULL);
+	DE_ASSERT(numFamilies > 0);
+	properties.resize(numFamilies);
+
+	vkd.getPhysicalDeviceQueueFamilyProperties(physDevice, &numFamilies, properties.data());
+
+	for (auto prop: properties)
+		if (prop.queueFlags & vk::VK_QUEUE_PROTECTED_BIT)
+			return;
+
+	TCU_THROW(NotSupportedError, "No protected queue found.");
+}
+
 deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 											 vk::VkPhysicalDevice		physicalDevice,
 											 vk::VkSurfaceKHR			surface)

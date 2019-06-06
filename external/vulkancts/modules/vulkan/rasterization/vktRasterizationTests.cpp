@@ -949,9 +949,6 @@ BaseLineTestInstance::BaseLineTestInstance (Context& context, VkPrimitiveTopolog
 {
 	DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 
-	if (!context.getDeviceProperties().limits.strictLines)
-		TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
-
 	// create line widths
 	if (m_primitiveWideness == PRIMITIVEWIDENESS_NARROW)
 	{
@@ -959,16 +956,11 @@ BaseLineTestInstance::BaseLineTestInstance (Context& context, VkPrimitiveTopolog
 	}
 	else if (m_primitiveWideness == PRIMITIVEWIDENESS_WIDE)
 	{
-		if (!m_context.getDeviceFeatures().wideLines)
-			TCU_THROW(NotSupportedError , "wide line support required");
-
 		const float*	range = context.getDeviceProperties().limits.lineWidthRange;
 
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "ALIASED_LINE_WIDTH_RANGE = [" << range[0] << ", " << range[1] << "]" << tcu::TestLog::EndMessage;
 
-		// no wide line support
-		if (range[1] <= 1.0f)
-			TCU_THROW(NotSupportedError, "wide line support required");
+		DE_ASSERT(range[1] > 1.0f);
 
 		// set hand picked sizes
 		m_lineWidths.push_back(5.0f);
@@ -1076,16 +1068,11 @@ PointTestInstance::PointTestInstance (Context& context, PrimitiveWideness widene
 	}
 	else if (m_primitiveWideness == PRIMITIVEWIDENESS_WIDE)
 	{
-		if (!m_context.getDeviceFeatures().largePoints)
-			TCU_THROW(NotSupportedError , "large point support required");
-
 		const float*	range = context.getDeviceProperties().limits.pointSizeRange;
 
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "GL_ALIASED_POINT_SIZE_RANGE = [" << range[0] << ", " << range[1] << "]" << tcu::TestLog::EndMessage;
 
-		// no wide line support
-		if (range[1] <= 1.0f)
-			TCU_THROW(NotSupportedError , "wide point support required");
+		DE_ASSERT(range[1] > 1.0f);
 
 		// set hand picked sizes
 		m_pointSizes.push_back(10.0f);
@@ -1225,10 +1212,6 @@ public:
 	virtual TestInstance*	createInstance		(Context& context) const
 							{
 								VkPhysicalDeviceProperties	properties	(context.getDeviceProperties());
-								VkPhysicalDeviceFeatures	features	(context.getDeviceFeatures());
-
-								if (!features.largePoints)
-									TCU_THROW(NotSupportedError , "largePoints feature required");
 
 								if (m_renderSize > properties.limits.maxViewportDimensions[0] || m_renderSize > properties.limits.maxViewportDimensions[1])
 									TCU_THROW(NotSupportedError , "Viewport dimensions not supported");
@@ -1237,6 +1220,11 @@ public:
 									TCU_THROW(NotSupportedError , "Framebuffer width/height not supported");
 
 								return new ConcreteTestInstance(context, m_renderSize, m_pointSize);
+							}
+
+	virtual	void			checkSupport		(Context& context) const
+							{
+								context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
 							}
 protected:
 	const float				m_pointSize;
@@ -1748,17 +1736,36 @@ template <typename ConcreteTestInstance>
 class WidenessTestCase : public BaseRenderingTestCase
 {
 public:
-								WidenessTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, PrimitiveWideness wideness, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
+								WidenessTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, PrimitiveWideness wideness, bool isLineTest, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT)
 									: BaseRenderingTestCase(context, name, description, sampleCount)
-									, m_wideness(wideness)
+									, m_wideness	(wideness)
+									, m_isLineTest	(isLineTest)
 								{}
 
 	virtual TestInstance*		createInstance		(Context& context) const
 								{
 									return new ConcreteTestInstance(context, m_wideness, m_sampleCount);
 								}
+
+	virtual	void				checkSupport		(Context& context) const
+								{
+									if (m_isLineTest)
+									{
+										if (!context.getDeviceProperties().limits.strictLines)
+											TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
+
+										if (m_wideness == PRIMITIVEWIDENESS_WIDE)
+											context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+									}
+									else
+									{
+										if (m_wideness == PRIMITIVEWIDENESS_WIDE)
+											context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+									}
+								}
 protected:
 	const PrimitiveWideness		m_wideness;
+	const bool					m_isLineTest;
 };
 
 class LinesTestInstance : public BaseLineTestInstance
@@ -2949,10 +2956,13 @@ public:
 
 	virtual TestInstance*		createInstance		(Context& context) const
 								{
-									if (m_queryFragmentShaderInvocations && !context.getDeviceFeatures().pipelineStatisticsQuery)
-										throw tcu::NotSupportedError("Pipeline statistics queries are not supported");
-
 									return new DiscardTestInstance (context, m_primitiveTopology, m_queryFragmentShaderInvocations);
+								}
+
+	virtual	void				checkSupport		(Context& context) const
+								{
+									if (m_queryFragmentShaderInvocations)
+										context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_PIPELINE_STATISTICS_QUERY);
 								}
 
 protected:
@@ -3234,9 +3244,6 @@ LineInterpolationTestInstance::LineInterpolationTestInstance (Context& context, 
 {
 	DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 
-	if (!context.getDeviceProperties().limits.strictLines)
-		TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
-
 	// create line widths
 	if (m_primitiveWideness == PRIMITIVEWIDENESS_NARROW)
 	{
@@ -3244,16 +3251,11 @@ LineInterpolationTestInstance::LineInterpolationTestInstance (Context& context, 
 	}
 	else if (m_primitiveWideness == PRIMITIVEWIDENESS_WIDE)
 	{
-		if (!m_context.getDeviceFeatures().wideLines)
-			TCU_THROW(NotSupportedError , "wide line support required");
-
 		const float*	range = context.getDeviceProperties().limits.lineWidthRange;
 
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "ALIASED_LINE_WIDTH_RANGE = [" << range[0] << ", " << range[1] << "]" << tcu::TestLog::EndMessage;
 
-		// no wide line support
-		if (range[1] <= 1.0f)
-			throw tcu::NotSupportedError("wide line support required");
+		DE_ASSERT(range[1] > 1.0f);
 
 		// set hand picked sizes
 		m_lineWidths.push_back(5.0f);
@@ -3442,6 +3444,15 @@ public:
 								{
 									return new LineInterpolationTestInstance(context, m_primitiveTopology, m_flags, m_wideness, m_sampleCount);
 								}
+
+	virtual	void				checkSupport		(Context& context) const
+								{
+									if (!context.getDeviceProperties().limits.strictLines)
+										TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
+
+									if (m_wideness == PRIMITIVEWIDENESS_WIDE)
+										context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+								}
 protected:
 	const VkPrimitiveTopology	m_primitiveTopology;
 	const int					m_flags;
@@ -3461,11 +3472,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		primitives->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result"));
 		primitives->addChild(new BaseTestCase<TriangleStripTestInstance>	(testCtx, "triangle_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, verify rasterization result"));
 		primitives->addChild(new BaseTestCase<TriangleFanTestInstance>		(testCtx, "triangle_fan",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN, verify rasterization result"));
-		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW));
-		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW));
-		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE));
-		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE));
-		primitives->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE));
+		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true));
+		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true));
+		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		true));
+		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		true));
+		primitives->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE,		false));
 	}
 
 	// .primitive_size
@@ -3699,9 +3710,9 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			rasterizationTests->addChild(primitives);
 
 			primitives->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result",					samples[samplesNdx]));
-			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	samples[samplesNdx]));
-			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		samples[samplesNdx]));
-			primitives->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE,		samples[samplesNdx]));
+			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST, verify rasterization result",						PRIMITIVEWIDENESS_NARROW,	true,	samples[samplesNdx]));
+			primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE,		true,	samples[samplesNdx]));
+			primitives->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE,		false,	samples[samplesNdx]));
 		}
 
 		// .fill_rules

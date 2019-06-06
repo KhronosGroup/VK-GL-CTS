@@ -104,6 +104,7 @@ public:
 
 	void			initPrograms					(SourceCollections&			sourceCollections) const;
 	TestInstance*	createInstance					(Context&					context) const;
+	virtual void	checkSupport					(Context&					context) const;
 
 
 private:
@@ -129,6 +130,22 @@ ImageSparseMemoryAliasingCase::ImageSparseMemoryAliasingCase (tcu::TestContext&	
 	, m_format				(format)
 	, m_glslVersion			(glslVersion)
 {
+}
+
+void ImageSparseMemoryAliasingCase::checkSupport (Context& context) const
+{
+	const InstanceInterface&	instance		= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_ALIASED);
+
+	// Check if image size does not exceed device limits
+	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
+		TCU_THROW(NotSupportedError, "Image size not supported for device");
+
+	// Check if device supports sparse operations for image type
+	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
+		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 }
 
 class ImageSparseMemoryAliasingInstance : public SparseResourcesBaseInstance
@@ -183,21 +200,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	VkSparseImageMemoryRequirements		aspectRequirements;
 	std::vector<DeviceMemorySp>			deviceMemUniquePtrVec;
 
-	//vsk checking these flags should be after creating m_imageType
-	//getting queues should be outside the loop
+	//vsk getting queues should be outside the loop
 	//see these in all image files
-
-	// Check if image size does not exceed device limits
-	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
-		TCU_THROW(NotSupportedError, "Image size not supported for device");
-
-	// Check if sparse memory aliasing is supported
-	if (!getPhysicalDeviceFeatures(instance, physicalDevice).sparseResidencyAliased)
-		TCU_THROW(NotSupportedError, "Sparse memory aliasing not supported");
-
-	// Check if device supports sparse operations for image type
-	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
-		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
 	const DeviceInterface&	deviceInterface	= getDeviceInterface();
 	const Queue&			sparseQueue		= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);

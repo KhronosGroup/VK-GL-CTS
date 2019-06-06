@@ -102,12 +102,12 @@ struct CaseDef
 class BufferAddressTestInstance : public TestInstance
 {
 public:
-						BufferAddressTestInstance		(Context& context, const CaseDef& data);
+						BufferAddressTestInstance	(Context& context, const CaseDef& data);
 						~BufferAddressTestInstance	(void);
-	tcu::TestStatus		iterate								(void);
-	virtual	void				fillBuffer					(const std::vector<deUint8 *>& cpuAddrs,
-															 const std::vector<deUint64>& gpuAddrs,
-															 deUint32 bufNum, deUint32 curDepth) const;
+	tcu::TestStatus		iterate						(void);
+	virtual	void		fillBuffer					(const std::vector<deUint8 *>& cpuAddrs,
+													 const std::vector<deUint64>& gpuAddrs,
+													 deUint32 bufNum, deUint32 curDepth) const;
 private:
 	CaseDef				m_data;
 
@@ -131,12 +131,12 @@ BufferAddressTestInstance::~BufferAddressTestInstance (void)
 class BufferAddressTestCase : public TestCase
 {
 	public:
-								BufferAddressTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
-								~BufferAddressTestCase	(void);
-	virtual	void				initPrograms					(SourceCollections& programCollection) const;
-	virtual TestInstance*		createInstance					(Context& context) const;
-	virtual void				checkSupport					(Context& context) const;
-	virtual	void				checkBuffer					(std::stringstream& checks, deUint32 bufNum, deUint32 curDepth, const std::string &prefix) const;
+							BufferAddressTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							~BufferAddressTestCase	(void);
+	virtual	void			initPrograms			(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance			(Context& context) const;
+	virtual void			checkSupport			(Context& context) const;
+	virtual	void			checkBuffer				(std::stringstream& checks, deUint32 bufNum, deUint32 curDepth, const std::string &prefix) const;
 
 private:
 	CaseDef					m_data;
@@ -152,13 +152,13 @@ BufferAddressTestCase::~BufferAddressTestCase	(void)
 {
 }
 
-void BufferAddressTestCase::checkSupport(Context& context) const
+void BufferAddressTestCase::checkSupport (Context& context) const
 {
 	if (!context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 
 	if (m_data.stage == STAGE_VERTEX && !context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
-		return TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
+		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
@@ -173,7 +173,9 @@ void BufferAddressTestCase::checkSupport(Context& context) const
 #if ENABLE_RAYTRACING
 	if (m_data.stage == STAGE_RAYGEN &&
 		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
-		return TCU_THROW(NotSupportedError, "Ray tracing not supported");
+	{
+		TCU_THROW(NotSupportedError, "Ray tracing not supported");
+	}
 #endif
 }
 

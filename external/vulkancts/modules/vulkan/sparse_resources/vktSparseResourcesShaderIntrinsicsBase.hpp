@@ -100,18 +100,34 @@ std::string getOpTypeImageResidency	(const ImageType imageType);
 class SparseShaderIntrinsicsCaseBase : public TestCase
 {
 public:
-	SparseShaderIntrinsicsCaseBase			(tcu::TestContext&			testCtx,
-											 const std::string&			name,
-											 const SpirVFunction		function,
-											 const ImageType			imageType,
-											 const tcu::UVec3&			imageSize,
-											 const tcu::TextureFormat&	format)
+					SparseShaderIntrinsicsCaseBase	(tcu::TestContext&			testCtx,
+													 const std::string&			name,
+													 const SpirVFunction		function,
+													 const ImageType			imageType,
+													 const tcu::UVec3&			imageSize,
+													 const tcu::TextureFormat&	format)
 		: TestCase(testCtx, name, "")
 		, m_function(function)
 		, m_imageType(imageType)
 		, m_imageSize(imageSize)
 		, m_format(format)
 	{
+	}
+
+	virtual void	checkSupport					(Context&	context) const
+	{
+		const vk::InstanceInterface&	instance		= context.getInstanceInterface();
+		const vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_RESOURCE_RESIDENCY);
+
+		// Check if image size does not exceed device limits
+		if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
+			TCU_THROW(NotSupportedError, "Image size not supported for device");
+
+		// Check if device supports sparse operations for image type
+		if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
+			TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 	}
 
 protected:

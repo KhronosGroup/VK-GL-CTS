@@ -109,44 +109,6 @@ DrawTest::DrawTest (Context &context, TestSpec testSpec)
 	DE_ASSERT(!isMultiDraw()     || isIndirect());
 	DE_ASSERT(!isFirstInstance() || (isIndirect() && isInstanced()));
 
-	// Requirements
-	{
-		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_draw_parameters"))
-			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_draw_parameters");
-
-		// Shader draw parameters is part of Vulkan 1.1 but is optional
-		if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
-		{
-			// Check if shader draw parameters is supported on the physical device.
-			vk::VkPhysicalDeviceShaderDrawParametersFeatures	drawParameters =
-			{
-				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,	// sType
-				DE_NULL,																// pNext
-				VK_FALSE																// shaderDrawParameters
-			};
-			vk::VkPhysicalDeviceFeatures					features;
-			deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
-
-			vk::VkPhysicalDeviceFeatures2					featuresExt		=
-			{
-				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// sType
-				&drawParameters,													// pNext
-				features
-			};
-
-			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &featuresExt);
-
-			if (drawParameters.shaderDrawParameters == VK_FALSE)
-				TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
-		}
-
-		if (isMultiDraw() && !m_context.getDeviceFeatures().multiDrawIndirect)
-			TCU_THROW(NotSupportedError, "Missing feature: multiDrawIndirect");
-
-		if (isFirstInstance() && !m_context.getDeviceFeatures().drawIndirectFirstInstance)
-			TCU_THROW(NotSupportedError, "Missing feature: drawIndirectFirstInstance");
-	}
-
 	// Vertex data
 	{
 		int refIndex = NDX_FIRST_VERTEX - OFFSET_FIRST_INDEX;
@@ -349,6 +311,44 @@ tcu::TestStatus DrawTest::iterate (void)
 	}
 }
 
+void checkSupport (Context& context, TestFlags flags)
+{
+	context.requireDeviceExtension("VK_KHR_shader_draw_parameters");
+
+	// Shader draw parameters is part of Vulkan 1.1 but is optional
+	if (context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+	{
+		// Check if shader draw parameters is supported on the physical device.
+		vk::VkPhysicalDeviceShaderDrawParametersFeatures	drawParameters	=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,	// sType
+			DE_NULL,																// pNext
+			VK_FALSE																// shaderDrawParameters
+		};
+
+		vk::VkPhysicalDeviceFeatures						features;
+		deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
+
+		vk::VkPhysicalDeviceFeatures2						featuresExt		=
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// sType
+			&drawParameters,													// pNext
+			features
+		};
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &featuresExt);
+
+		if (drawParameters.shaderDrawParameters == VK_FALSE)
+			TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
+	}
+
+	if (flags & TEST_FLAG_MULTIDRAW)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
+
+	if (flags & TEST_FLAG_FIRST_INSTANCE)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DRAW_INDIRECT_FIRST_INSTANCE);
+}
+
 void addDrawCase (tcu::TestCaseGroup* group, const DrawTest::TestSpec testSpec, const TestFlags flags)
 {
 	std::ostringstream name;
@@ -359,7 +359,7 @@ void addDrawCase (tcu::TestCaseGroup* group, const DrawTest::TestSpec testSpec, 
 	if (flags & TEST_FLAG_INSTANCED)		name << "_instanced";
 	if (flags & TEST_FLAG_FIRST_INSTANCE)	name << "_first_instance";
 
-	group->addChild(new InstanceFactory<DrawTest>(group->getTestContext(), name.str(), "", addFlags(testSpec, flags)));
+	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<TestFlags>>(group->getTestContext(), name.str(), "", addFlags(testSpec, flags), FunctionSupport1<TestFlags>::Args(checkSupport, flags)));
 }
 
 }	// anonymous

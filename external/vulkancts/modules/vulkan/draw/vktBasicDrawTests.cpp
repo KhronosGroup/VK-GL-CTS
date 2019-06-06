@@ -322,18 +322,6 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 	const vk::VkDevice	device				= m_context.getDevice();
 	const deUint32		queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	const vk::VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
-
-	if (features.geometryShader == VK_FALSE &&
-		(m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY ||
-		 m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY ||
-		 m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY ||
-		 m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY)
-		)
-	{
-		TCU_THROW(NotSupportedError, "Geometry Not Supported");
-	}
-
 	const PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
 	m_pipelineLayout						= vk::createPipelineLayout(m_vk, device, &pipelineLayoutCreateInfo);
 
@@ -551,6 +539,7 @@ class DrawTestCase : public TestCase
 									~DrawTestCase		(void);
 	virtual	void					initPrograms		(vk::SourceCollections& programCollection) const;
 	virtual void					initShaderSources	(void);
+	virtual void					checkSupport		(Context& context) const;
 	virtual TestInstance*			createInstance		(Context& context) const;
 
 private:
@@ -577,6 +566,18 @@ void DrawTestCase<T>::initPrograms (vk::SourceCollections& programCollection) co
 {
 	programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource);
 	programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource);
+}
+
+template<typename T>
+void DrawTestCase<T>::checkSupport (Context& context) const
+{
+	if (m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY ||
+		m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY ||
+		m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY ||
+		m_data.topology == vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	}
 }
 
 template<typename T>

@@ -64,6 +64,7 @@ public:
 											 const bool			useDeviceGroups);
 
 	TestInstance*	createInstance			(Context&			context) const;
+	virtual void	checkSupport			(Context&			context) const;
 
 private:
 	const deUint32	m_bufferSize;
@@ -79,6 +80,11 @@ BufferSparseBindingCase::BufferSparseBindingCase (tcu::TestContext&		testCtx,
 	, m_bufferSize		(bufferSize)
 	, m_useDeviceGroups	(useDeviceGroups)
 {
+}
+
+void BufferSparseBindingCase::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 }
 
 class BufferSparseBindingInstance : public SparseResourcesBaseInstance
@@ -117,9 +123,6 @@ tcu::TestStatus BufferSparseBindingInstance::iterate (void)
 		createDeviceSupportingQueues(queueRequirements);
 	}
 	const vk::VkPhysicalDevice&	physicalDevice	= getPhysicalDevice();
-
-	if (!getPhysicalDeviceFeatures(instance, physicalDevice).sparseBinding)
-		TCU_THROW(NotSupportedError, "Sparse binding not supported");
 
 	const DeviceInterface&	deviceInterface	= getDeviceInterface();
 	const Queue&			sparseQueue		= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);

@@ -149,6 +149,10 @@ struct TestConfig
 	vk::VkComponentMapping					componentMapping;
 };
 
+void checkSupport (Context& context, const TestConfig)
+{
+	checkProtectedQueueSupport(context);
+}
 
 void validateFormatSupport (ProtectedContext& context, TestConfig& config)
 {
@@ -1454,6 +1458,7 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 							addFunctionCaseWithPrograms(colorRangeGroup.get(),
 														std::string(tilingName) + "_" + chromaOffsetName + (disjoint ? "_disjoint" : ""),
 														"",
+														checkSupport,
 														testShaders,
 														conversionTest,
 														config);

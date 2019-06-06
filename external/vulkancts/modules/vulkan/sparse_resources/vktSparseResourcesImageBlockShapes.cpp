@@ -64,8 +64,9 @@ public:
 											 const tcu::TextureFormat&	format,
 											 deUint32					numSamples);
 
-	void			initPrograms				(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);};
-	TestInstance*	createInstance				(Context&					context) const;
+	void			initPrograms			(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);};
+	TestInstance*	createInstance			(Context&					context) const;
+	virtual void	checkSupport			(Context&					context) const;
 
 private:
 	const ImageType				m_imageType;
@@ -87,6 +88,20 @@ ImageBlockShapesCase::ImageBlockShapesCase (tcu::TestContext&			testCtx,
 	, m_format				(format)
 	, m_numSamples			(numSamples)
 {
+}
+
+void ImageBlockShapesCase::checkSupport (Context& context) const
+{
+	const InstanceInterface&	instance		= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	// Check the image size does not exceed device limits
+	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
+		TCU_THROW(NotSupportedError, "Image size not supported for device");
+
+	// Check if device supports sparse operations for image type
+	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
+		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 }
 
 class ImageBlockShapesInstance : public SparseResourcesBaseInstance
@@ -131,14 +146,6 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 	const VkPhysicalDeviceSparseProperties	sparseProperties = physicalDeviceProperties.sparseProperties;
 	const deUint32							pixelSize = tcu::getPixelSize(m_format) * 8;
 	VkExtent3D								expectedGranularity;
-
-	// Check the image size does not exceed device limits
-	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
-		TCU_THROW(NotSupportedError, "Image size not supported for device");
-
-	// Check if device supports sparse operations for image type
-	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
-		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
 	imageCreateInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.pNext					= DE_NULL;

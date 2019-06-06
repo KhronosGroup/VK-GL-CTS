@@ -655,8 +655,6 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate	(void)
 
 	// Check for VK_EXT_discard_rectangles support and maximum number of active discard rectangles
 	{
-		m_context.requireDeviceExtension("VK_EXT_discard_rectangles");
-
 		VkPhysicalDeviceDiscardRectanglePropertiesEXT discardRectangleProperties;
 		deMemset(&discardRectangleProperties, 0, sizeof(VkPhysicalDeviceDiscardRectanglePropertiesEXT));
 		discardRectangleProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT;
@@ -801,6 +799,7 @@ public:
 
 	virtual TestInstance*		createInstance				(Context& context)	const;
 	virtual void				initPrograms				(SourceCollections& programCollection) const;
+	virtual void				checkSupport				(Context& context) const;
 
 private:
 	const TestParams			m_params;
@@ -853,18 +852,23 @@ void DiscardRectanglesTestCase::initPrograms(SourceCollections& programCollectio
 	}
 }
 
-vkt::TestInstance* DiscardRectanglesTestCase::createInstance (vkt::Context& context) const
+void DiscardRectanglesTestCase::checkSupport (Context& context) const
+{
+	context.requireDeviceExtension("VK_EXT_discard_rectangles");
+}
+
+TestInstance* DiscardRectanglesTestCase::createInstance (Context& context) const
 {
 	return new DiscardRectanglesTestInstance(context, m_params);
 }
 
 void createTests (tcu::TestCaseGroup* testGroup)
 {
-	tcu::TestContext&	testCtx				= testGroup->getTestContext();
-	deUint32		numRect [NUM_RECT_TESTS]	= { 1, 2, 3, 4,  8, 16};
-	std::string		modeName [TEST_MODE_COUNT]	= { "inclusive_", "exclusive_" };
-	std::string		scissorName [TEST_SCISSOR_MODE_COUNT]	= { "", "scissor_", "dynamic_scissor_" };
-	std::string		dynamicName [NUM_DYNAMIC_DISCARD_TYPE_TESTS]	= { "", "dynamic_discard_" };
+	tcu::TestContext&	testCtx											= testGroup->getTestContext();
+	deUint32			numRect [NUM_RECT_TESTS]						= { 1, 2, 3, 4,  8, 16};
+	std::string			modeName [TEST_MODE_COUNT]						= { "inclusive_", "exclusive_" };
+	std::string			scissorName [TEST_SCISSOR_MODE_COUNT]			= { "", "scissor_", "dynamic_scissor_" };
+	std::string			dynamicName [NUM_DYNAMIC_DISCARD_TYPE_TESTS]	= { "", "dynamic_discard_" };
 
 	for (deUint32 dynamic = 0 ; dynamic < NUM_DYNAMIC_DISCARD_TYPE_TESTS; dynamic++)
 	{

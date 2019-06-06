@@ -574,10 +574,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount) : vk::Move<vk::VkFramebuffer>())
 {
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-	}
+		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
 }
 
 ImageClearingTestInstance::ViewType ImageClearingTestInstance::getViewType (deUint32 imageLayerCount) const

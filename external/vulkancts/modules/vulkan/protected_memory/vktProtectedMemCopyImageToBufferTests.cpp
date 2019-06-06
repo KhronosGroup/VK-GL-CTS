@@ -99,6 +99,10 @@ public:
 							{
 								m_validator.initPrograms(programCollection);
 							}
+	virtual void			checkSupport				(Context& context) const
+							{
+								checkProtectedQueueSupport(context);
+							}
 private:
 	vk::VkClearColorValue	m_fillValue;
 	BufferValidator<T>		m_validator;

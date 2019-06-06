@@ -97,6 +97,10 @@ public:
 								{
 									m_validator.initPrograms(programCollection);
 								}
+	virtual void				checkSupport				(Context& context) const
+								{
+									checkProtectedQueueSupport(context);
+								}
 private:
 	deUint32					m_fillValue;
 	ValidationData				m_refData;

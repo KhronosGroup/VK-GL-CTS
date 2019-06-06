@@ -295,8 +295,6 @@ ConditionalRenderingBaseTestInstance::ConditionalRenderingBaseTestInstance (Cont
 	, m_physicalDevice				(m_context.getPhysicalDevice())
 	, m_queue						(m_context.getUniversalQueue())
 {
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_conditional_rendering"))
-		TCU_THROW(NotSupportedError, "VK_EXT_conditional_rendering is not supported");
 }
 
 void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate (bool discard, bool invert, deUint32 offsetMultiplier = 0, VkBufferUsageFlagBits extraUsage = (VkBufferUsageFlagBits)0)
@@ -1352,6 +1350,11 @@ struct AddProgramsUpdateBufferUsingRendering
 	}
 };
 
+void checkSupport (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_conditional_rendering");
+}
+
 } // unnamed namespace
 
 ConditionalRenderingDrawAndClearTests::ConditionalRenderingDrawAndClearTests (tcu::TestContext &testCtx)
@@ -1362,32 +1365,28 @@ ConditionalRenderingDrawAndClearTests::ConditionalRenderingDrawAndClearTests (tc
 
 void ConditionalRenderingDrawAndClearTests::init (void)
 {
-	tcu::TestCaseGroup*		clear			= new tcu::TestCaseGroup(m_testCtx, "clear", "Tests using vkCmdClearAttachments.");
-	tcu::TestCaseGroup*		color			= new tcu::TestCaseGroup(m_testCtx, "color", "Test color clear.");
-	tcu::TestCaseGroup*		depth			= new tcu::TestCaseGroup(m_testCtx, "depth", "Test depth clear.");
-	tcu::TestCaseGroup*		draw			= new tcu::TestCaseGroup(m_testCtx, "draw", "Test drawing.");
+	tcu::TestCaseGroup*	clear	= new tcu::TestCaseGroup(m_testCtx, "clear", "Tests using vkCmdClearAttachments.");
+	tcu::TestCaseGroup*	color	= new tcu::TestCaseGroup(m_testCtx, "color", "Test color clear.");
+	tcu::TestCaseGroup*	depth	= new tcu::TestCaseGroup(m_testCtx, "depth", "Test depth clear.");
+	tcu::TestCaseGroup*	draw	= new tcu::TestCaseGroup(m_testCtx, "draw", "Test drawing.");
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearColorTestGrid); testNdx++)
-		color->addChild(new InstanceFactory1<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearColorTestGrid[testNdx]),
-																												"Color clear test.", clearColorTestGrid[testNdx]));
+		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearColorTestGrid[testNdx]), "Color clear test.", clearColorTestGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearDepthTestGrid); testNdx++)
-		depth->addChild(new InstanceFactory1<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearDepthTestGrid[testNdx]),
-																												"Depth clear test.", clearDepthTestGrid[testNdx]));
+		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, generateClearTestName(clearDepthTestGrid[testNdx]), "Depth clear test.", clearDepthTestGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearColorTwiceGrid); testNdx++)
-		color->addChild(new InstanceFactory1<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearColorTwiceGrid[testNdx]),
-																												"Color clear test.", clearColorTwiceGrid[testNdx]));
+		color->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearColorTwiceGrid[testNdx]), "Color clear test.", clearColorTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(clearDepthTwiceGrid); testNdx++)
-		depth->addChild(new InstanceFactory1<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]),
-																												"Depth clear test.", clearDepthTwiceGrid[testNdx]));
+		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]), "Depth clear test.", clearDepthTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(drawTestGrid); testNdx++)
-		draw->addChild(new InstanceFactory1<ConditionalRenderingDrawTestInstance, DrawTestParams, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "case_" + de::toString(testNdx), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx]));
+		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "case_" + de::toString(testNdx), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx], checkSupport));
 
-	draw->addChild(new InstanceFactory1<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_no_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), true));
-	draw->addChild(new InstanceFactory1<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), false));
+	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_no_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), true, checkSupport));
+	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), false, checkSupport));
 
 	clear->addChild(color);
 	clear->addChild(depth);

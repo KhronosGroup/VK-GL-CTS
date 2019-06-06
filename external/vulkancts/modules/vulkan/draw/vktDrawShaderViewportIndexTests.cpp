@@ -743,27 +743,8 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-void requireShaderViewportIndexLayer (const Context& context)
-{
-	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
-	const VkPhysicalDeviceLimits	limits		= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
-
-	if (!features.multiViewport)
-		TCU_THROW(NotSupportedError, "Required feature is not supported: multiViewport");
-
-	if (limits.maxViewports < MIN_MAX_VIEWPORTS)
-		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
-
-	const std::vector<std::string>&		extensions	= context.getDeviceExtensions();
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_EXT_shader_viewport_index_layer"))
-		TCU_THROW(NotSupportedError, "Extension VK_EXT_shader_viewport_index_layer not supported");
-
-}
-
 tcu::TestStatus testVertexShader (Context& context, const int numViewports)
 {
-	requireShaderViewportIndexLayer(context);
-
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
 	Allocator&						allocator			= context.getDefaultAllocator();
@@ -815,12 +796,6 @@ tcu::TestStatus testVertexShader (Context& context, const int numViewports)
 
 tcu::TestStatus testTessellationShader (Context& context, const int numViewports)
 {
-	requireShaderViewportIndexLayer(context);
-
-	const VkPhysicalDeviceFeatures&		features	= context.getDeviceFeatures();
-	if (!features.tessellationShader)
-		TCU_THROW(NotSupportedError, "Required feature is not supported: tessellationShader");
-
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
 	Allocator&						allocator			= context.getDefaultAllocator();
@@ -870,6 +845,21 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 	return tcu::TestStatus::pass("OK");
 }
 
+void checkSupportVertex (Context& context, const int)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+	context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
+
+	if (context.getDeviceProperties().limits.maxViewports < MIN_MAX_VIEWPORTS)
+		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
+}
+
+void checkSupportTessellation (Context& context, const int)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+
+	checkSupportVertex(context, 0);
+}
 
 } // anonymous
 
@@ -878,10 +868,10 @@ tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx)
 	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_viewport_index", ""));
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", initVertexTestPrograms, testVertexShader, numViewports);
+		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", checkSupportVertex, initVertexTestPrograms, testVertexShader, numViewports);
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numViewports), "", initTessellationTestPrograms, testTessellationShader, numViewports);
+		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numViewports), "", checkSupportTessellation, initTessellationTestPrograms, testTessellationShader, numViewports);
 
 	return group.release();
 }

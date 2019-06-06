@@ -108,6 +108,7 @@ public:
 											 const DrawParams	params);
 							~DrawTestCase	(void);
 	virtual void			initPrograms	(vk::SourceCollections& programCollection) const;
+	virtual void			checkSupport	(Context& context) const;
 	virtual TestInstance*	createInstance	(Context& context) const;
 private:
 	const DrawParams		m_params;
@@ -204,15 +205,14 @@ void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 	programCollection.glslSources.add("frag_centroid")		<< glu::FragmentSource(fragShader_single.specialize(centroid));
 }
 
+void DrawTestCase::checkSupport (Context& context) const
+{
+	if (!(m_params.samples & context.getDeviceProperties().limits.framebufferColorSampleCounts))
+		throw tcu::NotSupportedError("Multisampling with " + de::toString(m_params.samples) + " samples not supported");
+}
+
 TestInstance* DrawTestCase::createInstance (Context& context) const
 {
-	const vk::InstanceInterface&		vki		= context.getInstanceInterface();
-	const vk::VkPhysicalDevice			device	= context.getPhysicalDevice();
-	const vk::VkPhysicalDeviceLimits	limits	= getPhysicalDeviceProperties(vki, device).limits;
-
-	if (!(m_params.samples & limits.framebufferColorSampleCounts))
-		throw tcu::NotSupportedError("Multisampling with " + de::toString(m_params.samples) + " samples not supported");
-
 	return new DrawTestInstance(context, m_params);
 }
 

@@ -211,17 +211,6 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	std::vector <deUint32>				residencyReferenceData;
 	std::vector<DeviceMemorySp>			deviceMemUniquePtrVec;
 
-	// Check if image size does not exceed device limits
-	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
-		TCU_THROW(NotSupportedError, "Image size not supported for device");
-
-	// Check if device supports sparse operations for image type
-	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
-		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
-
-	if (!getPhysicalDeviceFeatures(instance, physicalDevice).shaderResourceResidency)
-		TCU_THROW(NotSupportedError, "Sparse resource residency information not supported in shader code.");
-
 	imageSparseInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageSparseInfo.pNext					= DE_NULL;
 	imageSparseInfo.flags					= VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;

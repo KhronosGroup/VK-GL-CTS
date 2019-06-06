@@ -397,11 +397,6 @@ std::string getCullModeStr (const VkCullModeFlagBits cullMode)
 
 tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 {
-	// Check requirements
-
-	if(!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_maintenance1"))
-		TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_maintenance1");
-
 	// Set up the viewport and draw
 
 	const VkViewport viewport =
@@ -501,6 +496,11 @@ public:
 
 			programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
 		}
+	}
+
+	virtual void checkSupport (Context& context) const
+	{
+		context.requireDeviceExtension("VK_KHR_maintenance1");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const

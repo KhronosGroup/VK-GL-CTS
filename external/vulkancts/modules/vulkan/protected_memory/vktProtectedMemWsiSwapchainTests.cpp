@@ -739,13 +739,18 @@ struct GroupParameters
 	{}
 };
 
+void checkSupport (Context& context, TestParameters)
+{
+	checkProtectedQueueSupport(context);
+}
+
 void populateSwapchainGroup (tcu::TestCaseGroup* testGroup, GroupParameters params)
 {
 	for (int dimensionNdx = 0; dimensionNdx < TEST_DIMENSION_LAST; ++dimensionNdx)
 	{
 		const TestDimension		testDimension	= (TestDimension)dimensionNdx;
 
-		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", params.function, TestParameters(params.wsiType, testDimension));
+		addFunctionCase(testGroup, getTestDimensionName(testDimension), "", checkSupport, params.function, TestParameters(params.wsiType, testDimension));
 	}
 }
 
@@ -1270,9 +1275,14 @@ void getBasicRenderPrograms (vk::SourceCollections& dst, vk::wsi::Type)
 	TriangleRenderer::getPrograms(dst);
 }
 
+void checkSupport (Context& context, vk::wsi::Type)
+{
+	checkProtectedQueueSupport(context);
+}
+
 void populateRenderGroup (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
-	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", getBasicRenderPrograms, basicRenderTest, wsiType);
+	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", checkSupport, getBasicRenderPrograms, basicRenderTest, wsiType);
 }
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)

@@ -65,6 +65,7 @@ public:
 
 	void			initPrograms			(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);};
 	TestInstance*	createInstance			(Context&					context) const;
+	virtual void	checkSupport			(Context&					context) const;
 
 private:
 	const ImageType				m_imageType;
@@ -83,6 +84,20 @@ ImageAlignedMipSizeCase::ImageAlignedMipSizeCase (tcu::TestContext&			testCtx,
 	, m_imageSize	(imageSize)
 	, m_format		(format)
 {
+}
+
+void ImageAlignedMipSizeCase::checkSupport (Context& context) const
+{
+	const InstanceInterface&	instance		= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	// Check the image size does not exceed device limits
+	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
+		TCU_THROW(NotSupportedError, "Image size not supported for device");
+
+	// Check if device supports sparse operations for image type
+	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
+		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 }
 
 class ImageAlignedMipSizeInstance : public SparseResourcesBaseInstance
@@ -122,14 +137,6 @@ tcu::TestStatus ImageAlignedMipSizeInstance::iterate (void)
 	VkExtent3D								imageGranularity;
 	const VkPhysicalDeviceSparseProperties	sparseProperties = physicalDeviceProperties.sparseProperties;
 	VkImageFormatProperties					imageFormatProperties;
-
-	// Check the image size does not exceed device limits
-	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
-		TCU_THROW(NotSupportedError, "Image size not supported for device");
-
-	// Check if device supports sparse operations for image type
-	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
-		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
 	imageCreateInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.pNext					= DE_NULL;

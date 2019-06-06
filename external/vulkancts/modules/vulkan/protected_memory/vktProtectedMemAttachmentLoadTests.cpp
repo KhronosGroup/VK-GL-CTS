@@ -93,6 +93,10 @@ public:
 							{
 								m_validator.initPrograms(programCollection);
 							}
+	virtual void			checkSupport				(Context& context) const
+							{
+								checkProtectedQueueSupport(context);
+							}
 private:
 	vk::VkClearValue		m_clearValue;
 	ValidationData			m_refData;
