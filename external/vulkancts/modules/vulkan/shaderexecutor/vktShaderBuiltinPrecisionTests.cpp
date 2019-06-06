@@ -2622,10 +2622,7 @@ double LogFunc<Signature<float, float> >::precision(const EvalContext& ctx, doub
 		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -21) : ctx.format.ulp(ret, 3.0);
 	case glu::PRECISION_MEDIUMP:
 	case glu::PRECISION_LAST:
-		if (ctx.isShaderFloat16Int8)
-			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 3.0);
-		else
-			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 2.0);
+		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 3.0);
 	default:
 		DE_FATAL("Impossible");
 	}
@@ -2864,11 +2861,9 @@ Interval TrigFunc<Signature<deFloat16, deFloat16> >::getInputRange(const bool is
 template<>
 double TrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, double ret, double arg) const
 {
-	DE_ASSERT(!ctx.isShaderFloat16Int8 || (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE));
-
+	DE_UNREF(ret);
 	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 	{
-		// Use precision from OpenCL fast relaxed math
 		if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
 			return deLdExp(1.0, -11);
 		else
@@ -2883,16 +2878,11 @@ double TrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, dou
 		DE_ASSERT(ctx.floatPrecision == glu::PRECISION_MEDIUMP || ctx.floatPrecision == glu::PRECISION_LAST);
 
 		if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
-		{
-			if (ctx.isShaderFloat16Int8)
-				return deLdExp(1.0, -7);
-			else
-				return ctx.format.ulp(ret, 2.0);			// from OpenCL half-float extension specification
-		}
+			return deLdExp(1.0, -7);
 		else
 		{
-			// |x| * 2^-10, slightly larger than 2 ULP at x == pi
-			return deLdExp(deAbs(arg), -10);
+			// |x| * 2^-8, slightly larger than 2^-7 at x == pi
+			return deLdExp(deAbs(arg), -8);
 		}
 	}
 }
@@ -2972,7 +2962,7 @@ double ArcTrigFunc<Signature<deFloat16, deFloat16> >::precision (const EvalConte
 	if (!m_domain.contains(x))
 		return TCU_NAN;
 
-	// Form the spec 5 ULP.
+	// From the spec 5 ULP.
 	return ctx.format.ulp(ret, 5.0);
 }
 
@@ -2985,7 +2975,7 @@ double ArcTrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, 
 	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 		return ctx.format.ulp(ret, 4096.0);
 	else
-		return ctx.format.ulp(ret, ctx.isShaderFloat16Int8 ? 5.0 : 2.0);
+		return ctx.format.ulp(ret, 5.0);
 }
 
 class ASin : public CFloatFunc1<Signature<float, float> >
@@ -6577,7 +6567,7 @@ TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, in
 										 tcu::MAYBE,	// subnormals
 										 tcu::YES,		// infinities
 										 tcu::MAYBE);	// NaN
-	const FloatFormat       mediump		(-13, 13, 9, false, tcu::MAYBE);
+	const FloatFormat       mediump		(-14, 13, 10, false, tcu::MAYBE);
 
 	for (int precNdx = glu::PRECISION_MEDIUMP; precNdx < glu::PRECISION_LAST; ++precNdx)
 	{
