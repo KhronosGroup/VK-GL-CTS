@@ -3785,6 +3785,7 @@ private:
 	bool Check(StorageMultisampleTest::RenderbufferInternalFormatConfiguration format, glw::GLuint width,
 			   glw::GLuint height);
 	void Clean();
+	glw::GLint GetMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat);
 
 	/* Private member variables. */
 	glw::GLuint m_fbo[2];
