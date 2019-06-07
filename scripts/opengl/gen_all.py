@@ -33,8 +33,15 @@ from gen_null_render_context import genNullRenderContext
 from gen_str_util import genStrUtil
 from gen_wrapper import genWrapper
 from gen_query_util import genQueryUtil
+import logging
+import sys
 
 def genAll ():
+	# https://docs.python.org/3/howto/logging.html#what-happens-if-no-configuration-is-provided
+	# To obtain the pre-3.2 behaviour, logging.lastResort can be set to None.
+	if (sys.version_info >= (3, 2)):
+		logging.lastResort=None
+
 	registry = getGLRegistry()
 	iface = getHybridInterface()
 	genCallLogWrapper(iface)
