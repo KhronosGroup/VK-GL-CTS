@@ -212,7 +212,10 @@ static void addFunctionCases (TestCaseGroup* parent, const char* functionName, i
 	{
 		for (int shaderTypeNdx = 0; shaderTypeNdx < glu::SHADERTYPE_LAST; shaderTypeNdx++)
 		{
-			group->addChild(new TestClass(parent->getContext(), input, glu::Precision(prec), glu::ShaderType(shaderTypeNdx)));
+			if (executorSupported(glu::ShaderType(shaderTypeNdx)))
+			{
+				group->addChild(new TestClass(parent->getContext(), input, glu::Precision(prec), glu::ShaderType(shaderTypeNdx)));
+			}
 		}
 	}
 }

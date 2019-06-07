@@ -152,6 +152,12 @@ const char* getShaderTypeName (ShaderType shaderType)
 		"tess_control",
 		"tess_eval",
 		"compute",
+		"unused for GL",
+		"unused for GL",
+		"unused for GL",
+		"unused for GL",
+		"unused for GL",
+		"unused for GL",
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == SHADERTYPE_LAST);

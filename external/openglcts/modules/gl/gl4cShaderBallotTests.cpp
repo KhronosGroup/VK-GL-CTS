@@ -163,7 +163,7 @@ ShaderBallotBaseTestCase::ShaderPipeline::ShaderPipeline(glu::ShaderType	testedS
 
 	// create shader chunks
 
-	for (unsigned int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; ++shaderType)
+	for (unsigned int shaderType = 0; shaderType <= glu::SHADERTYPE_COMPUTE; ++shaderType)
 	{
 		m_shaderChunks[shaderType] = new char*[m_shaders[shaderType].size()];
 		for (unsigned int i = 0; i < m_shaders[i].size(); ++i)
@@ -185,7 +185,7 @@ ShaderBallotBaseTestCase::ShaderPipeline::~ShaderPipeline()
 		delete m_programCompute;
 	}
 
-	for (unsigned int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; ++shaderType)
+	for (unsigned int shaderType = 0; shaderType <= glu::SHADERTYPE_COMPUTE; ++shaderType)
 	{
 		delete[] m_shaderChunks[shaderType];
 	}
@@ -472,7 +472,7 @@ ShaderBallotAvailabilityTestCase::ShaderBallotAvailabilityTestCase(deqp::Context
 		"	float blue = float(ballotARB(true) % 256) / 256.0f;\n"
 		"	outColor = readInvocationARB(vec4(red, green, blue, 1.0f), gl_SubGroupInvocationARB);\n";
 
-	for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
+	for (unsigned int i = 0; i <= glu::SHADERTYPE_COMPUTE; ++i)
 	{
 		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, colorShaderSnippet));
 	}
@@ -544,7 +544,7 @@ ShaderBallotBitmasksTestCase::ShaderBallotBitmasksTestCase(deqp::Context& contex
 
 	for (MaskVarIter maskIter = m_maskVars.begin(); maskIter != m_maskVars.end(); maskIter++)
 	{
-		for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
+		for (unsigned int i = 0; i <= glu::SHADERTYPE_COMPUTE; ++i)
 		{
 			std::map<std::string, std::string> specMap;
 			specMap["MASK_VAR"]		 = maskIter->first;
@@ -622,7 +622,7 @@ ShaderBallotFunctionBallotTestCase::ShaderBallotFunctionBallotTestCase(deqp::Con
 									 "	float color = (param && result != 0ul) || !param ? 1.0 : 0.0;\n"
 									 "	outColor = vec4(color, color, color, 1.0);\n";
 
-	for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
+	for (unsigned int i = 0; i <= glu::SHADERTYPE_COMPUTE; ++i)
 	{
 		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, ballotFalseSnippet));
 		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, ballotTrueSnippet));
@@ -696,7 +696,7 @@ ShaderBallotFunctionReadTestCase::ShaderBallotFunctionReadTestCase(deqp::Context
 								 "}\n"
 								 "outColor = readInvocationARB(vec4(color, color, color, 1.0f), invocation);\n";
 
-	for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
+	for (unsigned int i = 0; i <= glu::SHADERTYPE_COMPUTE; ++i)
 	{
 		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, readFirstInvSnippet));
 		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, readInvSnippet));

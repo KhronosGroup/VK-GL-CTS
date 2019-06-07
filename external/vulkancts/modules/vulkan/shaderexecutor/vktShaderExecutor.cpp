@@ -3345,5 +3345,22 @@ ShaderExecutor* createExecutor (Context& context, glu::ShaderType shaderType, co
 	}
 }
 
+bool  executorSupported(glu::ShaderType shaderType)
+{
+	switch (shaderType)
+	{
+	case glu::SHADERTYPE_VERTEX:
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+	case glu::SHADERTYPE_GEOMETRY:
+	case glu::SHADERTYPE_FRAGMENT:
+	case glu::SHADERTYPE_COMPUTE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+
 } // shaderexecutor
 } // vkt

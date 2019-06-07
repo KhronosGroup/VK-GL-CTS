@@ -85,6 +85,7 @@ typedef enum
 	STAGE_COMPUTE = 0,
 	STAGE_VERTEX,
 	STAGE_FRAGMENT,
+	STAGE_RAYGEN
 } Stage;
 
 typedef enum
@@ -92,9 +93,6 @@ typedef enum
 	UPDATE_AFTER_BIND_DISABLED = 0,
 	UPDATE_AFTER_BIND_ENABLED,
 } UpdateAfterBind;
-
-const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-const VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
 struct CaseDef
 {
@@ -112,6 +110,8 @@ struct CaseDef
 	Stage stage;
 	UpdateAfterBind uab;
 	deUint32 seed;
+	VkFlags allShaderStages;
+	VkFlags allPipelineStages;
 };
 
 
@@ -185,14 +185,27 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	deMemset(&inlineUniformProperties, 0, sizeof(inlineUniformProperties));
 	inlineUniformProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT;
 
+	VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
+	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
+	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
+
 	VkPhysicalDeviceProperties2 properties;
 	deMemset(&properties, 0, sizeof(properties));
 	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	void ** pNextTail = &properties.pNext;
 
 	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
 	{
-		properties.pNext = &inlineUniformProperties;
+		*pNextTail = &inlineUniformProperties;
+		pNextTail = &inlineUniformProperties.pNext;
 	}
+
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	{
+		*pNextTail = &rayTracingProperties;
+		pNextTail = &rayTracingProperties.pNext;
+	}
+	*pNextTail = NULL;
 
 	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
@@ -228,7 +241,11 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	{
 		return TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
-
+	else if (m_data.stage == STAGE_RAYGEN &&
+		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	{
+		return TCU_THROW(NotSupportedError, "Ray tracing is not supported");
+	}
 	if ((m_data.indexType == INDEX_TYPE_PUSHCONSTANT ||
 		 m_data.indexType == INDEX_TYPE_DEPENDENT ||
 		 m_data.indexType == INDEX_TYPE_RUNTIME_SIZE) &&
@@ -362,13 +379,14 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 			VkDescriptorSetLayoutBinding &binding = bindings[b];
 			binding.binding = b;
 			binding.pImmutableSamplers = NULL;
+			binding.stageFlags = caseDef.allShaderStages;
 
 			// Output image
 			if (s == 0 && b == 0)
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				binding.descriptorCount = 1;
-				binding.stageFlags = allShaderStages;
+				binding.stageFlags = caseDef.allShaderStages;
 				numImage++;
 				arraySizes[b] = 0;
 				continue;
@@ -486,7 +504,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 				break;
 			}
 
-			binding.stageFlags = ((binding.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) ? (VkFlags)(VK_SHADER_STAGE_FRAGMENT_BIT) : allShaderStages);
+			binding.stageFlags = ((binding.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) ? (VkFlags)(VK_SHADER_STAGE_FRAGMENT_BIT) : caseDef.allShaderStages);
 		}
 	}
 
@@ -744,6 +762,26 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str());
 			break;
 		}
+	case STAGE_RAYGEN:
+	{
+		std::stringstream css;
+		css <<
+			"#version 460 core\n"
+			"#extension GL_EXT_nonuniform_qualifier : enable\n"
+			"#extension GL_NV_ray_tracing : require\n"
+			<< pushdecl.str()
+			<< decls.str() <<
+			"void main()\n"
+			"{\n"
+			"  int accum = 0, temp;\n"
+			<< checks.str() <<
+			"  uvec4 color = (accum != 0) ? uvec4(0,0,0,0) : uvec4(1,0,0,1);\n"
+			"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
+			"}\n";
+
+		programCollection.glslSources.add("test") << glu::RaygenSource(css.str());
+		break;
+	}
 	case STAGE_VERTEX:
 		{
 			std::stringstream vss;
@@ -818,6 +856,15 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	deMemset(&properties, 0, sizeof(properties));
 	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
+	VkPhysicalDeviceRayTracingPropertiesNV rayTracingProperties;
+	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
+	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
+
+	if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	{
+		properties.pNext = &rayTracingProperties;
+	}
+
 	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties);
 
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
@@ -852,7 +899,20 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	deRandom rnd;
 	deRandom_init(&rnd, m_data.seed);
 
-	VkPipelineBindPoint bindPoint = m_data.stage == STAGE_COMPUTE ? VK_PIPELINE_BIND_POINT_COMPUTE : VK_PIPELINE_BIND_POINT_GRAPHICS;
+	VkPipelineBindPoint bindPoint;
+
+	switch (m_data.stage)
+	{
+	case STAGE_COMPUTE:
+		bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+		break;
+	case STAGE_RAYGEN:
+		bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_NV;
+		break;
+	default:
+		bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		break;
+	}
 
 	DE_ASSERT(m_data.numDescriptorSets <= 32);
 	Move<vk::VkDescriptorSetLayout>	descriptorSetLayouts[32];
@@ -1215,7 +1275,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	// Push constants are used for dynamic indexing. PushConstant[i] = i.
 	const VkPushConstantRange			pushConstRange			=
 	{
-		allShaderStages,		// VkShaderStageFlags	stageFlags
+		m_data.allShaderStages,	// VkShaderStageFlags	stageFlags
 		0,						// deUint32				offset
 		128						// deUint32				size
 	};
@@ -1244,7 +1304,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		// PushConstant[i] = i
 		for (deUint32 i = 0; i < (deUint32)(128 / sizeof(deUint32)); ++i)
 		{
-			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
+			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, m_data.allShaderStages,
 								(deUint32)(i * sizeof(deUint32)), (deUint32)sizeof(deUint32), &i);
 		}
 	}
@@ -1560,6 +1620,8 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	Move<VkRenderPass> renderPass;
 	Move<VkFramebuffer> framebuffer;
 
+	de::MovePtr<BufferWithMemory> sbtBuffer;
+
 	if (m_data.stage == STAGE_COMPUTE)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
@@ -1586,6 +1648,56 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			0u,															// basePipelineIndex
 		};
 		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+	}
+	else if (m_data.stage == STAGE_RAYGEN)
+	{
+		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
+
+		const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			DE_NULL,
+			(VkPipelineShaderStageCreateFlags)0,
+			VK_SHADER_STAGE_RAYGEN_BIT_NV,								// stage
+			*shader,													// shader
+			"main",
+			DE_NULL,													// pSpecializationInfo
+		};
+
+		VkRayTracingShaderGroupCreateInfoNV group =
+		{
+			VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV,
+			DE_NULL,
+			VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV,			// type
+			0,														// generalShader
+			VK_SHADER_UNUSED_NV,									// closestHitShader
+			VK_SHADER_UNUSED_NV,									// anyHitShader
+			VK_SHADER_UNUSED_NV,									// intersectionShader
+		};
+
+		VkRayTracingPipelineCreateInfoNV pipelineCreateInfo = {
+			VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_NV,	// sType
+			DE_NULL,												// pNext
+			0,														// flags
+			1,														// stageCount
+			&shaderCreateInfo,										// pStages
+			1,														// groupCount
+			&group,													// pGroups
+			0,														// maxRecursionDepth
+			*pipelineLayout,										// layout
+			(vk::VkPipeline)0,										// basePipelineHandle
+			0u,														// basePipelineIndex
+		};
+
+		pipeline = createRayTracingPipelineNV(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
+
+		sbtBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+			vk, device, allocator, makeBufferCreateInfo(rayTracingProperties.shaderGroupHandleSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
+
+		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
+		invalidateMappedMemoryRange(vk, device, sbtBuffer->getAllocation().getMemory(), sbtBuffer->getAllocation().getOffset(), rayTracingProperties.shaderGroupHandleSize);
+
+		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
 	}
 	else
 	{
@@ -1850,12 +1962,21 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 	if (m_data.stage == STAGE_COMPUTE)
 	{
 		vk.cmdDispatch(*cmdBuffer, DIM, DIM, 1);
+	}
+	else if (m_data.stage == STAGE_RAYGEN)
+	{
+		vk.cmdTraceRaysNV(*cmdBuffer,
+			**sbtBuffer, 0,
+			DE_NULL, 0, 0,
+			DE_NULL, 0, 0,
+			DE_NULL, 0, 0,
+			DIM, DIM, 1);
 	}
 	else
 	{
@@ -1876,7 +1997,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	memBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 	memBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-	vk.cmdPipelineBarrier(*cmdBuffer, allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT,
+	vk.cmdPipelineBarrier(*cmdBuffer, m_data.allPipelineStages, VK_PIPELINE_STAGE_TRANSFER_BIT,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 	const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeExtent3D(DIM, DIM, 1u),
@@ -1984,6 +2105,7 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		{ STAGE_COMPUTE,	"comp",		"compute"	},
 		{ STAGE_FRAGMENT,	"frag",		"fragment"	},
 		{ STAGE_VERTEX,		"vert",		"vertex"	},
+		{ STAGE_RAYGEN,		"rgen",		"raygen"	},
 	};
 
 	TestGroupCase uabCases[] =
@@ -2026,6 +2148,12 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 											deUint32 numSeeds = (setsCases[setsNdx].count == 4 && uboNdx == 0 && sboNdx == 0 && imgNdx == 0 && iubNdx == 0 && iaNdx < 2) ? 10 : 1;
 											for (deUint32 rnd = 0; rnd < numSeeds; ++rnd)
 											{
+												VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+												VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+												if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN) {
+													allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
+													allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+												}
 												CaseDef c =
 												{
 													(IndexType)indexCases[indexNdx].count,							// IndexType indexType;
@@ -2042,6 +2170,8 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 													currentStage,													// Stage stage;
 													(UpdateAfterBind)uabCases[uabNdx].count,						// UpdateAfterBind uab;
 													seed++,															// deUint32 seed;
+													allShaderStages,												// VkFlags allShaderStages;
+													allPipelineStages,												// VkFlags allPipelineStages;
 												};
 
 												string name = de::toString(rnd);

@@ -99,6 +99,7 @@ protected:
 inline tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderExecutor* executor) { executor->log(log);	return log; }
 inline tcu::TestLog& operator<< (tcu::TestLog& log, const ShaderExecutor& executor) { executor.log(log);	return log; }
 
+bool            executorSupported(glu::ShaderType shaderType);
 ShaderExecutor* createExecutor (const glu::RenderContext& renderCtx, glu::ShaderType shaderType, const ShaderSpec& shaderSpec);
 
 } // ShaderExecUtil

@@ -1530,6 +1530,22 @@ ShaderExecutor* createExecutor (const glu::RenderContext& renderCtx, glu::Shader
 	}
 }
 
+bool  executorSupported(glu::ShaderType shaderType)
+{
+	switch (shaderType)
+	{
+	case glu::SHADERTYPE_VERTEX:
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+	case glu::SHADERTYPE_GEOMETRY:
+	case glu::SHADERTYPE_FRAGMENT:
+	case glu::SHADERTYPE_COMPUTE:
+		return true;
+	default:
+		return false;
+	}
+}
+
 } // ShaderExecUtil
 } // gls
 } // deqp
