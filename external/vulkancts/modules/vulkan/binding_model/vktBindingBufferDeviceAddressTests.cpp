@@ -503,12 +503,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		break;
 	}
 
-	Move<vk::VkDescriptorSetLayout>	descriptorSetLayout;
 	Move<vk::VkDescriptorPool>	descriptorPool;
 	Move<vk::VkDescriptorSet>	descriptorSet;
 
 	VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-	VkDescriptorSetLayoutCreateFlags layoutCreateFlags = 0;
 
 	VkDescriptorSetLayoutBinding bindings[2];
 	bindings[0].binding = 0;
@@ -521,17 +519,20 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	bindings[1].descriptorCount = 1;
 
 	// Create a layout and allocate a descriptor set for it.
-	const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
+	VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		DE_NULL,
 
-		layoutCreateFlags,
+		0,
 		(deUint32)2,
 		&bindings[0]
 	};
 
-	descriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
+	Move<vk::VkDescriptorSetLayout>	descriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
+
+	setLayoutCreateInfo.bindingCount = 0;
+	Move<vk::VkDescriptorSetLayout>	emptyDescriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
 
 	vk::DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(bindings[1].descriptorType, 1);
@@ -644,10 +645,18 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		128						// deUint32				size
 	};
 
+	deUint32 nonEmptySetLimit = m_data.base == BASE_UBO ? properties.properties.limits.maxPerStageDescriptorUniformBuffers :
+														  properties.properties.limits.maxPerStageDescriptorStorageBuffers;
+	nonEmptySetLimit = de::min(nonEmptySetLimit, properties.properties.limits.maxPerStageDescriptorStorageImages);
+
 	vector<vk::VkDescriptorSetLayout>	descriptorSetLayoutsRaw(m_data.set+1);
 	for (size_t i = 0; i < m_data.set+1; ++i)
 	{
-		descriptorSetLayoutsRaw[i] = descriptorSetLayout.get();
+		// use nonempty descriptor sets to consume resources until we run out of descriptors
+		if (i < nonEmptySetLimit - 1 || i == m_data.set)
+			descriptorSetLayoutsRaw[i] = descriptorSetLayout.get();
+		else
+			descriptorSetLayoutsRaw[i] = emptyDescriptorSetLayout.get();
 	}
 
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
