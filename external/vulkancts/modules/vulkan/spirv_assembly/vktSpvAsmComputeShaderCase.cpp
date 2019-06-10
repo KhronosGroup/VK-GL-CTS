@@ -491,7 +491,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		if (!isFloatControlsFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
 			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
 
-        if (m_shaderSpec.usesPhysStorageBuffer && !m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
+		if (m_shaderSpec.usesPhysStorageBuffer && !m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
 			TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
 	}
 

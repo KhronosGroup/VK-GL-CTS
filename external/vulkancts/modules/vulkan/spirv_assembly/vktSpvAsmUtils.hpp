@@ -268,6 +268,8 @@ struct VulkanFeatures
 	{
 		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
 		deMemset(&floatControlsProperties, 0, sizeof(ExtensionFloatControlsFeatures));
+		floatControlsProperties.denormBehaviorIndependence	= vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+		floatControlsProperties.roundingModeIndependence	= vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
 	}
 };
 

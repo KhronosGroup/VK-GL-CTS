@@ -6276,6 +6276,7 @@ typedef enum VkShaderFloatControlsIndependenceKHR {
     VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_RANGE_SIZE_KHR = (VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR - VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR + 1),
     VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkShaderFloatControlsIndependenceKHR;
+
 typedef struct VkPhysicalDeviceFloatControlsPropertiesKHR {
     VkStructureType                         sType;
     void*                                   pNext;

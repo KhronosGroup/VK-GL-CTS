@@ -31,6 +31,7 @@
 #include "tcuStringTemplate.hpp"
 #include "deUniquePtr.hpp"
 #include "deFloat16.h"
+#include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include <cstring>
 #include <vector>
@@ -322,10 +323,11 @@ class TypeValuesBase
 {
 public:
 	TypeValuesBase();
-	virtual ~TypeValuesBase()	{}
+	virtual ~TypeValuesBase() = default;
 
-	virtual BufferSp	constructInputBuffer(const ValueId* twoArguments) const = 0;
-	virtual BufferSp	constructOutputBuffer(ValueId result) const = 0;
+	virtual BufferSp	constructInputBuffer	(const ValueId* twoArguments) const = 0;
+	virtual BufferSp	constructOutputBuffer	(ValueId result) const = 0;
+	virtual void		fillInputData			(const ValueId* twoArguments, vector<deUint8>& bufferData, deUint32& offset) const = 0;
 
 protected:
 	const double	pi;
@@ -344,8 +346,9 @@ class TypeValues: public TypeValuesBase
 public:
 	TypeValues();
 
-	BufferSp constructInputBuffer(const ValueId* twoArguments) const;
-	BufferSp constructOutputBuffer(ValueId result) const;
+	BufferSp	constructInputBuffer	(const ValueId* twoArguments) const override;
+	BufferSp	constructOutputBuffer	(ValueId result) const override;
+	void		fillInputData			(const ValueId* twoArguments, vector<deUint8>& bufferData, deUint32& offset) const override;
 
 	FLOAT_TYPE getValue(ValueId id) const;
 
@@ -377,6 +380,20 @@ BufferSp TypeValues<FLOAT_TYPE>::constructOutputBuffer(ValueId result) const
 
 	std::vector<FLOAT_TYPE> outputData(1, exactByteEquivalent<uint_t>(value));
 	return BufferSp(new Buffer<FLOAT_TYPE>(outputData));
+}
+
+template <typename FLOAT_TYPE>
+void TypeValues<FLOAT_TYPE>::fillInputData(const ValueId* twoArguments, vector<deUint8>& bufferData, deUint32& offset) const
+{
+	deUint32 typeSize = sizeof(FLOAT_TYPE);
+
+	FLOAT_TYPE argA = getValue(twoArguments[0]);
+	deMemcpy(&bufferData[offset], &argA, typeSize);
+	offset += typeSize;
+
+	FLOAT_TYPE argB = getValue(twoArguments[1]);
+	deMemcpy(&bufferData[offset], &argB, typeSize);
+	offset += typeSize;
 }
 
 template <typename FLOAT_TYPE>
@@ -566,7 +583,7 @@ TypeValues<double>::TypeValues()
 class TypeSnippetsBase
 {
 public:
-	virtual ~TypeSnippetsBase() {}
+	virtual ~TypeSnippetsBase() = default;
 
 protected:
 	void updateSpirvSnippets();
@@ -600,8 +617,11 @@ public: // Type specific spir-v snippets:
 	// Common annotations
 	string typeAnnotationsSnippet;
 
-	// Definitions of all types commonly used by tests
+	// Definitions of all types commonly used by operation tests
 	string typeDefinitionsSnippet;
+
+	// Definitions of all types commonly used by settings tests
+	string minTypeDefinitionsSnippet;
 
 	// Definitions of all constants commonly used by tests
 	string constantsDefinitionsSnippet;
@@ -611,14 +631,17 @@ public: // Type specific spir-v snippets:
 	typedef map<ValueId, string> SnippetMap;
 	SnippetMap valueIdToSnippetArgMap;
 
-	// Spir-v snippet that reads argument from SSBO
+	// Spir-v snippets that read argument from SSBO
 	string argumentsFromInputSnippet;
+	string multiArgumentsFromInputSnippet;
 
 	// SSBO with stage input/output definitions
 	string inputAnnotationsSnippet;
 	string inputDefinitionsSnippet;
 	string outputAnnotationsSnippet;
+	string multiOutputAnnotationsSnippet;
 	string outputDefinitionsSnippet;
+	string multiOutputDefinitionsSnippet;
 
 	// Varying is required to pass result from vertex stage to fragment stage,
 	// one of requirements was to not use SSBO writes in vertex stage so we
@@ -631,6 +654,7 @@ public: // Type specific spir-v snippets:
 	string loadVertexResultSnippet;
 
 	string storeResultsSnippet;
+	string multiStoreResultsSnippet;
 };
 
 void TypeSnippetsBase::updateSpirvSnippets()
@@ -654,6 +678,12 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"%type_float_arr_1       = OpTypeArray %type_float %c_i32_1\n"
 		"%type_float_arr_2       = OpTypeArray %type_float %c_i32_2\n";
 
+	// minimal type definition set that is used by settings tests
+	const string minTypeDefinitionsTemplate =
+		"%type_float             = OpTypeFloat " + bitWidth + "\n"
+		"%type_float_uptr        = OpTypePointer Uniform %type_float\n"
+		"%type_float_arr_2       = OpTypeArray %type_float %c_i32_2\n";
+
 	// definition off all constans that are used by tests
 	const string constantsDefinitionsTemplate =
 		"%c_float_n1             = OpConstant %type_float -1\n"
@@ -675,6 +705,12 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"%arg2loc                = OpAccessChain %type_float_uptr %ssbo_in %c_i32_0 %c_i32_1\n"
 		"%arg2                   = OpLoad %type_float %arg2loc\n";
 
+	const string multiArgumentsFromInputTemplate =
+		"%arg1_float_loc         = OpAccessChain %type_float_uptr %ssbo_in %c_i32_${attr} %c_i32_0\n"
+		"%arg2_float_loc         = OpAccessChain %type_float_uptr %ssbo_in %c_i32_${attr} %c_i32_1\n"
+		"%arg1_float             = OpLoad %type_float %arg1_float_loc\n"
+		"%arg2_float             = OpLoad %type_float %arg2_float_loc\n";
+
 	// when tested shader stage reads from SSBO it has to have this snippet
 	inputAnnotationsSnippet =
 		"OpMemberDecorate %SSBO_in 0 Offset 0\n"
@@ -694,26 +730,46 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"OpDecorate %ssbo_out DescriptorSet 0\n"
 		"OpDecorate %ssbo_out Binding 1\n";
 
+	const string multiOutputAnnotationsTemplate =
+		"OpMemberDecorate %SSBO_float_out 0 Offset 0\n"
+		"OpDecorate %type_float_arr_2 ArrayStride "+ arrayStride + "\n"
+		"OpDecorate %SSBO_float_out BufferBlock\n"
+		"OpDecorate %ssbo_float_out DescriptorSet 0\n";
+
 	const string outputDefinitionsTemplate =
 		"%SSBO_out             = OpTypeStruct %type_float_arr_1\n"
 		"%up_SSBO_out          = OpTypePointer Uniform %SSBO_out\n"
 		"%ssbo_out             = OpVariable %up_SSBO_out Uniform\n";
+
+	const string multiOutputDefinitionsTemplate =
+		"%SSBO_float_out         = OpTypeStruct %type_float\n"
+		"%up_SSBO_float_out      = OpTypePointer Uniform %SSBO_float_out\n"
+		"%ssbo_float_out         = OpVariable %up_SSBO_float_out Uniform\n";
 
 	// this snippet is used by compute and fragment stage but not by vertex stage
 	const string storeResultsTemplate =
 		"%outloc               = OpAccessChain %type_float_uptr %ssbo_out %c_i32_0 %c_i32_0\n"
 		"OpStore %outloc %result\n";
 
+	const string multiStoreResultsTemplate =
+		"%outloc" + bitWidth + "             = OpAccessChain %type_float_uptr %ssbo_float_out %c_i32_0\n"
+		"                        OpStore %outloc" + bitWidth + " %result" + bitWidth + "\n";
+
 	const string typeToken	= "_float";
 	const string typeName	= "_f" + bitWidth;
 
-	typeAnnotationsSnippet		= replace(typeAnnotationsTemplate, typeToken, typeName);
-	typeDefinitionsSnippet		= replace(typeDefinitionsTemplate, typeToken, typeName);
-	constantsDefinitionsSnippet	= replace(constantsDefinitionsTemplate, typeToken, typeName);
-	argumentsFromInputSnippet	= replace(argumentsFromInputTemplate, typeToken, typeName);
-	inputDefinitionsSnippet		= replace(inputDefinitionsTemplate, typeToken, typeName);
-	outputDefinitionsSnippet	= replace(outputDefinitionsTemplate, typeToken, typeName);
-	storeResultsSnippet			= replace(storeResultsTemplate, typeToken, typeName);
+	typeAnnotationsSnippet			= replace(typeAnnotationsTemplate, typeToken, typeName);
+	typeDefinitionsSnippet			= replace(typeDefinitionsTemplate, typeToken, typeName);
+	minTypeDefinitionsSnippet		= replace(minTypeDefinitionsTemplate, typeToken, typeName);
+	constantsDefinitionsSnippet		= replace(constantsDefinitionsTemplate, typeToken, typeName);
+	argumentsFromInputSnippet		= replace(argumentsFromInputTemplate, typeToken, typeName);
+	multiArgumentsFromInputSnippet	= replace(multiArgumentsFromInputTemplate, typeToken, typeName);
+	inputDefinitionsSnippet			= replace(inputDefinitionsTemplate, typeToken, typeName);
+	multiOutputAnnotationsSnippet	= replace(multiOutputAnnotationsTemplate, typeToken, typeName);
+	outputDefinitionsSnippet		= replace(outputDefinitionsTemplate, typeToken, typeName);
+	multiOutputDefinitionsSnippet	= replace(multiOutputDefinitionsTemplate, typeToken, typeName);
+	storeResultsSnippet				= replace(storeResultsTemplate, typeToken, typeName);
+	multiStoreResultsSnippet		= replace(multiStoreResultsTemplate, typeToken, typeName);
 
 	// NOTE: only values used as _generated_ arguments in test operations
 	// need to be in this map, arguments that are only used by tests,
@@ -2249,9 +2305,9 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 
 template <typename TYPE, typename FLOAT_TYPE>
 bool checkFloats (const vector<Resource>&		,
-						  const vector<AllocationSp>&	outputAllocs,
-						  const vector<Resource>&		expectedOutputs,
-						  TestLog&						log)
+				  const vector<AllocationSp>&	outputAllocs,
+				  const vector<Resource>&		expectedOutputs,
+				  TestLog&						log)
 {
 	if (outputAllocs.size() != expectedOutputs.size())
 		return false;
@@ -2268,6 +2324,40 @@ bool checkFloats (const vector<Resource>&		,
 	return true;
 }
 
+bool checkMixedFloats (const vector<Resource>&		,
+					   const vector<AllocationSp>&	outputAllocs,
+					   const vector<Resource>&		expectedOutputs,
+					   TestLog&						log)
+{
+	// this function validates buffers containing floats of diferent widths, order is not important
+
+	if (outputAllocs.size() != expectedOutputs.size())
+		return false;
+
+	// create map storing functions that should be used for comparision
+	// depending on float width in bytes; this lets us later to avoid switch in while
+	typedef bool (*compareFun)(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, TestLog& log);
+	const map<size_t, compareFun> compareMap =
+	{
+		{ 2, compareBytes<Float16, deFloat16> },
+		{ 4, compareBytes<Float32, float> },
+		{ 8, compareBytes<Float64, double>},
+	};
+
+	vector<deUint8> expectedBytes;
+	bool			allResultsAreCorrect	= true;
+	int				resultIndex				= static_cast<int>(outputAllocs.size());
+
+	while (resultIndex--)
+	{
+		expectedOutputs[resultIndex].getBytes(expectedBytes);
+		size_t byteWidth		 = expectedOutputs[resultIndex].getByteSize();
+		allResultsAreCorrect	&= compareMap.at(byteWidth)(expectedBytes, outputAllocs[resultIndex], log);
+	}
+
+	return allResultsAreCorrect;
+}
+
 // Base class for ComputeTestGroupBuilder and GrephicstestGroupBuilder classes.
 // It contains all functionalities that are used by both child classes.
 class TestGroupBuilderBase
@@ -2275,20 +2365,21 @@ class TestGroupBuilderBase
 public:
 
 	TestGroupBuilderBase();
-	virtual ~TestGroupBuilderBase() {}
+	virtual ~TestGroupBuilderBase() = default;
 
-	void init();
+	virtual void createOperationTests(TestCaseGroup* parentGroup,
+									  const char* groupName,
+									  FloatType floatType,
+									  bool argumentsFromInput) = 0;
 
-	virtual void createTests(TestCaseGroup* group,
-							 FloatType floatType,
-							 bool argumentsFromInput) = 0;
+	virtual void createSettingsTests(TestCaseGroup* parentGroup) = 0;
 
 protected:
 
 	typedef vector<OperationTestCase> TestCaseVect;
 
-	// Structure containing all data required to create single test.
-	struct TestCaseInfo
+	// Structure containing all data required to create single operation test.
+	struct OperationTestCaseInfo
 	{
 		FloatType					outFloatType;
 		bool						argumentsFromInput;
@@ -2297,8 +2388,38 @@ protected:
 		const OperationTestCase&	testCase;
 	};
 
-	void specializeOperation(const TestCaseInfo&	testCaseInfo,
-							 SpecializedOperation&	specializedOperation) const;
+	// Mode used by SettingsTestCaseInfo to specify what settings do we want to test.
+	enum SettingsMode
+	{
+		SM_ROUNDING			= 0,
+		SM_DENORMS
+	};
+
+	// Enum containing available options. When rounding is tested only SO_RTE and SO_RTZ
+	// should be used. SO_FLUSH and SO_PRESERVE should be used only for denorm tests.
+	enum SettingsOption
+	{
+		SO_UNUSED			= 0,
+		SO_RTE,
+		SO_RTZ,
+		SO_FLUSH,
+		SO_PRESERVE
+	};
+
+	// Structure containing all data required to create single settings test.
+	struct SettingsTestCaseInfo
+	{
+		const char*								name;
+		SettingsMode							testedMode;
+		VkShaderFloatControlsIndependenceKHR	independenceSetting;
+
+		SettingsOption							fp16Option;
+		SettingsOption							fp32Option;
+		SettingsOption							fp64Option;
+	};
+
+	void specializeOperation(const OperationTestCaseInfo&	testCaseInfo,
+							 SpecializedOperation&			specializedOperation) const;
 
 	void getBehaviorCapabilityAndExecutionMode(BehaviorFlags behaviorFlags,
 											   const string inBitWidth,
@@ -2351,8 +2472,8 @@ TestGroupBuilderBase::TestGroupBuilderBase()
 	m_behaviorToName[B_RTZ_ROUNDING]	= "RoundingModeRTZ";
 }
 
-void TestGroupBuilderBase::specializeOperation(const TestCaseInfo&		testCaseInfo,
-											   SpecializedOperation&	specializedOperation) const
+void TestGroupBuilderBase::specializeOperation(const OperationTestCaseInfo&	testCaseInfo,
+											   SpecializedOperation&		specializedOperation) const
 {
 	const string		typeToken		= "_float";
 	const string		widthToken		= "${float_width}";
@@ -2489,6 +2610,88 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 	}
 }
 
+// Test case not related to SPIR-V but executed with compute tests. It checks if specified
+// features are set to the same value when specific independence settings are used.
+tcu::TestStatus verifyIndependenceSettings(Context& context)
+{
+	const std::vector<std::string>& deviceExtensions = context.getDeviceExtensions();
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), deviceExtensions, "VK_KHR_shader_float_controls"))
+		TCU_THROW(NotSupportedError, "VK_KHR_shader_float_controls not supported");
+
+	vk::VkPhysicalDeviceFloatControlsPropertiesKHR	fcProperties;
+	fcProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+	fcProperties.pNext	= DE_NULL;
+
+	vk::VkPhysicalDeviceProperties2 deviceProperties;
+	deviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	deviceProperties.pNext	= &fcProperties;
+
+	auto fail = [](const string& featureGroup)
+	{
+		return tcu::TestStatus::fail(featureGroup + " features should be set to the same value");
+	};
+
+	const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
+	const vk::InstanceInterface&	instanceInterface	= context.getInstanceInterface();
+	instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
+
+	if (fcProperties.roundingModeIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR)
+	{
+		vk::VkBool32 fp16rte = fcProperties.shaderRoundingModeRTEFloat16;
+		vk::VkBool32 fp32rte = fcProperties.shaderRoundingModeRTEFloat32;
+		vk::VkBool32 fp64rte = fcProperties.shaderRoundingModeRTEFloat64;
+		if ((fp16rte != fp32rte) || (fp32rte != fp64rte))
+			return fail("shaderRoundingModeRTEFloat*");
+
+		vk::VkBool32 fp16rtz = fcProperties.shaderRoundingModeRTZFloat16;
+		vk::VkBool32 fp32rtz = fcProperties.shaderRoundingModeRTZFloat32;
+		vk::VkBool32 fp64rtz = fcProperties.shaderRoundingModeRTZFloat64;
+		if ((fp16rtz != fp32rtz) || (fp32rtz != fp64rtz))
+			return fail("shaderRoundingModeRTZFloat*");
+	}
+	else if (fcProperties.roundingModeIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR)
+	{
+		vk::VkBool32 fp16rte = fcProperties.shaderRoundingModeRTEFloat16;
+		vk::VkBool32 fp64rte = fcProperties.shaderRoundingModeRTEFloat64;
+		if ((fp16rte != fp64rte))
+			return fail("shaderRoundingModeRTEFloat16 and 64");
+
+		vk::VkBool32 fp16rtz = fcProperties.shaderRoundingModeRTZFloat16;
+		vk::VkBool32 fp64rtz = fcProperties.shaderRoundingModeRTZFloat64;
+		if ((fp16rtz != fp64rtz))
+			return fail("shaderRoundingModeRTZFloat16 and 64");
+	}
+
+	if (fcProperties.denormBehaviorIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR)
+	{
+		vk::VkBool32 fp16flush = fcProperties.shaderDenormFlushToZeroFloat16;
+		vk::VkBool32 fp32flush = fcProperties.shaderDenormFlushToZeroFloat32;
+		vk::VkBool32 fp64flush = fcProperties.shaderDenormFlushToZeroFloat64;
+		if ((fp16flush != fp32flush) || (fp32flush != fp64flush))
+			return fail("shaderDenormFlushToZeroFloat*");
+
+		vk::VkBool32 fp16preserve = fcProperties.shaderDenormPreserveFloat16;
+		vk::VkBool32 fp32preserve = fcProperties.shaderDenormPreserveFloat32;
+		vk::VkBool32 fp64preserve = fcProperties.shaderDenormPreserveFloat64;
+		if ((fp16preserve != fp32preserve) || (fp32preserve != fp64preserve))
+			return fail("shaderDenormPreserveFloat*");
+	}
+	else if (fcProperties.denormBehaviorIndependence == VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR)
+	{
+		vk::VkBool32 fp16flush = fcProperties.shaderDenormFlushToZeroFloat16;
+		vk::VkBool32 fp64flush = fcProperties.shaderDenormFlushToZeroFloat64;
+		if ((fp16flush != fp64flush))
+			return fail("shaderDenormFlushToZeroFloat16 and 64");
+
+		vk::VkBool32 fp16preserve = fcProperties.shaderDenormPreserveFloat16;
+		vk::VkBool32 fp64preserve = fcProperties.shaderDenormPreserveFloat64;
+		if ((fp16preserve != fp64preserve))
+			return fail("shaderDenormPreserveFloat16 and 64");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 // ComputeTestGroupBuilder contains logic that creates compute shaders
 // for all test cases. As most tests in spirv-assembly it uses functionality
 // implemented in vktSpvAsmComputeShaderTestUtil.cpp.
@@ -2498,27 +2701,35 @@ public:
 
 	void init();
 
-	void createTests(TestCaseGroup* group, FloatType floatType, bool argumentsFromInput);
+	void createOperationTests(TestCaseGroup* parentGroup,
+							  const char* groupName,
+							  FloatType floatType,
+							  bool argumentsFromInput) override;
+
+	void createSettingsTests(TestCaseGroup* parentGroup) override;
 
 protected:
 
-	void fillShaderSpec(const TestCaseInfo&		testCaseInfo,
-						ComputeShaderSpec&		csSpec) const;
+	void fillShaderSpec(const OperationTestCaseInfo&	testCaseInfo,
+						ComputeShaderSpec&				csSpec) const;
+	void fillShaderSpec(const SettingsTestCaseInfo&		testCaseInfo,
+						ComputeShaderSpec&				csSpec) const;
 
 private:
 
 
-	StringTemplate		m_shaderTemplate;
-	TestCasesBuilder	m_testCaseBuilder;
+	StringTemplate		m_operationShaderTemplate;
+	StringTemplate		m_settingsShaderTemplate;
+	TestCasesBuilder	m_operationTestCaseBuilder;
 };
 
 void ComputeTestGroupBuilder::init()
 {
-	m_testCaseBuilder.init();
+	m_operationTestCaseBuilder.init();
 
-	// geenric compute shader template that has code common for all
+	// generic compute shader template with common code for all
 	// float types and all possible operations listed in OperationId enum
-	m_shaderTemplate.setString(
+	m_operationShaderTemplate.setString(
 		"OpCapability Shader\n"
 		"${capabilities}"
 
@@ -2587,13 +2798,72 @@ void ComputeTestGroupBuilder::init()
 
 		"OpReturn\n"
 		"OpFunctionEnd\n");
+
+	m_settingsShaderTemplate.setString(
+		"OpCapability Shader\n"
+		"${capabilities}"
+
+		"OpExtension \"SPV_KHR_float_controls\"\n"
+		"${extensions}"
+
+		"%std450 = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"${execution_modes}"
+
+		// annotations
+		"OpDecorate %SSBO_in BufferBlock\n"
+		"OpDecorate %ssbo_in DescriptorSet 0\n"
+		"OpDecorate %ssbo_in Binding 0\n"
+		"OpDecorate %ssbo_in NonWritable\n"
+		"${io_annotations}"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		// types
+		"%type_void            = OpTypeVoid\n"
+		"%type_voidf           = OpTypeFunction %type_void\n"
+		"%type_u32             = OpTypeInt 32 0\n"
+		"%type_i32             = OpTypeInt 32 1\n"
+		"%type_i32_fptr        = OpTypePointer Function %type_i32\n"
+		"%type_u32_vec3        = OpTypeVector %type_u32 3\n"
+		"%type_u32_vec3_ptr    = OpTypePointer Input %type_u32_vec3\n"
+
+		"%c_i32_0              = OpConstant %type_i32 0\n"
+		"%c_i32_1              = OpConstant %type_i32 1\n"
+		"%c_i32_2              = OpConstant %type_i32 2\n"
+
+		"${types}"
+
+		// in SSBO definition
+		"%SSBO_in              = OpTypeStruct ${in_struct}\n"
+		"%up_SSBO_in           = OpTypePointer Uniform %SSBO_in\n"
+		"%ssbo_in              = OpVariable %up_SSBO_in Uniform\n"
+
+		// out SSBO definitions
+		"${out_definitions}"
+
+		"%id                   = OpVariable %type_u32_vec3_ptr Input\n"
+		"%main                 = OpFunction %type_void None %type_voidf\n"
+		"%label                = OpLabel\n"
+
+		"${commands}"
+
+		"${save_result}"
+
+		"OpReturn\n"
+		"OpFunctionEnd\n");
 }
 
-void ComputeTestGroupBuilder::createTests(TestCaseGroup* group, FloatType floatType, bool argumentsFromInput)
+void ComputeTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput)
 {
-	TestContext& testCtx = group->getTestContext();
+	TestContext&	testCtx	= parentGroup->getTestContext();
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
+	parentGroup->addChild(group);
+
 	TestCaseVect testCases;
-	m_testCaseBuilder.build(testCases, m_typeData[floatType].testResults, argumentsFromInput);
+	m_operationTestCaseBuilder.build(testCases, m_typeData[floatType].testResults, argumentsFromInput);
 
 	TestCaseVect::const_iterator currTestCase = testCases.begin();
 	TestCaseVect::const_iterator lastTestCase = testCases.end();
@@ -2606,12 +2876,12 @@ void ComputeTestGroupBuilder::createTests(TestCaseGroup* group, FloatType floatT
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
 
-		TestCaseInfo testCaseInfo =
+		OperationTestCaseInfo testCaseInfo =
 		{
 			floatType,
 			argumentsFromInput,
 			VK_SHADER_STAGE_COMPUTE_BIT,
-			m_testCaseBuilder.getOperation(testCase.operationId),
+			m_operationTestCaseBuilder.getOperation(testCase.operationId),
 			testCase
 		};
 
@@ -2624,8 +2894,77 @@ void ComputeTestGroupBuilder::createTests(TestCaseGroup* group, FloatType floatT
 	}
 }
 
-void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
-											 ComputeShaderSpec& csSpec) const
+void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
+{
+	TestContext&	testCtx	= parentGroup->getTestContext();
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, "independence_settings", "");
+	parentGroup->addChild(group);
+
+	using SFCI = VkShaderFloatControlsIndependenceKHR;
+	const SFCI independence32	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
+	const SFCI independenceAll	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
+
+	vector<SettingsTestCaseInfo> testCases =
+	{
+		// name															mode			independenceSetting		fp16Option		fp32Option		fp64Option
+
+		// test rounding modes when only two float widths are available
+		{ "rounding_ind_all_fp16_rte_fp32_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz",							SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte",							SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED },
+		{ "rounding_ind_all_fp16_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ },
+		{ "rounding_ind_all_fp16_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE },
+		{ "rounding_ind_all_fp32_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTE,			SO_RTZ },
+		{ "rounding_ind_all_fp32_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTZ,			SO_RTE },
+		{ "rounding_ind_32_fp32_rte_fp64_rtz",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTE,			SO_RTZ },
+		{ "rounding_ind_32_fp32_rtz_fp64_rte",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTZ,			SO_RTE },
+
+		// test rounding modes when three widths are available
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz",					SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte",					SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE },
+		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ },
+
+		// test denorm settings when only two float widths are available
+		{ "denorm_ind_all_fp16_flush_fp32_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve",						SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush",						SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED },
+		{ "denorm_ind_all_fp16_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE },
+		{ "denorm_ind_all_fp16_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH },
+		{ "denorm_ind_all_fp32_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_FLUSH,		SO_PRESERVE },
+		{ "denorm_ind_all_fp32_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_PRESERVE,	SO_FLUSH },
+		{ "denorm_ind_32_fp32_flush_fp64_preserve",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_FLUSH,		SO_PRESERVE },
+		{ "denorm_ind_32_fp32_preserve_fp64_flush",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_PRESERVE,	SO_FLUSH },
+
+		// test denorm settings when three widths are available
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH },
+		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH },
+		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE }
+	};
+
+	for(const auto& testCase : testCases)
+	{
+		ComputeShaderSpec	csSpec;
+		fillShaderSpec(testCase, csSpec);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testCase.name, "", csSpec));
+	}
+
+	addFunctionCase(group, "independence_settings", "", verifyIndependenceSettings);
+}
+
+void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCaseInfo,
+											 ComputeShaderSpec&				csSpec) const
 {
 	// LUT storing functions used to verify test results
 	const VerifyIOFunc checkFloatsLUT[] =
@@ -2701,7 +3040,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 	const bool needConstants = argsUseFPConstants || commandsUseFPConstants;
 	if (needConstants)
 	{
-	    specializations["constants"]	= constants;
+		specializations["constants"]	= constants;
 	}
 	specializations["constants"]		+= specOpData.constans;
 
@@ -2720,7 +3059,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 	specializations["capabilities"]		= capabilities;
 
 	// specialize shader
-	const string shaderCode = m_shaderTemplate.specialize(specializations);
+	const string shaderCode = m_operationShaderTemplate.specialize(specializations);
 
 	// construct input and output buffers of proper types
 	TypeValuesSP inTypeValues	= m_typeData.at(inFloatType).values;
@@ -2752,11 +3091,227 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 	needShaderFloat16 |= usesFP16Constants;
 	if (needShaderFloat16)
 	{
-	    csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
-	    csSpec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
+		csSpec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 	}
 	if (float64FeatureRequired)
 		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+}
+
+void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCaseInfo,
+											 ComputeShaderSpec&				csSpec) const
+{
+	string		capabilities;
+	string		fp16behaviorName;
+	string		fp32behaviorName;
+	string		fp64behaviorName;
+
+	ValueId		addArgs[2];
+	ValueId		fp16resultValue;
+	ValueId		fp32resultValue;
+	ValueId		fp64resultValue;
+
+	ExtensionFloatControlsFeatures& floatControls = csSpec.requestedVulkanFeatures.floatControlsProperties;
+	bool fp16Required	= testCaseInfo.fp16Option != SO_UNUSED;
+	bool fp32Required	= testCaseInfo.fp32Option != SO_UNUSED;
+	bool fp64Required	= testCaseInfo.fp64Option != SO_UNUSED;
+
+	if (testCaseInfo.testedMode == SM_ROUNDING)
+	{
+		// make sure that only rounding options are used
+		DE_ASSERT((testCaseInfo.fp16Option != SO_FLUSH) ||
+				  (testCaseInfo.fp16Option != SO_PRESERVE) ||
+				  (testCaseInfo.fp32Option != SO_FLUSH) ||
+				  (testCaseInfo.fp32Option != SO_PRESERVE) ||
+				  (testCaseInfo.fp64Option != SO_FLUSH) ||
+				  (testCaseInfo.fp64Option != SO_PRESERVE));
+
+		bool fp16RteRounding	= testCaseInfo.fp16Option == SO_RTE;
+		bool fp32RteRounding	= testCaseInfo.fp32Option == SO_RTE;
+		bool fp64RteRounding	= testCaseInfo.fp64Option == SO_RTE;
+
+		const string& rte		= m_behaviorToName.at(B_RTE_ROUNDING);
+		const string& rtz		= m_behaviorToName.at(B_RTZ_ROUNDING);
+
+		fp16behaviorName		= fp16RteRounding ? rte : rtz;
+		fp32behaviorName		= fp32RteRounding ? rte : rtz;
+		fp64behaviorName		= fp64RteRounding ? rte : rtz;
+
+		addArgs[0]				= V_ADD_ARG_A;
+		addArgs[1]				= V_ADD_ARG_B;
+		fp16resultValue			= fp16RteRounding ? V_ADD_RTE_RESULT : V_ADD_RTZ_RESULT;
+		fp32resultValue			= fp32RteRounding ? V_ADD_RTE_RESULT : V_ADD_RTZ_RESULT;
+		fp64resultValue			= fp64RteRounding ? V_ADD_RTE_RESULT : V_ADD_RTZ_RESULT;
+
+		capabilities			= "OpCapability " + rte + "\n"
+								  "OpCapability " + rtz + "\n";
+
+		floatControls.roundingModeIndependence		= testCaseInfo.independenceSetting;
+		floatControls.denormBehaviorIndependence	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+		floatControls.shaderRoundingModeRTEFloat16	= fp16RteRounding;
+		floatControls.shaderRoundingModeRTZFloat16	= fp16Required && !fp16RteRounding;
+		floatControls.shaderRoundingModeRTEFloat32	= fp32RteRounding;
+		floatControls.shaderRoundingModeRTZFloat32	= fp32Required && !fp32RteRounding;
+		floatControls.shaderRoundingModeRTEFloat64	= fp64RteRounding;
+		floatControls.shaderRoundingModeRTZFloat64	= fp64Required && !fp64RteRounding;
+	}
+	else // SM_DENORMS
+	{
+		// make sure that only denorm options are used
+		DE_ASSERT((testCaseInfo.fp16Option != SO_RTE) ||
+				  (testCaseInfo.fp16Option != SO_RTZ) ||
+				  (testCaseInfo.fp32Option != SO_RTE) ||
+				  (testCaseInfo.fp32Option != SO_RTZ) ||
+				  (testCaseInfo.fp64Option != SO_RTE) ||
+				  (testCaseInfo.fp64Option != SO_RTZ));
+
+		bool fp16DenormPreserve		= testCaseInfo.fp16Option == SO_PRESERVE;
+		bool fp32DenormPreserve		= testCaseInfo.fp32Option == SO_PRESERVE;
+		bool fp64DenormPreserve		= testCaseInfo.fp64Option == SO_PRESERVE;
+
+		const string& preserve		= m_behaviorToName.at(B_DENORM_PRESERVE);
+		const string& flush			= m_behaviorToName.at(B_DENORM_FLUSH);
+
+		fp16behaviorName			= fp16DenormPreserve ? preserve : flush;
+		fp32behaviorName			= fp32DenormPreserve ? preserve : flush;
+		fp64behaviorName			= fp64DenormPreserve ? preserve : flush;
+
+		addArgs[0]					= V_DENORM;
+		addArgs[1]					= V_DENORM;
+		fp16resultValue				= fp16DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO;
+		fp32resultValue				= fp32DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO;
+		fp64resultValue				= fp64DenormPreserve ? V_DENORM_TIMES_TWO : V_ZERO;
+
+		capabilities				= "OpCapability " + preserve + "\n"
+									  "OpCapability " + flush + "\n";
+
+		floatControls.denormBehaviorIndependence		= testCaseInfo.independenceSetting;
+		floatControls.roundingModeIndependence			= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+		floatControls.shaderDenormPreserveFloat16		= fp16DenormPreserve;
+		floatControls.shaderDenormFlushToZeroFloat16	= fp16Required && !fp16DenormPreserve;
+		floatControls.shaderDenormPreserveFloat32		= fp32DenormPreserve;
+		floatControls.shaderDenormFlushToZeroFloat32	= fp32Required && !fp32DenormPreserve;
+		floatControls.shaderDenormPreserveFloat64		= fp64DenormPreserve;
+		floatControls.shaderDenormFlushToZeroFloat64	= fp64Required && !fp64DenormPreserve;
+	}
+
+	const auto&	fp64Data			= m_typeData.at(FP64);
+	const auto&	fp32Data			= m_typeData.at(FP32);
+	const auto&	fp16Data			= m_typeData.at(FP16);
+
+	deUint32	attributeIndex		= 0;
+	deUint32	attributeOffset		= 0;
+	string		attribute;
+	string		extensions			= "";
+	string		executionModes		= "";
+	string		ioAnnotations		= "";
+	string		types				= "";
+	string		inStruct			= "";
+	string		outDefinitions		= "";
+	string		commands			= "";
+	string		saveResult			= "";
+
+	// construct single input buffer containing arguments for all float widths
+	// (maxPerStageDescriptorStorageBuffers can be min 4 and we need 3 for outputs)
+	deUint32				inputOffset	= 0;
+	std::vector<deUint8>	inputData	((fp64Required * sizeof(double) + sizeof(float) + fp16Required * sizeof(deFloat16)) * 2);
+
+	// to follow storage buffer layout rules we store data in ssbo in order 64 -> 16
+	if (fp64Required)
+	{
+		capabilities	+= fp64Data.snippets->capabilities;
+		executionModes	+= "OpExecutionMode %main " + fp64behaviorName + " 64\n";
+		attribute		 = to_string(attributeIndex);
+		ioAnnotations	+= "OpMemberDecorate %SSBO_in " + attribute + " Offset " + to_string(attributeOffset) +"\n" +
+						   fp64Data.snippets->multiOutputAnnotationsSnippet +
+						   "OpDecorate %ssbo_f64_out Binding " + to_string(attributeIndex+1) + "\n";
+		types			+= fp64Data.snippets->minTypeDefinitionsSnippet;
+		inStruct		+= " %type_f64_arr_2";
+		outDefinitions	+= fp64Data.snippets->multiOutputDefinitionsSnippet;
+		commands		+= replace(fp64Data.snippets->multiArgumentsFromInputSnippet, "${attr}", attribute) +
+						   "%result64             = OpFAdd %type_f64 %arg1_f64 %arg2_f64\n";
+		saveResult		+= fp64Data.snippets->multiStoreResultsSnippet;
+		attributeOffset += 2 * static_cast<deUint32>(sizeof(double));
+		attributeIndex++;
+
+		fp64Data.values->fillInputData(addArgs, inputData, inputOffset);
+
+		// construct separate buffers for outputs to make validation easier
+		BufferSp fp64OutBufferSp = fp64Data.values->constructOutputBuffer(fp64resultValue);
+		csSpec.outputs.push_back(Resource(fp64OutBufferSp));
+
+		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+	}
+	if (fp32Required)
+	{
+		executionModes		+= "OpExecutionMode %main " + fp32behaviorName + " 32\n";
+		attribute			 = to_string(attributeIndex);
+		ioAnnotations		+= "OpMemberDecorate %SSBO_in " + attribute + " Offset " + to_string(attributeOffset) +"\n" +
+							   fp32Data.snippets->multiOutputAnnotationsSnippet +
+							   "OpDecorate %ssbo_f32_out Binding " + to_string(attributeIndex+1) + "\n";
+		types				+= fp32Data.snippets->minTypeDefinitionsSnippet;
+		inStruct			+= " %type_f32_arr_2";
+		outDefinitions		+= fp32Data.snippets->multiOutputDefinitionsSnippet;
+		commands			+= replace(fp32Data.snippets->multiArgumentsFromInputSnippet, "${attr}", attribute) +
+							   "%result32             = OpFAdd %type_f32 %arg1_f32 %arg2_f32\n";
+		saveResult			+= fp32Data.snippets->multiStoreResultsSnippet;
+		attributeOffset		+= 2 * static_cast<deUint32>(sizeof(float));
+		attributeIndex++;
+
+		fp32Data.values->fillInputData(addArgs, inputData, inputOffset);
+
+		BufferSp fp32OutBufferSp = fp32Data.values->constructOutputBuffer(fp32resultValue);
+		csSpec.outputs.push_back(Resource(fp32OutBufferSp));
+	}
+	if (fp16Required)
+	{
+		capabilities	+= fp16Data.snippets->capabilities +
+						   "OpCapability Float16\n";
+		extensions		+= fp16Data.snippets->extensions;
+		executionModes	+= "OpExecutionMode %main " + fp16behaviorName + " 16\n";
+		attribute		 = to_string(attributeIndex);
+		ioAnnotations	+= "OpMemberDecorate %SSBO_in " + attribute + " Offset " + to_string(attributeOffset) +"\n" +
+						   fp16Data.snippets->multiOutputAnnotationsSnippet +
+						   "OpDecorate %ssbo_f16_out Binding " + to_string(attributeIndex+1) + "\n";
+		types			+= fp16Data.snippets->minTypeDefinitionsSnippet;
+		inStruct		+= " %type_f16_arr_2";
+		outDefinitions	+= fp16Data.snippets->multiOutputDefinitionsSnippet;
+		commands		+= replace(fp16Data.snippets->multiArgumentsFromInputSnippet, "${attr}", attribute) +
+						   "%result16             = OpFAdd %type_f16 %arg1_f16 %arg2_f16\n";
+		saveResult		+= fp16Data.snippets->multiStoreResultsSnippet;
+
+		fp16Data.values->fillInputData(addArgs, inputData, inputOffset);
+
+		BufferSp fp16OutBufferSp = fp16Data.values->constructOutputBuffer(fp16resultValue);
+		csSpec.outputs.push_back(Resource(fp16OutBufferSp));
+
+		csSpec.extensions.push_back("VK_KHR_16bit_storage");
+		csSpec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+	}
+
+	BufferSp inBufferSp(new Buffer<deUint8>(inputData));
+	csSpec.inputs.push_back(Resource(inBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
+	map<string, string> specializations =
+	{
+		{ "capabilities",		capabilities },
+		{ "extensions",			extensions },
+		{ "execution_modes",	executionModes },
+		{ "io_annotations",		ioAnnotations },
+		{ "types",				types },
+		{ "in_struct",			inStruct },
+		{ "out_definitions",	outDefinitions },
+		{ "commands",			commands },
+		{ "save_result",		saveResult }
+	};
+
+	// specialize shader
+	const string shaderCode = m_settingsShaderTemplate.specialize(specializations);
+
+	csSpec.assembly			= shaderCode;
+	csSpec.numWorkGroups	= IVec3(1, 1, 1);
+	csSpec.verifyIO			= checkMixedFloats;
+	csSpec.extensions.push_back("VK_KHR_shader_float_controls");
 }
 
 void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
@@ -2973,11 +3528,12 @@ public:
 
 	void init();
 
-	void createTests(TestCaseGroup* group, FloatType floatType, bool argumentsFromInput);
+	void createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput) override;
+	void createSettingsTests(TestCaseGroup* parentGroup) override;
 
 protected:
 
-	InstanceContext createInstanceContext(const TestCaseInfo& testCaseInfo) const;
+	InstanceContext createInstanceContext(const OperationTestCaseInfo& testCaseInfo) const;
 
 private:
 
@@ -2989,8 +3545,12 @@ void GraphicsTestGroupBuilder::init()
 	m_testCaseBuilder.init();
 }
 
-void GraphicsTestGroupBuilder::createTests(TestCaseGroup* group, FloatType floatType, bool argumentsFromInput)
+void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup* parentGroup, const char* groupName, FloatType floatType, bool argumentsFromInput)
 {
+	TestContext&	testCtx	= parentGroup->getTestContext();
+	TestCaseGroup*	group	= new TestCaseGroup(testCtx, groupName, "");
+	parentGroup->addChild(group);
+
 	// create test cases for vertex stage
 	TestCaseVect testCases;
 	m_testCaseBuilder.build(testCases, m_typeData[floatType].testResults, argumentsFromInput);
@@ -3013,7 +3573,7 @@ void GraphicsTestGroupBuilder::createTests(TestCaseGroup* group, FloatType float
 		if ((testCase.operationId == O_ORTZ_ROUND) || (testCase.operationId == O_ORTE_ROUND))
 			continue;
 
-		TestCaseInfo testCaseInfo =
+		OperationTestCaseInfo testCaseInfo =
 		{
 			floatType,
 			argumentsFromInput,
@@ -3043,7 +3603,7 @@ void GraphicsTestGroupBuilder::createTests(TestCaseGroup* group, FloatType float
 		if (testCase.expectedOutput == V_UNUSED)
 			continue;
 
-		TestCaseInfo testCaseInfo =
+		OperationTestCaseInfo testCaseInfo =
 		{
 			floatType,
 			argumentsFromInput,
@@ -3059,7 +3619,14 @@ void GraphicsTestGroupBuilder::createTests(TestCaseGroup* group, FloatType float
 	}
 }
 
-InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseInfo& testCaseInfo) const
+void GraphicsTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
+{
+	DE_UNREF(parentGroup);
+
+	// WG decided that testing settings only for compute stage is sufficient
+}
+
+InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationTestCaseInfo& testCaseInfo) const
 {
 	// LUT storing functions used to verify test results
 	const VerifyIOFunc checkFloatsLUT[] =
@@ -3285,10 +3852,10 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 
 	if (!needsFP16Constants && float16FeatureRequired)
 	{
-	    // Check various code fragments
-	    auto hasFP16Constants = [](const std::string& spirv) { return DE_NULL != strstr(spirv.c_str(), "%c_f16"); };
-	    if (hasFP16Constants(vertConstants) || hasFP16Constants(fragConstants))
-	    {
+		// Check various code fragments
+		auto hasFP16Constants = [](const std::string& spirv) { return DE_NULL != strstr(spirv.c_str(), "%c_f16"); };
+		if (hasFP16Constants(vertConstants) || hasFP16Constants(fragConstants))
+		{
 			needsFP16Constants |=
 				hasFP16Constants(vertCommands) || hasFP16Constants(vertArguments)
 				|| hasFP16Constants(fragCommands) || hasFP16Constants(fragArguments);
@@ -3297,14 +3864,14 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 				vertConstants = "";
 				fragConstants = "";
 			}
-	    }
+		}
 	}
 	needsShaderFloat16 |= needsFP16Constants;
 
 	if (needsShaderFloat16)
 	{
-	    vertCapabilities += "OpCapability Float16\n";
-	    fragCapabilities += "OpCapability Float16\n";
+		vertCapabilities += "OpCapability Float16\n";
+		fragCapabilities += "OpCapability Float16\n";
 	}
 
 	map<string, string> specializations;
@@ -3417,14 +3984,11 @@ tcu::TestCaseGroup* createFloatControlsTestGroup (TestContext& testCtx, TestGrou
 		TestCaseGroup* typeGroup = new TestCaseGroup(testCtx, testGroup.groupName, "");
 		group->addChild(typeGroup);
 
-		TestCaseGroup* inputArgsGroup = new TestCaseGroup(testCtx, "input_args", "");
-		groupBuilder->createTests(inputArgsGroup, testGroup.floatType, true);
-		typeGroup->addChild(inputArgsGroup);
-
-		TestCaseGroup* generatedArgsGroup = new TestCaseGroup(testCtx, "generated_args", "");
-		groupBuilder->createTests(generatedArgsGroup, testGroup.floatType, false);
-		typeGroup->addChild(generatedArgsGroup);
+		groupBuilder->createOperationTests(typeGroup, "input_args", testGroup.floatType, true);
+		groupBuilder->createOperationTests(typeGroup, "generated_args", testGroup.floatType, false);
 	}
+
+	groupBuilder->createSettingsTests(group.get());
 
 	return group.release();
 }
