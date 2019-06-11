@@ -574,6 +574,7 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 	const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki, *instHelper.instance, params.wsiType, *native.display, *native.window));
 	const DeviceHelper						devHelper	(context, instHelper.vki, *instHelper.instance, *surface);
 	const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+	const VkSurfaceCapabilitiesKHR			capabilities(getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface));
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -608,10 +609,32 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 		switch (propertiesResult) {
 		case VK_SUCCESS:
 			{
-				const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+				// The maxExtents case might not be able to create the requested surface due to insufficient
+				// memory, so in this case *only* we handle the OOM exception.
+				if (params.dimension == TEST_DIMENSION_IMAGE_EXTENT &&
+					capabilities.maxImageExtent.width == curParams.imageExtent.width &&
+					capabilities.maxImageExtent.height == curParams.imageExtent.height)
+				{
+					try
+					{
+						const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+
+						log << TestLog::Message << subcase.str()
+							<< "Creating swapchain succeeded" << TestLog::EndMessage;
+					}
+					catch (const OutOfMemoryError& e)
+					{
+						log << TestLog::Message << subcase.str() << "vkCreateSwapchainKHR with maxImageExtent encountered " << e.getError() << TestLog::EndMessage;
+					}
+				}
+				else
+				{
+					const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+
+					log << TestLog::Message << subcase.str()
+						<< "Creating swapchain succeeded" << TestLog::EndMessage;
+				}
 			}
-			log << TestLog::Message << subcase.str()
-				<< "Creating swapchain succeeeded" << TestLog::EndMessage;
 			break;
 		case VK_ERROR_FORMAT_NOT_SUPPORTED:
 			log << TestLog::Message << subcase.str()
