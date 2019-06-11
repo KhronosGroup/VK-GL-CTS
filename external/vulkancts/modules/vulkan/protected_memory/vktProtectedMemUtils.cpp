@@ -49,37 +49,6 @@ namespace ProtectedMem
 
 typedef std::vector<vk::VkExtensionProperties> Extensions;
 
-std::vector<std::string> getValidationLayers (const vk::PlatformInterface& vkp)
-{
-	static const char*	s_magicLayer		= "VK_LAYER_LUNARG_standard_validation";
-	static const char*	s_defaultLayers[]	=
-	{
-		"VK_LAYER_GOOGLE_threading",
-		"VK_LAYER_LUNARG_parameter_validation",
-		"VK_LAYER_LUNARG_device_limits",
-		"VK_LAYER_LUNARG_object_tracker",
-		"VK_LAYER_LUNARG_image",
-		"VK_LAYER_LUNARG_core_validation",
-		"VK_LAYER_LUNARG_swapchain",
-		"VK_LAYER_GOOGLE_unique_objects"
-	};
-	const std::vector<vk::VkLayerProperties>	supportedLayers	(enumerateInstanceLayerProperties(vkp));
-	std::vector<std::string>					enabledLayers;
-
-	if (isLayerSupported(supportedLayers, vk::RequiredLayer(s_magicLayer)))
-		enabledLayers.push_back(s_magicLayer);
-	else
-	{
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_defaultLayers); ++ndx)
-		{
-			if (isLayerSupported(supportedLayers, vk::RequiredLayer(s_defaultLayers[ndx])))
-				enabledLayers.push_back(s_defaultLayers[ndx]);
-		}
-	}
-
-	return enabledLayers;
-}
-
 vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& vkp, const vkt::Context& context, const std::vector<std::string>& extraExtensions)
 {
 	const Extensions			supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, DE_NULL));
@@ -92,7 +61,7 @@ vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& 
 		if (!vk::isDebugReportSupported(vkp))
 			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 
-		enabledLayers = getValidationLayers(vkp);
+		enabledLayers = vkt::getValidationLayers(vkp);
 		if (enabledLayers.empty())
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}

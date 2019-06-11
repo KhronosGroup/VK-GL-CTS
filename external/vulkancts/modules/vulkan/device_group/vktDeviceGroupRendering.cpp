@@ -214,31 +214,7 @@ void DeviceGroupTestInstance::getDeviceLayers (vector<string>& enabledLayers)
 	const tcu::CommandLine& cmdLine = m_context.getTestContext().getCommandLine();
 	if (cmdLine.isValidationEnabled())
 	{
-		const vector<VkLayerProperties> layerProperties = enumerateDeviceLayerProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-
-		static const char*	s_magicLayer = "VK_LAYER_LUNARG_standard_validation";
-		static const char*	s_defaultLayers[] =
-		{
-			"VK_LAYER_GOOGLE_threading",
-			"VK_LAYER_LUNARG_parameter_validation",
-			"VK_LAYER_LUNARG_device_limits",
-			"VK_LAYER_LUNARG_object_tracker",
-			"VK_LAYER_LUNARG_image",
-			"VK_LAYER_LUNARG_core_validation",
-			"VK_LAYER_LUNARG_swapchain",
-			"VK_LAYER_GOOGLE_unique_objects",
-		};
-
-		if (isLayerSupported(layerProperties, RequiredLayer(s_magicLayer)))
-			enabledLayers.push_back(s_magicLayer);
-		else
-		{
-			for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_defaultLayers); ++ndx)
-			{
-				if (isLayerSupported(layerProperties, RequiredLayer(s_defaultLayers[ndx])))
-					enabledLayers.push_back(s_defaultLayers[ndx]);
-			}
-		}
+		enabledLayers = vkt::getValidationLayers(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 		if (enabledLayers.empty())
 			TCU_THROW(NotSupportedError, "No device validation layers found");
 	}

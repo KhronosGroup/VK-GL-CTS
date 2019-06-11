@@ -30,6 +30,8 @@
 #include "vkPrograms.hpp"
 #include "vkApiVersion.hpp"
 #include "vktTestCaseDefs.hpp"
+#include <vector>
+#include <string>
 
 namespace glu
 {
@@ -45,6 +47,10 @@ struct SourceCollections;
 
 namespace vkt
 {
+
+std::vector<std::string> getValidationLayers (const vk::PlatformInterface& vkp);
+
+std::vector<std::string> getValidationLayers (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice);
 
 class DefaultDevice;
 
