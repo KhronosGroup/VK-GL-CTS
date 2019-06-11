@@ -576,36 +576,23 @@ public:
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
-		if (precision == glu::PRECISION_HIGHP)
+		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
-			// Only highp is required to support inf/nan
-			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
-			{
-				const float		in0		= ((const float*)inputs[0])[compNdx];
-				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
-				const bool		ref		= tcu::Float32(in0).isNaN();
+			const float		in0		= ((const float*)inputs[0])[compNdx];
+			const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
+			const bool		ref		= tcu::Float32(in0).isNaN();
+			bool			ok;
 
-				if (out0 != ref)
-				{
-					m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
-					return false;
-				}
-			}
-		}
-		else if (precision == glu::PRECISION_MEDIUMP || precision == glu::PRECISION_LOWP)
-		{
-			// NaN support is optional, check that inputs that are not NaN don't result in true.
-			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
-			{
-				const float		in0		= ((const float*)inputs[0])[compNdx];
-				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
-				const bool		ref		= tcu::Float32(in0).isNaN();
+			// NaN support only required for highp. Otherwise just check for false positives.
+			if (precision == glu::PRECISION_HIGHP)
+				ok = (out0 == ref);
+			else
+				ok = ref || !out0;
 
-				if (!ref && out0)
-				{
-					m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
-					return false;
-				}
+			if (!ok)
+			{
+				m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
+				return false;
 			}
 		}
 
@@ -654,39 +641,30 @@ public:
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
-		if (precision == glu::PRECISION_HIGHP)
+		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
-			// Only highp is required to support inf/nan
-			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
+			const float		in0		= ((const float*)inputs[0])[compNdx];
+			const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
+			bool			ref;
+			bool			ok;
+			if (precision == glu::PRECISION_HIGHP)
 			{
-				const float		in0		= ((const float*)inputs[0])[compNdx];
-				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
-				const bool		ref		= tcu::Float32(in0).isInf();
-
-				if (out0 != ref)
-				{
-					m_failMsg << "Expected [" << compNdx << "] = " << HexBool(ref);
-					return false;
-				}
+				// Only highp is required to support inf/nan
+				ref = tcu::Float32(in0).isInf();
+				ok = (out0 == ref);
+			}
+			else
+			{
+				// Inf support is optional, check that inputs that are not Inf in mediump don't result in true.
+				ref = tcu::Float16(in0).isInf();
+				ok = (out0 || !ref);
+			}
+			if (!ok)
+			{
+				m_failMsg << "Expected [" << compNdx << "] = " << HexBool(ref);
+				return false;
 			}
 		}
-		else if (precision == glu::PRECISION_MEDIUMP)
-		{
-			// Inf support is optional, check that inputs that are not Inf in mediump don't result in true.
-			for (int compNdx = 0; compNdx < scalarSize; compNdx++)
-			{
-				const float		in0		= ((const float*)inputs[0])[compNdx];
-				const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
-				const bool		ref		= tcu::Float16(in0).isInf();
-
-				if (!ref && out0)
-				{
-					m_failMsg << "Expected [" << compNdx << "] = " << (ref ? "true" : "false");
-					return false;
-				}
-			}
-		}
-		// else: no verification can be performed
 
 		return true;
 	}
