@@ -1642,11 +1642,12 @@ public:
 	}
 
 	template <typename createSyncFuncType,
-		typename getSyncAttribFuncType>
+		typename getSyncAttribFuncType, typename valueType>
 	void test(string funcNames[FUNC_NAME_NUM_NAMES],
 			  createSyncFuncType createSyncFunc,
 			  getSyncAttribFuncType getSyncAttribFunc,
-			  EGLint attribute, const string &attributeName)
+			  EGLint attribute, const string &attributeName,
+			  valueType value)
 	{
 		// Reset before each test
 		deinit();
@@ -1662,9 +1663,9 @@ public:
 			TestLog::EndMessage;
 		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
 
-		EGLBoolean result = (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync, attribute, NULL);
+		EGLBoolean result = (egl.*getSyncAttribFunc)(m_eglDisplay, NULL, attribute, &value);
 		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] <<
-			"(" << m_eglDisplay << ", " << m_sync << ", " << attributeName << ", NULL)" <<
+			"(" << m_eglDisplay << ", " << 0x0 << ", " << attributeName << ", " << &value << ")" <<
 			TestLog::EndMessage;
 
 		EGLint error = egl.getError();
@@ -1687,15 +1688,17 @@ public:
 
 		if (hasRequiredEGLVersion(1, 5))
 		{
+			EGLAttrib value = 0;
 			test<createSync, getSyncAttrib>(m_funcNames, &Library::createSync,
 											&Library::getSyncAttrib,
-											EGL_SYNC_TYPE, "EGL_SYNC_TYPE");
+											EGL_SYNC_TYPE, "EGL_SYNC_TYPE", value);
 		}
 		if (hasRequiredEGLExtensions())
 		{
+			EGLint value = 0;
 			test<createSyncKHR, getSyncAttribKHR>(m_funcNamesKHR, &Library::createSyncKHR,
 												  &Library::getSyncAttribKHR,
-												  EGL_SYNC_TYPE_KHR, "EGL_SYNC_TYPE_KHR");
+												  EGL_SYNC_TYPE_KHR, "EGL_SYNC_TYPE_KHR", value);
 		}
 		else if (!hasRequiredEGLVersion(1, 5))
 		{
