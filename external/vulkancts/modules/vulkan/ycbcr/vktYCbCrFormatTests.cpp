@@ -437,6 +437,37 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 	TCU_CHECK(propsResult == VK_SUCCESS);
 	TCU_CHECK(ycbcrProperties.combinedImageSamplerDescriptorCount >= 1);
 
+	// Zero fill unused layer
+	if (params.useArrayLayers)
+	{
+		fillZero(&imageData);
+
+		if (mappedMemory)
+		{
+			fillImageMemory(vkd,
+							device,
+							context.getUniversalQueueFamilyIndex(),
+							*image,
+							allocations,
+							imageData,
+							(VkAccessFlags)VK_ACCESS_SHADER_READ_BIT,
+							VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+							0);
+		}
+		else
+		{
+			uploadImage(vkd,
+						device,
+						context.getUniversalQueueFamilyIndex(),
+						context.getDefaultAllocator(),
+						*image,
+						imageData,
+						(VkAccessFlags)VK_ACCESS_SHADER_READ_BIT,
+						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						0);
+		}
+	}
+
 	// Prepare texture data
 	fillGradient(&imageData, Vec4(0.0f), Vec4(1.0f));
 
