@@ -50,17 +50,20 @@ struct ShaderBuildOptions
 	deUint32		vulkanVersion;
 	SpirvVersion	targetVersion;
 	deUint32		flags;
+	bool			supports_VK_KHR_spirv_1_4;
 
-	ShaderBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, deUint32 flags_)
+	ShaderBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, deUint32 flags_, bool allowSpirv14 = false)
 		: vulkanVersion	(vulkanVersion_)
 		, targetVersion	(targetVersion_)
 		, flags			(flags_)
+		, supports_VK_KHR_spirv_1_4(allowSpirv14)
 	{}
 
 	ShaderBuildOptions (void)
 		: vulkanVersion	(VK_MAKE_VERSION(1, 0, 0))
 		, targetVersion	(SPIRV_VERSION_1_0)
 		, flags			(0u)
+		, supports_VK_KHR_spirv_1_4 (false)
 	{}
 
 	SpirvValidatorOptions getSpirvValidatorOptions() const
@@ -80,7 +83,7 @@ struct ShaderBuildOptions
 			rules = SpirvValidatorOptions::kRelaxedBlockLayout;
 		}
 
-		return SpirvValidatorOptions(vulkanVersion, rules);
+		return SpirvValidatorOptions(vulkanVersion, rules, supports_VK_KHR_spirv_1_4);
 	}
 };
 
