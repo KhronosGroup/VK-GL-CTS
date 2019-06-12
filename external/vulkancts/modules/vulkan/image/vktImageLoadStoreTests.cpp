@@ -50,9 +50,11 @@
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuFloat.hpp"
+#include "tcuStringTemplate.hpp"
 
 #include <string>
 #include <vector>
+#include <map>
 
 using namespace vk;
 
@@ -633,7 +635,7 @@ public:
 																			 const bool		minalign);
 
 protected:
-	tcu::TestStatus					verifyResult							(void);
+	virtual tcu::TestStatus			verifyResult							(void);
 
 	// Add empty implementations for functions that might be not needed
 	void							commandBeforeCompute					(const VkCommandBuffer) {}
@@ -755,9 +757,9 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 	, m_allDescriptorSets				(texture.numLayers())
 	, m_allImageViews					(texture.numLayers())
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	Allocator&				allocator			= m_context.getDefaultAllocator();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+	Allocator&				allocator	= m_context.getDefaultAllocator();
 
 	m_image = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
@@ -1494,6 +1496,456 @@ TestInstance* LoadStoreTest::createInstance (Context& context) const
 		return new ImageLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader, m_singleLayerBind, m_minalign, m_bufferLoadUniform);
 }
 
+class ImageExtendOperandTestInstance : public BaseTestInstance
+{
+public:
+									ImageExtendOperandTestInstance			(Context&				context,
+																			 const Texture&			texture,
+																			 const VkFormat			format,
+																			 const bool				signExtend);
+
+	virtual							~ImageExtendOperandTestInstance			(void) {};
+
+protected:
+
+	void							checkRequirements(void);
+	VkDescriptorSetLayout			prepareDescriptors						(void);
+	void							commandBeforeCompute					(const VkCommandBuffer	cmdBuffer);
+	void							commandBetweenShaderInvocations			(const VkCommandBuffer	cmdBuffer);
+	void							commandAfterCompute						(const VkCommandBuffer	cmdBuffer);
+
+	void							commandBindDescriptorsForLayer			(const VkCommandBuffer	cmdBuffer,
+																			 const VkPipelineLayout pipelineLayout,
+																			 const int				layerNdx);
+
+	tcu::TestStatus					verifyResult							(void);
+
+protected:
+
+	bool							m_signExtend;
+	bool							m_isSigned;
+	tcu::TextureLevel				m_inputImageData;
+
+	de::MovePtr<Image>				m_imageSrc;				// source image
+	SharedVkImageView				m_imageSrcView;
+
+	de::MovePtr<Image>				m_imageDst;				// dest image
+	SharedVkImageView				m_imageDstView;
+	VkFormat						m_imageDstFormat;
+
+	de::MovePtr<Buffer>				m_buffer;				// result buffer
+	VkDeviceSize					m_bufferSizeBytes;
+
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
+	Move<VkDescriptorPool>			m_descriptorPool;
+	SharedVkDescriptorSet			m_descriptorSet;
+};
+
+ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context,
+																const Texture& texture,
+																const VkFormat format,
+																const bool signExtend)
+	: BaseTestInstance		(context, texture, format, true, true)
+	, m_signExtend			(signExtend)
+{
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkDevice				device			= m_context.getDevice();
+	Allocator&					allocator		= m_context.getDefaultAllocator();
+	const deInt32				width			= texture.size().x();
+	const deInt32				height			= texture.size().y();
+	const tcu::TextureFormat	textureFormat	= mapVkFormat(m_format);
+
+	// Generate reference image
+	m_isSigned = (getTextureChannelClass(textureFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
+	m_inputImageData.setStorage(textureFormat, width, height, 1);
+	const tcu::PixelBufferAccess access = m_inputImageData.getAccess();
+	int valueStart = m_isSigned ? -width / 2 : 0;
+	for (int x = 0; x < width; ++x)
+	for (int y = 0; y < height; ++y)
+	{
+		const tcu::IVec4 color(valueStart + x, valueStart + y, valueStart, valueStart);
+		access.setPixel(color, x, y);
+	}
+
+	// Create source image
+	m_imageSrc = de::MovePtr<Image>(new Image(
+		vk, device, allocator,
+		makeImageCreateInfo(m_texture, m_format, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0u),
+		MemoryRequirement::Any));
+
+	// Create destination image
+	m_bufferSizeBytes	= width * height * tcu::getPixelSize(textureFormat);
+	m_imageDstFormat	= m_isSigned ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT;
+	m_imageDst = de::MovePtr<Image>(new Image(
+		vk, device, allocator,
+		makeImageCreateInfo(m_texture, m_imageDstFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u),
+		MemoryRequirement::Any));
+
+	// Create helper buffer able to store input data and image write result
+	m_buffer = de::MovePtr<Buffer>(new Buffer(
+		vk, device, allocator,
+		makeBufferCreateInfo(m_bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+		MemoryRequirement::HostVisible));
+
+	const Allocation& alloc = m_buffer->getAllocation();
+	deMemcpy(alloc.getHostPtr(), m_inputImageData.getAccess().getDataPtr(), static_cast<size_t>(m_bufferSizeBytes));
+	flushAlloc(vk, device, alloc);
+}
+
+void ImageExtendOperandTestInstance::checkRequirements (void)
+{
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
+																							   m_context.getPhysicalDevice(),
+																							   m_format));
+
+	if (m_context.requireDeviceExtension("VK_KHR_spirv_1_4"))
+		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+}
+
+VkDescriptorSetLayout ImageExtendOperandTestInstance::prepareDescriptors (void)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, device);
+
+	m_descriptorPool = DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1);
+
+	const VkImageViewType viewType = mapImageViewType(m_texture.type());
+	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+	m_descriptorSet	= makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+	m_imageSrcView	= makeVkSharedPtr(makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange));
+	m_imageDstView	= makeVkSharedPtr(makeImageView(vk, device, m_imageDst->get(), viewType, m_imageDstFormat, subresourceRange));
+
+	return *m_descriptorSetLayout;  // not passing the ownership
+}
+
+void ImageExtendOperandTestInstance::commandBindDescriptorsForLayer (const VkCommandBuffer cmdBuffer, const VkPipelineLayout pipelineLayout, const int layerNdx)
+{
+	DE_UNREF(layerNdx);
+
+	const DeviceInterface&	vk				= m_context.getDeviceInterface();
+	const VkDevice			device			= m_context.getDevice();
+	const VkDescriptorSet	descriptorSet	= **m_descriptorSet;
+
+	const VkDescriptorImageInfo descriptorSrcImageInfo = makeDescriptorImageInfo(DE_NULL, **m_imageSrcView, VK_IMAGE_LAYOUT_GENERAL);
+	const VkDescriptorImageInfo descriptorDstImageInfo = makeDescriptorImageInfo(DE_NULL, **m_imageDstView, VK_IMAGE_LAYOUT_GENERAL);
+
+	typedef DescriptorSetUpdateBuilder::Location DSUBL;
+	DescriptorSetUpdateBuilder()
+		.writeSingle(descriptorSet, DSUBL::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorSrcImageInfo)
+		.writeSingle(descriptorSet, DSUBL::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorDstImageInfo)
+		.update(vk, device);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
+}
+
+void ImageExtendOperandTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+
+	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
+	{
+		const VkImageMemoryBarrier preCopyImageBarriers[] =
+		{
+			makeImageMemoryBarrier(
+				0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				m_imageSrc->get(), fullImageSubresourceRange),
+			makeImageMemoryBarrier(
+				0u, VK_ACCESS_SHADER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+				m_imageDst->get(), fullImageSubresourceRange)
+		};
+
+		const VkBufferMemoryBarrier barrierFlushHostWriteBeforeCopy = makeBufferMemoryBarrier(
+			VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			m_buffer->get(), 0ull, m_bufferSizeBytes);
+
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+			(VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
+	}
+	{
+		const VkImageMemoryBarrier barrierAfterCopy = makeImageMemoryBarrier(
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+			m_imageSrc->get(), fullImageSubresourceRange);
+
+		const VkBufferImageCopy copyRegion = makeBufferImageCopy(m_texture);
+
+		vk.cmdCopyBufferToImage(cmdBuffer, m_buffer->get(), m_imageSrc->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &barrierAfterCopy);
+	}
+}
+
+void ImageExtendOperandTestInstance::commandBetweenShaderInvocations (const VkCommandBuffer cmdBuffer)
+{
+	commandImageWriteBarrierBetweenShaderInvocations(m_context, cmdBuffer, m_imageDst->get(), m_texture);
+}
+
+void ImageExtendOperandTestInstance::commandAfterCompute (const VkCommandBuffer cmdBuffer)
+{
+	commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_buffer->get(), m_bufferSizeBytes, m_texture);
+}
+
+tcu::TestStatus ImageExtendOperandTestInstance::verifyResult (void)
+{
+	const DeviceInterface&			vk			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	const tcu::IVec3				imageSize	= m_texture.size();
+	const tcu::PixelBufferAccess	inputAccess	= m_inputImageData.getAccess();
+	const deInt32					width		= inputAccess.getWidth();
+	const deInt32					height		= inputAccess.getHeight();
+	tcu::TextureLevel				refImage	(mapVkFormat(m_imageDstFormat), width, height);
+	tcu::PixelBufferAccess			refAccess	= refImage.getAccess();
+
+	for (int x = 0; x < width; ++x)
+	for (int y = 0; y < height; ++y)
+	{
+		tcu::IVec4 color = inputAccess.getPixelInt(x, y);
+		refAccess.setPixel(color, x, y);
+	}
+
+	const Allocation& alloc = m_buffer->getAllocation();
+	invalidateAlloc(vk, device, alloc);
+	const tcu::ConstPixelBufferAccess result(mapVkFormat(m_imageDstFormat), imageSize, alloc.getHostPtr());
+
+	if (intThresholdCompare (m_context.getTestContext().getLog(), "Comparison", "Comparison", refAccess, result, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT))
+		return tcu::TestStatus::pass("Passed");
+	else
+		return tcu::TestStatus::fail("Image comparison failed");
+}
+
+class ImageExtendOperandTest : public TestCase
+{
+public:
+							ImageExtendOperandTest	(tcu::TestContext&					testCtx,
+													 const std::string&					name,
+													 const Texture						texture,
+													 const VkFormat						format,
+													 const bool							readSigned);
+
+	void					initPrograms			(SourceCollections&		programCollection) const;
+	TestInstance*			createInstance			(Context&				context) const;
+
+private:
+	const Texture					m_texture;
+	VkFormat						m_format;
+	bool							m_signExtend;
+};
+
+ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
+												const std::string&				name,
+												const Texture					texture,
+												const VkFormat					format,
+												const bool						signExtend)
+	: TestCase						(testCtx, name, "")
+	, m_texture						(texture)
+	, m_format						(format)
+	, m_signExtend					(signExtend)
+{
+}
+
+void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection) const
+{
+	tcu::StringTemplate shaderTemplate(
+		"OpCapability Shader\n"
+
+		"${capability}"
+
+		"%std450 = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id %src_image_ptr %dst_image_ptr\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		// decorations
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		"OpDecorate %src_image_ptr DescriptorSet 0\n"
+		"OpDecorate %src_image_ptr Binding 0\n"
+		"OpDecorate %src_image_ptr NonWritable\n"
+
+		"OpDecorate %dst_image_ptr DescriptorSet 0\n"
+		"OpDecorate %dst_image_ptr Binding 1\n"
+		"OpDecorate %dst_image_ptr NonReadable\n"
+
+		// types
+		"%type_void                          = OpTypeVoid\n"
+		"%type_i32                           = OpTypeInt 32 1\n"
+		"%type_u32                           = OpTypeInt 32 0\n"
+		"%type_vec3_i32                      = OpTypeVector %type_i32 3\n"
+		"%type_vec3_u32                      = OpTypeVector %type_u32 3\n"
+		"%type_vec4_i32                      = OpTypeVector %type_i32 4\n"
+		"%type_vec4_u32                      = OpTypeVector %type_u32 4\n"
+
+		"%type_fun_void                      = OpTypeFunction %type_void\n"
+		"%type_ptr_fun_i32                   = OpTypePointer Function %type_i32\n"
+
+		"${image_types}"
+
+		"%type_ptr_in_vec3_u32               = OpTypePointer Input %type_vec3_u32\n"
+		"%type_ptr_in_u32                    = OpTypePointer Input %type_u32\n"
+
+		"${image_uniforms}"
+
+		// variables
+		"%id                                 = OpVariable %type_ptr_in_vec3_u32 Input\n"
+
+		"${image_variables}"
+
+		// main function
+		"%main                               = OpFunction %type_void None %type_fun_void\n"
+		"%label                              = OpLabel\n"
+
+		"${image_load}"
+
+		"%coord                              = OpLoad %type_vec3_u32 %id\n"
+		"%value                              = OpImageRead ${read_vect4_type} %src_image %coord ${extend_operand}\n"
+		"                                      OpImageWrite %dst_image %coord %value ${extend_operand}\n"
+		"                                      OpReturn\n"
+		"                                      OpFunctionEnd\n");
+
+	tcu::TextureFormat	tcuFormat			= mapVkFormat(m_format);
+	const ImageType		usedImageType		= getImageTypeForSingleLayer(m_texture.type());
+	const std::string	imageTypeStr		= getShaderImageType(tcuFormat, usedImageType);
+	const bool			isSigned			= (getTextureChannelClass(tcuFormat.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER);
+
+	struct FormatData
+	{
+		std::string		spirvImageFormat;
+		bool			isExtendedFormat;
+	};
+	const std::map<vk::VkFormat, FormatData> formatDataMap =
+	{
+		// Mandatory support
+		{ VK_FORMAT_R32G32B32A32_UINT,			{ "Rgba32ui",	false } },
+		{ VK_FORMAT_R16G16B16A16_UINT,			{ "Rgba16ui",	false } },
+		{ VK_FORMAT_R8G8B8A8_UINT,				{ "Rgba8ui",	false } },
+		{ VK_FORMAT_R32_UINT,					{ "R32ui",		false } },
+		{ VK_FORMAT_R32G32B32A32_SINT,			{ "Rgba32i",	false } },
+		{ VK_FORMAT_R16G16B16A16_SINT,			{ "Rgba16i",	false } },
+		{ VK_FORMAT_R8G8B8A8_SINT,				{ "Rgba8i",		false } },
+		{ VK_FORMAT_R32_SINT,					{ "R32i",		false } },
+
+		// Requires StorageImageExtendedFormats capability
+		{ VK_FORMAT_R32G32_UINT,				{ "Rg32ui",		true } },
+		{ VK_FORMAT_R16G16_UINT,				{ "Rg16ui",		true } },
+		{ VK_FORMAT_R16_UINT,					{ "R16ui",		true } },
+		{ VK_FORMAT_R8G8_UINT,					{ "Rg8ui",		true } },
+		{ VK_FORMAT_R8_UINT,					{ "R8ui",		true } },
+		{ VK_FORMAT_R32G32_SINT,				{ "Rg32i",		true } },
+		{ VK_FORMAT_R16G16_SINT,				{ "Rg16i",		true } },
+		{ VK_FORMAT_R16_SINT,					{ "R16i",		true } },
+		{ VK_FORMAT_R8G8_SINT,					{ "Rg8i",		true } },
+		{ VK_FORMAT_R8_SINT,					{ "R8i",		true } },
+		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	{ "Rgb10a2ui",	true } }
+	};
+
+	auto it = formatDataMap.find(m_format);
+	if (it == formatDataMap.end())
+		DE_ASSERT(DE_FALSE);	// Missing int format data
+	auto spirvImageFormat = it->second.spirvImageFormat;
+	auto isExtendedFormat = it->second.isExtendedFormat;
+
+	// Request additional capability when needed
+	std::string capability = "";
+	if (isExtendedFormat)
+		capability += "OpCapability StorageImageExtendedFormats\n";
+
+	// Read type and sampled type must match. For uint formats it does not
+	// matter if we do a Sign or ZeroExtend, it matters only for sint formats
+	std::string readTypePostfix = "u32";
+	if (isSigned && m_signExtend)
+		readTypePostfix = "i32";
+
+	std::map<std::string, std::string> specializations =
+	{
+		{ "image_type_id",			"%type_image" },
+		{ "image_uni_ptr_type_id",	"%type_ptr_uniform_const_image" },
+		{ "image_var_id",			"%src_image_ptr" },
+		{ "image_id",				"%src_image" },
+		{ "capability",				capability },
+		{ "image_format",			spirvImageFormat },
+		{ "sampled_type",			(std::string("%type_") + readTypePostfix) },
+		{ "read_vect4_type",		(std::string("%type_vec4_") + readTypePostfix) },
+		{ "extend_operand",			(m_signExtend ? "SignExtend" : "ZeroExtend") }
+	};
+
+	// Addidtional parametrization is needed for a case when source and destination textures have same format
+	tcu::StringTemplate imageTypeTemplate(
+		"${image_type_id}                     = OpTypeImage ${sampled_type} 2D 0 0 0 2 ${image_format}\n");
+	tcu::StringTemplate imageUniformTypeTemplate(
+		"${image_uni_ptr_type_id}   = OpTypePointer UniformConstant ${image_type_id}\n");
+	tcu::StringTemplate imageVariablesTemplate(
+		"${image_var_id}                      = OpVariable ${image_uni_ptr_type_id} UniformConstant\n");
+	tcu::StringTemplate imageLoadTemplate(
+		"${image_id}                          = OpLoad ${image_type_id} ${image_var_id}\n");
+
+	std::string imageTypes;
+	std::string imageUniformTypes;
+	std::string imageVariables;
+	std::string imageLoad;
+
+	// If input image format is the same as output there is less spir-v definitions
+	if ((m_format == VK_FORMAT_R32G32B32A32_SINT) || (m_format == VK_FORMAT_R32G32B32A32_UINT))
+	{
+		imageTypes			= imageTypeTemplate.specialize(specializations);
+		imageUniformTypes	= imageUniformTypeTemplate.specialize(specializations);
+		imageVariables		= imageVariablesTemplate.specialize(specializations);
+		imageLoad			= imageLoadTemplate.specialize(specializations);
+
+		specializations["image_var_id"]				= "%dst_image_ptr";
+		specializations["image_id"]					= "%dst_image";
+		imageVariables		+= imageVariablesTemplate.specialize(specializations);
+		imageLoad			+= imageLoadTemplate.specialize(specializations);
+	}
+	else
+	{
+		specializations["image_type_id"]			= "%type_src_image";
+		specializations["image_uni_ptr_type_id"]	= "%type_ptr_uniform_const_src_image";
+		imageTypes			= imageTypeTemplate.specialize(specializations);
+		imageUniformTypes	= imageUniformTypeTemplate.specialize(specializations);
+		imageVariables		= imageVariablesTemplate.specialize(specializations);
+		imageLoad			= imageLoadTemplate.specialize(specializations);
+
+		specializations["image_format"]				= isSigned ? "Rgba32i" : "Rgba32ui";
+		specializations["image_type_id"]			= "%type_dst_image";
+		specializations["image_uni_ptr_type_id"]	= "%type_ptr_uniform_const_dst_image";
+		specializations["image_var_id"]				= "%dst_image_ptr";
+		specializations["image_id"]					= "%dst_image";
+		imageTypes			+= imageTypeTemplate.specialize(specializations);
+		imageUniformTypes	+= imageUniformTypeTemplate.specialize(specializations);
+		imageVariables		+= imageVariablesTemplate.specialize(specializations);
+		imageLoad			+= imageLoadTemplate.specialize(specializations);
+	}
+
+	specializations["image_types"]		= imageTypes;
+	specializations["image_uniforms"]	= imageUniformTypes;
+	specializations["image_variables"]	= imageVariables;
+	specializations["image_load"]		= imageLoad;
+
+	// Specialize whole shader and add it to program collection
+	programCollection.spirvAsmSources.add("comp") << shaderTemplate.specialize(specializations)
+		<< vk::SpirVAsmBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+}
+
+TestInstance* ImageExtendOperandTest::createInstance(Context& context) const
+{
+	return new ImageExtendOperandTestInstance(context, m_texture, m_format, m_signExtend);
+}
+
 static const Texture s_textures[] =
 {
 	Texture(IMAGE_TYPE_1D,			tcu::IVec3(64,	1,	1),	1),
@@ -1706,6 +2158,25 @@ de::MovePtr<TestCase> createImageQualifierRestrictCase (tcu::TestContext& testCt
 	const VkFormat format = VK_FORMAT_R32G32B32A32_UINT;
 	const Texture& texture = getTestTexture(imageType);
 	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
+}
+
+tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "extend_operands_spirv1p4", "Cases with SignExtend and ZeroExtend"));
+
+	const auto texture = Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
+	{
+		auto format		= s_formats[formatNdx];
+		bool intFormat	= isIntFormat(format);
+		if (intFormat || isUintFormat(format))
+		{
+			const std::string caseName = getFormatShortString(format) + (intFormat ? "_sign_extend" : "_zero_extend");
+			testGroup->addChild(new ImageExtendOperandTest(testCtx, caseName, texture, format, intFormat));
+		}
+	}
+
+	return testGroup.release();
 }
 
 } // image
