@@ -13,7 +13,7 @@ OpMemberDecorate %struct1 0 Offset 0
 OpMemberDecorate %struct1 1 Offset 4
 OpMemberDecorate %struct1 2 Offset 8
 OpMemberDecorate %struct1 3 Offset 12
-OpDecorate %struct2 BufferBlock
+OpDecorate %struct2 Block
 OpMemberDecorate %struct2 0 Offset 0
 OpMemberDecorate %struct2 1 Offset 4
 OpMemberDecorate %struct2 2 Offset 8
@@ -29,10 +29,10 @@ OpDecorate %out_var Binding 1
 %ptr_struct1 = OpTypePointer Uniform %struct1
 
 %struct2 = OpTypeStruct %int %int %int %int
-%ptr_struct2 = OpTypePointer Uniform %struct2
+%ptr_struct2 = OpTypePointer StorageBuffer %struct2
 
 %in_var = OpVariable %ptr_struct1 Uniform
-%out_var = OpVariable %ptr_struct2 Uniform
+%out_var = OpVariable %ptr_struct2 StorageBuffer
 
 %func_ty = OpTypeFunction %void
 %main = OpFunction %void None %func_ty
