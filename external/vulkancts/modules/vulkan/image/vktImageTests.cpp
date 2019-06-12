@@ -55,6 +55,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageAtomicOperationTests(testCtx));
 	imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
 	imageTests->addChild(createImageTranscodingSupportTests(testCtx));
+	imageTests->addChild(createImageExtendOperandsTests(testCtx));
 }
 
 } // anonymous
