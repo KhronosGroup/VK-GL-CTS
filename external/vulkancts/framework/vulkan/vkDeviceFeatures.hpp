@@ -128,10 +128,10 @@ public:
 				return static_cast<FeatureWrapperPtr>(m_features[featIdx])->getFeatureTypeRef();
 		}
 
-		FeatureWrapperPtr p = new FeatureStructWrapper<FeatureType>;
+		FeatureStruct* p = vk::createFeatureStructWrapper<FeatureType>();
 		m_features.push_back(p);
 
-		return p->getFeatureTypeRef();
+		return static_cast<FeatureWrapperPtr>(p)->getFeatureTypeRef();
 	}
 
 	const VkPhysicalDeviceFeatures2&	getCoreFeatures2	(void) const { return m_coreFeatures2; }
