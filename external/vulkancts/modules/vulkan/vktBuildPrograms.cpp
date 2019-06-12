@@ -394,7 +394,8 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						  const bool				validateBinaries,
 						  const deUint32			usedVulkanVersion,
 						  const vk::SpirvVersion	baselineSpirvVersion,
-						  const vk::SpirvVersion	maxSpirvVersion)
+						  const vk::SpirvVersion	maxSpirvVersion,
+						  const bool				allowSpirV14)
 {
 	const deUint32						numThreads			= deGetNumAvailableLogicalCores();
 
@@ -447,7 +448,8 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						 ++progIter)
 					{
 						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
+						// Unless this is SPIR-V 1.4 and is explicitly allowed.
+						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
@@ -461,7 +463,8 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						 ++progIter)
 					{
 						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
+						// Unless this is SPIR-V 1.4 and is explicitly allowed.
+						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
@@ -475,7 +478,8 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						 ++progIter)
 					{
 						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
+						// Unless this is SPIR-V 1.4 and is explicitly allowed.
+						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion && !(allowSpirV14 && progIter.getProgram().buildOptions.supports_VK_KHR_spirv_1_4 && progIter.getProgram().buildOptions.targetVersion == vk::SPIRV_VERSION_1_4))
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
@@ -562,6 +566,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,	bool);
 DE_DECLARE_COMMAND_LINE_OPT(SpirvOptimize,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(SpirvOptimizationRecipe,std::string);
+DE_DECLARE_COMMAND_LINE_OPT(SpirvAllow14,			bool);
 
 static const de::cmdline::NamedValue<bool> s_enableNames[] =
 {
@@ -590,7 +595,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<opt::ShaderCacheFilename>("r", "shadercache-filename", "Write shader cache to given file", "shadercache.bin")
 		<< Option<opt::ShaderCacheTruncate>("x", "shadercache-truncate", "Truncate shader cache before running", s_enableNames, "enable")
 		<< Option<opt::SpirvOptimize>("o", "deqp-optimize-spirv", "Enable optimization for SPIR-V", s_enableNames, "disable")
-		<< Option<opt::SpirvOptimizationRecipe>("p","deqp-optimization-recipe", "Shader optimization recipe");
+		<< Option<opt::SpirvOptimizationRecipe>("p","deqp-optimization-recipe", "Shader optimization recipe")
+		<< Option<opt::SpirvAllow14>("e","allow-spirv-14", "Allow SPIR-V 1.4 with Vulkan 1.1");
 }
 
 } // opt
@@ -682,7 +688,8 @@ int main (int argc, const char* argv[])
 																 cmdLine.getOption<opt::Validate>(),
 																 cmdLine.getOption<opt::VulkanVersion>(),
 																 baselineSpirvVersion,
-																 maxSpirvVersion);
+																 maxSpirvVersion,
+																 cmdLine.getOption<opt::SpirvAllow14>());
 
 		tcu::print("DONE: %d passed, %d failed, %d not supported\n", stats.numSucceeded, stats.numFailed, stats.notSupported);
 
