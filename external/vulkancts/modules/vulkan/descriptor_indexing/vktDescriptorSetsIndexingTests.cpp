@@ -1018,11 +1018,9 @@ void CommonDescriptorInstance::copyBuffersToImages					(IterateCommonVariables&	
 			*(variables.descriptorsImages[infoIdx]->image),	// image
 			variables.descriptorsImages[infoIdx]->extent,	// imageExtent
 			variables.descriptorsImages[infoIdx]->format,	// imageFormat
-			variables.descriptorsImages[infoIdx]->layout,	// oldImageLayout
-			VK_IMAGE_LAYOUT_GENERAL,						// newImageLayout
+			VK_IMAGE_LAYOUT_UNDEFINED,						// oldImageLayout
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newImageLayout
 			variables.descriptorsImages[infoIdx]->levels);	// mipLevelCount
-
-		variables.descriptorsImages[infoIdx]->layout = VK_IMAGE_LAYOUT_GENERAL;
 	}
 }
 
@@ -1044,8 +1042,8 @@ void CommonDescriptorInstance::copyImagesToBuffers					(IterateCommonVariables&	
 			*(variables.descriptorsImages[infoIdx]->image),	// image
 			variables.descriptorsImages[infoIdx]->extent,	// imageExtent
 			variables.descriptorsImages[infoIdx]->format,	// imageFormat
-			variables.descriptorsImages[infoIdx]->layout,	// oldImageLayout
-			VK_IMAGE_LAYOUT_GENERAL,						// newImageLayout
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// oldImageLayout
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newImageLayout
 			variables.descriptorsBufferInfos[infoIdx]);		// bufferInfo
 	}
 }
@@ -1445,21 +1443,21 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 		0u,											// baseMipLevel
 		1u,											// levelCount
 		0u,											// baseArrayLayer
-		1u,											// layerCount
+		1u											// layerCount
 	};
 
-	const VkImageMemoryBarrier	imageBarrier =
+	const VkImageMemoryBarrier	barrierBefore =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// sType;
 		DE_NULL,									// pNext;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// srcAccessMask;
 		VK_ACCESS_TRANSFER_READ_BIT,				// dstAccessMask;
-		VK_IMAGE_LAYOUT_UNDEFINED,					// oldLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// oldLayout
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,					// dstQueueFamilyIndex;
 		image,										// image;
-		subresourceRange,							// subresourceRange;
+		subresourceRange							// subresourceRange;
 	};
 
 	const VkBufferImageCopy		copyRegion =
@@ -1490,21 +1488,36 @@ void CommonDescriptorInstance::commandReadFrameBuffer				(ut::BufferHandleAllocS
 		bufferSize									// size;
 	};
 
+	const VkImageMemoryBarrier	barrierAfter =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
+		DE_NULL,										// pNext;
+		VK_ACCESS_TRANSFER_READ_BIT,					// srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// oldLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// newLayout;
+		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						// dstQueueFamilyIndex;
+		image,											// image
+		subresourceRange								// subresourceRange
+	};
+
+
 	m_vki.cmdPipelineBarrier(commandBuffer,												// commandBuffer
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,	// srcStageMask, dstStageMask
 		(VkDependencyFlags)0,															// dependencyFlags
-		0u, (const VkMemoryBarrier*)DE_NULL,											// memoryBarrierCount, pMemoryBarriers
-		0u, (const VkBufferMemoryBarrier*)DE_NULL,										// bufferBarrierCount, pBufferBarriers
-		1u, &imageBarrier);																// imageBarrierCount, pImageBarriers
+		0u, DE_NULL,																	// memoryBarrierCount, pMemoryBarriers
+		0u, DE_NULL,																	// bufferBarrierCount, pBufferBarriers
+		1u, &barrierBefore);																// imageBarrierCount, pImageBarriers
 
 	m_vki.cmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &copyRegion);
 
 	m_vki.cmdPipelineBarrier(commandBuffer,
-		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 		(VkDependencyFlags)0,
-		0, DE_NULL,
-		1, &bufferBarrier,
-		0u, DE_NULL);
+		0u, DE_NULL,
+		1u, &bufferBarrier,
+		1u, &barrierAfter);
 
 	content = ut::BufferHandleAllocSp(new ut::BufferHandleAlloc(buffer, allocation));
 }
@@ -2233,7 +2246,7 @@ InputAttachmentInstance::InputAttachmentInstance					(Context&									context,
 void InputAttachmentInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
 {
 	createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer,
-		(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT), m_testParams.frameResolution, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount);
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, m_testParams.frameResolution, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount);
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
 	for (deUint32 descriptorIdx = 0; descriptorIdx < variables.validDescriptorCount; ++descriptorIdx)
@@ -2242,6 +2255,7 @@ void InputAttachmentInstance::createAndPopulateDescriptors			(IterateCommonVaria
 		const tcu::PixelBufferAccess	pa			= getPixelAccess(descriptorIdx, m_testParams.frameResolution, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer);
 		tcu::clear(pa, tcu::Vec4(component, component, component, 1.0f));
 	}
+	vk::flushAlloc(m_vki, m_vkd, *variables.descriptorsBuffer->alloc);
 }
 
 Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateCommonVariables&				variables)
@@ -2279,17 +2293,17 @@ Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateComm
 				variables.descriptorsImages[inputIdx]->format,	// VkFormat							format;
 				VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits			samples;
 				VK_ATTACHMENT_LOAD_OP_LOAD,						// VkAttachmentLoadOp				loadOp;
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,				// VkAttachmentStoreOp				storeOp;
+				VK_ATTACHMENT_STORE_OP_STORE,					// VkAttachmentStoreOp				storeOp;
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,				// VkAttachmentLoadOp				stencilLoadOp;
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,				// VkAttachmentStoreOp				stencilStoreOp;
-				variables.descriptorsImages[inputIdx]->layout,	// VkImageLayout					initialLayout;
-				VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout					finalLayout;
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout					initialLayout;
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL		// VkImageLayout					finalLayout;
 			};
 
 			const VkAttachmentReference		inputAttachmentRef =
 			{
 				inputIdx + 1,								// deUint32							attachment;
-				VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					layout;
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout					layout;
 			};
 
 			inputAttachmentRefs.push_back(inputAttachmentRef);
@@ -2420,7 +2434,7 @@ void SamplerInstance::createAndPopulateDescriptors					(IterateCommonVariables&	
 		};
 
 		createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer,
-			(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT), imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, 1, m_testParams.usesMipMaps);
 		createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
 		PixelBufferAccess pa = getPixelAccess(0, imageExtent, m_colorFormat, variables.descriptorsBufferInfos, variables.descriptorsBuffer, m_testParams.usesMipMaps ? 1 : 0);
@@ -2539,7 +2553,7 @@ void SampledImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 	const VkExtent3D&			imageExtent = m_testParams.usesMipMaps ? bigImageExtent : smallImageExtent;
 
 	createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer,
-		(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT), imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount, m_testParams.usesMipMaps);
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount, m_testParams.usesMipMaps);
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
 	PixelBufferAccess			pixelAccess;
@@ -2650,7 +2664,7 @@ void CombinedImageInstance::createAndPopulateDescriptors			(IterateCommonVariabl
 	variables.descriptorSamplers.push_back(ut::SamplerSp(new Move<VkSampler>(vk::createSampler(m_vki, m_vkd, &createInfo))));
 
 	const VkExtent3D&			imageExtent = m_testParams.usesMipMaps ? bigImageExtent : smallImageExtent;
-	createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer, (VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+	createImages(variables.descriptorsImages, variables.descriptorsBufferInfos, variables.descriptorsBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		imageExtent, m_colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, variables.validDescriptorCount, m_testParams.usesMipMaps);
 	createImagesViews(variables.descriptorImageViews, variables.descriptorsImages, m_colorFormat);
 
