@@ -27,6 +27,7 @@
 #include "tcuVector.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vktProtectedMemUtils.hpp"
 #include "tcuCommandLine.hpp"
@@ -64,7 +65,7 @@ public:
 	vk::Allocator&								getDefaultAllocator	(void) const	{ return *m_allocator;	}
 
 	const vk::InstanceDriver&					getInstanceDriver	(void) const	{ return m_vki;								}
-	vk::VkInstance								getInstance			(void) const	{ return *m_instance;						}
+	vk::VkInstance								getInstance			(void) const	{ return m_instance;						}
 	const vk::VkSurfaceKHR						getSurface			(void) const	{ return *m_surface;						}
 
 
@@ -80,8 +81,8 @@ private:
 
 	Context&							m_context;
 	const vk::PlatformInterface&		m_interface;
-	vk::Move<vk::VkInstance>			m_instance;
-	vk::InstanceDriver					m_vki;
+	CustomInstance						m_instance;
+	const vk::InstanceDriver&			m_vki;
 	vk::VkPhysicalDevice				m_phyDevice;
 	const vk::Move<vk::VkSurfaceKHR>	m_surface;
 	deUint32							m_queueFamilyIndex;

@@ -324,6 +324,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	DE_ASSERT(!m_instance);
 	m_instance = vktCase->createInstance(m_context);
+	m_context.resultSetOnValidation(false);
 }
 
 void TestCaseExecutor::deinit (tcu::TestCase*)
@@ -335,38 +336,7 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 
 	// Collect and report any debug messages
 	if (m_debugReportRecorder)
-	{
-		// \note We are not logging INFORMATION and DEBUG messages
-		static const vk::VkDebugReportFlagsEXT			errorFlags		= vk::VK_DEBUG_REPORT_ERROR_BIT_EXT;
-		static const vk::VkDebugReportFlagsEXT			logFlags		= errorFlags
-																		| vk::VK_DEBUG_REPORT_WARNING_BIT_EXT
-																		| vk::VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-
-		typedef vk::DebugReportRecorder::MessageList	DebugMessages;
-
-		const DebugMessages&	messages	= m_debugReportRecorder->getMessages();
-		tcu::TestLog&			log			= m_context.getTestContext().getLog();
-
-		if (messages.begin() != messages.end())
-		{
-			const tcu::ScopedLogSection	section		(log, "DebugMessages", "Debug Messages");
-			int							numErrors	= 0;
-
-			for (DebugMessages::const_iterator curMsg = messages.begin(); curMsg != messages.end(); ++curMsg)
-			{
-				if ((curMsg->flags & logFlags) != 0)
-					log << tcu::TestLog::Message << *curMsg << tcu::TestLog::EndMessage;
-
-				if ((curMsg->flags & errorFlags) != 0)
-					numErrors += 1;
-			}
-
-			m_debugReportRecorder->clearMessages();
-
-			if (numErrors > 0)
-				m_context.getTestContext().setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, (de::toString(numErrors) + " API usage errors found").c_str());
-		}
-	}
+		collectAndReportDebugMessages(*m_debugReportRecorder, m_context);
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
@@ -377,9 +347,12 @@ tcu::TestNode::IterateResult TestCaseExecutor::iterate (tcu::TestCase*)
 
 	if (result.isComplete())
 	{
-		// Vulkan tests shouldn't set result directly
-		DE_ASSERT(m_context.getTestContext().getTestResult() == QP_TEST_RESULT_LAST);
-		m_context.getTestContext().setTestResult(result.getCode(), result.getDescription().c_str());
+		// Vulkan tests shouldn't set result directly except when using a debug report messenger to catch validation errors.
+		DE_ASSERT(m_context.getTestContext().getTestResult() == QP_TEST_RESULT_LAST || m_context.resultSetOnValidation());
+
+		// Override result if not set previously by a debug report messenger.
+		if (!m_context.resultSetOnValidation())
+			m_context.getTestContext().setTestResult(result.getCode(), result.getDescription().c_str());
 		return tcu::TestNode::STOP;
 	}
 	else

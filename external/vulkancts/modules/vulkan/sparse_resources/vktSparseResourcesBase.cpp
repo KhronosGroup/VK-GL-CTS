@@ -23,6 +23,7 @@
 
 #include "vktSparseResourcesBase.hpp"
 #include "vktSparseResourcesTestsUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -81,8 +82,8 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	if (m_useDeviceGroups)
 	{
 		const std::vector<std::string>	requiredExtensions(1, "VK_KHR_device_group_creation");
-		m_deviceGroupInstance	=		createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
-		devGroupProperties		=		enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+		m_deviceGroupInstance	=		createCustomInstanceWithExtensions(m_context, requiredExtensions);
+		devGroupProperties		=		enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
 		m_numPhysicalDevices	=		devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
 
 		m_physicalDevices.clear();
@@ -100,7 +101,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 			deviceExtensions.push_back("VK_KHR_device_group");
 	}
 
-	const VkInstance&					instance(m_useDeviceGroups ? m_deviceGroupInstance.get() : m_context.getInstance());
+	const VkInstance&					instance(m_useDeviceGroups ? m_deviceGroupInstance : m_context.getInstance());
 	InstanceDriver						instanceDriver(m_context.getPlatformInterface(), instance);
 	const VkPhysicalDevice				physicalDevice = getPhysicalDevice();
 	deUint32 queueFamilyPropertiesCount = 0u;
@@ -188,7 +189,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 		&deviceFeatures,											// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
 	};
 
-	m_logicalDevice = createDevice(m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
+	m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, physicalDevice, &deviceInfo);
 	m_deviceDriver	= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice));
 	m_allocator		= de::MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instanceDriver, physicalDevice)));
 

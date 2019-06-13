@@ -24,6 +24,7 @@
 #include "vktSynchronizationBasicSemaphoreTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktSynchronizationUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
@@ -32,6 +33,8 @@
 
 
 #include "vkRef.hpp"
+
+#include "tcuCommandLine.hpp"
 
 namespace vkt
 {
@@ -359,7 +362,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 	deviceInfo.queueCreateInfoCount		= (queues[FIRST].queueFamilyIndex == queues[SECOND].queueFamilyIndex) ? 1 : COUNT;
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
-	logicalDevice = vk::createDevice(context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
+	logicalDevice = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
 
 	for (deUint32 queueReqNdx = 0; queueReqNdx < COUNT; ++queueReqNdx)
 	{

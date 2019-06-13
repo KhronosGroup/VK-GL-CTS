@@ -26,6 +26,7 @@
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktComputeTestsUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
@@ -2335,7 +2336,7 @@ public:
 
 	void							createDeviceGroup	(void);
 	const vk::DeviceInterface&		getDeviceInterface	(void)			{ return *m_deviceDriver; }
-	vk::VkInstance					getInstance			(void)			{ return *m_deviceGroupInstance; }
+	vk::VkInstance					getInstance			(void)			{ return m_deviceGroupInstance; }
 	vk::VkDevice					getDevice			(void)			{ return *m_logicalDevice; }
 	vk::VkPhysicalDevice			getPhysicalDevice	(deUint32 i = 0){ return m_physicalDevices[i]; }
 
@@ -2344,7 +2345,7 @@ protected:
 	deUint32						m_queueFamilyIndex;
 
 private:
-	vk::Move<vk::VkInstance>			m_deviceGroupInstance;
+	CustomInstance						m_deviceGroupInstance;
 	vk::Move<vk::VkDevice>				m_logicalDevice;
 	std::vector<vk::VkPhysicalDevice>	m_physicalDevices;
 	de::MovePtr<vk::DeviceDriver>		m_deviceDriver;
@@ -2357,8 +2358,8 @@ void ComputeTestInstance::createDeviceGroup (void)
 	const deUint32									physDeviceIdx			= cmdLine.getVKDeviceId() - 1;
 	const float										queuePriority			= 1.0f;
 	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
-	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	m_deviceGroupInstance													= createCustomInstanceWithExtensions(m_context, requiredExtensions);
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	std::vector<const char*>						deviceExtensions;
 
@@ -2372,7 +2373,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
 	};
-	InstanceDriver									instance				(m_context.getPlatformInterface(), m_deviceGroupInstance.get());
+	const InstanceDriver&							instance				(m_deviceGroupInstance.getDriver());
 	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 	const std::vector<VkQueueFamilyProperties>		queueProps				= getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
 
@@ -2409,8 +2410,9 @@ void ComputeTestInstance::createDeviceGroup (void)
 		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	// const char* const*				ppEnabledExtensionNames;
 		&deviceFeatures,												// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
-	m_logicalDevice		= createDevice(m_context.getPlatformInterface(), m_deviceGroupInstance.get(), instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
-	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance.get(), *m_logicalDevice));
+
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_deviceGroupInstance, instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance, *m_logicalDevice));
 }
 
 class DispatchBaseTest : public vkt::TestCase
@@ -3096,7 +3098,7 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	deviceInfo.queueCreateInfoCount		= (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 1 : 2;
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
-	logicalDevice = vk::createDevice(m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+	logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
 
 	for (deUint32 queueReqNdx = 0; queueReqNdx < 2; ++queueReqNdx)
 	{

@@ -37,10 +37,12 @@
 #include "vktWsiDisplayTimingTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deClock.h"
 
@@ -76,10 +78,9 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 	}
 }
 
-vk::Move<vk::VkInstance> createInstanceWithWsi (const vk::PlatformInterface&		vkp,
-												deUint32							version,
-												const Extensions&					supportedExtensions,
-												vk::wsi::Type						wsiType)
+CustomInstance createInstanceWithWsi (Context&							context,
+									  const Extensions&					supportedExtensions,
+									  vk::wsi::Type						wsiType)
 {
 	vector<string>	extensions;
 
@@ -88,7 +89,7 @@ vk::Move<vk::VkInstance> createInstanceWithWsi (const vk::PlatformInterface&		vk
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions);
+	return vkt::createCustomInstanceWithExtensions(context, extensions);
 }
 
 vk::VkPhysicalDeviceFeatures getDeviceNullFeatures (void)
@@ -138,6 +139,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
 											const Extensions&					supportedExtensions,
 											const deUint32						queueFamilyIndex,
 											bool								requiresDisplayTiming,
+											bool								validationEnabled,
 											const vk::VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
 	const float							queuePriorities[]	= { 1.0f };
@@ -179,7 +181,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
-	return createDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
@@ -544,8 +546,8 @@ private:
 	const deUint32							m_quadCount;
 	const vk::PlatformInterface&			m_vkp;
 	const Extensions						m_instanceExtensions;
-	const vk::Unique<vk::VkInstance>		m_instance;
-	const vk::InstanceDriver				m_vki;
+	const CustomInstance					m_instance;
+	const vk::InstanceDriver&				m_vki;
 	const vk::VkPhysicalDevice				m_physicalDevice;
 	const de::UniquePtr<vk::wsi::Display>	m_nativeDisplay;
 	const de::UniquePtr<vk::wsi::Window>	m_nativeWindow;
@@ -691,17 +693,17 @@ DisplayTimingTestInstance::DisplayTimingTestInstance (Context& context, const Te
 	, m_quadCount				(16u)
 	, m_vkp						(context.getPlatformInterface())
 	, m_instanceExtensions		(vk::enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
-	, m_instance				(createInstanceWithWsi(m_vkp, context.getUsedApiVersion(), m_instanceExtensions, testConfig.wsiType))
-	, m_vki						(m_vkp, *m_instance)
-	, m_physicalDevice			(vk::chooseDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
+	, m_instance				(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
+	, m_vki						(m_instance.getDriver())
+	, m_physicalDevice			(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
 	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::nothing<UVec2>()))
-	, m_surface					(vk::wsi::createSurface(m_vki, *m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
+	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device					(createDeviceWithWsi(m_vkp, *m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useDisplayTiming))
-	, m_vkd						(m_vkp, *m_instance, *m_device)
+	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useDisplayTiming, context.getTestContext().getCommandLine().isValidationEnabled()))
+	, m_vkd						(m_vkp, m_instance, *m_device)
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))
