@@ -24,6 +24,7 @@
 #include "vktMemoryAllocationTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "tcuMaybe.hpp"
 #include "tcuResultCollector.hpp"
@@ -146,7 +147,7 @@ protected:
 	VkPhysicalDeviceMemoryProperties		m_memoryProperties;
 
 private:
-	vk::Move<vk::VkInstance>		m_deviceGroupInstance;
+	CustomInstance					m_deviceGroupInstance;
 	vk::Move<vk::VkDevice>			m_logicalDevice;
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
 };
@@ -159,8 +160,8 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
 	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
-	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	m_deviceGroupInstance													= createCustomInstanceWithExtensions(m_context, requiredExtensions);
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance);
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
 	if (m_numPhysDevices < 2)
@@ -177,7 +178,7 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
 	};
-	VkInstance										instance				(m_useDeviceGroups ? m_deviceGroupInstance.get() : m_context.getInstance());
+	VkInstance										instance				(m_useDeviceGroups ? m_deviceGroupInstance : m_context.getInstance());
 	InstanceDriver									instanceDriver			(m_context.getPlatformInterface(), instance);
 	const VkPhysicalDeviceFeatures					deviceFeatures	=		getPhysicalDeviceFeatures(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 
@@ -211,7 +212,8 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],	// const char* const*	ppEnabledExtensionNames;
 		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
-	m_logicalDevice		= createDevice(m_context.getPlatformInterface(), instance, instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), instance, *m_logicalDevice));
 	m_memoryProperties	= getPhysicalDeviceMemoryProperties(instanceDriver, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
 }

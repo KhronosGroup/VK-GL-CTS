@@ -24,6 +24,7 @@
 #include "vktSynchronizationSmokeTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
@@ -34,6 +35,7 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deThread.hpp"
@@ -87,7 +89,7 @@ void buildShaders (SourceCollections& shaderCollection)
 				"}\n");
 }
 
-Move<VkDevice> createTestDevice (const PlatformInterface& vkp, VkInstance instance, const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 *outQueueFamilyIndex)
+Move<VkDevice> createTestDevice (const PlatformInterface& vkp, VkInstance instance, const InstanceInterface& vki, VkPhysicalDevice physicalDevice, bool validationEnabled, deUint32 *outQueueFamilyIndex)
 {
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
@@ -138,7 +140,7 @@ Move<VkDevice> createTestDevice (const PlatformInterface& vkp, VkInstance instan
 
 	*outQueueFamilyIndex					= queueInfo.queueFamilyIndex;
 
-	return createDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
+	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceInfo);
 };
 
 struct BufferParameters
@@ -1082,7 +1084,7 @@ tcu::TestStatus testSemaphores (Context& context)
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	deUint32					queueFamilyIdx;
-	vk::Move<VkDevice>			device				= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, &queueFamilyIdx);
+	vk::Move<VkDevice>			device				= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, context.getTestContext().getCommandLine().isValidationEnabled(), &queueFamilyIdx);
 	const DeviceDriver			deviceInterface		(platformInterface, context.getInstance(), *device);
 	SimpleAllocator				allocator			(deviceInterface,
 													 *device,

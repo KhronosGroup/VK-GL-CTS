@@ -94,6 +94,8 @@ set(DEQP_VK_SRCS
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
 	vktInfoTests.hpp
+	vktCustomInstancesDevices.cpp
+	vktCustomInstancesDevices.hpp
 	)
 
 set(DEQP_VK_LIBS

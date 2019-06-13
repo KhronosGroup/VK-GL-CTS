@@ -24,6 +24,7 @@
 #include "vktMultiViewRenderTests.hpp"
 #include "vktMultiViewRenderUtil.hpp"
 #include "vktMultiViewRenderPassUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vktTestCase.hpp"
 #include "vkBuilderUtil.hpp"
@@ -695,7 +696,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	m_hasMultiDrawIndirect = enabledFeatures.features.multiDrawIndirect;
 
 	{
-		vector<const char*>							deviceExtensions;
+		vector<const char*>				deviceExtensions;
 
 		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_multiview"))
 			deviceExtensions.push_back("VK_KHR_multiview");
@@ -718,7 +719,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_logicalDevice					= createDevice(m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+		m_logicalDevice					= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
 		m_device						= MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice));
 		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);

@@ -29,6 +29,8 @@
 #include "deUniquePtr.hpp"
 #include "vkPrograms.hpp"
 #include "vkApiVersion.hpp"
+#include "vkDebugReportUtil.hpp"
+#include "vkPlatform.hpp"
 #include "vktTestCaseDefs.hpp"
 #include <vector>
 #include <string>
@@ -47,10 +49,6 @@ struct SourceCollections;
 
 namespace vkt
 {
-
-std::vector<std::string> getValidationLayers (const vk::PlatformInterface& vkp);
-
-std::vector<std::string> getValidationLayers (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice);
 
 class DefaultDevice;
 
@@ -97,6 +95,9 @@ public:
 
 	void*										getInstanceProcAddr				();
 
+	bool										resultSetOnValidation			() const		{ return m_resultSetOnValidation;	}
+	void										resultSetOnValidation			(bool value)	{ m_resultSetOnValidation = value;	}
+
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;
@@ -104,6 +105,8 @@ protected:
 
 	const de::UniquePtr<DefaultDevice>			m_device;
 	const de::UniquePtr<vk::Allocator>			m_allocator;
+
+	bool										m_resultSetOnValidation;
 
 private:
 												Context							(const Context&); // Not allowed
@@ -152,6 +155,8 @@ inline TestCase::TestCase (tcu::TestContext& testCtx, tcu::TestNodeType type, co
 	: tcu::TestCase(testCtx, type, name.c_str(), description.c_str())
 {
 }
+
+void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder, Context& context);
 
 } // vkt
 

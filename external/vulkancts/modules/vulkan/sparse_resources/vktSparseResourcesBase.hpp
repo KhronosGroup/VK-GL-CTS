@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkRef.hpp"
 #include "vkPlatform.hpp"
 #include "deUniquePtr.hpp"
@@ -84,7 +85,7 @@ protected:
 private:
 	bool												m_useDeviceGroups;
 	deUint32											m_deviceGroupIdx;
-	vk::Move<vk::VkInstance>							m_deviceGroupInstance;
+	CustomInstance										m_deviceGroupInstance;
 	std::vector<vk::VkPhysicalDevice>					m_physicalDevices;
 	std::map<vk::VkQueueFlags, std::vector<Queue> >		m_queues;
 	de::MovePtr<vk::DeviceDriver>						m_deviceDriver;

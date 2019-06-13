@@ -35,9 +35,11 @@
 #include "vktSynchronizationOperationResources.hpp"
 #include "vktExternalMemoryUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 using tcu::TestLog;
 using namespace vkt::ExternalMemoryUtil;
@@ -291,122 +293,23 @@ SimpleAllocation::~SimpleAllocation (void)
 	m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
 }
 
-class DeviceId
+CustomInstance createTestInstance (Context& context)
 {
-public:
-					DeviceId		(deUint32		vendorId,
-									 deUint32		driverVersion,
-									 const deUint8	driverUUID[VK_UUID_SIZE],
-									 const deUint8	deviceUUID[VK_UUID_SIZE]);
+	std::vector<std::string> extensions;
+	extensions.push_back("VK_KHR_get_physical_device_properties2");
+	extensions.push_back("VK_KHR_external_semaphore_capabilities");
+	extensions.push_back("VK_KHR_external_memory_capabilities");
 
-	bool			operator==		(const DeviceId& other) const;
-	bool			operator|=		(const DeviceId& other) const;
-
-private:
-	const deUint32	m_vendorId;
-	const deUint32	m_driverVersion;
-	deUint8			m_driverUUID[VK_UUID_SIZE];
-	deUint8			m_deviceUUID[VK_UUID_SIZE];
-};
-
-DeviceId::DeviceId (deUint32		vendorId,
-					deUint32		driverVersion,
-					const deUint8	driverUUID[VK_UUID_SIZE],
-					const deUint8	deviceUUID[VK_UUID_SIZE])
-	: m_vendorId		(vendorId)
-	, m_driverVersion	(driverVersion)
-{
-	deMemcpy(m_driverUUID, driverUUID, sizeof(m_driverUUID));
-	deMemcpy(m_deviceUUID, deviceUUID, sizeof(m_deviceUUID));
+	return createCustomInstanceWithExtensions(context, extensions);
 }
 
-bool DeviceId::operator== (const DeviceId& other) const
+vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
+										 const vk::PlatformInterface&	vkp,
+										 vk::VkInstance					instance,
+										 const vk::InstanceInterface&	vki,
+										 const vk::VkPhysicalDevice		physicalDevice)
 {
-	if (this == &other)
-		return true;
-
-	if (m_vendorId != other.m_vendorId)
-		return false;
-
-	if (m_driverVersion != other.m_driverVersion)
-		return false;
-
-	if (deMemCmp(m_driverUUID, other.m_driverUUID, sizeof(m_driverUUID)) != 0)
-		return false;
-
-	return deMemCmp(m_deviceUUID, other.m_deviceUUID, sizeof(m_deviceUUID)) == 0;
-}
-
-DeviceId getDeviceId (const vk::InstanceInterface&	vki,
-					  vk::VkPhysicalDevice			physicalDevice)
-{
-	vk::VkPhysicalDeviceIDProperties			propertiesId;
-	vk::VkPhysicalDeviceProperties2				properties;
-
-	deMemset(&properties, 0, sizeof(properties));
-	deMemset(&propertiesId, 0, sizeof(propertiesId));
-
-	propertiesId.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-
-	properties.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	properties.pNext	= &propertiesId;
-
-	vki.getPhysicalDeviceProperties2(physicalDevice, &properties);
-
-	return DeviceId(properties.properties.vendorID, properties.properties.driverVersion, propertiesId.driverUUID, propertiesId.deviceUUID);
-}
-
-vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp, deUint32 version)
-{
-	try
-	{
-		std::vector<std::string> extensions;
-		if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
-			extensions.push_back("VK_KHR_get_physical_device_properties2");
-		if (!vk::isCoreInstanceExtension(version, "VK_KHR_external_semaphore_capabilities"))
-			extensions.push_back("VK_KHR_external_semaphore_capabilities");
-		if (!vk::isCoreInstanceExtension(version, "VK_KHR_external_memory_capabilities"))
-			extensions.push_back("VK_KHR_external_memory_capabilities");
-
-		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), extensions);
-	}
-	catch (const vk::Error& error)
-	{
-		if (error.getError() == vk::VK_ERROR_EXTENSION_NOT_PRESENT)
-			TCU_THROW(NotSupportedError, "Required external memory extensions not supported by the instance");
-		else
-			throw;
-	}
-}
-
-vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface&	vki,
-										vk::VkInstance					instance,
-										const tcu::CommandLine&			cmdLine)
-{
-	return vk::chooseDevice(vki, instance, cmdLine);
-}
-
-vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface& vki, vk::VkInstance instance, const DeviceId& deviceId)
-{
-	const std::vector<vk::VkPhysicalDevice> devices (vk::enumeratePhysicalDevices(vki, instance));
-
-	for (size_t deviceNdx = 0; deviceNdx < devices.size(); deviceNdx++)
-	{
-		if (deviceId == getDeviceId(vki, devices[deviceNdx]))
-			return devices[deviceNdx];
-	}
-
-	TCU_FAIL("No matching device found");
-
-	return (vk::VkPhysicalDevice)0;
-}
-
-vk::Move<vk::VkDevice> createDevice (const Context&		context,
-									 const vk::PlatformInterface&					vkp,
-									 vk::VkInstance									instance,
-									 const vk::InstanceInterface&					vki,
-									 const vk::VkPhysicalDevice						physicalDevice)
-{
+	const bool										validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
 	const float										priority				= 0.0f;
 	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
@@ -470,7 +373,7 @@ vk::Move<vk::VkDevice> createDevice (const Context&		context,
 			0u
 		};
 
-		return vk::createDevice(vkp, instance, vki, physicalDevice, &createInfo);
+		return vkt::createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
 	}
 	catch (const vk::Error& error)
 	{
@@ -484,29 +387,49 @@ vk::Move<vk::VkDevice> createDevice (const Context&		context,
 // Class to wrap a singleton instance and device
 class InstanceAndDevice
 {
-	InstanceAndDevice	(const Context& context)
-		: m_instance		(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
-		, m_vki				(context.getPlatformInterface(), *m_instance)
-		, m_physicalDevice	(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
-		, m_logicalDevice	(createDevice(context, context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
+	InstanceAndDevice	(Context& context)
+		: m_instance		(createTestInstance(context))
+		, m_vki				(m_instance.getDriver())
+		, m_physicalDevice	(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+		, m_logicalDevice	(createTestDevice(context, context.getPlatformInterface(), m_instance, m_vki, m_physicalDevice))
 	{
 	}
 
 public:
 
-	static const vk::Unique<vk::VkInstance>& getInstanceA(const Context& context)
+	static vk::VkInstance getInstanceA(Context& context)
 	{
 		if (!m_instanceA)
 			m_instanceA = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
 
 		return m_instanceA->m_instance;
 	}
-	static const Unique<vk::VkInstance>& getInstanceB(const Context& context)
+	static vk::VkInstance getInstanceB(Context& context)
 	{
 		if (!m_instanceB)
 			m_instanceB = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
 
 		return m_instanceB->m_instance;
+	}
+	static const vk::InstanceDriver& getDriverA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_instance.getDriver();
+	}
+	static const vk::InstanceDriver& getDriverB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_instance.getDriver();
+	}
+	static vk::VkPhysicalDevice getPhysicalDeviceA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_physicalDevice;
+	}
+	static vk::VkPhysicalDevice getPhysicalDeviceB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_physicalDevice;
 	}
 	static const Unique<vk::VkDevice>& getDeviceA()
 	{
@@ -518,7 +441,16 @@ public:
 		DE_ASSERT(m_instanceB);
 		return m_instanceB->m_logicalDevice;
 	}
-
+	static void collectMessagesA()
+	{
+		DE_ASSERT(m_instanceA);
+		m_instanceA->m_instance.collectMessages();
+	}
+	static void collectMessagesB()
+	{
+		DE_ASSERT(m_instanceB);
+		m_instanceB->m_instance.collectMessages();
+	}
 	static void destroy()
 	{
 		m_instanceA.clear();
@@ -526,8 +458,8 @@ public:
 	}
 
 private:
-	const Unique<vk::VkInstance>	m_instance;
-	const vk::InstanceDriver		m_vki;
+	CustomInstance					m_instance;
+	const vk::InstanceDriver&		m_vki;
 	const vk::VkPhysicalDevice		m_physicalDevice;
 	const Unique<vk::VkDevice>		m_logicalDevice;
 
@@ -1051,27 +983,25 @@ private:
 	const de::UniquePtr<OperationSupport>				m_supportReadOp;
 	const NotSupportedChecker							m_notSupportedChecker; // Must declare before VkInstance to effectively reduce runtimes!
 
-	const vk::Unique<vk::VkInstance>&					m_instanceA;
+	const bool											m_getMemReq2Supported;
 
-	const vk::InstanceDriver							m_vkiA;
+	const vk::VkInstance								m_instanceA;
+	const vk::InstanceDriver&							m_vkiA;
 	const vk::VkPhysicalDevice							m_physicalDeviceA;
 	const std::vector<vk::VkQueueFamilyProperties>		m_queueFamiliesA;
 	const std::vector<deUint32>							m_queueFamilyIndicesA;
-
-	const bool											m_getMemReq2Supported;
-
 	const vk::Unique<vk::VkDevice>&						m_deviceA;
 	const vk::DeviceDriver								m_vkdA;
 
-	const vk::Unique<vk::VkInstance>&					m_instanceB;
-	const vk::InstanceDriver							m_vkiB;
+	const vk::VkInstance								m_instanceB;
+	const vk::InstanceDriver&							m_vkiB;
 	const vk::VkPhysicalDevice							m_physicalDeviceB;
 	const std::vector<vk::VkQueueFamilyProperties>		m_queueFamiliesB;
 	const std::vector<deUint32>							m_queueFamilyIndicesB;
 	const vk::Unique<vk::VkDevice>&						m_deviceB;
 	const vk::DeviceDriver								m_vkdB;
 
-	const vk::VkExternalSemaphoreHandleTypeFlagBits	m_semaphoreHandleType;
+	const vk::VkExternalSemaphoreHandleTypeFlagBits		m_semaphoreHandleType;
 	const vk::VkExternalMemoryHandleTypeFlagBits		m_memoryHandleType;
 
 	// \todo Should this be moved to the group same way as in the other tests?
@@ -1088,25 +1018,23 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_supportWriteOp			(makeOperationSupport(config.writeOp, config.resource))
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 	, m_notSupportedChecker		(context, m_config, *m_supportWriteOp, *m_supportReadOp)
+	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
 
 	, m_instanceA				(InstanceAndDevice::getInstanceA(context))
-
-	, m_vkiA					(context.getPlatformInterface(), *m_instanceA) // \todo [2017-06-13 pyry] Provide correct extension list
-	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
+	, m_vkiA					(InstanceAndDevice::getDriverA())
+	, m_physicalDeviceA			(InstanceAndDevice::getPhysicalDeviceA())
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
-	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
 	, m_deviceA					(InstanceAndDevice::getDeviceA())
-	, m_vkdA					(context.getPlatformInterface(), *m_instanceA, *m_deviceA)
+	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA)
 
 	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
-
-	, m_vkiB					(context.getPlatformInterface(), *m_instanceB) // \todo [2017-06-13 pyry] Provide correct extension list
-	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
+	, m_vkiB					(InstanceAndDevice::getDriverB())
+	, m_physicalDeviceB			(InstanceAndDevice::getPhysicalDeviceB())
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
 	, m_deviceB					(InstanceAndDevice::getDeviceB())
-	, m_vkdB					(context.getPlatformInterface(), *m_instanceB, *m_deviceB)
+	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
 	, m_memoryHandleType		(m_config.memoryHandleType)
@@ -1126,20 +1054,20 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		const deUint32							queueFamilyA		= (deUint32)m_queueANdx;
 		const deUint32							queueFamilyB		= (deUint32)m_queueBNdx;
 
-	const tcu::ScopedLogSection				queuePairSection	(log,
+		const tcu::ScopedLogSection				queuePairSection	(log,
 																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB),
 																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB));
 
-	const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphore(m_vkdA, *m_deviceA, m_semaphoreHandleType));
-	const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphore(m_vkdB, *m_deviceB));
+		const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphore(m_vkdA, *m_deviceA, m_semaphoreHandleType));
+		const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphore(m_vkdB, *m_deviceB));
 
-	deUint32								exportedMemoryTypeIndex = ~0U;
-	const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated, m_getMemReq2Supported));
+		deUint32								exportedMemoryTypeIndex = ~0U;
+		const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated, m_getMemReq2Supported));
 
-	NativeHandle							nativeMemoryHandle;
-	getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
+		NativeHandle							nativeMemoryHandle;
+		getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
 
-	const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated));
+		const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated));
 
 
 		const vk::VkQueue						queueA				(getQueue(m_vkdA, *m_deviceA, queueFamilyA));
@@ -1305,6 +1233,10 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 	{
 		m_resultCollector.fail(std::string("Exception: ") + error.getMessage());
 	}
+
+	// Collect possible validation errors.
+	InstanceAndDevice::collectMessagesA();
+	InstanceAndDevice::collectMessagesB();
 
 	// Move to next queue
 	{

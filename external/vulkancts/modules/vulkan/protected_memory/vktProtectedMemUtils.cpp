@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktProtectedMemUtils.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "deString.h"
 #include "deRandom.hpp"
@@ -49,35 +50,22 @@ namespace ProtectedMem
 
 typedef std::vector<vk::VkExtensionProperties> Extensions;
 
-vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& vkp, const vkt::Context& context, const std::vector<std::string>& extraExtensions)
+CustomInstance makeProtectedMemInstance (vkt::Context& context, const std::vector<std::string>& extraExtensions)
 {
+	const PlatformInterface&	vkp = context.getPlatformInterface();
 	const Extensions			supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, DE_NULL));
-	std::vector<std::string>	enabledLayers;
 	std::vector<std::string>	requiredExtensions = extraExtensions;
-	const bool					isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
-
-	if (isValidationEnabled)
-	{
-		if (!vk::isDebugReportSupported(vkp))
-			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
-
-		enabledLayers = vkt::getValidationLayers(vkp);
-		if (enabledLayers.empty())
-			TCU_THROW(NotSupportedError, "No validation layers found");
-	}
 
 	if (!isCoreInstanceExtension(context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"))
 		requiredExtensions.push_back("VK_KHR_get_physical_device_properties2");
 
-	for (std::vector<std::string>::const_iterator requiredExtName = requiredExtensions.begin();
-		requiredExtName != requiredExtensions.end();
-		++requiredExtName)
+	for (const auto& extName : requiredExtensions)
 	{
-		if (!isInstanceExtensionSupported(context.getUsedApiVersion(), supportedExtensions, vk::RequiredExtension(*requiredExtName)))
-			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
+		if (!isInstanceExtensionSupported(context.getUsedApiVersion(), supportedExtensions, vk::RequiredExtension(extName)))
+			TCU_THROW(NotSupportedError, (extName + " is not supported").c_str());
 	}
 
-	return vk::createDefaultInstance(vkp, context.getUsedApiVersion(), enabledLayers, requiredExtensions);
+	return createCustomInstanceWithExtensions(context, requiredExtensions);
 }
 
 void checkProtectedQueueSupport (Context& context)
@@ -145,7 +133,8 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 												 vk::VkPhysicalDevice				physicalDevice,
 												 const deUint32						queueFamilyIndex,
 												 const deUint32						apiVersion,
-												 const std::vector<std::string>&	extraExtensions)
+												 const std::vector<std::string>&	extraExtensions,
+												 bool								validationEnabled)
 {
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
 	std::vector<std::string>			requiredExtensions;
@@ -236,7 +225,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 		DE_NULL															// pEnabledFeatures
 	};
 
-	return vk::createDevice(vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
+	return createCustomDevice(validationEnabled, vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
 }
 
 vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,

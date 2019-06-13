@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRobustnessUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkDefs.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
@@ -31,6 +32,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "tcuCommandLine.hpp"
 #include "deMath.h"
 #include <iomanip>
 #include <limits>
@@ -48,7 +50,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context)
 	const float queuePriority = 1.0f;
 
 	// Create a universal queue that supports graphics and compute
-	const VkDeviceQueueCreateInfo queueParams =
+	const VkDeviceQueueCreateInfo	queueParams =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
 		DE_NULL,									// const void*					pNext;
@@ -61,7 +63,7 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context)
 	VkPhysicalDeviceFeatures enabledFeatures = context.getDeviceFeatures();
 	enabledFeatures.robustBufferAccess = true;
 
-	const VkDeviceCreateInfo deviceParams =
+	const VkDeviceCreateInfo		deviceParams =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
 		DE_NULL,								// const void*						pNext;
@@ -75,8 +77,8 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context)
 		&enabledFeatures						// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return createDevice(context.getPlatformInterface(), context.getInstance(),
-						context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
+	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
+							  context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
 }
 
 bool areEqual (float a, float b)

@@ -34,9 +34,11 @@
 #include "vktSynchronizationOperationTestData.hpp"
 #include "vktExternalMemoryUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 
 #if (DE_OS == DE_OS_WIN32)
 #	define WIN32_LEAN_AND_MEAN
@@ -144,40 +146,23 @@ SimpleAllocation::~SimpleAllocation (void)
 	m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
 }
 
-vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp, deUint32 version)
+CustomInstance createTestInstance (Context& context)
 {
-	try
-	{
-		std::vector<std::string> extensions;
-		if (!isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
-			extensions.push_back("VK_KHR_get_physical_device_properties2");
-		if (!isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
-			extensions.push_back("VK_KHR_external_memory_capabilities");
+	std::vector<std::string> extensions;
+	extensions.push_back("VK_KHR_get_physical_device_properties2");
+	extensions.push_back("VK_KHR_external_memory_capabilities");
 
-		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), extensions);
-	}
-	catch (const vk::Error& error)
-	{
-		if (error.getError() == vk::VK_ERROR_EXTENSION_NOT_PRESENT)
-			TCU_THROW(NotSupportedError, "Required external memory extensions not supported by the instance");
-		else
-			throw;
-	}
+	return createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface&	vki,
-										vk::VkInstance					instance,
-										const tcu::CommandLine&			cmdLine)
+vk::Move<vk::VkDevice> createTestDevice (Context&						context,
+										 vk::VkInstance					instance,
+										 const vk::InstanceInterface&	vki,
+										 vk::VkPhysicalDevice			physicalDevice)
 {
-	return vk::chooseDevice(vki, instance, cmdLine);
-}
-
-vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
-									 const vk::PlatformInterface&					vkp,
-									 vk::VkInstance									instance,
-									 const vk::InstanceInterface&					vki,
-									 vk::VkPhysicalDevice							physicalDevice)
-{
+	const bool										validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
+	const deUint32									apiVersion				= context.getUsedApiVersion();
+	const vk::PlatformInterface&					vkp						= context.getPlatformInterface();
 	const float										priority				= 0.0f;
 	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
@@ -230,7 +215,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			0u
 		};
 
-		return vk::createDevice(vkp, instance, vki, physicalDevice, &createInfo);
+		return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &createInfo);
 	}
 	catch (const vk::Error& error)
 	{
@@ -1435,23 +1420,33 @@ private:
 // Class to wrap a singleton instance and device
 class InstanceAndDevice
 {
-	InstanceAndDevice	(const Context& context)
-		: m_instance		(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
-		, m_vki				(context.getPlatformInterface(), *m_instance)
-		, m_physicalDevice	(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
-		, m_logicalDevice	(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
+	InstanceAndDevice	(Context& context)
+		: m_instance		(createTestInstance(context))
+		, m_vki				(m_instance.getDriver())
+		, m_physicalDevice	(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+		, m_logicalDevice	(createTestDevice(context, m_instance, m_vki, m_physicalDevice))
 		, m_supportDX11		(new DX11OperationSupport(m_vki, m_physicalDevice))
 	{
 	}
 
 public:
 
-	static const vk::Unique<vk::VkInstance>& getInstance(const Context& context)
+	static vk::VkInstance getInstance(Context& context)
 	{
 		if (!m_instanceAndDevice)
 			m_instanceAndDevice = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
 
 		return m_instanceAndDevice->m_instance;
+	}
+	static const vk::InstanceDriver& getDriver()
+	{
+		DE_ASSERT(m_instanceAndDevice);
+		return m_instanceAndDevice->m_instance.getDriver();
+	}
+	static vk::VkPhysicalDevice getPhysicalDevice()
+	{
+		DE_ASSERT(m_instanceAndDevice);
+		return m_instanceAndDevice->m_physicalDevice;
 	}
 	static const Unique<vk::VkDevice>& getDevice()
 	{
@@ -1463,6 +1458,11 @@ public:
 		DE_ASSERT(m_instanceAndDevice);
 		return m_instanceAndDevice->m_supportDX11;
 	}
+	static void collectMessages()
+	{
+		DE_ASSERT(m_instanceAndDevice);
+		m_instanceAndDevice->m_instance.collectMessages();
+	}
 
 	static void destroy()
 	{
@@ -1470,8 +1470,8 @@ public:
 	}
 
 private:
-	const Unique<vk::VkInstance>				m_instance;
-	const vk::InstanceDriver					m_vki;
+	CustomInstance								m_instance;
+	const vk::InstanceDriver&					m_vki;
 	const vk::VkPhysicalDevice					m_physicalDevice;
 	const Unique<vk::VkDevice>					m_logicalDevice;
 	const de::UniquePtr<DX11OperationSupport>	m_supportDX11;
@@ -1494,9 +1494,9 @@ private:
 	const de::UniquePtr<OperationSupport>				m_supportWriteOp;
 	const de::UniquePtr<OperationSupport>				m_supportReadOp;
 
-	const vk::Unique<vk::VkInstance>&					m_instance;
+	const vk::VkInstance								m_instance;
 
-	const vk::InstanceDriver							m_vki;
+	const vk::InstanceDriver&							m_vki;
 	const vk::VkPhysicalDevice							m_physicalDevice;
 	const std::vector<vk::VkQueueFamilyProperties>		m_queueFamilies;
 	const std::vector<deUint32>							m_queueFamilyIndices;
@@ -1522,12 +1522,12 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 
 	, m_instance				(InstanceAndDevice::getInstance(context))
 
-	, m_vki						(context.getPlatformInterface(), *m_instance)
-	, m_physicalDevice			(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
+	, m_vki						(InstanceAndDevice::getDriver())
+	, m_physicalDevice			(InstanceAndDevice::getPhysicalDevice())
 	, m_queueFamilies			(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
 	, m_queueFamilyIndices		(getFamilyIndices(m_queueFamilies))
 	, m_device					(InstanceAndDevice::getDevice())
-	, m_vkd						(context.getPlatformInterface(), *m_instance, *m_device)
+	, m_vkd						(context.getPlatformInterface(), m_instance, *m_device)
 
 	, m_memoryHandleType		((m_config.resource.type == RESOURCE_TYPE_IMAGE) ? m_config.memoryHandleTypeImage : m_config.memoryHandleTypeBuffer)
 
@@ -1815,6 +1815,9 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 	{
 		m_resultCollector.fail(std::string("Exception: ") + error.getMessage());
 	}
+
+	// Collect possible validation errors.
+	InstanceAndDevice::collectMessages();
 
 	// Move to next queue
 	{
