@@ -25,6 +25,7 @@
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
@@ -47,6 +48,7 @@
 #include "tcuFormatUtil.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -89,11 +91,10 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 	}
 }
 
-Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
-										deUint32						version,
-										const Extensions&				supportedExtensions,
-										Type							wsiType,
-										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
+CustomInstance createInstanceWithWsi (Context&						context,
+									  const Extensions&				supportedExtensions,
+									  Type							wsiType,
+									  const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
 	vector<string>	extensions;
 
@@ -115,7 +116,7 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return createDefaultInstance(vkp, version, vector<string>(), extensions, pAllocator);
+	return createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
 
 VkPhysicalDeviceFeatures getDeviceFeaturesForWsi (void)
@@ -131,7 +132,8 @@ Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
 									VkPhysicalDevice				physicalDevice,
 									const Extensions&				supportedExtensions,
 									const deUint32					queueFamilyIndex,
-									const VkAllocationCallbacks*	pAllocator = DE_NULL)
+									const VkAllocationCallbacks*	pAllocator,
+									bool							validationEnabled)
 {
 	const float						queuePriorities[]	= { 1.0f };
 	const VkDeviceQueueCreateInfo	queueInfos[]		=
@@ -155,7 +157,7 @@ Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
 	if (isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_hdr_metadata")))
 		extensions.push_back("VK_EXT_hdr_metadata");
 
-	const VkDeviceCreateInfo		deviceParams	=
+	VkDeviceCreateInfo		deviceParams	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		DE_NULL,
@@ -169,7 +171,7 @@ Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
 		&features
 	};
 
-	return createDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 deUint32 getNumQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
@@ -208,18 +210,17 @@ deUint32 chooseQueueFamilyIndex (const InstanceInterface& vki, VkPhysicalDevice 
 struct InstanceHelper
 {
 	const vector<VkExtensionProperties>	supportedExtensions;
-	const Unique<VkInstance>			instance;
-	const InstanceDriver				vki;
+	const CustomInstance				instance;
+	const InstanceDriver&				vki;
 
 	InstanceHelper (Context& context, Type wsiType, const VkAllocationCallbacks* pAllocator = DE_NULL)
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
-		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
-													   context.getUsedApiVersion(),
+		, instance				(createInstanceWithWsi(context,
 													   supportedExtensions,
 													   wsiType,
 													   pAllocator))
-		, vki					(context.getPlatformInterface(), *instance)
+		, vki					(instance.getDriver())
 	{}
 };
 
@@ -244,7 +245,8 @@ struct DeviceHelper
 												 physicalDevice,
 												 enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
 												 queueFamilyIndex,
-												 pAllocator))
+												 pAllocator,
+												 context.getTestContext().getCommandLine().isValidationEnabled()))
 		, vkd				(context.getPlatformInterface(), instance, *device)
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
@@ -797,8 +799,8 @@ tcu::TestStatus basicExtensionTest (Context& context, Type wsiType)
 	const tcu::UVec2				desiredSize		(256, 256);
 	const InstanceHelper			instHelper		(context, wsiType);
 	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
-	const DeviceHelper				devHelper		(context, instHelper.vki, *instHelper.instance, *surface);
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper				devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 
 	if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_EXT_swapchain_colorspace"))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
@@ -831,7 +833,7 @@ tcu::TestStatus surfaceFormatRenderTest (Context& context,
 {
 	const tcu::UVec2					desiredSize		(256, 256);
 	const InstanceHelper				instHelper		(context, wsiType);
-	const DeviceHelper					devHelper		(context, instHelper.vki, *instHelper.instance, surface);
+	const DeviceHelper					devHelper		(context, instHelper.vki, instHelper.instance, surface);
 	const DeviceInterface&				vkd				= devHelper.vkd;
 	const VkDevice						device			= *devHelper.device;
 	SimpleAllocator						allocator		(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -971,8 +973,8 @@ tcu::TestStatus surfaceFormatRenderTests (Context& context, Type wsiType)
 	const tcu::UVec2					desiredSize		(256, 256);
 	const InstanceHelper				instHelper		(context, wsiType);
 	const NativeObjects					native			(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
-	const DeviceHelper					devHelper		(context, instHelper.vki, *instHelper.instance, *surface);
+	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper					devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 
 	if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_EXT_swapchain_colorspace"))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");
@@ -992,8 +994,8 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 	const tcu::UVec2					desiredSize		(256, 256);
 	const InstanceHelper				instHelper		(context, wsiType);
 	const NativeObjects					native			(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
-	const DeviceHelper					devHelper		(context, instHelper.vki, *instHelper.instance, *surface);
+	const Unique<VkSurfaceKHR>			surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const DeviceHelper					devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 
 	if (!de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_EXT_swapchain_colorspace"))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_swapchain_colorspace not supported");

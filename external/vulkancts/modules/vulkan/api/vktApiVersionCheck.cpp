@@ -31,6 +31,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuFunctionLibrary.hpp"
 #include "tcuPlatform.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkApiVersion.hpp"
 #include "vkDefs.hpp"
@@ -38,6 +39,7 @@
 
 #include "vktApiVersionCheck.hpp"
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -114,6 +116,14 @@ private:
 class APIEntryPointsTestInstance : public TestInstance
 {
 public:
+	struct APIContext
+	{
+		VkInstance				instance;
+		VkDevice				device;
+		GetInstanceProcAddrFunc	getInstanceProcAddr;
+		GetDeviceProcAddrFunc	getDeviceProcAddr;
+	};
+
 								APIEntryPointsTestInstance	(Context&				ctx)
 									: TestInstance	(ctx)
 	{
@@ -131,10 +141,11 @@ public:
 
 		// Tests with default instance and device without extensions
 		{
-			instance			= createDefaultInstance(m_context.getPlatformInterface(), m_context.getUsedApiVersion());
-			device				= createTestDevice(m_context.getPlatformInterface(), m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-			getInstanceProcAddr	= reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
-			getDeviceProcAddr	= reinterpret_cast<GetDeviceProcAddrFunc>(getInstanceProcAddr(*instance, "vkGetDeviceProcAddr"));
+			CustomInstance			instance			= createCustomInstanceFromContext(m_context, DE_NULL, false);
+			Move<VkDevice>			device				= createTestDevice(m_context, instance, vector<string>(), false);
+			GetInstanceProcAddrFunc	getInstanceProcAddr	= reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
+			GetDeviceProcAddrFunc	getDeviceProcAddr	= reinterpret_cast<GetDeviceProcAddrFunc>(getInstanceProcAddr(instance, "vkGetDeviceProcAddr"));
+			APIContext				ctx					= { instance, *device, getInstanceProcAddr, getDeviceProcAddr };
 
 			// Check entry points of core functions
 			{
@@ -149,11 +160,11 @@ public:
 				}
 
 				log << tcu::TestLog::Message << "Regular check - tries to get core functions from proper vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char* const				regularResult		= regularCheck(log, failsQuantity, lastGoodVersion->second) ? "Passed" : "Failed";
+				const char* const				regularResult		= regularCheck(ctx, log, failsQuantity, lastGoodVersion->second) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << regularResult << tcu::TestLog::EndMessage;
 
 				log << tcu::TestLog::Message << "Cross check - tries to get core functions from improper vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char* const				mixupResult			= mixupAddressProcCheck(log, failsQuantity, lastGoodVersion->second) ? "Passed" : "Failed";
+				const char* const				mixupResult			= mixupAddressProcCheck(ctx, log, failsQuantity, lastGoodVersion->second) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << mixupResult << tcu::TestLog::EndMessage;
 			}
 
@@ -172,7 +183,7 @@ public:
 				extFunctions.push_back(FunctionInfo("vkGetImageMemoryRequirements2KHR", FUNCTIONORIGIN_DEVICE));
 
 				log << tcu::TestLog::Message << "Disabled extensions check - tries to get functions of disabled extensions from proper vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char * const				result				= specialCasesCheck(log, failsQuantity, extFunctions) ? "Passed" : "Failed";
+				const char * const				result				= specialCasesCheck(ctx, log, failsQuantity, extFunctions) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << result << tcu::TestLog::EndMessage;
 			}
 
@@ -188,17 +199,18 @@ public:
 				}
 
 				log << tcu::TestLog::Message << "Special check - tries to get some dummy functions from various vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char * const				result				= specialCasesCheck(log, failsQuantity, dummyFunctions) ? "Passed" : "Failed";
+				const char * const				result				= specialCasesCheck(ctx, log, failsQuantity, dummyFunctions) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << result << tcu::TestLog::EndMessage;
 			}
 		}
 
 		// Tests with instance and device with extensions
 		{
-			instance			= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), getSupportedInstanceExtensions(apiVersion));
-			device				= createTestDevice(m_context.getPlatformInterface(), m_context.getInstanceInterface(), m_context.getPhysicalDevice(), getSupportedDeviceExtensions(apiVersion));
-			getInstanceProcAddr	= reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
-			getDeviceProcAddr	= reinterpret_cast<GetDeviceProcAddrFunc>(getInstanceProcAddr(*instance, "vkGetDeviceProcAddr"));
+			CustomInstance			instance			= createCustomInstanceWithExtensions(m_context, getSupportedInstanceExtensions(apiVersion), DE_NULL, false);
+			Move<VkDevice>			device				= createTestDevice(m_context, instance, getSupportedDeviceExtensions(apiVersion), false);
+			GetInstanceProcAddrFunc	getInstanceProcAddr	= reinterpret_cast<GetInstanceProcAddrFunc>(funcLibrary.getFunction("vkGetInstanceProcAddr"));
+			GetDeviceProcAddrFunc	getDeviceProcAddr	= reinterpret_cast<GetDeviceProcAddrFunc>(getInstanceProcAddr(instance, "vkGetDeviceProcAddr"));
+			APIContext				ctx					= { instance, *device, getInstanceProcAddr, getDeviceProcAddr };
 
 			// Check function entry points of enabled extensions
 			{
@@ -229,7 +241,7 @@ public:
 				}
 
 				log << tcu::TestLog::Message << "Enabled extensions check - tries to get functions of supported extensions from proper vkGet*ProcAddr." << tcu::TestLog::EndMessage;
-				const char * const		result = regularCheck(log, failsQuantity, extFunctions) ? "Passed" : "Failed";
+				const char * const		result = regularCheck(ctx, log, failsQuantity, extFunctions) ? "Passed" : "Failed";
 				log << tcu::TestLog::Message << result << tcu::TestLog::EndMessage;
 			}
 		}
@@ -241,11 +253,6 @@ public:
 	}
 
 private:
-
-	GetDeviceProcAddrFunc	getDeviceProcAddr;
-	GetInstanceProcAddrFunc	getInstanceProcAddr;
-	Move<VkInstance>		instance;
-	Move<VkDevice>			device;
 
 	deUint32 findQueueFamilyIndex(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
 	{
@@ -314,8 +321,12 @@ private:
 		return filterMultiAuthorExtensions(supportedExtensions);
 	}
 
-	Move<VkDevice> createTestDevice (const PlatformInterface& vkp, const InstanceInterface& vki, VkPhysicalDevice physicalDevice, vector<string> extensions = vector<string>())
+	Move<VkDevice> createTestDevice (const Context& context, VkInstance instance, vector<string> extensions = vector<string>(), bool allowLayers = true)
 	{
+		auto&						cmdLine			= context.getTestContext().getCommandLine();
+		const PlatformInterface&	vkp				= context.getPlatformInterface();
+		const InstanceInterface&	vki				= context.getInstanceInterface();
+		VkPhysicalDevice			physicalDevice	= chooseDevice(context.getInstanceInterface(), instance, cmdLine);
 		vector<const char*>			extensionPtrs;
 		const float					queuePriority	= 1.0f;
 		const deUint32				queueIndex		= findQueueFamilyIndex(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
@@ -331,7 +342,8 @@ private:
 			1u,
 			&queuePriority
 		};
-		VkDeviceCreateInfo			deviceInfo		= {
+
+		const VkDeviceCreateInfo	deviceInfo		= {
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			DE_NULL,
 			static_cast<VkDeviceCreateFlags>(0u),
@@ -344,7 +356,8 @@ private:
 			DE_NULL,
 		};
 
-		return vk::createDevice(vkp, *instance, vki, physicalDevice, &deviceInfo);
+		const bool					validationEnabled = (cmdLine.isValidationEnabled() && allowLayers);
+		return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceInfo);
 	}
 
 	void reportFail (tcu::TestLog& log, const char* const functionName, const char* const firstParamName, const char* const secondParamName, deBool shouldBeNonNull, deUint32& failsQuantity)
@@ -356,21 +369,21 @@ private:
 		++failsQuantity;
 	}
 
-	void checkPlatformFunction (tcu::TestLog& log, const char* const name, deBool shouldBeNonNull, deUint32& failsQuantity)
+	void checkPlatformFunction (const APIContext& ctx, tcu::TestLog& log, const char* const name, deBool shouldBeNonNull, deUint32& failsQuantity)
 	{
-		if ((getInstanceProcAddr(DE_NULL, name) == DE_NULL) == shouldBeNonNull)
+		if ((ctx.getInstanceProcAddr(DE_NULL, name) == DE_NULL) == shouldBeNonNull)
 			reportFail(log, "vkGetInstanceProcAddr", "DE_NULL", name, shouldBeNonNull, failsQuantity);
 	}
 
-	void checkInstanceFunction (tcu::TestLog& log, const char* const name, deBool shouldBeNonNull, deUint32& failsQuantity)
+	void checkInstanceFunction (const APIContext& ctx, tcu::TestLog& log, const char* const name, deBool shouldBeNonNull, deUint32& failsQuantity)
 	{
-		if ((getInstanceProcAddr(*instance, name) == DE_NULL) == shouldBeNonNull)
+		if ((ctx.getInstanceProcAddr(ctx.instance, name) == DE_NULL) == shouldBeNonNull)
 			reportFail(log, "vkGetInstanceProcAddr", "instance", name, shouldBeNonNull, failsQuantity);
 	}
 
-	void checkDeviceFunction (tcu::TestLog& log, const char* const name, deBool shouldBeNonNull, deUint32& failsQuantity)
+	void checkDeviceFunction (const APIContext& ctx, tcu::TestLog& log, const char* const name, deBool shouldBeNonNull, deUint32& failsQuantity)
 	{
-		if ((getDeviceProcAddr(*device, name) == DE_NULL) == shouldBeNonNull)
+		if ((ctx.getDeviceProcAddr(ctx.device, name) == DE_NULL) == shouldBeNonNull)
 			reportFail(log, "vkGetDeviceProcAddr", "device", name, shouldBeNonNull, failsQuantity);
 	}
 
@@ -388,7 +401,7 @@ private:
 		return de::contains(supportedDeviceExtensions.begin(), supportedDeviceExtensions.end(), extName);
 	}
 
-	deBool mixupAddressProcCheck (tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
+	deBool mixupAddressProcCheck (const APIContext& ctx, tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
 	{
 		const deUint32 startingQuantity = failsQuantity;
 		for (deUint32 ndx = 0u; ndx < testsArr.size(); ++ndx)
@@ -400,32 +413,32 @@ private:
 			const deUint32 functionType = testsArr[ndx].second;
 			if (functionType == FUNCTIONORIGIN_INSTANCE)
 			{
-				checkPlatformFunction(log, functionName, DE_FALSE, failsQuantity);
-				checkDeviceFunction(log, functionName, DE_FALSE, failsQuantity);
+				checkPlatformFunction(ctx, log, functionName, DE_FALSE, failsQuantity);
+				checkDeviceFunction(ctx, log, functionName, DE_FALSE, failsQuantity);
 			}
 			else if (functionType == FUNCTIONORIGIN_DEVICE)
-				checkPlatformFunction(log, functionName, DE_FALSE, failsQuantity);
+				checkPlatformFunction(ctx, log, functionName, DE_FALSE, failsQuantity);
 		}
 		return startingQuantity == failsQuantity;
 	}
 
-	deBool specialCasesCheck (tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
+	deBool specialCasesCheck (const APIContext& ctx, tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
 	{
 		const deUint32 startingQuantity = failsQuantity;
 		for (deUint32 ndx = 0u; ndx < testsArr.size(); ++ndx)
 		{
 			const deUint32 functionType = testsArr[ndx].second;
 			if (functionType == FUNCTIONORIGIN_PLATFORM)
-				checkPlatformFunction(log, testsArr[ndx].first, DE_FALSE, failsQuantity);
+				checkPlatformFunction(ctx, log, testsArr[ndx].first, DE_FALSE, failsQuantity);
 			else if (functionType == FUNCTIONORIGIN_INSTANCE)
-				checkInstanceFunction(log, testsArr[ndx].first, DE_FALSE, failsQuantity);
+				checkInstanceFunction(ctx, log, testsArr[ndx].first, DE_FALSE, failsQuantity);
 			else if (functionType == FUNCTIONORIGIN_DEVICE)
-				checkDeviceFunction(log, testsArr[ndx].first, DE_FALSE, failsQuantity);
+				checkDeviceFunction(ctx, log, testsArr[ndx].first, DE_FALSE, failsQuantity);
 		}
 		return startingQuantity == failsQuantity;
 	}
 
-	deBool regularCheck (tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
+	deBool regularCheck (const APIContext& ctx, tcu::TestLog& log, deUint32& failsQuantity, const vector<pair<const char*, FunctionOrigin> >& testsArr)
 	{
 		const deUint32 startingQuantity = failsQuantity;
 		for (deUint32 ndx = 0u; ndx < testsArr.size(); ++ndx)
@@ -435,11 +448,11 @@ private:
 
 			const deUint32 functionType	= testsArr[ndx].second;
 			if (functionType == FUNCTIONORIGIN_PLATFORM)
-				checkPlatformFunction(log, testsArr[ndx].first, DE_TRUE, failsQuantity);
+				checkPlatformFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
 			else if (functionType == FUNCTIONORIGIN_INSTANCE)
-				checkInstanceFunction(log, testsArr[ndx].first, DE_TRUE, failsQuantity);
+				checkInstanceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
 			else if (functionType == FUNCTIONORIGIN_DEVICE)
-				checkDeviceFunction(log, testsArr[ndx].first, DE_TRUE, failsQuantity);
+				checkDeviceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
 		}
 		return startingQuantity == failsQuantity;
 	}

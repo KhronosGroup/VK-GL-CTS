@@ -21,10 +21,12 @@
  * \brief Instance and device initialization utilities.
  *//*--------------------------------------------------------------------*/
 
+#include "deSTLUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkApiVersion.hpp"
+#include "vkDebugReportUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 
@@ -42,8 +44,27 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 										const vector<string>&			enabledExtensions,
 										const VkAllocationCallbacks*	pAllocator)
 {
+	bool			validationEnabled	= (!enabledLayers.empty());
+	vector<string>	actualExtensions	= enabledExtensions;
+
+	if (validationEnabled)
+	{
+		// Make sure the debug report extension is enabled when validation is enabled.
+		if (!isDebugReportSupported(vkPlatform))
+			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
+
+		if (!de::contains(begin(actualExtensions), end(actualExtensions), "VK_EXT_debug_report"))
+			actualExtensions.push_back("VK_EXT_debug_report");
+	}
+
 	vector<const char*>		layerNamePtrs		(enabledLayers.size());
-	vector<const char*>		extensionNamePtrs	(enabledExtensions.size());
+	vector<const char*>		extensionNamePtrs	(actualExtensions.size());
+
+	for (size_t ndx = 0; ndx < enabledLayers.size(); ++ndx)
+		layerNamePtrs[ndx] = enabledLayers[ndx].c_str();
+
+	for (size_t ndx = 0; ndx < actualExtensions.size(); ++ndx)
+		extensionNamePtrs[ndx] = actualExtensions[ndx].c_str();
 
 	const struct VkApplicationInfo		appInfo			=
 	{
@@ -62,16 +83,10 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 		(VkInstanceCreateFlags)0,
 		&appInfo,
 		(deUint32)layerNamePtrs.size(),
-		layerNamePtrs.empty() ? DE_NULL : &layerNamePtrs[0],
+		(validationEnabled ? layerNamePtrs.data() : DE_NULL),
 		(deUint32)extensionNamePtrs.size(),
-		extensionNamePtrs.empty() ? DE_NULL : &extensionNamePtrs[0],
+		(extensionNamePtrs.empty() ? DE_NULL : extensionNamePtrs.data()),
 	};
-
-	for (size_t ndx = 0; ndx < enabledLayers.size(); ++ndx)
-		layerNamePtrs[ndx] = enabledLayers[ndx].c_str();
-
-	for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
-		extensionNamePtrs[ndx] = enabledExtensions[ndx].c_str();
 
 	return createInstance(vkPlatform, &instanceInfo, pAllocator);
 }
@@ -79,31 +94,6 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface&		vkPlatform,
 Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform, deUint32 apiVersion)
 {
 	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), DE_NULL);
-}
-
-Move<VkInstance> createInstanceWithExtensions (const PlatformInterface&			vkp,
-											   const deUint32					version,
-											   const std::vector<std::string>	requiredExtensions)
-{
-	std::vector<std::string>					extensionPtrs;
-	const std::vector<VkExtensionProperties>	availableExtensions	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
-	for (size_t extensionID = 0; extensionID < requiredExtensions.size(); extensionID++)
-	{
-		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(requiredExtensions[extensionID])))
-			TCU_THROW(NotSupportedError, (requiredExtensions[extensionID] + " is not supported").c_str());
-
-		if (!isCoreInstanceExtension(version, requiredExtensions[extensionID]))
-			extensionPtrs.push_back(requiredExtensions[extensionID]);
-	}
-
-	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, extensionPtrs, DE_NULL);
-}
-
-Move<VkInstance> createInstanceWithExtension (const PlatformInterface&	vkp,
-											  const deUint32			version,
-											  const std::string			requiredExtension)
-{
-	return createInstanceWithExtensions(vkp, version, std::vector<std::string>(1, requiredExtension));
 }
 
 deUint32 chooseDeviceIndex (const InstanceInterface& vkInstance, const VkInstance instance, const tcu::CommandLine& cmdLine)

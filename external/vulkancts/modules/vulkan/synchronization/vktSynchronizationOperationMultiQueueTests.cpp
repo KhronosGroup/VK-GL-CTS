@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSynchronizationOperationMultiQueueTests.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -42,6 +43,7 @@
 #include "vktSynchronizationOperationTestData.hpp"
 #include "vktSynchronizationOperationResources.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "tcuCommandLine.hpp"
 
 #include <set>
 
@@ -158,7 +160,7 @@ class MultiQueues
 			if (timelineSemaphore && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
 				TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
-			m_logicalDevice	= createDevice(context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
+			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
 			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
 			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 

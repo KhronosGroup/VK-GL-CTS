@@ -26,6 +26,7 @@
 
 #include "deUniquePtr.hpp"
 #include "vktTestCase.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vkDefs.hpp"
 #include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -57,8 +58,7 @@ typedef std::vector<vk::VkVertexInputAttributeDescription>	VertexAttribs;
 
 void								checkProtectedQueueSupport			(Context& context);
 
-vk::Move<vk::VkInstance>			makeProtectedMemInstance			(const vk::PlatformInterface&		vkp,
-																		 const vkt::Context&				context,
+CustomInstance						makeProtectedMemInstance			(vkt::Context&						context,
 																		 const std::vector<std::string>&	extraExtensions = std::vector<std::string>());
 deUint32							chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&			vkd,
 																		 vk::VkPhysicalDevice				physicalDevice,
@@ -70,7 +70,8 @@ vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::PlatformInterface
 																		 vk::VkPhysicalDevice				physicalDevice,
 																		 const deUint32						queueFamilyIndex,
 																		 const deUint32						apiVersion,
-																		 const std::vector<std::string>&	extraExtensions = std::vector<std::string>());
+																		 const std::vector<std::string>&	extraExtensions,
+																		 bool								validationEnabled);
 vk::VkQueue							getProtectedQueue					(const vk::DeviceInterface&			vk,
 																		 vk::VkDevice						device,
 																		 const deUint32						queueFamilyIndex,
