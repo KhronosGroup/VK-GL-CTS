@@ -921,19 +921,16 @@ struct EvalContext
 	EvalContext (const FloatFormat&	format_,
 				 Precision			floatPrecision_,
 				 Environment&		env_,
-				 int				callDepth_,
-				 bool				isShaderFloat16Int8_ = false)
+				 int				callDepth_)
 		: format				(format_)
 		, floatPrecision		(floatPrecision_)
 		, env					(env_)
-		, callDepth				(callDepth_)
-		, isShaderFloat16Int8	(isShaderFloat16Int8_) {}
+		, callDepth				(callDepth_) {}
 
 	FloatFormat		format;
 	Precision		floatPrecision;
 	Environment&	env;
 	int				callDepth;
-	bool			isShaderFloat16Int8;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -1863,7 +1860,7 @@ protected:
 		funEnv.bind(*m_var3, args.d);
 
 		{
-			EvalContext	funCtx(ctx.format, ctx.floatPrecision, funEnv, ctx.callDepth, ctx.isShaderFloat16Int8);
+			EvalContext	funCtx(ctx.format, ctx.floatPrecision, funEnv, ctx.callDepth);
 
 			for (size_t ndx = 0; ndx < m_body.size(); ++ndx)
 				m_body[ndx]->execute(funCtx);
@@ -2575,8 +2572,7 @@ double ExpFunc <Signature<float, float> >::precision (const EvalContext& ctx, do
 		return ctx.format.ulp(ret, 3.0 + 2.0 * deAbs(x));
 	case glu::PRECISION_MEDIUMP:
 	case glu::PRECISION_LAST:
-		return ctx.isShaderFloat16Int8 ?	ctx.format.ulp(ret, 1.0 + 2.0 * deAbs(x)) :
-											ctx.format.ulp(ret, 2.0 + 2.0 * deAbs(x));
+		return ctx.format.ulp(ret, 1.0 + 2.0 * deAbs(x));
 	default:
 		DE_FATAL("Impossible");
 	}
@@ -2964,7 +2960,7 @@ protected:
 		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 			return ctx.format.ulp(ret, 4096.0);
 		else
-			return ctx.format.ulp(ret, ctx.isShaderFloat16Int8 ? 5.0 : 2.0);
+			return ctx.format.ulp(ret, 5.0);
 	}
 };
 
@@ -5635,7 +5631,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 		env.lookup(*m_variables.in3) = convert<In3>(fmt, round(fmt, inputs.in3[valueNdx]));
 
 		{
-			EvalContext	ctx (fmt, m_caseCtx.precision, env, 0, m_context.getShaderFloat16Int8Features().shaderFloat16 != 0u);
+			EvalContext	ctx (fmt, m_caseCtx.precision, env, 0);
 			m_stmt->execute(ctx);
 
 		switch (outCount)
