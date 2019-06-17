@@ -536,9 +536,9 @@ VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const VkExtent2D s
 }
 
 std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageInfos (const VkExtent2D&			renderSize,
-																					  const VkFormat			colorFormat,
+																					  const VkFormat*			colorFormat,
 																					  const VkImageUsageFlags	colorUsage,
-																					  const VkFormat			dsFormat,
+																					  const VkFormat*			dsFormat,
 																					  const VkImageUsageFlags	dsUsage,
 																					  const AspectFlags			resolveAspects,
 																					  const deUint32			inputAttachmentCount)
@@ -547,7 +547,10 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 	const bool											depthStencilResolve				= (resolveAspects & ASPECT_DEPTH_STENCIL) != 0;
 	std::vector<VkFramebufferAttachmentImageInfoKHR>	framebufferAttachmentImageInfos;
 
-	if (colorFormat != VK_FORMAT_UNDEFINED)
+	DE_ASSERT(colorFormat != DE_NULL);
+	DE_ASSERT(dsFormat != DE_NULL);
+
+	if (*colorFormat != VK_FORMAT_UNDEFINED)
 	{
 		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
 		{
@@ -559,13 +562,13 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 			renderSize.height,											//  deUint32			height;
 			1u,															//  deUint32			layerCount;
 			1u,															//  deUint32			viewFormatCount;
-			&colorFormat												//  const VkFormat*		pViewFormats;
+			colorFormat													//  const VkFormat*		pViewFormats;
 		};
 
 		framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
 	}
 
-	if (dsFormat != VK_FORMAT_UNDEFINED)
+	if (*dsFormat != VK_FORMAT_UNDEFINED)
 	{
 		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
 		{
@@ -577,7 +580,7 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 			renderSize.height,											//  deUint32			height;
 			1u,															//  deUint32			layerCount;
 			1u,															//  deUint32			viewFormatCount;
-			&dsFormat													//  const VkFormat*		pViewFormats;
+			dsFormat													//  const VkFormat*		pViewFormats;
 		};
 
 		framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
@@ -595,10 +598,10 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 			renderSize.height,											//  deUint32			height;
 			1u,															//  deUint32			layerCount;
 			1u,															//  deUint32			viewFormatCount;
-			&colorFormat												//  const VkFormat*		pViewFormats;
+			colorFormat													//  const VkFormat*		pViewFormats;
 		};
 
-		DE_ASSERT(colorFormat != VK_FORMAT_UNDEFINED);
+		DE_ASSERT(*colorFormat != VK_FORMAT_UNDEFINED);
 
 		framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
 	}
@@ -615,10 +618,10 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 			renderSize.height,											//  deUint32			height;
 			1u,															//  deUint32			layerCount;
 			1u,															//  deUint32			viewFormatCount;
-			&dsFormat													//  const VkFormat*		pViewFormats;
+			dsFormat													//  const VkFormat*		pViewFormats;
 		};
 
-		DE_ASSERT(dsFormat != VK_FORMAT_UNDEFINED);
+		DE_ASSERT(*dsFormat != VK_FORMAT_UNDEFINED);
 
 		framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
 	}
@@ -635,7 +638,7 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 			renderSize.height,											//  deUint32			height;
 			1u,															//  deUint32			layerCount;
 			1u,															//  deUint32			viewFormatCount;
-			&colorFormat												//  const VkFormat*		pViewFormats;
+			colorFormat													//  const VkFormat*		pViewFormats;
 		};
 
 		framebufferAttachmentImageInfos.push_back(framebufferAttachmentImageInfo);
@@ -648,9 +651,9 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&			vk,
 									 const VkDevice					device,
 									 const VkRenderPass				renderPass,
 									 const VkExtent2D&				renderSize,
-									 const VkFormat					colorFormat,
+									 const VkFormat*				colorFormat,
 									 const VkImageUsageFlags		colorUsage,
-									 const VkFormat					dsFormat				= VK_FORMAT_UNDEFINED,
+									 const VkFormat*				dsFormat,
 									 const VkImageUsageFlags		dsUsage					= static_cast<VkImageUsageFlags>(0),
 									 const AspectFlags				resolveAspects			= ASPECT_NONE,
 									 const deUint32					inputAttachmentCount	= 0)
@@ -1248,7 +1251,7 @@ tcu::TestStatus ColorImagelessTestInstance::iterate (void)
 	const Unique<VkShaderModule>	vertModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat, m_parameters.dsFormat));
-	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, colorFormat, m_colorImageUsage, m_parameters.dsFormat));
+	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &m_parameters.dsFormat));
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, m_imageExtent2D));
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1480,7 +1483,7 @@ tcu::TestStatus DepthImagelessTestInstance::iterate (void)
 	const Unique<VkShaderModule>	vertModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 	const Unique<VkRenderPass>		renderPass			(makeRenderPass			(vk, device, colorFormat, dsFormat));
-	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, colorFormat, m_colorImageUsage, dsFormat, m_dsImageUsage));
+	const Unique<VkFramebuffer>		framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &dsFormat, m_dsImageUsage));
 	const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, m_imageExtent2D, ASPECT_DEPTH_STENCIL));
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1679,7 +1682,7 @@ tcu::TestStatus ColorResolveImagelessTestInstance::iterate (void)
 	const Unique<VkShaderModule>	vertModule				(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragModule				(createShaderModule		(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 	const Unique<VkRenderPass>		renderPass				(makeRenderPass			(vk, device, colorFormat, m_parameters.dsFormat, sampleCount));
-	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, colorFormat, m_colorImageUsage, m_parameters.dsFormat, 0u, ASPECT_COLOR));
+	const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &m_parameters.dsFormat, 0u, ASPECT_COLOR));
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, m_imageExtent2D, ASPECT_NONE, sampleCount));
 	const Unique<VkCommandPool>		cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1975,7 +1978,7 @@ tcu::TestStatus DepthResolveImagelessTestInstance::iterate (void)
 	const Unique<VkShaderModule>	vertModule					(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 	const Unique<VkShaderModule>	fragModule					(createShaderModule		(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 	const Unique<VkRenderPass>		renderPass					(makeRenderPass			(vk, device, colorFormat, m_parameters.dsFormat, sampleCountFlag, sampleCountFlag));
-	const Unique<VkFramebuffer>		framebuffer					(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, colorFormat, m_colorImageUsage, m_parameters.dsFormat, m_dsImageUsage, ASPECT_COLOR|ASPECT_DEPTH_STENCIL));
+	const Unique<VkFramebuffer>		framebuffer					(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &m_parameters.dsFormat, m_dsImageUsage, ASPECT_COLOR|ASPECT_DEPTH_STENCIL));
 	const Unique<VkPipelineLayout>	pipelineLayout				(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline					(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertModule, *fragModule, m_imageExtent2D, ASPECT_DEPTH_STENCIL, sampleCountFlag));
 	const Unique<VkCommandPool>		cmdPool						(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -2223,7 +2226,7 @@ tcu::TestStatus MultisubpassTestInstance::iterate (void)
 		.update(vk, device);
 
 	const Unique<VkRenderPass>			renderPass			(makeRenderPass			(vk, device, colorFormat, DE_NULL));
-	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, colorFormat, m_colorImageUsage, VK_FORMAT_UNDEFINED, 0u, ASPECT_NONE, 1u));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage, &m_parameters.dsFormat, 0u, ASPECT_NONE, 1u));
 	const Unique<VkCommandPool>			cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
@@ -2637,7 +2640,7 @@ tcu::TestNode*	imagelessMultisubpass (tcu::TestContext& testCtx)
 	{
 		TEST_TYPE_MULTISUBPASS,			//  TestType	testType;
 		VK_FORMAT_R8G8B8A8_UNORM,		//  VkFormat	colorFormat;
-		VK_FORMAT_D24_UNORM_S8_UINT,	//  VkFormat	dsFormat;
+		VK_FORMAT_UNDEFINED,			//  VkFormat	dsFormat;
 	};
 
 	return new BaseTestCase(testCtx, "multisubpass", "Multi-subpass test", parameters);
