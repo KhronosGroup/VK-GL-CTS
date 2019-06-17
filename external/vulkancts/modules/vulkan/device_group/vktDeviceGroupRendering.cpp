@@ -774,7 +774,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 				VK_IMAGE_TYPE_2D,														// type
 				VK_IMAGE_TILING_OPTIMAL,												// tiling
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// usage
-				VK_IMAGE_CREATE_BIND_SFR_BIT,											// flags
+				VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,						// flags
 				&properties) != VK_SUCCESS)												// properties
 			{
 				TCU_THROW(NotSupportedError, "Format not supported for SFR");
@@ -783,7 +783,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			VkImageCreateFlags	imageCreateFlags = VK_IMAGE_CREATE_ALIAS_BIT;	// The image objects alias same memory
 			if ((m_testMode & TEST_MODE_SFR) && (m_physicalDeviceCount > 1))
 			{
-				imageCreateFlags |= VK_IMAGE_CREATE_BIND_SFR_BIT;
+				imageCreateFlags |= VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT;
 			}
 
 			const VkImageCreateInfo		imageParams =

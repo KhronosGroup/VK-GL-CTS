@@ -58,6 +58,7 @@ struct NAME {											\
 
 #define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
+#define VK_CHECK_WSI(EXPR)						vk::checkWsiResult((EXPR), #EXPR, __FILE__, __LINE__)
 
 /*--------------------------------------------------------------------*//*!
  * \brief Vulkan utilities
@@ -127,7 +128,6 @@ enum Type
 	TYPE_XLIB = 0,
 	TYPE_XCB,
 	TYPE_WAYLAND,
-	TYPE_MIR,
 	TYPE_ANDROID,
 	TYPE_WIN32,
 	TYPE_MACOS,
@@ -167,6 +167,11 @@ typedef VKAPI_ATTR VkBool32	(VKAPI_CALL* PFN_vkDebugReportCallbackEXT)			(VkDebu
 																				 const char*				pLayerPrefix,
 																				 const char*				pMessage,
 																				 void*						pUserData);
+
+typedef VKAPI_ATTR VkBool32 (VKAPI_CALL *PFN_vkDebugUtilsMessengerCallbackEXT)	(VkDebugUtilsMessageSeverityFlagBitsEXT				messageSeverity,
+																				 VkDebugUtilsMessageTypeFlagsEXT					messageTypes,
+																				 const struct VkDebugUtilsMessengerCallbackDataEXT*	pCallbackData,
+																				 void*												pUserData);
 
 #include "vkStructTypes.inl"
 
@@ -243,6 +248,7 @@ private:
 };
 
 void			checkResult			(VkResult result, const char* message, const char* file, int line);
+void			checkWsiResult		(VkResult result, const char* message, const char* file, int line);
 
 } // vk
 

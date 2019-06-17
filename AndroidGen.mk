@@ -182,6 +182,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineClearUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCreationFeedbackTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineDepthRangeUnrestrictedTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDepthTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDerivativeTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineDynamicOffsetTests.cpp \
@@ -215,6 +216,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexOnlyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentClearTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentLoadTests.cpp \

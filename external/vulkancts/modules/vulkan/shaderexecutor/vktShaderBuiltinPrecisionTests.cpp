@@ -2560,51 +2560,19 @@ protected:
 	{
 		return Interval(0.0, TCU_INFINITY);
 	}
-private:
-	double precision_legacy(const EvalContext& ctx, double ret, double x) const;
 };
-
-template <>
-double ExpFunc <Signature<float, float> >::precision_legacy(const EvalContext& ctx, double ret, double x) const
-{
-	switch (ctx.floatPrecision)
-	{
-	case glu::PRECISION_HIGHP:
-		return ctx.format.ulp(ret, 3.0 + 2.0 * deAbs(x));
-	case glu::PRECISION_MEDIUMP:
-		return ctx.format.ulp(ret, 2.0 + 2.0 * deAbs(x));
-	case glu::PRECISION_LOWP:
-		return ctx.format.ulp(ret, 2.0);
-	default:
-		DE_FATAL("Impossible");
-	}
-	return 0.0;
-}
-
-template <>
-double ExpFunc <Signature<deFloat16, deFloat16> >::precision_legacy(const EvalContext& ctx, double ret, double x) const
-{
-	DE_UNREF(ctx);
-	DE_UNREF(ret);
-	DE_UNREF(x);
-	DE_FATAL("Impossible");
-	return 0.0;
-}
 
 template <>
 double ExpFunc <Signature<float, float> >::precision (const EvalContext& ctx, double ret, double x) const
 {
-	if (!ctx.isShaderFloat16Int8)
-		return precision_legacy(ctx, ret, x);
-
 	switch (ctx.floatPrecision)
 	{
 	case glu::PRECISION_HIGHP:
 		return ctx.format.ulp(ret, 3.0 + 2.0 * deAbs(x));
 	case glu::PRECISION_MEDIUMP:
-	case glu::PRECISION_LOWP:
 	case glu::PRECISION_LAST:
-		return ctx.format.ulp(ret, 1.0 + 2.0 * deAbs(x));
+		return ctx.isShaderFloat16Int8 ?	ctx.format.ulp(ret, 1.0 + 2.0 * deAbs(x)) :
+											ctx.format.ulp(ret, 2.0 + 2.0 * deAbs(x));
 	default:
 		DE_FATAL("Impossible");
 	}
@@ -2653,11 +2621,11 @@ double LogFunc<Signature<float, float> >::precision(const EvalContext& ctx, doub
 	case glu::PRECISION_HIGHP:
 		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -21) : ctx.format.ulp(ret, 3.0);
 	case glu::PRECISION_MEDIUMP:
-		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 2.0);
-	case glu::PRECISION_LOWP:
-		return ctx.format.ulp(ret, 2.0);
 	case glu::PRECISION_LAST:
-		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 3.0); // float16bit
+		if (ctx.isShaderFloat16Int8)
+			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 3.0);
+		else
+			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 2.0);
 	default:
 		DE_FATAL("Impossible");
 	}
@@ -2911,8 +2879,6 @@ protected:
 
 	Interval		m_loExtremum;
 	Interval		m_hiExtremum;
-private:
-	double precision_legacy(const EvalContext& ctx, double ret, double arg) const;
 };
 
 //Only -DE_PI_DOUBLE, DE_PI_DOUBLE input range
@@ -2931,19 +2897,16 @@ Interval TrigFunc<Signature<deFloat16, deFloat16> >::getInputRange(const bool is
 	return Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE);
 }
 
-/*
-* Old tests without changes.
-*/
 template<>
-double TrigFunc<Signature<float, float> >::precision_legacy(const EvalContext& ctx, double ret, double arg) const
+double TrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, double ret, double arg) const
 {
+	DE_ASSERT(!ctx.isShaderFloat16Int8 || (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE));
+
 	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 	{
 		// Use precision from OpenCL fast relaxed math
 		if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
-		{
 			return deLdExp(1.0, -11);
-		}
 		else
 		{
 			// "larger otherwise", let's pick |x| * 2^-12 , which is slightly over
@@ -2951,12 +2914,16 @@ double TrigFunc<Signature<float, float> >::precision_legacy(const EvalContext& c
 			return deLdExp(deAbs(arg), -12);
 		}
 	}
-	else if (ctx.floatPrecision == glu::PRECISION_MEDIUMP)
+	else
 	{
+		DE_ASSERT(ctx.floatPrecision == glu::PRECISION_MEDIUMP || ctx.floatPrecision == glu::PRECISION_LAST);
+
 		if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
 		{
-			// from OpenCL half-float extension specification
-			return ctx.format.ulp(ret, 2.0);
+			if (ctx.isShaderFloat16Int8)
+				return deLdExp(1.0, -7);
+			else
+				return ctx.format.ulp(ret, 2.0);			// from OpenCL half-float extension specification
 		}
 		else
 		{
@@ -2964,41 +2931,6 @@ double TrigFunc<Signature<float, float> >::precision_legacy(const EvalContext& c
 			return deLdExp(deAbs(arg), -10);
 		}
 	}
-	else
-	{
-		DE_ASSERT(ctx.floatPrecision == glu::PRECISION_LOWP);
-
-		// from OpenCL half-float extension specification
-		return ctx.format.ulp(ret, 2.0);
-	}
-}
-
-template<>
-double TrigFunc<Signature<deFloat16, deFloat16> >::precision_legacy(const EvalContext& ctx, double ret, double arg) const
-{
-	DE_UNREF(ctx);
-	DE_UNREF(ret);
-	DE_UNREF(arg);
-	DE_FATAL("Impossible");
-	return 0.0;
-}
-
-template<>
-double TrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, double ret, double arg) const
-{
-	if (!ctx.isShaderFloat16Int8)
-		return precision_legacy(ctx, ret, arg);
-
-	DE_ASSERT(-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE);
-	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
-	{
-		return deLdExp(1.0, -11);
-	}
-	else
-	{
-		return deLdExp(1.0, -7);
-	}
-	return 0.0;
 }
 //
 /*
@@ -3054,11 +2986,9 @@ class ArcTrigFunc : public CFloatFunc1<T>
 public:
 					ArcTrigFunc	(const string&		name,
 								 DoubleFunc1&		func,
-								 double				precisionULPs,
 								 const Interval&	domain,
 								 const Interval&	codomain)
 						: CFloatFunc1<T>	(name, func)
-						, m_precision		(precisionULPs)
 						, m_domain			(domain)
 						, m_codomain		(codomain) {}
 
@@ -3068,7 +2998,6 @@ protected:
 	// We could implement getCodomain with m_codomain, but choose not to,
 	// because it seems too strict with trascendental constants like pi.
 
-	const double	m_precision;
 	const Interval	m_domain;
 	const Interval	m_codomain;
 };
@@ -3089,32 +3018,10 @@ double ArcTrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, 
 	if (!m_domain.contains(x))
 		return TCU_NAN;
 
-	//precision_with_extension
-	if (ctx.isShaderFloat16Int8)
-	{
-		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
-		{
-			return ctx.format.ulp(ret, 4096.0);
-		}
-		else
-		{
-			return ctx.format.ulp(ret, 5.0);
-		}
-	}
-	// precision legacy
+	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
+		return ctx.format.ulp(ret, 4096.0);
 	else
-	{
-		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
-		{
-			// Use OpenCL's fast relaxed math precision
-			return ctx.format.ulp(ret, m_precision);
-		}
-		else
-		{
-			// Use OpenCL half-float spec
-			return ctx.format.ulp(ret, 2.0);
-		}
-	}
+		return ctx.format.ulp(ret, ctx.isShaderFloat16Int8 ? 5.0 : 2.0);
 }
 
 class ASin : public CFloatFunc1<Signature<float, float> >
@@ -3145,7 +3052,7 @@ protected:
 class ACos : public ArcTrigFunc<Signature<float, float> >
 {
 public:
-	ACos (void) : ArcTrigFunc<Signature<float, float> > ("acos", deAcos, 4096.0,
+	ACos (void) : ArcTrigFunc<Signature<float, float> > ("acos", deAcos,
 								  Interval(-1.0, 1.0),
 								  Interval(0.0, DE_PI_DOUBLE)) {}
 };
@@ -3154,7 +3061,7 @@ template <class T>
 class ATan : public ArcTrigFunc<T>
 {
 public:
-	ATan (void) : ArcTrigFunc<T>("atan", deAtanOver, 4096.0,
+	ATan (void) : ArcTrigFunc<T>("atan", deAtanOver,
 								  Interval::unbounded(),
 								  Interval(-DE_PI_DOUBLE * 0.5, DE_PI_DOUBLE * 0.5)) {}
 };
@@ -5308,7 +5215,6 @@ public:
 	virtual void	genFixeds			(const FloatFormat&, const Precision, vector<T>&, const Interval&)	const {}
 	virtual T		genRandom			(const FloatFormat&,const Precision, Random&, const Interval&)		const { return T(); }
 	virtual void	removeNotInRange	(vector<T>&, const Interval&, const Precision)					const {};
-	virtual double	getWeight			(void)																const { return 0.0; }
 };
 
 template <>
@@ -5347,14 +5253,12 @@ public:
 		dst.push_back(-1);
 		dst.push_back(1);
 	}
-	double	getWeight	(void) const { return 1.0; }
 
 private:
 	static inline int getNumBits (Precision prec)
 	{
 		switch (prec)
 		{
-			case glu::PRECISION_LOWP:		return 8;
 			case glu::PRECISION_LAST:
 			case glu::PRECISION_MEDIUMP:	return 16;
 			case glu::PRECISION_HIGHP:		return 32;
@@ -5372,7 +5276,6 @@ public:
 	float	genRandom			(const FloatFormat& format, const Precision prec, Random& rnd, const Interval& inputRange)			const;
 	void	genFixeds			(const FloatFormat& format, const Precision prec, vector<float>& dst, const Interval& inputRange)	const;
 	void	removeNotInRange	(vector<float>& dst, const Interval& inputRange, const Precision prec)								const;
-	double	getWeight			(void) const { return 1.0; }
 };
 
 //! Generate a random float from a reasonable general-purpose distribution.
@@ -5384,6 +5287,7 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
 	const bool		haveSubnormal	= format.hasSubnormal() != tcu::NO;
+	const float		midpoint		= static_cast<float>(inputRange.midpoint());
 
 	// Choose exponent so that the cumulative distribution is cubic.
 	// This makes the probability distribution quadratic, with the peak centered on zero.
@@ -5401,42 +5305,39 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 	// Generate some occasional special numbers
 	switch (rnd.getInt(0, 64))
 	{
-		case 0:		value = inputRange.contains(0) ? 0 : static_cast<float>(inputRange.midpoint()); break;
-		case 1:		value = inputRange.contains(TCU_INFINITY) ? TCU_INFINITY : static_cast<float>(inputRange.midpoint()); break;
-		case 2:		value = inputRange.contains(-TCU_INFINITY) ? -TCU_INFINITY : static_cast<float>(inputRange.midpoint()); break;
-		case 3:		value = inputRange.contains(TCU_NAN) ? TCU_NAN : static_cast<float>(inputRange.midpoint()); break;
+		case 0:		return inputRange.contains(0)				? 0				: midpoint; break;
+		case 1:		return inputRange.contains(TCU_INFINITY)	? TCU_INFINITY	: midpoint; break;
+		case 2:		return inputRange.contains(-TCU_INFINITY)	? -TCU_INFINITY	: midpoint; break;
+		case 3:		return inputRange.contains(TCU_NAN)			? TCU_NAN		: midpoint; break;
 		default:	break;
 	}
 
-	if(value != -1.0f)
+	// Normal number
+	base = deFloatLdExp(1.0f, exp);
+	quantum = deFloatLdExp(1.0f, exp - fractionBits);
+
+	switch (rnd.getInt(0, 16))
 	{
-		// Normal number
-		base = deFloatLdExp(1.0f, exp);
-		quantum = deFloatLdExp(1.0f, exp - fractionBits);
-
-		switch (rnd.getInt(0, 16))
+		case 0: // The highest number in this binade, significand is all bits one.
+			significand = base - quantum;
+			break;
+		case 1: // Significand is one.
+			significand = quantum;
+			break;
+		case 2: // Significand is zero.
+			significand = 0.0;
+			break;
+		default: // Random (evenly distributed) significand.
 		{
-			case 0: // The highest number in this binade, significand is all bits one.
-				significand = base - quantum;
-				break;
-			case 1: // Significand is one.
-				significand = quantum;
-				break;
-			case 2: // Significand is zero.
-				significand = 0.0;
-				break;
-			default: // Random (evenly distributed) significand.
-			{
-				deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
-				significand = float(intFraction) * quantum;
-			}
+			deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
+			significand = float(intFraction) * quantum;
 		}
-
-		// Produce positive numbers more often than negative.
-		value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 	}
 
-	value = inputRange.contains(static_cast<double>(value)) ? value : static_cast<float>(inputRange.midpoint());
+	// Produce positive numbers more often than negative.
+	value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
+
+	value = inputRange.contains(static_cast<double>(value)) ? value : midpoint;
 
 	//not denormalized values
 	{
@@ -5513,7 +5414,6 @@ class DefaultSampling<deFloat16> : public Sampling<deFloat16>
 public:
 	deFloat16	genRandom			(const FloatFormat& format, const Precision prec, Random& rnd, const Interval& inputRange) const;
 	void		genFixeds			(const FloatFormat& format, const Precision prec, vector<deFloat16>& dst, const Interval& inputRange) const;
-	double		getWeight			(void) const { return 1.0; }
 private:
 	void		removeNotInRange(vector<deFloat16>& dst, const Interval& inputRange, const Precision prec) const;
 };
@@ -5678,11 +5578,6 @@ public:
 		for (size_t scalarNdx = 0; scalarNdx < scalars.size(); ++scalarNdx)
 			dst.push_back(Value(scalars[scalarNdx]));
 	}
-
-	double	getWeight	(void) const
-	{
-		return dePow(instance<DefaultSampling<T> >().getWeight(), Size);
-	}
 };
 
 template <typename T, int Rows, int Columns>
@@ -5723,11 +5618,6 @@ public:
 			}
 			dst.push_back(mat);
 		}
-	}
-
-	double	getWeight	(void) const
-	{
-		return dePow(instance<DefaultSampling<T> >().getWeight(), Rows * Columns);
 	}
 };
 

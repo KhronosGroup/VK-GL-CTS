@@ -279,6 +279,12 @@ void fillGradient (MultiPlaneImageData* imageData, const tcu::Vec4& minVal, cons
 	}
 }
 
+void fillZero (MultiPlaneImageData* imageData)
+{
+	for (deUint32 planeNdx = 0; planeNdx < imageData->getDescription().numPlanes; ++planeNdx)
+		deMemset(imageData->getPlanePtr(planeNdx), 0, imageData->getPlaneSize(planeNdx));
+}
+
 vector<AllocationSp> allocateAndBindImageMemory (const DeviceInterface&	vkd,
 												 VkDevice				device,
 												 Allocator&				allocator,

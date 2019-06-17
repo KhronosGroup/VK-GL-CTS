@@ -66,6 +66,7 @@ public:
 											 const bool					useDeviceGroups = false);
 
 	TestInstance*	createInstance			(Context&					context) const;
+	virtual void	checkSupport			(Context&					context) const;
 
 private:
 	const bool					m_useDeviceGroups;
@@ -88,6 +89,14 @@ ImageSparseBindingCase::ImageSparseBindingCase (tcu::TestContext&			testCtx,
 	, m_imageSize			(imageSize)
 	, m_format				(format)
 {
+}
+
+void ImageSparseBindingCase::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+	if (!isImageSizeSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageType, m_imageSize))
+		TCU_THROW(NotSupportedError, "Image size not supported for device");
 }
 
 class ImageSparseBindingInstance : public SparseResourcesBaseInstance
@@ -138,14 +147,6 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 	const VkPhysicalDevice		physicalDevice	= getPhysicalDevice();
 	VkImageCreateInfo			imageSparseInfo;
 	std::vector<DeviceMemorySp>	deviceMemUniquePtrVec;
-
-	// Check if image size does not exceed device limits
-	if (!isImageSizeSupported(instance, physicalDevice, m_imageType, m_imageSize))
-		TCU_THROW(NotSupportedError, "Image size not supported for device");
-
-	// Check if device supports sparse binding
-	if (!getPhysicalDeviceFeatures(instance, physicalDevice).sparseBinding)
-		TCU_THROW(NotSupportedError, "Device does not support sparse binding");
 
 	const DeviceInterface&	deviceInterface	= getDeviceInterface();
 	const Queue&			sparseQueue		= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0);

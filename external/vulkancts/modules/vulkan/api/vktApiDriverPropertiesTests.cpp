@@ -53,6 +53,7 @@ static const deUint32 knownDriverIds[] =
 
 static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
+	makeConformanceVersionKHR(1, 1, 4, 2),
 	makeConformanceVersionKHR(1, 1, 4, 1),
 	makeConformanceVersionKHR(1, 1, 4, 0),
 	makeConformanceVersionKHR(1, 1, 3, 2),
@@ -82,13 +83,13 @@ DE_INLINE bool operator==(const VkConformanceVersionKHR& a, const VkConformanceV
 			(a.patch == b.patch));
 }
 
+void checkSupport (Context& context)
+{
+	context.requireDeviceExtension("VK_KHR_driver_properties");
+}
+
 tcu::TestStatus testQueryProperties (Context& context)
 {
-	// Check extension support
-
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_driver_properties"))
-		TCU_THROW(NotSupportedError, "Unsupported extension: VK_KHR_driver_properties");
-
 	// Query the driver properties
 
 	const VkPhysicalDevice				physDevice			= context.getPhysicalDevice();
@@ -151,7 +152,7 @@ tcu::TestStatus testQueryProperties (Context& context)
 
 void createTestCases (tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group, "properties", "Query VkPhysicalDeviceDriverPropertiesKHR and check its values", testQueryProperties);
+	addFunctionCase(group, "properties", "Query VkPhysicalDeviceDriverPropertiesKHR and check its values", checkSupport, testQueryProperties);
 }
 
 } // anonymous

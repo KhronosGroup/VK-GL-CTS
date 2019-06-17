@@ -102,12 +102,12 @@ struct CaseDef
 class BufferAddressTestInstance : public TestInstance
 {
 public:
-						BufferAddressTestInstance		(Context& context, const CaseDef& data);
+						BufferAddressTestInstance	(Context& context, const CaseDef& data);
 						~BufferAddressTestInstance	(void);
-	tcu::TestStatus		iterate								(void);
-	virtual	void				fillBuffer					(const std::vector<deUint8 *>& cpuAddrs,
-															 const std::vector<deUint64>& gpuAddrs,
-															 deUint32 bufNum, deUint32 curDepth) const;
+	tcu::TestStatus		iterate						(void);
+	virtual	void		fillBuffer					(const std::vector<deUint8 *>& cpuAddrs,
+													 const std::vector<deUint64>& gpuAddrs,
+													 deUint32 bufNum, deUint32 curDepth) const;
 private:
 	CaseDef				m_data;
 
@@ -131,12 +131,12 @@ BufferAddressTestInstance::~BufferAddressTestInstance (void)
 class BufferAddressTestCase : public TestCase
 {
 	public:
-								BufferAddressTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
-								~BufferAddressTestCase	(void);
-	virtual	void				initPrograms					(SourceCollections& programCollection) const;
-	virtual TestInstance*		createInstance					(Context& context) const;
-	virtual void				checkSupport					(Context& context) const;
-	virtual	void				checkBuffer					(std::stringstream& checks, deUint32 bufNum, deUint32 curDepth, const std::string &prefix) const;
+							BufferAddressTestCase	(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+							~BufferAddressTestCase	(void);
+	virtual	void			initPrograms			(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance			(Context& context) const;
+	virtual void			checkSupport			(Context& context) const;
+	virtual	void			checkBuffer				(std::stringstream& checks, deUint32 bufNum, deUint32 curDepth, const std::string &prefix) const;
 
 private:
 	CaseDef					m_data;
@@ -152,13 +152,13 @@ BufferAddressTestCase::~BufferAddressTestCase	(void)
 {
 }
 
-void BufferAddressTestCase::checkSupport(Context& context) const
+void BufferAddressTestCase::checkSupport (Context& context) const
 {
 	if (!context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 
 	if (m_data.stage == STAGE_VERTEX && !context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
-		return TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
+		TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
@@ -173,7 +173,9 @@ void BufferAddressTestCase::checkSupport(Context& context) const
 #if ENABLE_RAYTRACING
 	if (m_data.stage == STAGE_RAYGEN &&
 		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
-		return TCU_THROW(NotSupportedError, "Ray tracing not supported");
+	{
+		TCU_THROW(NotSupportedError, "Ray tracing not supported");
+	}
 #endif
 }
 
@@ -501,12 +503,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		break;
 	}
 
-	Move<vk::VkDescriptorSetLayout>	descriptorSetLayout;
 	Move<vk::VkDescriptorPool>	descriptorPool;
 	Move<vk::VkDescriptorSet>	descriptorSet;
 
 	VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-	VkDescriptorSetLayoutCreateFlags layoutCreateFlags = 0;
 
 	VkDescriptorSetLayoutBinding bindings[2];
 	bindings[0].binding = 0;
@@ -519,17 +519,20 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	bindings[1].descriptorCount = 1;
 
 	// Create a layout and allocate a descriptor set for it.
-	const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
+	VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		DE_NULL,
 
-		layoutCreateFlags,
+		0,
 		(deUint32)2,
 		&bindings[0]
 	};
 
-	descriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
+	Move<vk::VkDescriptorSetLayout>	descriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
+
+	setLayoutCreateInfo.bindingCount = 0;
+	Move<vk::VkDescriptorSetLayout>	emptyDescriptorSetLayout = vk::createDescriptorSetLayout(vk, device, &setLayoutCreateInfo);
 
 	vk::DescriptorPoolBuilder poolBuilder;
 	poolBuilder.addType(bindings[1].descriptorType, 1);
@@ -642,10 +645,18 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		128						// deUint32				size
 	};
 
+	deUint32 nonEmptySetLimit = m_data.base == BASE_UBO ? properties.properties.limits.maxPerStageDescriptorUniformBuffers :
+														  properties.properties.limits.maxPerStageDescriptorStorageBuffers;
+	nonEmptySetLimit = de::min(nonEmptySetLimit, properties.properties.limits.maxPerStageDescriptorStorageImages);
+
 	vector<vk::VkDescriptorSetLayout>	descriptorSetLayoutsRaw(m_data.set+1);
 	for (size_t i = 0; i < m_data.set+1; ++i)
 	{
-		descriptorSetLayoutsRaw[i] = descriptorSetLayout.get();
+		// use nonempty descriptor sets to consume resources until we run out of descriptors
+		if (i < nonEmptySetLimit - 1 || i == m_data.set)
+			descriptorSetLayoutsRaw[i] = descriptorSetLayout.get();
+		else
+			descriptorSetLayoutsRaw[i] = emptyDescriptorSetLayout.get();
 	}
 
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =

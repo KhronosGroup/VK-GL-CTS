@@ -216,6 +216,10 @@ public:
 									return new StorageBufferTestInstance<T>(ctx, m_testType, m_shaderType, m_testInput, m_validator);
 								}
 	virtual void				initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual void				checkSupport			(Context& context) const
+								{
+									checkProtectedQueueSupport(context);
+								}
 
 	virtual						~StorageBufferTestCase	(void) {}
 

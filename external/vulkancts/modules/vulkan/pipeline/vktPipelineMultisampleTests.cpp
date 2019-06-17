@@ -2389,6 +2389,9 @@ void MultisampleRenderer::initialize (Context&									context,
 			throw tcu::NotSupportedError("Unsupported number of rasterization samples for sparse residency");
 	}
 
+	if (sparse && !context.getDeviceFeatures().sparseBinding)
+		throw tcu::NotSupportedError("No sparseBinding support");
+
 	// Create color image
 	{
 		const VkImageUsageFlags	imageUsageFlags		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |

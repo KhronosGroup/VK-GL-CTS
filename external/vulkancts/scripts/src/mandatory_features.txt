@@ -1,0 +1,31 @@
+// This is manually created file used by gen_framework.py.
+// It contains list of mandatory features required to
+// generate code for cts. Currently every line contains:
+// * name of structure containing physical device featurs
+// * name of attribute that is mandatory
+// * structure type enum
+// * required extensions that enable specified feature
+
+VkPhysicalDeviceFeatures								robustBufferAccess									not_used																		EXTENSIONS ()
+VkPhysicalDeviceFeatures								shaderSampledImageArrayDynamicIndexing				not_used																		EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceFeatures								shaderStorageBufferArrayDynamicIndexing				not_used																		EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDevice8BitStorageFeaturesKHR					storageBuffer8BitAccess								VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR						EXTENSIONS ( VK_KHR_8bit_storage )
+VkPhysicalDeviceMultiviewFeatures						multiview											VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES							EXTENSIONS ( VK_KHR_multiview )
+VkPhysicalDeviceVariablePointersFeatures				variablePointersStorageBuffer						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES					EXTENSIONS ( VK_KHR_variable_pointers )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			shaderUniformTexelBufferArrayDynamicIndexing		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			shaderStorageTexelBufferArrayDynamicIndexing		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			shaderSampledImageArrayNonUniformIndexing			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			shaderStorageBufferArrayNonUniformIndexing			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			shaderUniformTexelBufferArrayNonUniformIndexing		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingSampledImageUpdateAfterBind		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingStorageImageUpdateAfterBind		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingStorageBufferUpdateAfterBind		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingUniformTexelBufferUpdateAfterBind	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingStorageTexelBufferUpdateAfterBind	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingUpdateUnusedWhilePending			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			descriptorBindingPartiallyBound						VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceDescriptorIndexingFeaturesEXT			runtimeDescriptorArray								VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT				EXTENSIONS ( VK_EXT_descriptor_indexing )
+VkPhysicalDeviceInlineUniformBlockFeaturesEXT			inlineUniformBlock									VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT				EXTENSIONS ( VK_EXT_inline_uniform_block )
+VkPhysicalDeviceInlineUniformBlockFeaturesEXT			descriptorBindingInlineUniformBlockUpdateAfterBind	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT				EXTENSIONS ( VK_EXT_inline_uniform_block VK_EXT_descriptor_indexing )
+VkPhysicalDeviceScalarBlockLayoutFeaturesEXT			scalarBlockLayout									VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT				EXTENSIONS ( VK_EXT_scalar_block_layout )
+VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR	uniformBufferStandardLayout							VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR	EXTENSIONS ( VK_KHR_uniform_buffer_standard_layout )

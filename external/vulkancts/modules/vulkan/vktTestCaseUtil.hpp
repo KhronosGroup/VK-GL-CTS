@@ -161,6 +161,11 @@ private:
 	const Function	m_func;
 };
 
+struct NoSupport0
+{
+	void			checkSupport	(Context&) const {};
+};
+
 class FunctionSupport0
 {
 public:
@@ -174,6 +179,12 @@ public:
 
 private:
 	const Function	m_function;
+};
+
+template<typename Arg0>
+struct NoSupport1
+{
+	void			checkSupport	(Context&, Arg0) const {};
 };
 
 template<typename Arg0>

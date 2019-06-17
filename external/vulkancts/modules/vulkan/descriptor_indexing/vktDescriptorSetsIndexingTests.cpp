@@ -220,8 +220,6 @@ public:
 								CommonDescriptorInstance		(Context&									context,
 																const TestParams&							testParams);
 
-	void						checkIndexingAvailable			(const ut::DeviceProperties&				devProps) const;
-
 	deUint32					computeAvailableDescriptorCount	(VkDescriptorType							descriptorType) const;
 
 	Move<VkDescriptorSetLayout>	createDescriptorSetLayout		(deUint32&									descriptorCount) const;
@@ -518,12 +516,6 @@ CommonDescriptorInstance::CommonDescriptorInstance					(Context&								context,
 	, m_colorScheme		(createColorScheme())
 	, m_schemeSize		(static_cast<deUint32>(m_colorScheme.size()))
 {
-}
-
-void CommonDescriptorInstance::checkIndexingAvailable				(const ut::DeviceProperties&			devProps) const
-{
-	DE_UNREF(devProps);
-	m_context.requireDeviceExtension("VK_EXT_descriptor_indexing");
 }
 
 deUint32 CommonDescriptorInstance::computeAvailableDescriptorCount	(VkDescriptorType						descriptorType) const
@@ -1813,20 +1805,6 @@ StorageBufferInstance::StorageBufferInstance						(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderStorageBufferArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over storage buffer descriptor arrays is not supported.");
-
-	if (m_testParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingStorageBufferUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for storage buffer descriptors is not supported.");
-	}
 }
 
 void StorageBufferInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
@@ -1902,20 +1880,6 @@ UniformBufferInstance::UniformBufferInstance						(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderUniformBufferArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing for uniform buffer descriptor arrays is not supported.");
-
-	if (m_testParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingUniformBufferUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for uniform buffer descriptors is not supported.");
-	}
 }
 
 void UniformBufferInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
@@ -1961,20 +1925,6 @@ StorageTexelInstance::StorageTexelInstance							(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderStorageTexelBufferArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing for storage texel buffer descriptor arrays is not supported.");
-
-	if (m_testParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingStorageTexelBufferUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for storage texel buffer descriptors is not supported.");
-	}
 }
 
 void StorageTexelInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
@@ -2039,20 +1989,6 @@ UniformTexelInstance::UniformTexelInstance							(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderUniformTexelBufferArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing for uniform texel buffer descriptor arrays is not supported.");
-
-	if (m_testParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingUniformTexelBufferUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for uniform texel buffer descriptors is not supported.");
-	}
 }
 
 void UniformTexelInstance::createAndPopulateDescriptors				(IterateCommonVariables&					variables)
@@ -2205,19 +2141,6 @@ DynamicStorageBufferInstance::DynamicStorageBufferInstance			(Context&					conte
 			testCaseParams)),
 			DynamicBuffersInstance(context, m_testParams), StorageBufferInstance(context, testCaseParams)
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderStorageBufferArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over storage buffer dynamic descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		TCU_THROW(NotSupportedError, "Update after bind for storage buffer dynamic descriptors is not supported.");
-	}
 }
 
 tcu::TestStatus	DynamicStorageBufferInstance::iterate(void)
@@ -2263,19 +2186,6 @@ DynamicUniformBufferInstance::DynamicUniformBufferInstance			(Context&					conte
 			testCaseParams)),
 			DynamicBuffersInstance(context, m_testParams), UniformBufferInstance(context, testCaseParams)
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderUniformBufferArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over uniform buffer dynamic descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		TCU_THROW(NotSupportedError, "Update after bind for uniform buffer dynamic descriptors is not supported.");
-	}
 }
 
 tcu::TestStatus DynamicUniformBufferInstance::iterate(void)
@@ -2318,19 +2228,6 @@ InputAttachmentInstance::InputAttachmentInstance					(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-
-	if (!(feats.shaderInputAttachmentArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over input attachment descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		TCU_THROW(NotSupportedError, "Update after bind for input attachment descriptors is not supported.");
-	}
 }
 
 void InputAttachmentInstance::createAndPopulateDescriptors			(IterateCommonVariables&					variables)
@@ -2466,21 +2363,6 @@ SamplerInstance::SamplerInstance									(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-	// Note: common flags for SAMPLER, SAMPLED_IMAGE, COMBINED_IMAGE_SAMPLER
-
-	if (!(feats.shaderSampledImageArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over sampler descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingSampledImageUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for sampler descriptors is not supported.");
-	}
 }
 
 void SamplerInstance::updateDescriptors								(IterateCommonVariables&					variables)
@@ -2594,21 +2476,6 @@ SampledImageInstance::SampledImageInstance							(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-	// Note: common flags for SAMPLER, SAMPLED_IMAGE, COMBINED_IMAGE_SAMPLER
-
-	if (!(feats.shaderSampledImageArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over sampled image descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingSampledImageUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for sampled image descriptors is not supported.");
-	}
 }
 
 void SampledImageInstance::updateDescriptors						(IterateCommonVariables&					variables)
@@ -2724,21 +2591,6 @@ CombinedImageInstance::CombinedImageInstance						(Context&									context,
 			performWritesInVertex(testCaseParams.descriptorType),
 			testCaseParams))
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	feats = dp.descriptorIndexingFeatures();
-	// Note: common flags for SAMPLER, SAMPLED_IMAGE, COMBINED_IMAGE_SAMPLER
-
-	if (!(feats.shaderSampledImageArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over combined image sampler descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		if (!(feats.descriptorBindingSampledImageUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for combined image sampler descriptors is not supported.");
-	}
 }
 
 void CombinedImageInstance::updateDescriptors						(IterateCommonVariables&					variables)
@@ -2861,20 +2713,6 @@ StorageImageInstance::StorageImageInstance							(Context&									context,
 	, m_buffer		()
 	, m_fillColor	(10)
 {
-	ut::DeviceProperties dp(context);
-
-	checkIndexingAvailable(dp);
-
-	const VkPhysicalDeviceDescriptorIndexingFeaturesEXT& features = dp.descriptorIndexingFeatures();
-
-	if (!(features.shaderStorageImageArrayNonUniformIndexing))
-		TCU_THROW(NotSupportedError, "Non-uniform indexing over storage image descriptor arrays is not supported.");
-
-	if (testCaseParams.updateAfterBind)
-	{
-		if (!(features.descriptorBindingStorageImageUpdateAfterBind))
-			TCU_THROW(NotSupportedError, "Update after bind for storage image descriptors is not supported.");
-	}
 }
 
 void StorageImageInstance::updateDescriptors						(IterateCommonVariables&					variables)
@@ -3022,13 +2860,13 @@ class DescriptorIndexingTestCase : public TestCase
 {
 	const TestCaseParams m_testCaseParams;
 public:
-	DescriptorIndexingTestCase(tcu::TestContext &context, const char *name, const char *description, const TestCaseParams& testCaseParams)
+	DescriptorIndexingTestCase (tcu::TestContext &context, const char *name, const char *description, const TestCaseParams& testCaseParams)
 		: TestCase(context, name, description)
 		, m_testCaseParams(testCaseParams)
 	{
 	}
 
-	vkt::TestInstance* createInstance(vkt::Context& context) const // override
+	vkt::TestInstance* createInstance (vkt::Context& context) const // override
 	{
 		switch (m_testCaseParams.descriptorType)
 		{
@@ -3060,7 +2898,98 @@ public:
 		return DE_NULL;
 	}
 
-	virtual void initPrograms(SourceCollections& programCollection) const
+	virtual void checkSupport (vkt::Context& context) const
+	{
+		context.requireDeviceExtension("VK_EXT_descriptor_indexing");
+
+		const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT& feats = context.getDescriptorIndexingFeatures();
+
+		switch (m_testCaseParams.descriptorType)
+		{
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			if (!(feats.shaderStorageBufferArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over storage buffer descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingStorageBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for storage buffer descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+			if (!(feats.shaderUniformBufferArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing for uniform buffer descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingUniformBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for uniform buffer descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+			if (!(feats.shaderStorageTexelBufferArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing for storage texel buffer descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingStorageTexelBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for storage texel buffer descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+			if (!(feats.shaderUniformTexelBufferArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing for uniform texel buffer descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingUniformTexelBufferUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for uniform texel buffer descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+			if (!(feats.shaderStorageBufferArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over storage buffer dynamic descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for storage buffer dynamic descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+			if (!(feats.shaderUniformBufferArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over uniform buffer dynamic descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for uniform buffer dynamic descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+			if (!(feats.shaderInputAttachmentArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over input attachment descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for input attachment descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+			if (!(feats.shaderSampledImageArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over sampler descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingSampledImageUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for sampler descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			if (!(feats.shaderSampledImageArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over sampled image descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingSampledImageUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for sampled image descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			if (!(feats.shaderSampledImageArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over combined image sampler descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingSampledImageUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for combined image sampler descriptors is not supported.");
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			if (!(feats.shaderStorageImageArrayNonUniformIndexing))
+				TCU_THROW(NotSupportedError, "Non-uniform indexing over storage image descriptor arrays is not supported.");
+
+			if (m_testCaseParams.updateAfterBind && !feats.descriptorBindingStorageImageUpdateAfterBind)
+				TCU_THROW(NotSupportedError, "Update after bind for storage image descriptors is not supported.");
+			break;
+		default:
+			DE_FATAL("Unknown Descriptor Type");
+			break;
+		}
+	}
+
+	virtual void initPrograms (SourceCollections& programCollection) const
 	{
 		std::string(*genShaderSource)(VkShaderStageFlagBits, const TestCaseParams&, bool) = &CommonDescriptorInstance::getShaderSource;
 

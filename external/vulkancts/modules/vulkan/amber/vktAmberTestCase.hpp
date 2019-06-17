@@ -66,9 +66,8 @@ public:
 	// Check that the Vulkan implementation supports this test.
 	// We have the principle that client code in dEQP should independently
 	// determine if the test should be supported:
-	//  - If any of the extensions registered via
-	//    |addRequiredDeviceExtension| is not supported then throw a
-	//    NotSupported exception.
+	//  - If any of the extensions registered via |addRequirement| is not
+	//    supported then throw a NotSupported exception.
 	//  - Otherwise, we do a secondary sanity check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
@@ -80,13 +79,29 @@ public:
 	// Otherwise, defaults to target Vulkan 1.0, SPIR-V 1.0.
 	void setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options);
 
-	// Add a require device extension, to be checked in checkSupport.
-	void addRequiredDeviceExtension(const std::string& ext);
+	// Add a required instance extension, device extension, or feature bit.
+	// A feature bit is represented by a string of form "<structure>.<feature>", where
+	// the structure name matches the Vulkan spec, but without the leading "VkPhysicalDevice".
+	// An example entry is: "VariablePointerFeatures.variablePointers".
+	// An instance or device extension will not have a period in its name.
+	void addRequirement(const std::string& requirement);
 
 private:
 	amber::Recipe* m_recipe;
 	vk::SpirVAsmBuildOptions m_asm_options;
-	std::set<std::string> m_required_device_extensions;
+
+	// Instance and device extensions required by the test.
+	// We don't differentiate between the two:  We consider the requirement
+	// satisfied if the string is registered as either an instance or device
+	// extension.  Use a set for consistent ordering.
+	std::set<std::string> m_required_extensions;
+
+	// Features required by the test.
+	// A feature bit is represented by a string of form "<structure>.<feature>", where
+	// the structure name matches the Vulkan spec, but without the leading "VkPhysicalDevice".
+	// An example entry is: "VariablePointerFeatures.variablePointers".
+	// Use a set for consistent ordering.
+	std::set<std::string> m_required_features;
 };
 
 } // cts_amber

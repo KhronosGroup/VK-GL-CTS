@@ -154,13 +154,8 @@ public:
 
 	tcu::TestStatus iterate (void)
 	{
-		const InstanceInterface&	vki				= m_context.getInstanceInterface();
-		const VkPhysicalDevice		physDevice		= m_context.getPhysicalDevice();
 		const Queue*				sparseQueue		= DE_NULL;
 		std::vector<const Queue*>	otherQueues;
-
-		if (!getPhysicalDeviceFeatures(vki, physDevice).sparseBinding)
-			TCU_THROW(NotSupportedError, "Sparse binding not supported");
 
 		// Determine required queues and create a device that supports them
 		{
@@ -313,7 +308,7 @@ private:
 class SparseQueueBindTest : public TestCase
 {
 public:
-	SparseQueueBindTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
+					SparseQueueBindTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
 		: TestCase	(testCtx, name, description)
 		, m_params	(params)
 	{
@@ -321,9 +316,14 @@ public:
 		DE_ASSERT(params.numQueues == 1u || m_params.numWaitSemaphores > 0u || m_params.numSignalSemaphores > 0u);	// without any semaphores, only sparse queue will be used
 	}
 
-	TestInstance* createInstance (Context& context) const
+	TestInstance*	createInstance		(Context& context) const
 	{
 		return new SparseQueueBindTestInstance(context, m_params);
+	}
+
+	virtual void	checkSupport		(Context& context) const
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 	}
 
 private:

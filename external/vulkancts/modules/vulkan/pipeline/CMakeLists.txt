@@ -1,6 +1,7 @@
 
 include_directories(
 	..
+	../amber
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
@@ -74,6 +75,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineVertexInputTests.hpp
 	vktPipelineTimestampTests.cpp
 	vktPipelineTimestampTests.hpp
+	vktPipelineVertexOnlyTests.cpp
+	vktPipelineVertexOnlyTests.hpp
 	vktPipelineVertexUtil.cpp
 	vktPipelineVertexUtil.hpp
 	vktPipelineCacheTests.cpp
@@ -82,15 +85,20 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMakeUtil.hpp
 	vktPipelineCreationFeedbackTests.cpp
 	vktPipelineCreationFeedbackTests.hpp
+	vktPipelineDepthRangeUnrestrictedTests.cpp
+	vktPipelineDepthRangeUnrestrictedTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
 	tcutil
 	vkutil
 	referencerenderer
+	libamber
 	)
 
 PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
+include_directories("../../../../amber/src/include")
+include_directories("../amber")
 
 add_library(deqp-vk-pipeline STATIC ${DEQP_VK_PIPELINE_SRCS})
 target_link_libraries(deqp-vk-pipeline ${DEQP_VK_PIPELINE_LIBS})

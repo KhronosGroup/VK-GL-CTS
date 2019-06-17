@@ -260,10 +260,11 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 	de::MovePtr<Allocation>			bufferAlloc;
 	Move<VkCommandPool>				cmdPool;
 	Move<VkCommandBuffer>			cmdBuffer;
-	Move<VkFence>					fence;
 
 	tcu::TextureFormat				retFormat		(tcu::TextureFormat::D, tcu::TextureFormat::CHANNELTYPE_LAST);
 	tcu::TextureFormat				bufferFormat	(tcu::TextureFormat::D, tcu::TextureFormat::CHANNELTYPE_LAST);
+	const VkImageAspectFlags		barrierAspect	= VK_IMAGE_ASPECT_DEPTH_BIT | (mapVkFormat(format).order == tcu::TextureFormat::DS ? VK_IMAGE_ASPECT_STENCIL_BIT : (VkImageAspectFlagBits)0);
+
 	switch (format)
 	{
 	case vk::VK_FORMAT_D16_UNORM:
@@ -310,47 +311,65 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 	cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	// Create fence
-	fence = createFence(vk, device);
+	beginCommandBuffer(vk, *cmdBuffer);
+	copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, barrierAspect, VK_IMAGE_ASPECT_DEPTH_BIT);
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+	// Read buffer data
+	invalidateAlloc(vk, device, *bufferAlloc);
+	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(bufferFormat, resultLevel->getSize(), bufferAlloc->getHostPtr()));
+
+	return resultLevel;
+}
+
+de::MovePtr<tcu::TextureLevel> readStencilAttachment (const vk::DeviceInterface&	vk,
+													  vk::VkDevice					device,
+													  vk::VkQueue					queue,
+													  deUint32						queueFamilyIndex,
+													  vk::Allocator&				allocator,
+													  vk::VkImage					image,
+													  vk::VkFormat					format,
+													  const tcu::UVec2&				renderSize)
+{
+	Move<VkBuffer>					buffer;
+	de::MovePtr<Allocation>			bufferAlloc;
+	Move<VkCommandPool>				cmdPool;
+	Move<VkCommandBuffer>			cmdBuffer;
+
+	tcu::TextureFormat				retFormat		(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT8);
+	tcu::TextureFormat				bufferFormat	(tcu::TextureFormat::S, tcu::TextureFormat::UNSIGNED_INT8);
+
+	const VkImageAspectFlags		barrierAspect	= VK_IMAGE_ASPECT_STENCIL_BIT | (mapVkFormat(format).order == tcu::TextureFormat::DS ? VK_IMAGE_ASPECT_DEPTH_BIT : (VkImageAspectFlagBits)0);
+	const VkDeviceSize				pixelDataSize	= renderSize.x() * renderSize.y() * bufferFormat.getPixelSize();
+	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(retFormat, renderSize.x(), renderSize.y()));
+
+	// Create destination buffer
+	{
+		const VkBufferCreateInfo bufferParams =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
+			pixelDataSize,								// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+			0u,											// deUint32				queueFamilyIndexCount;
+			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+		};
+
+		buffer		= createBuffer(vk, device, &bufferParams);
+		bufferAlloc = allocator.allocate(getBufferMemoryRequirements(vk, device, *buffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
+	}
+
+	// Create command pool and buffer
+	cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *cmdBuffer);
-
-	const VkImageSubresourceLayers	subresource	=
-	{
-		VK_IMAGE_ASPECT_DEPTH_BIT,					// VkImageAspectFlags	aspectMask;
-		0u,											// deUint32				mipLevel;
-		0u,											// deUint32				baseArrayLayer;
-		1u,											// deUint32				layerCount;
-	};
-
-	const VkBufferImageCopy			region		=
-	{
-		0ull,												// VkDeviceSize					bufferOffset;
-		0u,													// deUint32						bufferRowLength;
-		0u,													// deUint32						bufferImageHeight;
-		subresource,										// VkImageSubresourceLayers		imageSubresource;
-		makeOffset3D(0, 0, 0),								// VkOffset3D					imageOffset;
-		makeExtent3D(renderSize.x(), renderSize.y(), 1u)	// VkExtent3D					imageExtent;
-	};
-
-	vk.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &region);
-
-	const VkBufferMemoryBarrier	bufferBarrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
-		*buffer,									// VkBuffer			buffer;
-		0ull,										// VkDeviceSize		offset;
-		VK_WHOLE_SIZE								// VkDeviceSize		size;
-	};
-
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-						  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
-
+	copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, barrierAspect, VK_IMAGE_ASPECT_STENCIL_BIT);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());

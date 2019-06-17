@@ -641,21 +641,9 @@ public:
 
 			createDeviceSupportingQueues(requirements);
 		}
-		const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(m_context.getInstanceInterface(), getPhysicalDevice());
 
-		if (!features.sparseBinding)
-			TCU_THROW(NotSupportedError, "Missing feature: sparseBinding");
+		const DeviceInterface& vk = getDeviceInterface();
 
-		if (m_residency && !features.sparseResidencyBuffer)
-			TCU_THROW(NotSupportedError, "Missing feature: sparseResidencyBuffer");
-
-		if (m_aliased && !features.sparseResidencyAliased)
-			TCU_THROW(NotSupportedError, "Missing feature: sparseResidencyAliased");
-
-		if (m_nonResidentStrict && !m_context.getDeviceProperties().sparseProperties.residencyNonResidentStrict)
-			TCU_THROW(NotSupportedError, "Missing sparse property: residencyNonResidentStrict");
-
-		const DeviceInterface& vk		= getDeviceInterface();
 		m_sparseQueue					= getQueue(VK_QUEUE_SPARSE_BINDING_BIT, 0u);
 		m_universalQueue				= getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0u);
 
@@ -1457,6 +1445,20 @@ private:
 	const Function	m_func;
 };
 
+void checkSupport (Context& context, const TestFlags flags)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+	if (flags & TEST_FLAG_RESIDENCY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
+
+	if (flags & TEST_FLAG_ALIASED)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_ALIASED);
+
+	if (flags & TEST_FLAG_NON_RESIDENT_STRICT && !context.getDeviceProperties().sparseProperties.residencyNonResidentStrict)
+		TCU_THROW(NotSupportedError, "Missing sparse property: residencyNonResidentStrict");
+}
+
 //! Convenience function to create a TestCase based on a freestanding initPrograms and a TestInstance implementation
 template<typename TestInstanceT, typename Arg0>
 TestCase* createTestInstanceWithPrograms (tcu::TestContext&									testCtx,
@@ -1465,8 +1467,8 @@ TestCase* createTestInstanceWithPrograms (tcu::TestContext&									testCtx,
 										  typename FunctionProgramsSimple1<Arg0>::Function	initPrograms,
 										  Arg0												arg0)
 {
-	return new InstanceFactory1<TestInstanceT, Arg0, FunctionProgramsSimple1<Arg0> >(
-		testCtx, tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0);
+	return new InstanceFactory1WithSupport<TestInstanceT, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
+		testCtx, tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
 void populateTestGroup (tcu::TestCaseGroup* parentGroup)

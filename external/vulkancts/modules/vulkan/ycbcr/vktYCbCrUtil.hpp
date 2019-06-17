@@ -83,6 +83,7 @@ void										checkImageSupport			(Context& context, vk::VkFormat format, vk::Vk
 
 void										fillRandom					(de::Random* randomGen, MultiPlaneImageData* imageData);
 void										fillGradient				(MultiPlaneImageData* imageData, const tcu::Vec4& minVal, const tcu::Vec4& maxVal);
+void										fillZero					(MultiPlaneImageData* imageData);
 
 std::vector<de::SharedPtr<vk::Allocation> >	allocateAndBindImageMemory	(const vk::DeviceInterface&	vkd,
 																		 vk::VkDevice				device,

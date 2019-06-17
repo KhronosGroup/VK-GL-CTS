@@ -87,18 +87,6 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 	const VkDevice			device	= m_context.getDevice();
 
-	if (m_params.depthClampEnable && !m_context.getDeviceFeatures().depthClamp)
-		TCU_THROW(NotSupportedError, "DepthClamp device feature not supported.");
-
-	if (params.minDepth > 1.0f	||
-		params.minDepth < 0.0f	||
-		params.maxDepth > 1.0f	||
-		params.maxDepth < 0.0f)
-	{
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_depth_range_unrestricted"))
-			throw tcu::NotSupportedError("Test variant with minDepth/maxDepth outside 0..1 requires the VK_EXT_depth_range_unrestricted extension");
-	}
-
 	// Vertex data
 	{
 		std::vector<Vec4> vertexData;
@@ -398,6 +386,15 @@ public:
 
 			programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
 		}
+	}
+
+	virtual void checkSupport (Context& context) const
+	{
+		if (m_params.depthClampEnable)
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_CLAMP);
+
+		if (m_params.minDepth > 1.0f || m_params.minDepth < 0.0f || m_params.maxDepth > 1.0f || m_params.maxDepth < 0.0f)
+			context.requireDeviceExtension("VK_EXT_depth_range_unrestricted");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const

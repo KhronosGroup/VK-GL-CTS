@@ -182,6 +182,29 @@ private:
 };
 
 template<>
+class Deleter<VkDebugUtilsMessengerEXT>
+{
+public:
+									Deleter		(const InstanceInterface& instanceIface, VkInstance instance, const VkAllocationCallbacks* allocator)
+										: m_instanceIface	(&instanceIface)
+										, m_instance		(instance)
+										, m_allocator		(allocator)
+									{}
+									Deleter		(void)
+										: m_instanceIface	(DE_NULL)
+										, m_instance		((VkInstance)0)
+										, m_allocator		(DE_NULL)
+									{}
+
+	void							operator()	(VkDebugUtilsMessengerEXT obj) const { m_instanceIface->destroyDebugUtilsMessengerEXT(m_instance, obj, m_allocator); }
+
+private:
+	const InstanceInterface*		m_instanceIface;
+	VkInstance						m_instance;
+	const VkAllocationCallbacks*	m_allocator;
+};
+
+template<>
 class Deleter<VkDescriptorSet>
 {
 public:

@@ -99,7 +99,7 @@ the Standard Template Library (STL).
 Configuring and Building the Tests
 ------------------------
 The CTS is built via CMake build system. The requirements for the build are as follows:
-- CMake 2.8 (3.6 for Android NDK r17+ builds) or newer
+- CMake 3.0 (3.6 for Android NDK r17+ builds) or newer
 - C++ compiler with STL and exceptions support
 - Unix: Make + GCC / Clang
 - Windows: Visual Studio or Windows SDK (available free-of-charge)

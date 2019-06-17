@@ -141,16 +141,6 @@ typedef WindowInterface<TYPE_WAYLAND>	WaylandWindowInterface;
 
 // VK_KHR_mir_surface
 
-template<>
-struct TypeTraits<TYPE_MIR>
-{
-	typedef pt::MirConnectionPtr		NativeDisplayType;
-	typedef pt::MirSurfacePtr			NativeWindowType;
-};
-
-typedef DisplayInterface<TYPE_MIR>		MirDisplayInterface;
-typedef WindowInterface<TYPE_MIR>		MirWindowInterface;
-
 // VK_KHR_android_surface
 
 template<>

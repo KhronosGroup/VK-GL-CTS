@@ -20,10 +20,17 @@
 #
 #-------------------------------------------------------------------------
 
+import logging
 import egl
+import sys
 
 def gen ():
 	egl.gen()
 
 if __name__ == "__main__":
+	# https://docs.python.org/3/howto/logging.html#what-happens-if-no-configuration-is-provided
+	# To obtain the pre-3.2 behaviour, logging.lastResort can be set to None.
+	if (sys.version_info >= (3, 2)):
+		logging.lastResort=None
+
 	gen()

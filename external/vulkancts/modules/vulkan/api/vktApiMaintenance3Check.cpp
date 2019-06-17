@@ -47,15 +47,6 @@ typedef vk::VkPhysicalDeviceProperties DevProp1;
 typedef vk::VkPhysicalDeviceProperties2  DevProp2;
 typedef vk::VkPhysicalDeviceMaintenance3Properties MainDevProp3;
 
-
-void										checkSupport							(const Context& m_context)
-{
-	const vector<string>					extensions								= m_context.getDeviceExtensions();
-
-	if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_maintenance3"))
-		TCU_THROW(NotSupportedError, "VK_KHR_maintenance3 extension is not supported");
-}
-
 class Maintenance3StructTestInstance : public TestInstance
 {
 public:
@@ -64,7 +55,6 @@ public:
 	{}
 	virtual tcu::TestStatus					iterate									(void)
 	{
-		checkSupport(m_context);
 		tcu::TestLog&						log										= m_context.getTestContext().getLog();
 
 		// these variables are equal to minimal values for maxMemoryAllocationSize and maxPerSetDescriptors
@@ -108,6 +98,10 @@ public:
 
 	virtual									~Maintenance3StructTestCase				(void)
 	{}
+	virtual void							checkSupport							(Context&	ctx) const
+	{
+		ctx.requireDeviceExtension("VK_KHR_maintenance3");
+	}
 	virtual TestInstance*					createInstance							(Context&	ctx) const
 	{
 		return new Maintenance3StructTestInstance(ctx);
@@ -124,8 +118,6 @@ public:
 	{}
 	virtual tcu::TestStatus					iterate									(void)
 	{
-		checkSupport(m_context);
-
 		// these variables are equal to minimal values for maxMemoryAllocationSize and maxPerSetDescriptors
 		const deUint32						maxMemoryAllocationSize					= 1073741824u;
 		const deUint32						maxDescriptorsInSet						= 1024u;
@@ -279,6 +271,10 @@ public:
 	{}
 	virtual									~Maintenance3DescriptorTestCase			(void)
 	{}
+	virtual void							checkSupport							(Context&	ctx) const
+	{
+		ctx.requireDeviceExtension("VK_KHR_maintenance3");
+	}
 	virtual TestInstance*					createInstance							(Context&	ctx) const
 	{
 		return new Maintenance3DescriptorTestInstance(ctx);

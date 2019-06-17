@@ -40,7 +40,6 @@ const char* getName (Type wsiType)
 		"xlib",
 		"xcb",
 		"wayland",
-		"mir",
 		"android",
 		"win32",
 		"macos",
@@ -55,7 +54,6 @@ const char* getExtensionName (Type wsiType)
 		"VK_KHR_xlib_surface",
 		"VK_KHR_xcb_surface",
 		"VK_KHR_wayland_surface",
-		"VK_KHR_mir_surface",
 		"VK_KHR_android_surface",
 		"VK_KHR_win32_surface",
 		"VK_MVK_macos_surface"
@@ -96,13 +94,6 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 			noDisplayLimit,
 			noWindowLimit,
 		},
-		// VK_KHR_mir_surface
-		{
-			PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE|PlatformProperties::FEATURE_RESIZE_WINDOW,
-			PlatformProperties::SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE,
-			noDisplayLimit,
-			noWindowLimit,
-		},
 		// VK_KHR_android_surface
 		{
 			PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE,
@@ -138,7 +129,7 @@ VkResult createSurface (const InstanceInterface&		vki,
 						VkSurfaceKHR*					pSurface)
 {
 	// Update this function if you add more WSI implementations
-	DE_STATIC_ASSERT(TYPE_LAST == 7);
+	DE_STATIC_ASSERT(TYPE_LAST == 6);
 
 	switch (wsiType)
 	{
@@ -188,22 +179,6 @@ VkResult createSurface (const InstanceInterface&		vki,
 			};
 
 			return vki.createWaylandSurfaceKHR(instance, &createInfo, pAllocator, pSurface);
-		}
-
-		case TYPE_MIR:
-		{
-			const MirDisplayInterface&			mirDisplay		= dynamic_cast<const MirDisplayInterface&>(nativeDisplay);
-			const MirWindowInterface&			mirWindow		= dynamic_cast<const MirWindowInterface&>(nativeWindow);
-			const VkMirSurfaceCreateInfoKHR		createInfo		=
-			{
-				VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR,
-				DE_NULL,
-				(VkXcbSurfaceCreateFlagsKHR)0,
-				mirDisplay.getNative(),
-				mirWindow.getNative()
-			};
-
-			return vki.createMirSurfaceKHR(instance, &createInfo, pAllocator, pSurface);
 		}
 
 		case TYPE_ANDROID:

@@ -29,11 +29,12 @@ namespace vkt
 namespace cts_amber
 {
 
-AmberTestCase* createAmberTestCase (tcu::TestContext&	testCtx,
-									const char*			name,
-									const char*			description,
-									const char*			category,
-									const std::string&	filename);
+AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
+									const char*						name,
+									const char*						description,
+									const char*						category,
+									const std::string&				filename,
+									const std::vector<std::string>	requirements = std::vector<std::string>());
 
 } // cts_amber
 } // vkt

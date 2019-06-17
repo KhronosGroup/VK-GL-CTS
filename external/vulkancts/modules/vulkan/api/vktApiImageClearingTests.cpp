@@ -574,10 +574,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount) : vk::Move<vk::VkFramebuffer>())
 {
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-	}
+		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
 }
 
 ImageClearingTestInstance::ViewType ImageClearingTestInstance::getViewType (deUint32 imageLayerCount) const
@@ -1436,7 +1433,7 @@ const char* getImageTypeCaseName (VkImageType type)
 		"2d",
 		"3d"
 	};
-	return de::getSizedArrayElement<VK_IMAGE_TYPE_LAST>(s_names, type);
+	return s_names[type];
 }
 
 const char* getImageTilingCaseName (VkImageTiling tiling)
@@ -1446,7 +1443,7 @@ const char* getImageTilingCaseName (VkImageTiling tiling)
 		"optimal",
 		"linear",
 	};
-	return de::getSizedArrayElement<VK_IMAGE_TILING_LAST>(s_names, tiling);
+	return s_names[tiling];
 }
 
 TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)

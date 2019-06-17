@@ -71,29 +71,79 @@ static amber::EngineConfig* createEngineConfig(Context& ctx)
 	return vkConfig;
 }
 
+// Returns true if the given feature is supported by the device.
+// Throws an internal error If the feature is not recognized at all.
+static bool isFeatureSupported(const vkt::Context& ctx, const std::string& feature)
+{
+	if (feature == "Features.shaderInt16")
+		return ctx.getDeviceFeatures().shaderInt16;
+	if (feature == "Features.shaderInt64")
+		return ctx.getDeviceFeatures().shaderInt64;
+	if (feature == "Features.tessellationShader")
+		return ctx.getDeviceFeatures().tessellationShader;
+	if (feature == "Features.geometryShader")
+		return ctx.getDeviceFeatures().tessellationShader;
+	if (feature == "Features.vertexPipelineStoresAndAtomics")
+		return ctx.getDeviceFeatures().vertexPipelineStoresAndAtomics;
+	if (feature == "VariablePointerFeatures.variablePointersStorageBuffer")
+		return ctx.getVariablePointersFeatures().variablePointersStorageBuffer;
+	if (feature == "VariablePointerFeatures.variablePointers")
+		return ctx.getVariablePointersFeatures().variablePointers;
+
+	std::string message = std::string("Unexpected feature name: ") + feature;
+	TCU_THROW(InternalError, message.c_str());
+}
+
 void AmberTestCase::checkSupport(Context& ctx) const
 {
-	// Check for device extensions as declared by the test code.
-	if (m_required_device_extensions.size())
+	// Check for instance and device extensions as declared by the test code.
+	if (m_required_extensions.size())
 	{
-			std::set<std::string> device_extensions(ctx.getDeviceExtensions().begin(),
-													ctx.getDeviceExtensions().end());
-			std::string missing;
-			for (std::set<std::string>::iterator iter = m_required_device_extensions.begin();
-				 iter != m_required_device_extensions.end();
-				 ++iter)
+		std::set<std::string> device_extensions(ctx.getDeviceExtensions().begin(),
+												ctx.getDeviceExtensions().end());
+		std::set<std::string> instance_extensions(ctx.getInstanceExtensions().begin(),
+												  ctx.getInstanceExtensions().end());
+		std::string missing;
+		for (std::set<std::string>::iterator iter = m_required_extensions.begin();
+			 iter != m_required_extensions.end();
+			 ++iter)
+		{
+			const std::string extension = *iter;
+			if ((device_extensions.count(extension) == 0) &&
+				(instance_extensions.count(extension) == 0))
 			{
-					if (device_extensions.count(*iter) == 0)
-					{
-							missing += " " + *iter;
-					}
+				missing += " " + extension;
 			}
-			if (missing.size() > 0)
+		}
+		if (missing.size() > 0)
+		{
+			std::string message("Test requires unsupported extensions:");
+			message += missing;
+			TCU_THROW(NotSupportedError, message.c_str());
+		}
+	}
+
+	// Check for required features.  Do this after extensions are checked because
+	// some feature checks are only valid when corresponding extensions are enabled.
+	if (m_required_features.size())
+	{
+		std::string missing;
+		for (std::set<std::string>::iterator iter = m_required_features.begin();
+			 iter != m_required_features.end();
+			 ++iter)
+		{
+			const std::string feature = *iter;
+			if (!isFeatureSupported(ctx, feature))
 			{
-					std::string message("Test requires unsupported extensions:");
-					message += missing;
-					TCU_THROW(NotSupportedError, message.c_str());
+				missing += " " + feature;
 			}
+		}
+		if (missing.size() > 0)
+		{
+			std::string message("Test requires unsupported features:");
+			message += missing;
+			TCU_THROW(NotSupportedError, message.c_str());
+		}
 	}
 
 	// Check for extensions as declared by the Amber script itself.  Throw an internal
@@ -260,9 +310,12 @@ void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_
 		m_asm_options = asm_options;
 }
 
-void AmberTestCase::addRequiredDeviceExtension(const std::string& ext)
+void AmberTestCase::addRequirement(const std::string& requirement)
 {
-		m_required_device_extensions.insert(ext);
+	if (requirement.find(".") != std::string::npos)
+		m_required_features.insert(requirement);
+	else
+		m_required_extensions.insert(requirement);
 }
 
 } // cts_amber

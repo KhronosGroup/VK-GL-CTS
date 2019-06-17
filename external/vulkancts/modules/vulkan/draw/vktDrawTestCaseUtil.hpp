@@ -50,22 +50,30 @@ struct TestSpecBase
 	vk::VkPrimitiveTopology	topology;
 };
 
-template<typename Instance>
+template<typename Instance, typename Support = NoSupport0>
 class InstanceFactory : public TestCase
 {
 public:
 	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc, typename Instance::TestSpec testSpec)
 		: TestCase		(testCtx, name, desc)
 		, m_testSpec	(testSpec)
+		, m_support		()
 	{
 	}
 
-	TestInstance* createInstance (Context& context) const
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc, typename Instance::TestSpec testSpec, const Support& support)
+		: TestCase		(testCtx, name, desc)
+		, m_testSpec	(testSpec)
+		, m_support		(support)
+	{
+	}
+
+	TestInstance*	createInstance	(Context& context) const
 	{
 		return new Instance(context, m_testSpec);
 	}
 
-	virtual void initPrograms (vk::SourceCollections& programCollection) const
+	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
 	{
 		for (ShaderMap::const_iterator i = m_testSpec.shaders.begin(); i != m_testSpec.shaders.end(); ++i)
 		{
@@ -74,8 +82,14 @@ public:
 		}
 	}
 
+	virtual void	checkSupport	(Context& context) const
+	{
+		m_support.checkSupport(context);
+	}
+
 private:
-	const typename Instance::TestSpec m_testSpec;
+	const typename Instance::TestSpec	m_testSpec;
+	const Support						m_support;
 };
 
 } // Draw

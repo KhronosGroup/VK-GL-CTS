@@ -432,6 +432,17 @@ inline VkConformanceVersionKHR makeConformanceVersionKHR (deUint8 major, deUint8
 	return res;
 }
 
+inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (deUint32 numUsedVgprs, deUint32 numUsedSgprs, deUint32 ldsSizePerLocalWorkGroup, deUintptr ldsUsageSizeInBytes, deUintptr scratchMemUsageInBytes)
+{
+	VkShaderResourceUsageAMD res;
+	res.numUsedVgprs				= numUsedVgprs;
+	res.numUsedSgprs				= numUsedSgprs;
+	res.ldsSizePerLocalWorkGroup	= ldsSizePerLocalWorkGroup;
+	res.ldsUsageSizeInBytes			= ldsUsageSizeInBytes;
+	res.scratchMemUsageInBytes		= scratchMemUsageInBytes;
+	return res;
+}
+
 inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
 {
 	VkIndirectCommandsTokenNVX res;
@@ -567,6 +578,42 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	return res;
 }
 
+inline VkDrmFormatModifierPropertiesEXT makeDrmFormatModifierPropertiesEXT (deUint64 drmFormatModifier, deUint32 drmFormatModifierPlaneCount, VkFormatFeatureFlags drmFormatModifierTilingFeatures)
+{
+	VkDrmFormatModifierPropertiesEXT res;
+	res.drmFormatModifier				= drmFormatModifier;
+	res.drmFormatModifierPlaneCount		= drmFormatModifierPlaneCount;
+	res.drmFormatModifierTilingFeatures	= drmFormatModifierTilingFeatures;
+	return res;
+}
+
+inline VkShadingRatePaletteNV makeShadingRatePaletteNV (deUint32 shadingRatePaletteEntryCount, const VkShadingRatePaletteEntryNV* pShadingRatePaletteEntries)
+{
+	VkShadingRatePaletteNV res;
+	res.shadingRatePaletteEntryCount	= shadingRatePaletteEntryCount;
+	res.pShadingRatePaletteEntries		= pShadingRatePaletteEntries;
+	return res;
+}
+
+inline VkCoarseSampleLocationNV makeCoarseSampleLocationNV (deUint32 pixelX, deUint32 pixelY, deUint32 sample)
+{
+	VkCoarseSampleLocationNV res;
+	res.pixelX	= pixelX;
+	res.pixelY	= pixelY;
+	res.sample	= sample;
+	return res;
+}
+
+inline VkCoarseSampleOrderCustomNV makeCoarseSampleOrderCustomNV (VkShadingRatePaletteEntryNV shadingRate, deUint32 sampleCount, deUint32 sampleLocationCount, const VkCoarseSampleLocationNV* pSampleLocations)
+{
+	VkCoarseSampleOrderCustomNV res;
+	res.shadingRate			= shadingRate;
+	res.sampleCount			= sampleCount;
+	res.sampleLocationCount	= sampleLocationCount;
+	res.pSampleLocations	= pSampleLocations;
+	return res;
+}
+
 inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (deUint32 binding, deUint32 divisor)
 {
 	VkVertexInputBindingDivisorDescriptionEXT res;
@@ -580,5 +627,13 @@ inline VkPipelineCreationFeedbackEXT makePipelineCreationFeedbackEXT (VkPipeline
 	VkPipelineCreationFeedbackEXT res;
 	res.flags		= flags;
 	res.duration	= duration;
+	return res;
+}
+
+inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (deUint32 taskCount, deUint32 firstTask)
+{
+	VkDrawMeshTasksIndirectCommandNV res;
+	res.taskCount	= taskCount;
+	res.firstTask	= firstTask;
 	return res;
 }

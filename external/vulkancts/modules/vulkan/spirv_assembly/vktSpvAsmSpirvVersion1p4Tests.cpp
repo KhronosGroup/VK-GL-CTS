@@ -82,7 +82,7 @@ void addTestsForAmberFiles (tcu::TestCaseGroup* tests, CaseGroup group)
 		// So for, example, these tests never have to request VK_KHR_storage_buffer_storage_class,
 		// or VK_KHR_variable_pointers since those extensions were promoted to core features
 		// in Vulkan 1.1.  Note that feature bits may still be optional.
-		testCase->addRequiredDeviceExtension("VK_KHR_spirv_1_4");
+		testCase->addRequirement("VK_KHR_spirv_1_4");
 		// The tests often use StorageBuffer storage class.
 		// We do not have to request VK_KHR_storage_buffer_storage_class because that extension
 		// is about enabling use of SPV_KHR_storage_buffer_storage_class.  But SPIR-V 1.4 allows

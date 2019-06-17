@@ -276,6 +276,7 @@ class ScissorTestCase : public TestCase
 							~ScissorTestCase	(void);
 	virtual	void			initPrograms		(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance		(Context& context) const;
+	virtual void			checkSupport		(Context& context) const;
 
 private:
 	TestParams				m_params;
@@ -294,6 +295,15 @@ ScissorTestCase::ScissorTestCase (TestContext& context, const char* name, const 
 
 ScissorTestCase::~ScissorTestCase (void)
 {
+}
+
+void ScissorTestCase::checkSupport (Context& context) const
+{
+	if (m_params.usesMultipleScissors)
+	{
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+	}
 }
 
 void ScissorTestCase::initPrograms (SourceCollections& programCollection) const
@@ -353,7 +363,6 @@ TestStatus ScissorTestInstance::iterate (void)
 	TestLog&						log						= m_context.getTestContext().getLog();
 	const DeviceInterface&			vk						= m_context.getDeviceInterface();
 	const VkDevice					device					= m_context.getDevice();
-	const VkPhysicalDeviceFeatures	features				= getPhysicalDeviceFeatures(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
 	const CmdPoolCreateInfo			cmdPoolCreateInfo		(m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, &cmdPoolCreateInfo);
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -370,15 +379,7 @@ TestStatus ScissorTestInstance::iterate (void)
 	TextureLevel					refImage;
 
 	if (m_params.usesMultipleScissors)
-	{
-		if (!features.geometryShader)
-			throw NotSupportedError("Geometry shader not supported");
-
-		if (!features.multiViewport)
-			throw NotSupportedError("Multi viewport not supported");
-
 		gs = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
-	}
 
 	// Create color buffer image
 	{

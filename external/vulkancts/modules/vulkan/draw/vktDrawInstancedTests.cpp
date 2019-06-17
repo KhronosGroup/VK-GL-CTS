@@ -286,33 +286,38 @@ public:
 				"}\n";
 	}
 
-	TestInstance* createInstance (Context& context) const
+	virtual void	checkSupport	(Context& context) const
 	{
 		if (m_params.testAttribDivisor)
 		{
+			context.requireDeviceExtension("VK_EXT_vertex_attribute_divisor");
+
 			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
-			if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_vertex_attribute_divisor"))
-				TCU_THROW(NotSupportedError, "Implementation does not support VK_EXT_vertex_attribute_divisor");
 
 			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
 
 			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
 				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+
 			if (m_params.testMultiview)
 			{
-				if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
-					TCU_THROW(NotSupportedError, "Implementation does not support VK_KHR_multiview");
+				context.requireDeviceExtension("VK_KHR_multiview");
+
 				const vk::VkPhysicalDeviceMultiviewFeatures& multiviewFeatures = context.getMultiviewFeatures();
+
 				if (!multiviewFeatures.multiview)
 					TCU_THROW(NotSupportedError, "Implementation does not support multiview feature");
 			}
 		}
+	}
 
+	TestInstance*	createInstance	(Context& context) const
+	{
 		return new InstancedDrawInstance(context, m_params);
 	}
 
-	virtual void initPrograms (vk::SourceCollections& programCollection) const
+	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
 	{
 		programCollection.glslSources.add("InstancedDrawVert") << glu::VertexSource(m_vertexShader);
 		programCollection.glslSources.add("InstancedDrawFrag") << glu::FragmentSource(m_fragmentShader);

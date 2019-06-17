@@ -90,7 +90,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 	const VkFormatProperties						formatProperties				(getPhysicalDeviceFormatProperties(vki, physicalDevice, format));
 	const VkImageTiling								imageTiling						= (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_LINEAR
 																					: (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_OPTIMAL
-																					: VK_IMAGE_TILING_LAST;
+																					: VK_IMAGE_TILING_MAX_ENUM;
 
 	const VkImageCreateInfo							attachmentImageCreateInfo		=
 	{
@@ -527,7 +527,7 @@ tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
 	const VkFormatProperties		formatProperties		(getPhysicalDeviceFormatProperties(vki, physicalDevice, format));
 	const VkImageTiling				imageTiling				= (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_LINEAR
 															: (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_OPTIMAL
-															: VK_IMAGE_TILING_LAST;
+															: VK_IMAGE_TILING_MAX_ENUM;
 
 	const VkImageCreateInfo			imageCreateInfo			=
 	{
@@ -882,7 +882,7 @@ tcu::TestStatus pipelineLayoutLifetimeGraphicsTest (Context& context)
 	const VkFormatProperties				formatProperties			(getPhysicalDeviceFormatProperties(vki, physicalDevice, format));
 	const VkImageTiling						imageTiling					= (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_LINEAR
 																		: (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_OPTIMAL
-																		: VK_IMAGE_TILING_LAST;
+																		: VK_IMAGE_TILING_MAX_ENUM;
 
 	const VkImageCreateInfo					imageCreateInfo				=
 	{
