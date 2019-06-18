@@ -3699,14 +3699,14 @@ bool logAndVerifyImages (TestLog&											log,
 
 				invalidateAlloc(vk, device, attachmentResources[attachmentNdx]->getResultMemory());
 
+				const ConstPixelBufferAccess	access		(format, targetSize.x(), targetSize.y(), 1, ptr);
+				tcu::TextureLevel errorImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
+
+				log << TestLog::Image("Attachment" + de::toString(attachmentNdx), "Attachment " + de::toString(attachmentNdx), access);
+				log << TestLog::Image("AttachmentReference" + de::toString(attachmentNdx), "Attachment reference " + de::toString(attachmentNdx), referenceAttachments[attachmentNdx].getAccess());
+
 				if (tcu::hasDepthComponent(format.order))
 				{
-					const ConstPixelBufferAccess	access		(format, targetSize.x(), targetSize.y(), 1, ptr);
-					tcu::TextureLevel				errorImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
-
-					log << TestLog::Image("Attachment" + de::toString(attachmentNdx), "Attachment " + de::toString(attachmentNdx), access);
-					log << TestLog::Image("AttachmentReference" + de::toString(attachmentNdx), "Attachment reference " + de::toString(attachmentNdx), referenceAttachments[attachmentNdx].getAccess());
-
 					if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE || renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE)
 						&& !verifyDepthAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess(), config.depthValues))
 					{
@@ -3716,12 +3716,6 @@ bool logAndVerifyImages (TestLog&											log,
 				}
 				else if (tcu::hasStencilComponent(format.order))
 				{
-					const ConstPixelBufferAccess	access		(format, targetSize.x(), targetSize.y(), 1, ptr);
-					tcu::TextureLevel				errorImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
-
-					log << TestLog::Image("Attachment" + de::toString(attachmentNdx), "Attachment " + de::toString(attachmentNdx), access);
-					log << TestLog::Image("AttachmentReference" + de::toString(attachmentNdx), "Attachment reference " + de::toString(attachmentNdx), referenceAttachments[attachmentNdx].getAccess());
-
 					if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE || renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE)
 						&& !verifyStencilAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess()))
 					{
@@ -3731,12 +3725,6 @@ bool logAndVerifyImages (TestLog&											log,
 				}
 				else
 				{
-					const ConstPixelBufferAccess	access		(format, targetSize.x(), targetSize.y(), 1, ptr);
-					tcu::TextureLevel				errorImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), targetSize.x(), targetSize.y());
-
-					log << TestLog::Image("Attachment" + de::toString(attachmentNdx), "Attachment " + de::toString(attachmentNdx), access);
-					log << TestLog::Image("AttachmentReference" + de::toString(attachmentNdx), "Attachment reference " + de::toString(attachmentNdx), referenceAttachments[attachmentNdx].getAccess());
-
 					if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE || renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE)
 						&& !verifyColorAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess(), config.useFormatCompCount))
 					{
@@ -5270,44 +5258,23 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 
 							if(lastUseOfAttachment[inputAttachmentIndex])
 							{
-								if(*lastUseOfAttachment[inputAttachmentIndex] == subpassIndex)
-								{
-									deps.push_back(SubpassDependency(subpassIndex, subpassIndex,
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								const bool byRegion = (*lastUseOfAttachment[inputAttachmentIndex] == subpassIndex) || rng.getBool();
 
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								deps.push_back(SubpassDependency(*lastUseOfAttachment[inputAttachmentIndex], subpassIndex,
+																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																	 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																	 VK_DEPENDENCY_BY_REGION_BIT));
-								}
-								else
-								{
-									const bool byRegion = rng.getBool();
+																 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 
-									deps.push_back(SubpassDependency(*lastUseOfAttachment[inputAttachmentIndex], subpassIndex,
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-
-																	 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-
-																	 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
-								}
+																 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
 
 								lastUseOfAttachment[inputAttachmentIndex] = just(subpassIndex);
 
@@ -5325,44 +5292,23 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, const TestConfigEx
 						{
 							if (lastUseOfAttachment[*depthStencilAttachment])
 							{
-								if(*lastUseOfAttachment[*depthStencilAttachment] == subpassIndex)
-								{
-									deps.push_back(SubpassDependency(subpassIndex, subpassIndex,
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								const bool byRegion = (*lastUseOfAttachment[*depthStencilAttachment] == subpassIndex) || rng.getBool();
 
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+								deps.push_back(SubpassDependency(*lastUseOfAttachment[*depthStencilAttachment], subpassIndex,
+																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																	 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+																	| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+																	| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+																	| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-																	 VK_DEPENDENCY_BY_REGION_BIT));
-								}
-								else
-								{
-									const bool byRegion = rng.getBool();
+																 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 
-									deps.push_back(SubpassDependency(*lastUseOfAttachment[*depthStencilAttachment], subpassIndex,
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-
-																	 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-																		| VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-																		| VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
-																		| VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-
-																	 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																	 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-
-																	 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
-								}
+																 byRegion ? (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT : 0u));
 							}
 
 							lastUseOfAttachment[*depthStencilAttachment] = just(subpassIndex);
