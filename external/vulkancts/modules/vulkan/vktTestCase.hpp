@@ -119,6 +119,7 @@ public:
 							TestCase		(tcu::TestContext& testCtx, tcu::TestNodeType type, const std::string& name, const std::string& description);
 	virtual					~TestCase		(void) {}
 
+	virtual void			delayedInit		(void); // non-const init called after checkSupport but before initPrograms
 	virtual void			initPrograms	(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance	(Context& context) const = 0;
 	virtual void			checkSupport	(Context& context) const;

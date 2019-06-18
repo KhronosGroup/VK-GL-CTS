@@ -323,13 +323,12 @@ public:
 															 bool				shuffleUniformMembers = false);
 								~UniformBlockCase			(void);
 
+	virtual void				delayedInit					(void);
 	virtual	void				initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance				(Context& context) const;
 	bool						usesBlockLayout				(UniformFlags layoutFlag) const { return m_interface.usesBlockLayout(layoutFlag); }
 
 protected:
-	void						init						(void);
-
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
 	MatrixLoadFlags				m_matrixLoadFlag;

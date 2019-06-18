@@ -77,8 +77,6 @@ public:
 			block.setArraySize(numInstances);
 			block.setInstanceName("block");
 		}
-
-		init();
 	}
 };
 
@@ -116,8 +114,6 @@ public:
 			block.setInstanceName("block");
 			block.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 
@@ -143,8 +139,6 @@ public:
 			block.setInstanceName("block");
 			block.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 
@@ -175,8 +169,6 @@ public:
 			block.setInstanceName("block");
 			block.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 
@@ -207,8 +199,6 @@ public:
 			block.setInstanceName("block");
 			block.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 
@@ -238,8 +228,6 @@ public:
 			blockA.setArraySize(numInstances);
 			blockB.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 
@@ -279,8 +267,6 @@ public:
 			blockA.setArraySize(numInstances);
 			blockB.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 
@@ -308,8 +294,6 @@ public:
 			block.setInstanceName("block");
 			block.setArraySize(m_numInstances);
 		}
-
-		init();
 	}
 
 private:
@@ -343,8 +327,6 @@ public:
 			blockB.setInstanceName("testBlock");
 			blockB.setArraySize(numInstances);
 		}
-
-		init();
 	}
 };
 

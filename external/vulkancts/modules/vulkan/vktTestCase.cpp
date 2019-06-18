@@ -579,4 +579,8 @@ void TestCase::checkSupport (Context&) const
 {
 }
 
+void TestCase::delayedInit (void)
+{
+}
+
 } // vkt

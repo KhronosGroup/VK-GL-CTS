@@ -234,12 +234,11 @@ public:
 								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool usePhysStorageBuffer);
 	virtual						~SSBOLayoutCase				(void);
 
+	virtual void				delayedInit					(void);
 	virtual void				initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance				(Context& context) const;
 
 protected:
-	void						init						(void);
-
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
 	MatrixLoadFlags				m_matrixLoadFlag;

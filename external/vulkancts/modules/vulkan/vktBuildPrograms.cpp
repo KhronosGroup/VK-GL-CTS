@@ -423,7 +423,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 				if (iterator.getState() == tcu::TestHierarchyIterator::STATE_ENTER_NODE &&
 					tcu::isTestNodeTypeExecutable(iterator.getNode()->getNodeType()))
 				{
-					const TestCase* const		testCase					= dynamic_cast<TestCase*>(iterator.getNode());
+					TestCase* const				testCase					= dynamic_cast<TestCase*>(iterator.getNode());
 					const string				casePath					= iterator.getNodePath();
 					vk::ShaderBuildOptions		defaultGlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
 					vk::ShaderBuildOptions		defaultHlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
@@ -432,6 +432,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 
 					try
 					{
+						testCase->delayedInit();
 						testCase->initPrograms(sourcePrograms);
 					}
 					catch (const tcu::NotSupportedError& )

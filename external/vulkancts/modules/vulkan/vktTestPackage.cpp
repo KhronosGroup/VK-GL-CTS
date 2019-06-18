@@ -236,7 +236,7 @@ TestCaseExecutor::~TestCaseExecutor (void)
 
 void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePath)
 {
-	const TestCase*				vktCase						= dynamic_cast<TestCase*>(testCase);
+	TestCase*					vktCase						= dynamic_cast<TestCase*>(testCase);
 	tcu::TestLog&				log							= m_context.getTestContext().getLog();
 	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
 	const vk::SpirvVersion		baselineSpirvVersion		= vk::getBaselineSpirvVersion(usedVulkanVersion);
@@ -253,6 +253,8 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
 
 	vktCase->checkSupport(m_context);
+
+	vktCase->delayedInit();
 
 	m_progCollection.clear();
 	vktCase->initPrograms(sourceProgs);
