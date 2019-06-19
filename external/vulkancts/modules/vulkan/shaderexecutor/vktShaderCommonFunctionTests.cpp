@@ -529,6 +529,34 @@ public:
 	}
 };
 
+static void infNanRandomFloats(int numValues, void* const* values, const char *name, const ShaderSpec& spec)
+{
+	de::Random				rnd				(deStringHash(name) ^ 0xc2a39fu);
+	const glu::DataType		type			= spec.inputs[0].varType.getBasicType();
+	const glu::Precision	precision		= spec.inputs[0].varType.getPrecision();
+	const int				scalarSize		= glu::getDataTypeScalarSize(type);
+	const int				mantissaBits	= getMinMantissaBits(precision);
+	const deUint32			mantissaMask	= ~getMaxUlpDiffFromBits(mantissaBits) & ((1u<<23)-1u);
+
+	for (int valNdx = 0; valNdx < numValues*scalarSize; valNdx++)
+	{
+		// Roughly 25% chance of each of Inf and NaN
+		const bool		isInf		= rnd.getFloat() > 0.75f;
+		const bool		isNan		= !isInf && rnd.getFloat() > 0.66f;
+		const deUint32	m			= rnd.getUint32() & mantissaMask;
+		const deUint32	e			= rnd.getUint32() & 0xffu;
+		const deUint32	sign		= rnd.getUint32() & 0x1u;
+		// Ensure the 'quiet' bit is set on NaNs (also ensures we don't generate inf by mistake)
+		const deUint32	mantissa	= isInf ? 0 : (isNan ? ((1u<<22) | m) : m);
+		const deUint32	exp			= (isNan || isInf) ? 0xffu : deMin32(e, 0x7fu);
+		const deUint32	value		= (sign << 31) | (exp << 23) | mantissa;
+
+		DE_ASSERT(tcu::Float32(value).isInf() == isInf && tcu::Float32(value).isNaN() == isNan);
+
+		((deUint32*)values[0])[valNdx] = value;
+	}
+}
+
 class IsnanCaseInstance : public CommonFunctionTestInstance
 {
 public:
@@ -539,26 +567,7 @@ public:
 
 	void getInputValues (int numValues, void* const* values) const
 	{
-		de::Random				rnd				(deStringHash(m_name) ^ 0xc2a39fu);
-		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
-		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				mantissaBits	= getMinMantissaBits(precision);
-		const deUint32			mantissaMask	= ~getMaxUlpDiffFromBits(mantissaBits) & ((1u<<23)-1u);
-
-		for (int valNdx = 0; valNdx < numValues*scalarSize; valNdx++)
-		{
-			const bool		isNan		= rnd.getFloat() > 0.3f;
-			const bool		isInf		= !isNan && rnd.getFloat() > 0.4f;
-			const deUint32	mantissa	= !isInf ? ((1u<<22) | (rnd.getUint32() & mantissaMask)) : 0;
-			const deUint32	exp			= !isNan && !isInf ? (rnd.getUint32() & 0x7fu) : 0xffu;
-			const deUint32	sign		= rnd.getUint32() & 0x1u;
-			const deUint32	value		= (sign << 31) | (exp << 23) | mantissa;
-
-			DE_ASSERT(tcu::Float32(value).isInf() == isInf && tcu::Float32(value).isNaN() == isNan);
-
-			((deUint32*)values[0])[valNdx] = value;
-		}
+		infNanRandomFloats(numValues, values, m_name, m_spec);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
@@ -636,26 +645,7 @@ public:
 
 	void getInputValues (int numValues, void* const* values) const
 	{
-		de::Random				rnd				(deStringHash(m_name) ^ 0xc2a39fu);
-		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
-		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
-		const int				scalarSize		= glu::getDataTypeScalarSize(type);
-		const int				mantissaBits	= getMinMantissaBits(precision);
-		const deUint32			mantissaMask	= ~getMaxUlpDiffFromBits(mantissaBits) & ((1u<<23)-1u);
-
-		for (int valNdx = 0; valNdx < numValues*scalarSize; valNdx++)
-		{
-			const bool		isInf		= rnd.getFloat() > 0.3f;
-			const bool		isNan		= !isInf && rnd.getFloat() > 0.4f;
-			const deUint32	mantissa	= !isInf ? ((1u<<22) | (rnd.getUint32() & mantissaMask)) : 0;
-			const deUint32	exp			= !isNan && !isInf ? (rnd.getUint32() & 0x7fu) : 0xffu;
-			const deUint32	sign		= rnd.getUint32() & 0x1u;
-			const deUint32	value		= (sign << 31) | (exp << 23) | mantissa;
-
-			DE_ASSERT(tcu::Float32(value).isInf() == isInf && tcu::Float32(value).isNaN() == isNan);
-
-			((deUint32*)values[0])[valNdx] = value;
-		}
+		infNanRandomFloats(numValues, values, m_name, m_spec);
 	}
 
 	bool compare (const void* const* inputs, const void* const* outputs)
