@@ -84,16 +84,6 @@ vector<string> getValidationLayers (const vector<VkLayerProperties>& supportedLa
 	return enabledLayers;
 }
 
-vector<string> getValidationLayers (const PlatformInterface& vkp)
-{
-	return getValidationLayers(enumerateInstanceLayerProperties(vkp));
-}
-
-vector<string> getValidationLayers (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
-{
-	return getValidationLayers(enumerateDeviceLayerProperties(vki, physicalDevice));
-}
-
 vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions)
 {
 	vector<string>	enabledExtensions;
@@ -205,7 +195,7 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersi
 		if (!isDebugReportSupported(vkp))
 			TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 
-		enabledLayers = getValidationLayers(vkp);
+		enabledLayers = vkt::getValidationLayers(vkp);
 		if (enabledLayers.empty())
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
@@ -250,7 +240,7 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
 
 	if (cmdLine.isValidationEnabled())
 	{
-		enabledLayers = getValidationLayers(vki, physicalDevice);
+		enabledLayers = vkt::getValidationLayers(vki, physicalDevice);
 		if (enabledLayers.empty())
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
@@ -303,6 +293,16 @@ Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
 };
 
 } // anonymous
+
+vector<string> getValidationLayers (const PlatformInterface& vkp)
+{
+	return getValidationLayers(enumerateInstanceLayerProperties(vkp));
+}
+
+vector<string> getValidationLayers (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
+{
+	return getValidationLayers(enumerateDeviceLayerProperties(vki, physicalDevice));
+}
 
 class DefaultDevice
 {

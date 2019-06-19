@@ -30,6 +30,7 @@
 #include "vktRenderPassSparseRenderTargetTests.hpp"
 #include "vktRenderPassSubpassDependencyTests.hpp"
 #include "vktRenderPassUnusedAttachmentTests.hpp"
+#include "vktRenderPassUnusedClearAttachmentTests.hpp"
 #include "vktRenderPassDepthStencilResolveTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
@@ -4596,7 +4597,7 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 		Allocator&									allocator							= context.getDefaultAllocator();
 
 		const Unique<VkRenderPass>					renderPass							(createRenderPass(vk, device, renderPassInfo, config.renderPassType));
-		const Unique<VkCommandPool>					commandBufferPool					(createCommandPool(vk, device, queueIndex, 0));
+		const Unique<VkCommandPool>					commandBufferPool					(createCommandPool(vk, device, 0, queueIndex));
 		const Unique<VkCommandBuffer>				initializeImagesCommandBuffer		(allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const Unique<VkCommandBuffer>				renderCommandBuffer					(allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const Unique<VkCommandBuffer>				readImagesToBuffersCommandBuffer	(allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -6998,6 +6999,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSampleReadTests(testCtx)			: createRenderPass2SampleReadTests(testCtx));
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSparseRenderTargetTests(testCtx)	: createRenderPass2SparseRenderTargetTests(testCtx));
 	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
+	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderPassType));
 
 	renderpassTests->addChild(suballocationTestGroup.release());
 	renderpassTests->addChild(dedicatedAllocationTestGroup.release());
