@@ -7011,10 +7011,10 @@ void RenderFragmentStorageImage::verify (VerifyRenderPassContext& context, size_
 			const UVec2	pos			= UVec2(value.z() * 256u + (value.x() ^ value.z()), value.w() * 256u + (value.y() ^ value.w()));
 			const Vec4	floatValue	= context.getReferenceImage().getAccess().getPixel(pos.x() % size.x(), pos.y() % size.y());
 
-			value = UVec4((deUint32)(floatValue.x() * 255.0f),
-						  (deUint32)(floatValue.y() * 255.0f),
-						  (deUint32)(floatValue.z() * 255.0f),
-						  (deUint32)(floatValue.w() * 255.0f));
+			value = UVec4((deUint32)round(floatValue.x() * 255.0f),
+						  (deUint32)round(floatValue.y() * 255.0f),
+						  (deUint32)round(floatValue.z() * 255.0f),
+						  (deUint32)round(floatValue.w() * 255.0f));
 
 		}
 		context.getReferenceTarget().getAccess().setPixel(value.asFloat() / Vec4(255.0f), x, y);
@@ -7219,10 +7219,10 @@ void RenderFragmentSampledImage::verify (VerifyRenderPassContext& context, size_
 			const UVec2	pos			= UVec2(value.z() * 256u + (value.x() ^ value.z()), value.w() * 256u + (value.y() ^ value.w()));
 			const Vec4	floatValue	= context.getReferenceImage().getAccess().getPixel(pos.x() % size.x(), pos.y() % size.y());
 
-			value = UVec4((deUint32)(floatValue.x() * 255.0f),
-						  (deUint32)(floatValue.y() * 255.0f),
-						  (deUint32)(floatValue.z() * 255.0f),
-						  (deUint32)(floatValue.w() * 255.0f));
+			value = UVec4((deUint32)round(floatValue.x() * 255.0f),
+						  (deUint32)round(floatValue.y() * 255.0f),
+						  (deUint32)round(floatValue.z() * 255.0f),
+						  (deUint32)round(floatValue.w() * 255.0f));
 
 		}
 
@@ -9932,7 +9932,7 @@ struct AddPrograms
 					"\tfor (uint i = 0u; i < valuesPerPixel; i++)\n"
 					"\t{\n"
 					"\t\thighp vec4 floatValue = imageLoad(u_image, ivec2(int((value.z *  256u + (value.x ^ value.z)) % size.x), int((value.w * 256u + (value.y ^ value.w)) % size.y)));\n"
-					"\t\tvalue = uvec4(uint(floatValue.x * 255.0), uint(floatValue.y * 255.0), uint(floatValue.z * 255.0), uint(floatValue.w * 255.0));\n"
+					"\t\tvalue = uvec4(uint(round(floatValue.x * 255.0)), uint(round(floatValue.y * 255.0)), uint(round(floatValue.z * 255.0)), uint(round(floatValue.w * 255.0)));\n"
 					"\t}\n"
 					"\to_color = vec4(value) / vec4(255.0);\n"
 					"}\n";
@@ -9983,7 +9983,7 @@ struct AddPrograms
 					"\tfor (uint i = 0u; i < valuesPerPixel; i++)\n"
 					"\t{\n"
 					"\t\thighp vec4 floatValue = texelFetch(u_sampler, ivec2(int((value.z *  256u + (value.x ^ value.z)) % size.x), int((value.w * 256u + (value.y ^ value.w)) % size.y)), 0);\n"
-					"\t\tvalue = uvec4(uint(floatValue.x * 255.0), uint(floatValue.y * 255.0), uint(floatValue.z * 255.0), uint(floatValue.w * 255.0));\n"
+					"\t\tvalue = uvec4(uint(round(floatValue.x * 255.0)), uint(round(floatValue.y * 255.0)), uint(round(floatValue.z * 255.0)), uint(round(floatValue.w * 255.0)));\n"
 					"\t}\n"
 					"\to_color = vec4(value) / vec4(255.0);\n"
 					"}\n";
