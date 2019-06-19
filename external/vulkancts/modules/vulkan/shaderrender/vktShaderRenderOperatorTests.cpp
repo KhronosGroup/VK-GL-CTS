@@ -1273,9 +1273,6 @@ void ShaderOperatorTests::init (void)
 	// Unary operators.
 	funcInfoGroups.push_back(
 		BuiltinFuncGroup("unary_operator", "Unary operator tests")
-		<< BuiltinOperInfo						("plus",			"+",	GT,		Value(GT,  -1.0f, 1.0f),	notUsed,	notUsed,	0.5f,	0.5f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(nop))
-		<< BuiltinOperInfo						("plus",			"+",	IGT,	Value(IGT, -5.0f, 5.0f),	notUsed,	notUsed,	0.1f,	0.5f,	PRECMASK_ALL,		INT_GENTYPE_FUNCS(nop))
-		<< BuiltinOperInfo						("plus",			"+",	UGT,	Value(UGT,  0.0f, 2e2f),	notUsed,	notUsed,	5e-3f,	0.0f,	PRECMASK_ALL,		UINT_GENTYPE_FUNCS(nop))
 		<< BuiltinOperInfo						("minus",			"-",	GT,		Value(GT,  -1.0f, 1.0f),	notUsed,	notUsed,	0.5f,	0.5f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(negate))
 		<< BuiltinOperInfo						("minus",			"-",	IGT,	Value(IGT, -5.0f, 5.0f),	notUsed,	notUsed,	0.1f,	0.5f,	PRECMASK_ALL,		INT_GENTYPE_FUNCS(negate))
 		<< BuiltinOperInfo						("minus",			"-",	UGT,	Value(UGT,  0.0f, 4e9f),	notUsed,	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(negate))
