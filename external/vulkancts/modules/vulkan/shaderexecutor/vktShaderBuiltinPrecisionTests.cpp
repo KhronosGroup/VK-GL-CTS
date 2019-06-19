@@ -2950,89 +2950,22 @@ DEFINE_DERIVED_FLOAT1_INPUTRANGE(Tan, tan, x, sin(x) * (constant(1.0f) / cos(x))
 DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(Tan16Bit, tan, x, sin(x) * (constant((deFloat16)FLOAT16_1_0) / cos(x)), Interval(false, -DE_PI_DOUBLE, DE_PI_DOUBLE));
 
 template <class T>
-class ArcTrigFunc : public CFloatFunc1<T>
+class ATan : public CFloatFunc1<T>
 {
 public:
-					ArcTrigFunc	(const string&		name,
-								 DoubleFunc1&		func,
-								 const Interval&	domain,
-								 const Interval&	codomain)
-						: CFloatFunc1<T>	(name, func)
-						, m_domain			(domain)
-						, m_codomain		(codomain) {}
+			ATan		(void) : CFloatFunc1<T>	("atan", deAtanOver) {}
 
 protected:
-	double			precision	(const EvalContext& ctx, double ret, double x) const;
-
-	// We could implement getCodomain with m_codomain, but choose not to,
-	// because it seems too strict with trascendental constants like pi.
-
-	const Interval	m_domain;
-	const Interval	m_codomain;
-};
-
-template<> //half precision
-double ArcTrigFunc<Signature<deFloat16, deFloat16> >::precision (const EvalContext& ctx, double ret, double x) const
-{
-	if (!m_domain.contains(x))
-		return TCU_NAN;
-
-	// From the spec 5 ULP.
-	return ctx.format.ulp(ret, 5.0);
-}
-
-template<>
-double ArcTrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, double ret, double x) const
-{
-	if (!m_domain.contains(x))
-		return TCU_NAN;
-
-	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
-		return ctx.format.ulp(ret, 4096.0);
-	else
-		return ctx.format.ulp(ret, 5.0);
-}
-
-class ASin : public CFloatFunc1<Signature<float, float> >
-{
-public:
-	ASin(void) : CFloatFunc1<Signature<float, float> >("asin", deAsin) {}
-
-protected:
-	double			precision(const EvalContext& ctx, double ret, double x) const
+	double	precision	(const EvalContext& ctx, double ret, double x) const
 	{
-		DE_UNREF(ret);
-		if (!de::inBounds(x, -1.0, 1.0))
+		if (x < -DE_PI_DOUBLE * 0.5 || x > DE_PI_DOUBLE * 0.5)
 			return TCU_NAN;
 
 		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
-		{
-			// Absolute error of 2^-11
-			return deLdExp(1.0, -11);
-		}
+			return ctx.format.ulp(ret, 4096.0);
 		else
-		{
-			// Absolute error of 2^-8
-			return deLdExp(1.0, -8);
-		}
+			return ctx.format.ulp(ret, ctx.isShaderFloat16Int8 ? 5.0 : 2.0);
 	}
-};
-
-class ACos : public ArcTrigFunc<Signature<float, float> >
-{
-public:
-	ACos (void) : ArcTrigFunc<Signature<float, float> > ("acos", deAcos,
-								  Interval(-1.0, 1.0),
-								  Interval(0.0, DE_PI_DOUBLE)) {}
-};
-
-template <class T>
-class ATan : public ArcTrigFunc<T>
-{
-public:
-	ATan (void) : ArcTrigFunc<T>("atan", deAtanOver,
-								  Interval::unbounded(),
-								  Interval(-DE_PI_DOUBLE * 0.5, DE_PI_DOUBLE * 0.5)) {}
 };
 
 template <class T>
@@ -3089,18 +3022,16 @@ DEFINE_DERIVED_FLOAT1_16BIT(Sinh16Bit, sinh, x, (exp(x) - exp(-x)) / constant((d
 DEFINE_DERIVED_FLOAT1_16BIT(Cosh16Bit, cosh, x, (exp(x) + exp(-x)) / constant((deFloat16)FLOAT16_2_0));
 DEFINE_DERIVED_FLOAT1_16BIT(Tanh16Bit, tanh, x, sinh(x) / cosh(x));
 
-// These are not defined as derived forms in the GLSL ES spec, but
-// that gives us a reasonable precision.
-DEFINE_DERIVED_FLOAT1(ASin16BitInOut32b, asin, x, atan2(x, sqrt(constant(1.0f) - pow(x, constant(2.0f)))));
-DEFINE_DERIVED_FLOAT1(ACos16BitInOut32b, acos, x, atan2(sqrt(constant(1.0f) - pow(x, constant(2.0f))), x));
+DEFINE_DERIVED_FLOAT1(ASin, asin, x, atan2(x, sqrt(constant(1.0f) - x * x)));
+DEFINE_DERIVED_FLOAT1(ACos, acos, x, atan2(sqrt(constant(1.0f) - x * x), x));
 DEFINE_DERIVED_FLOAT1(ASinh, asinh, x, log(x + sqrt(x * x + constant(1.0f))));
 DEFINE_DERIVED_FLOAT1(ACosh, acosh, x, log(x + sqrt(alternatives((x + constant(1.0f)) * (x - constant(1.0f)),
 																 (x * x - constant(1.0f))))));
 DEFINE_DERIVED_FLOAT1(ATanh, atanh, x, constant(0.5f) * log((constant(1.0f) + x) /
 															(constant(1.0f) - x)));
 
-DEFINE_DERIVED_FLOAT1_16BIT(ASin16Bit, asin, x, atan2(x, sqrt(constant((deFloat16)FLOAT16_1_0) - pow(x, constant((deFloat16)FLOAT16_2_0)))));
-DEFINE_DERIVED_FLOAT1_16BIT(ACos16Bit, acos, x, atan2(sqrt(constant((deFloat16)FLOAT16_1_0) - pow(x, constant((deFloat16)FLOAT16_2_0))), x));
+DEFINE_DERIVED_FLOAT1_16BIT(ASin16Bit, asin, x, atan2(x, sqrt(constant((deFloat16)FLOAT16_1_0) - x * x)));
+DEFINE_DERIVED_FLOAT1_16BIT(ACos16Bit, acos, x, atan2(sqrt(constant((deFloat16)FLOAT16_1_0) - x * x), x));
 DEFINE_DERIVED_FLOAT1_16BIT(ASinh16Bit, asinh, x, log(x + sqrt(x * x + constant((deFloat16)FLOAT16_1_0))));
 DEFINE_DERIVED_FLOAT1_16BIT(ACosh16Bit, acosh, x, log(x + sqrt(alternatives((x + constant((deFloat16)FLOAT16_1_0)) * (x - constant((deFloat16)FLOAT16_1_0)),
 																 (x * x - constant((deFloat16)FLOAT16_1_0))))));
@@ -6379,7 +6310,7 @@ void addScalarFactory (BuiltinFuncs& funcs, string name = "")
 	funcs.addFactory(SharedPtr<const CaseFactory>(new GenFuncCaseFactory<typename F::Sig>(makeVectorizedFuncs<F>(), name)));
 }
 
-MovePtr<const CaseFactories> createBuiltinCases (bool is16BitTest = false)
+MovePtr<const CaseFactories> createBuiltinCases ()
 {
 	MovePtr<BuiltinFuncs>	funcs	(new BuiltinFuncs());
 
@@ -6396,16 +6327,8 @@ MovePtr<const CaseFactories> createBuiltinCases (bool is16BitTest = false)
 	addScalarFactory<Cos<Signature<float, float> > >(*funcs);
 	addScalarFactory<Tan>(*funcs);
 
-	if (is16BitTest)
-		addScalarFactory<ASin16BitInOut32b>(*funcs);
-	else
-		addScalarFactory<ASin>(*funcs);
-
-	if (is16BitTest)
-		addScalarFactory<ACos16BitInOut32b>(*funcs);
-	else
-		addScalarFactory<ACos>(*funcs);
-
+	addScalarFactory<ASin>(*funcs);
+	addScalarFactory<ACos>(*funcs);
 	addScalarFactory<ATan2< Signature<float, float, float> > >(*funcs, "atan2");
 	addScalarFactory<ATan<Signature<float, float> > >(*funcs);
 	addScalarFactory<Sinh>(*funcs);
@@ -6591,7 +6514,7 @@ void addBuiltinPrecisionTests (TestContext&				ctx,
 	const int numRandoms	= userRandoms > 0 ? userRandoms : defRandoms;
 
 	MovePtr<const CaseFactories> cases = (test16Bit && !storage32Bit)	? createBuiltinCases16Bit()
-																		: createBuiltinCases(storage32Bit);
+																		: createBuiltinCases();
 	for (size_t ndx = 0; ndx < cases->getFactories().size(); ++ndx)
 	{
 		if (!test16Bit)
