@@ -3555,8 +3555,8 @@ ExprP<typename ContainerOf<T, Size>::Container> genXType (const ExprP<T>& x)
 typedef GenVec<float, 2> FloatVec2;
 DEFINE_CONSTRUCTOR2(FloatVec2, Vec2, vec2, float, float)
 
-typedef GenVec<deFloat16, 2> FloatVec1_16bit;
-DEFINE_CONSTRUCTOR2(FloatVec1_16bit, Vec2_16Bit, vec2, deFloat16, deFloat16)
+typedef GenVec<deFloat16, 2> FloatVec2_16bit;
+DEFINE_CONSTRUCTOR2(FloatVec2_16bit, Vec2_16Bit, vec2, deFloat16, deFloat16)
 
 typedef GenVec<float, 3> FloatVec3;
 DEFINE_CONSTRUCTOR3(FloatVec3, Vec3, vec3, float, float, float)
