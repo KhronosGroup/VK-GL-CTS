@@ -1,0 +1,45 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %func_var NonWritable
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%block = OpTypeStruct %int
+%ptr_ssbo_block = OpTypePointer StorageBuffer %block
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%out_var = OpVariable %ptr_ssbo_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%int_fn = OpTypeFunction %int
+%ptr_func_int = OpTypePointer Function %int
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %int %func
+%gep = OpAccessChain %ptr_ssbo_int %out_var %int_0
+OpStore %gep %call
+OpReturn
+OpFunctionEnd
+%func = OpFunction %int None %int_fn
+%func_entry = OpLabel
+%func_var = OpVariable %ptr_func_int Function %int_2
+%ld = OpLoad %int %func_var
+OpReturnValue %ld
+OpFunctionEnd
+
+[test]
+ssbo 0:0 4
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uint 0:0 0 == 2

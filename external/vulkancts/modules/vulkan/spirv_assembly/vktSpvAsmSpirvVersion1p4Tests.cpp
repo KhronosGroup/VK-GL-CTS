@@ -166,6 +166,8 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "opptrdiff", "OpPtrDiff", addTestsForAmberFiles, group));
 
 	group = CaseGroup(data_dir, "opptrequal");
+	group.add("different_ssbos_equal", "ptr equal against different SSBO variables", Varptr_full);
+	group.add("different_wgs_equal", "ptr equal against different WG variables", Varptr_full);
 	group.add("null_comparisons_ssbo_equal", "ptr equal null in SSBO", Varptr_ssbo);
 	group.add("null_comparisons_wg_equal", "ptr equal null in Workgrop", Varptr_full);
 	group.add("ssbo_comparisons_equal", "ptr equal in SSBO", Varptr_ssbo);
@@ -178,6 +180,8 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "opptrequal", "OpPtrEqual", addTestsForAmberFiles, group));
 
 	group = CaseGroup(data_dir, "opptrnotequal");
+	group.add("different_ssbos_not_equal", "ptr not equal against different SSBO variables", Varptr_full);
+	group.add("different_wgs_not_equal", "ptr not equal against different WG variables", Varptr_full);
 	group.add("null_comparisons_ssbo_not_equal", "ptr not equal null SSBO", Varptr_ssbo);
 	group.add("null_comparisons_wg_not_equal", "ptr not equal null SSBO", Varptr_full);
 	group.add("ssbo_comparisons_not_equal", "ptr not equal SSBO", Varptr_ssbo);
@@ -206,6 +210,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	group = CaseGroup(data_dir, "nonwritable");
 	group.add("function_2_nonwritable", "NonWritable decorates Function variables");
 	group.add("function_nonwritable", "NonWritable decorates 2 Function variables");
+	group.add("non_main_function_nonwritable", "NonWritable decorates Function variable in non-entrypoint function");
 	group.add("private_2_nonwritable", "NonWritable decorates Private variables");
 	group.add("private_nonwritable", "NonWritable decorates 2 Private variables");
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "nonwritable", "NonWritable decoration", addTestsForAmberFiles, group));
@@ -246,9 +251,18 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "loop_control", "SPIR-V 1.4 loop controls", addTestsForAmberFiles, group));
 
 	group = CaseGroup(data_dir, "opselect");
+	group.add("array_select", "OpSelect arrays, new in SPIR-V 1.4");
+	group.add("array_stride_select", "OpSelect arrays with non-standard strides, new in SPIR-V 1.4");
+	group.add("nested_array_select", "OpSelect structs with nested arrays, new in SPIR-V 1.4");
+	group.add("nested_struct_select", "OpSelect structs with nested structs, new in SPIR-V 1.4");
 	group.add("scalar_select", "OpSelect scalars, verify SPIR-V 1.0");
+	group.add("ssbo_pointers_2_select", "OpSelect SSBO pointers to different buffers, verify SPIR-V 1.0", Varptr_full);
+	group.add("ssbo_pointers_select", "OpSelect SSBO pointers to same buffer, verify SPIR-V 1.0", Varptr_ssbo);
 	group.add("struct_select", "OpSelect structs, new in SPIR-V 1.4");
+	group.add("vector_element_select", "OpSelect vector with vector selector, verify SPIR-V 1.0");
 	group.add("vector_select", "OpSelect vector with scalar selector, new in SPIR-V 1.4");
+	group.add("wg_pointers_2_select", "OpSelect Workgroup pointers to different buffers, verify SPIR-V 1.0", Varptr_full);
+	group.add("wg_pointers_select", "OpSelect Workgroup pointers to same buffer, verify SPIR-V 1.0", Varptr_full);
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "opselect", "SPIR-V 1.4 OpSelect more cases", addTestsForAmberFiles, group));
 
 	group = CaseGroup(data_dir, "uconvert");
