@@ -5658,46 +5658,38 @@ static bool isDenorm16(deFloat16 v)
 	return ((exponent & v) == 0 && (mantissa & v) != 0);
 }
 
-//! Generate a random float from a reasonable general-purpose distribution.
-float DefaultSampling<float>::genRandom (const FloatFormat&	format,
-										 Precision			prec,
-										 Random&			rnd,
-										 const Interval&	inputRange) const
+//! Generate a random double from a reasonable general-purpose distribution.
+double randomDouble(const FloatFormat& format, Random& rnd, const Interval& inputRange)
 {
-	DE_UNREF(prec);
 	// No testing of subnormals. TODO: Could integrate float controls for some operations.
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
 	const bool		haveSubnormal	= false;
-	const float		midpoint		= static_cast<float>(inputRange.midpoint());
+	const double	midpoint		= inputRange.midpoint();
 
 	// Choose exponent so that the cumulative distribution is cubic.
 	// This makes the probability distribution quadratic, with the peak centered on zero.
 	const double	minRoot			= deCbrt(minExp - 0.5 - (haveSubnormal ? 1.0 : 0.0));
 	const double	maxRoot			= deCbrt(maxExp + 0.5);
 	const int		fractionBits	= format.getFractionBits();
-	const int		exp				= int(deRoundEven(dePow(rnd.getDouble(minRoot, maxRoot),
-															3.0)));
-	float			base			= 0.0f; // integral power of two
-	float			quantum			= 0.0f; // smallest representable difference in the binade
-	float			significand		= 0.0f; // Significand.
-	float			value			= -1.0f;
-	DE_ASSERT(fractionBits < std::numeric_limits<float>::digits);
+	const int		exp				= int(deRoundEven(dePow(rnd.getDouble(minRoot, maxRoot), 3.0)));
 
 	// Generate some occasional special numbers
 	switch (rnd.getInt(0, 64))
 	{
-		case 0:		return inputRange.contains(0)				? 0				: midpoint; break;
-		case 1:		return inputRange.contains(TCU_INFINITY)	? TCU_INFINITY	: midpoint; break;
-		case 2:		return inputRange.contains(-TCU_INFINITY)	? -TCU_INFINITY	: midpoint; break;
-		case 3:		return inputRange.contains(TCU_NAN)			? TCU_NAN		: midpoint; break;
+		case 0:		return inputRange.contains(0)				? 0				: midpoint;
+		case 1:		return inputRange.contains(TCU_INFINITY)	? TCU_INFINITY	: midpoint;
+		case 2:		return inputRange.contains(-TCU_INFINITY)	? -TCU_INFINITY	: midpoint;
+		case 3:		return inputRange.contains(TCU_NAN)			? TCU_NAN		: midpoint;
 		default:	break;
 	}
 
-	// Normal number
-	base = deFloatLdExp(1.0f, exp);
-	quantum = deFloatLdExp(1.0f, exp - fractionBits);
+	DE_ASSERT(fractionBits < std::numeric_limits<double>::digits);
 
+	// Normal number
+	double base = deLdExp(1.0, exp);
+	double quantum = deLdExp(1.0, exp - fractionBits); // smallest representable difference in the binade
+	double significand = 0.0;
 	switch (rnd.getInt(0, 16))
 	{
 		case 0: // The highest number in this binade, significand is all bits one.
@@ -5712,14 +5704,23 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 		default: // Random (evenly distributed) significand.
 		{
 			deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
-			significand = float(intFraction) * quantum;
+			significand = double(intFraction) * quantum;
 		}
 	}
 
 	// Produce positive numbers more often than negative.
-	value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
+	double value = (rnd.getInt(0, 3) == 0 ? -1.0 : 1.0) * (base + significand);
+	return inputRange.contains(value) ? value : midpoint;
+}
 
-	return inputRange.contains(static_cast<double>(value)) ? value : midpoint;
+//! Generate a random float from a reasonable general-purpose distribution.
+float DefaultSampling<float>::genRandom (const FloatFormat&	format,
+										 Precision			prec,
+										 Random&			rnd,
+										 const Interval&	inputRange) const
+{
+	DE_UNREF(prec);
+	return (float)randomDouble(format, rnd, inputRange);
 }
 
 //! Generate a standard set of floats that should always be tested.
@@ -5778,61 +5779,7 @@ double DefaultSampling<double>::genRandom (const FloatFormat&	format,
 										   const Interval&		inputRange) const
 {
 	DE_UNREF(prec);
-	// No testing of subnormals. TODO: Could integrate float controls for some operations.
-	const int		minExp			= format.getMinExp();
-	const int		maxExp			= format.getMaxExp();
-	const bool		haveSubnormal	= false;
-	const double	midpoint		= inputRange.midpoint();
-
-	// Choose exponent so that the cumulative distribution is cubic.
-	// This makes the probability distribution quadratic, with the peak centered on zero.
-	const double	minRoot			= deCbrt(minExp - 0.5 - (haveSubnormal ? 1.0 : 0.0));
-	const double	maxRoot			= deCbrt(maxExp + 0.5);
-	const int		fractionBits	= format.getFractionBits();
-	const int		exp				= int(deRoundEven(dePow(rnd.getDouble(minRoot, maxRoot),
-															3.0)));
-	double			base			= 0.0; // integral power of two
-	double			quantum			= 0.0; // smallest representable difference in the binade
-	double			significand		= 0.0; // Significand.
-	double			value			= -1.0;
-	DE_ASSERT(fractionBits < std::numeric_limits<double>::digits);
-
-	// Generate some occasional special numbers
-	switch (rnd.getInt(0, 64))
-	{
-		case 0:		return inputRange.contains(0)				? 0				: midpoint; break;
-		case 1:		return inputRange.contains(TCU_INFINITY)	? TCU_INFINITY	: midpoint; break;
-		case 2:		return inputRange.contains(-TCU_INFINITY)	? -TCU_INFINITY	: midpoint; break;
-		case 3:		return inputRange.contains(TCU_NAN)			? TCU_NAN		: midpoint; break;
-		default:	break;
-	}
-
-	// Normal number
-	base = deLdExp(1.0, exp);
-	quantum = deLdExp(1.0, exp - fractionBits);
-
-	switch (rnd.getInt(0, 16))
-	{
-		case 0: // The highest number in this binade, significand is all bits one.
-			significand = base - quantum;
-			break;
-		case 1: // Significand is one.
-			significand = quantum;
-			break;
-		case 2: // Significand is zero.
-			significand = 0.0;
-			break;
-		default: // Random (evenly distributed) significand.
-		{
-			deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
-			significand = double(intFraction) * quantum;
-		}
-	}
-
-	// Produce positive numbers more often than negative.
-	value = (rnd.getInt(0, 3) == 0 ? -1.0 : 1.0) * (base + significand);
-
-	return inputRange.contains(value) ? value : midpoint;
+	return randomDouble(format, rnd, inputRange);
 }
 
 //! Generate a standard set of floats that should always be tested.
@@ -5896,61 +5843,7 @@ deFloat16 DefaultSampling<deFloat16>::genRandom (const FloatFormat& format, cons
 												Random& rnd, const Interval& inputRange) const
 {
 	DE_UNREF(prec);
-	const int		minExp			= format.getMinExp();
-	const int		maxExp			= format.getMaxExp();
-	const bool		haveSubnormal	= false;
-	const deUint16	midpoint		= deFloat32To16Round(static_cast<float>(inputRange.midpoint()), DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-
-	// Choose exponent so that the cumulative distribution is cubic.
-	// This makes the probability distribution quadratic, with the peak centered on zero.
-	const double	minRoot			= deCbrt(minExp - 0.5 - (haveSubnormal ? 1.0 : 0.0));
-	const double	maxRoot			= deCbrt(maxExp + 0.5);
-	const int		fractionBits	= format.getFractionBits();
-	const int		exp				= int(deRoundEven(dePow(rnd.getDouble(minRoot, maxRoot),
-															3.0)));
-	float			base			= 0.0f; // integral power of two
-	float			quantum			= 0.0f; // smallest representable difference in the binade
-	float			significand		= 0.0f; // Significand.
-
-	DE_ASSERT(fractionBits < std::numeric_limits<float>::digits);
-
-	// Generate some occasional special numbers
-	switch (rnd.getInt(0, 64))
-	{
-		case 0:		return inputRange.contains(static_cast<double>(deFloat16To32(0))) ? 0 : midpoint;
-		case 1:		return inputRange.contains(static_cast<double>(deFloat16To32(deUint16(0x7c00)))) ? deUint16(0x7c00) : midpoint;	//INFINITY
-		case 2:		return inputRange.contains(static_cast<double>(deFloat16To32(deUint16(0xfcf0)))) ? deUint16(0xfcf0) : midpoint;	//INFINITY
-		case 3:		return inputRange.contains(static_cast<double>(deFloat16To32(deUint16(0xfc0f)))) ? deUint16(0xfc0f) : midpoint;	//NaN
-		default:	break;
-	}
-
-	// Normal number
-	base = deFloatLdExp(1.0f, exp);
-	quantum = deFloatLdExp(1.0f, exp - fractionBits);
-
-	switch (rnd.getInt(0, 16))
-	{
-		case 0: // The highest number in this binade, significand is all bits one.
-			significand = base - quantum;
-			break;
-		case 1: // Significand is one.
-			significand = quantum;
-			break;
-		case 2: // Significand is zero.
-			significand = 0.0;
-			break;
-		default: // Random (evenly distributed) significand.
-		{
-			deUint64 intFraction = rnd.getUint64() & ((1 << fractionBits) - 1);
-			significand = deFloat16(intFraction) * quantum;
-		}
-	}
-
-	// Produce positive numbers more often than negative.
-	float value			= (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
-	deFloat16 value16b	= deFloat32To16Round(value, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-
-	return inputRange.contains(static_cast<double>(value16b)) ? value16b : midpoint;
+	return deFloat64To16Round(randomDouble(format, rnd, inputRange), DE_ROUNDINGMODE_TO_NEAREST_EVEN);
 }
 
 //! Generate a standard set of floats that should always be tested.
