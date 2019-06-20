@@ -1,0 +1,112 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var1 %var2 %var3 %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %rta ArrayStride 4
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var1 DescriptorSet 0
+OpDecorate %var1 Binding 0
+OpDecorate %var2 DescriptorSet 0
+OpDecorate %var2 Binding 1
+OpDecorate %var3 DescriptorSet 0
+OpDecorate %var3 Binding 2
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 3
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%rta = OpTypeRuntimeArray %int
+%struct = OpTypeStruct %rta
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%ptr_ssbo_rta = OpTypePointer StorageBuffer %rta
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%var1 = OpVariable %ptr_ssbo_struct StorageBuffer
+%var2 = OpVariable %ptr_ssbo_struct StorageBuffer
+%var3 = OpVariable %ptr_ssbo_struct StorageBuffer
+%out_var = OpVariable %ptr_ssbo_struct StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%out_idx0 = OpCopyObject %int %int_0
+%var1_rta_gep = OpAccessChain %ptr_ssbo_rta %var1 %int_0
+%var1_int_gep = OpAccessChain %ptr_ssbo_int %var1 %int_0 %int_0
+%var2_rta_gep = OpAccessChain %ptr_ssbo_rta %var2 %int_0
+%var2_int_gep = OpAccessChain %ptr_ssbo_int %var2 %int_0 %int_0
+%var3_rta_gep = OpAccessChain %ptr_ssbo_rta %var3 %int_0
+%var3_int_gep = OpAccessChain %ptr_ssbo_int %var3 %int_0 %int_0
+; var1 vs var2
+%v1_eq_v2 = OpPtrEqual %bool %var1 %var2
+%v1_eq_v2_sel = OpSelect %int %v1_eq_v2 %int_1 %int_0
+%out_gep1 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx0
+%out_idx1 = OpIAdd %int %out_idx0 %int_1
+OpStore %out_gep1 %v1_eq_v2_sel
+%v1_eq_v2_rta = OpPtrEqual %bool %var1_rta_gep %var2_rta_gep
+%v1_eq_v2_rta_sel = OpSelect %int %v1_eq_v2_rta %int_1 %int_0
+%out_gep2 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx1
+%out_idx2 = OpIAdd %int %out_idx1 %int_1
+OpStore %out_gep2 %v1_eq_v2_rta_sel
+%v1_eq_v2_int = OpPtrEqual %bool %var1_int_gep %var2_int_gep
+%v1_eq_v2_int_sel = OpSelect %int %v1_eq_v2_int %int_1 %int_0
+%out_gep3 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx2
+%out_idx3 = OpIAdd %int %out_idx2 %int_1
+OpStore %out_gep3 %v1_eq_v2_int_sel
+; var1 vs var3
+%v1_eq_v3 = OpPtrEqual %bool %var1 %var3
+%v1_eq_v3_sel = OpSelect %int %v1_eq_v3 %int_1 %int_0
+%out_gep4 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx3
+%out_idx4 = OpIAdd %int %out_idx3 %int_1
+OpStore %out_gep4 %v1_eq_v3_sel
+%v1_eq_v3_rta = OpPtrEqual %bool %var1_rta_gep %var3_rta_gep
+%v1_eq_v3_rta_sel = OpSelect %int %v1_eq_v3_rta %int_1 %int_0
+%out_gep5 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx4
+%out_idx5 = OpIAdd %int %out_idx4 %int_1
+OpStore %out_gep5 %v1_eq_v3_rta_sel
+%v1_eq_v3_int = OpPtrEqual %bool %var1_int_gep %var3_int_gep
+%v1_eq_v3_int_sel = OpSelect %int %v1_eq_v3_int %int_1 %int_0
+%out_gep6 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx5
+%out_idx6 = OpIAdd %int %out_idx5 %int_1
+OpStore %out_gep6 %v1_eq_v3_int_sel
+; var2 vs var3
+%v2_eq_v3 = OpPtrEqual %bool %var2 %var3
+%v2_eq_v3_sel = OpSelect %int %v2_eq_v3 %int_1 %int_0
+%out_gep7 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx6
+%out_idx7 = OpIAdd %int %out_idx6 %int_1
+OpStore %out_gep7 %v2_eq_v3_sel
+%v2_eq_v3_rta = OpPtrEqual %bool %var2_rta_gep %var3_rta_gep
+%v2_eq_v3_rta_sel = OpSelect %int %v2_eq_v3_rta %int_1 %int_0
+%out_gep8 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx7
+%out_idx8 = OpIAdd %int %out_idx7 %int_1
+OpStore %out_gep8 %v2_eq_v3_rta_sel
+%v2_eq_v3_int = OpPtrEqual %bool %var2_int_gep %var3_int_gep
+%v2_eq_v3_int_sel = OpSelect %int %v2_eq_v3_int %int_1 %int_0
+%out_gep9 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx8
+%out_idx9 = OpIAdd %int %out_idx8 %int_1
+OpStore %out_gep9 %v2_eq_v3_int_sel
+%v1_eq_v1 = OpPtrEqual %bool %var1 %var1
+%v1_eq_v1_sel = OpSelect %int %v1_eq_v1 %int_1 %int_0
+%out_gep10 = OpAccessChain %ptr_ssbo_int %out_var %int_0 %out_idx9
+OpStore %out_gep10 %v1_eq_v1_sel
+OpReturn
+OpFunctionEnd
+[test]
+ssbo 0:0 4
+ssbo 0:1 4
+ssbo 0:2 4
+ssbo 0:3 40
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uint 0:3 0  == 0 0 0 0 0 0 0 0 0 1

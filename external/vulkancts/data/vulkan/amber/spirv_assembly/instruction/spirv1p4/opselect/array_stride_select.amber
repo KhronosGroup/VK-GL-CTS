@@ -1,0 +1,74 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %gid_var %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %gid_var BuiltIn GlobalInvocationId
+OpDecorate %int_array ArrayStride 8
+OpDecorate %rta ArrayStride 4
+OpDecorate %rta_array ArrayStride 32
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_4 = OpConstant %int 4
+%int3 = OpTypeVector %int 3
+%int_array = OpTypeArray %int %int_4
+%const_array1 = OpConstantComposite %int_array %int_0 %int_1 %int_2 %int_3
+%const_array2 = OpConstantComposite %int_array %int_3 %int_2 %int_1 %int_0
+%rta_array = OpTypeRuntimeArray %int_array
+%out_struct = OpTypeStruct %rta_array
+%rta = OpTypeRuntimeArray %int
+%struct = OpTypeStruct %rta
+%ptr_input_int3 = OpTypePointer Input %int3
+%gid_var = OpVariable %ptr_input_int3 Input
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%ptr_ssbo_array = OpTypePointer StorageBuffer %int_array
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%in_var = OpVariable %ptr_ssbo_struct StorageBuffer
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gid = OpLoad %int3 %gid_var
+%gid_x = OpCompositeExtract %int %gid 0
+%in_gep = OpAccessChain %ptr_ssbo_int %in_var %int_0 %gid_x
+%ld = OpLoad %int %in_gep
+%eq_0 = OpIEqual %bool %ld %int_0
+%select = OpSelect %int_array %eq_0 %const_array1 %const_array2
+%out_gep = OpAccessChain %ptr_ssbo_array %out_var %int_0 %gid_x
+OpStore %out_gep %select
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0 0 1
+ssbo 0:1 64
+
+compute entrypoint main
+compute 2 1 1
+
+probe ssbo uint 0:1 0  == 0
+probe ssbo uint 0:1 8  == 1
+probe ssbo uint 0:1 16 == 2
+probe ssbo uint 0:1 24 == 3
+probe ssbo uint 0:1 32 == 3
+probe ssbo uint 0:1 40 == 2
+probe ssbo uint 0:1 48 == 1
+probe ssbo uint 0:1 56 == 0
+

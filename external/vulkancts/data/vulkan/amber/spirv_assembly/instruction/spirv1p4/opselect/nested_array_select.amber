@@ -1,0 +1,75 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %gid_var %sel_var %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %gid_var BuiltIn GlobalInvocationId
+OpDecorate %inner ArrayStride 4
+OpMemberDecorate %outer 0 Offset 0
+OpMemberDecorate %outer 1 Offset 8
+OpDecorate %rta ArrayStride 4
+OpDecorate %rta_out ArrayStride 16
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %out_block Block
+OpMemberDecorate %out_block 0 Offset 0
+OpDecorate %sel_var DescriptorSet 0
+OpDecorate %sel_var Binding 0
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 1
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 2
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int3 = OpTypeVector %int 3
+%inner = OpTypeArray %int %int_2
+%outer = OpTypeStruct %inner %inner
+%rta_out = OpTypeRuntimeArray %outer
+%out_block = OpTypeStruct %rta_out
+%rta = OpTypeRuntimeArray %int
+%block = OpTypeStruct %rta
+%ptr_input_int3 = OpTypePointer Input %int3
+%gid_var = OpVariable %ptr_input_int3 Input
+%ptr_ssbo_block = OpTypePointer StorageBuffer %block
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%ptr_ssbo_out_block = OpTypePointer StorageBuffer %out_block
+%ptr_ssbo_outer = OpTypePointer StorageBuffer %outer
+%sel_var = OpVariable %ptr_ssbo_block StorageBuffer
+%in_var = OpVariable %ptr_ssbo_out_block StorageBuffer
+%out_var = OpVariable %ptr_ssbo_out_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gid = OpLoad %int3 %gid_var
+%gid_x = OpCompositeExtract %int %gid 0
+%in_gep0 = OpAccessChain %ptr_ssbo_outer %in_var %int_0 %int_0
+%in0 = OpLoad %outer %in_gep0
+%in_gep1 = OpAccessChain %ptr_ssbo_outer %in_var %int_0 %int_1
+%in1 = OpLoad %outer %in_gep1
+%sel_gep = OpAccessChain %ptr_ssbo_int %sel_var %int_0 %gid_x
+%sel_val = OpLoad %int %sel_gep
+%eq_0 = OpIEqual %bool %sel_val %int_0
+%select = OpSelect %outer %eq_0 %in0 %in1
+%out_gep = OpAccessChain %ptr_ssbo_outer %out_var %int_0 %gid_x
+OpStore %out_gep %select
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0 1 0
+ssbo 0:1 subdata uint 0 1 1 1 1 2 2 2 2
+ssbo 0:2 32
+
+compute entrypoint main
+compute 2 1 1
+
+probe ssbo uint 0:2 0  == 2 2 2 2
+probe ssbo uint 0:2 16 == 1 1 1 1
+
