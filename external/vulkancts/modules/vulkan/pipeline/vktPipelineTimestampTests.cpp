@@ -52,6 +52,7 @@
 #include <thread>
 #include <chrono>
 #include <time.h>
+#include <algorithm>
 
 #if (DE_OS == DE_OS_WIN32)
 #	define VC_EXTRALEAN
@@ -935,7 +936,8 @@ protected:
 		deUint64 deviation;
 	};
 
-	tcu::Maybe<VkTimeDomainEXT>			getBestDomain(const std::vector<VkTimeDomainEXT>& avail, const std::vector<VkTimeDomainEXT>& preferred) const;
+	std::vector<VkTimeDomainEXT>		getDomainSubset(const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const;
+	std::string							domainName(VkTimeDomainEXT domain) const;
 	deUint64							getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const;
 	deUint64							getHostNanoseconds(deUint64 hostTimestamp) const;
 	deUint64							getDeviceNanoseconds(deUint64 devTicksDelta) const;
@@ -948,29 +950,29 @@ protected:
 	deUint64							positiveDiffWithOverflow(deUint64 before, deUint64 after, deUint64 mask = std::numeric_limits<deUint64>::max()) const;
 	bool								outOfRange(deUint64 begin, deUint64 middle, deUint64 end) const;
 
-	static constexpr deUint64	kBatchTimeLimitNanos		= 1000000000u;	// 1 sec.
-	static constexpr deUint64	kDeviationErrorLimitNanos	=  100000000u;	// 100 ms.
-	static constexpr deUint64	kDeviationWarningLimitNanos =   50000000u;	// 50 ms.
-	static constexpr deUint64	kDefaultToleranceNanos		=   10000000u;	// 10 ms.
+	static constexpr deUint64		kBatchTimeLimitNanos		= 1000000000u;	// 1 sec.
+	static constexpr deUint64		kDeviationErrorLimitNanos	=  100000000u;	// 100 ms.
+	static constexpr deUint64		kDeviationWarningLimitNanos =   50000000u;	// 50 ms.
+	static constexpr deUint64		kDefaultToleranceNanos		=   10000000u;	// 10 ms.
 
 #if (DE_OS == DE_OS_WIN32)
     // Preprocessor used to avoid warning about unused variable.
-	static constexpr deUint64	kNanosecondsPerSecond		= 1000000000u;
+	static constexpr deUint64		kNanosecondsPerSecond		= 1000000000u;
 #endif
-	static constexpr deUint64	kNanosecondsPerMillisecond	=    1000000u;
+	static constexpr deUint64		kNanosecondsPerMillisecond	=    1000000u;
 
-	std::string					m_qualityMessage;
-	float						m_timestampPeriod;
-	tcu::Maybe<VkTimeDomainEXT>	m_devDomain;
-	tcu::Maybe<VkTimeDomainEXT>	m_hostDomain;
+	std::string						m_qualityMessage;
+	float							m_timestampPeriod;
+	std::vector<VkTimeDomainEXT>	m_devDomains;
+	std::vector<VkTimeDomainEXT>	m_hostDomains;
 #if (DE_OS == DE_OS_WIN32)
-	deUint64					m_frequency;
+	deUint64						m_frequency;
 #endif
 
-	Move<VkCommandPool>			m_cmdPool;
-	Move<VkCommandBuffer>		m_cmdBuffer;
-	Move<VkQueryPool>			m_queryPool;
-	deUint64					m_devTimestampMask;
+	Move<VkCommandPool>				m_cmdPool;
+	Move<VkCommandBuffer>			m_cmdBuffer;
+	Move<VkQueryPool>				m_queryPool;
+	deUint64						m_devTimestampMask;
 };
 
 class CalibratedTimestampDevDomainTestInstance : public CalibratedTimestampTestInstance
@@ -1076,7 +1078,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& contex
 	// Find the dev domain.
 	std::vector<VkTimeDomainEXT> preferredDevDomains;
 	preferredDevDomains.push_back(VK_TIME_DOMAIN_DEVICE_EXT);
-	m_devDomain = getBestDomain(domains, preferredDevDomains);
+	m_devDomains = getDomainSubset(domains, preferredDevDomains);
 
 	// Find the host domain.
 	std::vector<VkTimeDomainEXT> preferredHostDomains;
@@ -1086,7 +1088,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& contex
 	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
 	preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT);
 #endif
-	m_hostDomain = getBestDomain(domains, preferredHostDomains);
+	m_hostDomains = getDomainSubset(domains, preferredHostDomains);
 
 	// Initialize command buffers and queries.
 	const DeviceInterface&      vk                  = context.getDeviceInterface();
@@ -1112,14 +1114,23 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& contex
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-tcu::Maybe<VkTimeDomainEXT> CalibratedTimestampTestInstance::getBestDomain(const std::vector<VkTimeDomainEXT>& avail, const std::vector<VkTimeDomainEXT>& preferred) const
+std::vector<VkTimeDomainEXT> CalibratedTimestampTestInstance::getDomainSubset(const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const
 {
-	for (auto domain : preferred)
+	std::vector<VkTimeDomainEXT> subset;
+	std::set_intersection(begin(available), end(available), begin(interesting), end(interesting), std::back_inserter(subset));
+	return subset;
+}
+
+std::string CalibratedTimestampTestInstance::domainName(VkTimeDomainEXT domain) const
+{
+	switch (domain)
 	{
-		if (find(avail.begin(), avail.end(), domain) != avail.end())
-			return tcu::just(domain);
+	case VK_TIME_DOMAIN_DEVICE_EXT:						return "Device Domain";
+	case VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT:			return "Monotonic Clock";
+	case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT:		return "Raw Monotonic Clock";
+	case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT:	return "Query Performance Counter";
+	default:											DE_ASSERT(DE_FALSE); return "Unknown Time Domain";
 	}
-	return tcu::nothing<VkTimeDomainEXT>();
 }
 
 deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const
@@ -1310,30 +1321,32 @@ void CalibratedTimestampTestInstance::appendQualityMessage(const std::string& me
 // Test device domain makes sense and is consistent with vkCmdWriteTimestamp().
 tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest()
 {
-	if (!m_devDomain)
-		throw tcu::NotSupportedError("No suitable device time domain found");
+	if (m_devDomains.empty())
+		throw tcu::NotSupportedError("No suitable device time domains found");
 
-	const VkTimeDomainEXT		devDomain	= *m_devDomain;
 	const DeviceInterface&      vk          = m_context.getDeviceInterface();
 	const VkDevice              vkDevice    = m_context.getDevice();
 	const VkQueue               queue       = m_context.getUniversalQueue();
 
-	const CalibratedTimestamp	before		= getCalibratedTimestamp(devDomain);
-	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
-	const CalibratedTimestamp	after		= getCalibratedTimestamp(devDomain);
-	const deUint64				diffNanos	= getDeviceNanoseconds(positiveDiffWithOverflow(before.timestamp, after.timestamp, m_devTimestampMask));
-	deUint64					written;
-	VK_CHECK(vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, 1u, sizeof(written), &written, sizeof(written), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)));
-	verifyDevTimestampMask(written);
-
-	if (diffNanos > kBatchTimeLimitNanos)
+	for (const auto devDomain : m_devDomains)
 	{
-		return tcu::TestStatus::fail("Batch of work took too long to execute");
-	}
+		const CalibratedTimestamp	before		= getCalibratedTimestamp(devDomain);
+		submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+		const CalibratedTimestamp	after		= getCalibratedTimestamp(devDomain);
+		const deUint64				diffNanos	= getDeviceNanoseconds(positiveDiffWithOverflow(before.timestamp, after.timestamp, m_devTimestampMask));
+		deUint64					written;
+		VK_CHECK(vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, 1u, sizeof(written), &written, sizeof(written), (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)));
+		verifyDevTimestampMask(written);
 
-	if (outOfRange(before.timestamp, written, after.timestamp))
-	{
-		return tcu::TestStatus::fail("vkCmdWriteTimestamp() inconsistent with vkGetCalibratedTimestampsEXT()");
+		if (diffNanos > kBatchTimeLimitNanos)
+		{
+			return tcu::TestStatus::fail(domainName(devDomain) + ": Batch of work took too long to execute");
+		}
+
+		if (outOfRange(before.timestamp, written, after.timestamp))
+		{
+			return tcu::TestStatus::fail(domainName(devDomain) + ": vkCmdWriteTimestamp() inconsistent with vkGetCalibratedTimestampsEXT()");
+		}
 	}
 
 	return tcu::TestStatus::pass("Pass");
@@ -1342,23 +1355,25 @@ tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest()
 // Test host domain makes sense and is consistent with native host values.
 tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest()
 {
-	if (!m_hostDomain)
-		throw tcu::NotSupportedError("No suitable host time domain found");
+	if (m_hostDomains.empty())
+		throw tcu::NotSupportedError("No suitable host time domains found");
 
-	const VkTimeDomainEXT		hostDomain	= *m_hostDomain;
-	const deUint64				before		= getHostNativeTimestamp(hostDomain);
-	const CalibratedTimestamp	vkTS		= getCalibratedTimestamp(hostDomain);
-	const deUint64				after		= getHostNativeTimestamp(hostDomain);
-	const deUint64				diffNanos	= getHostNanoseconds(positiveDiffWithOverflow(before, after));
-
-	if (diffNanos > kBatchTimeLimitNanos)
+	for (const auto hostDomain : m_hostDomains)
 	{
-		return tcu::TestStatus::fail("Querying host domain took too long to execute");
-	}
+		const deUint64				before		= getHostNativeTimestamp(hostDomain);
+		const CalibratedTimestamp	vkTS		= getCalibratedTimestamp(hostDomain);
+		const deUint64				after		= getHostNativeTimestamp(hostDomain);
+		const deUint64				diffNanos	= getHostNanoseconds(positiveDiffWithOverflow(before, after));
 
-	if (outOfRange(before, vkTS.timestamp, after))
-	{
-		return tcu::TestStatus::fail("vkGetCalibratedTimestampsEXT() inconsistent with native host API");
+		if (diffNanos > kBatchTimeLimitNanos)
+		{
+			return tcu::TestStatus::fail(domainName(hostDomain) + ": Querying host domain took too long to execute");
+		}
+
+		if (outOfRange(before, vkTS.timestamp, after))
+		{
+			return tcu::TestStatus::fail(domainName(hostDomain) + ": vkGetCalibratedTimestampsEXT() inconsistent with native host API");
+		}
 	}
 
 	return tcu::TestStatus::pass("Pass");
@@ -1367,52 +1382,54 @@ tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest()
 // Verify predictable timestamps and calibration possible.
 tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest()
 {
-	if (!m_devDomain)
-		throw tcu::NotSupportedError("No suitable device time domain found");
-	if (!m_hostDomain)
-		throw tcu::NotSupportedError("No suitable host time domain found");
+	if (m_devDomains.empty())
+		throw tcu::NotSupportedError("No suitable device time domains found");
+	if (m_hostDomains.empty())
+		throw tcu::NotSupportedError("No suitable host time domains found");
 
-	VkTimeDomainEXT					devDomain	= *m_devDomain;
-	VkTimeDomainEXT					hostDomain	= *m_hostDomain;
-
-	std::vector<VkTimeDomainEXT>	domains;
-	domains.push_back(devDomain);		// Device results at index 0.
-	domains.push_back(hostDomain);	// Host results at index 1.
-
-	// Measure time.
+	// Sleep time.
 	constexpr deUint32	kSleepMilliseconds	= 200;
 	constexpr deUint32	kSleepNanoseconds	= kSleepMilliseconds * kNanosecondsPerMillisecond;
 
-	const std::vector<CalibratedTimestamp> before	= getCalibratedTimestamps(domains);
-	std::this_thread::sleep_for(std::chrono::nanoseconds(kSleepNanoseconds));
-	const std::vector<CalibratedTimestamp> after	= getCalibratedTimestamps(domains);
-
-	// Check device timestamp is as expected.
-	const deUint64 devBeforeTicks	= before[0].timestamp;
-	const deUint64 devAfterTicks	= after[0].timestamp;
-	const deUint64 devExpectedTicks	= ((devBeforeTicks + static_cast<deUint64>(static_cast<double>(kSleepNanoseconds) / m_timestampPeriod)) & m_devTimestampMask);
-	const deUint64 devDiffNanos		= getDeviceNanoseconds(absDiffWithOverflow(devAfterTicks, devExpectedTicks, m_devTimestampMask));
-	const deUint64 maxDevDiffNanos	= std::max({ kDefaultToleranceNanos, before[0].deviation + after[0].deviation });
-
-	if (devDiffNanos > maxDevDiffNanos)
+	for (const auto devDomain	: m_devDomains)
+	for (const auto hostDomain	: m_hostDomains)
 	{
-		std::ostringstream msg;
-		msg << "Device expected timestamp differs " << devDiffNanos << " nanoseconds (expect value <= " << maxDevDiffNanos << ")";
-		return tcu::TestStatus::fail(msg.str());
-	}
+		std::vector<VkTimeDomainEXT>	domains;
+		domains.push_back(devDomain);	// Device results at index 0.
+		domains.push_back(hostDomain);	// Host results at index 1.
 
-	// Check host timestamp is as expected.
-	const deUint64 hostBefore		= getHostNanoseconds(before[1].timestamp);
-	const deUint64 hostAfter		= getHostNanoseconds(after[1].timestamp);
-	const deUint64 hostExpected		= hostBefore + kSleepNanoseconds;
-	const deUint64 hostDiff			= absDiffWithOverflow(hostAfter, hostExpected);
-	const deUint64 maxHostDiff		= std::max({ kDefaultToleranceNanos, before[1].deviation + after[1].deviation });
+		// Measure time.
+		const std::vector<CalibratedTimestamp> before	= getCalibratedTimestamps(domains);
+		std::this_thread::sleep_for(std::chrono::nanoseconds(kSleepNanoseconds));
+		const std::vector<CalibratedTimestamp> after	= getCalibratedTimestamps(domains);
 
-	if (hostDiff > maxHostDiff)
-	{
-		std::ostringstream msg;
-		msg << "Host expected timestamp differs " << hostDiff << " nanoseconds (expected value <= " << maxHostDiff << ")";
-		return tcu::TestStatus::fail(msg.str());
+		// Check device timestamp is as expected.
+		const deUint64 devBeforeTicks	= before[0].timestamp;
+		const deUint64 devAfterTicks	= after[0].timestamp;
+		const deUint64 devExpectedTicks	= ((devBeforeTicks + static_cast<deUint64>(static_cast<double>(kSleepNanoseconds) / m_timestampPeriod)) & m_devTimestampMask);
+		const deUint64 devDiffNanos		= getDeviceNanoseconds(absDiffWithOverflow(devAfterTicks, devExpectedTicks, m_devTimestampMask));
+		const deUint64 maxDevDiffNanos	= std::max({ kDefaultToleranceNanos, before[0].deviation + after[0].deviation });
+
+		if (devDiffNanos > maxDevDiffNanos)
+		{
+			std::ostringstream msg;
+			msg << "[" << domainName(devDomain) << "] Device expected timestamp differs " << devDiffNanos << " nanoseconds (expect value <= " << maxDevDiffNanos << ")";
+			return tcu::TestStatus::fail(msg.str());
+		}
+
+		// Check host timestamp is as expected.
+		const deUint64 hostBefore		= getHostNanoseconds(before[1].timestamp);
+		const deUint64 hostAfter		= getHostNanoseconds(after[1].timestamp);
+		const deUint64 hostExpected		= hostBefore + kSleepNanoseconds;
+		const deUint64 hostDiff			= absDiffWithOverflow(hostAfter, hostExpected);
+		const deUint64 maxHostDiff		= std::max({ kDefaultToleranceNanos, before[1].deviation + after[1].deviation });
+
+		if (hostDiff > maxHostDiff)
+		{
+			std::ostringstream msg;
+			msg << "[" << domainName(hostDomain) << "] Host expected timestamp differs " << hostDiff << " nanoseconds (expected value <= " << maxHostDiff << ")";
+			return tcu::TestStatus::fail(msg.str());
+		}
 	}
 
 	return tcu::TestStatus::pass("Pass");
