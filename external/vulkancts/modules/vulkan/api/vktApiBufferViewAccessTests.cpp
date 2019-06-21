@@ -246,7 +246,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 										descriptorLayoutParams			=
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,													// cost void*				pNexŧ;
+			DE_NULL,													// const void*				pNext;
 			(VkDescriptorSetLayoutCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(layoutBindings),							// deUint32					count;
 			layoutBindings												// const VkDescriptorSetLayoutBinding pBinding;

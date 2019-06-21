@@ -13310,7 +13310,7 @@ tcu::TestNode::IterateResult ImageQueryErrorsTest::iterate()
 			"format is not one of the integer formats in table 8.3 and the internal format is integer.");
 
 		/* Check that INVALID_OPERATION error is generated if a pixel pack buffer
-		 object is bound and packing the texture image into the buffer’s memory
+		 object is bound and packing the texture image into the buffer's memory
 		 would exceed the size of the buffer. */
 		gl.bindBuffer(GL_PIXEL_PACK_BUFFER, buffer);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer has failed");
@@ -13318,7 +13318,7 @@ tcu::TestNode::IterateResult ImageQueryErrorsTest::iterate()
 		gl.getTextureImage(texture_2D, 0, s_reference_format, s_reference_type, s_reference_size,
 						   glu::BufferOffsetAsPointer(1 * sizeof(GLuint)));
 		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureImage",
-								  "a pixel pack buffer object is bound and packing the texture image into the buffer’s "
+								  "a pixel pack buffer object is bound and packing the texture image into the buffer's "
 								  "memory would exceed the size of the buffer.");
 
 		gl.bindBuffer(GL_PIXEL_PACK_BUFFER, 0);

@@ -312,7 +312,7 @@ deFloat16 deFloat32To16Round (float val32, deRoundingMode mode)
 		/* According to IEEE Std 754-2008 Section 7.4,
 		 * * roundTiesToEven and roundTiesToAway carry all overflows to Inf with the sign
 		 *   of the intermediate  result.
-		 * * roundTowardZero carries all overflows to the format’s largest finite number
+		 * * roundTowardZero carries all overflows to the format's largest finite number
 		 *   with the sign of the intermediate result.
 		 */
 		if (mode == DE_ROUNDINGMODE_TO_ZERO)
@@ -469,7 +469,7 @@ deFloat16 deFloat64To16Round (double val64, deRoundingMode mode)
 		/* According to IEEE Std 754-2008 Section 7.4,
 		 * * roundTiesToEven and roundTiesToAway carry all overflows to Inf with the sign
 		 *   of the intermediate  result.
-		 * * roundTowardZero carries all overflows to the format’s largest finite number
+		 * * roundTowardZero carries all overflows to the format's largest finite number
 		 *   with the sign of the intermediate result.
 		 */
 		if (mode == DE_ROUNDINGMODE_TO_ZERO)

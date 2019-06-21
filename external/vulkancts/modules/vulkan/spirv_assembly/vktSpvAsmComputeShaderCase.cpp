@@ -642,7 +642,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeV;
 					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeW;
 					0.0f,										// float					mipLodBias;
-					VK_FALSE,									// VkBool32					anistoropyÉnable;
+					VK_FALSE,									// VkBool32					anistoropyEnable;
 					1.0f,										// float					maxAnisotropy;
 					VK_FALSE,									// VkBool32					compareEnable;
 					VK_COMPARE_OP_ALWAYS,						// VkCompareOp				compareOp;

@@ -3698,7 +3698,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 						VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeV;
 						VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeW;
 						0.0f,										// float					mipLodBias;
-						VK_FALSE,									// VkBool32					anistoropyÉnable;
+						VK_FALSE,									// VkBool32					anistoropyEnable;
 						1.0f,										// float					maxAnisotropy;
 						(hasDepthComponent) ? VK_TRUE : VK_FALSE,	// VkBool32					compareEnable;
 						VK_COMPARE_OP_LESS,							// VkCompareOp				compareOp;
