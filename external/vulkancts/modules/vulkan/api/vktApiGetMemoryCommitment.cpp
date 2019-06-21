@@ -52,12 +52,27 @@ struct MemoryCommitmentCaseParams
 	deUint32	elementOffset;
 };
 
+namespace
+{
+
+std::vector<deUint32> getMemoryTypeIndices (VkMemoryPropertyFlags propertyFlag, const VkPhysicalDeviceMemoryProperties& pMemoryProperties)
+{
+	std::vector<deUint32> indices;
+	for (deUint32 typeIndex = 0u; typeIndex < pMemoryProperties.memoryTypeCount; ++typeIndex)
+	{
+		if ((pMemoryProperties.memoryTypes[typeIndex].propertyFlags & propertyFlag) == propertyFlag)
+			indices.push_back(typeIndex);
+	}
+	return indices;
+}
+
+}
+
 class MemoryCommitmentTestInstance : public vkt::TestInstance
 {
 public:
 									MemoryCommitmentTestInstance	(Context& context, MemoryCommitmentCaseParams testCase);
 	tcu::TestStatus					iterate							(void);
-	deUint32						getMemoryTypeIndex				(VkMemoryPropertyFlags propertyFlag, VkPhysicalDeviceMemoryProperties pMemoryProperties);
 	Move<VkCommandPool>				createCommandPool				() const;
 	Move<VkCommandBuffer>			allocatePrimaryCommandBuffer	(VkCommandPool commandPool) const;
 	bool							isDeviceMemoryCommitmentOk		(const VkMemoryRequirements memoryRequirements);
@@ -98,7 +113,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	const VkPhysicalDevice					physicalDevice			= m_context.getPhysicalDevice();
 	const InstanceInterface&				vki						= m_context.getInstanceInterface();
 	const VkPhysicalDeviceMemoryProperties	pMemoryProperties		= getPhysicalDeviceMemoryProperties(vki,physicalDevice);
-	const deUint32							memoryTypeIndex			= getMemoryTypeIndex(propertyFlag, pMemoryProperties);
+	const std::vector<deUint32>				memoryTypeIndices		= getMemoryTypeIndices(propertyFlag, pMemoryProperties);
 	Allocator&								memAlloc				= m_context.getDefaultAllocator();
 	bool									isMemoryAllocationOK	= false;
 	const deUint32							queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
@@ -116,8 +131,9 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	Move<VkShaderModule>					fragmentShaderModule;
 	Move<VkPipeline>						graphicsPipelines;
 
-	if (memoryTypeIndex == static_cast<deUint32>(-1))
-		TCU_THROW(NotSupportedError, "Lazily allocated bit is not supported");
+	// Note we can still fail later if none of lazily allocated memory types can be used with the image below.
+	if (memoryTypeIndices.empty())
+		TCU_THROW(NotSupportedError, "Lazily allocated bit is not supported by any memory type");
 
 	const VkImageCreateInfo	imageParams			=
 	{
@@ -368,9 +384,13 @@ tcu::TestStatus MemoryCommitmentAllocateOnlyTestInstance::iterate(void)
 	const DeviceInterface&					vkd						= m_context.getDeviceInterface();
 	const VkPhysicalDeviceMemoryProperties	pMemoryProperties		= getPhysicalDeviceMemoryProperties(vki,physicalDevice);
 	const VkMemoryPropertyFlags				propertyFlag			= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+	const std::vector<deUint32>				memoryTypeIndices		= getMemoryTypeIndices(propertyFlag, pMemoryProperties);
 	const int								arrayLength				= 10;
 	VkDeviceSize							pCommittedMemoryInBytes = 0u;
 	VkDeviceSize							allocSize[arrayLength];
+
+	if (memoryTypeIndices.empty())
+		TCU_THROW(NotSupportedError, "Lazily allocated bit is not supported by any memory type");
 
 	// generating random allocation sizes
 	for (int i = 0; i < arrayLength; ++i)
@@ -378,46 +398,32 @@ tcu::TestStatus MemoryCommitmentAllocateOnlyTestInstance::iterate(void)
 		allocSize[i] = rand() % 1000 + 1;
 	}
 
-	for (deUint32 memoryTypeIndex = 0u; memoryTypeIndex < VK_MAX_MEMORY_TYPES; ++memoryTypeIndex) //for memoryTypes
+	for (const auto memoryTypeIndex : memoryTypeIndices)
 	{
-		if((pMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & propertyFlag) == propertyFlag) //if supports Lazy allocation
+		for (int i = 0; i < arrayLength; ++i)
 		{
-			for (int i = 0; i < arrayLength; ++i)
+			const VkMemoryAllocateInfo	memAllocInfo =
 			{
-				const VkMemoryAllocateInfo	memAllocInfo =
-				{
-					VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType		sType
-					NULL,									//	const void*			pNext
-					allocSize[i],							//	VkDeviceSize		allocationSize
-					memoryTypeIndex							//	deUint32			memoryTypeIndex
-				};
+				VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType		sType
+				NULL,									//	const void*			pNext
+				allocSize[i],							//	VkDeviceSize		allocationSize
+				memoryTypeIndex							//	deUint32			memoryTypeIndex
+			};
 
-				Move<VkDeviceMemory> memory = allocateMemory(vkd, device, &memAllocInfo, (const VkAllocationCallbacks*)DE_NULL);
+			Move<VkDeviceMemory> memory = allocateMemory(vkd, device, &memAllocInfo, (const VkAllocationCallbacks*)DE_NULL);
 
-				vkd.getDeviceMemoryCommitment(device, memory.get(), &pCommittedMemoryInBytes);
-				if(pCommittedMemoryInBytes != 0)
-				{
-					tcu::TestLog& log = m_context.getTestContext().getLog();
-					log << TestLog::Message << "Warning: Memory commitment not null before binding." << TestLog::EndMessage;
-				}
-				if(pCommittedMemoryInBytes > allocSize[i])
-					return tcu::TestStatus::fail("Fail");
-
+			vkd.getDeviceMemoryCommitment(device, memory.get(), &pCommittedMemoryInBytes);
+			if(pCommittedMemoryInBytes != 0)
+			{
+				tcu::TestLog& log = m_context.getTestContext().getLog();
+				log << TestLog::Message << "Warning: Memory commitment not null before binding." << TestLog::EndMessage;
 			}
+			if(pCommittedMemoryInBytes > allocSize[i])
+				return tcu::TestStatus::fail("Fail");
+
 		}
 	}
 	return tcu::TestStatus::pass("Pass");
-}
-
-deUint32 MemoryCommitmentTestInstance::getMemoryTypeIndex(VkMemoryPropertyFlags propertyFlag, VkPhysicalDeviceMemoryProperties pMemoryProperties)
-{
-	for (deUint32 memoryTypeIndex = 0u; memoryTypeIndex < VK_MAX_MEMORY_TYPES; ++memoryTypeIndex)
-	{
-		if((pMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & propertyFlag) == propertyFlag)
-			return memoryTypeIndex;
-	}
-
-	return static_cast<deUint32>(-1);
 }
 
 void MemoryCommitmentTestCase::initPrograms (SourceCollections& programCollection) const

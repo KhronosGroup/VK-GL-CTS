@@ -29,6 +29,7 @@
 #include "deSTLUtil.hpp"
 
 #include <vector>
+#include <sstream>
 
 namespace vk
 {
@@ -171,6 +172,23 @@ VkPhysicalDeviceMemoryProperties getPhysicalDeviceMemoryProperties (const Instan
 	deMemset(&properties, 0, sizeof(properties));
 
 	vk.getPhysicalDeviceMemoryProperties(physicalDevice, &properties);
+
+	if (properties.memoryTypeCount > VK_MAX_MEMORY_TYPES)
+	{
+		std::ostringstream msg;
+		msg << "Invalid memoryTypeCount in VkPhysicalDeviceMemoryProperties (got " << properties.memoryTypeCount
+			<< ", max " << VK_MAX_MEMORY_TYPES << ")";
+		TCU_FAIL(msg.str());
+	}
+
+	if (properties.memoryHeapCount > VK_MAX_MEMORY_HEAPS)
+	{
+		std::ostringstream msg;
+		msg << "Invalid memoryHeapCount in VkPhysicalDeviceMemoryProperties (got " << properties.memoryHeapCount
+			<< ", max " << VK_MAX_MEMORY_HEAPS << ")";
+		TCU_FAIL(msg.str());
+	}
+
 	return properties;
 }
 
