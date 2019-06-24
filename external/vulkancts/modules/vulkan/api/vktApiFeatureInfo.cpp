@@ -3207,6 +3207,9 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 
 	for (VkImageUsageFlags curUsageFlags = (VkImageUsageFlags)1; curUsageFlags <= allUsageFlags; curUsageFlags++)
 	{
+		if (!isValidImageUsageFlagCombination(curUsageFlags))
+			continue;
+
 		for (VkImageCreateFlags curCreateFlags = 0; curCreateFlags <= allCreateFlags; curCreateFlags++)
 		{
 			const VkPhysicalDeviceImageFormatInfo2	imageFormatInfo	=
@@ -3273,6 +3276,9 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 	{
 		for (VkImageUsageFlags curUsageFlags = (VkImageUsageFlags)1; curUsageFlags <= allUsageFlags; curUsageFlags++)
 		{
+			if (!isValidImageUsageFlagCombination(curUsageFlags))
+				continue;
+
 			const VkPhysicalDeviceSparseImageFormatInfo2	imageFormatInfo	=
 			{
 				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2,
