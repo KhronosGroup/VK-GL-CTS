@@ -95,6 +95,7 @@ struct TestParameters
 	deUint32		pointSize;
 	deUint32		vertexStride;
 	StreamId0Mode	streamId0Mode;
+	bool			query64bits;
 };
 
 const deUint32 MINIMUM_TF_BUFFER_SIZE	= (1<<27);
@@ -1512,8 +1513,8 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 
 	const deUint32						overflowVertices		= 3u;
 	const deUint32						bytesPerVertex			= static_cast<deUint32>(4 * sizeof(float));
-	const deUint32						numVerticesInBuffer		= m_parameters.bufferSize / bytesPerVertex;
-	const deUint32						numVerticesToWrite		= numVerticesInBuffer + overflowVertices;
+	const deUint64						numVerticesInBuffer		= m_parameters.bufferSize / bytesPerVertex;
+	const deUint64						numVerticesToWrite		= numVerticesInBuffer + overflowVertices;
 	const Unique<VkRenderPass>			renderPass				(makeRenderPass							(vk, device, VK_FORMAT_UNDEFINED));
 
 	const Unique<VkShaderModule>		vertModule				(createShaderModule						(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
@@ -1531,9 +1532,12 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	const VkDeviceSize					tfBufBindingSize		= m_parameters.bufferSize;
 	const VkDeviceSize					tfBufBindingOffset		= 0ull;
 
+	const size_t						queryResultWidth		= (m_parameters.query64bits ? sizeof(deUint64) : sizeof(deUint32));
+	const vk::VkQueryControlFlags		queryExtraFlags			= (m_parameters.query64bits ? vk::VK_QUERY_RESULT_64_BIT : 0);
 	const deUint32						queryCountersNumber		= 1u;
 	const deUint32						queryIndex				= 0u;
-	const deUint32						queryDataSize			= static_cast<deUint32>(2u * sizeof(deUint32));
+	constexpr deUint32					queryResultElements		= 2u;
+	const deUint32						queryDataSize			= static_cast<deUint32>(queryResultElements * queryResultWidth);
 	const VkQueryPoolCreateInfo			queryPoolCreateInfo		= makeQueryPoolCreateInfo(queryCountersNumber);
 	const Unique<VkQueryPool>			queryPool				(createQueryPool(vk, device, &queryPoolCreateInfo));
 
@@ -1580,7 +1584,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 			{
 				vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
 				{
-					vk.cmdDraw(*cmdBuffer, numVerticesToWrite, 1u, 0u, 0u);
+					vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(numVerticesToWrite), 1u, 0u, 0u);
 				}
 				vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
 			}
@@ -1593,7 +1597,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 
 		if (m_parameters.testType == TEST_TYPE_QUERY_COPY)
 		{
-			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber, *queryPoolResultsBuffer, 0u, queryDataSize, VK_QUERY_RESULT_WAIT_BIT);
+			vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, queryIndex, queryCountersNumber, *queryPoolResultsBuffer, 0u, queryDataSize, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
 
 			const VkBufferMemoryBarrier bufferBarrier =
 			{
@@ -1618,13 +1622,17 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	{
-		std::vector<deUint8>	queryData				(queryDataSize, 0u);
-		const deUint32*			numPrimitivesWritten	= reinterpret_cast<deUint32*>(&queryData[0]);
-		const deUint32*			numPrimitivesNeeded		= numPrimitivesWritten + 1;
+		union Results {
+			deUint32	elements32[queryResultElements];
+			deUint64	elements64[queryResultElements];
+		};
+
+		std::vector<deUint8>	queryData		(queryDataSize, 0u);
+		const Results*			queryResults	= reinterpret_cast<Results*>(queryData.data());
 
 		if (m_parameters.testType != TEST_TYPE_QUERY_COPY)
 		{
-			vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, queryData.data(), queryDataSize, VK_QUERY_RESULT_WAIT_BIT);
+			vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, queryData.data(), queryDataSize, (vk::VK_QUERY_RESULT_WAIT_BIT | queryExtraFlags));
 		}
 		else
 		{
@@ -1632,39 +1640,59 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 			deMemcpy(queryData.data(), queryPoolResultsBufferAlloc->getHostPtr(), queryData.size());
 		}
 
-		if (*numPrimitivesWritten != numVerticesInBuffer)
-			return tcu::TestStatus::fail("numPrimitivesWritten=" + de::toString(*numPrimitivesWritten) + " while expected " + de::toString(numVerticesInBuffer));
+		const deUint64	numPrimitivesWritten	= (m_parameters.query64bits ? queryResults->elements64[0] : queryResults->elements32[0]);
+		const deUint64	numPrimitivesNeeded		= (m_parameters.query64bits ? queryResults->elements64[1] : queryResults->elements32[1]);
 
-		if (*numPrimitivesNeeded != numVerticesToWrite)
-			return tcu::TestStatus::fail("numPrimitivesNeeded=" + de::toString(*numPrimitivesNeeded) + " while expected " + de::toString(numVerticesToWrite));
+		if (numPrimitivesWritten != numVerticesInBuffer)
+			return tcu::TestStatus::fail("numPrimitivesWritten=" + de::toString(numPrimitivesWritten) + " while expected " + de::toString(numVerticesInBuffer));
+
+		if (numPrimitivesNeeded != numVerticesToWrite)
+			return tcu::TestStatus::fail("numPrimitivesNeeded=" + de::toString(numPrimitivesNeeded) + " while expected " + de::toString(numVerticesToWrite));
 	}
 
 	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
 	{
+		constexpr deUint32		queryResetElements		= queryResultElements + 1; // For the availability bit.
 
-		const deUint32			queryDataAvailSize	(static_cast<deUint32>(3u * sizeof(deUint32)));
-		std::vector<deUint8>	queryData			(queryDataAvailSize, 0u);
-		deUint32*			numPrimitivesWritten	= reinterpret_cast<deUint32*>(&queryData[0]);
-		deUint32*			numPrimitivesNeeded		= numPrimitivesWritten + 1;
-		deUint32*			availabilityState		= numPrimitivesNeeded + 1;
+		union Results {
+			deUint32	elements32[queryResetElements];
+			deUint64	elements64[queryResetElements];
+		};
+
+		const deUint32			queryDataAvailSize		(static_cast<deUint32>(queryResetElements * queryResultWidth));
+		std::vector<deUint8>	queryData				(queryDataAvailSize, 0u);
+		Results*				queryResults			= reinterpret_cast<Results*>(queryData.data());
 
 		// Initialize values
-		*numPrimitivesNeeded	= 1u;
-		*numPrimitivesWritten	= 1u;
-		*availabilityState		= 1u;
+		if (m_parameters.query64bits)
+		{
+			queryResults->elements64[0] = 1u;	// numPrimitivesWritten
+			queryResults->elements64[1] = 1u;	// numPrimitivesNeeded
+			queryResults->elements64[2] = 1u;	// Availability bit
+		}
+		else
+		{
+			queryResults->elements32[0] = 1u;	// numPrimitivesWritten
+			queryResults->elements32[1] = 1u;	// numPrimitivesNeeded
+			queryResults->elements32[2] = 1u;	// Availability bit
+		}
 
 		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
 
-		vk::VkResult res = vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataAvailSize, &queryData[0], queryDataAvailSize, VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
-		/* From Vulkan spec:
+		vk::VkResult	res						= vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataAvailSize, queryData.data(), queryDataAvailSize, (vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | queryExtraFlags));
+		const deUint64	numPrimitivesWritten	= (m_parameters.query64bits ? queryResults->elements64[0] : queryResults->elements32[0]);
+		const deUint64	numPrimitivesNeeded		= (m_parameters.query64bits ? queryResults->elements64[1] : queryResults->elements32[1]);
+		const deUint64	availabilityState		= (m_parameters.query64bits ? queryResults->elements64[2] : queryResults->elements32[2]);
+
+		/* From the Vulkan spec:
 			*
 			* If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
 			* for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
 			* However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
 			*/
-		if (res != vk::VK_NOT_READY || *availabilityState != 0u)
+		if (res != vk::VK_NOT_READY || availabilityState != 0u)
 			return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
-	    if (*numPrimitivesWritten != 1u || *numPrimitivesNeeded != 1u )
+	    if (numPrimitivesWritten != 1u || numPrimitivesNeeded != 1u)
 			return tcu::TestStatus::fail("QueryPoolResults data was modified");
 
 	}
@@ -2154,8 +2182,8 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 
 				for (deUint32 bufferSizesNdx = 0; bufferSizesNdx < DE_LENGTH_OF_ARRAY(bufferSizes); ++bufferSizesNdx)
 				{
-					const deUint32			bufferSize	= bufferSizes[bufferSizesNdx];
-					TestParameters	parameters	= { testType, bufferSize, partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL};
+					const deUint32	bufferSize	= bufferSizes[bufferSizesNdx];
+					TestParameters	parameters	= { testType, bufferSize, partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false };
 
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(partCount) + "_" + de::toString(bufferSize)).c_str(), "Simple Transform Feedback test", parameters));
 					parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -2180,7 +2208,7 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 			for (deUint32 bufferCountsNdx = 0; bufferCountsNdx < DE_LENGTH_OF_ARRAY(bufferCounts); ++bufferCountsNdx)
 			{
 				const deUint32			vertexCount	= bufferCounts[bufferCountsNdx];
-				TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL};
+				TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false };
 
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexCount)).c_str(), "Triangle Strip With Adjacency Transform Feedback test", parameters));
 				parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -2198,8 +2226,8 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 
 		for (deUint32 vertexStridesNdx = 0; vertexStridesNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++vertexStridesNdx)
 		{
-			const deUint32			vertexStride	= static_cast<deUint32>(sizeof(deUint32) * vertexStrides[vertexStridesNdx]);
-			TestParameters	parameters		= { testType, 0u, 0u, 0u, 0u, vertexStride, STREAM_ID_0_NORMAL };
+			const deUint32	vertexStride	= static_cast<deUint32>(sizeof(deUint32) * vertexStrides[vertexStridesNdx]);
+			TestParameters	parameters		= { testType, 0u, 0u, 0u, 0u, vertexStride, STREAM_ID_0_NORMAL, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexStride)).c_str(), "Rendering tests with various strides", parameters));
 			parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -2210,9 +2238,9 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 	}
 
 	{
-		const TestType			testType	= TEST_TYPE_BACKWARD_DEPENDENCY;
-		const std::string		testName	= "backward_dependency";
-		TestParameters	parameters	= { testType, 512u, 2u, 0u, 0u, 0u, STREAM_ID_0_NORMAL };
+		const TestType		testType	= TEST_TYPE_BACKWARD_DEPENDENCY;
+		const std::string	testName	= "backward_dependency";
+		TestParameters		parameters	= { testType, 512u, 2u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false };
 
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testName.c_str(), "Rendering test checks backward pipeline dependency", parameters));
 		parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -2237,30 +2265,36 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 
 			for (deUint32 vertexCountNdx = 0; vertexCountNdx < DE_LENGTH_OF_ARRAY(vertexCount); ++vertexCountNdx)
 			{
-				const deUint32			bytesPerVertex	= static_cast<deUint32>(4 * sizeof(float));
-				const deUint32			bufferSize		= bytesPerVertex * vertexCount[vertexCountNdx];
-				TestParameters			parameters		= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL};
-				const std::string		fullTestName	= testName + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]);
-				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "Written primitives query test", parameters));
-
-				const TestParameters	parametersCopy		= { testTypeCopy, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL };
-				const std::string		fullTestNameCopy	= testNameCopy + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]);
-				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameCopy.c_str(), "Written primitives query test", parametersCopy));
-
-				const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL};
-				const std::string		fullTestNameHostQueryReset	= testNameHostQueryReset + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]);
-				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameHostQueryReset.c_str(), "Written primitives query test", parametersHostQueryReset));
-
-				if (streamId == 0)
+				for (deUint32 i = 0; i < 2; ++i)
 				{
-					std::string	testNameStream0 = fullTestName;
-					testNameStream0 += "_beginqueryindexed_streamid_0";
-					parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
-					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testNameStream0.c_str(), "Written primitives query test", parameters));
-					testNameStream0 = fullTestName;
-					testNameStream0 += "_endqueryindexed_streamid_0";
-					parameters.streamId0Mode = STREAM_ID_0_END_QUERY_INDEXED;
-					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testNameStream0.c_str(), "Written primitives query test", parameters));
+					const bool				query64Bits		= (i == 1);
+					const std::string		widthStr		= (query64Bits ? "_64bits" : "_32bits");
+
+					const deUint32			bytesPerVertex	= static_cast<deUint32>(4 * sizeof(float));
+					const deUint32			bufferSize		= bytesPerVertex * vertexCount[vertexCountNdx];
+					TestParameters			parameters		= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits };
+					const std::string		fullTestName	= testName + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]) + widthStr;
+					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "Written primitives query test", parameters));
+
+					const TestParameters	parametersCopy		= { testTypeCopy, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits };
+					const std::string		fullTestNameCopy	= testNameCopy + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]) + widthStr;
+					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameCopy.c_str(), "Written primitives query test", parametersCopy));
+
+					const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits };
+					const std::string		fullTestNameHostQueryReset	= testNameHostQueryReset + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]) + widthStr;
+					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameHostQueryReset.c_str(), "Written primitives query test", parametersHostQueryReset));
+
+					if (streamId == 0)
+					{
+						std::string	testNameStream0 = fullTestName;
+						testNameStream0 += "_beginqueryindexed_streamid_0";
+						parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
+						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testNameStream0.c_str(), "Written primitives query test", parameters));
+						testNameStream0 = fullTestName;
+						testNameStream0 += "_endqueryindexed_streamid_0";
+						parameters.streamId0Mode = STREAM_ID_0_END_QUERY_INDEXED;
+						group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testNameStream0.c_str(), "Written primitives query test", parameters));
+					}
 				}
 			}
 		}
@@ -2281,8 +2315,8 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 
 		for (deUint32 streamCountsNdx = 0; streamCountsNdx < DE_LENGTH_OF_ARRAY(usedStreamId); ++streamCountsNdx)
 		{
-			const deUint32			streamId	= usedStreamId[streamCountsNdx];
-			TestParameters	parameters	= { testType, 0u, 0u, streamId, pointSize, 0u, STREAM_ID_0_NORMAL};
+			const deUint32	streamId	= usedStreamId[streamCountsNdx];
+			TestParameters	parameters	= { testType, 0u, 0u, streamId, pointSize, 0u, STREAM_ID_0_NORMAL, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Streams usage test", parameters));
 		}
@@ -2297,7 +2331,7 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			const deUint32			streamId			= usedStreamId[bufferCountsNdx];
 			const deUint32			streamsUsed			= 2u;
 			const deUint32			maxBytesPerVertex	= 256u;
-			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL};
+			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple streams usage test", parameters));
 		}
