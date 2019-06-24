@@ -5278,6 +5278,13 @@ public:
 	void	removeNotInRange	(vector<float>& dst, const Interval& inputRange, const Precision prec)								const;
 };
 
+static bool isDenorm16(deFloat16 v)
+{
+	const deUint16 mantissa = 0x03FF;
+	const deUint16 exponent = 0x7C00;
+	return ((exponent & v) == 0 && (mantissa & v) != 0);
+}
+
 //! Generate a random float from a reasonable general-purpose distribution.
 float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 										 Precision			prec,
@@ -5354,9 +5361,15 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 			deMemcpy(&value, &toReturn, sizeof(float));
 		}
 
-		//Remove denormalized for 16bit float
-		if (glu::PRECISION_LAST == prec && (1.0 - deAbs(static_cast<double>(value)) >= 0.999939))
-			value = value + 1.0099f;
+		// For 16bit-but-32bit-storage tests we must also avoid any value that
+		// becomes a denorm in fp16. The tests don't specify a rounding mode so
+		// assume the worst and use round-to-zero. Add an offset to put values
+		// back into the normal range.
+		// NOTE: The large offset means that all denorms will come out equal,
+		// except for differences that will round away in fp16. This catches
+		// some cases of operations incorrectly using the full fp32 precision.
+		if (prec == glu::PRECISION_LAST && isDenorm16(deFloat32To16Round(value, DE_ROUNDINGMODE_TO_ZERO)))
+			value += 1.0099f;
 	}
 	return value;
 }
@@ -5477,15 +5490,10 @@ deFloat16 DefaultSampling<deFloat16>::genRandom (const FloatFormat& format, cons
 	float value			= (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 	deFloat16 value16b	= deFloat32To16Round(value, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
 
-	//not denormalized values
-	{
-		const deUint16 mantissa = 0x03FF;
-		const deUint16 exponent = 0x7C00;
-		if ((exponent & value16b) == 0 && (mantissa & value16b) != 0)
-		{
-			value16b = 0x4000 | value16b;
-		}
-	}
+	// Offset denormalised values to put them into the normal range
+	if (isDenorm16(value16b))
+		value16b = 0x4000 | value16b;
+
 	return inputRange.contains(static_cast<double>(value16b)) ? value16b : midpoint;
 }
 
