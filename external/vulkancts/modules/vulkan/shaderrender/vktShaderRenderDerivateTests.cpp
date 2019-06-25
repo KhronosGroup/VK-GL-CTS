@@ -700,6 +700,9 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 
 		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
 			throw tcu::NotSupportedError("Derivative dynamic control flow tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
+
+		if ((subgroupProperties.supportedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+			throw tcu::NotSupportedError("Derivative dynamic control flow tests require subgroup supported stage including VK_SHADER_STAGE_FRAGMENT_BIT");
 	}
 
 	setup();
