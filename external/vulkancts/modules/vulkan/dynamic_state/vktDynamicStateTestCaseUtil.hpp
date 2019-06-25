@@ -53,7 +53,7 @@ struct PositionColorVertex
 
 typedef std::map<glu::ShaderType, const char*> ShaderMap;
 
-template<typename Instance>
+template<typename Instance, typename Support = NoSupport0>
 class InstanceFactory : public TestCase
 {
 public:
@@ -61,15 +61,24 @@ public:
 		const std::map<glu::ShaderType, const char*> shaderPaths)
 		: TestCase		(testCtx, name, desc)
 		, m_shaderPaths (shaderPaths)
+		, m_support		()
 	{
 	}
 
-	TestInstance* createInstance (Context& context) const
+	InstanceFactory (tcu::TestContext& testCtx, const std::string& name, const std::string& desc,
+		const std::map<glu::ShaderType, const char*> shaderPaths, const Support& support)
+		: TestCase		(testCtx, name, desc)
+		, m_shaderPaths (shaderPaths)
+		, m_support		(support)
+	{
+	}
+
+	TestInstance*	createInstance	(Context& context) const
 	{
 		return new Instance(context, m_shaderPaths);
 	}
 
-	virtual void initPrograms (vk::SourceCollections& programCollection) const
+	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
 	{
 		for (ShaderMap::const_iterator i = m_shaderPaths.begin(); i != m_shaderPaths.end(); ++i)
 		{
@@ -78,8 +87,14 @@ public:
 		}
 	}
 
+	virtual void	checkSupport	(Context& context) const
+	{
+		m_support.checkSupport(context);
+	}
+
 private:
-	const ShaderMap m_shaderPaths;
+	const ShaderMap	m_shaderPaths;
+	const Support	m_support;
 };
 
 } // DynamicState

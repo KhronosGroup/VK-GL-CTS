@@ -169,6 +169,7 @@ public:
 
 	void				initPrograms		(SourceCollections& programCollection) const;
 	TestInstance*		createInstance		(Context&			context) const;
+	virtual void		checkSupport		(Context&			context) const;
 
 private:
 	const Texture		m_texture;
@@ -191,6 +192,12 @@ SizeTest::SizeTest (tcu::TestContext&		testCtx,
 {
 	// We expect at least one flag to be set.
 	DE_ASSERT(m_useReadonly || m_useWriteonly);
+}
+
+void SizeTest::checkSupport (Context& context) const
+{
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 }
 
 void SizeTest::initPrograms (SourceCollections& programCollection) const
@@ -251,8 +258,6 @@ public:
 																 const VkFormat			format);
 
 	tcu::TestStatus                 iterate						(void);
-	void							checkRequirements			(void) const;
-
 	virtual							~SizeTestInstance			(void) {}
 
 protected:
@@ -284,22 +289,12 @@ SizeTestInstance::SizeTestInstance (Context& context, const Texture& texture, co
 		MemoryRequirement::HostVisible));
 }
 
-void SizeTestInstance::checkRequirements (void) const
-{
-	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !m_context.getDeviceFeatures().imageCubeArray)
-	{
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
-	}
-}
-
 tcu::TestStatus SizeTestInstance::iterate (void)
 {
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
 	const VkQueue			queue				= m_context.getUniversalQueue();
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-
-	checkRequirements();
 
 	// Create memory barriers.
 

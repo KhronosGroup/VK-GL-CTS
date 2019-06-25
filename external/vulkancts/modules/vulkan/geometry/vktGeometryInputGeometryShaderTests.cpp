@@ -119,14 +119,15 @@ void GeometryInputTestInstance::genVertexAttribData (void)
 class GeometryExpanderRenderTest : public TestCase
 {
 public:
-							GeometryExpanderRenderTest	(TestContext&				testCtx,
-														 const PrimitiveTestSpec&	inputPrimitives);
+								GeometryExpanderRenderTest	(TestContext&				testCtx,
+															 const PrimitiveTestSpec&	inputPrimitives);
 
-	void					initPrograms				(SourceCollections&			sourceCollections) const;
-	virtual TestInstance*	createInstance				(Context&					context) const;
+	void						initPrograms				(SourceCollections&			sourceCollections) const;
+	virtual TestInstance*		createInstance				(Context&					context) const;
+	virtual void				checkSupport				(Context&					context) const;
 
 protected:
-	string					shaderGeometry				(bool						pointSize) const;
+	string						shaderGeometry				(bool						pointSize) const;
 	const VkPrimitiveTopology	m_primitiveType;
 	const VkPrimitiveTopology	m_outputType;
 };
@@ -137,6 +138,11 @@ GeometryExpanderRenderTest::GeometryExpanderRenderTest (TestContext& testCtx, co
 	, m_outputType		(inputPrimitives.outputType)
 {
 
+}
+
+void GeometryExpanderRenderTest::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void GeometryExpanderRenderTest::initPrograms (SourceCollections& sourceCollections) const

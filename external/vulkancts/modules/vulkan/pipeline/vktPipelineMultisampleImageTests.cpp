@@ -902,19 +902,22 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 	}
 }
 
+void checkSupport (Context& context, const CaseDef caseDef)
+{
+	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+}
+
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
 {
 	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const VkDevice				device				= context.getDevice();
-	const VkPhysicalDevice		physDevice			= context.getPhysicalDevice();
 	const VkQueue				queue				= context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					allocator			= context.getDefaultAllocator();
 
 	const VkImageUsageFlags		colorImageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	checkImageFormatRequirements(vki, physDevice, caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
 
 	{
 		tcu::TestLog& log = context.getTestContext().getLog();
@@ -1318,15 +1321,18 @@ bool compareImages (tcu::TestLog& log, const CaseDef& caseDef, const tcu::ConstP
 	}
 }
 
+void checkSupport (Context& context, const CaseDef caseDef)
+{
+	const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+
+	checkImageFormatRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.numSamples, caseDef.colorFormat, colorImageUsage);
+}
+
 tcu::TestStatus test (Context& context, const CaseDef caseDef)
 {
 	const DeviceInterface&		vk					= context.getDeviceInterface();
-	const InstanceInterface&	vki					= context.getInstanceInterface();
 	const VkDevice				device				= context.getDevice();
-	const VkPhysicalDevice		physDevice			= context.getPhysicalDevice();
 	Allocator&					allocator			= context.getDefaultAllocator();
-
-	checkImageFormatRequirements(vki, physDevice, caseDef.numSamples, caseDef.colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
 
 	{
 		tcu::TestLog& log = context.getTestContext().getLog();
@@ -1384,6 +1390,7 @@ std::string getFormatString (const VkFormat format)
 }
 
 void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
+								FunctionSupport1<CaseDef>::Function		checkSupport,
 								FunctionPrograms1<CaseDef>::Function	initPrograms,
 								FunctionInstance1<CaseDef>::Function	testFunc)
 {
@@ -1433,7 +1440,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 					samples[samplesNdx],	// VkSampleCountFlagBits	numSamples;
 				};
 
-				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", initPrograms, testFunc, caseDef);
+				addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), "", checkSupport, initPrograms, testFunc, caseDef);
 			}
 			sizeLayerGroup->addChild(formatGroup.release());
 		}
@@ -1443,12 +1450,12 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup*						group,
 
 void createSampledImageTestsInGroup (tcu::TestCaseGroup* group)
 {
-	addTestCasesWithFunctions(group, SampledImage::initPrograms, SampledImage::test);
+	addTestCasesWithFunctions(group, SampledImage::checkSupport, SampledImage::initPrograms, SampledImage::test);
 }
 
 void createStorageImageTestsInGroup (tcu::TestCaseGroup* group)
 {
-	addTestCasesWithFunctions(group, StorageImage::initPrograms, StorageImage::test);
+	addTestCasesWithFunctions(group, StorageImage::checkSupport, StorageImage::initPrograms, StorageImage::test);
 }
 
 } // anonymous ns

@@ -29,6 +29,7 @@
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
@@ -70,7 +71,7 @@ enum FeatureFlagBits
 typedef deUint32 FeatureFlags;
 
 vk::VkImageCreateInfo			makeImageCreateInfo		(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
-void							requireFeatures			(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
+void							requireFeatures			(vkt::Context& context, const FeatureFlags flags);
 
 // Ugly, brute-force replacement for the initializer list
 

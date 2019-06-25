@@ -284,24 +284,22 @@ VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat fo
 	return imageInfo;
 }
 
-void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const FeatureFlags flags)
+void requireFeatures (Context& context, const FeatureFlags flags)
 {
-	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
+	if (flags & FEATURE_TESSELLATION_SHADER)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
 
-	if (((flags & FEATURE_TESSELLATION_SHADER) != 0) && !features.tessellationShader)
-		throw tcu::NotSupportedError("Tessellation shader not supported");
+	if (flags & FEATURE_GEOMETRY_SHADER)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
-	if (((flags & FEATURE_GEOMETRY_SHADER) != 0) && !features.geometryShader)
-		throw tcu::NotSupportedError("Geometry shader not supported");
+	if (flags & FEATURE_SHADER_FLOAT_64)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_FLOAT64);
 
-	if (((flags & FEATURE_SHADER_FLOAT_64) != 0) && !features.shaderFloat64)
-		throw tcu::NotSupportedError("Double-precision floats not supported");
+	if (flags & FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
-	if (((flags & FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS) != 0) && !features.vertexPipelineStoresAndAtomics)
-		throw tcu::NotSupportedError("SSBO and image writes not supported in vertex pipeline");
-
-	if (((flags & FEATURE_FRAGMENT_STORES_AND_ATOMICS) != 0) && !features.fragmentStoresAndAtomics)
-		throw tcu::NotSupportedError("SSBO and image writes not supported in fragment shader");
+	if (flags & FEATURE_FRAGMENT_STORES_AND_ATOMICS)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 }
 
 } // pipeline

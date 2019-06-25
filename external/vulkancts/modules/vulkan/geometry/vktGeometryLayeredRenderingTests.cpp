@@ -1185,19 +1185,11 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 
 tcu::TestStatus test (Context& context, const TestParams params)
 {
-	if (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType &&
-		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-
 	const DeviceInterface&			vk						= context.getDeviceInterface();
-	const InstanceInterface&		vki						= context.getInstanceInterface();
 	const VkDevice					device					= context.getDevice();
-	const VkPhysicalDevice			physDevice				= context.getPhysicalDevice();
 	const deUint32					queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	const VkQueue					queue					= context.getUniversalQueue();
 	Allocator&						allocator				= context.getDefaultAllocator();
-
-	checkGeometryShaderSupport(vki, physDevice);
 
 	const VkFormat					colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;
 	const deUint32					numLayers				= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? params.image.size.depth : params.image.numLayers);
@@ -1253,10 +1245,6 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 {
-	if (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType &&
-		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-
 	const DeviceInterface&				vk					= context.getDeviceInterface();
 	const InstanceInterface&			vki					= context.getInstanceInterface();
 	const VkDevice						device				= context.getDevice();
@@ -1264,8 +1252,6 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue				= context.getUniversalQueue();
 	Allocator&							allocator			= context.getDefaultAllocator();
-
-	checkGeometryShaderSupport(vki, physDevice);
 
 	const size_t						passCount			= 2;
 	const deUint32						numLayers			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? params.image.size.depth : params.image.numLayers);
@@ -1519,25 +1505,11 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 
 tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams params)
 {
-	if (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType &&
-		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
-	{
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-	}
-
 	const DeviceInterface&				vk					= context.getDeviceInterface();
-	const InstanceInterface&			vki					= context.getInstanceInterface();
 	const VkDevice						device				= context.getDevice();
-	const VkPhysicalDevice				physDevice			= context.getPhysicalDevice();
-	const VkPhysicalDeviceFeatures		features			= getPhysicalDeviceFeatures(vki, physDevice);
 	const deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue				= context.getUniversalQueue();
 	Allocator&							allocator			= context.getDefaultAllocator();
-
-	checkGeometryShaderSupport(vki, physDevice);
-
-	if (!features.fragmentStoresAndAtomics)
-		TCU_THROW(NotSupportedError, "Storage image stores not supported in fragment shader");
 
 	const VkFormat						colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
 	const deUint32						numLayers			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? params.image.size.depth : params.image.numLayers);
@@ -1766,6 +1738,17 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 		return tcu::TestStatus::pass("OK");
 }
 
+void checkSupport (Context& context, const TestParams params)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (params.image.viewType == VK_IMAGE_VIEW_TYPE_3D)
+		context.requireDeviceExtension("VK_KHR_maintenance1");
+
+	if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
@@ -1813,15 +1796,15 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 			};
 
 			if (testTypes[testTypeNdx].test == TEST_TYPE_LAYERED_READBACK)
-				addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, initPrograms, testLayeredReadBack, params);
+				addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, checkSupport, initPrograms, testLayeredReadBack, params);
 			else if (testTypes[testTypeNdx].test == TEST_TYPE_SECONDARY_CMD_BUFFER)
 			{
-				addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer", testTypes[testTypeNdx].description, initPrograms, testSecondaryCmdBuffer, params);
+				addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer", testTypes[testTypeNdx].description, checkSupport, initPrograms, testSecondaryCmdBuffer, params);
 				params.inheritFramebuffer = true;
-				addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer_inherit_framebuffer", testTypes[testTypeNdx].description, initPrograms, testSecondaryCmdBuffer, params);
+				addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer_inherit_framebuffer", testTypes[testTypeNdx].description, checkSupport, initPrograms, testSecondaryCmdBuffer, params);
 			}
 			else
-				addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, initPrograms, test, params);
+				addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, checkSupport, initPrograms, test, params);
 		}
 
 		group->addChild(viewTypeGroup.release());

@@ -561,14 +561,15 @@ class GraphicsCacheTest : public CacheTest
 {
 public:
 							GraphicsCacheTest	(tcu::TestContext&		testContext,
-												 const std::string&	name,
-												 const std::string&	description,
+												 const std::string&		name,
+												 const std::string&		description,
 												 const CacheTestParam*	param)
 								: CacheTest (testContext, name, description, param)
 								{ }
 	virtual					~GraphicsCacheTest	(void) { }
 	virtual void			initPrograms		(SourceCollections&	programCollection) const;
-	virtual TestInstance*	createInstance		(Context&				context) const;
+	virtual void			checkSupport		(Context&			context) const;
+	virtual TestInstance*	createInstance		(Context&			context) const;
 };
 
 class GraphicsCacheTestInstance : public CacheTestInstance
@@ -713,12 +714,31 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 	}
 }
 
+void GraphicsCacheTest::checkSupport (Context& context) const
+{
+	for (deUint32 shaderNdx = 0; shaderNdx < m_param.getShaderCount(); shaderNdx++)
+	{
+		switch(m_param.getShaderFlag(shaderNdx))
+		{
+		case VK_SHADER_STAGE_GEOMETRY_BIT:
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+			break;
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+			break;
+		default:
+			break;
+		};
+	}
+}
+
 TestInstance* GraphicsCacheTest::createInstance (Context& context) const
 {
 	return new GraphicsCacheTestInstance(context, &m_param);
 }
 
-GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&					context,
+GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 													  const CacheTestParam*	param)
 	: CacheTestInstance		(context, param)
 	, m_renderSize			(32u, 32u)
@@ -750,8 +770,6 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&					context,
 	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	// Bind shader stages
-
-	VkPhysicalDeviceFeatures	features = m_context.getDeviceFeatures();
 	for (deUint32 ndx = 0; ndx < PIPELINE_CACHE_NDX_COUNT; ndx++)
 	{
 		for (deUint32 shaderNdx = 0; shaderNdx < m_param->getShaderCount(); shaderNdx++)
@@ -759,52 +777,30 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&					context,
 			switch(m_param->getShaderFlag(shaderNdx))
 			{
 			case VK_SHADER_STAGE_VERTEX_BIT:
-			{
-				std::string	shader_name("color_vert_");
-				shader_name += (ndx == PIPELINE_CACHE_NDX_DERIVATIVE) ? "2" : "1";
-				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, shader_name.c_str(), "main");
-			}
+				{
+					std::string	shader_name("color_vert_");
+					shader_name += (ndx == PIPELINE_CACHE_NDX_DERIVATIVE) ? "2" : "1";
+					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, shader_name.c_str(), "main");
+				}
 				break;
 			case VK_SHADER_STAGE_FRAGMENT_BIT:
 				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "color_frag", "main");
 				break;
 			case VK_SHADER_STAGE_GEOMETRY_BIT:
-				if (features.geometryShader == VK_FALSE)
-				{
-					TCU_THROW(NotSupportedError, "Geometry Shader Not Supported");
-				}
-				else
-				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
-				}
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-				if (features.tessellationShader == VK_FALSE)
-				{
-					TCU_THROW(NotSupportedError, "Tessellation Not Supported");
-				}
-				else
-				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
-					m_pipelineBuilder.enableTessellationStage(3);
-				}
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
+				m_pipelineBuilder.enableTessellationStage(3);
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-				if (features.tessellationShader == VK_FALSE)
-				{
-					TCU_THROW(NotSupportedError, "Tessellation Not Supported");
-				}
-				else
-				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
-					m_pipelineBuilder.enableTessellationStage(3);
-				}
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
+				m_pipelineBuilder.enableTessellationStage(3);
 				break;
 			default:
 				DE_FATAL("Unknown Shader Stage!");
 				break;
 			};
-
 		}
 		if (ndx == PIPELINE_CACHE_NDX_CACHED)
 		{
@@ -1276,7 +1272,6 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 
 tcu::TestCaseGroup* createCreationFeedbackTests (tcu::TestContext& testCtx)
 {
-
 	de::MovePtr<tcu::TestCaseGroup> cacheTests (new tcu::TestCaseGroup(testCtx, "creation_feedback", "pipeline creation feedback tests"));
 
 	// Graphics Pipeline Tests

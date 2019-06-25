@@ -395,16 +395,13 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 
 void StoreTest::checkSupport (Context& context) const
 {
-	const VkPhysicalDeviceFeatures	features			(context.getDeviceFeatures());
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																							   context.getPhysicalDevice(),
-																							   m_format));
+	const VkFormatProperties formatProperties (getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
 
-	if (!m_declareImageFormatInShader && !features.shaderStorageImageWriteWithoutFormat)
-		TCU_THROW(NotSupportedError, "shaderStorageImageWriteWithoutFormat feature not supported");
+	if (!m_declareImageFormatInShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_WRITE_WITHOUT_FORMAT);
 
-	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
 	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");
@@ -935,16 +932,13 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const VkPhysicalDeviceFeatures	features			(context.getDeviceFeatures());
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
-																							   context.getPhysicalDevice(),
-																							   m_format));
+	const VkFormatProperties formatProperties (getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
 
-	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
-		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat feature not supported");
+	if (!m_declareImageFormatInShader)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
 
-	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
 	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage images");

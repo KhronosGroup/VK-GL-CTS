@@ -62,8 +62,8 @@ enum
 
 // helper functions
 
-std::string getShaderFlagStr (const VkShaderStageFlagBits shader,
-							  bool                        isDescription)
+std::string getShaderFlagStr (const VkShaderStageFlagBits	shader,
+							  bool							isDescription)
 {
 	std::ostringstream desc;
 	switch(shader)
@@ -111,18 +111,18 @@ std::string getShaderFlagStr (const VkShaderStageFlagBits shader,
 class CacheTestParam
 {
 public:
-								CacheTestParam          (const VkShaderStageFlagBits* shaders,
-														 deUint32                     count,
-														 bool						  compileCacheMissShaders);
-	virtual						~CacheTestParam         (void);
-	virtual const std::string   generateTestName        (void)          const;
-	virtual const std::string   generateTestDescription (void)          const;
-	VkShaderStageFlagBits       getShaderFlag           (deUint32 ndx)  const   { return m_shaders[ndx]; }
-	deUint32                    getShaderCount          (void)          const   { return (deUint32)m_shaderCount; }
+								CacheTestParam			(const VkShaderStageFlagBits*	shaders,
+														 deUint32						count,
+														 bool							compileCacheMissShaders);
+	virtual						~CacheTestParam			(void);
+	virtual const std::string	generateTestName		(void)			const;
+	virtual const std::string	generateTestDescription	(void)			const;
+	VkShaderStageFlagBits		getShaderFlag			(deUint32 ndx)	const	{ return m_shaders[ndx]; }
+	deUint32					getShaderCount			(void)			const	{ return (deUint32)m_shaderCount; }
 	bool						getCompileMissShaders	(void)			const	{ return m_compileCacheMissShaders;	}
 protected:
-	VkShaderStageFlagBits       m_shaders[VK_MAX_SHADER_STAGES];
-	size_t                      m_shaderCount;
+	VkShaderStageFlagBits		m_shaders[VK_MAX_SHADER_STAGES];
+	size_t						m_shaderCount;
 	bool						m_compileCacheMissShaders;
 };
 
@@ -130,8 +130,10 @@ CacheTestParam::CacheTestParam (const VkShaderStageFlagBits* shaders, deUint32 c
 	: m_compileCacheMissShaders	(compileCacheMissShaders)
 {
 	DE_ASSERT(count <= VK_MAX_SHADER_STAGES);
+
 	for (deUint32 ndx = 0; ndx < count; ndx++)
 		m_shaders[ndx] = shaders[ndx];
+
 	m_shaderCount = count;
 }
 
@@ -173,13 +175,11 @@ public:
 															 VkPipelineCache		cache,
 															 VkPipelineLayout		pipelineLayout);
 protected:
-	Context&                            m_context;
-
-	Move<VkShaderModule>                m_shaderModules[VK_MAX_SHADER_STAGES];
-	deUint32                            m_shaderStageCount;
-	VkPipelineShaderStageCreateInfo     m_shaderStageInfo[VK_MAX_SHADER_STAGES];
-
-	deUint32                            m_patchControlPoints;
+	Context&							m_context;
+	Move<VkShaderModule>				m_shaderModules[VK_MAX_SHADER_STAGES];
+	deUint32							m_shaderStageCount;
+	VkPipelineShaderStageCreateInfo		m_shaderStageInfo[VK_MAX_SHADER_STAGES];
+	deUint32							m_patchControlPoints;
 };
 
 SimpleGraphicsPipelineBuilder::SimpleGraphicsPipelineBuilder (Context& context)
@@ -189,16 +189,16 @@ SimpleGraphicsPipelineBuilder::SimpleGraphicsPipelineBuilder (Context& context)
 	m_shaderStageCount   = 0;
 }
 
-void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits stage,
-													 const char*           sourceName,
-													 const char*           entryName)
+void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits	stage,
+													 const char*			sourceName,
+													 const char*			entryName)
 {
-	const DeviceInterface&  vk        = m_context.getDeviceInterface();
-	const VkDevice          vkDevice  = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create shader module
-	deUint32*               code     = (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
-	deUint32                codeSize  = (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
+	deUint32*				code		= (deUint32*)m_context.getBinaryCollection().get(sourceName).getBinary();
+	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(sourceName).getSize();
 
 	const VkShaderModuleCreateInfo moduleCreateInfo =
 	{
@@ -212,65 +212,65 @@ void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits stage
 	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
 
 	// Prepare shader stage info
-	m_shaderStageInfo[m_shaderStageCount].sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	m_shaderStageInfo[m_shaderStageCount].pNext               = DE_NULL;
-	m_shaderStageInfo[m_shaderStageCount].flags               = 0u;
-	m_shaderStageInfo[m_shaderStageCount].stage               = stage;
-	m_shaderStageInfo[m_shaderStageCount].module              = *m_shaderModules[m_shaderStageCount];
-	m_shaderStageInfo[m_shaderStageCount].pName               = entryName;
-	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo = DE_NULL;
+	m_shaderStageInfo[m_shaderStageCount].sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	m_shaderStageInfo[m_shaderStageCount].pNext					= DE_NULL;
+	m_shaderStageInfo[m_shaderStageCount].flags					= 0u;
+	m_shaderStageInfo[m_shaderStageCount].stage					= stage;
+	m_shaderStageInfo[m_shaderStageCount].module				= *m_shaderModules[m_shaderStageCount];
+	m_shaderStageInfo[m_shaderStageCount].pName					= entryName;
+	m_shaderStageInfo[m_shaderStageCount].pSpecializationInfo	= DE_NULL;
 
 	m_shaderStageCount++;
 }
 
 Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, VkRenderPass renderPass, VkPipelineCache cache, VkPipelineLayout pipelineLayout)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
-	const VkDevice              vkDevice            = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create pipeline
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
-		0u,                                 // deUint32                 binding;
-		sizeof(Vertex4RGBA),                // deUint32                 strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,        // VkVertexInputRate        inputRate;
+		0u,								// deUint32                 binding;
+		sizeof(Vertex4RGBA),			// deUint32                 strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX,	// VkVertexInputRate        inputRate;
 	};
 
 	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
 	{
 		{
-			0u,                                 // deUint32 location;
-			0u,                                 // deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,      // VkFormat format;
-			0u                                  // deUint32 offsetInBytes;
+			0u,								// deUint32 location;
+			0u,								// deUint32 binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat format;
+			0u								// deUint32 offsetInBytes;
 		},
 		{
-			1u,                                 // deUint32 location;
-			0u,                                 // deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,      // VkFormat format;
-			DE_OFFSET_OF(Vertex4RGBA, color),   // deUint32 offsetInBytes;
+			1u,									// deUint32 location;
+			0u,									// deUint32 binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
+			DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32 offsetInBytes;
 		}
 	};
 
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,      // VkStructureType                          sType;
-		DE_NULL,                                                        // const void*                              pNext;
-		0u,                                                             // VkPipelineVertexInputStateCreateFlags    flags;
-		1u,                                                             // deUint32                                 vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,                                 // const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
-		2u,                                                             // deUint32                                 vertexAttributeDescriptionCount;
-		vertexInputAttributeDescriptions,                               // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineVertexInputStateCreateFlags    flags;
+		1u,															// deUint32                                 vertexBindingDescriptionCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
+		2u,															// deUint32                                 vertexAttributeDescriptionCount;
+		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
 	};
 
 	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,    // VkStructureType                          sType;
-		DE_NULL,                                                        // const void*                              pNext;
-		0u,                                                             // VkPipelineInputAssemblyStateCreateFlags  flags;
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,														// const void*                              pNext;
+		0u,																// VkPipelineInputAssemblyStateCreateFlags  flags;
 		(m_patchControlPoints == 0 ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
-								   : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST), // VkPrimitiveTopology                      topology;
-		VK_FALSE,                                                       // VkBool32                                 primitiveRestartEnable;
+								   : VK_PRIMITIVE_TOPOLOGY_PATCH_LIST),	// VkPrimitiveTopology                      topology;
+		VK_FALSE,														// VkBool32                                 primitiveRestartEnable;
 	};
 
 	const VkViewport	viewport	= makeViewport(renderSize);
@@ -278,112 +278,112 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 render
 
 	const VkPipelineViewportStateCreateInfo viewportStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,          // VkStructureType                      sType;
-		DE_NULL,                                                        // const void*                          pNext;
-		0u,                                                             // VkPipelineViewportStateCreateFlags   flags;
-		1u,                                                             // deUint32                             viewportCount;
-		&viewport,                                                      // const VkViewport*                    pViewports;
-		1u,                                                             // deUint32                             scissorCount;
-		&scissor                                                        // const VkRect2D*                      pScissors;
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                      sType;
+		DE_NULL,												// const void*                          pNext;
+		0u,														// VkPipelineViewportStateCreateFlags   flags;
+		1u,														// deUint32                             viewportCount;
+		&viewport,												// const VkViewport*                    pViewports;
+		1u,														// deUint32                             scissorCount;
+		&scissor												// const VkRect2D*                      pScissors;
 	};
 
 	const VkPipelineRasterizationStateCreateInfo rasterStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,     // VkStructureType                          sType;
-		DE_NULL,                                                        // const void*                              pNext;
-		0u,                                                             // VkPipelineRasterizationStateCreateFlags  flags;
-		VK_FALSE,                                                       // VkBool32                                 depthClampEnable;
-		VK_FALSE,                                                       // VkBool32                                 rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,                                           // VkPolygonMode                            polygonMode;
-		VK_CULL_MODE_NONE,                                              // VkCullModeFlags                          cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,                                // VkFrontFace                              frontFace;
-		VK_FALSE,                                                       // VkBool32                                 depthBiasEnable;
-		0.0f,                                                           // float                                    depthBiasConstantFactor;
-		0.0f,                                                           // float                                    depthBiasClamp;
-		0.0f,                                                           // float                                    depthBiasSlopeFactor;
-		1.0f,                                                           // float                                    lineWidth;
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineRasterizationStateCreateFlags  flags;
+		VK_FALSE,													// VkBool32                                 depthClampEnable;
+		VK_FALSE,													// VkBool32                                 rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,										// VkPolygonMode                            polygonMode;
+		VK_CULL_MODE_NONE,											// VkCullModeFlags                          cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace                              frontFace;
+		VK_FALSE,													// VkBool32                                 depthBiasEnable;
+		0.0f,														// float                                    depthBiasConstantFactor;
+		0.0f,														// float                                    depthBiasClamp;
+		0.0f,														// float                                    depthBiasSlopeFactor;
+		1.0f,														// float                                    lineWidth;
 	};
 
 	const VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
 	{
-		VK_FALSE,                                                                   // VkBool32                 blendEnable;
-		VK_BLEND_FACTOR_ONE,                                                        // VkBlendFactor            srcColorBlendFactor;
-		VK_BLEND_FACTOR_ZERO,                                                       // VkBlendFactor            dstColorBlendFactor;
-		VK_BLEND_OP_ADD,                                                            // VkBlendOp                colorBlendOp;
-		VK_BLEND_FACTOR_ONE,                                                        // VkBlendFactor            srcAlphaBlendFactor;
-		VK_BLEND_FACTOR_ZERO,                                                       // VkBlendFactor            dstAlphaBlendFactor;
-		VK_BLEND_OP_ADD,                                                            // VkBlendOp                alphaBlendOp;
+		VK_FALSE,						// VkBool32                 blendEnable;
+		VK_BLEND_FACTOR_ONE,			// VkBlendFactor            srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor            dstColorBlendFactor;
+		VK_BLEND_OP_ADD,				// VkBlendOp                colorBlendOp;
+		VK_BLEND_FACTOR_ONE,			// VkBlendFactor            srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor            dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,				// VkBlendOp                alphaBlendOp;
 		VK_COLOR_COMPONENT_R_BIT |
 		VK_COLOR_COMPONENT_G_BIT |
 		VK_COLOR_COMPONENT_B_BIT |
-		VK_COLOR_COMPONENT_A_BIT                                                    // VkColorComponentFlags    colorWriteMask;
+		VK_COLOR_COMPONENT_A_BIT		// VkColorComponentFlags    colorWriteMask;
 	};
 
 	const VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,   // VkStructureType                              sType;
-		DE_NULL,                                                    // const void*                                  pNext;
-		0u,                                                         // VkPipelineColorBlendStateCreateFlags         flags;
-		VK_FALSE,                                                   // VkBool32                                     logicOpEnable;
-		VK_LOGIC_OP_COPY,                                           // VkLogicOp                                    logicOp;
-		1u,                                                         // deUint32                                     attachmentCount;
-		&colorBlendAttachmentState,                                 // const VkPipelineColorBlendAttachmentState*   pAttachments;
-		{ 0.0f, 0.0f, 0.0f, 0.0f },                                 // float                                        blendConst[4];
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                              sType;
+		DE_NULL,													// const void*                                  pNext;
+		0u,															// VkPipelineColorBlendStateCreateFlags         flags;
+		VK_FALSE,													// VkBool32                                     logicOpEnable;
+		VK_LOGIC_OP_COPY,											// VkLogicOp                                    logicOp;
+		1u,															// deUint32                                     attachmentCount;
+		&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*   pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float                                        blendConst[4];
 	};
 
 	const VkPipelineMultisampleStateCreateInfo  multisampleStateParams  =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,   // VkStructureType                          sType;
-		DE_NULL,                                                    // const void*                              pNext;
-		0u,                                                         // VkPipelineMultisampleStateCreateFlags    flags;
-		VK_SAMPLE_COUNT_1_BIT,                                      // VkSampleCountFlagBits                    rasterizationSamples;
-		VK_FALSE,                                                   // VkBool32                                 sampleShadingEnable;
-		0.0f,                                                       // float                                    minSampleShading;
-		DE_NULL,                                                    // const VkSampleMask*                      pSampleMask;
-		VK_FALSE,                                                   // VkBool32                                 alphaToCoverageEnable;
-		VK_FALSE,                                                   // VkBool32                                 alphaToOneEnable;
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineMultisampleStateCreateFlags    flags;
+		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits                    rasterizationSamples;
+		VK_FALSE,													// VkBool32                                 sampleShadingEnable;
+		0.0f,														// float                                    minSampleShading;
+		DE_NULL,													// const VkSampleMask*                      pSampleMask;
+		VK_FALSE,													// VkBool32                                 alphaToCoverageEnable;
+		VK_FALSE,													// VkBool32                                 alphaToOneEnable;
 	};
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType;
-		DE_NULL,                                                    // const void*                              pNext;
-		0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags;
-		VK_TRUE,                                                    // VkBool32                                 depthTestEnable;
-		VK_TRUE,                                                    // VkBool32                                 depthWriteEnable;
-		VK_COMPARE_OP_LESS_OR_EQUAL,                                // VkCompareOp                              depthCompareOp;
-		VK_FALSE,                                                   // VkBool32                                 depthBoundsTestEnable;
-		VK_FALSE,                                                   // VkBool32                                 stencilTestEnable;
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineDepthStencilStateCreateFlags   flags;
+		VK_TRUE,													// VkBool32                                 depthTestEnable;
+		VK_TRUE,													// VkBool32                                 depthWriteEnable;
+		VK_COMPARE_OP_LESS_OR_EQUAL,								// VkCompareOp                              depthCompareOp;
+		VK_FALSE,													// VkBool32                                 depthBoundsTestEnable;
+		VK_FALSE,													// VkBool32                                 stencilTestEnable;
 		// VkStencilOpState front;
 		{
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,    // VkCompareOp  compareOp;
-			0u,                     // deUint32     compareMask;
-			0u,                     // deUint32     writeMask;
-			0u,                     // deUint32     reference;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
+			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
+			0u,						// deUint32     compareMask;
+			0u,						// deUint32     writeMask;
+			0u,						// deUint32     reference;
 		},
 		// VkStencilOpState back;
 		{
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,    // VkCompareOp  compareOp;
-			0u,                     // deUint32     compareMask;
-			0u,                     // deUint32     writeMask;
-			0u,                     // deUint32     reference;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
+			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
+			0u,						// deUint32     compareMask;
+			0u,						// deUint32     writeMask;
+			0u,						// deUint32     reference;
 		},
-		0.0f,                                                      // float                                    minDepthBounds;
-		1.0f,                                                      // float                                    maxDepthBounds;
+		0.0f,														// float                                    minDepthBounds;
+		1.0f,														// float                                    maxDepthBounds;
 	};
 
 	const VkPipelineTessellationStateCreateInfo tessStateCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,  // VkStructureType                          sType;
-		DE_NULL,                                                    // const void*                              pNext;
-		0u,                                                         // VkPipelineTesselationStateCreateFlags    flags;
-		m_patchControlPoints,                                       // deUint32                                 patchControlPoints;
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineTesselationStateCreateFlags    flags;
+		m_patchControlPoints,										// deUint32                                 patchControlPoints;
 	};
 	const VkPipelineTessellationStateCreateInfo* pTessCreateInfo = (m_patchControlPoints > 0)
 																  ? &tessStateCreateInfo
@@ -391,25 +391,25 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 render
 
 	const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
 	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,    // VkStructureType                                  sType;
-		DE_NULL,                                            // const void*                                      pNext;
-		0u,                                                 // VkPipelineCreateFlags                            flags;
-		m_shaderStageCount,                                 // deUint32                                         stageCount;
-		m_shaderStageInfo,                                  // const VkPipelineShaderStageCreateInfo*           pStages;
-		&vertexInputStateParams,                            // const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
-		&inputAssemblyStateParams,                          // const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-		pTessCreateInfo,                                    // const VkPipelineTessellationStateCreateInfo*     pTessellationState;
-		&viewportStateParams,                               // const VkPipelineViewportStateCreateInfo*         pViewportState;
-		&rasterStateParams,                                 // const VkPipelineRasterizationStateCreateInfo*    pRasterState;
-		&multisampleStateParams,                            // const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-		&depthStencilStateParams,                           // const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
-		&colorBlendStateParams,                             // const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,   // const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-		pipelineLayout,                                     // VkPipelineLayout                                 layout;
-		renderPass,                                         // VkRenderPass                                     renderPass;
-		0u,                                                 // deUint32                                         subpass;
-		0u,                                                 // VkPipeline                                       basePipelineHandle;
-		0,                                                  // deInt32                                          basePipelineIndex;
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType;
+		DE_NULL,											// const void*                                      pNext;
+		0u,													// VkPipelineCreateFlags                            flags;
+		m_shaderStageCount,									// deUint32                                         stageCount;
+		m_shaderStageInfo,									// const VkPipelineShaderStageCreateInfo*           pStages;
+		&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
+		&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
+		pTessCreateInfo,									// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
+		&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*         pViewportState;
+		&rasterStateParams,									// const VkPipelineRasterizationStateCreateInfo*    pRasterState;
+		&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
+		&depthStencilStateParams,							// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+		&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
+		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,	// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
+		pipelineLayout,										// VkPipelineLayout                                 layout;
+		renderPass,											// VkRenderPass                                     renderPass;
+		0u,													// deUint32                                         subpass;
+		0u,													// VkPipeline                                       basePipelineHandle;
+		0,													// deInt32                                          basePipelineIndex;
 	};
 
 	return createGraphicsPipeline(vk, vkDevice, cache, &graphicsPipelineParams);
@@ -421,8 +421,8 @@ void SimpleGraphicsPipelineBuilder::enableTessellationStage (deUint32 patchContr
 }
 
 template <class Test>
-vkt::TestCase* newTestCase (tcu::TestContext&     testContext,
-							const CacheTestParam* testParam)
+vkt::TestCase* newTestCase (tcu::TestContext&		testContext,
+							const CacheTestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
@@ -432,9 +432,9 @@ vkt::TestCase* newTestCase (tcu::TestContext&     testContext,
 
 Move<VkBuffer> createBufferAndBindMemory (Context& context, VkDeviceSize size, VkBufferUsageFlags usage, de::MovePtr<Allocation>* pAlloc)
 {
-	const DeviceInterface&  vk               = context.getDeviceInterface();
-	const VkDevice          vkDevice         = context.getDevice();
-	const deUint32          queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
 	const VkBufferCreateInfo vertexBufferParams =
 	{
@@ -456,35 +456,35 @@ Move<VkBuffer> createBufferAndBindMemory (Context& context, VkDeviceSize size, V
 	return vertexBuffer;
 }
 
-Move<VkImage> createImage2DAndBindMemory (Context&                          context,
-										  VkFormat                          format,
-										  deUint32                          width,
-										  deUint32                          height,
-										  VkImageUsageFlags                 usage,
-										  VkSampleCountFlagBits             sampleCount,
-										  de::details::MovePtr<Allocation>* pAlloc)
+Move<VkImage> createImage2DAndBindMemory (Context&							context,
+										  VkFormat							format,
+										  deUint32							width,
+										  deUint32							height,
+										  VkImageUsageFlags					usage,
+										  VkSampleCountFlagBits				sampleCount,
+										  de::details::MovePtr<Allocation>*	pAlloc)
 {
-	const DeviceInterface&  vk               = context.getDeviceInterface();
-	const VkDevice          vkDevice         = context.getDevice();
-	const deUint32          queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
 	const VkImageCreateInfo colorImageParams =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                        // VkStructureType      sType;
-		DE_NULL,                                                                    // const void*          pNext;
-		0u,                                                                         // VkImageCreateFlags   flags;
-		VK_IMAGE_TYPE_2D,                                                           // VkImageType          imageType;
-		format,                                                                     // VkFormat             format;
-		{ width, height, 1u },                                                      // VkExtent3D           extent;
-		1u,                                                                         // deUint32             mipLevels;
-		1u,                                                                         // deUint32             arraySize;
-		sampleCount,                                                                // deUint32             samples;
-		VK_IMAGE_TILING_OPTIMAL,                                                    // VkImageTiling        tiling;
-		usage,                                                                      // VkImageUsageFlags    usage;
-		VK_SHARING_MODE_EXCLUSIVE,                                                  // VkSharingMode        sharingMode;
-		1u,                                                                         // deUint32             queueFamilyCount;
-		&queueFamilyIndex,                                                          // const deUint32*      pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,                                                  // VkImageLayout        initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType      sType;
+		DE_NULL,								// const void*          pNext;
+		0u,										// VkImageCreateFlags   flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType          imageType;
+		format,									// VkFormat             format;
+		{ width, height, 1u },					// VkExtent3D           extent;
+		1u,										// deUint32             mipLevels;
+		1u,										// deUint32             arraySize;
+		sampleCount,							// deUint32             samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling        tiling;
+		usage,									// VkImageUsageFlags    usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode        sharingMode;
+		1u,										// deUint32             queueFamilyCount;
+		&queueFamilyIndex,						// const deUint32*      pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout        initialLayout;
 	};
 
 	Move<VkImage> image = createImage(vk, vkDevice, &colorImageParams);
@@ -499,16 +499,16 @@ Move<VkImage> createImage2DAndBindMemory (Context&                          cont
 class CacheTest : public vkt::TestCase
 {
 public:
-						  CacheTest(tcu::TestContext&           testContext,
-									const std::string&          name,
-									const std::string&          description,
-									const CacheTestParam*       param)
+							CacheTest	(tcu::TestContext&		testContext,
+										 const std::string&		name,
+										 const std::string&		description,
+										 const CacheTestParam*	param)
 							  : vkt::TestCase (testContext, name, description)
 							  , m_param (*param)
 							  { }
-	virtual               ~CacheTest (void) { }
+	virtual					~CacheTest (void) { }
 protected:
-	const CacheTestParam  m_param;
+	const CacheTestParam	m_param;
 };
 
 class CacheTestInstance : public vkt::TestInstance
@@ -520,29 +520,28 @@ public:
 		PIPELINE_CACHE_NDX_CACHED,
 		PIPELINE_CACHE_NDX_COUNT,
 	};
-							CacheTestInstance           (Context&                 context,
-														 const CacheTestParam*    param);
-	virtual                 ~CacheTestInstance          (void);
-	virtual tcu::TestStatus iterate                     (void);
+							CacheTestInstance		(Context&				context,
+													 const CacheTestParam*	param);
+	virtual					~CacheTestInstance		(void);
+	virtual tcu::TestStatus	iterate					(void);
 protected:
-	virtual tcu::TestStatus verifyTestResult            (void) = 0;
-	virtual void            prepareCommandBuffer        (void) = 0;
+	virtual tcu::TestStatus	verifyTestResult		(void) = 0;
+	virtual void			prepareCommandBuffer	(void) = 0;
 protected:
 	const CacheTestParam*   m_param;
-
-	Move<VkCommandPool>     m_cmdPool;
-	Move<VkCommandBuffer>   m_cmdBuffer;
-	Move<VkPipelineCache>   m_cache;
+	Move<VkCommandPool>		m_cmdPool;
+	Move<VkCommandBuffer>	m_cmdBuffer;
+	Move<VkPipelineCache>	m_cache;
 };
 
-CacheTestInstance::CacheTestInstance (Context&                 context,
-									  const CacheTestParam*    param)
-	: TestInstance       (context)
-	, m_param            (param)
+CacheTestInstance::CacheTestInstance (Context&				context,
+									  const CacheTestParam*	param)
+	: TestInstance	(context)
+	, m_param		(param)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
-	const deUint32          queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDevice			vkDevice			= m_context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
 	// Create command pool
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
@@ -554,11 +553,11 @@ CacheTestInstance::CacheTestInstance (Context&                 context,
 	{
 		const VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
-			DE_NULL,                                                // const void*                 pNext;
-			0u,                                                     // VkPipelineCacheCreateFlags  flags;
-			0u,                                                     // deUintptr                   initialDataSize;
-			DE_NULL,                                                // const void*                 pInitialData;
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
+			DE_NULL,										// const void*                 pNext;
+			0u,												// VkPipelineCacheCreateFlags  flags;
+			0u,												// deUintptr                   initialDataSize;
+			DE_NULL,										// const void*                 pInitialData;
 		};
 
 		m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
@@ -571,9 +570,9 @@ CacheTestInstance::~CacheTestInstance (void)
 
 tcu::TestStatus CacheTestInstance::iterate (void)
 {
-	const DeviceInterface&  vk       = m_context.getDeviceInterface();
-	const VkDevice          vkDevice = m_context.getDevice();
-	const VkQueue           queue    = m_context.getUniversalQueue();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
+	const VkQueue			queue		= m_context.getUniversalQueue();
 
 	prepareCommandBuffer();
 
@@ -585,52 +584,53 @@ tcu::TestStatus CacheTestInstance::iterate (void)
 class GraphicsCacheTest : public CacheTest
 {
 public:
-							GraphicsCacheTest   (tcu::TestContext&      testContext,
-												 const std::string&     name,
-												 const std::string&     description,
-												 const CacheTestParam*  param)
+							GraphicsCacheTest	(tcu::TestContext&		testContext,
+												 const std::string&		name,
+												 const std::string&		description,
+												 const CacheTestParam*	param)
 								: CacheTest (testContext, name, description, param)
 								{ }
-	virtual                 ~GraphicsCacheTest  (void) { }
-	virtual void            initPrograms        (SourceCollections&      programCollection) const;
-	virtual TestInstance*   createInstance      (Context&                context) const;
+	virtual                 ~GraphicsCacheTest	(void) { }
+	virtual void            initPrograms		(SourceCollections&		programCollection) const;
+	virtual void			checkSupport		(Context&				context) const;
+	virtual TestInstance*   createInstance		(Context&				context) const;
 };
 
 class GraphicsCacheTestInstance : public CacheTestInstance
 {
 public:
-							GraphicsCacheTestInstance   (Context&              context,
-														 const CacheTestParam*  param);
-	virtual                 ~GraphicsCacheTestInstance  (void);
+							GraphicsCacheTestInstance   (Context&				context,
+														 const CacheTestParam*	param);
+	virtual					~GraphicsCacheTestInstance	(void);
 protected:
-			void            prepareRenderPass           (VkFramebuffer framebuffer, VkPipeline pipeline);
-	virtual void            prepareCommandBuffer        (void);
-	virtual tcu::TestStatus verifyTestResult            (void);
+			void			prepareRenderPass			(VkFramebuffer framebuffer, VkPipeline pipeline);
+	virtual void			prepareCommandBuffer		(void);
+	virtual tcu::TestStatus	verifyTestResult			(void);
 
 protected:
-	const tcu::UVec2                    m_renderSize;
-	const VkFormat                      m_colorFormat;
-	const VkFormat                      m_depthFormat;
-	Move<VkPipelineLayout>              m_pipelineLayout;
+	const tcu::UVec2				m_renderSize;
+	const VkFormat					m_colorFormat;
+	const VkFormat					m_depthFormat;
+	Move<VkPipelineLayout>			m_pipelineLayout;
 
-	Move<VkImage>                       m_depthImage;
-	de::MovePtr<Allocation>             m_depthImageAlloc;
-	de::MovePtr<Allocation>             m_colorImageAlloc[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkImageView>                   m_depthAttachmentView;
-	VkImageMemoryBarrier				m_imageLayoutBarriers[3];
+	Move<VkImage>					m_depthImage;
+	de::MovePtr<Allocation>			m_depthImageAlloc;
+	de::MovePtr<Allocation>			m_colorImageAlloc[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkImageView>				m_depthAttachmentView;
+	VkImageMemoryBarrier			m_imageLayoutBarriers[3];
 
-	Move<VkBuffer>                      m_vertexBuffer;
-	de::MovePtr<Allocation>				m_vertexBufferMemory;
-	std::vector<Vertex4RGBA>            m_vertices;
+	Move<VkBuffer>					m_vertexBuffer;
+	de::MovePtr<Allocation>			m_vertexBufferMemory;
+	std::vector<Vertex4RGBA>		m_vertices;
 
-	SimpleGraphicsPipelineBuilder       m_pipelineBuilder;
-	SimpleGraphicsPipelineBuilder       m_missPipelineBuilder;
-	Move<VkRenderPass>                  m_renderPass;
+	SimpleGraphicsPipelineBuilder	m_pipelineBuilder;
+	SimpleGraphicsPipelineBuilder	m_missPipelineBuilder;
+	Move<VkRenderPass>				m_renderPass;
 
-	Move<VkImage>                       m_colorImage[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkImageView>                   m_colorAttachmentView[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkFramebuffer>                 m_framebuffer[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkPipeline>                    m_pipeline[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkImage>					m_colorImage[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkImageView>				m_colorAttachmentView[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkFramebuffer>				m_framebuffer[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkPipeline>				m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 };
 
 void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) const
@@ -757,13 +757,32 @@ void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) cons
 	}
 }
 
+void GraphicsCacheTest::checkSupport (Context& context) const
+{
+	for (deUint32 shaderNdx = 0; shaderNdx < m_param.getShaderCount(); shaderNdx++)
+	{
+		switch(m_param.getShaderFlag(shaderNdx))
+		{
+			case VK_SHADER_STAGE_GEOMETRY_BIT:
+				context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+				break;
+			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+				context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+				break;
+			default:
+				break;
+		};
+	}
+}
+
 TestInstance* GraphicsCacheTest::createInstance (Context& context) const
 {
 	return new GraphicsCacheTestInstance(context, &m_param);
 }
 
-GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              context,
-													  const CacheTestParam* param)
+GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
+													  const CacheTestParam*	param)
 	: CacheTestInstance		(context,param)
 	, m_renderSize			(32u, 32u)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
@@ -771,14 +790,14 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	, m_pipelineBuilder		(context)
 	, m_missPipelineBuilder	(context)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create vertex buffer
 	{
-		m_vertexBuffer = createBufferAndBindMemory(m_context, 1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
+		m_vertexBuffer	= createBufferAndBindMemory(m_context, 1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
 
-		m_vertices          = createOverlappingQuads();
+		m_vertices		= createOverlappingQuads();
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
 		flushAlloc(vk, vkDevice, *m_vertexBufferMemory);
@@ -787,23 +806,23 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	// Create render pass
 	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
 
-	const VkComponentMapping    ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+	const VkComponentMapping ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 	// Create color image
 	{
-		m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE] = createImage2DAndBindMemory(m_context,
-																			   m_colorFormat,
-																			   m_renderSize.x(),
-																			   m_renderSize.y(),
-																			   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																			   VK_SAMPLE_COUNT_1_BIT,
-																			   &m_colorImageAlloc[PIPELINE_CACHE_NDX_NO_CACHE]);
-		m_colorImage[PIPELINE_CACHE_NDX_CACHED]   = createImage2DAndBindMemory(m_context,
-																			   m_colorFormat,
-																			   m_renderSize.x(),
-																			   m_renderSize.y(),
-																			   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																			   VK_SAMPLE_COUNT_1_BIT,
-																			   &m_colorImageAlloc[PIPELINE_CACHE_NDX_CACHED]);
+		m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE]	= createImage2DAndBindMemory(m_context,
+																				 m_colorFormat,
+																				 m_renderSize.x(),
+																				 m_renderSize.y(),
+																				 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																				 VK_SAMPLE_COUNT_1_BIT,
+																				 &m_colorImageAlloc[PIPELINE_CACHE_NDX_NO_CACHE]);
+		m_colorImage[PIPELINE_CACHE_NDX_CACHED]		= createImage2DAndBindMemory(m_context,
+																				 m_colorFormat,
+																				 m_renderSize.x(),
+																				 m_renderSize.y(),
+																				 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																				 VK_SAMPLE_COUNT_1_BIT,
+																				 &m_colorImageAlloc[PIPELINE_CACHE_NDX_CACHED]);
 	}
 
 	// Create depth image
@@ -858,14 +877,14 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	{
 		VkImageViewCreateInfo colorAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,       // VkStructureType          sType;
-			DE_NULL,                                        // const void*              pNext;
-			0u,                                             // VkImageViewCreateFlags   flags;
-			*m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE],     // VkImage                  image;
-			VK_IMAGE_VIEW_TYPE_2D,                          // VkImageViewType          viewType;
-			m_colorFormat,                                  // VkFormat                 format;
-			ComponentMappingRGBA,                           // VkComponentMapping       components;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange  subresourceRange;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType          sType;
+			DE_NULL,										// const void*              pNext;
+			0u,												// VkImageViewCreateFlags   flags;
+			*m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE],		// VkImage                  image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType          viewType;
+			m_colorFormat,									// VkFormat                 format;
+			ComponentMappingRGBA,							// VkComponentMapping       components;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange  subresourceRange;
 		};
 
 		m_colorAttachmentView[PIPELINE_CACHE_NDX_NO_CACHE] = createImageView(vk, vkDevice, &colorAttachmentViewParams);
@@ -878,14 +897,14 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	{
 		const VkImageViewCreateInfo depthAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,       // VkStructureType          sType;
-			DE_NULL,                                        // const void*              pNext;
-			0u,                                             // VkImageViewCreateFlags   flags;
-			*m_depthImage,                                  // VkImage                  image;
-			VK_IMAGE_VIEW_TYPE_2D,                          // VkImageViewType          viewType;
-			m_depthFormat,                                  // VkFormat                 format;
-			ComponentMappingRGBA,                           // VkComponentMapping       components;
-			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange  subresourceRange;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType          sType;
+			DE_NULL,										// const void*              pNext;
+			0u,												// VkImageViewCreateFlags   flags;
+			*m_depthImage,									// VkImage                  image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType          viewType;
+			m_depthFormat,									// VkFormat                 format;
+			ComponentMappingRGBA,							// VkComponentMapping       components;
+			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange  subresourceRange;
 		};
 
 		m_depthAttachmentView = createImageView(vk, vkDevice, &depthAttachmentViewParams);
@@ -901,15 +920,15 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 
 		const VkFramebufferCreateInfo framebufferParams =
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,          // VkStructureType              sType;
-			DE_NULL,                                            // const void*                  pNext;
-			0u,                                                 // VkFramebufferCreateFlags     flags;
-			*m_renderPass,                                      // VkRenderPass                 renderPass;
-			2u,                                                 // deUint32                     attachmentCount;
-			attachmentBindInfos,                                // const VkImageView*           pAttachments;
-			(deUint32)m_renderSize.x(),                         // deUint32                     width;
-			(deUint32)m_renderSize.y(),                         // deUint32                     height;
-			1u,                                                 // deUint32                     layers;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType              sType;
+			DE_NULL,									// const void*                  pNext;
+			0u,											// VkFramebufferCreateFlags     flags;
+			*m_renderPass,								// VkRenderPass                 renderPass;
+			2u,											// deUint32                     attachmentCount;
+			attachmentBindInfos,						// const VkImageView*           pAttachments;
+			(deUint32)m_renderSize.x(),					// deUint32                     width;
+			(deUint32)m_renderSize.y(),					// deUint32                     height;
+			1u,											// deUint32                     layers;
 		};
 
 		m_framebuffer[PIPELINE_CACHE_NDX_NO_CACHE] = createFramebuffer(vk, vkDevice, &framebufferParams);
@@ -919,7 +938,6 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	}
 
 	// Bind shader stages
-	VkPhysicalDeviceFeatures  features = m_context.getDeviceFeatures();
 	for (deUint32 shaderNdx = 0; shaderNdx < m_param->getShaderCount(); shaderNdx++)
 	{
 		switch(m_param->getShaderFlag(shaderNdx))
@@ -939,49 +957,28 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 				}
 				break;
 			case VK_SHADER_STAGE_GEOMETRY_BIT:
-				if (features.geometryShader == VK_FALSE)
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
+				if (m_param->getCompileMissShaders())
 				{
-					TCU_THROW(NotSupportedError, "Geometry Shader Not Supported");
-				}
-				else
-				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
-					if (m_param->getCompileMissShaders())
-					{
-						m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo_miss", "main");
-					}
+					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo_miss", "main");
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-				if (features.tessellationShader == VK_FALSE)
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
+				m_pipelineBuilder.enableTessellationStage(3);
+				if (m_param->getCompileMissShaders())
 				{
-					TCU_THROW(NotSupportedError, "Tessellation Not Supported");
-				}
-				else
-				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
-					m_pipelineBuilder.enableTessellationStage(3);
-					if (m_param->getCompileMissShaders())
-					{
-						m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs_miss", "main");
-						m_missPipelineBuilder.enableTessellationStage(3);
-					}
+					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs_miss", "main");
+					m_missPipelineBuilder.enableTessellationStage(3);
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-				if (features.tessellationShader == VK_FALSE)
+				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
+				m_pipelineBuilder.enableTessellationStage(3);
+				if (m_param->getCompileMissShaders())
 				{
-					TCU_THROW(NotSupportedError, "Tessellation Not Supported");
-				}
-				else
-				{
-					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
-					m_pipelineBuilder.enableTessellationStage(3);
-					if (m_param->getCompileMissShaders())
-					{
-						m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes_miss", "main");
-						m_missPipelineBuilder.enableTessellationStage(3);
-					}
+					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes_miss", "main");
+					m_missPipelineBuilder.enableTessellationStage(3);
 				}
 				break;
 			default:
@@ -994,13 +991,13 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
-			DE_NULL,											// const void*						pNext;
-			0u,													// VkPipelineLayoutCreateFlags		flags;
-			0u,													// deUint32							setLayoutCount;
-			DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
-			0u,													// deUint32							pushConstantRangeCount;
-			DE_NULL												// const VkPushConstantRange*		pPushConstantRanges;
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType					sType;
+			DE_NULL,										// const void*						pNext;
+			0u,												// VkPipelineLayoutCreateFlags		flags;
+			0u,												// deUint32							setLayoutCount;
+			DE_NULL,										// const VkDescriptorSetLayout*		pSetLayouts;
+			0u,												// deUint32							pushConstantRangeCount;
+			DE_NULL											// const VkPushConstantRange*		pPushConstantRanges;
 		};
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -1016,9 +1013,9 @@ GraphicsCacheTestInstance::~GraphicsCacheTestInstance (void)
 
 void GraphicsCacheTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
+	const DeviceInterface&	vk							= m_context.getDeviceInterface();
 
-	const VkClearValue attachmentClearValues[2] =
+	const VkClearValue		attachmentClearValues[2]	=
 	{
 		defaultClearValue(m_colorFormat),
 		defaultClearValue(m_depthFormat),
@@ -1036,7 +1033,7 @@ void GraphicsCacheTestInstance::prepareRenderPass (VkFramebuffer framebuffer, Vk
 
 void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
@@ -1054,12 +1051,12 @@ void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 
 tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
-	const deUint32          queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					vkDevice			= m_context.getDevice();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	const VkQueue                   queue               = m_context.getUniversalQueue();
-	de::MovePtr<tcu::TextureLevel>  resultNoCache       = readColorAttachment(vk,
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	de::MovePtr<tcu::TextureLevel>	resultNoCache		= readColorAttachment(vk,
 																			  vkDevice,
 																			  queue,
 																			  queueFamilyIndex,
@@ -1067,7 +1064,7 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 																			  *m_colorImage[PIPELINE_CACHE_NDX_NO_CACHE],
 																			  m_colorFormat,
 																			  m_renderSize);
-	de::MovePtr<tcu::TextureLevel>  resultCache         = readColorAttachment(vk,
+	de::MovePtr<tcu::TextureLevel>	resultCache			= readColorAttachment(vk,
 																			  vkDevice,
 																			  queue,
 																			  queueFamilyIndex,
@@ -1093,44 +1090,44 @@ tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
 class ComputeCacheTest : public CacheTest
 {
 public:
-							ComputeCacheTest    (tcu::TestContext&      testContext,
-												 const std::string&     name,
-												 const std::string&     description,
-												 const CacheTestParam*  param)
+							ComputeCacheTest	(tcu::TestContext&		testContext,
+												 const std::string&		name,
+												 const std::string&		description,
+												 const CacheTestParam*	param)
 								: CacheTest (testContext, name, description, param)
 								{ }
-	virtual                 ~ComputeCacheTest   (void) { }
-	virtual void            initPrograms        (SourceCollections&      programCollection) const;
-	virtual TestInstance*   createInstance      (Context&                context) const;
+	virtual					~ComputeCacheTest	(void) { }
+	virtual void			initPrograms		(SourceCollections&		programCollection) const;
+	virtual TestInstance*	createInstance		(Context&				context) const;
 };
 
 class ComputeCacheTestInstance : public CacheTestInstance
 {
 public:
-							ComputeCacheTestInstance    (Context&               context,
-														 const CacheTestParam*  param);
-	virtual                 ~ComputeCacheTestInstance   (void);
-	virtual void            prepareCommandBuffer        (void);
+							ComputeCacheTestInstance	(Context&				context,
+														 const CacheTestParam*	param);
+	virtual					~ComputeCacheTestInstance	(void);
+	virtual void			prepareCommandBuffer		(void);
 protected:
-	virtual tcu::TestStatus verifyTestResult            (void);
-			void            buildBuffers                (void);
-			void            buildDescriptorSets         (deUint32 ndx);
-			void            buildShader                 (void);
-			void            buildPipeline               (deUint32 ndx);
+	virtual tcu::TestStatus	verifyTestResult			(void);
+			void			buildBuffers				(void);
+			void			buildDescriptorSets			(deUint32 ndx);
+			void			buildShader					(void);
+			void			buildPipeline				(deUint32 ndx);
 protected:
-	Move<VkBuffer>              m_inputBuf;
-	de::MovePtr<Allocation>     m_inputBufferAlloc;
-	Move<VkShaderModule>        m_computeShaderModule;
+	Move<VkBuffer>				m_inputBuf;
+	de::MovePtr<Allocation>		m_inputBufferAlloc;
+	Move<VkShaderModule>		m_computeShaderModule;
 
-	Move<VkBuffer>              m_outputBuf[PIPELINE_CACHE_NDX_COUNT];
-	de::MovePtr<Allocation>     m_outputBufferAlloc[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkBuffer>				m_outputBuf[PIPELINE_CACHE_NDX_COUNT];
+	de::MovePtr<Allocation>		m_outputBufferAlloc[PIPELINE_CACHE_NDX_COUNT];
 
-	Move<VkDescriptorPool>      m_descriptorPool[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkDescriptorSetLayout> m_descriptorSetLayout[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkDescriptorSet>       m_descriptorSet[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkDescriptorPool>		m_descriptorPool[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkDescriptorSetLayout>	m_descriptorSetLayout[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkDescriptorSet>		m_descriptorSet[PIPELINE_CACHE_NDX_COUNT];
 
-	Move<VkPipelineLayout>      m_pipelineLayout[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkPipeline>            m_pipeline[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkPipelineLayout>		m_pipelineLayout[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkPipeline>			m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 };
 
 void ComputeCacheTest::initPrograms (SourceCollections& programCollection) const
@@ -1161,11 +1158,11 @@ TestInstance* ComputeCacheTest::createInstance (Context& context) const
 
 void ComputeCacheTestInstance::buildBuffers (void)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create buffer object, allocate storage, and generate input data
-	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u;
+	const VkDeviceSize		size		= sizeof(tcu::Vec4) * 128u;
 	m_inputBuf = createBufferAndBindMemory(m_context, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_inputBufferAlloc);
 
 	// Initialize input buffer
@@ -1193,8 +1190,8 @@ void ComputeCacheTestInstance::buildBuffers (void)
 
 void ComputeCacheTestInstance::buildDescriptorSets (deUint32 ndx)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create descriptor set layout
 	DescriptorSetLayoutBuilder descLayoutBuilder;
@@ -1204,7 +1201,7 @@ void ComputeCacheTestInstance::buildDescriptorSets (deUint32 ndx)
 
 	m_descriptorSetLayout[ndx] = descLayoutBuilder.build(vk, vkDevice);
 
-	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
+	std::vector<VkDescriptorBufferInfo> descriptorInfos;
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, sizeof(tcu::Vec4) * 128u));
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_outputBuf[ndx], 0u, sizeof(tcu::Vec4) * 128u));
 
@@ -1217,11 +1214,11 @@ void ComputeCacheTestInstance::buildDescriptorSets (deUint32 ndx)
 	// Create descriptor set
 	const VkDescriptorSetAllocateInfo descriptorSetAllocInfo =
 	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,     // VkStructureType                 sType;
-		DE_NULL,                                            // const void*                     pNext;
-		*m_descriptorPool[ndx],                             // VkDescriptorPool                descriptorPool;
-		1u,                                                 // deUint32                        setLayoutCount;
-		&m_descriptorSetLayout[ndx].get(),                  // const VkDescriptorSetLayout*    pSetLayouts;
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType                 sType;
+		DE_NULL,										// const void*                     pNext;
+		*m_descriptorPool[ndx],							// VkDescriptorPool                descriptorPool;
+		1u,												// deUint32                        setLayoutCount;
+		&m_descriptorSetLayout[ndx].get(),				// const VkDescriptorSetLayout*    pSetLayouts;
 	};
 	m_descriptorSet[ndx] = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocInfo);
 
@@ -1238,67 +1235,67 @@ void ComputeCacheTestInstance::buildDescriptorSets (deUint32 ndx)
 
 void ComputeCacheTestInstance::buildShader (void)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create compute shader
 	VkShaderModuleCreateInfo shaderModuleCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                                    // VkStructureType             sType;
-		DE_NULL,                                                                        // const void*                 pNext;
-		0u,                                                                             // VkShaderModuleCreateFlags   flags;
-		m_context.getBinaryCollection().get("basic_compute").getSize(),                 // deUintptr                   codeSize;
-		(deUint32*)m_context.getBinaryCollection().get("basic_compute").getBinary(),    // const deUint32*             pCode;
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,									// VkStructureType             sType;
+		DE_NULL,																		// const void*                 pNext;
+		0u,																				// VkShaderModuleCreateFlags   flags;
+		m_context.getBinaryCollection().get("basic_compute").getSize(),					// deUintptr                   codeSize;
+		(deUint32*)m_context.getBinaryCollection().get("basic_compute").getBinary(),	// const deUint32*             pCode;
 	};
 	m_computeShaderModule = createShaderModule(vk, vkDevice, &shaderModuleCreateInfo);
 }
 
 void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create compute pipeline layout
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // VkStructureType                 sType;
-		DE_NULL,                                        // const void*                     pNext;
-		0u,                                             // VkPipelineLayoutCreateFlags     flags;
-		1u,                                             // deUint32                        setLayoutCount;
-		&m_descriptorSetLayout[ndx].get(),              // const VkDescriptorSetLayout*    pSetLayouts;
-		0u,                                             // deUint32                        pushConstantRangeCount;
-		DE_NULL,                                        // const VkPushConstantRange*      pPushConstantRanges;
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                 sType;
+		DE_NULL,										// const void*                     pNext;
+		0u,												// VkPipelineLayoutCreateFlags     flags;
+		1u,												// deUint32                        setLayoutCount;
+		&m_descriptorSetLayout[ndx].get(),				// const VkDescriptorSetLayout*    pSetLayouts;
+		0u,												// deUint32                        pushConstantRangeCount;
+		DE_NULL,										// const VkPushConstantRange*      pPushConstantRanges;
 	};
 
 	m_pipelineLayout[ndx] = createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo);
 
 	const VkPipelineShaderStageCreateInfo stageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-		DE_NULL,                                             // const void*                         pNext;
-		0u,                                                  // VkPipelineShaderStageCreateFlags    flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
-		*m_computeShaderModule,                              // VkShaderModule                      module;
-		"main",                                              // const char*                         pName;
-		DE_NULL,                                             // const VkSpecializationInfo*         pSpecializationInfo;
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+		DE_NULL,												// const void*                         pNext;
+		0u,														// VkPipelineShaderStageCreateFlags    flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits               stage;
+		*m_computeShaderModule,									// VkShaderModule                      module;
+		"main",													// const char*                         pName;
+		DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
 	};
 
 	const VkComputePipelineCreateInfo pipelineCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,      // VkStructureType                 sType;
-		DE_NULL,                                             // const void*                     pNext;
-		0u,                                                  // VkPipelineCreateFlags           flags;
-		stageCreateInfo,                                     // VkPipelineShaderStageCreateInfo stage;
-		*m_pipelineLayout[ndx],                              // VkPipelineLayout                layout;
-		(VkPipeline)0,                                       // VkPipeline                      basePipelineHandle;
-		0u,                                                  // deInt32                         basePipelineIndex;
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType                 sType;
+		DE_NULL,											// const void*                     pNext;
+		0u,													// VkPipelineCreateFlags           flags;
+		stageCreateInfo,									// VkPipelineShaderStageCreateInfo stage;
+		*m_pipelineLayout[ndx],								// VkPipelineLayout                layout;
+		(VkPipeline)0,										// VkPipeline                      basePipelineHandle;
+		0u,													// deInt32                         basePipelineIndex;
 	};
 
 	m_pipeline[ndx] = createComputePipeline(vk, vkDevice, *m_cache, &pipelineCreateInfo);
 }
 
-ComputeCacheTestInstance::ComputeCacheTestInstance (Context&              context,
-													const CacheTestParam*  param)
+ComputeCacheTestInstance::ComputeCacheTestInstance (Context&				context,
+													const CacheTestParam*	param)
 	: CacheTestInstance (context, param)
 {
 	buildBuffers();
@@ -1320,7 +1317,7 @@ ComputeCacheTestInstance::~ComputeCacheTestInstance (void)
 
 void ComputeCacheTestInstance::prepareCommandBuffer (void)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
 
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
@@ -1336,8 +1333,8 @@ void ComputeCacheTestInstance::prepareCommandBuffer (void)
 
 tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Read the content of output buffers
 	invalidateAlloc(vk, vkDevice, *m_outputBufferAlloc[PIPELINE_CACHE_NDX_NO_CACHE]);
@@ -1361,8 +1358,8 @@ class PipelineFromCacheTest : public GraphicsCacheTest
 {
 public:
 							PipelineFromCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
-	virtual                 ~PipelineFromCacheTest		(void) {		}
-	virtual TestInstance*   createInstance				(Context& context) const;
+	virtual					~PipelineFromCacheTest		(void) { }
+	virtual TestInstance*	createInstance				(Context& context) const;
 };
 
 PipelineFromCacheTest::PipelineFromCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
@@ -1374,10 +1371,10 @@ class PipelineFromCacheTestInstance : public GraphicsCacheTestInstance
 {
 public:
 							PipelineFromCacheTestInstance	(Context& context, const CacheTestParam* param);
-	virtual                 ~PipelineFromCacheTestInstance	(void);
+	virtual					~PipelineFromCacheTestInstance	(void);
 protected:
-	Move<VkPipelineCache>   m_newCache;
-	deUint8*                m_data;
+	Move<VkPipelineCache>	m_newCache;
+	deUint8*				m_data;
 };
 
 TestInstance* PipelineFromCacheTest::createInstance (Context& context) const
@@ -1389,26 +1386,26 @@ PipelineFromCacheTestInstance::PipelineFromCacheTestInstance (Context& context, 
 	: GraphicsCacheTestInstance	(context, param)
 	, m_data					(DE_NULL)
 {
-	const DeviceInterface&  vk = m_context.getDeviceInterface();
-	const VkDevice          vkDevice = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create more pipeline caches
 	{
-		size_t  dataSize	= 0u;
+		size_t dataSize	= 0u;
 
 		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
 
-		m_data				= new deUint8[dataSize];
+		m_data = new deUint8[dataSize];
 		DE_ASSERT(m_data);
 		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data));
 
 		const VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
-			DE_NULL,                                                // const void*                 pNext;
-			0u,                                                     // VkPipelineCacheCreateFlags  flags;
-			dataSize,                                               // deUintptr                   initialDataSize;
-			m_data,                                                 // const void*                 pInitialData;
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
+			DE_NULL,										// const void*                 pNext;
+			0u,												// VkPipelineCacheCreateFlags  flags;
+			dataSize,										// deUintptr                   initialDataSize;
+			m_data,											// const void*                 pInitialData;
 		};
 		m_newCache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
 	}
@@ -1424,8 +1421,8 @@ class PipelineFromIncompleteCacheTest : public GraphicsCacheTest
 {
 public:
 							PipelineFromIncompleteCacheTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
-	virtual                 ~PipelineFromIncompleteCacheTest	(void)			{}
-	virtual TestInstance*   createInstance						(Context& context) const;
+	virtual					~PipelineFromIncompleteCacheTest	(void) {}
+	virtual TestInstance*	createInstance						(Context& context) const;
 };
 
 PipelineFromIncompleteCacheTest::PipelineFromIncompleteCacheTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
@@ -1437,11 +1434,11 @@ class PipelineFromIncompleteCacheTestInstance : public GraphicsCacheTestInstance
 {
 public:
 							PipelineFromIncompleteCacheTestInstance(Context& context, const CacheTestParam* param);
-	virtual                 ~PipelineFromIncompleteCacheTestInstance(void);
+	virtual					~PipelineFromIncompleteCacheTestInstance(void);
 protected:
 protected:
-	Move<VkPipelineCache>   m_newCache;
-	deUint8*                m_data;
+	Move<VkPipelineCache>	m_newCache;
+	deUint8*				m_data;
 };
 
 TestInstance* PipelineFromIncompleteCacheTest::createInstance (Context& context) const
@@ -1453,12 +1450,12 @@ PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance
 	: GraphicsCacheTestInstance	(context, param)
 	, m_data					(DE_NULL)
 {
-	const DeviceInterface&  vk			= m_context.getDeviceInterface();
-	const VkDevice          vkDevice	= m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create more pipeline caches
 	{
-		size_t  dataSize = 0u;
+		size_t dataSize = 0u;
 		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
 
 		if (dataSize == 0)
@@ -1473,11 +1470,11 @@ PipelineFromIncompleteCacheTestInstance::PipelineFromIncompleteCacheTestInstance
 
 		const VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
-			DE_NULL,                                                // const void*                 pNext;
-			0u,                                                     // VkPipelineCacheCreateFlags  flags;
-			dataSize,                                               // deUintptr                   initialDataSize;
-			m_data,                                                 // const void*                 pInitialData;
+			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
+			DE_NULL,										// const void*                 pNext;
+			0u,												// VkPipelineCacheCreateFlags  flags;
+			dataSize,										// deUintptr                   initialDataSize;
+			m_data,											// const void*                 pInitialData;
 		};
 		m_newCache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
 	}
@@ -1488,7 +1485,6 @@ PipelineFromIncompleteCacheTestInstance::~PipelineFromIncompleteCacheTestInstanc
 {
 	delete[] m_data;
 }
-
 
 enum MergeCacheType
 {
@@ -1545,16 +1541,16 @@ public:
 class MergeCacheTest : public GraphicsCacheTest
 {
 public:
-								MergeCacheTest      (tcu::TestContext&			testContext,
-													 const std::string&			name,
-													 const std::string&			description,
-													 const CacheTestParam*		param,
-													 const MergeCacheTestParam* mergeCacheParam)
+								MergeCacheTest	(tcu::TestContext&			testContext,
+												 const std::string&			name,
+												 const std::string&			description,
+												 const CacheTestParam*		param,
+												 const MergeCacheTestParam* mergeCacheParam)
 									: GraphicsCacheTest (testContext, name, description, param)
 									, m_mergeCacheParam	(*mergeCacheParam)
 									{ }
-	virtual						~MergeCacheTest     (void) { }
-	virtual TestInstance*		createInstance      (Context&               context) const;
+	virtual						~MergeCacheTest	(void) { }
+	virtual TestInstance*		createInstance	(Context& context) const;
 private:
 	const MergeCacheTestParam	m_mergeCacheParam;
 };
@@ -1562,14 +1558,14 @@ private:
 class MergeCacheTestInstance : public GraphicsCacheTestInstance
 {
 public:
-							MergeCacheTestInstance  (Context&					context,
+							MergeCacheTestInstance	(Context&					context,
 													 const CacheTestParam*		param,
 													 const MergeCacheTestParam* mergeCacheParam);
 private:
 	Move<VkPipelineCache>	createPipelineCache		(const DeviceInterface& vk, VkDevice device, MergeCacheType type);
 
 protected:
-	Move<VkPipelineCache>   m_cacheMerged;
+	Move<VkPipelineCache>	m_cacheMerged;
 };
 
 TestInstance* MergeCacheTest::createInstance (Context& context) const
@@ -1580,9 +1576,8 @@ TestInstance* MergeCacheTest::createInstance (Context& context) const
 MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTestParam* param, const MergeCacheTestParam* mergeCacheParam)
 	: GraphicsCacheTestInstance (context, param)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
-
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create a merge destination cache
 	m_cacheMerged = createPipelineCache(vk, vkDevice, mergeCacheParam->destCacheType);
@@ -1614,11 +1609,11 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 {
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
-		DE_NULL,                                                // const void*                 pNext;
-		0u,                                                     // VkPipelineCacheCreateFlags  flags;
-		0u,                                                     // deUintptr                   initialDataSize;
-		DE_NULL,                                                // const void*                 pInitialData;
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
+		DE_NULL,										// const void*                 pNext;
+		0u,												// VkPipelineCacheCreateFlags  flags;
+		0u,												// deUintptr                   initialDataSize;
+		DE_NULL,										// const void*                 pInitialData;
 	};
 
 	switch (type)
@@ -1678,7 +1673,7 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 				*cache3
 			};
 
-			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+			Move<VkPipelineCache>	ret				= createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
 
 			// Merge the caches
 			VK_CHECK(vk.mergePipelineCaches(device, *ret, DE_LENGTH_OF_ARRAY(sourceCaches), sourceCaches));
@@ -1692,31 +1687,31 @@ Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceI
 class CacheHeaderTest : public GraphicsCacheTest
 {
 public:
-	CacheHeaderTest(tcu::TestContext&      testContext,
-		const std::string&     name,
-		const std::string&     description,
-		const CacheTestParam*  param)
-		: GraphicsCacheTest(testContext, name, description, param)
+			CacheHeaderTest		(tcu::TestContext&		testContext,
+								 const std::string&		name,
+								 const std::string&		description,
+								 const CacheTestParam*	param)
+								: GraphicsCacheTest(testContext, name, description, param)
 	{ }
-	virtual                 ~CacheHeaderTest(void) { }
-	virtual TestInstance*   createInstance(Context&               context) const;
+	virtual	~CacheHeaderTest	(void) { }
+	virtual	TestInstance*		createInstance(Context& context) const;
 };
 
 class CacheHeaderTestInstance : public GraphicsCacheTestInstance
 {
 public:
-							CacheHeaderTestInstance  (Context& context, const CacheTestParam*  param);
-	virtual                 ~CacheHeaderTestInstance (void);
+				CacheHeaderTestInstance		(Context& context, const CacheTestParam*  param);
+	virtual		~CacheHeaderTestInstance	(void);
 protected:
-	deUint8*                m_data;
+	deUint8*	m_data;
 
 	struct CacheHeader
 	{
-		deUint32 HeaderLength;
-		deUint32 HeaderVersion;
-		deUint32 VendorID;
-		deUint32 DeviceID;
-		deUint8 PipelineCacheUUID[VK_UUID_SIZE];
+		deUint32	HeaderLength;
+		deUint32	HeaderVersion;
+		deUint32	VendorID;
+		deUint32	DeviceID;
+		deUint8		PipelineCacheUUID[VK_UUID_SIZE];
 	} m_header;
 };
 
@@ -1726,16 +1721,16 @@ TestInstance* CacheHeaderTest::createInstance (Context& context) const
 }
 
 CacheHeaderTestInstance::CacheHeaderTestInstance (Context& context, const CacheTestParam* param)
-	: GraphicsCacheTestInstance (context, param)
-	, m_data                    (DE_NULL)
+	: GraphicsCacheTestInstance	(context, param)
+	, m_data					(DE_NULL)
 {
-	const DeviceInterface&  vk               = m_context.getDeviceInterface();
-	const VkDevice          vkDevice         = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create more pipeline caches
 	{
 		// Create a cache with init data from m_cache
-		size_t  dataSize = 0u;
+		size_t dataSize = 0u;
 		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
 
 		if (dataSize < sizeof(m_header))
@@ -1773,8 +1768,8 @@ class InvalidSizeTest : public GraphicsCacheTest
 {
 public:
 							InvalidSizeTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
-	virtual                 ~InvalidSizeTest	(void)	 {}
-	virtual TestInstance*   createInstance		(Context& context) const;
+	virtual					~InvalidSizeTest	(void) {}
+	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
 InvalidSizeTest::InvalidSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
@@ -1786,10 +1781,10 @@ class InvalidSizeTestInstance : public GraphicsCacheTestInstance
 {
 public:
 							InvalidSizeTestInstance		(Context& context, const CacheTestParam*  param);
-	virtual                 ~InvalidSizeTestInstance	(void);
+	virtual					~InvalidSizeTestInstance	(void);
 protected:
-	deUint8*                m_data;
-	deUint8*                m_zeroBlock;
+	deUint8*				m_data;
+	deUint8*				m_zeroBlock;
 };
 
 TestInstance* InvalidSizeTest::createInstance (Context& context) const
@@ -1802,8 +1797,8 @@ InvalidSizeTestInstance::InvalidSizeTestInstance (Context& context, const CacheT
 	, m_data					(DE_NULL)
 	, m_zeroBlock				(DE_NULL)
 {
-	const DeviceInterface&  vk			= m_context.getDeviceInterface();
-	const VkDevice          vkDevice	= m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create more pipeline caches
 	try

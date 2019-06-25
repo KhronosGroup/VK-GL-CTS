@@ -844,15 +844,6 @@ public:
 
 	virtual tcu::TestStatus				iterate								(void)
 	{
-		const std::vector<std::string>&	extensions							= m_context.getDeviceExtensions();
-		const deBool					isSupported							= isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_bind_memory2");
-		if (!isSupported)
-		{
-			TCU_THROW(NotSupportedError, "Not supported");
-		}
-		if (m_params.usePriority && !m_context.getMemoryPriorityFeatures().memoryPriority)
-			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
-
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets;
 		MemoryRegionsList				memory;
@@ -899,15 +890,6 @@ public:
 
 	virtual tcu::TestStatus				iterate								(void)
 	{
-		const std::vector<std::string>&	extensions							= m_context.getDeviceExtensions();
-		const deBool					isSupported							= isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_bind_memory2");
-		if (!isSupported)
-		{
-			TCU_THROW(NotSupportedError, "Not supported");
-		}
-		if (m_params.usePriority && !m_context.getMemoryPriorityFeatures().memoryPriority)
-			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
-
 		std::vector<de::SharedPtr<Move<TTarget> > >
 										targets[2];
 		MemoryRegionsList				memory;
@@ -965,6 +947,14 @@ public:
 	virtual TestInstance*				createInstance						(Context&				ctx) const
 	{
 		return new TInstance(ctx, m_params);
+	}
+
+	virtual void						checkSupport						(Context&				ctx) const
+	{
+		ctx.requireDeviceExtension("VK_KHR_bind_memory2");
+
+		if (m_params.usePriority && !ctx.getMemoryPriorityFeatures().memoryPriority)
+			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
 	}
 
 private:

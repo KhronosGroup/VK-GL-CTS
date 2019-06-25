@@ -185,9 +185,6 @@ ExternalMemoryHostBaseTestInstance::ExternalMemoryHostBaseTestInstance (Context&
 	, m_allocationSize						(m_minImportedHostPointerAlignment * allocationSize)
 	, m_allocator							(m_context.getDefaultAllocator())
 {
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_external_memory_host"))
-		throw tcu::NotSupportedError("VK_EXT_external_memory_host is not supported");
-
 	m_hostMemoryAlloc	=	deAlignedMalloc((size_t)m_allocationSize, (size_t)m_minImportedHostPointerAlignment);
 
 	if (!m_hostMemoryAlloc)
@@ -1044,10 +1041,16 @@ struct AddPrograms
 	}
 };
 
-struct FormatName {
+struct FormatName
+{
 	vk::VkFormat	format;
 	std::string		name;
 };
+
+void checkSupport (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_external_memory_host");
+}
 
 } // unnamed namespace
 
@@ -1061,10 +1064,10 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 	de::MovePtr<tcu::TestCaseGroup>	synchronization(new tcu::TestCaseGroup(testCtx, "synchronization", "synchronization tests."));
 
 	//test cases:
-	simpleAllocation->addChild(new InstanceFactory1<ExternalMemoryHostBaseTestInstance, VkDeviceSize> (testCtx, tcu::NODETYPE_SELF_VALIDATE, "minImportedHostPointerAlignment_x1",
-																									  "allocate minImportedHostPointerAlignment multiplied by 1", 1));
-	simpleAllocation->addChild(new InstanceFactory1<ExternalMemoryHostBaseTestInstance, VkDeviceSize> (testCtx, tcu::NODETYPE_SELF_VALIDATE, "minImportedHostPointerAlignment_x3",
-																									  "allocate minImportedHostPointerAlignment multiplied by 3", 3));
+	simpleAllocation->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostBaseTestInstance, VkDeviceSize, FunctionSupport0> (testCtx, tcu::NODETYPE_SELF_VALIDATE, "minImportedHostPointerAlignment_x1",
+																																	"allocate minImportedHostPointerAlignment multiplied by 1", 1, checkSupport));
+	simpleAllocation->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostBaseTestInstance, VkDeviceSize, FunctionSupport0> (testCtx, tcu::NODETYPE_SELF_VALIDATE, "minImportedHostPointerAlignment_x3",
+																																	"allocate minImportedHostPointerAlignment multiplied by 3", 3, checkSupport));
 	group ->addChild(simpleAllocation.release());
 
 	const std::vector<FormatName> testFormats = {
@@ -1076,25 +1079,25 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	for (const auto& formatName : testFormats)
 	{
-		with_zero_offset->addChild(new InstanceFactory1<ExternalMemoryHostRenderImageTestInstance, TestParams, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
-																															formatName.name, formatName.name, AddPrograms(),
-																															TestParams(formatName.format)));
+		with_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
+																																							 formatName.name, formatName.name, AddPrograms(),
+																																							 TestParams(formatName.format), checkSupport));
 	}
 	bind_image_memory_and_render->addChild(with_zero_offset.release());
 
 	for (const auto& formatName : testFormats)
 	{
-		with_non_zero_offset->addChild(new InstanceFactory1<ExternalMemoryHostRenderImageTestInstance, TestParams, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
-																																formatName.name, formatName.name, AddPrograms(),
-																																TestParams(formatName.format, true)));
+		with_non_zero_offset->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostRenderImageTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
+																																								 formatName.name, formatName.name, AddPrograms(),
+																																								 TestParams(formatName.format, true), checkSupport));
 	}
 	bind_image_memory_and_render->addChild(with_non_zero_offset.release());
 
 	group->addChild(bind_image_memory_and_render.release());
 
-	synchronization->addChild(new InstanceFactory1<ExternalMemoryHostSynchronizationTestInstance, TestParams, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
-																															"synchronization", "synchronization", AddPrograms(),
-																															TestParams(testFormats[0].format, true)));
+	synchronization->addChild(new InstanceFactory1WithSupport<ExternalMemoryHostSynchronizationTestInstance, TestParams, FunctionSupport0, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
+																																						 "synchronization", "synchronization", AddPrograms(),
+																																						 TestParams(testFormats[0].format, true), checkSupport));
 	group->addChild(synchronization.release());
 	return group.release();
 }

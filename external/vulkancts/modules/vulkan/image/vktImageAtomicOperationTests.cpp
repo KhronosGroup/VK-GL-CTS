@@ -251,19 +251,20 @@ static deInt32 computeBinaryAtomicOperationResult (const AtomicOperation op, con
 class BinaryAtomicEndResultCase : public vkt::TestCase
 {
 public:
-								BinaryAtomicEndResultCase  (tcu::TestContext&			testCtx,
-															const string&				name,
-															const string&				description,
-															const ImageType				imageType,
-															const tcu::UVec3&			imageSize,
-															const tcu::TextureFormat&	format,
-															const AtomicOperation		operation,
-															const glu::GLSLVersion		glslVersion);
+								BinaryAtomicEndResultCase	(tcu::TestContext&			testCtx,
+															 const string&				name,
+															 const string&				description,
+															 const ImageType			imageType,
+															 const tcu::UVec3&			imageSize,
+															 const tcu::TextureFormat&	format,
+															 const AtomicOperation		operation,
+															 const glu::GLSLVersion		glslVersion);
 
-	void						initPrograms			   (SourceCollections&			sourceCollections) const;
-	TestInstance*				createInstance			   (Context&					context) const;
+	void						initPrograms				(SourceCollections&			sourceCollections) const;
+	TestInstance*				createInstance				(Context&					context) const;
+	virtual void				checkSupport				(Context&					context) const;
+
 private:
-
 	const ImageType				m_imageType;
 	const tcu::UVec3			m_imageSize;
 	const tcu::TextureFormat	m_format;
@@ -286,6 +287,12 @@ BinaryAtomicEndResultCase::BinaryAtomicEndResultCase (tcu::TestContext&			testCt
 	, m_operation	(operation)
 	, m_glslVersion	(glslVersion)
 {
+}
+
+void BinaryAtomicEndResultCase::checkSupport (Context& context) const
+{
+	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 }
 
 void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollections) const
@@ -325,19 +332,20 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 class BinaryAtomicIntermValuesCase : public vkt::TestCase
 {
 public:
-								BinaryAtomicIntermValuesCase   (tcu::TestContext&			testCtx,
-																const string&				name,
-																const string&				description,
-																const ImageType				imageType,
-																const tcu::UVec3&			imageSize,
-																const tcu::TextureFormat&	format,
-																const AtomicOperation		operation,
-																const glu::GLSLVersion		glslVersion);
+								BinaryAtomicIntermValuesCase	(tcu::TestContext&			testCtx,
+																 const string&				name,
+																 const string&				description,
+																 const ImageType			imageType,
+																 const tcu::UVec3&			imageSize,
+																 const tcu::TextureFormat&	format,
+																 const AtomicOperation		operation,
+																 const glu::GLSLVersion		glslVersion);
 
-	void						initPrograms				   (SourceCollections&			sourceCollections) const;
-	TestInstance*				createInstance				   (Context&					context) const;
+	void						initPrograms					(SourceCollections&			sourceCollections) const;
+	TestInstance*				createInstance					(Context&					context) const;
+	virtual void				checkSupport					(Context&					context) const;
+
 private:
-
 	const ImageType				m_imageType;
 	const tcu::UVec3			m_imageSize;
 	const tcu::TextureFormat	m_format;
@@ -360,6 +368,12 @@ BinaryAtomicIntermValuesCase::BinaryAtomicIntermValuesCase (TestContext&			testC
 	, m_operation	(operation)
 	, m_glslVersion	(glslVersion)
 {
+}
+
+void BinaryAtomicIntermValuesCase::checkSupport (Context& context) const
+{
+	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 }
 
 void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollections) const
@@ -420,7 +434,6 @@ public:
 	virtual void				commandsAfterCompute	 (const VkCommandBuffer			cmdBuffer) const = 0;
 
 	virtual bool				verifyResult			 (Allocation&					outputBufferAllocation) const = 0;
-	void						checkRequirements		 (void) const;
 
 protected:
 	const string				m_name;
@@ -452,14 +465,6 @@ BinaryAtomicInstanceBase::BinaryAtomicInstanceBase (Context&				context,
 {
 }
 
-void BinaryAtomicInstanceBase::checkRequirements (void) const
-{
-	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY && !m_context.getDeviceFeatures().imageCubeArray)
-	{
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
-	}
-}
-
 tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 {
 	const VkDevice			device				= m_context.getDevice();
@@ -469,8 +474,6 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 	const VkDeviceSize		imageSizeInBytes	= tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 	const VkDeviceSize		outBuffSizeInBytes	= getOutputBufferSize();
-
-	checkRequirements();
 
 	const VkImageCreateInfo imageParams	=
 	{

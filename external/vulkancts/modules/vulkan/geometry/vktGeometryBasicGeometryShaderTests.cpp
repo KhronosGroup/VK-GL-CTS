@@ -562,8 +562,9 @@ public:
 													 const char*		description,
 													 const vector<int>	pattern);
 
-	void					initPrograms			(SourceCollections&			sourceCollections) const;
-	virtual TestInstance*	createInstance			(Context&					context) const;
+	void					initPrograms			(SourceCollections&	sourceCollections) const;
+	virtual TestInstance*	createInstance			(Context&			context) const;
+	virtual void			checkSupport			(Context&			context) const;
 
 protected:
 	const vector<int> m_pattern;
@@ -574,6 +575,11 @@ GeometryOutputCountTest::GeometryOutputCountTest (TestContext& testCtx, const ch
 	, m_pattern	(pattern)
 {
 
+}
+
+void GeometryOutputCountTest::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void GeometryOutputCountTest::initPrograms (SourceCollections& sourceCollections) const
@@ -655,6 +661,7 @@ public:
 													 const ShaderInstancingMode	mode);
 	void					initPrograms			(SourceCollections&			sourceCollections) const;
 	virtual TestInstance*	createInstance			(Context&					context) const;
+	virtual void			checkSupport			(Context&					context) const;
 protected:
 	const VaryingSource			m_test;
 	const ShaderInstancingMode	m_mode;
@@ -665,6 +672,11 @@ VaryingOutputCountCase::VaryingOutputCountCase (TestContext& testCtx, const char
 	, m_test	(test)
 	, m_mode	(mode)
 {
+}
+
+void VaryingOutputCountCase::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void VaryingOutputCountCase::initPrograms (SourceCollections& sourceCollections) const
@@ -843,6 +855,7 @@ public:
 														const bool			flag = false);
 	void					initPrograms				(SourceCollections&	sourceCollections) const;
 	virtual TestInstance*	createInstance				(Context&			context) const;
+	virtual void			checkSupport				(Context&			context) const;
 protected:
 	const VariableTest	m_test;
 	const bool			m_flag;
@@ -854,6 +867,15 @@ BuiltinVariableRenderTest::BuiltinVariableRenderTest (TestContext& testCtx, cons
 	, m_flag	(flag)
 {
 }
+
+void BuiltinVariableRenderTest::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (m_test == TEST_POINT_SIZE)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
+}
+
 
 void BuiltinVariableRenderTest::initPrograms (SourceCollections& sourceCollections) const
 {
@@ -1019,8 +1041,6 @@ void BuiltinVariableRenderTest::initPrograms (SourceCollections& sourceCollectio
 
 TestInstance* BuiltinVariableRenderTest::createInstance (Context& context) const
 {
-	if (m_test == TEST_POINT_SIZE && !checkPointSize(context.getInstanceInterface(), context.getPhysicalDevice()))
-			TCU_THROW(NotSupportedError, "Missing feature: pointSize");
 	return new BuiltinVariableRenderTestInstance(context, getName(), m_test, m_flag);
 }
 

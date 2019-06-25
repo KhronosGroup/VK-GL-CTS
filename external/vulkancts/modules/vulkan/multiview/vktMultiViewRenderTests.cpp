@@ -323,9 +323,6 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 	, m_squareCount			(4u)
 	, m_queueFamilyIndex	(0u)
 {
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
-		throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
-
 	const float v	= 0.75f;
 	const float o	= 0.25f;
 
@@ -536,9 +533,6 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
-		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_multiview"))
-			throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
-
 		const InstanceInterface&			instance			= m_context.getInstanceInterface();
 		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
 
@@ -3365,6 +3359,11 @@ private:
 			return new MultiViewDepthStencilTestInstance(context, m_parameters);
 
 		TCU_THROW(InternalError, "Unknown test type");
+	}
+
+	virtual void		checkSupport		(Context& context) const
+	{
+		context.requireDeviceExtension("VK_KHR_multiview");
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const

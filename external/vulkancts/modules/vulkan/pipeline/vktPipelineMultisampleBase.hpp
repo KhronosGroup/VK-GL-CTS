@@ -52,6 +52,9 @@ public:
 		, m_imageMSParams(imageMSParams)
 	{}
 
+	virtual void checkSupport (Context&) const
+	{}
+
 protected:
 	const ImageMSParams m_imageMSParams;
 };

@@ -52,32 +52,39 @@ namespace
 class ImageViewTest : public vkt::TestCase
 {
 public:
-							ImageViewTest			(tcu::TestContext&				testContext,
-													 const char*					name,
-													 const char*					description,
-													 VkImageViewType				imageViewType,
-													 VkFormat						imageFormat,
-													 float							samplerLod,
-													 const VkComponentMapping&		componentMapping,
-													 const VkImageSubresourceRange&	subresourceRange);
-	virtual					~ImageViewTest			(void) {}
+								ImageViewTest					(tcu::TestContext&				testContext,
+																 const char*					name,
+																 const char*					description,
+																 VkImageViewType				imageViewType,
+																 VkFormat						imageFormat,
+																 float							samplerLod,
+																 const VkComponentMapping&		componentMapping,
+																 const VkImageSubresourceRange&	subresourceRange);
+	virtual						~ImageViewTest					(void) {}
 
-	virtual void			initPrograms			(SourceCollections&				sourceCollections) const;
-	virtual TestInstance*	createInstance			(Context&						context) const;
-	static std::string		getGlslSamplerType		(const tcu::TextureFormat&		format,
-													 VkImageViewType				type);
-	static tcu::UVec2		getRenderSize			(VkImageViewType				viewType);
-	static tcu::IVec3		getImageSize			(VkImageViewType				viewType);
-	static int				getArraySize			(VkImageViewType				viewType);
-	static int				getNumLevels			(VkImageViewType				viewType);
-	static tcu::Vec4		swizzle					(tcu::Vec4						inputData,
-													 VkComponentMapping				componentMapping);
+	ImageSamplingInstanceParams	getImageSamplingInstanceParams	(VkImageViewType				imageViewType,
+																 VkFormat						imageFormat,
+																 float							samplerLod,
+																 const VkComponentMapping&		componentMapping,
+																 const VkImageSubresourceRange&	subresourceRange) const;
+
+	virtual void				initPrograms					(SourceCollections&				sourceCollections) const;
+	virtual void				checkSupport					(Context&						context) const;
+	virtual TestInstance*		createInstance					(Context&						context) const;
+	static std::string			getGlslSamplerType				(const tcu::TextureFormat&		format,
+																 VkImageViewType				type);
+	static tcu::UVec2			getRenderSize					(VkImageViewType				viewType);
+	static tcu::IVec3			getImageSize					(VkImageViewType				viewType);
+	static int					getArraySize					(VkImageViewType				viewType);
+	static int					getNumLevels					(VkImageViewType				viewType);
+	static tcu::Vec4			swizzle							(tcu::Vec4						inputData,
+																 VkComponentMapping				componentMapping);
 private:
-	VkImageViewType			m_imageViewType;
-	VkFormat				m_imageFormat;
-	float					m_samplerLod;
-	VkComponentMapping		m_componentMapping;
-	VkImageSubresourceRange	m_subresourceRange;
+	VkImageViewType				m_imageViewType;
+	VkFormat					m_imageFormat;
+	float						m_samplerLod;
+	VkComponentMapping			m_componentMapping;
+	VkImageSubresourceRange		m_subresourceRange;
 };
 
 ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
@@ -96,6 +103,47 @@ ImageViewTest::ImageViewTest (tcu::TestContext&					testContext,
 	, m_componentMapping	(componentMapping)
 	, m_subresourceRange	(subresourceRange)
 {
+}
+
+ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams (VkImageViewType					imageViewType,
+																		   VkFormat							imageFormat,
+																		   float							samplerLod,
+																		   const VkComponentMapping&		componentMapping,
+																		   const VkImageSubresourceRange&	subresourceRange) const
+{
+	const tcu::UVec2				renderSize		= getRenderSize(imageViewType);
+	const tcu::IVec3				imageSize		= getImageSize(imageViewType);
+	const int						arraySize		= getArraySize(imageViewType);
+	const std::vector<Vertex4Tex4>	vertices		= createTestQuadMosaic(imageViewType);
+
+	const VkSamplerCreateInfo		samplerParams	=
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,								// VkStructureType			sType;
+		DE_NULL,															// const void*				pNext;
+		0u,																	// VkSamplerCreateFlags		flags;
+		VK_FILTER_NEAREST,													// VkFilter					magFilter;
+		VK_FILTER_NEAREST,													// VkFilter					minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,										// VkSamplerMipmapMode		mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,								// VkSamplerAddressMode		addressModeW;
+		0.0f,																// float					mipLodBias;
+		VK_FALSE,															// VkBool32					anisotropyEnable;
+		1.0f,																// float					maxAnisotropy;
+		false,																// VkBool32					compareEnable;
+		VK_COMPARE_OP_NEVER,												// VkCompareOp				compareOp;
+		0.0f,																// float					minLod;
+		(float)(subresourceRange.levelCount - 1),							// float					maxLod;
+		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, imageFormat),	// VkBorderColor			borderColor;
+		false																// VkBool32					unnormalizedCoordinates;
+	};
+
+	return ImageSamplingInstanceParams(renderSize, imageViewType, imageFormat, imageSize, arraySize, componentMapping, subresourceRange, samplerParams, samplerLod, vertices);
+}
+
+void ImageViewTest::checkSupport (Context& context) const
+{
+	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_samplerLod, m_componentMapping, m_subresourceRange));
 }
 
 tcu::Vec4 ImageViewTest::swizzle (tcu::Vec4 inputData, VkComponentMapping componentMapping)
@@ -192,34 +240,7 @@ void ImageViewTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* ImageViewTest::createInstance (Context& context) const
 {
-	const tcu::UVec2				renderSize		= getRenderSize(m_imageViewType);
-	const tcu::IVec3				imageSize		= getImageSize(m_imageViewType);
-	const int						arraySize		= getArraySize(m_imageViewType);
-	const std::vector<Vertex4Tex4>	vertices		= createTestQuadMosaic(m_imageViewType);
-
-	const VkSamplerCreateInfo		samplerParams	=
-	{
-		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,									// VkStructureType			sType;
-		DE_NULL,																// const void*				pNext;
-		0u,																		// VkSamplerCreateFlags		flags;
-		VK_FILTER_NEAREST,														// VkFilter					magFilter;
-		VK_FILTER_NEAREST,														// VkFilter					minFilter;
-		VK_SAMPLER_MIPMAP_MODE_NEAREST,											// VkSamplerMipmapMode		mipmapMode;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeU;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeV;
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,									// VkSamplerAddressMode		addressModeW;
-		0.0f,																	// float					mipLodBias;
-		VK_FALSE,																// VkBool32					anisotropyEnable;
-		1.0f,																	// float					maxAnisotropy;
-		false,																	// VkBool32					compareEnable;
-		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
-		0.0f,																	// float					minLod;
-		(float)(m_subresourceRange.levelCount - 1),								// float					maxLod;
-		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
-		false																	// VkBool32					unnormalizedCoordinates;
-	};
-
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat, imageSize, arraySize, m_componentMapping, m_subresourceRange, samplerParams, m_samplerLod, vertices);
+	return new ImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_samplerLod, m_componentMapping, m_subresourceRange));
 }
 
 std::string ImageViewTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)

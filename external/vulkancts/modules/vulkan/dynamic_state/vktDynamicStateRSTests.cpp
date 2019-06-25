@@ -488,9 +488,6 @@ public:
 		const vk::VkQueue	queue	= m_context.getUniversalQueue();
 		const vk::VkDevice	device	= m_context.getDevice();
 
-		if (!m_context.getDeviceFeatures().depthBiasClamp)
-			TCU_THROW(NotSupportedError, "depthBiasClamp feature is not supported");
-
 		beginRenderPass();
 
 		// set states here
@@ -562,14 +559,6 @@ public:
 	LineWidthParamTestInstance (Context& context, ShaderMap shaders)
 		: DynamicStateBaseClass (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
-		// Check if line width test is supported
-		{
-			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
-
-			if (!deviceFeatures.wideLines)
-				throw tcu::NotSupportedError("Line width test is unsupported");
-		}
-
 		m_topology = vk::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 0.0f, 0.0f, 1.0f), tcu::RGBA::green().toVec()));
@@ -649,6 +638,16 @@ public:
 	}
 };
 
+void checkDepthBiasClampSupport (Context& context)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BIAS_CLAMP);
+}
+
+void checkWideLinesSupport (Context& context)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+}
+
 } //anonymous
 
 DynamicStateRSTests::DynamicStateRSTests (tcu::TestContext& testCtx)
@@ -668,8 +667,8 @@ void DynamicStateRSTests::init (void)
 	shaderPaths[glu::SHADERTYPE_FRAGMENT]	= "vulkan/dynamic_state/VertexFetch.frag";
 
 	addChild(new InstanceFactory<DepthBiasParamTestInstance>(m_testCtx, "depth_bias", "Test depth bias functionality", shaderPaths));
-	addChild(new InstanceFactory<DepthBiasClampParamTestInstance>(m_testCtx, "depth_bias_clamp", "Test depth bias clamp functionality", shaderPaths));
-	addChild(new InstanceFactory<LineWidthParamTestInstance>(m_testCtx, "line_width", "Draw a line with width set to max defined by physical device", shaderPaths));
+	addChild(new InstanceFactory<DepthBiasClampParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bias_clamp", "Test depth bias clamp functionality", shaderPaths, checkDepthBiasClampSupport));
+	addChild(new InstanceFactory<LineWidthParamTestInstance, FunctionSupport0>(m_testCtx, "line_width", "Draw a line with width set to max defined by physical device", shaderPaths, checkWideLinesSupport));
 }
 
 } // DynamicState

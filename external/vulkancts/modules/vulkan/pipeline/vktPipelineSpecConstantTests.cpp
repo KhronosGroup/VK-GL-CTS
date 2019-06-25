@@ -235,6 +235,7 @@ public:
 
 	void						initPrograms		(SourceCollections&		programCollection) const;
 	TestInstance*				createInstance		(Context&				context) const;
+	virtual void				checkSupport		(Context&				context) const;
 
 private:
 	const VkShaderStageFlagBits	m_stage;
@@ -718,10 +719,13 @@ FeatureFlags getShaderStageRequirements (const VkShaderStageFlags stageFlags)
 	return features;
 }
 
+void SpecConstantTest::checkSupport (Context& context) const
+{
+	requireFeatures(context, m_caseDef.requirements | getShaderStageRequirements(m_stage));
+}
+
 TestInstance* SpecConstantTest::createInstance (Context& context) const
 {
-	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), m_caseDef.requirements | getShaderStageRequirements(m_stage));
-
 	if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
 		return new ComputeTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues);
 	else

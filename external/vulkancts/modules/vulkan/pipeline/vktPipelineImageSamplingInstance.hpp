@@ -45,24 +45,61 @@ enum AllocationKind
 	ALLOCATION_KIND_DEDICATED,
 };
 
+struct ImageSamplingInstanceParams
+{
+	ImageSamplingInstanceParams	(const tcu::UVec2&					renderSize_,
+								 vk::VkImageViewType				imageViewType_,
+								 vk::VkFormat						imageFormat_,
+								 const tcu::IVec3&					imageSize_,
+								 int								layerCount_,
+								 const vk::VkComponentMapping&		componentMapping_,
+								 const vk::VkImageSubresourceRange&	subresourceRange_,
+								 const vk::VkSamplerCreateInfo&		samplerParams_,
+								 float								samplerLod_,
+								 const std::vector<Vertex4Tex4>&	vertices_,
+								 bool								separateStencilUsage_ = false,
+								 vk::VkDescriptorType				samplingType_ = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+								 int								imageCount_ = 1,
+								 AllocationKind						allocationKind_ = ALLOCATION_KIND_SUBALLOCATED)
+	: renderSize			(renderSize_)
+	, imageViewType			(imageViewType_)
+	, imageFormat			(imageFormat_)
+	, imageSize				(imageSize_)
+	, layerCount			(layerCount_)
+	, componentMapping		(componentMapping_)
+	, subresourceRange		(subresourceRange_)
+	, samplerParams			(samplerParams_)
+	, samplerLod			(samplerLod_)
+	, vertices				(vertices_)
+	, separateStencilUsage	(separateStencilUsage_)
+	, samplingType			(samplingType_)
+	, imageCount			(imageCount_)
+	, allocationKind		(allocationKind_)
+	{}
+
+	const tcu::UVec2					renderSize;
+	vk::VkImageViewType					imageViewType;
+	vk::VkFormat						imageFormat;
+	const tcu::IVec3					imageSize;
+	int									layerCount;
+	const vk::VkComponentMapping		componentMapping;
+	const vk::VkImageSubresourceRange	subresourceRange;
+	const vk::VkSamplerCreateInfo		samplerParams;
+	float								samplerLod;
+	const std::vector<Vertex4Tex4>		vertices;
+	bool								separateStencilUsage;
+	vk::VkDescriptorType				samplingType;
+	int									imageCount;
+	AllocationKind						allocationKind;
+};
+
+void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceParams params);
+
 class ImageSamplingInstance : public vkt::TestInstance
 {
 public:
-												ImageSamplingInstance	(Context&							context,
-																		 const tcu::UVec2&					renderSize,
-																		 vk::VkImageViewType				imageViewType,
-																		 vk::VkFormat						imageFormat,
-																		 const tcu::IVec3&					imageSize,
-																		 int								layerCount,
-																		 const vk::VkComponentMapping&		componentMapping,
-																		 const vk::VkImageSubresourceRange&	subresourceRange,
-																		 const vk::VkSamplerCreateInfo&		samplerParams,
-																		 float								samplerLod,
-																		 const std::vector<Vertex4Tex4>&	vertices,
-																		 bool								separateStencilUsage = false,
-																		 vk::VkDescriptorType				samplingType = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-																		 int								imageCount = 1,
-																		 AllocationKind						allocationKind = ALLOCATION_KIND_SUBALLOCATED);
+												ImageSamplingInstance	(Context&						context,
+																		 ImageSamplingInstanceParams	params);
 
 	virtual										~ImageSamplingInstance	(void);
 
@@ -124,8 +161,6 @@ private:
 
 	vk::Move<vk::VkCommandPool>					m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;
-
-	const bool									m_separateStencilUsage;
 };
 
 } // pipeline

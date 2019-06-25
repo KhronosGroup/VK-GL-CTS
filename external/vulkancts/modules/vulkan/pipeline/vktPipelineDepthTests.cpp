@@ -127,6 +127,7 @@ public:
 																 const bool				colorAttachmentEnable			= true);
 	virtual								~DepthTest				(void);
 	virtual void						initPrograms			(SourceCollections& programCollection) const;
+	virtual void						checkSupport			(Context& context) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 
 private:
@@ -229,6 +230,15 @@ DepthTest::~DepthTest (void)
 {
 }
 
+void DepthTest::checkSupport (Context& context) const
+{
+	if (m_depthBoundsTestEnable)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BOUNDS);
+
+	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
+		throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
+}
+
 TestInstance* DepthTest::createInstance (Context& context) const
 {
 	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps, m_depthBoundsTestEnable, m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable, m_colorAttachmentEnable);
@@ -304,10 +314,6 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
-	// Check depthBounds support
-	if (m_depthBoundsTestEnable && !context.getDeviceFeatures().depthBounds)
-		TCU_THROW(NotSupportedError, "depthBounds feature is not supported");
-
 	// Copy depth operators
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * DepthTest::QUAD_COUNT);
 
@@ -342,10 +348,6 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create depth image
 	{
-		// Check format support
-		if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
-			throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
-
 		const VkImageCreateInfo depthImageParams =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,			// VkStructureType			sType;

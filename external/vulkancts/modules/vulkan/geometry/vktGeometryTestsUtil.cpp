@@ -504,17 +504,5 @@ VkBool32 checkPointSize (const InstanceInterface& vki, const VkPhysicalDevice ph
 	return features.shaderTessellationAndGeometryPointSize;
 }
 
-void checkGeometryShaderSupport (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const int numGeometryShaderInvocations)
-{
-	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures  (vki, physDevice);
-	const VkPhysicalDeviceLimits	limits		= getPhysicalDeviceProperties(vki, physDevice).limits;
-
-	if (!features.geometryShader)
-		TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-	if (numGeometryShaderInvocations != 0 && limits.maxGeometryShaderInvocations < static_cast<deUint32>(numGeometryShaderInvocations))
-		TCU_THROW(NotSupportedError, ("Unsupported limit: maxGeometryShaderInvocations < " + de::toString(numGeometryShaderInvocations)).c_str());
-}
-
 } //geometry
 } //vkt

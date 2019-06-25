@@ -142,21 +142,6 @@ void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocat
 	flushAlloc(vk, device, alloc);
 }
 
-void requireFeatureMultiViewport (const InstanceInterface& vki, const VkPhysicalDevice physDevice)
-{
-	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceLimits	limits		= getPhysicalDeviceProperties(vki, physDevice).limits;
-
-	if (!features.geometryShader)
-		TCU_THROW(NotSupportedError, "Required feature is not supported: geometryShader");
-
-	if (!features.multiViewport)
-		TCU_THROW(NotSupportedError, "Required feature is not supported: multiViewport");
-
-	if (limits.maxViewports < MIN_MAX_VIEWPORTS)
-		TCU_THROW(NotSupportedError, "Implementation doesn't support minimum required number of viewports");
-}
-
 std::vector<IVec4> generateScissors (const int numScissors, const IVec2& renderSize)
 {
 	// Scissor rects will be arranged in a grid-like fashion.
@@ -419,8 +404,6 @@ private:
 
 tcu::TestStatus test (Context& context, const int numViewports)
 {
-	requireFeatureMultiViewport(context.getInstanceInterface(), context.getPhysicalDevice());
-
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
 	Allocator&						allocator			= context.getDefaultAllocator();
@@ -464,6 +447,15 @@ tcu::TestStatus test (Context& context, const int numViewports)
 	return tcu::TestStatus::pass("OK");
 }
 
+void checkSupport (Context& context, const int)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+
+	if (context.getDeviceProperties().limits.maxViewports < MIN_MAX_VIEWPORTS)
+		TCU_THROW(NotSupportedError, "Implementation doesn't support minimum required number of viewports");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createScissorMultiViewportTests	(tcu::TestContext& testCtx)
@@ -471,7 +463,7 @@ tcu::TestCaseGroup* createScissorMultiViewportTests	(tcu::TestContext& testCtx)
 	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "multi_viewport", ""));
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "scissor_" + de::toString(numViewports), "", initPrograms, test, numViewports);
+		addFunctionCaseWithPrograms(group.get(), "scissor_" + de::toString(numViewports), "", checkSupport, initPrograms, test, numViewports);
 
 	return group.release();
 }
