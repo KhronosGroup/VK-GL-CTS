@@ -2665,7 +2665,7 @@ protected:																	\
 	ExprP<TRET>		doExpand		(ExpandContext&,						\
 									 const CLASS::ArgExprs& args_) const	\
 	{																		\
-		const ExprP<float>& ARG0 = args_.a;								\
+		const ExprP<T0>& ARG0 = args_.a;									\
 		return EXPANSION;													\
 	}																		\
 };																			\
@@ -2685,7 +2685,7 @@ protected:																				\
 	ExprP<TRET>		doExpand		(ExpandContext&,									\
 									 const CLASS::ArgExprs& args_) const				\
 	{																					\
-		const ExprP<float>& ARG0 = args_.a;												\
+		const ExprP<T0>& ARG0 = args_.a;												\
 		return EXPANSION;																\
 	}																					\
 	Interval	getInputRange	(const bool /*is16bit*/) const							\
@@ -2698,47 +2698,11 @@ DEFINE_CONSTRUCTOR1(CLASS, TRET, NAME, T0)
 #define DEFINE_DERIVED_FLOAT1_INPUTRANGE(CLASS, NAME, ARG0, EXPANSION, INTERVAL) \
 	DEFINE_DERIVED1_INPUTRANGE(CLASS, float, NAME, float, ARG0, EXPANSION, INTERVAL)
 
-#define DEFINE_DERIVED1_16BIT(CLASS, TRET, NAME, T0, ARG0, EXPANSION)		\
-class CLASS : public DerivedFunc<Signature<TRET, T0> > /* NOLINT(CLASS) */	\
-{																			\
-public:																		\
-	string			getName		(void) const		{ return #NAME; }		\
-																			\
-protected:																	\
-	ExprP<TRET>		doExpand		(ExpandContext&,						\
-									 const CLASS::ArgExprs& args_) const	\
-	{																		\
-		const ExprP<deFloat16>& ARG0 = args_.a;							\
-		return EXPANSION;													\
-	}																		\
-};																			\
-DEFINE_CONSTRUCTOR1(CLASS, TRET, NAME, T0)
-
-#define DEFINE_DERIVED1_INPUTRANGE_16BIT(CLASS, TRET, NAME, T0, ARG0, EXPANSION, INTERVAL)	\
-class CLASS : public DerivedFunc<Signature<TRET, T0> > /* NOLINT(CLASS) */	\
-{																			\
-public:																		\
-	string			getName		(void) const		{ return #NAME; }		\
-																			\
-protected:																	\
-	ExprP<TRET>		doExpand		(ExpandContext&,						\
-									 const CLASS::ArgExprs& args_) const	\
-	{																		\
-		const ExprP<deFloat16>& ARG0 = args_.a;							\
-		return EXPANSION;													\
-	}																		\
-	Interval	getInputRange	(const bool /*is16bit*/) const				\
-	{																		\
-		return INTERVAL;													\
-	}																		\
-};																			\
-DEFINE_CONSTRUCTOR1(CLASS, TRET, NAME, T0)
-
 #define DEFINE_DERIVED_FLOAT1_16BIT(CLASS, NAME, ARG0, EXPANSION) \
-	DEFINE_DERIVED1_16BIT(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION)
+	DEFINE_DERIVED1(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION)
 
 #define DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(CLASS, NAME, ARG0, EXPANSION, INTERVAL) \
-	DEFINE_DERIVED1_INPUTRANGE_16BIT(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION, INTERVAL)
+	DEFINE_DERIVED1_INPUTRANGE(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION, INTERVAL)
 
 #define DEFINE_CONSTRUCTOR2(CLASS, TRET, NAME, T0, T1)				\
 ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1)		\
