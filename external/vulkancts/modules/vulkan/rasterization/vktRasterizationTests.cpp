@@ -1348,9 +1348,9 @@ void PointSizeTestInstance::drawPoint (tcu::PixelBufferAccess& result, PointScen
 
 		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
 		{
-			0u,							// deUint32					binding;
-			sizeof(tcu::Vec4),			// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputStepRate	stepRate;
+			0u,									// deUint32					binding;
+			(deUint32)(2 * sizeof(tcu::Vec4)),	// deUint32					strideInBytes;
+			VK_VERTEX_INPUT_RATE_VERTEX			// VkVertexInputStepRate	stepRate;
 		};
 
 		const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
