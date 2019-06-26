@@ -197,18 +197,23 @@ template <typename InstanceClassName>
 class MSInstance : public MSInstanceBaseResolveAndPerSampleFetch
 {
 public:
-					MSInstance				(Context&											context,
-											 const ImageMSParams&								imageMSParams)
-					: MSInstanceBaseResolveAndPerSampleFetch(context, imageMSParams) {}
+													MSInstance				(Context&											context,
+																			 const ImageMSParams&								imageMSParams)
+													: MSInstanceBaseResolveAndPerSampleFetch(context, imageMSParams) {}
 
-	VertexDataDesc	getVertexDataDescripton	(void) const;
-	void			uploadVertexData		(const Allocation&									vertexBufferAllocation,
-											 const VertexDataDesc&								vertexDataDescripton) const;
+	VertexDataDesc									getVertexDataDescripton	(void) const;
+	void											uploadVertexData		(const Allocation&									vertexBufferAllocation,
+																			 const VertexDataDesc&								vertexDataDescripton) const;
 
-	tcu::TestStatus	verifyImageData			(const vk::VkImageCreateInfo&						imageMSInfo,
-											 const vk::VkImageCreateInfo&						imageRSInfo,
-											 const std::vector<tcu::ConstPixelBufferAccess>&	dataPerSample,
-											 const tcu::ConstPixelBufferAccess&					dataRS) const;
+	tcu::TestStatus									verifyImageData			(const vk::VkImageCreateInfo&						imageMSInfo,
+																			 const vk::VkImageCreateInfo&						imageRSInfo,
+																			 const std::vector<tcu::ConstPixelBufferAccess>&	dataPerSample,
+																			 const tcu::ConstPixelBufferAccess&					dataRS) const;
+
+	virtual VkPipelineMultisampleStateCreateInfo	getMSStateCreateInfo	(const ImageMSParams&								imageMSParams) const
+	{
+		return MSInstanceBaseResolveAndPerSampleFetch::getMSStateCreateInfo(imageMSParams);
+	}
 };
 
 class MSInstanceSampleID;
@@ -253,8 +258,7 @@ class MSCaseSampleID;
 
 template<> void MSCase<MSCaseSampleID>::checkSupport (Context& context) const
 {
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> void MSCase<MSCaseSampleID>::init (void)
@@ -406,8 +410,7 @@ class MSCaseSamplePosDistribution;
 
 template<> void MSCase<MSCaseSamplePosDistribution>::checkSupport (Context& context) const
 {
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> void MSCase<MSCaseSamplePosDistribution>::init (void)
@@ -498,8 +501,7 @@ class MSCaseSamplePosCorrectness;
 
 template<> void MSCase<MSCaseSamplePosCorrectness>::checkSupport (Context& context) const
 {
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> void MSCase<MSCaseSamplePosCorrectness>::init (void)
@@ -796,8 +798,7 @@ class MSCaseSampleMaskBitCount;
 
 template<> void MSCase<MSCaseSampleMaskBitCount>::checkSupport (Context& context) const
 {
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> void MSCase<MSCaseSampleMaskBitCount>::init (void)
@@ -891,8 +892,7 @@ class MSCaseSampleMaskCorrectBit;
 
 template<> void MSCase<MSCaseSampleMaskCorrectBit>::checkSupport (Context& context) const
 {
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> void MSCase<MSCaseSampleMaskCorrectBit>::init (void)
@@ -962,6 +962,25 @@ template<> void MSInstance<MSInstanceSampleMaskWrite>::uploadVertexData (const A
 	uploadVertexDataNdc(vertexBufferAllocation, vertexDataDescripton);
 }
 
+//! Creates VkPipelineMultisampleStateCreateInfo with sample shading disabled.
+template<> VkPipelineMultisampleStateCreateInfo MSInstance<MSInstanceSampleMaskWrite>::getMSStateCreateInfo (const ImageMSParams& imageMSParams) const
+{
+	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		(VkPipelineMultisampleStateCreateFlags)0u,					// VkPipelineMultisampleStateCreateFlags	flags;
+		imageMSParams.numSamples,									// VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													// VkBool32									sampleShadingEnable;
+		0.0f,														// float									minSampleShading;
+		DE_NULL,													// const VkSampleMask*						pSampleMask;
+		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
+		VK_FALSE,													// VkBool32									alphaToOneEnable;
+	};
+
+	return multisampleStateInfo;
+}
+
 template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskWrite>::verifyImageData	(const vk::VkImageCreateInfo&						imageMSInfo,
 																					 const vk::VkImageCreateInfo&						imageRSInfo,
 																					 const std::vector<tcu::ConstPixelBufferAccess>&	dataPerSample,
@@ -996,12 +1015,6 @@ template<> tcu::TestStatus MSInstance<MSInstanceSampleMaskWrite>::verifyImageDat
 }
 
 class MSCaseSampleMaskWrite;
-
-template<> void MSCase<MSCaseSampleMaskWrite>::checkSupport (Context& context) const
-{
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
-}
 
 template<> void MSCase<MSCaseSampleMaskWrite>::init (void)
 {

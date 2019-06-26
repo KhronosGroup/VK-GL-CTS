@@ -82,11 +82,7 @@ void MSCaseBaseResolveAndPerSampleFetch::initPrograms (vk::SourceCollections& pr
 }
 
 MSInstanceBaseResolveAndPerSampleFetch::MSInstanceBaseResolveAndPerSampleFetch (Context& context, const ImageMSParams& imageMSParams)
-	: MultisampleInstanceBase(context, imageMSParams)
-{
-	if (!context.getDeviceFeatures().sampleRateShading)
-		TCU_THROW(NotSupportedError, "sampleRateShading not supported");
-}
+	: MultisampleInstanceBase(context, imageMSParams) {}
 
 VkPipelineMultisampleStateCreateInfo MSInstanceBaseResolveAndPerSampleFetch::getMSStateCreateInfo (const ImageMSParams& imageMSParams) const
 {
