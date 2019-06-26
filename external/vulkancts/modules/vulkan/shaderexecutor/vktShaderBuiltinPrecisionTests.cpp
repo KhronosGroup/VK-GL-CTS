@@ -2596,9 +2596,6 @@ ExprP<T> exp2	(const ExprP<T>& x)	{ return app<Exp2< Signature<T, T> > >(x); }
 template <typename T>
 ExprP<T> exp	(const ExprP<T>& x)	{ return app<Exp< Signature<T, T> > >(x); }
 
-//ExprP<deFloat16> exp2	(const ExprP<deFloat16>& x)	{ return app<Exp2< Signature<deFloat16, deFloat16> > >(x); }
-//ExprP<deFloat16> exp	(const ExprP<deFloat16>& x)	{ return app<Exp< Signature<deFloat16, deFloat16> > >(x); }
-
 template <class T>
 class LogFunc : public CFloatFunc1<T>
 {
@@ -6221,7 +6218,7 @@ private:
 	string				m_name;
 };
 
-template <template <int, class T> class GenF>
+template <template <int, class> class GenF, typename T>
 class TemplateFuncCaseFactory : public FuncCaseFactory
 {
 public:
@@ -6229,34 +6226,15 @@ public:
 	{
 		TestCaseGroup*	group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
 
-		group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, float> >()));
-		group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, float> >()));
-		group->addChild(createFuncCase(ctx, "vec3", instance<GenF<3, float> >()));
-		group->addChild(createFuncCase(ctx, "vec4", instance<GenF<4, float> >()));
+		group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, T> >()));
+		group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, T> >()));
+		group->addChild(createFuncCase(ctx, "vec3", instance<GenF<3, T> >()));
+		group->addChild(createFuncCase(ctx, "vec4", instance<GenF<4, T> >()));
 
 		return MovePtr<TestNode>(group);
 	}
 
-	const FuncBase&		getFunc			(void) const { return instance<GenF<1, float> >(); }
-};
-
-template <template <int, class T> class GenF>
-class TemplateFuncCaseFactory16Bit : public FuncCaseFactory
-{
-public:
-	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
-	{
-		TestCaseGroup*	group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
-
-		group->addChild(createFuncCase(ctx, "scalar", instance<GenF<1, deFloat16> >()));
-		group->addChild(createFuncCase(ctx, "vec2", instance<GenF<2, deFloat16> >()));
-		group->addChild(createFuncCase(ctx, "vec3", instance<GenF<3, deFloat16> >()));
-		group->addChild(createFuncCase(ctx, "vec4", instance<GenF<4, deFloat16> >()));
-
-		return MovePtr<TestNode>(group);
-	}
-
-	const FuncBase&		getFunc			(void) const { return instance<GenF<1, deFloat16> >(); }
+	const FuncBase&		getFunc			(void) const { return instance<GenF<1, T> >(); }
 };
 
 template <template <int> class GenF>
@@ -6280,7 +6258,7 @@ public:
 	const FuncBase&		getFunc			(void) const { return instance<GenF<2> >(); }
 };
 
-template <template <int, int, class> class GenF>
+template <template <int, int, class> class GenF, typename T>
 class MatrixFuncCaseFactory : public FuncCaseFactory
 {
 public:
@@ -6288,55 +6266,23 @@ public:
 	{
 		TestCaseGroup*	const group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
 
-		this->addCase<2, 2, float >(ctx, group);
-		this->addCase<3, 2, float >(ctx, group);
-		this->addCase<4, 2, float >(ctx, group);
-		this->addCase<2, 3, float >(ctx, group);
-		this->addCase<3, 3, float >(ctx, group);
-		this->addCase<4, 3, float >(ctx, group);
-		this->addCase<2, 4, float >(ctx, group);
-		this->addCase<3, 4, float >(ctx, group);
-		this->addCase<4, 4, float >(ctx, group);
+		this->addCase<2, 2>(ctx, group);
+		this->addCase<3, 2>(ctx, group);
+		this->addCase<4, 2>(ctx, group);
+		this->addCase<2, 3>(ctx, group);
+		this->addCase<3, 3>(ctx, group);
+		this->addCase<4, 3>(ctx, group);
+		this->addCase<2, 4>(ctx, group);
+		this->addCase<3, 4>(ctx, group);
+		this->addCase<4, 4>(ctx, group);
 
 		return MovePtr<TestNode>(group);
 	}
 
-	const FuncBase&		getFunc			(void) const { return instance<GenF<2,2, float> >(); }
+	const FuncBase&		getFunc			(void) const { return instance<GenF<2,2, T> >(); }
 
 private:
-	template <int Rows, int Cols, class T>
-	void				addCase			(const CaseContext& ctx, TestCaseGroup* group) const
-	{
-		const char*	const name = dataTypeNameOf<Matrix<float, Rows, Cols> >();
-		group->addChild(createFuncCase(ctx, name, instance<GenF<Rows, Cols, T> >()));
-	}
-};
-
-template <template <int, int, class> class GenF>
-class MatrixFuncCaseFactory16Bit : public FuncCaseFactory
-{
-public:
-	MovePtr<TestNode>	createCase		(const CaseContext& ctx) const
-	{
-		TestCaseGroup*	const group = new TestCaseGroup(ctx.testContext, ctx.name.c_str(), ctx.name.c_str());
-
-		this->addCase<2, 2, deFloat16 >(ctx, group);
-		this->addCase<3, 2, deFloat16 >(ctx, group);
-		this->addCase<4, 2, deFloat16 >(ctx, group);
-		this->addCase<2, 3, deFloat16 >(ctx, group);
-		this->addCase<3, 3, deFloat16 >(ctx, group);
-		this->addCase<4, 3, deFloat16 >(ctx, group);
-		this->addCase<2, 4, deFloat16 >(ctx, group);
-		this->addCase<3, 4, deFloat16 >(ctx, group);
-		this->addCase<4, 4, deFloat16 >(ctx, group);
-
-		return MovePtr<TestNode>(group);
-	}
-
-	const FuncBase&		getFunc			(void) const { return instance<GenF<2, 2, deFloat16> >(); }
-
-private:
-	template <int Rows, int Cols, class T>
+	template <int Rows, int Cols>
 	void				addCase			(const CaseContext& ctx, TestCaseGroup* group) const
 	{
 		const char*	const name = dataTypeNameOf<Matrix<float, Rows, Cols> >();
@@ -6462,18 +6408,18 @@ MovePtr<const CaseFactories> createBuiltinCases (bool is16BitTest = false)
 	addScalarFactory<Step< Signature<float, float, float> > >(*funcs);
 	addScalarFactory<SmoothStep< Signature<float, float, float, float> > >(*funcs);
 
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Length>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Distance>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Dot>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Length, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Distance, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Dot, float>()));
 	funcs->addFactory(createSimpleFuncCaseFactory<Cross>());
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Normalize>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<FaceForward>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Reflect>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Refract>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Normalize, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<FaceForward, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Reflect, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Refract, float>()));
 
-	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<MatrixCompMult, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, float>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, float>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
 
@@ -6539,17 +6485,17 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 	addScalarFactory<Step< Signature<deFloat16, deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<SmoothStep< Signature<deFloat16, deFloat16, deFloat16, deFloat16> > >(*funcs);
 
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<Length>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<Distance>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<Dot>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Length, deFloat16>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Distance, deFloat16>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Dot, deFloat16>()));
 	funcs->addFactory(createSimpleFuncCaseFactory<Cross16Bit>());
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<Normalize>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<FaceForward>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<Reflect>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory16Bit<Refract>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Normalize, deFloat16>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<FaceForward, deFloat16>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Reflect, deFloat16>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new TemplateFuncCaseFactory<Refract, deFloat16>()));
 
-	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory16Bit<OuterProduct>()));
-	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory16Bit<Transpose>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<OuterProduct, deFloat16>()));
+	funcs->addFactory(SharedPtr<const CaseFactory>(new MatrixFuncCaseFactory<Transpose, deFloat16>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
 
