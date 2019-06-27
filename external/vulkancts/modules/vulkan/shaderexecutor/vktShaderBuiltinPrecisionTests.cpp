@@ -5243,7 +5243,7 @@ void DefaultSampling<float>::removeNotInRange (vector<float>& dst, const Interva
 {
 	for (vector<float>::iterator it = dst.begin(); it < dst.end();)
 	{
-		if ( !inputRange.contains(static_cast<double>(*it)) || (glu::PRECISION_LAST == prec && (1.0 - deAbs(static_cast<double>(*it)) >= 0.999939)))
+		if ( !inputRange.contains(static_cast<double>(*it)) || (prec == glu::PRECISION_LAST && isDenorm16(deFloat32To16Round(*it, DE_ROUNDINGMODE_TO_ZERO))))
 			it = dst.erase(it);
 		else
 			++it;
