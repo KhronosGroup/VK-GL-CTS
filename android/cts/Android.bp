@@ -21,21 +21,6 @@ filegroup {
     path: "master",
 }
 
-genrule {
-    name: "deqp_nyc_caselists",
-    srcs: [
-        "nyc/vk-master.txt",
-        "nyc/gles31-master.txt",
-        "nyc/egl-master.txt",
-    ],
-    out: [
-        "nyc-vk-master.txt",
-        "nyc-gles31-master.txt",
-        "nyc-egl-master.txt",
-    ],
-    cmd: "for i in $(in); do cp $$i $(genDir)/nyc-$$(basename $$i); done",
-}
-
 java_test_host {
     name: "CtsDeqpTestCases",
 
@@ -55,6 +40,5 @@ java_test_host {
 
     data: [
         ":deqp_master_caselists",
-        ":deqp_nyc_caselists",
     ],
 }
