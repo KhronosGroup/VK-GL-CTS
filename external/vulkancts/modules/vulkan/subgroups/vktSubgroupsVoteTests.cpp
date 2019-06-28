@@ -123,7 +123,6 @@ const string stageTestSource(CaseDefinition caseDef)
 {
 	const bool formatIsBoolean =
 		VK_FORMAT_R8_USCALED == caseDef.format || VK_FORMAT_R8G8_USCALED == caseDef.format || VK_FORMAT_R8G8B8_USCALED == caseDef.format || VK_FORMAT_R8G8B8A8_USCALED == caseDef.format;
-	const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
 
 	const string op = getOpTypeName(caseDef.opType);
 	const string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
@@ -141,7 +140,9 @@ const string stageTestSource(CaseDefinition caseDef)
 			"  " + fmt + " valueEqual = " + fmt + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
 			"  " + fmt + " valueNoEqual = " + fmt + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + gl_SubgroupInvocationID);\n") +
 			"  result = " + op + "(" + fmt + "(1)) ? 0x1 : 0;\n"
-			"  result |= " + op + (arbFunctions ? "(bool" : "") + "(gl_SubgroupInvocationID)" + (arbFunctions ? ")" : "") + " ? 0 : 0x2;\n"
+			"  result |= "
+				+ (formatIsBoolean ? "0x2" : op + "(" + fmt + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
+				+ ";\n"
 			"  result |= " + op + "(data[0]) ? 0x4 : 0;\n"
 			"  result |= " + op + "(valueEqual) ? 0x8 : 0x0;\n"
 			"  result |= " + op + "(valueNoEqual) ? 0x0 : 0x10;\n"
@@ -301,8 +302,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + int(gl_FragCoord.x*gl_SubgroupInvocationID));\n") +
 			"  result |= " + getOpTypeName(caseDef.opType) + "("
 			+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x10 : 0;\n"
-			"  result |= " + getOpTypeName(caseDef.opType) + (arbFunctions ? "(bool" : "") +
-			"(gl_SubgroupInvocationID)" + (arbFunctions ? ")" : "") + " ? 0 : 0x2;\n"
+			"  result |= "
+				+ (formatIsBoolean ? "0x2" : getOpTypeName(caseDef.opType) + "(" + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
+				+ ";\n"
 			"  result |= " + getOpTypeName(caseDef.opType) + "(data[0]) ? 0x4 : 0;\n"
 			"  result |= " + getOpTypeName(caseDef.opType) + "(valueEqual) ? 0x8 : 0x0;\n"
 			"  result |= " + getOpTypeName(caseDef.opType) + "(gl_HelperInvocation) ? 0x0 : 0x1;\n"
@@ -372,8 +374,9 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + offset);\n") +
 			"  result = " + getOpTypeName(caseDef.opType) + "("
 			+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
-			"  result |= " + getOpTypeName(caseDef.opType) + (arbFunctions ? "(bool" : "") +
-			"(gl_SubgroupInvocationID)" + (arbFunctions ? ")" : "") + " ? 0x0 : 0x2;\n"
+			"  result |= "
+				+ (formatIsBoolean ? "0x2" : getOpTypeName(caseDef.opType) + "(" + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
+				+ ";\n"
 			"  result |= " + getOpTypeName(caseDef.opType) + "(data[0]) ? 0x4 : 0x0;\n"
 			"  result |= "+ getOpTypeName(caseDef.opType) + "(valueEqual) ? 0x8 : 0x0;\n"
 			"  result |= "+ getOpTypeName(caseDef.opType) + "(valueNoEqual) ? 0x0 : 0x10;\n"
@@ -546,8 +549,9 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + int(gl_FragCoord.x*gl_SubgroupInvocationID));\n") +
 				"  result = " + getOpTypeName(caseDef.opType) + "("
 				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
-				"  result |= " + getOpTypeName(caseDef.opType) + (arbFunctions ? "(bool" : "") +
-				"(gl_SubgroupInvocationID)" + (arbFunctions ? ")" : "") + " ? 0 : 0x2;\n"
+				"  result |= "
+					+ (formatIsBoolean ? "0x2" : getOpTypeName(caseDef.opType) + "(" + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID)) ? 0 : 0x2")
+					+ ";\n"
 				"  result |= " + getOpTypeName(caseDef.opType) + "(data[0]) ? 0x4 : 0;\n"
 				"  result |= " + getOpTypeName(caseDef.opType) + "(valueEqual) ? 0x8 : 0x0;\n"
 				"  result |= " + getOpTypeName(caseDef.opType) + "(valueNoEqual) ? 0x0 : 0x10;\n"
