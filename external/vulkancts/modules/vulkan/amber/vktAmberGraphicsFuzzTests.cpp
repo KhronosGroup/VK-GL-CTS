@@ -45,6 +45,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 	}
 	tests[] =
 	{
+		{	"barrier-in-loop-with-break.amber",				"barrier-in-loop-with-break",			"A compute shader with a barrier in a loop with a break"								},
 		{	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
 		{	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
 		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
