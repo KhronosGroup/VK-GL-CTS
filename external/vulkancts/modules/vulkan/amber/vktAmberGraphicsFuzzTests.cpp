@@ -56,6 +56,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
 		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
 		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
+		{	"matrices-and-return-in-loop.amber",			"matrices-and-return-in-loop",			"A fragment shader with matrices and a return in a loop"								},
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
 		{	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
 		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
