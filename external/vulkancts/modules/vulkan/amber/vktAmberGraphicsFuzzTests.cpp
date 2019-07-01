@@ -52,6 +52,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
 		{	"fragcoord-control-flow.amber",					"fragcoord-control-flow",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
 		{	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
+		{	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
 		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
 		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
