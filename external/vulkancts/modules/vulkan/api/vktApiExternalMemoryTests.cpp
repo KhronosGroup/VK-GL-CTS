@@ -4330,7 +4330,6 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			dedicatedGroup->addChild(bufferGroup.release());
 		}
 
-		if (externalType != vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
 		{
 			de::MovePtr<tcu::TestCaseGroup> imageGroup	(new tcu::TestCaseGroup(testCtx, "image", ""));
 			const ImageTestConfig			imageConfig	(externalType, dedicated);
