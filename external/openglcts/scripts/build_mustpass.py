@@ -813,30 +813,36 @@ GLCTS_GLES31_GTF_PKG_N1CFG			= Package(module = ES31GTF_MODULE, useforfirsteglco
 					filters			= [include("gles31-gtf-master.txt")]),
 	])
 
+MASTER_GLES32_COMMON_FILTERS             = [
+		include("gles32-khr-master.txt"),
+		exclude("gles32-khr-test-issues.txt"),
+		exclude("gles32-khr-spec-issues.txt")
+	]
+
 GLCTS_GLES32_KHR_PKG_1CFG			= Package(module = ES32KHR_MODULE, configurations = [
 		# Master
 		Configuration(name			= "khr-master",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "64",
 					surfaceheight	= "-1",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "-1",
 					surfaceheight	= "64",
 					baseseed		= "3",
 					fboconfig		= "rgba8888d24s8",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 	])
 
 GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglconfig = False, configurations = [
@@ -845,12 +851,12 @@ GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglco
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 		Configuration(name			= "khr-master",
 					surfacewidth	= "113",
 					surfaceheight	= "47",
 					baseseed		= "2",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 	])
 
 GLCTS_NOCTX_ES2_KHR_PKG			= Package(module = NOCTX_ES2_KHR_MODULE, configurations = [
@@ -868,7 +874,7 @@ GLCTS_NOCTX_ES32_KHR_PKG		= Package(module = NOCTX_ES32_KHR_MODULE, configuratio
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
-					filters			= [include("gles32-khr-master.txt")]),
+					filters			= MASTER_GLES32_COMMON_FILTERS),
 	])
 
 ES_MUSTPASS_LISTS		= [
@@ -1017,10 +1023,10 @@ GL_MODULES							= OrderedDict([
 			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt'), exclude('gl42-waivers.txt')]]),
 			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt'), exclude('gl41-waivers.txt')]]),
 			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt'), exclude('gl40-waivers.txt')]]),
-			('KHR-GL33',		['master',		[include('gl33-master.txt')]]),
-			('KHR-GL32',		['master',		[include('gl32-master.txt')]]),
-			('KHR-GL31',		['master',		[include('gl31-master.txt')]]),
-			('KHR-GL30',		['master',		[include('gl30-master.txt')]]),
+			('KHR-GL33',		['master',		[include('gl33-master.txt'), exclude('gl33-test-issues.txt')]]),
+			('KHR-GL32',		['master',		[include('gl32-master.txt'), exclude('gl32-test-issues.txt')]]),
+			('KHR-GL31',		['master',		[include('gl31-master.txt'), exclude('gl31-test-issues.txt')]]),
+			('KHR-GL30',		['master',		[include('gl30-master.txt'), exclude('gl30-test-issues.txt')]]),
 			('GTF-GL46',		['gtf-master',	[include('gl46-gtf-master.txt')]]),
 			('GTF-GL45',		['gtf-master',	[include('gl45-gtf-master.txt')]]),
 			('GTF-GL44',		['gtf-master',	[include('gl44-gtf-master.txt')]]),

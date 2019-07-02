@@ -359,7 +359,7 @@ void addDrawCase (tcu::TestCaseGroup* group, const DrawTest::TestSpec testSpec, 
 	if (flags & TEST_FLAG_INSTANCED)		name << "_instanced";
 	if (flags & TEST_FLAG_FIRST_INSTANCE)	name << "_first_instance";
 
-	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<TestFlags>>(group->getTestContext(), name.str(), "", addFlags(testSpec, flags), FunctionSupport1<TestFlags>::Args(checkSupport, flags)));
+	group->addChild(new InstanceFactory<DrawTest, FunctionSupport1<TestFlags>>(group->getTestContext(), name.str(), "", addFlags(testSpec, flags), FunctionSupport1<TestFlags>::Args(checkSupport, testSpec.flags | flags)));
 }
 
 }	// anonymous

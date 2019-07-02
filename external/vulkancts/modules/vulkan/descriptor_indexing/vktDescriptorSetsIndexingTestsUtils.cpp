@@ -62,13 +62,11 @@ ImageHandleAlloc::ImageHandleAlloc	(Move<VkImage>&					image_,
 									 AllocMv&						alloc_,
 									 const VkExtent3D&				extent_,
 									 VkFormat						format_,
-									 VkImageLayout					layout_,
 									 bool							usesMipMaps_)
 	: image		(image_)
 	, alloc		(alloc_)
 	, extent	(extent_)
 	, format	(format_)
-	, layout	(layout_)
 	, levels	(usesMipMaps_ ? computeMipMapCount(extent_) : 1)
 {
 }
@@ -247,7 +245,7 @@ void createImageAndBind				(ut::ImageHandleAllocSp&		output,
 
 	VK_CHECK(dinterface.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
 
-	output = ImageHandleAllocSp(new ImageHandleAlloc(image, allocation, extent, colorFormat, initialLayout, withMipMaps));
+	output = ImageHandleAllocSp(new ImageHandleAlloc(image, allocation, extent, colorFormat, withMipMaps));
 }
 
 void recordCopyBufferToImage		(VkCommandBuffer				cmd,
@@ -308,14 +306,14 @@ void recordCopyBufferToImage		(VkCommandBuffer				cmd,
 		1u,												// layerCount
 	};
 
-	const VkImageMemoryBarrier	transitionBarrier =
+	const VkImageMemoryBarrier	barrierBefore =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
 		DE_NULL,										// pNext;
 		0,												// srcAccessMask;
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// dstAccessMask;
 		oldImageLayout,									// oldLayout;
-		newImageLayout,									// newLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// dstQueueFamilyIndex;
 		image,											// image
@@ -326,7 +324,7 @@ void recordCopyBufferToImage		(VkCommandBuffer				cmd,
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// sType;
 		DE_NULL,										// pNext;
-		pipelineAcceesFromStage(srcStageMask, false),	// srcAccessMask;
+		pipelineAccessFromStage(srcStageMask, false),	// srcAccessMask;
 		VK_ACCESS_TRANSFER_READ_BIT,					// dstAccessMask;
 		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// dstQueueFamilyIndex;
@@ -335,14 +333,14 @@ void recordCopyBufferToImage		(VkCommandBuffer				cmd,
 		bufferInfo.range								// size;
 	};
 
-	const VkImageMemoryBarrier	imageBarrier =
+	const VkImageMemoryBarrier	barrierAfter =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
 		DE_NULL,										// pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// srcAccessMask;
-		pipelineAcceesFromStage(dstStageMask, true)
-		| pipelineAcceesFromStage(dstStageMask, false),	// dstAccessMask;
-		oldImageLayout,									// oldLayout;
+		pipelineAccessFromStage(dstStageMask, true)
+		| pipelineAccessFromStage(dstStageMask, false),	// dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// oldLayout;
 		newImageLayout,									// newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// dstQueueFamilyIndex;
@@ -353,18 +351,18 @@ void recordCopyBufferToImage		(VkCommandBuffer				cmd,
 	interface.cmdPipelineBarrier(cmd,
 		srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT,	// srcStageMask, dstStageMask
 		(VkDependencyFlags)0,							// dependencyFlags
-		0u, (const VkMemoryBarrier*)DE_NULL,			// memoryBarrierCount, pMemoryBarriers
+		0u, DE_NULL,									// memoryBarrierCount, pMemoryBarriers
 		1u, &bufferBarrier,								// bufferBarrierCount, pBufferBarriers
-		1u, &transitionBarrier);						// imageBarrierCount, pImageBarriers
+		1u, &barrierBefore);							// imageBarrierCount, pImageBarriers
 
-	interface.cmdCopyBufferToImage(cmd, bufferInfo.buffer, image, newImageLayout, static_cast<deUint32>(copyRegions.size()), copyRegions.data());
+	interface.cmdCopyBufferToImage(cmd, bufferInfo.buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<deUint32>(copyRegions.size()), copyRegions.data());
 
 	interface.cmdPipelineBarrier(cmd,
 		VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask,	// srcStageMask, dstStageMask
 		(VkDependencyFlags)0,							// dependencyFlags
-		0u, (const VkMemoryBarrier*)DE_NULL,			// memoryBarrierCount, pMemoryBarriers
-		0u, (const VkBufferMemoryBarrier*)DE_NULL,		// bufferBarrierCount, pBufferBarriers
-		1u, &imageBarrier);								// imageBarrierCount, pImageBarriers
+		0u, DE_NULL,									// memoryBarrierCount, pMemoryBarriers
+		0u, DE_NULL,									// bufferBarrierCount, pBufferBarriers
+		1u, &barrierAfter);								// imageBarrierCount, pImageBarriers
 }
 
 void recordCopyImageToBuffer		(VkCommandBuffer				cmd,
@@ -406,51 +404,53 @@ void recordCopyImageToBuffer		(VkCommandBuffer				cmd,
 		1u,												// layerCount
 	};
 
-	const VkImageMemoryBarrier	imageBarrier =
+	const VkImageMemoryBarrier	barrierBefore =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
 		DE_NULL,										// pNext;
-		pipelineAcceesFromStage(srcStageMask, false),	// srcAccessMask;
+		pipelineAccessFromStage(srcStageMask, false),	// srcAccessMask;
 		VK_ACCESS_TRANSFER_READ_BIT,					// dstAccessMask;
 		oldImageLayout,									// oldLayout
-		newImageLayout,									// newLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// dstQueueFamilyIndex;
 		image,											// image;
 		subresourceRange,								// subresourceRange;
 	};
 
-	const VkBufferMemoryBarrier	bufferBarrier =
+	const VkImageMemoryBarrier	barrierAfter =
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// sType;
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
 		DE_NULL,										// pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,					// srcAccessMask;
-		pipelineAcceesFromStage(dstStageMask, true),	// dstAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,					// srcAccessMask;
+		pipelineAccessFromStage(dstStageMask, true)
+		| pipelineAccessFromStage(dstStageMask, false),	// dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// oldLayout;
+		newImageLayout,									// newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// dstQueueFamilyIndex;
-		bufferInfo.buffer,								// buffer;
-		bufferInfo.offset,								// offset;
-		bufferInfo.range								// size;
+		image,											// image
+		subresourceRange								// subresourceRange
 	};
 
 	interface.cmdPipelineBarrier(cmd,					// commandBuffer
 		srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT,	// srcStageMask, dstStageMask
 		(VkDependencyFlags)0,							// dependencyFlags
-		0u, (const VkMemoryBarrier*)DE_NULL,			// memoryBarrierCount, pMemoryBarriers
-		0u, (const VkBufferMemoryBarrier*)DE_NULL,		// bufferBarrierCount, pBufferBarriers
-		1u, &imageBarrier);								// imageBarrierCount, pImageBarriers
+		0u, DE_NULL,									// memoryBarrierCount, pMemoryBarriers
+		0u, DE_NULL,									// bufferBarrierCount, pBufferBarriers
+		1u, &barrierBefore);							// imageBarrierCount, pImageBarriers
 
-	interface.cmdCopyImageToBuffer(cmd, image, newImageLayout, bufferInfo.buffer, 1u, &copyRegion);
+	interface.cmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, bufferInfo.buffer, 1u, &copyRegion);
 
 	interface.cmdPipelineBarrier(cmd,
 		VK_PIPELINE_STAGE_TRANSFER_BIT, dstStageMask,
 		(VkDependencyFlags)0,
-		0, DE_NULL,
-		1, &bufferBarrier,
-		0u, DE_NULL);
+		0u, DE_NULL,
+		0u, DE_NULL,
+		0u, &barrierAfter);
 }
 
-VkAccessFlags pipelineAcceesFromStage (VkPipelineStageFlagBits stage, bool readORwrite)
+VkAccessFlags pipelineAccessFromStage (VkPipelineStageFlagBits stage, bool readORwrite)
 {
 	VkAccessFlags access[2];
 	VkAccessFlags& readAccess = access[1];

@@ -76,23 +76,23 @@ private:
  *      Compare the values with expected value.
  *
  *  Repeat the steps for following samplers:
- *   -  sampler1D​,
- *   -  sampler2D​,
- *   -  sampler3D​,
- *   -  samplerCube,​
+ *   -  sampler1D,
+ *   -  sampler2D,
+ *   -  sampler3D,
+ *   -  samplerCube,
  *   -  sampler2DRect,
- *   -  sampler1DArray​,
- *   -  sampler2DArray​,
+ *   -  sampler1DArray,
+ *   -  sampler2DArray,
  *   -  samplerCubeArray
- *  expecting ​(0.0, 0.0, 0.0, 1.0) and:
- *   -  sampler1DShadow​,
- *   -  sampler2DShadow​,
+ *  expecting (0.0, 0.0, 0.0, 1.0) and:
+ *   -  sampler1DShadow,
+ *   -  sampler2DShadow,
  *   -  samplerCubeShadow,
  *   -  sampler2DRectShadow,
- *   -  sampler1DArrayShadow​,
- *   -  sampler2DArrayShadow​,
- *   -  samplerCubeArrayShadow​
- *  expecting ​0.0.
+ *   -  sampler1DArrayShadow,
+ *   -  sampler2DArrayShadow,
+ *   -  samplerCubeArrayShadow
+ *  expecting 0.0.
  */
 class SamplerTest : public deqp::TestCase
 {

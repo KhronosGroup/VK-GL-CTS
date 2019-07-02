@@ -27,7 +27,7 @@ Dependencies
 Overview
 
     The test verifies that when ARB_post_depth_coverage is available one can
-    use post_depth_coverage layout and gl_SampleMaskIn​ is affected according
+    use post_depth_coverage layout and gl_SampleMaskIn is affected according
     to the extension specification.
 
 Tests

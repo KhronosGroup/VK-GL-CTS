@@ -40,21 +40,9 @@ namespace sr
 namespace
 {
 
-#if defined(abs)
-#	undef abs
-#endif
-
 using de::min;
 using de::max;
 using de::clamp;
-
-// \note VS2013 gets confused without these
-using tcu::asinh;
-using tcu::acosh;
-using tcu::atanh;
-using tcu::exp2;
-using tcu::log2;
-using tcu::trunc;
 
 inline bool logicalAnd	(bool a, bool b)	{ return (a && b); }
 inline bool logicalOr	(bool a, bool b)	{ return (a || b); }
@@ -1119,78 +1107,18 @@ DECLARE_UINT_UVEC_FUNCS(bitwiseOrScalarVec)
 DECLARE_UINT_UVEC_FUNCS(bitwiseXorScalarVec)
 
 // Built-in functions.
-
-DECLARE_UNARY_GENTYPE_FUNCS(radians)
-DECLARE_UNARY_GENTYPE_FUNCS(degrees)
-DECLARE_UNARY_GENTYPE_FUNCS(sin)
-DECLARE_UNARY_GENTYPE_FUNCS(cos)
-DECLARE_UNARY_GENTYPE_FUNCS(tan)
-DECLARE_UNARY_GENTYPE_FUNCS(asin)
-DECLARE_UNARY_GENTYPE_FUNCS(acos)
-DECLARE_UNARY_GENTYPE_FUNCS(atan)
-DECLARE_BINARY_GENTYPE_FUNCS(atan2)
-DECLARE_UNARY_GENTYPE_FUNCS(sinh)
-DECLARE_UNARY_GENTYPE_FUNCS(cosh)
-DECLARE_UNARY_GENTYPE_FUNCS(tanh)
-DECLARE_UNARY_GENTYPE_FUNCS(asinh)
-DECLARE_UNARY_GENTYPE_FUNCS(acosh)
-DECLARE_UNARY_GENTYPE_FUNCS(atanh)
-
-DECLARE_BINARY_GENTYPE_FUNCS(pow)
-DECLARE_UNARY_GENTYPE_FUNCS(exp)
-DECLARE_UNARY_GENTYPE_FUNCS(log)
-DECLARE_UNARY_GENTYPE_FUNCS(exp2)
-DECLARE_UNARY_GENTYPE_FUNCS(log2)
-DECLARE_UNARY_GENTYPE_FUNCS(sqrt)
-DECLARE_UNARY_GENTYPE_FUNCS(inverseSqrt)
-
-DECLARE_UNARY_GENTYPE_FUNCS(abs)
-DECLARE_UNARY_GENTYPE_FUNCS(sign)
-DECLARE_UNARY_GENTYPE_FUNCS(floor)
-DECLARE_UNARY_GENTYPE_FUNCS(trunc)
-DECLARE_UNARY_GENTYPE_FUNCS(roundToEven)
-DECLARE_UNARY_GENTYPE_FUNCS(ceil)
-DECLARE_UNARY_GENTYPE_FUNCS(fract)
-DECLARE_BINARY_GENTYPE_FUNCS(mod)
-DECLARE_VEC_FLOAT_FUNCS(modVecScalar)
-DECLARE_BINARY_GENTYPE_FUNCS(min)
-DECLARE_VEC_FLOAT_FUNCS(minVecScalar)
 DECLARE_BINARY_INT_GENTYPE_FUNCS(min)
 DECLARE_IVEC_INT_FUNCS(minVecScalar)
 DECLARE_BINARY_UINT_GENTYPE_FUNCS(min)
 DECLARE_UVEC_UINT_FUNCS(minVecScalar)
-DECLARE_BINARY_GENTYPE_FUNCS(max)
-DECLARE_VEC_FLOAT_FUNCS(maxVecScalar)
 DECLARE_BINARY_INT_GENTYPE_FUNCS(max)
 DECLARE_IVEC_INT_FUNCS(maxVecScalar)
 DECLARE_BINARY_UINT_GENTYPE_FUNCS(max)
 DECLARE_UVEC_UINT_FUNCS(maxVecScalar)
-DECLARE_TERNARY_GENTYPE_FUNCS(clamp)
-DECLARE_VEC_FLOAT_FLOAT_FUNCS(clampVecScalarScalar)
 DECLARE_TERNARY_INT_GENTYPE_FUNCS(clamp)
 DECLARE_IVEC_INT_INT_FUNCS(clampVecScalarScalar)
 DECLARE_TERNARY_UINT_GENTYPE_FUNCS(clamp)
 DECLARE_UVEC_UINT_UINT_FUNCS(clampVecScalarScalar)
-DECLARE_TERNARY_GENTYPE_FUNCS(mix)
-DECLARE_VEC_VEC_FLOAT_FUNCS(mixVecVecScalar)
-DECLARE_BINARY_GENTYPE_FUNCS(step)
-DECLARE_FLOAT_VEC_FUNCS(stepScalarVec)
-DECLARE_TERNARY_GENTYPE_FUNCS(smoothStep)
-DECLARE_FLOAT_FLOAT_VEC_FUNCS(smoothStepScalarScalarVec)
-
-DECLARE_UNARY_SCALAR_GENTYPE_FUNCS(length)
-DECLARE_BINARY_SCALAR_GENTYPE_FUNCS(distance)
-DECLARE_BINARY_SCALAR_GENTYPE_FUNCS(dot)
-void eval_cross_vec3 (ShaderEvalContext& c) { c.color.xyz()	= cross(c.in[0].swizzle(2, 0, 1), c.in[1].swizzle(1, 2, 0)); }
-
-DECLARE_UNARY_GENTYPE_FUNCS(normalize)
-DECLARE_TERNARY_GENTYPE_FUNCS(faceForward)
-DECLARE_BINARY_GENTYPE_FUNCS(reflect)
-
-void eval_refract_float	(ShaderEvalContext& c) { c.color.x()	= refract(c.in[0].z(),                 c.in[1].x(),                 c.in[2].y()); }
-void eval_refract_vec2	(ShaderEvalContext& c) { c.color.yz()	= refract(c.in[0].swizzle(3, 1),       c.in[1].swizzle(1, 0),       c.in[2].y()); }
-void eval_refract_vec3	(ShaderEvalContext& c) { c.color.xyz()	= refract(c.in[0].swizzle(2, 0, 1),    c.in[1].swizzle(1, 2, 0),    c.in[2].y()); }
-void eval_refract_vec4	(ShaderEvalContext& c) { c.color		= refract(c.in[0].swizzle(1, 2, 3, 0), c.in[1].swizzle(3, 2, 1, 0), c.in[2].y()); }
 
 // Compare functions.
 
@@ -1345,9 +1273,6 @@ void ShaderOperatorTests::init (void)
 	// Unary operators.
 	funcInfoGroups.push_back(
 		BuiltinFuncGroup("unary_operator", "Unary operator tests")
-		<< BuiltinOperInfo						("plus",			"+",	GT,		Value(GT,  -1.0f, 1.0f),	notUsed,	notUsed,	0.5f,	0.5f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(nop))
-		<< BuiltinOperInfo						("plus",			"+",	IGT,	Value(IGT, -5.0f, 5.0f),	notUsed,	notUsed,	0.1f,	0.5f,	PRECMASK_ALL,		INT_GENTYPE_FUNCS(nop))
-		<< BuiltinOperInfo						("plus",			"+",	UGT,	Value(UGT,  0.0f, 2e2f),	notUsed,	notUsed,	5e-3f,	0.0f,	PRECMASK_ALL,		UINT_GENTYPE_FUNCS(nop))
 		<< BuiltinOperInfo						("minus",			"-",	GT,		Value(GT,  -1.0f, 1.0f),	notUsed,	notUsed,	0.5f,	0.5f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(negate))
 		<< BuiltinOperInfo						("minus",			"-",	IGT,	Value(IGT, -5.0f, 5.0f),	notUsed,	notUsed,	0.1f,	0.5f,	PRECMASK_ALL,		INT_GENTYPE_FUNCS(negate))
 		<< BuiltinOperInfo						("minus",			"-",	UGT,	Value(UGT,  0.0f, 4e9f),	notUsed,	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(negate))
@@ -1433,166 +1358,166 @@ void ShaderOperatorTests::init (void)
 		// The add operator.
 
 		binaryOpGroup
-			<< operInfoFunc(addName,	addOp,	GT,		Value(GT,  -1.0f, 1.0f),	Value(GT,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_GENTYPE_FUNCS(add))
+			<< operInfoFunc(addName,	addOp,	GT,		Value(GT,  -1.0f, 1.0f),	Value(GT,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(add))
 			<< operInfoFunc(addName,	addOp,	IGT,	Value(IGT, -4.0f, 6.0f),	Value(IGT, -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(add))
-			<< operInfoFunc(addName,	addOp,	IGT,	Value(IGT, -2e9f, 2e9f),	Value(IGT, -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(add))
+			<< operInfoFunc(addName,	addOp,	IGT,	Value(IGT, -2e9f, 2e9f),	Value(IGT, -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(add))
 			<< operInfoFunc(addName,	addOp,	UGT,	Value(UGT,  0.0f, 1e2f),	Value(UGT,  0.0f, 1e2f),	notUsed,	5e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(add))
-			<< operInfoFunc(addName,	addOp,	UGT,	Value(UGT,  0.0f, 4e9f),	Value(UGT,  0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(add))
-			<< operInfoFunc(addName,	addOp,	FV,		Value(FV,  -1.0f, 1.0f),	Value(F,   -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(addVecScalar))
+			<< operInfoFunc(addName,	addOp,	UGT,	Value(UGT,  0.0f, 4e9f),	Value(UGT,  0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(add))
+			<< operInfoFunc(addName,	addOp,	FV,		Value(FV,  -1.0f, 1.0f),	Value(F,   -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(addVecScalar))
 			<< operInfoFunc(addName,	addOp,	IV,		Value(IV,  -4.0f, 6.0f),	Value(I,   -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(addVecScalar))
-			<< operInfoFunc(addName,	addOp,	IV,		Value(IV,  -2e9f, 2e9f),	Value(I,   -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(addVecScalar))
+			<< operInfoFunc(addName,	addOp,	IV,		Value(IV,  -2e9f, 2e9f),	Value(I,   -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(addVecScalar))
 			<< operInfoFunc(addName,	addOp,	UV,		Value(UV,   0.0f, 1e2f),	Value(U,    0.0f, 1e2f),	notUsed,	5e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(addVecScalar))
-			<< operInfoFunc(addName,	addOp,	UV,		Value(UV,   0.0f, 4e9f),	Value(U,    0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(addVecScalar));
+			<< operInfoFunc(addName,	addOp,	UV,		Value(UV,   0.0f, 4e9f),	Value(U,    0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(addVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
-				<< operInfoFunc(addName,	addOp,	FV,		Value(F,   -1.0f, 1.0f),	Value(FV,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(addScalarVec))
+				<< operInfoFunc(addName,	addOp,	FV,		Value(F,   -1.0f, 1.0f),	Value(FV,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(addScalarVec))
 				<< operInfoFunc(addName,	addOp,	IV,		Value(I,   -4.0f, 6.0f),	Value(IV,  -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(addScalarVec))
-				<< operInfoFunc(addName,	addOp,	IV,		Value(I,   -2e9f, 2e9f),	Value(IV,  -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(addScalarVec))
+				<< operInfoFunc(addName,	addOp,	IV,		Value(I,   -2e9f, 2e9f),	Value(IV,  -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(addScalarVec))
 				<< operInfoFunc(addName,	addOp,	UV,		Value(U,    0.0f, 1e2f),	Value(UV,   0.0f, 1e2f),	notUsed,	5e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(addScalarVec))
-				<< operInfoFunc(addName,	addOp,	UV,		Value(U,    0.0f, 4e9f),	Value(UV,   0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(addScalarVec));
+				<< operInfoFunc(addName,	addOp,	UV,		Value(U,    0.0f, 4e9f),	Value(UV,   0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(addScalarVec));
 
 		// The subtract operator.
 
 		binaryOpGroup
-			<< operInfoFunc(subName,	subOp,	GT,		Value(GT,  -1.0f, 1.0f),	Value(GT,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_GENTYPE_FUNCS(sub))
+			<< operInfoFunc(subName,	subOp,	GT,		Value(GT,  -1.0f, 1.0f),	Value(GT,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(sub))
 			<< operInfoFunc(subName,	subOp,	IGT,	Value(IGT, -4.0f, 6.0f),	Value(IGT, -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(sub))
-			<< operInfoFunc(subName,	subOp,	IGT,	Value(IGT, -2e9f, 2e9f),	Value(IGT, -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(sub))
+			<< operInfoFunc(subName,	subOp,	IGT,	Value(IGT, -2e9f, 2e9f),	Value(IGT, -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(sub))
 			<< operInfoFunc(subName,	subOp,	UGT,	Value(UGT,  1e2f, 2e2f),	Value(UGT,  0.0f, 1e2f),	notUsed,	5e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(sub))
-			<< operInfoFunc(subName,	subOp,	UGT,	Value(UGT,  .5e9f, 3.7e9f),	Value(UGT,  0.0f, 3.9e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(sub))
-			<< operInfoFunc(subName,	subOp,	FV,		Value(FV,  -1.0f, 1.0f),	Value(F,   -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(subVecScalar))
+			<< operInfoFunc(subName,	subOp,	UGT,	Value(UGT,  .5e9f, 3.7e9f),	Value(UGT,  0.0f, 3.9e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(sub))
+			<< operInfoFunc(subName,	subOp,	FV,		Value(FV,  -1.0f, 1.0f),	Value(F,   -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(subVecScalar))
 			<< operInfoFunc(subName,	subOp,	IV,		Value(IV,  -4.0f, 6.0f),	Value(I,   -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(subVecScalar))
-			<< operInfoFunc(subName,	subOp,	IV,		Value(IV,  -2e9f, 2e9f),	Value(I,   -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(subVecScalar))
+			<< operInfoFunc(subName,	subOp,	IV,		Value(IV,  -2e9f, 2e9f),	Value(I,   -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(subVecScalar))
 			<< operInfoFunc(subName,	subOp,	UV,		Value(UV,   1e2f, 2e2f),	Value(U,    0.0f, 1e2f),	notUsed,	5e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(subVecScalar))
-			<< operInfoFunc(subName,	subOp,	UV,		Value(UV,   0.0f, 4e9f),	Value(U,    0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(subVecScalar));
+			<< operInfoFunc(subName,	subOp,	UV,		Value(UV,   0.0f, 4e9f),	Value(U,    0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(subVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
-				<< operInfoFunc(subName,	subOp,	FV,		Value(F,   -1.0f, 1.0f),	Value(FV,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(subScalarVec))
+				<< operInfoFunc(subName,	subOp,	FV,		Value(F,   -1.0f, 1.0f),	Value(FV,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(subScalarVec))
 				<< operInfoFunc(subName,	subOp,	IV,		Value(I,   -4.0f, 6.0f),	Value(IV,  -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(subScalarVec))
-				<< operInfoFunc(subName,	subOp,	IV,		Value(I,   -2e9f, 2e9f),	Value(IV,  -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(subScalarVec))
+				<< operInfoFunc(subName,	subOp,	IV,		Value(I,   -2e9f, 2e9f),	Value(IV,  -2e9f, 2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(subScalarVec))
 				<< operInfoFunc(subName,	subOp,	UV,		Value(U,    1e2f, 2e2f),	Value(UV,    0.0f, 1e2f),	notUsed,	5e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(subScalarVec))
-				<< operInfoFunc(subName,	subOp,	UV,		Value(U,    0.0f, 4e9f),	Value(UV,    0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(subScalarVec));
+				<< operInfoFunc(subName,	subOp,	UV,		Value(U,    0.0f, 4e9f),	Value(UV,    0.0f, 4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(subScalarVec));
 
 		// The multiply operator.
 
 		binaryOpGroup
-			<< operInfoFunc(mulName,	mulOp,	GT,		Value(GT,  -1.0f, 1.0f),	Value(GT,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_GENTYPE_FUNCS(mul))
+			<< operInfoFunc(mulName,	mulOp,	GT,		Value(GT,  -1.0f, 1.0f),	Value(GT,  -1.0f, 1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(mul))
 			<< operInfoFunc(mulName,	mulOp,	IGT,	Value(IGT, -4.0f, 6.0f),	Value(IGT, -6.0f, 5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(mul))
-			<< operInfoFunc(mulName,	mulOp,	IGT,	Value(IGT, -3e5f, 3e5f),	Value(IGT, -3e4f, 3e4f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(mul))
+			<< operInfoFunc(mulName,	mulOp,	IGT,	Value(IGT, -3e5f, 3e5f),	Value(IGT, -3e4f, 3e4f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(mul))
 			<< operInfoFunc(mulName,	mulOp,	UGT,	Value(UGT,  0.0f, 16.0f),	Value(UGT,  0.0f, 16.0f),	notUsed,	4e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(mul))
-			<< operInfoFunc(mulName,	mulOp,	UGT,	Value(UGT,  0.0f, 6e5f),	Value(UGT,  0.0f, 6e4f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(mul))
-			<< operInfoFunc(mulName,	mulOp,	FV,		Value(FV,  -1.0f, 1.0f),	Value(F,   -1.0f,  1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(mulVecScalar))
+			<< operInfoFunc(mulName,	mulOp,	UGT,	Value(UGT,  0.0f, 6e5f),	Value(UGT,  0.0f, 6e4f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(mul))
+			<< operInfoFunc(mulName,	mulOp,	FV,		Value(FV,  -1.0f, 1.0f),	Value(F,   -1.0f,  1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(mulVecScalar))
 			<< operInfoFunc(mulName,	mulOp,	IV,		Value(IV,  -4.0f, 6.0f),	Value(I,   -6.0f,  5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(mulVecScalar))
-			<< operInfoFunc(mulName,	mulOp,	IV,		Value(IV,  -3e5f, 3e5f),	Value(I,   -3e4f,  3e4f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(mulVecScalar))
+			<< operInfoFunc(mulName,	mulOp,	IV,		Value(IV,  -3e5f, 3e5f),	Value(I,   -3e4f,  3e4f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(mulVecScalar))
 			<< operInfoFunc(mulName,	mulOp,	UV,		Value(UV,   0.0f, 16.0f),	Value(U,    0.0f, 16.0f),	notUsed,	4e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(mulVecScalar))
-			<< operInfoFunc(mulName,	mulOp,	UV,		Value(UV,   0.0f, 6e5f),	Value(U,    0.0f, 6e4f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(mulVecScalar));
+			<< operInfoFunc(mulName,	mulOp,	UV,		Value(UV,   0.0f, 6e5f),	Value(U,    0.0f, 6e4f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(mulVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
-				<< operInfoFunc(mulName,	mulOp,	FV,		Value(F,   -1.0f, 1.0f),	Value(FV,  -1.0f,  1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(mulScalarVec))
+				<< operInfoFunc(mulName,	mulOp,	FV,		Value(F,   -1.0f, 1.0f),	Value(FV,  -1.0f,  1.0f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(mulScalarVec))
 				<< operInfoFunc(mulName,	mulOp,	IV,		Value(I,   -4.0f, 6.0f),	Value(IV,  -6.0f,  5.0f),	notUsed,	0.1f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(mulScalarVec))
-				<< operInfoFunc(mulName,	mulOp,	IV,		Value(I,   -3e5f, 3e5f),	Value(IV,  -3e4f,  3e4f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(mulScalarVec))
+				<< operInfoFunc(mulName,	mulOp,	IV,		Value(I,   -3e5f, 3e5f),	Value(IV,  -3e4f,  3e4f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(mulScalarVec))
 				<< operInfoFunc(mulName,	mulOp,	UV,		Value(U,    0.0f, 16.0f),	Value(UV,   0.0f, 16.0f),	notUsed,	4e-3f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(mulScalarVec))
-				<< operInfoFunc(mulName,	mulOp,	UV,		Value(U,    0.0f, 6e5f),	Value(UV,   0.0f, 6e4f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(mulScalarVec));
+				<< operInfoFunc(mulName,	mulOp,	UV,		Value(U,    0.0f, 6e5f),	Value(UV,   0.0f, 6e4f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(mulScalarVec));
 
 		// The divide operator.
 
 		binaryOpGroup
-			<< operInfoFunc(divName,	divOp,	GT,		Value(GT,  -1.0f,    1.0f),		Value(GT,  -2.0f, -0.5f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_GENTYPE_FUNCS(div))
+			<< operInfoFunc(divName,	divOp,	GT,		Value(GT,  -1.0f,    1.0f),		Value(GT,  -2.0f, -0.5f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(div))
 			<< operInfoFunc(divName,	divOp,	IGT,	Value(IGT, 24.0f,    24.0f),	Value(IGT, -4.0f, -1.0f),	notUsed,	0.04f,	1.0f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(div))
-			<< operInfoFunc(divName,	divOp,	IGT,	Value(IGT, 40320.0f, 40320.0f),	Value(IGT, -8.0f, -1.0f),	notUsed,	1e-5f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(div))
+			<< operInfoFunc(divName,	divOp,	IGT,	Value(IGT, 40320.0f, 40320.0f),	Value(IGT, -8.0f, -1.0f),	notUsed,	1e-5f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(div))
 			<< operInfoFunc(divName,	divOp,	UGT,	Value(UGT,  0.0f,    24.0f),	Value(UGT,  1.0f,  4.0f),	notUsed,	0.04f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(div))
-			<< operInfoFunc(divName,	divOp,	UGT,	Value(UGT,  0.0f,    40320.0f),	Value(UGT,  1.0f,  8.0f),	notUsed,	1e-5f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(div))
-			<< operInfoFunc(divName,	divOp,	FV,		Value(FV,  -1.0f,    1.0f),		Value(F,   -2.0f, -0.5f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(divVecScalar))
+			<< operInfoFunc(divName,	divOp,	UGT,	Value(UGT,  0.0f,    40320.0f),	Value(UGT,  1.0f,  8.0f),	notUsed,	1e-5f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(div))
+			<< operInfoFunc(divName,	divOp,	FV,		Value(FV,  -1.0f,    1.0f),		Value(F,   -2.0f, -0.5f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(divVecScalar))
 			<< operInfoFunc(divName,	divOp,	IV,		Value(IV,  24.0f,    24.0f),	Value(I,   -4.0f, -1.0f),	notUsed,	0.04f,	1.0f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(divVecScalar))
-			<< operInfoFunc(divName,	divOp,	IV,		Value(IV,  40320.0f, 40320.0f),	Value(I,   -8.0f, -1.0f),	notUsed,	1e-5f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(divVecScalar))
+			<< operInfoFunc(divName,	divOp,	IV,		Value(IV,  40320.0f, 40320.0f),	Value(I,   -8.0f, -1.0f),	notUsed,	1e-5f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(divVecScalar))
 			<< operInfoFunc(divName,	divOp,	UV,		Value(UV,   0.0f,    24.0f),	Value(U,    1.0f,  4.0f),	notUsed,	0.04f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(divVecScalar))
-			<< operInfoFunc(divName,	divOp,	UV,		Value(UV,   0.0f,    40320.0f),	Value(U,    1.0f,  8.0f),	notUsed,	1e-5f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(divVecScalar));
+			<< operInfoFunc(divName,	divOp,	UV,		Value(UV,   0.0f,    40320.0f),	Value(U,    1.0f,  8.0f),	notUsed,	1e-5f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(divVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
-				<< operInfoFunc(divName,	divOp,	FV,		Value(F,   -1.0f,    1.0f),		Value(FV,  -2.0f, -0.5f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,			FLOAT_VEC_FUNCS(divScalarVec))
+				<< operInfoFunc(divName,	divOp,	FV,		Value(F,   -1.0f,    1.0f),		Value(FV,  -2.0f, -0.5f),	notUsed,	1.0f,	0.0f,	PRECMASK_ALL,		FLOAT_VEC_FUNCS(divScalarVec))
 				<< operInfoFunc(divName,	divOp,	IV,		Value(I,   24.0f,    24.0f),	Value(IV,  -4.0f, -1.0f),	notUsed,	0.04f,	1.0f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(divScalarVec))
-				<< operInfoFunc(divName,	divOp,	IV,		Value(I,   40320.0f, 40320.0f),	Value(IV,  -8.0f, -1.0f),	notUsed,	1e-5f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(divScalarVec))
+				<< operInfoFunc(divName,	divOp,	IV,		Value(I,   40320.0f, 40320.0f),	Value(IV,  -8.0f, -1.0f),	notUsed,	1e-5f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(divScalarVec))
 				<< operInfoFunc(divName,	divOp,	UV,		Value(U,    0.0f,    24.0f),	Value(UV,   1.0f,  4.0f),	notUsed,	0.04f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(divScalarVec))
-				<< operInfoFunc(divName,	divOp,	UV,		Value(U,    0.0f,    40320.0f),	Value(UV,   1.0f,  8.0f),	notUsed,	1e-5f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(divScalarVec));
+				<< operInfoFunc(divName,	divOp,	UV,		Value(U,    0.0f,    40320.0f),	Value(UV,   1.0f,  8.0f),	notUsed,	1e-5f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(divScalarVec));
 
 		// The modulus operator.
 
 		binaryOpGroup
 			<< operInfoFunc(modName,	modOp,	IGT,	Value(IGT,  0.0f, 6.0f),	Value(IGT,   1.1f,  6.1f),	notUsed,	0.25f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(mod))
-			<< operInfoFunc(modName,	modOp,	IGT,	Value(IGT,  0.0f, 14.0f),	Value(IGT,   1.1f, 11.1f),	notUsed,	0.1f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(mod))
+			<< operInfoFunc(modName,	modOp,	IGT,	Value(IGT,  0.0f, 14.0f),	Value(IGT,   1.1f, 11.1f),	notUsed,	0.1f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(mod))
 			<< operInfoFunc(modName,	modOp,	UGT,	Value(UGT,  0.0f, 6.0f),	Value(UGT,   1.1f,  6.1f),	notUsed,	0.25f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(mod))
-			<< operInfoFunc(modName,	modOp,	UGT,	Value(UGT,  0.0f, 24.0f),	Value(UGT,   1.1f, 11.1f),	notUsed,	0.1f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(mod))
+			<< operInfoFunc(modName,	modOp,	UGT,	Value(UGT,  0.0f, 24.0f),	Value(UGT,   1.1f, 11.1f),	notUsed,	0.1f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(mod))
 			<< operInfoFunc(modName,	modOp,	IV,		Value(IV,   0.0f, 6.0f),	Value(I,     1.1f,  6.1f),	notUsed,	0.25f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(modVecScalar))
-			<< operInfoFunc(modName,	modOp,	IV,		Value(IV,   0.0f, 6.0f),	Value(I,     1.1f, 11.1f),	notUsed,	0.1f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(modVecScalar))
+			<< operInfoFunc(modName,	modOp,	IV,		Value(IV,   0.0f, 6.0f),	Value(I,     1.1f, 11.1f),	notUsed,	0.1f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(modVecScalar))
 			<< operInfoFunc(modName,	modOp,	UV,		Value(UV,   0.0f, 6.0f),	Value(U,     1.1f,  6.1f),	notUsed,	0.25f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(modVecScalar))
-			<< operInfoFunc(modName,	modOp,	UV,		Value(UV,   0.0f, 24.0f),	Value(U,     1.1f, 11.1f),	notUsed,	0.1f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(modVecScalar));
+			<< operInfoFunc(modName,	modOp,	UV,		Value(UV,   0.0f, 24.0f),	Value(U,     1.1f, 11.1f),	notUsed,	0.1f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(modVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
 				<< operInfoFunc(modName,	modOp,	IV,		Value(I,   0.0f, 6.0f),		Value(IV,     1.1f,  6.1f),	notUsed,	0.25f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(modScalarVec))
-				<< operInfoFunc(modName,	modOp,	IV,		Value(I,   0.0f, 6.0f),		Value(IV,     1.1f, 11.1f),	notUsed,	0.1f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(modScalarVec))
+				<< operInfoFunc(modName,	modOp,	IV,		Value(I,   0.0f, 6.0f),		Value(IV,     1.1f, 11.1f),	notUsed,	0.1f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(modScalarVec))
 				<< operInfoFunc(modName,	modOp,	UV,		Value(U,   0.0f, 6.0f),		Value(UV,     1.1f,  6.1f),	notUsed,	0.25f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(modScalarVec))
-				<< operInfoFunc(modName,	modOp,	UV,		Value(U,   0.0f, 24.0f),	Value(UV,     1.1f, 11.1f),	notUsed,	0.1f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(modScalarVec));
+				<< operInfoFunc(modName,	modOp,	UV,		Value(U,   0.0f, 24.0f),	Value(UV,     1.1f, 11.1f),	notUsed,	0.1f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(modScalarVec));
 
 		// The bitwise and operator.
 
 		binaryOpGroup
 			<< operInfoFunc(andName,	andOp,	IGT,	Value(IGT, -16.0f, 16.0f),	Value(IGT, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(bitwiseAnd))
-			<< operInfoFunc(andName,	andOp,	IGT,	Value(IGT,  -2e9f,  2e9f),	Value(IGT,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(bitwiseAnd))
+			<< operInfoFunc(andName,	andOp,	IGT,	Value(IGT,  -2e9f,  2e9f),	Value(IGT,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(bitwiseAnd))
 			<< operInfoFunc(andName,	andOp,	UGT,	Value(UGT,   0.0f, 32.0f),	Value(UGT,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(bitwiseAnd))
-			<< operInfoFunc(andName,	andOp,	UGT,	Value(UGT,   0.0f,  4e9f),	Value(UGT,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(bitwiseAnd))
+			<< operInfoFunc(andName,	andOp,	UGT,	Value(UGT,   0.0f,  4e9f),	Value(UGT,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(bitwiseAnd))
 			<< operInfoFunc(andName,	andOp,	IV,		Value(IV, -16.0f, 16.0f),	Value(I, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseAndVecScalar))
-			<< operInfoFunc(andName,	andOp,	IV,		Value(IV,  -2e9f,  2e9f),	Value(I,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(bitwiseAndVecScalar))
+			<< operInfoFunc(andName,	andOp,	IV,		Value(IV,  -2e9f,  2e9f),	Value(I,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(bitwiseAndVecScalar))
 			<< operInfoFunc(andName,	andOp,	UV,		Value(UV,   0.0f, 32.0f),	Value(U,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseAndVecScalar))
-			<< operInfoFunc(andName,	andOp,	UV,		Value(UV,   0.0f,  4e9f),	Value(U,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(bitwiseAndVecScalar));
+			<< operInfoFunc(andName,	andOp,	UV,		Value(UV,   0.0f,  4e9f),	Value(U,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(bitwiseAndVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
 				<< operInfoFunc(andName,	andOp,	IV,		Value(I, -16.0f, 16.0f),	Value(IV, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseAndScalarVec))
-				<< operInfoFunc(andName,	andOp,	IV,		Value(I,  -2e9f,  2e9f),	Value(IV,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(bitwiseAndScalarVec))
+				<< operInfoFunc(andName,	andOp,	IV,		Value(I,  -2e9f,  2e9f),	Value(IV,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(bitwiseAndScalarVec))
 				<< operInfoFunc(andName,	andOp,	UV,		Value(U,   0.0f, 32.0f),	Value(UV,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseAndScalarVec))
-				<< operInfoFunc(andName,	andOp,	UV,		Value(U,   0.0f,  4e9f),	Value(UV,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(bitwiseAndScalarVec));
+				<< operInfoFunc(andName,	andOp,	UV,		Value(U,   0.0f,  4e9f),	Value(UV,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(bitwiseAndScalarVec));
 
 		// The bitwise or operator.
 
 		binaryOpGroup
 			<< operInfoFunc(orName,	orOp,	IGT,	Value(IGT, -16.0f, 16.0f),	Value(IGT, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(bitwiseOr))
-			<< operInfoFunc(orName,	orOp,	IGT,	Value(IGT,  -2e9f,  2e9f),	Value(IGT,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(bitwiseOr))
+			<< operInfoFunc(orName,	orOp,	IGT,	Value(IGT,  -2e9f,  2e9f),	Value(IGT,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(bitwiseOr))
 			<< operInfoFunc(orName,	orOp,	UGT,	Value(UGT,   0.0f, 32.0f),	Value(UGT,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(bitwiseOr))
-			<< operInfoFunc(orName,	orOp,	UGT,	Value(UGT,   0.0f,  4e9f),	Value(UGT,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(bitwiseOr))
+			<< operInfoFunc(orName,	orOp,	UGT,	Value(UGT,   0.0f,  4e9f),	Value(UGT,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(bitwiseOr))
 			<< operInfoFunc(orName,	orOp,	IV,		Value(IV, -16.0f, 16.0f),	Value(I, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseOrVecScalar))
-			<< operInfoFunc(orName,	orOp,	IV,		Value(IV,  -2e9f,  2e9f),	Value(I,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(bitwiseOrVecScalar))
+			<< operInfoFunc(orName,	orOp,	IV,		Value(IV,  -2e9f,  2e9f),	Value(I,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(bitwiseOrVecScalar))
 			<< operInfoFunc(orName,	orOp,	UV,		Value(UV,   0.0f, 32.0f),	Value(U,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseOrVecScalar))
-			<< operInfoFunc(orName,	orOp,	UV,		Value(UV,   0.0f,  4e9f),	Value(U,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(bitwiseOrVecScalar));
+			<< operInfoFunc(orName,	orOp,	UV,		Value(UV,   0.0f,  4e9f),	Value(U,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(bitwiseOrVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
 				<< operInfoFunc(orName,	orOp,	IV,		Value(I, -16.0f, 16.0f),	Value(IV, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseOrScalarVec))
-				<< operInfoFunc(orName,	orOp,	IV,		Value(I,  -2e9f,  2e9f),	Value(IV,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(bitwiseOrScalarVec))
+				<< operInfoFunc(orName,	orOp,	IV,		Value(I,  -2e9f,  2e9f),	Value(IV,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(bitwiseOrScalarVec))
 				<< operInfoFunc(orName,	orOp,	UV,		Value(U,   0.0f, 32.0f),	Value(UV,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseOrScalarVec))
-				<< operInfoFunc(orName,	orOp,	UV,		Value(U,   0.0f,  4e9f),	Value(UV,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(bitwiseOrScalarVec));
+				<< operInfoFunc(orName,	orOp,	UV,		Value(U,   0.0f,  4e9f),	Value(UV,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(bitwiseOrScalarVec));
 
 		// The bitwise xor operator.
 
 		binaryOpGroup
 			<< operInfoFunc(xorName,	xorOp,	IGT,	Value(IGT, -16.0f, 16.0f),	Value(IGT, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(bitwiseXor))
-			<< operInfoFunc(xorName,	xorOp,	IGT,	Value(IGT,  -2e9f,  2e9f),	Value(IGT,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(bitwiseXor))
+			<< operInfoFunc(xorName,	xorOp,	IGT,	Value(IGT,  -2e9f,  2e9f),	Value(IGT,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(bitwiseXor))
 			<< operInfoFunc(xorName,	xorOp,	UGT,	Value(UGT,   0.0f, 32.0f),	Value(UGT,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(bitwiseXor))
-			<< operInfoFunc(xorName,	xorOp,	UGT,	Value(UGT,   0.0f,  4e9f),	Value(UGT,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(bitwiseXor))
+			<< operInfoFunc(xorName,	xorOp,	UGT,	Value(UGT,   0.0f,  4e9f),	Value(UGT,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(bitwiseXor))
 			<< operInfoFunc(xorName,	xorOp,	IV,		Value(IV, -16.0f, 16.0f),	Value(I, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseXorVecScalar))
-			<< operInfoFunc(xorName,	xorOp,	IV,		Value(IV,  -2e9f,  2e9f),	Value(I,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(bitwiseXorVecScalar))
+			<< operInfoFunc(xorName,	xorOp,	IV,		Value(IV,  -2e9f,  2e9f),	Value(I,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(bitwiseXorVecScalar))
 			<< operInfoFunc(xorName,	xorOp,	UV,		Value(UV,   0.0f, 32.0f),	Value(U,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseXorVecScalar))
-			<< operInfoFunc(xorName,	xorOp,	UV,		Value(UV,   0.0f,  4e9f),	Value(U,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(bitwiseXorVecScalar));
+			<< operInfoFunc(xorName,	xorOp,	UV,		Value(UV,   0.0f,  4e9f),	Value(U,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(bitwiseXorVecScalar));
 
 		if (isNormalOp)
 			binaryOpGroup
-				<< operInfoFunc(xorName,	xorOp,	IV,		Value(I, -16.0f, 16.0f),	Value(IV, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseXorScalarVec))
-				<< operInfoFunc(xorName,	xorOp,	IV,		Value(I,  -2e9f,  2e9f),	Value(IV,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(bitwiseXorScalarVec))
-				<< operInfoFunc(xorName,	xorOp,	UV,		Value(U,   0.0f, 32.0f),	Value(UV,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseXorScalarVec))
-				<< operInfoFunc(xorName,	xorOp,	UV,		Value(U,   0.0f,  4e9f),	Value(UV,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(bitwiseXorScalarVec));
+				<< operInfoFunc(xorName,	xorOp,	IV,	Value(I, -16.0f, 16.0f),	Value(IV, -16.0f, 16.0f),	notUsed,	 0.03f,	0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(bitwiseXorScalarVec))
+				<< operInfoFunc(xorName,	xorOp,	IV,	Value(I,  -2e9f,  2e9f),	Value(IV,  -2e9f,  2e9f),	notUsed,	4e-10f,	0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(bitwiseXorScalarVec))
+				<< operInfoFunc(xorName,	xorOp,	UV,	Value(U,   0.0f, 32.0f),	Value(UV,   0.0f, 32.0f),	notUsed,	 0.03f,	0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(bitwiseXorScalarVec))
+				<< operInfoFunc(xorName,	xorOp,	UV,	Value(U,   0.0f,  4e9f),	Value(UV,   0.0f,  4e9f),	notUsed,	2e-10f,	0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(bitwiseXorScalarVec));
 
 		// The left shift operator. Second operand (shift amount) can be either int or uint, even for uint and int first operand, respectively.
 
@@ -1602,13 +1527,13 @@ void ShaderOperatorTests::init (void)
 			ValueType sType = isSignedAmount == 0 ? U	: I;
 			binaryOpGroup
 				<< operInfoFunc(leftShiftName,	leftShiftOp,	IGT,	Value(IGT, -7.0f, 7.0f),	Value(gType, 0.0f, 4.0f),	notUsed,	4e-3f,  0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(leftShift))
-				<< operInfoFunc(leftShiftName,	leftShiftOp,	IGT,	Value(IGT, -7.0f, 7.0f),	Value(gType, 0.0f, 27.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(leftShift))
+				<< operInfoFunc(leftShiftName,	leftShiftOp,	IGT,	Value(IGT, -7.0f, 7.0f),	Value(gType, 0.0f, 27.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(leftShift))
 				<< operInfoFunc(leftShiftName,	leftShiftOp,	UGT,	Value(UGT,  0.0f, 7.0f),	Value(gType, 0.0f, 5.0f),	notUsed,	4e-3f,  0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(leftShift))
-				<< operInfoFunc(leftShiftName,	leftShiftOp,	UGT,	Value(UGT,  0.0f, 7.0f),	Value(gType, 0.0f, 28.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(leftShift))
+				<< operInfoFunc(leftShiftName,	leftShiftOp,	UGT,	Value(UGT,  0.0f, 7.0f),	Value(gType, 0.0f, 28.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(leftShift))
 				<< operInfoFunc(leftShiftName,	leftShiftOp,	IV,		Value(IV,  -7.0f, 7.0f),	Value(sType, 0.0f, 4.0f),	notUsed,	4e-3f,  0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(leftShiftVecScalar))
-				<< operInfoFunc(leftShiftName,	leftShiftOp,	IV,		Value(IV,  -7.0f, 7.0f),	Value(sType, 0.0f, 27.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(leftShiftVecScalar))
+				<< operInfoFunc(leftShiftName,	leftShiftOp,	IV,		Value(IV,  -7.0f, 7.0f),	Value(sType, 0.0f, 27.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(leftShiftVecScalar))
 				<< operInfoFunc(leftShiftName,	leftShiftOp,	UV,		Value(UV,   0.0f, 7.0f),	Value(sType, 0.0f, 5.0f),	notUsed,	4e-3f,  0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(leftShiftVecScalar))
-				<< operInfoFunc(leftShiftName,	leftShiftOp,	UV,		Value(UV,   0.0f, 7.0f),	Value(sType, 0.0f, 28.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(leftShiftVecScalar));
+				<< operInfoFunc(leftShiftName,	leftShiftOp,	UV,		Value(UV,   0.0f, 7.0f),	Value(sType, 0.0f, 28.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(leftShiftVecScalar));
 		}
 
 		// The right shift operator. Second operand (shift amount) can be either int or uint, even for uint and int first operand, respectively.
@@ -1619,13 +1544,13 @@ void ShaderOperatorTests::init (void)
 			ValueType sType = isSignedAmount == 0 ? U	: I;
 			binaryOpGroup
 				<< operInfoFunc(rightShiftName,	rightShiftOp,	IGT,	Value(IGT, -127.0f, 127.0f),	Value(gType, 0.0f, 8.0f),	notUsed,	4e-3f,  0.5f,	PRECMASK_MEDIUMP,	INT_GENTYPE_FUNCS(rightShift))
-				<< operInfoFunc(rightShiftName,	rightShiftOp,	IGT,	Value(IGT, -2e9f, 2e9f),		Value(gType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,			INT_GENTYPE_FUNCS(rightShift))
+				<< operInfoFunc(rightShiftName,	rightShiftOp,	IGT,	Value(IGT, -2e9f, 2e9f),		Value(gType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,		INT_GENTYPE_FUNCS(rightShift))
 				<< operInfoFunc(rightShiftName,	rightShiftOp,	UGT,	Value(UGT,  0.0f, 255.0f),		Value(gType, 0.0f, 8.0f),	notUsed,	4e-3f,  0.0f,	PRECMASK_MEDIUMP,	UINT_GENTYPE_FUNCS(rightShift))
-				<< operInfoFunc(rightShiftName,	rightShiftOp,	UGT,	Value(UGT,  0.0f, 4e9f),		Value(gType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,			UINT_GENTYPE_FUNCS(rightShift))
+				<< operInfoFunc(rightShiftName,	rightShiftOp,	UGT,	Value(UGT,  0.0f, 4e9f),		Value(gType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,		UINT_GENTYPE_FUNCS(rightShift))
 				<< operInfoFunc(rightShiftName,	rightShiftOp,	IV,		Value(IV,  -127.0f, 127.0f),	Value(sType, 0.0f, 8.0f),	notUsed,	4e-3f,  0.5f,	PRECMASK_MEDIUMP,	INT_VEC_FUNCS(rightShiftVecScalar))
-				<< operInfoFunc(rightShiftName,	rightShiftOp,	IV,		Value(IV,  -2e9f, 2e9f),		Value(sType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,			INT_VEC_FUNCS(rightShiftVecScalar))
+				<< operInfoFunc(rightShiftName,	rightShiftOp,	IV,		Value(IV,  -2e9f, 2e9f),		Value(sType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.5f,	PRECMASK_HIGHP,		INT_VEC_FUNCS(rightShiftVecScalar))
 				<< operInfoFunc(rightShiftName,	rightShiftOp,	UV,		Value(UV,   0.0f, 255.0f),		Value(sType, 0.0f, 8.0f),	notUsed,	4e-3f,  0.0f,	PRECMASK_MEDIUMP,	UINT_VEC_FUNCS(rightShiftVecScalar))
-				<< operInfoFunc(rightShiftName,	rightShiftOp,	UV,		Value(UV,   0.0f, 4e9f),		Value(sType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,			UINT_VEC_FUNCS(rightShiftVecScalar));
+				<< operInfoFunc(rightShiftName,	rightShiftOp,	UV,		Value(UV,   0.0f, 4e9f),		Value(sType, 0.0f, 31.0f),	notUsed,	5e-10f, 0.0f,	PRECMASK_HIGHP,		UINT_VEC_FUNCS(rightShiftVecScalar));
 		}
 	}
 
@@ -1663,93 +1588,21 @@ void ShaderOperatorTests::init (void)
 
 	funcInfoGroups.push_back(binaryOpGroup);
 
-	// Angle and Trigonometry Functions.
-	funcInfoGroups.push_back(
-		BuiltinFuncGroup("angle_and_trigonometry", "Angle and trigonometry function tests.")
-		<< BuiltinFuncInfo("radians",		"radians",		GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					25.0f, 0.5f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(radians) )
-		<< BuiltinFuncInfo("degrees",		"degrees",		GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					0.04f, 0.5f,	PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(degrees) )
-		<< BuiltinFuncInfo("sin",			"sin",			GT,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(sin) )
-		<< BuiltinFuncInfo("sin2",			"sin",			GT,	Value(GT, -1.5f, 1.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_MEDIUMP,				FLOAT_GENTYPE_FUNCS(sin) )
-		<< BuiltinFuncInfo("cos",			"cos",			GT,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(cos) )
-		<< BuiltinFuncInfo("cos2",			"cos",			GT,	Value(GT, -1.5f, 1.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_MEDIUMP,				FLOAT_GENTYPE_FUNCS(cos) )
-		<< BuiltinFuncInfo("tan",			"tan",			GT,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(tan) )
-		<< BuiltinFuncInfo("tan2",			"tan",			GT,	Value(GT, -1.5f, 5.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_MEDIUMP,				FLOAT_GENTYPE_FUNCS(tan) )
-		<< BuiltinFuncInfo("asin",			"asin",			GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(asin) )
-		<< BuiltinFuncInfo("acos",			"acos",			GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(acos) )
-		<< BuiltinFuncInfo("atan",			"atan",			GT,	Value(GT, -4.0f, 4.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_HIGHP,		FLOAT_GENTYPE_FUNCS(atan) )
-		<< BuiltinFuncInfo("atan2",			"atan",			GT,	Value(GT, -4.0f, 4.0f),		Value(GT, 0.5f, 2.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(atan2) )
-		<< BuiltinFuncInfo("sinh",			"sinh",			GT,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(sinh) )
-		<< BuiltinFuncInfo("sinh2",			"sinh",			GT,	Value(GT, -1.5f, 1.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_MEDIUMP,				FLOAT_GENTYPE_FUNCS(sinh) )
-		<< BuiltinFuncInfo("cosh",			"cosh",			GT,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(cosh) )
-		<< BuiltinFuncInfo("cosh2",			"cosh",			GT,	Value(GT, -1.5f, 1.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_MEDIUMP,				FLOAT_GENTYPE_FUNCS(cosh) )
-		<< BuiltinFuncInfo("tanh",			"tanh",			GT,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(tanh) )
-		<< BuiltinFuncInfo("tanh2",			"tanh",			GT,	Value(GT, -1.5f, 5.5f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_MEDIUMP,				FLOAT_GENTYPE_FUNCS(tanh) )
-		<< BuiltinFuncInfo("asinh",			"asinh",		GT,	Value(GT, -1.0f, 1.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(asinh) )
-		<< BuiltinFuncInfo("acosh",			"acosh",		GT,	Value(GT, 1.0f, 2.2f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(acosh) )
-		<< BuiltinFuncInfo("atanh",			"atanh",		GT,	Value(GT, -0.99f, 0.99f),	notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(atanh) )
-	);
-
-	// Exponential Functions.
-	funcInfoGroups.push_back(
-		BuiltinFuncGroup("exponential", "Exponential function tests")
-		<< BuiltinFuncInfo("pow",			"pow",			GT,	Value(GT, 0.1f, 8.0f),		Value(GT, -4.0f, 2.0f),		notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(pow) )
-		<< BuiltinFuncInfo("exp",			"exp",			GT,	Value(GT, -6.0f, 3.0f),		notUsed,					notUsed,					0.5f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(exp) )
-		<< BuiltinFuncInfo("log",			"log",			GT,	Value(GT, 0.1f, 10.0f),		notUsed,					notUsed,					0.5f, 0.3f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(log) )
-		<< BuiltinFuncInfo("exp2",			"exp2",			GT,	Value(GT, -7.0f, 2.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(exp2) )
-		<< BuiltinFuncInfo("log2",			"log2",			GT,	Value(GT, 0.1f, 10.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(log2) )
-		<< BuiltinFuncInfo("sqrt",			"sqrt",			GT,	Value(GT, 0.0f, 10.0f),		notUsed,					notUsed,					0.3f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(sqrt) )
-		<< BuiltinFuncInfo("inversesqrt",	"inversesqrt",	GT,	Value(GT, 0.5f, 10.0f),		notUsed,					notUsed,					1.0f, 0.0f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(inverseSqrt) )
-	);
-
 	// Common Functions.
 	funcInfoGroups.push_back(
 		BuiltinFuncGroup("common_functions", "Common function tests.")
-		<< BuiltinFuncInfo("abs",			"abs",			GT,	Value(GT, -2.0f, 2.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(abs) )
-		<< BuiltinFuncInfo("sign",			"sign",			GT,	Value(GT, -1.5f, 1.5f),		notUsed,					notUsed,					0.3f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(sign) )
-		<< BuiltinFuncInfo("floor",			"floor",		GT,	Value(GT, -2.5f, 2.5f),		notUsed,					notUsed,					0.2f, 0.7f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(floor) )
-		<< BuiltinFuncInfo("trunc",			"trunc",		GT,	Value(GT, -2.5f, 2.5f),		notUsed,					notUsed,					0.2f, 0.7f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(trunc) )
-		<< BuiltinFuncInfo("roundEven",		"roundEven",	GT,	Value(GT, -2.5f, 2.5f),		notUsed,					notUsed,					0.2f, 0.7f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(roundToEven) )
-		<< BuiltinFuncInfo("ceil",			"ceil",			GT,	Value(GT, -2.5f, 2.5f),		notUsed,					notUsed,					0.2f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(ceil) )
-		<< BuiltinFuncInfo("fract",			"fract",		GT,	Value(GT, -1.5f, 1.5f),		notUsed,					notUsed,					0.8f, 0.1f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(fract) )
-		<< BuiltinFuncInfo("mod",			"mod",			GT,	Value(GT, -2.0f, 2.0f),		Value(GT, 0.9f, 6.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(mod) )
-		<< BuiltinFuncInfo("mod",			"mod",			GT,	Value(FV, -2.0f, 2.0f),		Value(F, 0.9f, 6.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_VEC_FUNCS(modVecScalar) )
-		<< BuiltinFuncInfo("min",			"min",			GT,	Value(GT, -1.0f, 1.0f),		Value(GT, -1.0f, 1.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(min) )
-		<< BuiltinFuncInfo("min",			"min",			GT,	Value(FV, -1.0f, 1.0f),		Value(F, -1.0f, 1.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_VEC_FUNCS(minVecScalar) )
-		<< BuiltinFuncInfo("min",			"min",			IGT,Value(IGT, -4.0f, 4.0f),	Value(IGT, -4.0f, 4.0f),	notUsed,					0.125f, 0.5f,	PRECMASK_ALL,				INT_GENTYPE_FUNCS(min) )
-		<< BuiltinFuncInfo("min",			"min",			IGT,Value(IV,  -4.0f, 4.0f),	Value(I, -4.0f, 4.0f),		notUsed,					0.125f, 0.5f,	PRECMASK_ALL,				INT_VEC_FUNCS(minVecScalar) )
-		<< BuiltinFuncInfo("min",			"min",			UGT,Value(UGT, 0.0f, 8.0f),		Value(UGT, 0.0f, 8.0f),		notUsed,					0.125f, 0.0f,	PRECMASK_ALL,				UINT_GENTYPE_FUNCS(min) )
-		<< BuiltinFuncInfo("min",			"min",			UGT,Value(UV,  0.0f, 8.0f),		Value(U, 0.0f, 8.0f),		notUsed,					0.125f, 0.0f,	PRECMASK_ALL,				UINT_VEC_FUNCS(minVecScalar) )
-		<< BuiltinFuncInfo("max",			"max",			GT,	Value(GT, -1.0f, 1.0f),		Value(GT, -1.0f, 1.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(max) )
-		<< BuiltinFuncInfo("max",			"max",			GT,	Value(FV, -1.0f, 1.0f),		Value(F, -1.0f, 1.0f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_VEC_FUNCS(maxVecScalar) )
-		<< BuiltinFuncInfo("max",			"max",			IGT,Value(IGT, -4.0f, 4.0f),	Value(IGT, -4.0f, 4.0f),	notUsed,					0.125f, 0.5f,	PRECMASK_ALL,				INT_GENTYPE_FUNCS(max) )
-		<< BuiltinFuncInfo("max",			"max",			IGT,Value(IV,  -4.0f, 4.0f),	Value(I, -4.0f, 4.0f),		notUsed,					0.125f, 0.5f,	PRECMASK_ALL,				INT_VEC_FUNCS(maxVecScalar) )
-		<< BuiltinFuncInfo("max",			"max",			UGT,Value(UGT, 0.0f, 8.0f),		Value(UGT, 0.0f, 8.0f),		notUsed,					0.125f, 0.0f,	PRECMASK_ALL,				UINT_GENTYPE_FUNCS(max) )
-		<< BuiltinFuncInfo("max",			"max",			UGT,Value(UV,  0.0f, 8.0f),		Value(U, 0.0f, 8.0f),		notUsed,					0.125f, 0.0f,	PRECMASK_ALL,				UINT_VEC_FUNCS(maxVecScalar) )
-		<< BuiltinFuncInfo("clamp",			"clamp",		GT,	Value(GT, -1.0f, 1.0f),		Value(GT, -0.5f, 0.5f),		Value(GT, 0.5f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(clamp) )
-		<< BuiltinFuncInfo("clamp",			"clamp",		GT,	Value(FV, -1.0f, 1.0f),		Value(F, -0.5f, 0.5f),		Value(F, 0.5f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_VEC_FUNCS(clampVecScalarScalar) )
-		<< BuiltinFuncInfo("clamp",			"clamp",		IGT,Value(IGT, -4.0f, 4.0f),	Value(IGT, -2.0f, 2.0f),	Value(IGT, 2.0f, 4.0f),		0.125f, 0.5f,	PRECMASK_ALL,				INT_GENTYPE_FUNCS(clamp) )
-		<< BuiltinFuncInfo("clamp",			"clamp",		IGT,Value(IV,  -4.0f, 4.0f),	Value(I, -2.0f, 2.0f),		Value(I, 2.0f, 4.0f),		0.125f, 0.5f,	PRECMASK_ALL,				INT_VEC_FUNCS(clampVecScalarScalar) )
-		<< BuiltinFuncInfo("clamp",			"clamp",		UGT,Value(UGT, 0.0f, 8.0f),		Value(UGT, 2.0f, 6.0f),		Value(UGT, 6.0f, 8.0f),		0.125f, 0.0f,	PRECMASK_ALL,				UINT_GENTYPE_FUNCS(clamp) )
-		<< BuiltinFuncInfo("clamp",			"clamp",		UGT,Value(UV,  0.0f, 8.0f),		Value(U,   2.0f, 6.0f),		Value(U, 6.0f, 8.0f),		0.125f, 0.0f,	PRECMASK_ALL,				UINT_VEC_FUNCS(clampVecScalarScalar) )
-		<< BuiltinFuncInfo("mix",			"mix",			GT,	Value(GT, -1.0f, 1.0f),		Value(GT, -1.0f, 1.0f),		Value(GT, 0.0f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(mix) )
-		<< BuiltinFuncInfo("mix",			"mix",			GT,	Value(FV, -1.0f, 1.0f),		Value(FV, -1.0f, 1.0f),		Value(F, 0.0f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_VEC_FUNCS(mixVecVecScalar) )
-		<< BuiltinFuncInfo("step",			"step",			GT,	Value(GT, -1.0f, 1.0f),		Value(GT, -1.0f, 0.0f),		notUsed,					0.5f, 0.25f,	PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(step) )
-		<< BuiltinFuncInfo("step",			"step",			GT,	Value(F, -1.0f, 1.0f),		Value(FV, -1.0f, 0.0f),		notUsed,					0.5f, 0.25f,	PRECMASK_ALL,				FLOAT_VEC_FUNCS(stepScalarVec) )
-		<< BuiltinFuncInfo("smoothstep",	"smoothstep",	GT,	Value(GT, -0.5f, 0.0f),		Value(GT, 0.1f, 1.0f),		Value(GT, -1.0f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_GENTYPE_FUNCS(smoothStep) )
-		<< BuiltinFuncInfo("smoothstep",	"smoothstep",	GT,	Value(F, -0.5f, 0.0f),		Value(F, 0.1f, 1.0f),		Value(FV, -1.0f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,				FLOAT_VEC_FUNCS(smoothStepScalarScalarVec) )
-	);
-
-	// Geometric Functions.
-	funcInfoGroups.push_back(
-		BuiltinFuncGroup("geometric", "Geometric function tests.")
-		<< BuiltinFuncInfo("length",		"length",		F,	Value(GT, -5.0f, 5.0f),		notUsed,					notUsed,					0.1f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(length) )
-		<< BuiltinFuncInfo("distance",		"distance",		F,	Value(GT, -5.0f, 5.0f),		Value(GT, -5.0f, 5.0f),		notUsed,					0.1f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(distance) )
-		<< BuiltinFuncInfo("dot",			"dot",			F,	Value(GT, -5.0f, 5.0f),		Value(GT, -5.0f, 5.0f),		notUsed,					0.1f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(dot) )
-		<< BuiltinFuncInfo("cross",			"cross",		V3,	Value(GT, -5.0f, 5.0f),		Value(GT, -5.0f, 5.0f),		notUsed,					0.1f, 0.5f,		PRECMASK_ALL,		DE_NULL, DE_NULL, eval_cross_vec3, DE_NULL )
-		<< BuiltinFuncInfo("normalize",		"normalize",	GT,	Value(GT, 0.1f, 4.0f),		notUsed,					notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(normalize) )
-		<< BuiltinFuncInfo("faceforward",	"faceforward",	GT,	Value(GT, -5.0f, 5.0f),		Value(GT, -5.0f, 5.0f),		Value(GT, -1.0f, 1.0f),		0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(faceForward) )
-		<< BuiltinFuncInfo("reflect",		"reflect",		GT,	Value(GT, -0.8f, -0.5f),	Value(GT, 0.5f, 0.8f),		notUsed,					0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(reflect) )
-		<< BuiltinFuncInfo("refract",		"refract",		GT,	Value(GT, -0.8f, 1.2f),		Value(GT, -1.1f, 0.5f),		Value(F, 0.2f, 1.5f),		0.5f, 0.5f,		PRECMASK_ALL,		FLOAT_GENTYPE_FUNCS(refract) )
+		<< BuiltinFuncInfo("min",	"min",		IGT,Value(IGT, -4.0f, 4.0f),	Value(IGT, -4.0f, 4.0f),	notUsed,				0.125f, 0.5f,	PRECMASK_ALL,	INT_GENTYPE_FUNCS(min) )
+		<< BuiltinFuncInfo("min",	"min",		IGT,Value(IV,  -4.0f, 4.0f),	Value(I, -4.0f, 4.0f),		notUsed,				0.125f, 0.5f,	PRECMASK_ALL,	INT_VEC_FUNCS(minVecScalar) )
+		<< BuiltinFuncInfo("min",	"min",		UGT,Value(UGT, 0.0f, 8.0f),		Value(UGT, 0.0f, 8.0f),		notUsed,				0.125f, 0.0f,	PRECMASK_ALL,	UINT_GENTYPE_FUNCS(min) )
+		<< BuiltinFuncInfo("min",	"min",		UGT,Value(UV,  0.0f, 8.0f),		Value(U, 0.0f, 8.0f),		notUsed,				0.125f, 0.0f,	PRECMASK_ALL,	UINT_VEC_FUNCS(minVecScalar) )
+		<< BuiltinFuncInfo("max",	"max",		IGT,Value(IGT, -4.0f, 4.0f),	Value(IGT, -4.0f, 4.0f),	notUsed,				0.125f, 0.5f,	PRECMASK_ALL,	INT_GENTYPE_FUNCS(max) )
+		<< BuiltinFuncInfo("max",	"max",		IGT,Value(IV,  -4.0f, 4.0f),	Value(I, -4.0f, 4.0f),		notUsed,				0.125f, 0.5f,	PRECMASK_ALL,	INT_VEC_FUNCS(maxVecScalar) )
+		<< BuiltinFuncInfo("max",	"max",		UGT,Value(UGT, 0.0f, 8.0f),		Value(UGT, 0.0f, 8.0f),		notUsed,				0.125f, 0.0f,	PRECMASK_ALL,	UINT_GENTYPE_FUNCS(max) )
+		<< BuiltinFuncInfo("max",	"max",		UGT,Value(UV,  0.0f, 8.0f),		Value(U, 0.0f, 8.0f),		notUsed,				0.125f, 0.0f,	PRECMASK_ALL,	UINT_VEC_FUNCS(maxVecScalar) )
+		<< BuiltinFuncInfo("clamp",	"clamp",	IGT,Value(IGT, -4.0f, 4.0f),	Value(IGT, -2.0f, 2.0f),	Value(IGT, 2.0f, 4.0f),	0.125f, 0.5f,	PRECMASK_ALL,	INT_GENTYPE_FUNCS(clamp) )
+		<< BuiltinFuncInfo("clamp",	"clamp",	IGT,Value(IV,  -4.0f, 4.0f),	Value(I, -2.0f, 2.0f),		Value(I, 2.0f, 4.0f),	0.125f, 0.5f,	PRECMASK_ALL,	INT_VEC_FUNCS(clampVecScalarScalar) )
+		<< BuiltinFuncInfo("clamp",	"clamp",	UGT,Value(UGT, 0.0f, 8.0f),		Value(UGT, 2.0f, 6.0f),		Value(UGT, 6.0f, 8.0f),	0.125f, 0.0f,	PRECMASK_ALL,	UINT_GENTYPE_FUNCS(clamp) )
+		<< BuiltinFuncInfo("clamp",	"clamp",	UGT,Value(UV,  0.0f, 8.0f),		Value(U,   2.0f, 6.0f),		Value(U, 6.0f, 8.0f),	0.125f, 0.0f,	PRECMASK_ALL,	UINT_VEC_FUNCS(clampVecScalarScalar) )
 	);
 
 	// Vector Relational Functions.

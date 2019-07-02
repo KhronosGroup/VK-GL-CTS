@@ -97,6 +97,26 @@ class BatchResultParser:
 
 		return self.testCaseResults
 
+	def getNextTestCaseResult (self, file):
+		try:
+			del self.testCaseResults[:]
+			self.curResultText = None
+
+			isNextResult = self.parseLine(file.next())
+			while not isNextResult:
+				isNextResult = self.parseLine(file.next())
+
+			# Return the next TestCaseResult
+			return self.testCaseResults.pop()
+
+		except StopIteration:
+			# If end of file was reached and there is no log left, the parsing finished successful (return None).
+			# Otherwise, if there is still log to be parsed, it means that there was a crash.
+			if self.curResultText:
+				return TestCaseResult(self.curCaseName, StatusCode.CRASH, StatusCode.CRASH, self.curResultText)
+			else:
+				return None
+
 	def init (self, filename):
 		# Results
 		self.sessionInfo		= []
@@ -112,12 +132,14 @@ class BatchResultParser:
 
 	def parseLine (self, line):
 		if len(line) > 0 and line[0] == '#':
-			self.parseContainerLine(line)
+			return self.parseContainerLine(line)
 		elif self.curResultText != None:
 			self.curResultText += line
+			return None
 		# else: just ignored
 
 	def parseContainerLine (self, line):
+		isTestCaseResult = False
 		args = splitContainerLine(line)
 		if args[0] == "#sessionInfo":
 			if len(args) < 3:
@@ -137,6 +159,7 @@ class BatchResultParser:
 			self.parseTestCaseResult(self.curCaseName, self.curResultText)
 			self.curCaseName	= None
 			self.curResultText	= None
+			isTestCaseResult	= True
 		elif args[0] == "#terminateTestCaseResult":
 			if len(args) < 2 or self.curCaseName == None:
 				self.parseError("Invalid #terminateTestCaseResult")
@@ -155,10 +178,13 @@ class BatchResultParser:
 
 			self.curCaseName	= None
 			self.curResultText	= None
+			isTestCaseResult	= True
 		else:
 			# Assume this is result text
 			if self.curResultText != None:
 				self.curResultText += line
+
+		return isTestCaseResult
 
 	def parseTestCaseResult (self, name, log):
 		try:

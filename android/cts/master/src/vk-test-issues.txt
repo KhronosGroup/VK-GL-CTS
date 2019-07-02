@@ -1,14 +1,14 @@
 # Issue 217: Built-in function precision test issues
-dEQP-VK.glsl.builtin.precision.dot.highp_compute.*
-dEQP-VK.glsl.builtin.precision.atan2.highp_compute.*
-dEQP-VK.glsl.builtin.precision.acosh.highp_compute.*
-dEQP-VK.glsl.builtin.precision.atanh.highp_compute.*
-dEQP-VK.glsl.builtin.precision.atanh.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.reflect.mediump_compute.scalar
-dEQP-VK.glsl.builtin.precision.reflect.highp_compute.scalar
-dEQP-VK.glsl.builtin.precision.acos.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.atan.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.inverse.highp_compute.mat2
+dEQP-VK.glsl.builtin.precision.dot.highp.*
+dEQP-VK.glsl.builtin.precision.atan2.highp.*
+dEQP-VK.glsl.builtin.precision.acosh.highp.*
+dEQP-VK.glsl.builtin.precision.atanh.highp.*
+dEQP-VK.glsl.builtin.precision.atanh.mediump.*
+dEQP-VK.glsl.builtin.precision.reflect.mediump.scalar
+dEQP-VK.glsl.builtin.precision.reflect.highp.scalar
+dEQP-VK.glsl.builtin.precision.acos.mediump.*
+dEQP-VK.glsl.builtin.precision.atan.mediump.*
+dEQP-VK.glsl.builtin.precision.inverse.highp.mat2
 dEQP-VK.glsl.builtin.precision.refract.*
 
 # Issue 340: Cube map corner texel selection

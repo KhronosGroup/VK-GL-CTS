@@ -1805,7 +1805,7 @@ void TexelFetchTest::prepareTexture(const Functions& gl, bool is_source, glw::GL
 			"${VERSION}\n"
 			"\n"
 			"layout (local_size_x = ${LOCAL_SIZE}, local_size_y = ${LOCAL_SIZE}, local_size_z = 1) in;\n"
-			"layout (${QUALIFIER​S}) writeonly uniform highp uimage2DMS uni_image;\n"
+			"layout (${QUALIFIERS}) writeonly uniform highp uimage2DMS uni_image;\n"
 			"\n"
 			"void main()\n"
 			"{\n"
@@ -1822,12 +1822,12 @@ void TexelFetchTest::prepareTexture(const Functions& gl, bool is_source, glw::GL
 		if (m_context_is_es)
 		{
 			m_specializationMap["LOCAL_SIZE"]	= "16";
-			m_specializationMap["QUALIFIER​S"] = "binding = 0, r32ui";
+			m_specializationMap["QUALIFIERS"] = "binding = 0, r32ui";
 		}
 		else
 		{
 			m_specializationMap["LOCAL_SIZE"]	= "1";
-			m_specializationMap["QUALIFIER​S"] = "location = 0";
+			m_specializationMap["QUALIFIERS"] = "location = 0";
 		}
 
 		Program		program(gl);

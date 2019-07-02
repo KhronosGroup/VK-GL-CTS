@@ -66,7 +66,6 @@ struct ImageHandleAlloc
 	AllocMv			alloc;
 	VkExtent3D		extent;
 	VkFormat		format;
-	VkImageLayout	layout;
 	deUint32		levels;
 
 	bool			usesMipMaps			(void) const { return levels > 0; }
@@ -79,7 +78,6 @@ struct ImageHandleAlloc
 										 AllocMv&			alloc_,
 										 const VkExtent3D&	extent_,
 										 VkFormat			format_,
-										 VkImageLayout		layout_,
 										 bool				usesMipMaps_ = false);
 private:
 					ImageHandleAlloc	(const ImageHandleAlloc&) {}
@@ -186,7 +184,7 @@ void					recordCopyImageToBuffer	(VkCommandBuffer				cmd,
 												 VkImageLayout					newImageLayout,
 												 const VkDescriptorBufferInfo&	bufferInfo);
 
-VkAccessFlags			pipelineAcceesFromStage	(VkPipelineStageFlagBits		stage,
+VkAccessFlags			pipelineAccessFromStage	(VkPipelineStageFlagBits		stage,
 												bool							readORwrite);
 
 bool					isDynamicDescriptor		(VkDescriptorType				descriptorType);

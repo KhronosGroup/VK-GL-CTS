@@ -90,7 +90,7 @@ const char* TessellationShaderPrimitiveCoverage::m_quad_tessellation_tes_code =
 	"void main()\n"
 	"{\n"
 	"    gl_Position = gl_in[0].gl_Position * (1.0 - gl_TessCoord.x) * (1.0 - "
-	"gl_TessCoord.y)\n" /* Specifying the vertex’s position */
+	"gl_TessCoord.y)\n" /* Specifying the vertex's position */
 	"                + gl_in[1].gl_Position * (      gl_TessCoord.x) * (1.0 - "
 	"gl_TessCoord.y)\n" /* using the bilinear interpolation */
 	"                + gl_in[2].gl_Position * (      gl_TessCoord.x) * (      "
@@ -136,7 +136,7 @@ const char* TessellationShaderPrimitiveCoverage::m_triangles_tessellation_tes_co
 	"\n"
 	"void main()\n"
 	"{\n"
-	"    gl_Position = gl_in[0].gl_Position * gl_TessCoord.x\n" /* Specifying the vertex’s position */
+	"    gl_Position = gl_in[0].gl_Position * gl_TessCoord.x\n" /* Specifying the vertex's position */
 	"                + gl_in[1].gl_Position * gl_TessCoord.y\n" /* using the barycentric interpolation */
 	"                + gl_in[2].gl_Position * gl_TessCoord.z;\n"
 	"}\n";

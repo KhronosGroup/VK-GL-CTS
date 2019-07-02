@@ -277,7 +277,7 @@ class GitRepo (Source):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
 		url = self.selectUrl(cmdProtocol)
-		if not os.path.exists(fullDstPath):
+		if not os.path.exists(os.path.join(fullDstPath, '.git')):
 			execute(["git", "clone", "--no-checkout", url, fullDstPath])
 
 		pushWorkingDir(fullDstPath)

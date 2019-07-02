@@ -246,7 +246,11 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 	{
 		vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		DE_NULL,
+#ifndef NOT_PROTECTED
 		vk::VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,
+#else
+		(vk::VkSwapchainCreateFlagsKHR)0,
+#endif
 		(vk::VkSurfaceKHR)0,
 		capabilities.minImageCount,
 		formats[0].format,
@@ -265,6 +269,13 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 		(vk::VkSwapchainKHR)0				// oldSwapchain
 	};
 
+	vk::VkImageCreateFlags imageCreateFlag =
+#ifndef NOT_PROTECTED
+		vk::VK_IMAGE_CREATE_PROTECTED_BIT;
+#else
+		(vk::VkImageCreateFlags)0u;
+#endif
+
 	switch (dimension)
 	{
 		case TEST_DIMENSION_MIN_IMAGE_COUNT:
@@ -280,7 +291,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				{
 					vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 					DE_NULL,
-					vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+					imageCreateFlag,
 					vk::VK_IMAGE_TYPE_2D,
 					baseParameters.imageFormat,
 					{
@@ -313,7 +324,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			{
 				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
 				if ((memoryRequirements.memoryTypeBits & (1u << memType)) != 0 &&
+#ifndef NOT_PROTECTED
 					(memoryProperties.memoryTypes[memType].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT) != 0 &&
+#endif
 					(protectedHeapMask & (1u << heapIndex)) == 0)
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
@@ -350,7 +363,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
 			{
 				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
+#ifndef NOT_PROTECTED
 				if (memoryProperties.memoryTypes[memType].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+#endif
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
 					maxMemoryUsage	  = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
@@ -365,7 +380,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					{
 						vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 						DE_NULL,
-						vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+						imageCreateFlag,
 						vk::VK_IMAGE_TYPE_2D,
 						curFmt->format,
 						{
@@ -423,7 +438,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
 			{
 				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
+#ifndef NOT_PROTECTED
 				if (memoryProperties.memoryTypes[memType].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+#endif
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
 					maxMemoryUsage    = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
@@ -441,7 +458,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 						{
 							vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 							DE_NULL,
-							vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+							imageCreateFlag,
 							vk::VK_IMAGE_TYPE_2D,
 							baseParameters.imageFormat,
 							{
@@ -483,7 +500,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					{
 						vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 						DE_NULL,
-						vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+						imageCreateFlag,
 						vk::VK_IMAGE_TYPE_2D,
 						baseParameters.imageFormat,
 						{
@@ -531,7 +548,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 						{
 							vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 							DE_NULL,
-							vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+							imageCreateFlag,
 							vk::VK_IMAGE_TYPE_2D,
 							baseParameters.imageFormat,
 							{

@@ -103,19 +103,19 @@ public:
 			return false;
 		}
 	}
-	bool IsSSBInVSFSAvailable(int required)
+	bool IsSSBInVSFSAvailable(int requiredVS, int requiredFS)
 	{
 		GLint blocksVS, blocksFS;
 		glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &blocksVS);
 		glGetIntegerv(GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, &blocksFS);
-		if (blocksVS >= required && blocksFS >= required)
+		if (blocksVS >= requiredVS && blocksFS >= requiredFS)
 			return true;
 		else
 		{
 			std::ostringstream reason;
-			reason << "Required " << required << " VS storage blocks but only " << blocksVS << " available."
+			reason << "Required " << requiredVS << " VS storage blocks but only " << blocksVS << " available."
 				   << std::endl
-				   << "Required " << required << " FS storage blocks but only " << blocksFS << " available."
+				   << "Required " << requiredFS << " FS storage blocks but only " << blocksFS << " available."
 				   << std::endl;
 			OutputNotSupported(reason.str());
 			return false;
@@ -1354,7 +1354,7 @@ class BasicAllFormatsLoadFS : public ShaderImageLoadStoreBase
 	}
 	virtual long Run()
 	{
-		if (!IsVSFSAvailable(0, 1) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(0, 1) || !IsSSBInVSFSAvailable(0, 1))
 			return NOT_SUPPORTED;
 
 		CreateFullViewportQuad(&m_vao, &m_vbo, NULL);
@@ -2256,7 +2256,7 @@ class BasicAllTargetsLoadFS : public ShaderImageLoadStoreBase
 
 	virtual long Run()
 	{
-		if (!IsVSFSAvailable(0, 4) || !IsSSBInVSFSAvailable(4))
+		if (!IsVSFSAvailable(0, 4) || !IsSSBInVSFSAvailable(0, 4))
 			return NOT_SUPPORTED;
 		CreateFullViewportQuad(&m_vao, &m_vbo, NULL);
 
@@ -2703,7 +2703,7 @@ class BasicAllTargetsAtomicFS : public ShaderImageLoadStoreBase
 			return NOT_SUPPORTED;
 		if (!AreOutputsAvailable(5))
 			return NOT_SUPPORTED;
-		if (!IsSSBInVSFSAvailable(1))
+		if (!IsSSBInVSFSAvailable(0, 1))
 			return NOT_SUPPORTED;
 		CreateFullViewportQuad(&m_vao, &m_vbo, NULL);
 
@@ -3358,7 +3358,7 @@ class BasicAllTargetsLoadStoreVS : public LoadStoreMachine
 {
 	virtual long Run()
 	{
-		if (!IsVSFSAvailable(4, 0) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(4, 0) || !IsSSBInVSFSAvailable(1, 0))
 			return NOT_SUPPORTED;
 		return RunStage(0);
 	}
@@ -3380,7 +3380,7 @@ class BasicAllTargetsAtomicVS : public AtomicMachine
 {
 	virtual long Run()
 	{
-		if (!IsVSFSAvailable(4, 0) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(4, 0) || !IsSSBInVSFSAvailable(1, 0))
 			return NOT_SUPPORTED;
 		return RunStage(0);
 	}
@@ -3415,7 +3415,7 @@ class BasicGLSLMiscFS : public ShaderImageLoadStoreBase
 	}
 	virtual long Run()
 	{
-		if (!IsVSFSAvailable(0, 2) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(0, 2) || !IsSSBInVSFSAvailable(0, 1))
 			return NOT_SUPPORTED;
 
 		const int		   kSize = 32;
@@ -3820,7 +3820,7 @@ class AdvancedSyncImageAccess : public ShaderImageLoadStoreBase
 
 	virtual long Run()
 	{
-		if (!IsVSFSAvailable(1, 0) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(1, 0) || !IsSSBInVSFSAvailable(1, 0))
 			return NOT_SUPPORTED;
 
 		const int		  kSize = 44;
@@ -4078,7 +4078,7 @@ class AdvancedSyncImageAccess2 : public ShaderImageLoadStoreBase
 	virtual long Run()
 	{
 		const int kSize = 32;
-		if (!IsVSFSAvailable(0, 1) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(0, 1) || !IsSSBInVSFSAvailable(0, 1))
 			return NOT_SUPPORTED;
 		const char* const glsl_vs =
 			NL "layout(location = 0) in vec4 i_position;" NL "void main() {" NL "  gl_Position = i_position;" NL "}";
@@ -4262,7 +4262,7 @@ class AdvancedMemoryOrderVSFS : public ShaderImageLoadStoreBase
 	virtual long Run()
 	{
 		const int kSize = 11;
-		if (!IsVSFSAvailable(1, 1) || !IsSSBInVSFSAvailable(1))
+		if (!IsVSFSAvailable(1, 1) || !IsSSBInVSFSAvailable(1, 1))
 			return NOT_SUPPORTED;
 		const char* const glsl_vs = NL
 			"layout(location = 0) in vec4 i_position;" NL "out vec4 vs_color;" NL

@@ -19,6 +19,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawShaderViewportIndexTests.cpp
 	vktDrawSimpleTest.hpp
 	vktDrawSimpleTest.cpp
+	vktDrawConcurrentTests.hpp
+	vktDrawConcurrentTests.cpp
 	vktDrawNegativeViewportHeightTests.hpp
 	vktDrawNegativeViewportHeightTests.cpp
 	vktDrawBaseClass.hpp

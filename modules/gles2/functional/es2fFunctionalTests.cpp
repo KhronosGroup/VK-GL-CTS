@@ -47,6 +47,7 @@
 #include "es2fDepthRangeTests.hpp"
 #include "es2fDitheringTests.hpp"
 #include "es2fClippingTests.hpp"
+#include "es2fClipControlTests.hpp"
 #include "es2fPolygonOffsetTests.hpp"
 #include "es2fDrawTests.hpp"
 #include "es2fFragOpInteractionTests.hpp"
@@ -311,6 +312,7 @@ void FunctionalTests::init (void)
 {
 	addChild(new PrerequisiteTests			(m_context));
 	addChild(new ImplementationLimitTests	(m_context));
+	addChild(new ClipControlTests			(m_context));
 	addChild(new ColorClearTest				(m_context));
 	addChild(new DepthStencilClearTests		(m_context));
 	addChild(new BufferTests				(m_context));

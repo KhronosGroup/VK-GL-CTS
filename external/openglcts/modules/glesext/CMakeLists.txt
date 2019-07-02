@@ -199,6 +199,8 @@ set(GLCTS_ESEXT_SRCS
     texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp
     texture_cube_map_array/esextcTextureCubeMapArrayTex3DValidation.cpp
     texture_cube_map_array/esextcTextureCubeMapArrayTex3DValidation.hpp
+    texture_shadow_lod/esextcTextureShadowLodFunctionsTest.cpp
+    texture_shadow_lod/esextcTextureShadowLodFunctionsTest.hpp
     )
 
 set(GLCTS_ESEXT_LIBS

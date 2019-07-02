@@ -61,7 +61,7 @@ def getDevices (adbPath):
 		if len(line.strip()) == 0:
 			continue
 
-		m = ptrn.match(line)
+		m = ptrn.match(line.decode('utf-8'))
 		if m == None:
 			print("WARNING: Failed to parse device info '%s'" % line)
 			continue
@@ -77,7 +77,7 @@ def execWithPrintPrefix (args, linePrefix="", failOnNonZeroExit=True):
 			line = source.readline()
 			if len(line) == 0: # EOF
 				break;
-			sink.write(prefix + line)
+			sink.write(prefix + line.decode('utf-8'))
 
 	process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	stdoutJob = threading.Thread(target=readApplyPrefixAndPrint, args=(process.stdout, linePrefix, sys.stdout))
@@ -233,7 +233,7 @@ if __name__ == "__main__":
 				for i in range(0, len(devices)):
 					print("%3d: %16s %s" % ((i+1), devices[i].serial, devices[i].model))
 
-				deviceNdx = int(raw_input("Choose device (1-%d): " % len(devices)))
+				deviceNdx = int(input("Choose device (1-%d): " % len(devices)))
 				installToDevice(devices[deviceNdx-1], args.adbPath, packageName, apkPath)
 		else:
 			devices = getDevices(args.adbPath)

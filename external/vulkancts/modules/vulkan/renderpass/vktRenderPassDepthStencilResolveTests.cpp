@@ -190,7 +190,7 @@ DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig c
 	, m_device					(context.getDevice())
 	, m_physicalDevice			(context.getPhysicalDevice())
 
-	, m_multisampleImage		(createImage(m_config.sampleCount))
+	, m_multisampleImage		(createImage(m_config.sampleCount, VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
 	, m_multisampleImageMemory	(createImageMemory(m_multisampleImage))
 	, m_multisampleImageView	(createImageView(m_multisampleImage, 0u))
 
