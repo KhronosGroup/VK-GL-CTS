@@ -1322,39 +1322,7 @@ void convertColor (vk::VkSamplerYcbcrModelConversion	colorModel,
 		}
 
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:
-		{
-			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]));
-			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat[0], bitDepth[0], input[0]));
-			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat[2], bitDepth[2], input[2]));
-
-			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
-			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
-			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
-
-			output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.402 * crClamped, false), false);
-			output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut((0.202008 / 0.587) * cbClamped, false), false) - conversionFormat[1].roundOut((0.419198 / 0.587) * crClamped, false), false);
-			output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.772 * cbClamped, false), false);
-			output[3] = input[3];
-			break;
-		}
-
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:
-		{
-			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]));
-			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat[0], bitDepth[0], input[0]));
-			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat[2], bitDepth[2], input[2]));
-
-			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
-			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
-			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
-
-			output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.5748 * crClamped, false), false);
-			output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut((0.13397432 / 0.7152) * cbClamped, false), false) - conversionFormat[1].roundOut((0.33480248 / 0.7152) * crClamped, false), false);
-			output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.8556 * cbClamped, false), false);
-			output[3] = input[3];
-			break;
-		}
-
 		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020:
 		{
 			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat[1], bitDepth[1], input[1]));
@@ -1365,9 +1333,24 @@ void convertColor (vk::VkSamplerYcbcrModelConversion	colorModel,
 			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
 			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
 
-			output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.4746 * crClamped, false), false);
-			output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut(conversionFormat[1].roundOut(0.11156702 / 0.6780, false) * cbClamped, false), false) - conversionFormat[1].roundOut(conversionFormat[1].roundOut(0.38737742 / 0.6780, false) * crClamped, false), false);
-			output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.8814 * cbClamped, false), false);
+			if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601)
+			{
+				output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.402 * crClamped, false), false);
+				output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut((0.202008 / 0.587) * cbClamped, false), false) - conversionFormat[1].roundOut((0.419198 / 0.587) * crClamped, false), false);
+				output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.772 * cbClamped, false), false);
+			}
+			else if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709)
+			{
+				output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.5748 * crClamped, false), false);
+				output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut((0.13397432 / 0.7152) * cbClamped, false), false) - conversionFormat[1].roundOut((0.33480248 / 0.7152) * crClamped, false), false);
+				output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.8556 * cbClamped, false), false);
+			}
+			else
+			{
+				output[0] = conversionFormat[0].roundOut(yClamped + conversionFormat[0].roundOut(1.4746 * crClamped, false), false);
+				output[1] = conversionFormat[1].roundOut(conversionFormat[1].roundOut(yClamped - conversionFormat[1].roundOut(conversionFormat[1].roundOut(0.11156702 / 0.6780, false) * cbClamped, false), false) - conversionFormat[1].roundOut(conversionFormat[1].roundOut(0.38737742 / 0.6780, false) * crClamped, false), false);
+				output[2] = conversionFormat[2].roundOut(yClamped + conversionFormat[2].roundOut(1.8814 * cbClamped, false), false);
+			}
 			output[3] = input[3];
 			break;
 		}
@@ -1428,6 +1411,15 @@ tcu::IVec2 calculateLinearIJRange (const tcu::FloatFormat&	coordFormat,
 	const tcu::Interval	ij	(coordFormat.roundOut(uv - tcu::Interval(0.5), false));
 
 	return tcu::IVec2(deFloorToInt32(ij.lo()), deFloorToInt32(ij.hi()));
+}
+
+tcu::IVec2 calculateIJRange (vk::VkFilter				filter,
+							 const tcu::FloatFormat&	coordFormat,
+							 const tcu::Interval&		uv)
+{
+	DE_ASSERT(filter == vk::VK_FILTER_NEAREST || filter == vk::VK_FILTER_LINEAR);
+	return (filter == vk::VK_FILTER_LINEAR)	? calculateLinearIJRange(coordFormat, uv)
+											: calculateNearestIJRange(coordFormat, uv);
 }
 
 tcu::Interval calculateAB (const deUint32		subTexelPrecisionBits,
@@ -1516,42 +1508,16 @@ tcu::Interval reconstructLinearXChromaSample (const tcu::FloatFormat&	filteringF
 											  int						i,
 											  int						j)
 {
-	const int subI	= divFloor(i, 2);
+	const int subI	= offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN
+					? divFloor(i, 2)
+					: (i % 2 == 0 ? divFloor(i, 2) - 1 : divFloor(i, 2));
+	const double a	= offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN
+					? (i % 2 == 0 ? 0.0 : 0.5)
+					: (i % 2 == 0 ? 0.25 : 0.75);
 
-	if (offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN)
-	{
-		if (i % 2 == 0)
-			return lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j));
-		else
-		{
-			const tcu::Interval	a	(filteringFormat.roundOut(0.5 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
-			const tcu::Interval	b	(filteringFormat.roundOut(0.5 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, j)), false));
-
-			return filteringFormat.roundOut(a + b, false);
-		}
-	}
-	else if (offset == vk::VK_CHROMA_LOCATION_MIDPOINT)
-	{
-		if (i % 2 == 0)
-		{
-			const tcu::Interval	a	(filteringFormat.roundOut(0.25 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI - 1, j)), false));
-			const tcu::Interval	b	(filteringFormat.roundOut(0.75 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
-
-			return filteringFormat.roundOut(a + b, false);
-		}
-		else
-		{
-			const tcu::Interval	a	(filteringFormat.roundOut(0.25 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, j)), false));
-			const tcu::Interval	b	(filteringFormat.roundOut(0.75 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
-
-			return filteringFormat.roundOut(a + b, false);
-		}
-	}
-	else
-	{
-		DE_FATAL("Unknown sample location");
-		return tcu::Interval();
-	}
+	const tcu::Interval A (filteringFormat.roundOut(       a  * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
+	const tcu::Interval B (filteringFormat.roundOut((1.0 - a) * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, j)), false));
+	return filteringFormat.roundOut(A + B, false);
 }
 
 tcu::Interval reconstructLinearXYChromaSample (const tcu::FloatFormat&	filteringFormat,
@@ -1578,11 +1544,7 @@ tcu::Interval reconstructLinearXYChromaSample (const tcu::FloatFormat&	filtering
 							? (j % 2 == 0 ? 0.0 : 0.5)
 							: (j % 2 == 0 ? 0.25 : 0.75);
 
-	return linearInterpolate(filteringFormat, a, b,
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, subJ)),
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, subJ)),
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, subJ + 1)),
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, subJ + 1)));
+	return linearSample(access, conversionFormat, filteringFormat, addressModeU, addressModeV, tcu::IVec2(subI, subJ), a, b);
 }
 
 const ChannelAccess& swizzle (vk::VkComponentSwizzle	swizzle,
@@ -1695,6 +1657,11 @@ void calculateBounds (const ChannelAccess&				rPlane,
 	DE_ASSERT(rAccess.getSize().x() == gAccess.getSize().x() || 2 * rAccess.getSize().x() == gAccess.getSize().x());
 	DE_ASSERT(rAccess.getSize().y() == gAccess.getSize().y() || 2 * rAccess.getSize().y() == gAccess.getSize().y());
 
+	DE_ASSERT(filter == vk::VK_FILTER_NEAREST || filter == vk::VK_FILTER_LINEAR);
+	DE_ASSERT(chromaFilter == vk::VK_FILTER_NEAREST || chromaFilter == vk::VK_FILTER_LINEAR);
+	DE_ASSERT(subsampledX || !subsampledY);
+
+
 	for (size_t ndx = 0; ndx < sts.size(); ndx++)
 	{
 		const Vec2	st		(sts[ndx]);
@@ -1709,160 +1676,53 @@ void calculateBounds (const ChannelAccess&				rPlane,
 		uvBounds[ndx][2] = (float)v.lo();
 		uvBounds[ndx][3] = (float)v.hi();
 
-		if (filter == vk::VK_FILTER_NEAREST)
+		const IVec2	iRange	(calculateIJRange(filter, coordFormat, u));
+		const IVec2	jRange	(calculateIJRange(filter, coordFormat, v));
+
+		ijBounds[ndx][0] = iRange[0];
+		ijBounds[ndx][1] = iRange[1];
+
+		ijBounds[ndx][2] = jRange[0];
+		ijBounds[ndx][3] = jRange[1];
+
+		for (int j = jRange.x(); j <= jRange.y(); j++)
+		for (int i = iRange.x(); i <= iRange.y(); i++)
 		{
-			const IVec2	iRange	(calculateNearestIJRange(coordFormat, u));
-			const IVec2	jRange	(calculateNearestIJRange(coordFormat, v));
-
-			ijBounds[ndx][0] = iRange[0];
-			ijBounds[ndx][1] = iRange[1];
-
-			ijBounds[ndx][2] = jRange[0];
-			ijBounds[ndx][3] = jRange[1];
-
-			for (int j = jRange.x(); j <= jRange.y(); j++)
-			for (int i = iRange.x(); i <= iRange.y(); i++)
+			if (filter == vk::VK_FILTER_NEAREST)
 			{
 				const Interval	gValue	(lookupWrapped(gAccess, conversionFormat[1], addressModeU, addressModeV, IVec2(i, j)));
 				const Interval	aValue	(lookupWrapped(aAccess, conversionFormat[3], addressModeU, addressModeV, IVec2(i, j)));
 
-				if (subsampledX || subsampledY)
+				if (explicitReconstruction || !(subsampledX || subsampledY))
 				{
-					if (explicitReconstruction)
+					Interval rValue, bValue;
+					if (chromaFilter == vk::VK_FILTER_NEAREST || !subsampledX)
 					{
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						// Reconstruct using nearest if needed, otherwise, just take what's already there.
+						const int subI = subsampledX ? i / 2 : i;
+						const int subJ = subsampledY ? j / 2 : j;
+						rValue = lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(subI, subJ));
+						bValue = lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(subI, subJ));
+					}
+					else // vk::VK_FILTER_LINEAR
+					{
+						if (subsampledY)
 						{
-							// Nearest, Reconstructed chroma with explicit nearest filtering
-							const int		subI		= subsampledX ? i / 2 : i;
-							const int		subJ		= subsampledY ? j / 2 : j;
-							const Interval	srcColor[]	=
-							{
-								lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(subI, subJ)),
-								gValue,
-								lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(subI, subJ)),
-								aValue
-							};
-							Interval		dstColor[4];
-
-							convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-							for (size_t compNdx = 0; compNdx < 4; compNdx++)
-								bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							if (subsampledX && subsampledY)
-							{
-								// Nearest, Reconstructed both chroma samples with explicit linear filtering
-								const Interval	rValue	(reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j));
-								const Interval	bValue	(reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-							else if (subsampledX)
-							{
-								// Nearest, Reconstructed x chroma samples with explicit linear filtering
-								const Interval	rValue	(reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i, j));
-								const Interval	bValue	(reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i, j));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-							else
-								DE_FATAL("Unexpected chroma reconstruction");
+							rValue = reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j);
+							bValue = reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j);
 						}
 						else
-							DE_FATAL("Unknown filter");
-					}
-					else
-					{
-						const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
-						const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
-
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
 						{
-							// Nearest, reconstructed chroma samples with implicit nearest filtering
-							const IVec2	chromaIRange	(subsampledX ? calculateNearestIJRange(coordFormat, chromaU) : IVec2(i, i));
-							const IVec2	chromaJRange	(subsampledY ? calculateNearestIJRange(coordFormat, chromaV) : IVec2(j, j));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
-							{
-								const Interval	srcColor[]	=
-								{
-									lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									gValue,
-									lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
+							rValue = reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i, j);
+							bValue = reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i, j);
 						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							// Nearest, reconstructed chroma samples with implicit linear filtering
-							const IVec2	chromaIRange	(subsampledX ? calculateLinearIJRange(coordFormat, chromaU) : IVec2(i, i));
-							const IVec2	chromaJRange	(subsampledY ? calculateLinearIJRange(coordFormat, chromaV) : IVec2(j, j));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
-							{
-								const Interval	chromaA	(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
-								const Interval	chromaB	(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
-
-								const Interval	srcColor[]	=
-								{
-									linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
-									gValue,
-									linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-						}
-						else
-							DE_FATAL("Unknown filter");
 					}
-				}
-				else
-				{
-					// Linear, no chroma subsampling
-					const Interval	srcColor[]	=
+
+					const Interval srcColor[] =
 					{
-						lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i, j)),
+						rValue,
 						gValue,
-						lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i, j)),
+						bValue,
 						aValue
 					};
 					Interval dstColor[4];
@@ -1872,21 +1732,51 @@ void calculateBounds (const ChannelAccess&				rPlane,
 					for (size_t compNdx = 0; compNdx < 4; compNdx++)
 						bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
 				}
+				else
+				{
+					const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
+					const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
+
+					// Reconstructed chroma samples with implicit filtering
+					const IVec2	chromaIRange	(subsampledX ? calculateIJRange(chromaFilter, coordFormat, chromaU) : IVec2(i, i));
+					const IVec2	chromaJRange	(subsampledY ? calculateIJRange(chromaFilter, coordFormat, chromaV) : IVec2(j, j));
+
+					for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
+					for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
+					{
+						Interval rValue, bValue;
+
+						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						{
+							rValue = lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ));
+							bValue = lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ));
+						}
+						else // vk::VK_FILTER_LINEAR
+						{
+							const Interval	chromaA	(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
+							const Interval	chromaB	(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
+
+							rValue = linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB);
+							bValue = linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB);
+						}
+
+						const Interval	srcColor[]	=
+						{
+							rValue,
+							gValue,
+							bValue,
+							aValue
+						};
+
+						Interval dstColor[4];
+						convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+						for (size_t compNdx = 0; compNdx < 4; compNdx++)
+							bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+					}
+				}
 			}
-		}
-		else if (filter == vk::VK_FILTER_LINEAR)
-		{
-			const IVec2	iRange	(calculateLinearIJRange(coordFormat, u));
-			const IVec2	jRange	(calculateLinearIJRange(coordFormat, v));
-
-			ijBounds[ndx][0] = iRange[0];
-			ijBounds[ndx][1] = iRange[1];
-
-			ijBounds[ndx][2] = jRange[0];
-			ijBounds[ndx][3] = jRange[1];
-
-			for (int j = jRange.x(); j <= jRange.y(); j++)
-			for (int i = iRange.x(); i <= iRange.y(); i++)
+			else // filter == vk::VK_FILTER_LINEAR
 			{
 				const Interval	lumaA		(calculateAB(subTexelPrecisionBits, u, i));
 				const Interval	lumaB		(calculateAB(subTexelPrecisionBits, v, j));
@@ -1894,163 +1784,54 @@ void calculateBounds (const ChannelAccess&				rPlane,
 				const Interval	gValue		(linearSample(gAccess, conversionFormat[1], filteringFormat[1], addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
 				const Interval	aValue		(linearSample(aAccess, conversionFormat[3], filteringFormat[3], addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
 
-				if (subsampledX || subsampledY)
+				if (explicitReconstruction || !(subsampledX || subsampledY))
 				{
-					if (explicitReconstruction)
+					Interval rValue, bValue;
+					if (chromaFilter == vk::VK_FILTER_NEAREST || !subsampledX)
 					{
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						rValue = linearInterpolate(filteringFormat[0], lumaA, lumaB,
+													lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+													lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+													lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
+													lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))));
+						bValue = linearInterpolate(filteringFormat[2], lumaA, lumaB,
+													lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+													lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+													lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
+													lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))));
+					}
+					else // vk::VK_FILTER_LINEAR
+					{
+						if (subsampledY)
 						{
-							const Interval	srcColor[]	=
-							{
-								linearInterpolate(filteringFormat[0], lumaA, lumaB,
-																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat[0], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
-								gValue,
-								linearInterpolate(filteringFormat[2], lumaA, lumaB,
-																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat[2], addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
-								aValue
-							};
-							Interval		dstColor[4];
-
-							convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-							for (size_t compNdx = 0; compNdx < 4; compNdx++)
-								bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							if (subsampledX && subsampledY)
-							{
-								// Linear, Reconstructed xx chroma samples with explicit linear filtering
-								const Interval	rValue	(linearInterpolate(filteringFormat[0], lumaA, lumaB,
-																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j),
-																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
-																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
-																			reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
-								const Interval	bValue	(linearInterpolate(filteringFormat[2], lumaA, lumaB,
-																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j),
-																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
-																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
-																			reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-
-							}
-							else if (subsampledX)
-							{
-								// Linear, Reconstructed x chroma samples with explicit linear filtering
-								const Interval	rValue	(linearInterpolate(filteringFormat[0], lumaA, lumaB,
-																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i, j),
-																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
-																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
-																			reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
-								const Interval	bValue	(linearInterpolate(filteringFormat[2], lumaA, lumaB,
-																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i, j),
-																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
-																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
-																			reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-							else
-								DE_FATAL("Unknown subsampling config");
+							// Linear, Reconstructed xx chroma samples with explicit linear filtering
+							rValue = linearInterpolate(filteringFormat[0], lumaA, lumaB,
+														reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j),
+														reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
+														reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
+														reconstructLinearXYChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1));
+							bValue = linearInterpolate(filteringFormat[2], lumaA, lumaB,
+														reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j),
+														reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
+														reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
+														reconstructLinearXYChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1));
 						}
 						else
-							DE_FATAL("Unknown chroma filter");
-					}
-					else
-					{
-						const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
-						const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
-
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
 						{
-							const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
-							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
-							{
-								const Interval	srcColor[]	=
-								{
-									lookupWrapped(rAccess, conversionFormat[1], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									gValue,
-									lookupWrapped(bAccess, conversionFormat[3], addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									aValue
-								};
-								Interval	dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
+							// Linear, Reconstructed x chroma samples with explicit linear filtering
+							rValue = linearInterpolate(filteringFormat[0], lumaA, lumaB,
+														reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i, j),
+														reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
+														reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
+														reconstructLinearXChromaSample(filteringFormat[0], conversionFormat[0], xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1));
+							bValue = linearInterpolate(filteringFormat[2], lumaA, lumaB,
+														reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i, j),
+														reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
+														reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
+														reconstructLinearXChromaSample(filteringFormat[2], conversionFormat[2], xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1));
 						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
-							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
-							{
-								const Interval	chromaA		(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
-								const Interval	chromaB		(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
-
-								const Interval	rValue		(linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
-								const Interval	bValue		(linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
-
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-						}
-						else
-							DE_FATAL("Unknown chroma filter");
 					}
-				}
-				else
-				{
-					const Interval	chromaA		(lumaA);
-					const Interval	chromaB		(lumaB);
-					const Interval	rValue		(linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
-					const Interval	bValue		(linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
+
 					const Interval	srcColor[]	=
 					{
 						rValue,
@@ -2065,10 +1846,50 @@ void calculateBounds (const ChannelAccess&				rPlane,
 					for (size_t compNdx = 0; compNdx < 4; compNdx++)
 						bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
 				}
+				else
+				{
+					const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
+					const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
+
+					// TODO: It looks incorrect to ignore the chroma filter here. Is it?
+					const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
+					const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
+
+					for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
+					for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
+					{
+						Interval rValue, bValue;
+
+						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						{
+							rValue = lookupWrapped(rAccess, conversionFormat[1], addressModeU, addressModeV, IVec2(chromaI, chromaJ));
+							bValue = lookupWrapped(bAccess, conversionFormat[3], addressModeU, addressModeV, IVec2(chromaI, chromaJ));
+						}
+						else // vk::VK_FILTER_LINEAR
+						{
+							const Interval	chromaA	(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
+							const Interval	chromaB	(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
+
+							rValue = linearSample(rAccess, conversionFormat[0], filteringFormat[0], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB);
+							bValue = linearSample(bAccess, conversionFormat[2], filteringFormat[2], addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB);
+						}
+
+						const Interval	srcColor[]	=
+						{
+							rValue,
+							gValue,
+							bValue,
+							aValue
+						};
+						Interval dstColor[4];
+						convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+						for (size_t compNdx = 0; compNdx < 4; compNdx++)
+							bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+					}
+				}
 			}
 		}
-		else
-			DE_FATAL("Unknown filter");
 
 		minBounds[ndx] = Vec4((float)bounds[0].lo(), (float)bounds[1].lo(), (float)bounds[2].lo(), (float)bounds[3].lo());
 		maxBounds[ndx] = Vec4((float)bounds[0].hi(), (float)bounds[1].hi(), (float)bounds[2].hi(), (float)bounds[3].hi());
