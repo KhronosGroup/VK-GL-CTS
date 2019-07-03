@@ -2665,7 +2665,7 @@ protected:																	\
 	ExprP<TRET>		doExpand		(ExpandContext&,						\
 									 const CLASS::ArgExprs& args_) const	\
 	{																		\
-		const ExprP<float>& ARG0 = args_.a;								\
+		const ExprP<T0>& ARG0 = args_.a;									\
 		return EXPANSION;													\
 	}																		\
 };																			\
@@ -2685,7 +2685,7 @@ protected:																				\
 	ExprP<TRET>		doExpand		(ExpandContext&,									\
 									 const CLASS::ArgExprs& args_) const				\
 	{																					\
-		const ExprP<float>& ARG0 = args_.a;												\
+		const ExprP<T0>& ARG0 = args_.a;												\
 		return EXPANSION;																\
 	}																					\
 	Interval	getInputRange	(const bool /*is16bit*/) const							\
@@ -2698,47 +2698,11 @@ DEFINE_CONSTRUCTOR1(CLASS, TRET, NAME, T0)
 #define DEFINE_DERIVED_FLOAT1_INPUTRANGE(CLASS, NAME, ARG0, EXPANSION, INTERVAL) \
 	DEFINE_DERIVED1_INPUTRANGE(CLASS, float, NAME, float, ARG0, EXPANSION, INTERVAL)
 
-#define DEFINE_DERIVED1_16BIT(CLASS, TRET, NAME, T0, ARG0, EXPANSION)		\
-class CLASS : public DerivedFunc<Signature<TRET, T0> > /* NOLINT(CLASS) */	\
-{																			\
-public:																		\
-	string			getName		(void) const		{ return #NAME; }		\
-																			\
-protected:																	\
-	ExprP<TRET>		doExpand		(ExpandContext&,						\
-									 const CLASS::ArgExprs& args_) const	\
-	{																		\
-		const ExprP<deFloat16>& ARG0 = args_.a;							\
-		return EXPANSION;													\
-	}																		\
-};																			\
-DEFINE_CONSTRUCTOR1(CLASS, TRET, NAME, T0)
-
-#define DEFINE_DERIVED1_INPUTRANGE_16BIT(CLASS, TRET, NAME, T0, ARG0, EXPANSION, INTERVAL)	\
-class CLASS : public DerivedFunc<Signature<TRET, T0> > /* NOLINT(CLASS) */	\
-{																			\
-public:																		\
-	string			getName		(void) const		{ return #NAME; }		\
-																			\
-protected:																	\
-	ExprP<TRET>		doExpand		(ExpandContext&,						\
-									 const CLASS::ArgExprs& args_) const	\
-	{																		\
-		const ExprP<deFloat16>& ARG0 = args_.a;							\
-		return EXPANSION;													\
-	}																		\
-	Interval	getInputRange	(const bool /*is16bit*/) const				\
-	{																		\
-		return INTERVAL;													\
-	}																		\
-};																			\
-DEFINE_CONSTRUCTOR1(CLASS, TRET, NAME, T0)
-
 #define DEFINE_DERIVED_FLOAT1_16BIT(CLASS, NAME, ARG0, EXPANSION) \
-	DEFINE_DERIVED1_16BIT(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION)
+	DEFINE_DERIVED1(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION)
 
 #define DEFINE_DERIVED_FLOAT1_INPUTRANGE_16BIT(CLASS, NAME, ARG0, EXPANSION, INTERVAL) \
-	DEFINE_DERIVED1_INPUTRANGE_16BIT(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION, INTERVAL)
+	DEFINE_DERIVED1_INPUTRANGE(CLASS, deFloat16, NAME, deFloat16, ARG0, EXPANSION, INTERVAL)
 
 #define DEFINE_CONSTRUCTOR2(CLASS, TRET, NAME, T0, T1)				\
 ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1)		\
@@ -3991,142 +3955,7 @@ protected:
 };
 
 DEFINE_DERIVED_FLOAT2(Mod, mod, x, y, x - y * app<Floor32Bit>(x / y));
-
-#ifdef MODULO_OPERATION
-// \todo Zanin: Due to this is a disjoint function a special care required for values results near b
-template <class T>
-class Mod : public DerivedFunc<T>
-{
-public:
-	typedef typename DerivedFunc<T>::ArgExprs	ArgExprs;
-	typedef typename DerivedFunc<T>::IRet		IRet;
-	typedef typename DerivedFunc<T>::IArgs		IArgs;
-	typedef typename DerivedFunc<T>::Ret		Ret;
-	typedef typename DerivedFunc<T>::Arg0		Arg0;
-	typedef typename DerivedFunc<T>::Arg1		Arg1;
-	typedef typename DerivedFunc<T>::Arg2		Arg2;
-	typedef typename DerivedFunc<T>::Arg3		Arg3;
-	typedef typename DerivedFunc<T>::IArg0		IArg0;
-	typedef typename DerivedFunc<T>::IArg1		IArg1;
-	typedef typename DerivedFunc<T>::IArg2		IArg2;
-	typedef typename DerivedFunc<T>::IArg3		IArg3;
-	typedef Floor< Signature<Ret, Ret> >		FloorMod;
-	string			getName		(void) const { return "mod"; }
-protected:
-	ExprP<Ret>	doExpand	(ExpandContext&, const ArgExprs& args_) const
-	{
-		const ExprP<Ret>& x = args_.a;
-		const ExprP<Ret>& y = args_.b;
-		return x - y * app<FloorMod>(x / y);
-	}
-	IRet			doApply		(const EvalContext& ctx, const IArgs& args) const
-	{
-		Environment	funEnv;
-		IArgs&		mutArgs		= const_cast<IArgs&>(args);
-		IRet		ret;
-
-		initialize();
-
-		funEnv.bind(*this->DerivedFunc<T>::m_var0, args.a);
-		funEnv.bind(*this->DerivedFunc<T>::m_var1, args.b);
-		funEnv.bind(*this->DerivedFunc<T>::m_var2, args.c);
-		funEnv.bind(*this->DerivedFunc<T>::m_var3, args.d);
-
-		{
-			EvalContext	funCtx(ctx.format, ctx.floatPrecision, funEnv, ctx.callDepth, ctx.isShaderFloat16Int8);
-
-			for (size_t ndx = 0; ndx < this->DerivedFunc<T>::m_body.size(); ++ndx)
-				this->DerivedFunc<T>::m_body[ndx]->execute(funCtx);
-
-			ret = this->DerivedFunc<T>::m_ret->evaluate(funCtx);
-
-			double lo = ret.lo();
-			double hi = ret.hi();
-			bool loWasChange = false;
-
-			ret =  Interval(ret.hasNaN(), deMin(lo,hi), deMax(lo,hi));
-		}
-
-		// \todo [lauri] Store references instead of values in environment
-		const_cast<IArg0&>(mutArgs.a) = funEnv.lookup(*this->DerivedFunc<T>::m_var0);
-		const_cast<IArg1&>(mutArgs.b) = funEnv.lookup(*this->DerivedFunc<T>::m_var1);
-		const_cast<IArg2&>(mutArgs.c) = funEnv.lookup(*this->DerivedFunc<T>::m_var2);
-		const_cast<IArg3&>(mutArgs.d) = funEnv.lookup(*this->DerivedFunc<T>::m_var3);
-
-		return ret;
-	}
-	IRet			doFail		(const EvalContext& ctx, const IArgs& args) const
-	{
-		Environment	funEnv;
-		IArgs&		mutArgs		= const_cast<IArgs&>(args);
-		IRet		ret			= this->doApply ( ctx,args);
-
-		funEnv.bind(*this->DerivedFunc<T>::m_var0, args.a);
-		funEnv.bind(*this->DerivedFunc<T>::m_var1, args.b);
-		funEnv.bind(*this->DerivedFunc<T>::m_var2, args.c);
-		funEnv.bind(*this->DerivedFunc<T>::m_var3, args.d);
-
-		{
-			double lo = ret.lo();
-			double hi = ret.hi();
-
-			if (!ret.isFinite() && (ret.lo()!=-TCU_INFINITY || ret.hi() != TCU_INFINITY))
-			{
-				if (lo == -TCU_INFINITY && (args.b.lo() > 0.0))
-				{
-					lo = hi * (-1.0);
-					hi = TCU_INFINITY;
-				}
-				if (hi == TCU_INFINITY && (args.b.hi() < 0.0))
-				{
-					hi = lo * (-1.0);
-					lo = -TCU_INFINITY;
-				}
-			}
-
-			if (ret.isFinite() && !ret.contains(Interval(ret.hasNaN(), 0.0, 0.0)) && (deAbs(args.b.hi()) <= deAbs(hi) || deAbs(args.b.hi()) <= deAbs(lo)))
-			{
-				const double precision = ctx.format.ulp(0.0, 2.5); // from the spec
-				lo = args.b.hi() > 0.0 ? 0.0 : -precision;
-				hi = args.b.hi() > 0.0 ? precision : 0.0;
-			}
-			ret =  Interval(ret.hasNaN(), deMin(lo,hi), deMax(lo,hi));
-		}
-
-		// \todo [lauri] Store references instead of values in environment
-		const_cast<IArg0&>(mutArgs.a) = funEnv.lookup(*this->DerivedFunc<T>::m_var0);
-		const_cast<IArg1&>(mutArgs.b) = funEnv.lookup(*this->DerivedFunc<T>::m_var1);
-		const_cast<IArg2&>(mutArgs.c) = funEnv.lookup(*this->DerivedFunc<T>::m_var2);
-		const_cast<IArg3&>(mutArgs.d) = funEnv.lookup(*this->DerivedFunc<T>::m_var3);
-
-		return ret;
-	}
-private:
-	void			initialize	(void)	const
-	{
-		if (!this->DerivedFunc<T>::m_ret)
-		{
-			const ParamNames&	paramNames	= this->getParamNames();
-			Counter				symCounter;
-			ExpandContext		ctx			(symCounter);
-			ArgExprs			args;
-
-			args.a	= this->DerivedFunc<T>::m_var0 = variable<Arg0>(paramNames.a);
-			args.b	= this->DerivedFunc<T>::m_var1 = variable<Arg1>(paramNames.b);
-			args.c	= this->DerivedFunc<T>::m_var2 = variable<Arg2>(paramNames.c);
-			args.d	= this->DerivedFunc<T>::m_var3 = variable<Arg3>(paramNames.d);
-
-			this->DerivedFunc<T>::m_ret	= this->doExpand(ctx, args);
-			this->DerivedFunc<T>::m_body	= ctx.getStatements();
-		}
-	}
-};
-
-ExprP<deFloat16> mod (const ExprP<deFloat16>& arg0, const ExprP<deFloat16>& arg1)
-{
-	return app<Mod<Signature<deFloat16, deFloat16, deFloat16> > >(arg0, arg1);
-};
-#endif
+DEFINE_DERIVED_FLOAT2_16BIT(Mod16Bit, mod, x, y, x - y * app<Floor16Bit>(x / y));
 
 template <class T>
 class Modf : public PrimitiveFunc<T>
@@ -6662,17 +6491,7 @@ MovePtr<const CaseFactories> createBuiltinCases (bool is16BitTest = false)
 	addScalarFactory<Ceil< Signature<float, float> > >(*funcs);
 	addScalarFactory<Fract>(*funcs);
 
-	if (is16BitTest)
-	{
-#ifdef MODULO_OPERATION
-		// \todo Zanin: Test removed for fp16 operations
-		addScalarFactory<Mod>(*funcs);
-#endif
-	}
-	else
-	{
-		addScalarFactory<Mod>(*funcs);
-	}
+	addScalarFactory<Mod>(*funcs);
 
 	funcs->addFactory(createSimpleFuncCaseFactory<Modf32Bit>());
 	addScalarFactory<Min< Signature<float, float, float> > >(*funcs);
@@ -6749,10 +6568,7 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 	addScalarFactory<Ceil< Signature<deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Fract16Bit>(*funcs);
 
-#ifdef MODULO_OPERATION
-	// \todo Zanin: Due to this is a disjoint function a special care required for values results near b
-	addScalarFactory<Mod<Signature<deFloat16, deFloat16, deFloat16> > >(*funcs);
-#endif
+	addScalarFactory<Mod16Bit>(*funcs);
 
 	funcs->addFactory(createSimpleFuncCaseFactory<Modf16Bit>());
 	addScalarFactory<Min< Signature<deFloat16, deFloat16, deFloat16> > >(*funcs);
