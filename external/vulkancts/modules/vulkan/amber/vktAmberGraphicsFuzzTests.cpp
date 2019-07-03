@@ -45,16 +45,16 @@ void createAmberTests (tcu::TestCaseGroup* group)
 	}
 	tests[] =
 	{
-		{	"continue-and-merge.amber",				"continue-and-merge",			"A fragment shader with two nested loops"										},
-		{	"control-flow-switch.amber",			"control-flow-switch",			"A fragment shader with somewhat complex control flow and a switch"				},
-		{	"dead-struct-init.amber",				"dead-struct-init",				"A fragment shader that uses struct initializers"								},
-		{	"fragcoord-control-flow.amber",			"fragcoord-control-flow",		"A fragment shader that uses FragCoord and somewhat complex control flow"		},
-		{	"fragcoord-control-flow-2.amber",		"fragcoord-control-flow-2",		"A fragment shader that uses FragCoord and somewhat complex control flow"		},
-		{	"mat-array-deep-control-flow.amber",	"mat-array-deep-control-flow",	"A fragment shader that uses an array of matrices and has deep control flow"	},
-		{	"mat-array-distance.amber",				"mat-array-distance",			"A fragment shader that uses an array of matrices and distance"					},
-		{	"pow-vec4.amber",						"pow-vec4",						"A fragment shader that uses pow"												},
-		{	"swizzle-struct-init-min.amber",		"swizzle-struct-init-min",		"A fragment shader that uses vector swizzles, struct initializers, and min"		},
-		{	"while-inside-switch.amber",			"while-inside-switch",			"A fragment shader that uses a while loop inside a switch"						},
+		{	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
+		{	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
+		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
+		{	"fragcoord-control-flow.amber",					"fragcoord-control-flow",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
+		{	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
+		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
+		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
+		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
+		{	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
+		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
 	};
 
 	for (size_t i = 0; i < sizeof tests / sizeof tests[0]; i++)
