@@ -2550,14 +2550,14 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
 }
 
-void SSBOLayoutCase::init ()
+void SSBOLayoutCase::delayedInit (void)
 {
-	computeReferenceLayout	(m_refLayout, m_interface);
-	initRefDataStorage		(m_interface, m_refLayout, m_initialData);
-	initRefDataStorage		(m_interface, m_refLayout, m_writeData);
-	generateValues			(m_refLayout, m_initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
-	generateValues			(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
-	copyNonWrittenData		(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
+	computeReferenceLayout(m_refLayout, m_interface);
+	initRefDataStorage(m_interface, m_refLayout, m_initialData);
+	initRefDataStorage(m_interface, m_refLayout, m_writeData);
+	generateValues(m_refLayout, m_initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
+	generateValues(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
+	copyNonWrittenData(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 
 	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers, m_matrixLoadFlag, m_usePhysStorageBuffer);
 }

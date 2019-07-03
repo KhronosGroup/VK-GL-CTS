@@ -2226,7 +2226,7 @@ TestInstance* UniformBlockCase::createInstance (Context& context) const
 	return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
 }
 
-void UniformBlockCase::init (void)
+void UniformBlockCase::delayedInit (void)
 {
 	const int vec4Alignment = (int)sizeof(deUint32)*4;
 
