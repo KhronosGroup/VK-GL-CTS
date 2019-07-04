@@ -597,47 +597,63 @@ std::string getShaderImageType (const tcu::TextureFormat& format, const ImageTyp
 
 std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 {
-	const char* orderPart;
-	const char* typePart;
-
-	switch (format.order)
+	if (!isPackedType(mapTextureFormat(format)))
 	{
-		case tcu::TextureFormat::R:		orderPart = "r";	break;
-		case tcu::TextureFormat::RG:	orderPart = "rg";	break;
-		case tcu::TextureFormat::RGB:	orderPart = "rgb";	break;
-		case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
-		case tcu::TextureFormat::sRGBA:	orderPart = "rgba";	break;
+		const char* orderPart;
+		const char* typePart;
 
-		default:
-			DE_ASSERT(false);
-			orderPart = DE_NULL;
+		switch (format.order)
+		{
+			case tcu::TextureFormat::R:		orderPart = "r";	break;
+			case tcu::TextureFormat::RG:	orderPart = "rg";	break;
+			case tcu::TextureFormat::RGB:	orderPart = "rgb";	break;
+			case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
+			case tcu::TextureFormat::sRGBA:	orderPart = "rgba";	break;
+
+			default:
+				DE_FATAL("Order not found");
+				orderPart = DE_NULL;
+		}
+
+		switch (format.type)
+		{
+			case tcu::TextureFormat::FLOAT:				typePart = "32f";		break;
+			case tcu::TextureFormat::HALF_FLOAT:		typePart = "16f";		break;
+
+			case tcu::TextureFormat::UNSIGNED_INT32:	typePart = "32ui";		break;
+			case tcu::TextureFormat::UNSIGNED_INT16:	typePart = "16ui";		break;
+			case tcu::TextureFormat::UNSIGNED_INT8:		typePart = "8ui";		break;
+
+			case tcu::TextureFormat::SIGNED_INT32:		typePart = "32i";		break;
+			case tcu::TextureFormat::SIGNED_INT16:		typePart = "16i";		break;
+			case tcu::TextureFormat::SIGNED_INT8:		typePart = "8i";		break;
+
+			case tcu::TextureFormat::UNORM_INT16:		typePart = "16";		break;
+			case tcu::TextureFormat::UNORM_INT8:		typePart = "8";			break;
+
+			case tcu::TextureFormat::SNORM_INT16:		typePart = "16_snorm";	break;
+			case tcu::TextureFormat::SNORM_INT8:		typePart = "8_snorm";	break;
+
+			default:
+				DE_FATAL("Type not found");
+				typePart = DE_NULL;
+		}
+
+		return std::string() + orderPart + typePart;
 	}
-
-	switch (format.type)
+	else
 	{
-		case tcu::TextureFormat::FLOAT:				typePart = "32f";		break;
-		case tcu::TextureFormat::HALF_FLOAT:		typePart = "16f";		break;
+		switch (mapTextureFormat(format))
+		{
+			case VK_FORMAT_B10G11R11_UFLOAT_PACK32:		return "r11f_g11f_b10f";
+			case VK_FORMAT_A2B10G10R10_UNORM_PACK32:	return "rgb10_a2";
+			case VK_FORMAT_A2B10G10R10_UINT_PACK32:		return "rgb10_a2ui";
 
-		case tcu::TextureFormat::UNSIGNED_INT32:	typePart = "32ui";		break;
-		case tcu::TextureFormat::UNSIGNED_INT16:	typePart = "16ui";		break;
-		case tcu::TextureFormat::UNSIGNED_INT8:		typePart = "8ui";		break;
-
-		case tcu::TextureFormat::SIGNED_INT32:		typePart = "32i";		break;
-		case tcu::TextureFormat::SIGNED_INT16:		typePart = "16i";		break;
-		case tcu::TextureFormat::SIGNED_INT8:		typePart = "8i";		break;
-
-		case tcu::TextureFormat::UNORM_INT16:		typePart = "16";		break;
-		case tcu::TextureFormat::UNORM_INT8:		typePart = "8";			break;
-
-		case tcu::TextureFormat::SNORM_INT16:		typePart = "16_snorm";	break;
-		case tcu::TextureFormat::SNORM_INT8:		typePart = "8_snorm";	break;
-
-		default:
-			DE_ASSERT(false);
-			typePart = DE_NULL;
+			default:
+				DE_FATAL("Qualifier not found");
+				return "";
+		}
 	}
-
-	return std::string() + orderPart + typePart;
 }
 
 std::string getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)

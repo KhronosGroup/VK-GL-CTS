@@ -255,7 +255,10 @@ typedef void (*deFunctionPtr) (void);
 /*#define DE_VALGRIND_BUILD*/
 
 /** Length of array. C++ version does compile time check that passed value is an array reference. */
-#if defined(__cplusplus) && (DE_COMPILER == DE_COMPILER_MSC)
+#if defined(__cplusplus)
+	// deArraySizeHelper is a function that receives a reference to an array of N elements of type T and returns a reference to an
+	// array of N chars. This forces the compiler to check the argument is an actual array and not some other type implementing
+	// operator[]. The actual function is never defined anywhere, but taking the sizeof() of the result is allowed and equal to N.
 	template <typename T, size_t N> char (&deArraySizeHelper(T (&array)[N]))[N];
 #	define DE_LENGTH_OF_ARRAY(ARRAY) ((int)(sizeof(deArraySizeHelper(ARRAY))))
 #else

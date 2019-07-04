@@ -55,6 +55,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmVaryingNameTests.hpp
 	vktSpvAsmWorkgroupMemoryTests.cpp
 	vktSpvAsmWorkgroupMemoryTests.hpp
+	vktSpvAsmPtrAccessChainTests.cpp
+	vktSpvAsmPtrAccessChainTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

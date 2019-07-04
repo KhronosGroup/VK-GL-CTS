@@ -24,6 +24,7 @@ import	sys
 from	argparse				import	ArgumentParser
 from	common					import	getChangedFiles, getAllProjectFiles
 from	check_include_guards	import	checkIncludeGuards
+from	check_encoding			import	checkEncoding
 from	check_whitespace		import	checkWhitespace
 from	check_license			import	checkLicense
 from	check_boms				import	checkBOMs
@@ -47,6 +48,7 @@ if __name__ == "__main__":
 
 	error = not all([
 		checkBOMs(files, args.fixBOMs),
+		checkEncoding(files),
 		checkWhitespace(files),
 		checkIncludeGuards(files),
 		checkLicense(files),

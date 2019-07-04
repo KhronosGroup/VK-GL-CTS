@@ -74,6 +74,7 @@
 #include "vktSpvAsmVaryingNameTests.hpp"
 #include "vktSpvAsmWorkgroupMemoryTests.hpp"
 #include "vktSpvAsmSignedIntCompareTests.hpp"
+#include "vktSpvAsmPtrAccessChainTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -18660,6 +18661,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createSpirvIdsAbuseGroup(testCtx));
 	computeTests->addChild(createSignedIntCompareGroup(testCtx));
 	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
+	computeTests->addChild(createPtrAccessChainGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));

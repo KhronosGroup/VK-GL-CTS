@@ -41,6 +41,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
+#include "deMath.h"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
@@ -103,7 +104,6 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 	DE_ASSERT(reference.getFormat() == result.getFormat());
 	DE_ASSERT(reference.getSize() == result.getSize());
 
-	const bool intFormat = isIntegerFormat(format);
 	const bool is3d = (texture.type() == IMAGE_TYPE_3D);
 	const int numLayersOrSlices = (is3d ? texture.size().z() : texture.numLayers());
 	const int numCubeFaces = 6;
@@ -120,14 +120,51 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 		const tcu::ConstPixelBufferAccess resultLayer = getLayerOrSlice(texture, result, layerNdx);
 
 		bool ok = false;
-		if (intFormat)
-			ok = tcu::intThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT);
-		else
-			ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, tcu::Vec4(0.01f), tcu::COMPARE_LOG_RESULT);
+
+		switch (tcu::getTextureChannelClass(mapVkFormat(format).type))
+		{
+			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			{
+				ok = tcu::intThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, tcu::UVec4(0), tcu::COMPARE_LOG_RESULT);
+				break;
+			}
+
+			case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			{
+				// Allow error of minimum representable difference
+				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>()) - 1u).cast<float>());
+
+				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
+				break;
+			}
+
+			case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+			{
+				// Allow error of minimum representable difference
+				const tcu::Vec4 threshold (1.0f / ((tcu::UVec4(1u) << (tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>() - 1u)) - 1u).cast<float>());
+
+				ok = tcu::floatThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
+				break;
+			}
+
+			case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			{
+				// Convert target format ulps to float ulps and allow 1 ulp difference
+				const tcu::UVec4 threshold (tcu::UVec4(1u) << (tcu::UVec4(23) - tcu::getTextureFormatMantissaBitDepth(mapVkFormat(format)).cast<deUint32>()));
+
+				ok = tcu::floatUlpThresholdCompare(log, comparisonName.c_str(), comparisonDesc.c_str(), refLayer, resultLayer, threshold, tcu::COMPARE_LOG_RESULT);
+				break;
+			}
+
+			default:
+				DE_FATAL("Unknown channel class");
+		}
 
 		if (ok)
 			++passedLayers;
 	}
+
 	return passedLayers == numLayersOrSlices;
 }
 
@@ -198,6 +235,7 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	const float storeColorBias = computeStoreColorBias(imageFormat);
 
 	const bool intFormat = isIntegerFormat(imageFormat);
+	const bool storeNegativeValues = isSignedFormat(imageFormat) && (storeColorBias == 0);
 	const int xMax = imageSize.x() - 1;
 	const int yMax = imageSize.y() - 1;
 
@@ -205,7 +243,10 @@ tcu::TextureLevel generateReferenceImage (const tcu::IVec3& imageSize, const VkF
 	for (int y = 0; y < imageSize.y(); ++y)
 	for (int x = 0; x < imageSize.x(); ++x)
 	{
-		const tcu::IVec4 color(x^y^z, (xMax - x)^y^z, x^(yMax - y)^z, (xMax - x)^(yMax - y)^z);
+		tcu::IVec4 color(x^y^z, (xMax - x)^y^z, x^(yMax - y)^z, (xMax - x)^(yMax - y)^z);
+
+		if (storeNegativeValues)
+			color -= tcu::IVec4(deRoundFloatToInt32((float)de::max(xMax, yMax) / 2.0f));
 
 		if (intFormat)
 			access.setPixel(color, x, y, z);
@@ -325,8 +366,8 @@ public:
 												 const VkFormat		format,
 												 const deUint32		flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER);
 
-	void					initPrograms		(SourceCollections& programCollection) const;
-
+	virtual void			checkSupport		(Context&			context) const;
+	void					initPrograms		(SourceCollections&	programCollection) const;
 	TestInstance*			createInstance		(Context&			context) const;
 
 private:
@@ -352,23 +393,90 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 		DE_ASSERT(m_texture.numLayers() > 1);
 }
 
+void StoreTest::checkSupport (Context& context) const
+{
+	const VkPhysicalDeviceFeatures	features			(context.getDeviceFeatures());
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_format));
+
+	if (!m_declareImageFormatInShader && !features.shaderStorageImageWriteWithoutFormat)
+		TCU_THROW(NotSupportedError, "shaderStorageImageWriteWithoutFormat feature not supported");
+
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+}
+
 void StoreTest::initPrograms (SourceCollections& programCollection) const
 {
 	const float storeColorScale = computeStoreColorScale(m_format, m_texture.size());
 	const float storeColorBias = computeStoreColorBias(m_format);
 	DE_ASSERT(colorScaleAndBiasAreValid(m_format, storeColorScale, storeColorBias));
 
-	const std::string xMax = de::toString(m_texture.size().x() - 1);
-	const std::string yMax = de::toString(m_texture.size().y() - 1);
+	const deUint32 xMax = m_texture.size().x() - 1;
+	const deUint32 yMax = m_texture.size().y() - 1;
 	const std::string signednessPrefix = isUintFormat(m_format) ? "u" : isIntFormat(m_format) ? "i" : "";
-	const std::string colorBaseExpr = signednessPrefix + "vec4("
+	const bool storeNegativeValues = isSignedFormat(m_format) && (storeColorBias == 0);
+	bool useClamp = false;
+	std::string colorBaseExpr = signednessPrefix + "vec4("
 		+ "gx^gy^gz, "
-		+ "(" + xMax + "-gx)^gy^gz, "
-		+ "gx^(" + yMax + "-gy)^gz, "
-		+ "(" + xMax + "-gx)^(" + yMax + "-gy)^gz)";
+		+ "(" + de::toString(xMax) + "-gx)^gy^gz, "
+		+ "gx^(" + de::toString(yMax) + "-gy)^gz, "
+		+ "(" + de::toString(xMax) + "-gx)^(" + de::toString(yMax) + "-gy)^gz)";
 
-	const std::string colorExpr = colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
-								  + (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
+	// Large integer values may not be represented with formats with low bit depths
+	if (isIntegerFormat(m_format))
+	{
+		const deInt64 minStoreValue = storeNegativeValues ? 0 - deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : 0;
+		const deInt64 maxStoreValue = storeNegativeValues ? deRoundFloatToInt64((float)de::max(xMax, yMax) / 2.0f) : de::max(xMax, yMax);
+
+		useClamp = !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(minStoreValue), mapVkFormat(m_format)) ||
+				   !isRepresentableIntegerValue(tcu::Vector<deInt64, 4>(maxStoreValue), mapVkFormat(m_format));
+	}
+
+	// Clamp if integer value cannot be represented with the current format
+	if (useClamp)
+	{
+		const tcu::IVec4 bitDepths = tcu::getTextureFormatBitDepth(mapVkFormat(m_format));
+		tcu::IVec4 minRepresentableValue;
+		tcu::IVec4 maxRepresentableValue;
+
+		switch (tcu::getTextureChannelClass(mapVkFormat(m_format).type))
+		{
+			case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			{
+				minRepresentableValue = tcu::IVec4(0);
+				maxRepresentableValue = (tcu::IVec4(1) << bitDepths) - tcu::IVec4(1);
+				break;
+			}
+
+			case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			{
+				minRepresentableValue = -(tcu::IVec4(1) << bitDepths - tcu::IVec4(1));
+				maxRepresentableValue = (tcu::IVec4(1) << (bitDepths - tcu::IVec4(1))) - tcu::IVec4(1);
+				break;
+			}
+
+			default:
+				DE_ASSERT(isIntegerFormat(m_format));
+		}
+
+		colorBaseExpr = "clamp(" + colorBaseExpr + ", "
+						+ signednessPrefix + "vec4" + de::toString(minRepresentableValue) + ", "
+						+ signednessPrefix + "vec4" + de::toString(maxRepresentableValue) + ")";
+	}
+
+	std::string colorExpr = colorBaseExpr + (storeColorScale == 1.0f ? "" : "*" + de::toString(storeColorScale))
+							+ (storeColorBias == 0.0f ? "" : " + float(" + de::toString(storeColorBias) + ")");
+
+	if (storeNegativeValues)
+		colorExpr += "-" + de::toString(deRoundFloatToInt32((float)deMax32(xMax, yMax) / 2.0f));
 
 	const int dimension = (m_singleLayerBind ? m_texture.layerDimension() : m_texture.dimension());
 	const std::string texelCoordStr = (dimension == 1 ? "gx" : dimension == 2 ? "ivec2(gx, gy)" : dimension == 3 ? "ivec3(gx, gy, gz)" : "");
@@ -431,7 +539,6 @@ protected:
 	virtual void					commandBindDescriptorsForLayer			(const VkCommandBuffer	cmdBuffer,
 																			 const VkPipelineLayout pipelineLayout,
 																			 const int				layerNdx) = 0;
-	virtual void					checkRequirements						(void) {};
 
 	const Texture					m_texture;
 	const VkFormat					m_format;
@@ -450,8 +557,6 @@ BaseTestInstance::BaseTestInstance (Context& context, const Texture& texture, co
 
 tcu::TestStatus BaseTestInstance::iterate (void)
 {
-	checkRequirements();
-
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
 	const VkDevice					device				= m_context.getDevice();
 	const VkQueue					queue				= m_context.getUniversalQueue();
@@ -509,7 +614,6 @@ protected:
 	void							commandBeforeCompute					(const VkCommandBuffer) {}
 	void							commandBetweenShaderInvocations			(const VkCommandBuffer) {}
 	void							commandAfterCompute						(const VkCommandBuffer) {}
-	void							checkRequirements						(void);
 
 	de::MovePtr<Buffer>				m_imageBuffer;
 	const VkDeviceSize				m_imageSizeBytes;
@@ -547,26 +651,6 @@ tcu::TestStatus StoreTestInstance::verifyResult	(void)
 		return tcu::TestStatus::pass("Passed");
 	else
 		return tcu::TestStatus::fail("Image comparison failed");
-}
-
-void StoreTestInstance::checkRequirements (void)
-{
-	const VkPhysicalDeviceFeatures	features			(m_context.getDeviceFeatures());
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
-																							   m_context.getPhysicalDevice(),
-																							   m_format));
-
-	if (!m_declareImageFormatInShader && !features.shaderStorageImageWriteWithoutFormat)
-		TCU_THROW(NotSupportedError, "shaderStorageImageWriteWithoutFormat feature not supported");
-
-	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
-
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage images");
-
-	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
 
 //! Store test for images
@@ -815,6 +899,7 @@ public:
 													 const VkFormat			imageFormat,
 													 const deUint32			flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER);
 
+	virtual void			checkSupport			(Context&				context) const;
 	void					initPrograms			(SourceCollections&		programCollection) const;
 	TestInstance*			createInstance			(Context&				context) const;
 
@@ -846,6 +931,26 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 		DE_ASSERT(m_texture.numLayers() > 1);
 
 	DE_ASSERT(formatsAreCompatible(m_format, m_imageFormat));
+}
+
+void LoadStoreTest::checkSupport (Context& context) const
+{
+	const VkPhysicalDeviceFeatures	features			(context.getDeviceFeatures());
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_format));
+
+	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
+		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat feature not supported");
+
+	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
+		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
 
 void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
@@ -911,7 +1016,6 @@ protected:
 	void							commandBeforeCompute				(const VkCommandBuffer) {}
 	void							commandBetweenShaderInvocations		(const VkCommandBuffer) {}
 	void							commandAfterCompute					(const VkCommandBuffer) {}
-	void							checkRequirements					(void);
 
 	de::MovePtr<Buffer>				m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize				m_imageSizeBytes;
@@ -965,26 +1069,6 @@ tcu::TestStatus LoadStoreTestInstance::verifyResult	(void)
 		return tcu::TestStatus::pass("Passed");
 	else
 		return tcu::TestStatus::fail("Image comparison failed");
-}
-
-void LoadStoreTestInstance::checkRequirements (void)
-{
-	const VkPhysicalDeviceFeatures	features			(m_context.getDeviceFeatures());
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
-																							   m_context.getPhysicalDevice(),
-																							   m_format));
-
-	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
-		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat feature not supported");
-
-	if (m_texture.type() == IMAGE_TYPE_CUBE_ARRAY && !features.imageCubeArray)
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
-
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage images");
-
-	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
 
 //! Load/store test for images
@@ -1303,10 +1387,13 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R8G8B8A8_SNORM,
 
 	// Requires StorageImageExtendedFormats capability
+	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+
 	VK_FORMAT_R32G32_SFLOAT,
 	VK_FORMAT_R16G16_SFLOAT,
 	VK_FORMAT_R16_SFLOAT,
 
+	VK_FORMAT_A2B10G10R10_UINT_PACK32,
 	VK_FORMAT_R32G32_UINT,
 	VK_FORMAT_R16G16_UINT,
 	VK_FORMAT_R16_UINT,
@@ -1319,6 +1406,7 @@ static const VkFormat s_formats[] =
 	VK_FORMAT_R8G8_SINT,
 	VK_FORMAT_R8_SINT,
 
+	VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 	VK_FORMAT_R16G16B16A16_UNORM,
 	VK_FORMAT_R16G16B16A16_SNORM,
 	VK_FORMAT_R16G16_UNORM,

@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include "tcuTextureUtil.hpp"
 #include "vkDefs.hpp"
 #include "vkImageUtil.hpp"
 #include "vktImageTestsUtil.hpp"
@@ -55,6 +56,11 @@ inline bool isIntegerFormat (const vk::VkFormat format)
 	return isIntFormat(format) || isUintFormat(format);
 }
 
+inline bool isSignedFormat (const vk::VkFormat format)
+{
+	return isIntFormat(format) || isSnormFormat(format) || isSfloatFormat(format);
+}
+
 inline bool colorScaleAndBiasAreValid (const vk::VkFormat format, const float colorScale, const float colorBias)
 {
 	// Only normalized (fixed-point) formats may have scale/bias
@@ -67,6 +73,7 @@ ImageType				getImageTypeForSingleLayer			(const ImageType imageType);
 vk::VkImageCreateInfo	makeImageCreateInfo					(const Texture& texture, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkImageCreateFlags flags);
 vk::VkDeviceSize		getOptimalUniformBufferChunkSize	(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, vk::VkDeviceSize minimumRequiredChunkSizeBytes);
 bool					isStorageImageExtendedFormat		(const vk::VkFormat format);
+bool					isRepresentableIntegerValue			(const tcu::Vector<deInt64, 4> value, tcu::TextureFormat format);
 
 } // image
 } // vkt

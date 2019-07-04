@@ -22,6 +22,8 @@
  * \brief Image load/store utilities
  *//*--------------------------------------------------------------------*/
 
+#include "deMath.h"
+#include "tcuTextureUtil.hpp"
 #include "vktImageLoadStoreUtil.hpp"
 #include "vkQueryUtil.hpp"
 
@@ -142,6 +144,42 @@ bool isStorageImageExtendedFormat (const vk::VkFormat format)
 		default:
 			return false;
 	}
+}
+
+bool isRepresentableIntegerValue (tcu::Vector<deInt64, 4> value, tcu::TextureFormat format)
+{
+	const tcu::IVec4	formatBitDepths	= tcu::getTextureFormatBitDepth(format);
+	const deUint32		numChannels		= getNumUsedChannels(mapTextureFormat(format));
+
+	switch (tcu::getTextureChannelClass(format.type))
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+		{
+			for (deUint32 compNdx = 0; compNdx < numChannels; compNdx++)
+			{
+				if (deFloorToInt32(log2((double)value[compNdx]) + 1) > formatBitDepths[compNdx])
+					return false;
+			}
+
+			break;
+		}
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+		{
+			for (deUint32 compNdx = 0; compNdx < numChannels; compNdx++)
+			{
+				if ((deFloorToInt32(log2((double)deAbs64(value[compNdx])) + 1) + 1) > formatBitDepths[compNdx])
+					return false;
+			}
+
+			break;
+		}
+
+		default:
+			DE_ASSERT(isIntegerFormat(mapTextureFormat(format)));
+	}
+
+	return true;
 }
 
 } // image
