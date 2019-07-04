@@ -61,6 +61,7 @@
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmFloatControlsTests.hpp"
+#include "vktSpvAsmFromHlslTests.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 #include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktSpvAsmVariableInitTests.hpp"
@@ -18687,6 +18688,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createSignedIntCompareGroup(testCtx));
 	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
+	computeTests->addChild(createHlslComputeGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));

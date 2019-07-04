@@ -11,6 +11,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsm16bitStorageTests.hpp
 	vktSpvAsmFloatControlsTests.cpp
 	vktSpvAsmFloatControlsTests.hpp
+	vktSpvAsmFromHlslTests.cpp
+	vktSpvAsmFromHlslTests.hpp
 	vktSpvAsmUboMatrixPaddingTests.cpp
 	vktSpvAsmUboMatrixPaddingTests.hpp
 	vktSpvAsmCompositeInsertTests.cpp
