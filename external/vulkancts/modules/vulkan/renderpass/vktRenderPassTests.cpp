@@ -33,6 +33,7 @@
 #include "vktRenderPassUnusedClearAttachmentTests.hpp"
 #include "vktRenderPassDepthStencilResolveTests.hpp"
 #include "vktRenderPassUnusedAttachmentSparseFillingTests.hpp"
+#include "vktRenderPassFragmentDensityMapTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -6998,6 +6999,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	if (renderPassType != RENDERPASS_TYPE_LEGACY)
 	{
 		renderpassTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
+		renderpassTests->addChild(createFragmentDensityMapTests(testCtx));
 	}
 
 	return renderpassTests.release();
