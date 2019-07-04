@@ -498,7 +498,7 @@ vk::Move<vk::VkPipeline> createPipeline (const vk::DeviceInterface&	vkd,
 		DE_NULL
 	};
 	const std::vector<vk::VkViewport>				viewports			(1, vk::makeViewport(tcu::UVec2(width, height)));
-	const std::vector<vk::VkRect2D>					noScissors;
+	const std::vector<vk::VkRect2D>					scissors			(1, vk::makeRect2D(tcu::UVec2(width, height)));
 
 	return vk::makeGraphicsPipeline(vkd,										// const DeviceInterface&                        vk
 									device,										// const VkDevice                                device
@@ -510,7 +510,7 @@ vk::Move<vk::VkPipeline> createPipeline (const vk::DeviceInterface&	vkd,
 									fragmentShaderModule,						// const VkShaderModule                          fragmentShaderModule
 									renderPass,									// const VkRenderPass                            renderPass
 									viewports,									// const std::vector<VkViewport>&                viewports
-									noScissors,									// const std::vector<VkRect2D>&                  scissors
+									scissors,									// const std::vector<VkRect2D>&                  scissors
 									vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
 									0u,											// const deUint32                                subpass
 									0u,											// const deUint32                                patchControlPoints
@@ -546,10 +546,12 @@ vk::Move<vk::VkPipelineLayout> createPipelineLayout (const vk::DeviceInterface&	
 
 struct TestConfig
 {
-	vk::wsi::Type			wsiType;
-	Scaling					scaling;
-	bool					useSharedPresentableImage;
-	vk::VkPresentModeKHR	presentMode;
+	vk::wsi::Type					wsiType;
+	Scaling							scaling;
+	bool							useSharedPresentableImage;
+	vk::VkPresentModeKHR			presentMode;
+	vk::VkSurfaceTransformFlagsKHR	transform;
+	vk::VkCompositeAlphaFlagsKHR	alpha;
 };
 
 class SharedPresentableImageTestInstance : public TestInstance
@@ -623,27 +625,32 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 																	const vector<vk::VkSurfaceFormatKHR>&	formats,
 																	const vector<vk::VkPresentModeKHR>&		presentModes,
 																	vk::VkPresentModeKHR					presentMode,
-																	vk::VkImageUsageFlags					supportedImageUsage)
+																	vk::VkImageUsageFlags					supportedImageUsage,
+																	const vk::VkSurfaceTransformFlagsKHR	transform,
+																	const vk::VkCompositeAlphaFlagsKHR		alpha)
 {
 	const deUint32							imageLayers			= 1u;
 	const vk::VkImageUsageFlags				imageUsage			= properties.supportedUsageFlags & supportedImageUsage;
 	const vk::VkBool32						clipped				= VK_FALSE;
 	vector<vk::VkSwapchainCreateInfoKHR>	createInfos;
 
+	const deUint32				currentWidth		= properties.currentExtent.width != 0xFFFFFFFFu
+												? properties.currentExtent.width
+												: de::min(1024u, properties.minImageExtent.width + ((properties.maxImageExtent.width - properties.minImageExtent.width) / 2));
+	const deUint32				currentHeight		= properties.currentExtent.height != 0xFFFFFFFFu
+												? properties.currentExtent.height
+												: de::min(1024u, properties.minImageExtent.height + ((properties.maxImageExtent.height - properties.minImageExtent.height) / 2));
+
 	const deUint32				imageWidth		= scaling == SCALING_NONE
-												? (properties.currentExtent.width != 0xFFFFFFFFu
-													? properties.currentExtent.width
-													: de::min(1024u, properties.minImageExtent.width + ((properties.maxImageExtent.width - properties.minImageExtent.width) / 2)))
+												? currentWidth
 												: (scaling == SCALING_UP
 													? de::max(31u, properties.minImageExtent.width)
-													: properties.maxImageExtent.width);
+													: de::min(deSmallestGreaterOrEquallPowerOfTwoU32(currentWidth+1), properties.maxImageExtent.width));
 	const deUint32				imageHeight		= scaling == SCALING_NONE
-												? (properties.currentExtent.height != 0xFFFFFFFFu
-													? properties.currentExtent.height
-													: de::min(1024u, properties.minImageExtent.height + ((properties.maxImageExtent.height - properties.minImageExtent.height) / 2)))
+												? currentHeight
 												: (scaling == SCALING_UP
 													? de::max(31u, properties.minImageExtent.height)
-													: properties.maxImageExtent.height);
+													: de::min(deSmallestGreaterOrEquallPowerOfTwoU32(currentHeight+1), properties.maxImageExtent.height));
 	const vk::VkExtent2D		imageSize		= { imageWidth, imageHeight };
 
 	{
@@ -657,49 +664,43 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 
 		if (presentModeNdx == presentModes.size())
 			TCU_THROW(NotSupportedError, "Present mode not supported");
+
+		if ((properties.supportedTransforms & transform) == 0)
+			TCU_THROW(NotSupportedError, "Transform not supported");
+
+		if ((properties.supportedCompositeAlpha & alpha) == 0)
+			TCU_THROW(NotSupportedError, "Composite alpha not supported");
 	}
 
 	for (size_t formatNdx = 0; formatNdx < formats.size(); formatNdx++)
 	{
-		for (vk::VkSurfaceTransformFlagsKHR transform = 1u; transform <= properties.supportedTransforms; transform = transform << 1u)
+		const vk::VkSurfaceTransformFlagBitsKHR	preTransform	= (vk::VkSurfaceTransformFlagBitsKHR)transform;
+		const vk::VkCompositeAlphaFlagBitsKHR	compositeAlpha	= (vk::VkCompositeAlphaFlagBitsKHR)alpha;
+		const vk::VkFormat						imageFormat		= formats[formatNdx].format;
+		const vk::VkColorSpaceKHR				imageColorSpace	= formats[formatNdx].colorSpace;
+		const vk::VkSwapchainCreateInfoKHR		createInfo		=
 		{
-			if ((properties.supportedTransforms & transform) == 0)
-				continue;
+			vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			DE_NULL,
+			0u,
+			surface,
+			1,														// Always 1 image for a shared presentable image swapchain.
+			imageFormat,
+			imageColorSpace,
+			imageSize,
+			imageLayers,
+			imageUsage,
+			vk::VK_SHARING_MODE_EXCLUSIVE,
+			1u,
+			&queueFamilyIndex,
+			preTransform,
+			compositeAlpha,
+			presentMode,
+			clipped,
+			(vk::VkSwapchainKHR)0
+		};
 
-			for (vk::VkCompositeAlphaFlagsKHR alpha = 1u; alpha <= properties.supportedCompositeAlpha; alpha = alpha << 1u)
-			{
-				if ((alpha & properties.supportedCompositeAlpha) == 0)
-					continue;
-
-				const vk::VkSurfaceTransformFlagBitsKHR	preTransform	= (vk::VkSurfaceTransformFlagBitsKHR)transform;
-				const vk::VkCompositeAlphaFlagBitsKHR	compositeAlpha	= (vk::VkCompositeAlphaFlagBitsKHR)alpha;
-				const vk::VkFormat						imageFormat		= formats[formatNdx].format;
-				const vk::VkColorSpaceKHR				imageColorSpace	= formats[formatNdx].colorSpace;
-				const vk::VkSwapchainCreateInfoKHR		createInfo		=
-				{
-					vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-					DE_NULL,
-					0u,
-					surface,
-					1,														// Always 1 image for a shared presentable image swapchain.
-					imageFormat,
-					imageColorSpace,
-					imageSize,
-					imageLayers,
-					imageUsage,
-					vk::VK_SHARING_MODE_EXCLUSIVE,
-					1u,
-					&queueFamilyIndex,
-					preTransform,
-					compositeAlpha,
-					presentMode,
-					clipped,
-					(vk::VkSwapchainKHR)0
-				};
-
-				createInfos.push_back(createInfo);
-			}
-		}
+		createInfos.push_back(createInfo);
 	}
 
 	return createInfos;
@@ -763,7 +764,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance (Context&
 	, m_surfaceFormats			(vk::wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, *m_surface))
 	, m_presentModes			(vk::wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, *m_surface))
 
-	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, m_supportedUsageFlags))
+	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode, m_supportedUsageFlags, testConfig.transform, testConfig.alpha))
 	, m_swapchainConfigNdx		(0u)
 
 	, m_frameCount				(60u * 5u)
@@ -997,7 +998,7 @@ tcu::TestStatus SharedPresentableImageTestInstance::iterate (void)
 	{
 		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_supportedUsageFlags);
+			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode, m_supportedUsageFlags, m_testConfig.transform, m_testConfig.alpha);
 
 			if (m_outOfDateCount < m_maxOutOfDateCount)
 			{
@@ -1117,6 +1118,33 @@ void createSharedPresentableImageTests (tcu::TestCaseGroup* testGroup, vk::wsi::
 		{ vk::VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR,			"demand"			},
 		{ vk::VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,		"continuous"		},
 	};
+	const struct
+	{
+		vk::VkSurfaceTransformFlagsKHR	transform;
+		const char*						name;
+	} transforms[] =
+	{
+		{ vk::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,						"identity"						},
+		{ vk::VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR,						"rotate_90"						},
+		{ vk::VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR,						"rotate_180"					},
+		{ vk::VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR,						"rotate_270"					},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR,				"horizontal_mirror"				},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR,		"horizontal_mirror_rotate_90"	},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR,	"horizontal_mirror_rotate_180"	},
+		{ vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR,	"horizontal_mirror_rotate_270"	},
+		{ vk::VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR,							"inherit"						}
+	};
+	const struct
+	{
+		vk::VkCompositeAlphaFlagsKHR	alpha;
+		const char*						name;
+	} alphas[] =
+	{
+		{ vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,			"opaque"			},
+		{ vk::VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,	"pre_multiplied"	},
+		{ vk::VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,	"post_multiplied"	},
+		{ vk::VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,			"inherit"			}
+	};
 
 	for (size_t scalingNdx = 0; scalingNdx < DE_LENGTH_OF_ARRAY(scaling); scalingNdx++)
 	{
@@ -1124,18 +1152,33 @@ void createSharedPresentableImageTests (tcu::TestCaseGroup* testGroup, vk::wsi::
 		{
 			de::MovePtr<tcu::TestCaseGroup>	scaleGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), scaling[scalingNdx].name, scaling[scalingNdx].name));
 
-			for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
+			for (size_t transformNdx = 0; transformNdx < DE_LENGTH_OF_ARRAY(transforms); transformNdx++)
 			{
+				de::MovePtr<tcu::TestCaseGroup>	transformGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), transforms[transformNdx].name, transforms[transformNdx].name));
 
-				const char* const				name		= presentModes[presentModeNdx].name;
-				TestConfig						config;
+				for (size_t alphaNdx = 0; alphaNdx < DE_LENGTH_OF_ARRAY(alphas); alphaNdx++)
+				{
+					de::MovePtr<tcu::TestCaseGroup>	alphaGroup	(new tcu::TestCaseGroup(testGroup->getTestContext(), alphas[alphaNdx].name, alphas[alphaNdx].name));
 
-				config.wsiType					= wsiType;
-				config.useSharedPresentableImage= true;
-				config.scaling					= scaling[scalingNdx].scaling;
-				config.presentMode				= presentModes[presentModeNdx].mode;
+					for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
+					{
+						const char* const					name	= presentModes[presentModeNdx].name;
+						TestConfig							config;
 
-				scaleGroup->addChild(new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+						config.wsiType						= wsiType;
+						config.useSharedPresentableImage	= true;
+						config.scaling						= scaling[scalingNdx].scaling;
+						config.transform					= transforms[transformNdx].transform;
+						config.alpha						= alphas[alphaNdx].alpha;
+						config.presentMode					= presentModes[presentModeNdx].mode;
+
+						alphaGroup->addChild(new vkt::InstanceFactory1<SharedPresentableImageTestInstance, TestConfig, Programs>(testGroup->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, name, Programs(), config));
+					}
+
+					transformGroup->addChild(alphaGroup.release());
+				}
+
+				scaleGroup->addChild(transformGroup.release());
 			}
 
 			testGroup->addChild(scaleGroup.release());

@@ -29,25 +29,25 @@ namespace glu
 {
 
 VarType::VarType (void)
-	: m_type(TYPE_LAST)
+	: m_type(VARTYPE_LAST)
 {
 }
 
 VarType::VarType (const VarType& other)
-	: m_type(TYPE_LAST)
+	: m_type(VARTYPE_LAST)
 {
 	*this = other;
 }
 
 VarType::VarType (DataType basicType, Precision precision)
-	: m_type(TYPE_BASIC)
+	: m_type(VARTYPE_BASIC)
 {
 	m_data.basic.type		= basicType;
 	m_data.basic.precision	= precision;
 }
 
 VarType::VarType (const VarType& elementType, int arraySize)
-	: m_type(TYPE_ARRAY)
+	: m_type(VARTYPE_ARRAY)
 {
 	DE_ASSERT(arraySize >= 0 || arraySize == UNSIZED_ARRAY);
 	m_data.array.size			= arraySize;
@@ -55,14 +55,14 @@ VarType::VarType (const VarType& elementType, int arraySize)
 }
 
 VarType::VarType (const StructType* structPtr)
-	: m_type(TYPE_STRUCT)
+	: m_type(VARTYPE_STRUCT)
 {
 	m_data.structPtr = structPtr;
 }
 
 VarType::~VarType (void)
 {
-	if (m_type == TYPE_ARRAY)
+	if (m_type == VARTYPE_ARRAY)
 		delete m_data.array.elementType;
 }
 
@@ -71,12 +71,12 @@ VarType& VarType::operator= (const VarType& other)
 	if (this == &other)
 		return *this; // Self-assignment.
 
-	VarType *oldElementType = m_type == TYPE_ARRAY ? m_data.array.elementType : DE_NULL;
+	VarType *oldElementType = m_type == VARTYPE_ARRAY ? m_data.array.elementType : DE_NULL;
 
 	m_type	= other.m_type;
 	m_data	= Data();
 
-	if (m_type == TYPE_ARRAY)
+	if (m_type == VARTYPE_ARRAY)
 	{
 		m_data.array.elementType	= new VarType(*other.m_data.array.elementType);
 		m_data.array.size			= other.m_data.array.size;
@@ -93,10 +93,10 @@ int VarType::getScalarSize (void) const
 {
 	switch (m_type)
 	{
-		case TYPE_BASIC:	return glu::getDataTypeScalarSize(m_data.basic.type);
-		case TYPE_ARRAY:	return m_data.array.elementType->getScalarSize()*m_data.array.size;
+		case VARTYPE_BASIC:	return glu::getDataTypeScalarSize(m_data.basic.type);
+		case VARTYPE_ARRAY:	return m_data.array.elementType->getScalarSize()*m_data.array.size;
 
-		case TYPE_STRUCT:
+		case VARTYPE_STRUCT:
 		{
 			int size = 0;
 			for (StructType::ConstIterator iter = m_data.structPtr->begin(); iter != m_data.structPtr->end(); iter++)
@@ -117,15 +117,15 @@ bool VarType::operator== (const VarType& other) const
 
 	switch (m_type)
 	{
-		case TYPE_BASIC:
+		case VARTYPE_BASIC:
 			return	m_data.basic.type == other.m_data.basic.type &&
 					m_data.basic.precision == other.m_data.basic.precision;
 
-		case TYPE_ARRAY:
+		case VARTYPE_ARRAY:
 			return	*m_data.array.elementType == *other.m_data.array.elementType &&
 					m_data.array.size == other.m_data.array.size;
 
-		case TYPE_STRUCT:
+		case VARTYPE_STRUCT:
 			return m_data.structPtr == other.m_data.structPtr;
 
 		default:

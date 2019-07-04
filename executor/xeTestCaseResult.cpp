@@ -71,14 +71,14 @@ std::ostream& operator<< (std::ostream& str, const NumericValue& value)
 {
 	switch (value.getType())
 	{
-		case NumericValue::TYPE_FLOAT64:
+		case NumericValue::NUMVALTYPE_FLOAT64:
 			return str << std::setprecision(std::numeric_limits<double>::digits10 + 2) << value.getFloat64();
 
-		case NumericValue::TYPE_INT64:
+		case NumericValue::NUMVALTYPE_INT64:
 			return str << value.getInt64();
 
 		default:
-			DE_ASSERT(value.getType() == NumericValue::TYPE_EMPTY);
+			DE_ASSERT(value.getType() == NumericValue::NUMVALTYPE_EMPTY);
 			return str;
 	}
 }
