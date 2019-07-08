@@ -67,3 +67,6 @@ dEQP-VK.wsi.android.incremental_present.scale_down.*
 
 # Excluded VkRunner example tests
 dEQP-VK.vkrunner-example.*
+
+# Exclude conformance version from android test, issue 1839
+dEQP-VK.api.driver_properties.conformance_version

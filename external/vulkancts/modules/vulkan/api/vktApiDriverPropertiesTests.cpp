@@ -37,6 +37,15 @@ namespace api
 namespace
 {
 
+enum TestType
+{
+	TEST_TYPE_DRIVER_ID_MATCH			= 0,
+	TEST_TYPE_NAME_IS_NOT_EMPTY,
+	TEST_TYPE_NAME_ZERO_TERMINATED,
+	TEST_TYPE_INFO_ZERO_TERMINATED,
+	TEST_TYPE_VERSION,
+};
+
 static const deUint32 knownDriverIds[] =
 {
 	// Specified in the Vulkan registry (vk.xml)
@@ -49,6 +58,9 @@ static const deUint32 knownDriverIds[] =
 	7,	// author = "Imagination Technologies"       comment = "Imagination proprietary driver"
 	8,	// author = "Qualcomm Technologies, Inc."    comment = "Qualcomm proprietary driver"
 	9,	// author = "Arm Limited"                    comment = "Arm proprietary driver"
+	10,	// <enum value="10"      name="VK_DRIVER_ID_GOOGLE_SWIFTSHADER_KHR"        comment="Google LLC"/>
+	11,	// <enum value="11"      name="VK_DRIVER_ID_GGP_PROPRIETARY_KHR"           comment="Google LLC"/>
+	12,	// <enum value="12"      name="VK_DRIVER_ID_BROADCOM_PROPRIETARY_KHR"      comment="Broadcom Inc."/>
 };
 
 static const VkConformanceVersionKHR knownConformanceVersions[] =
@@ -87,15 +99,60 @@ DE_INLINE bool operator==(const VkConformanceVersionKHR& a, const VkConformanceV
 			(a.patch == b.patch));
 }
 
-tcu::TestStatus testQueryProperties (Context& context)
+void checkSupport (Context& context, const TestType config)
 {
-	// Check extension support
+	DE_UNREF(config);
 
+	// Check extension support
 	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_driver_properties"))
 		TCU_THROW(NotSupportedError, "Unsupported extension: VK_KHR_driver_properties");
+}
 
+void testDriverMatch (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)
+{
+	for (const deUint32* pDriverId = knownDriverIds; pDriverId != DE_ARRAY_END(knownDriverIds); ++pDriverId)
+	{
+		if (deviceDriverProperties.driverID == *pDriverId)
+			return;
+	}
+
+	TCU_FAIL("Driver ID did not match any known driver");
+}
+
+void testNameIsNotEmpty (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)
+{
+	if (deviceDriverProperties.driverName[0] == 0)
+		TCU_FAIL("Driver name is empty");
+}
+
+void testNameZeroTerminated (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)
+{
+	if (!isNullTerminated(deviceDriverProperties.driverName, VK_MAX_DRIVER_NAME_SIZE_KHR))
+		TCU_FAIL("Driver name is not a null-terminated string");
+}
+
+void testInfoZeroTerminated (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)
+{
+	if (!isNullTerminated(deviceDriverProperties.driverInfo, VK_MAX_DRIVER_INFO_SIZE_KHR))
+		TCU_FAIL("Driver info is not a null-terminated string");
+}
+
+void testVersion (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)
+{
+	for (const VkConformanceVersionKHR* pConformanceVersion  = knownConformanceVersions;
+										pConformanceVersion != DE_ARRAY_END(knownConformanceVersions);
+									  ++pConformanceVersion)
+	{
+		if (deviceDriverProperties.conformanceVersion == *pConformanceVersion)
+			return;
+	}
+
+	TCU_FAIL("Wrong driver conformance version");
+}
+
+tcu::TestStatus testQueryProperties (Context& context, const TestType testType)
+{
 	// Query the driver properties
-
 	const VkPhysicalDevice				physDevice			= context.getPhysicalDevice();
 	const int							memsetPattern		= 0xaa;
 	VkPhysicalDeviceProperties2			deviceProperties2;
@@ -112,51 +169,26 @@ tcu::TestStatus testQueryProperties (Context& context)
 	context.getInstanceInterface().getPhysicalDeviceProperties2(physDevice, &deviceProperties2);
 
 	// Verify the returned values
-
-	bool match = false;
-
-	for (const deUint32* pDriverId = knownDriverIds; (pDriverId != DE_ARRAY_END(knownDriverIds)) && !match; ++pDriverId)
+	switch (testType)
 	{
-		if (deviceDriverProperties.driverID == *pDriverId)
-		{
-			match = true;
-
-			if (!isNullTerminated(deviceDriverProperties.driverName, VK_MAX_DRIVER_NAME_SIZE_KHR))
-				TCU_FAIL("Driver name is not a null-terminated string");
-
-			if (deviceDriverProperties.driverName[0] == 0)
-				TCU_FAIL("Driver name is empty");
-
-			if (!isNullTerminated(deviceDriverProperties.driverInfo, VK_MAX_DRIVER_INFO_SIZE_KHR))
-				TCU_FAIL("Driver info is not a null-terminated string");
-
-			bool conformanceVersionMatch = false;
-
-			for (const VkConformanceVersionKHR* pConformanceVersion  = knownConformanceVersions;
-												pConformanceVersion != DE_ARRAY_END(knownConformanceVersions);
-											  ++pConformanceVersion)
-			{
-				if (deviceDriverProperties.conformanceVersion == *pConformanceVersion)
-				{
-					conformanceVersionMatch = true;
-					break;
-				}
-			}
-
-			if (!conformanceVersionMatch)
-				TCU_FAIL("Wrong driver conformance version");
-		}
+		case TEST_TYPE_DRIVER_ID_MATCH:			testDriverMatch			(deviceDriverProperties);	break;
+		case TEST_TYPE_NAME_IS_NOT_EMPTY:		testNameIsNotEmpty		(deviceDriverProperties);	break;
+		case TEST_TYPE_NAME_ZERO_TERMINATED:	testNameZeroTerminated	(deviceDriverProperties);	break;
+		case TEST_TYPE_INFO_ZERO_TERMINATED:	testInfoZeroTerminated	(deviceDriverProperties);	break;
+		case TEST_TYPE_VERSION:					testVersion				(deviceDriverProperties);	break;
+		default:								TCU_THROW(InternalError, "Unknown test type specified");
 	}
-
-	if (!match)
-		TCU_FAIL("Driver ID did not match any known driver");
 
 	return tcu::TestStatus::pass("Pass");
 }
 
 void createTestCases (tcu::TestCaseGroup* group)
 {
-	addFunctionCase(group, "properties", "Query VkPhysicalDeviceDriverPropertiesKHR and check its values", testQueryProperties);
+	addFunctionCase(group, "driver_id_match",		"Check driverID is supported",					checkSupport,	testQueryProperties,	TEST_TYPE_DRIVER_ID_MATCH);
+	addFunctionCase(group, "name_is_not_empty",		"Check name field is not empty",				checkSupport,	testQueryProperties,	TEST_TYPE_NAME_IS_NOT_EMPTY);
+	addFunctionCase(group, "name_zero_terminated",	"Check name field is zero-terminated",			checkSupport,	testQueryProperties,	TEST_TYPE_NAME_ZERO_TERMINATED);
+	addFunctionCase(group, "info_zero_terminated",	"Check info field is zero-terminated",			checkSupport,	testQueryProperties,	TEST_TYPE_INFO_ZERO_TERMINATED);
+	addFunctionCase(group, "conformance_version",	"Check conformanceVersion reported by driver",	checkSupport,	testQueryProperties,	TEST_TYPE_VERSION);
 }
 
 } // anonymous
