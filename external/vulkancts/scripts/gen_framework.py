@@ -149,6 +149,7 @@ def prefixName (prefix, name):
 	name = name.replace("AABBNV", "AABB_NV")
 	name = name.replace("IMAGE_PIPE", "IMAGEPIPE")
 	name = name.replace("FUNCTIONS_2", "FUNCTIONS2_FEATURES")
+	name = name.replace("SMBUILTINS", "SM_BUILTINS")
 
 	return prefix + name
 

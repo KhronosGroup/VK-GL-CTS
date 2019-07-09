@@ -234,6 +234,15 @@ virtual void				cmdDrawMeshTasksIndirectCountNV					(VkCommandBuffer commandBuff
 virtual void				cmdSetExclusiveScissorNV						(VkCommandBuffer commandBuffer, deUint32 firstExclusiveScissor, deUint32 exclusiveScissorCount, const VkRect2D* pExclusiveScissors) const;
 virtual void				cmdSetCheckpointNV								(VkCommandBuffer commandBuffer, const void* pCheckpointMarker) const;
 virtual void				getQueueCheckpointDataNV						(VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData) const;
+virtual VkResult			initializePerformanceApiINTEL					(VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo) const;
+virtual void				uninitializePerformanceApiINTEL					(VkDevice device) const;
+virtual VkResult			cmdSetPerformanceMarkerINTEL					(VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo) const;
+virtual VkResult			cmdSetPerformanceStreamMarkerINTEL				(VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const;
+virtual VkResult			cmdSetPerformanceOverrideINTEL					(VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo) const;
+virtual VkResult			acquirePerformanceConfigurationINTEL			(VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration) const;
+virtual VkResult			releasePerformanceConfigurationINTEL			(VkDevice device, VkPerformanceConfigurationINTEL configuration) const;
+virtual VkResult			queueSetPerformanceConfigurationINTEL			(VkQueue queue, VkPerformanceConfigurationINTEL configuration) const;
+virtual VkResult			getPerformanceParameterINTEL					(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const;
 virtual void				setLocalDimmingAMD								(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const;
 virtual VkDeviceAddress		getBufferDeviceAddressEXT						(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const;
 virtual void				resetQueryPoolEXT								(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const;

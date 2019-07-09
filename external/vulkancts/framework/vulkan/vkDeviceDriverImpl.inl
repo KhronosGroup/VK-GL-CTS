@@ -1167,6 +1167,51 @@ void DeviceDriver::getQueueCheckpointDataNV (VkQueue queue, deUint32* pCheckpoin
 	m_vk.getQueueCheckpointDataNV(queue, pCheckpointDataCount, pCheckpointData);
 }
 
+VkResult DeviceDriver::initializePerformanceApiINTEL (VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo) const
+{
+	return m_vk.initializePerformanceApiINTEL(device, pInitializeInfo);
+}
+
+void DeviceDriver::uninitializePerformanceApiINTEL (VkDevice device) const
+{
+	m_vk.uninitializePerformanceApiINTEL(device);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo) const
+{
+	return m_vk.cmdSetPerformanceMarkerINTEL(commandBuffer, pMarkerInfo);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceStreamMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const
+{
+	return m_vk.cmdSetPerformanceStreamMarkerINTEL(commandBuffer, pMarkerInfo);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceOverrideINTEL (VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo) const
+{
+	return m_vk.cmdSetPerformanceOverrideINTEL(commandBuffer, pOverrideInfo);
+}
+
+VkResult DeviceDriver::acquirePerformanceConfigurationINTEL (VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration) const
+{
+	return m_vk.acquirePerformanceConfigurationINTEL(device, pAcquireInfo, pConfiguration);
+}
+
+VkResult DeviceDriver::releasePerformanceConfigurationINTEL (VkDevice device, VkPerformanceConfigurationINTEL configuration) const
+{
+	return m_vk.releasePerformanceConfigurationINTEL(device, configuration);
+}
+
+VkResult DeviceDriver::queueSetPerformanceConfigurationINTEL (VkQueue queue, VkPerformanceConfigurationINTEL configuration) const
+{
+	return m_vk.queueSetPerformanceConfigurationINTEL(queue, configuration);
+}
+
+VkResult DeviceDriver::getPerformanceParameterINTEL (VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const
+{
+	return m_vk.getPerformanceParameterINTEL(device, parameter, pValue);
+}
+
 void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const
 {
 	m_vk.setLocalDimmingAMD(device, swapChain, localDimmingEnable);

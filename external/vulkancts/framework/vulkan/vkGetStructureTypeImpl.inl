@@ -656,6 +656,26 @@ template<> VkStructureType getStructureType<VkPresentRegionsKHR> (void)
 	return VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImagelessFramebufferFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkFramebufferAttachmentImageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkFramebufferAttachmentsCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassAttachmentBeginInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkAttachmentDescription2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
@@ -1121,6 +1141,16 @@ template<> VkStructureType getStructureType<VkPipelineCoverageModulationStateCre
 	return VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesListEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT;
@@ -1381,6 +1411,36 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderIntegerFunctio
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL;
 }
 
+template<> VkStructureType getStructureType<VkInitializePerformanceApiInfoINTEL> (void)
+{
+	return VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL;
+}
+
+template<> VkStructureType getStructureType<VkQueryPoolCreateInfoINTEL> (void)
+{
+	return VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceMarkerInfoINTEL> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceStreamMarkerInfoINTEL> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_STREAM_MARKER_INFO_INTEL;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceOverrideInfoINTEL> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_OVERRIDE_INFO_INTEL;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceConfigurationAcquireInfoINTEL> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePCIBusInfoPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
@@ -1491,6 +1551,11 @@ template<> VkStructureType getStructureType<VkFramebufferMixedSamplesCombination
 	return VK_STRUCTURE_TYPE_FRAMEBUFFER_MIXED_SAMPLES_COMBINATION_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_YCBCR_IMAGE_ARRAYS_FEATURES_EXT;
@@ -1504,6 +1569,21 @@ template<> VkStructureType getStructureType<VkHeadlessSurfaceCreateInfoEXT> (voi
 template<> VkStructureType getStructureType<VkPhysicalDeviceHostQueryResetFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
