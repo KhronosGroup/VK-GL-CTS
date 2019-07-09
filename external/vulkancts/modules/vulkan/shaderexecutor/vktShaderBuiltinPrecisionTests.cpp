@@ -5120,9 +5120,11 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 										 Random&			rnd,
 										 const Interval&	inputRange) const
 {
+	DE_UNREF(prec);
+	// No testing of subnormals. TODO: Could integrate float controls for some operations.
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
-	const bool		haveSubnormal	= format.hasSubnormal() != tcu::NO;
+	const bool		haveSubnormal	= false;
 	const float		midpoint		= static_cast<float>(inputRange.midpoint());
 
 	// Choose exponent so that the cumulative distribution is cubic.
@@ -5173,34 +5175,7 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 	// Produce positive numbers more often than negative.
 	value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 
-	value = inputRange.contains(static_cast<double>(value)) ? value : midpoint;
-
-	//not denormalized values
-	{
-		DE_ASSERT(sizeof(float) == sizeof(deUint32));
-
-		const deUint32 mantissa	= 0x007fffff;
-		const deUint32 exponent	= 0x7f800000;
-		deUint32 valueInt		= 0u;
-		deMemcpy(&valueInt, &value, sizeof(deUint32));
-
-		if((exponent & valueInt) == 0 && (mantissa & valueInt) != 0)
-		{
-			deUint32 toReturn = 0x00800000 | valueInt;
-			deMemcpy(&value, &toReturn, sizeof(float));
-		}
-
-		// For 16bit-but-32bit-storage tests we must also avoid any value that
-		// becomes a denorm in fp16. The tests don't specify a rounding mode so
-		// assume the worst and use round-to-zero. Add an offset to put values
-		// back into the normal range.
-		// NOTE: The large offset means that all denorms will come out equal,
-		// except for differences that will round away in fp16. This catches
-		// some cases of operations incorrectly using the full fp32 precision.
-		if (prec == glu::PRECISION_LAST && isDenorm16(deFloat32To16Round(value, DE_ROUNDINGMODE_TO_ZERO)))
-			value += 1.0099f;
-	}
-	return value;
+	return inputRange.contains(static_cast<double>(value)) ? value : midpoint;
 }
 
 //! Generate a standard set of floats that should always be tested.
@@ -5267,7 +5242,7 @@ deFloat16 DefaultSampling<deFloat16>::genRandom (const FloatFormat& format, cons
 	DE_UNREF(prec);
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
-	const bool		haveSubnormal	= format.hasSubnormal() != tcu::NO;
+	const bool		haveSubnormal	= false;
 	const deUint16	midpoint		= deFloat32To16Round(static_cast<float>(inputRange.midpoint()), DE_ROUNDINGMODE_TO_NEAREST_EVEN);
 
 	// Choose exponent so that the cumulative distribution is cubic.
@@ -5318,10 +5293,6 @@ deFloat16 DefaultSampling<deFloat16>::genRandom (const FloatFormat& format, cons
 	// Produce positive numbers more often than negative.
 	float value			= (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 	deFloat16 value16b	= deFloat32To16Round(value, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-
-	// Offset denormalised values to put them into the normal range
-	if (isDenorm16(value16b))
-		value16b = 0x4000 | value16b;
 
 	return inputRange.contains(static_cast<double>(value16b)) ? value16b : midpoint;
 }
