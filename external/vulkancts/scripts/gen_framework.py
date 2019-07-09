@@ -1599,8 +1599,12 @@ def writeDeviceFeatures(dfDefs, filename):
 
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
-	for _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("EXT", "").replace("NV", "")
+	for sType, sSuffix, extStruct, _, _, _ in dfDefs:
+		# Special case to treat BufferDeviceAddressFeaturesEXT differently than BufferDeviceAddressFeaturesKHR
+		if sType == "BUFFER_DEVICE_ADDRESS" and sSuffix == "_EXT":
+			nameSubStr = extStruct.replace("VkPhysicalDevice", "")
+		else:
+			nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("EXT", "").replace("KHR", "").replace("NV", "")
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 

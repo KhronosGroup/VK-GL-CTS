@@ -2466,6 +2466,43 @@ struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
 	VkBool32		uniformBufferStandardLayout;
 };
 
+struct VkPhysicalDeviceBufferDeviceAddressFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		bufferDeviceAddress;
+	VkBool32		bufferDeviceAddressCaptureReplay;
+	VkBool32		bufferDeviceAddressMultiDevice;
+};
+
+struct VkBufferDeviceAddressInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBuffer		buffer;
+};
+
+struct VkBufferOpaqueCaptureAddressCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint64		opaqueCaptureAddress;
+};
+
+struct VkMemoryOpaqueCaptureAddressAllocateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint64		opaqueCaptureAddress;
+};
+
+struct VkDeviceMemoryOpaqueCaptureAddressInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceMemory	memory;
+};
+
 struct VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR
 {
 	VkStructureType	sType;
@@ -2701,7 +2738,7 @@ struct VkValidationFlagsEXT
 struct VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		textureCompressionASTC_HDR;
 };
 
@@ -4044,13 +4081,6 @@ struct VkPhysicalDeviceBufferDeviceAddressFeaturesEXT
 	VkBool32		bufferDeviceAddressMultiDevice;
 };
 
-struct VkBufferDeviceAddressInfoEXT
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkBuffer		buffer;
-};
-
 struct VkBufferDeviceAddressCreateInfoEXT
 {
 	VkStructureType	sType;
@@ -4655,6 +4685,8 @@ typedef VkDescriptorSetLayoutSupport VkDescriptorSetLayoutSupportKHR;
 typedef VkPhysicalDeviceShaderDrawParametersFeatures VkPhysicalDeviceShaderDrawParameterFeatures;
 
 typedef VkPhysicalDeviceShaderFloat16Int8FeaturesKHR VkPhysicalDeviceFloat16Int8FeaturesKHR;
+
+typedef VkBufferDeviceAddressInfoKHR VkBufferDeviceAddressInfoEXT;
 
 typedef VkPhysicalDeviceBufferDeviceAddressFeaturesEXT VkPhysicalDeviceBufferAddressFeaturesEXT;
 

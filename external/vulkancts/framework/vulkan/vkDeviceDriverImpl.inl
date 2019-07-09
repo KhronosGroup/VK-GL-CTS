@@ -832,6 +832,21 @@ VkResult DeviceDriver::signalSemaphoreKHR (VkDevice device, const VkSemaphoreSig
 	return m_vk.signalSemaphoreKHR(device, pSignalInfo);
 }
 
+VkDeviceAddress DeviceDriver::getBufferDeviceAddressKHR (VkDevice device, const VkBufferDeviceAddressInfoKHR* pInfo) const
+{
+	return m_vk.getBufferDeviceAddressKHR(device, pInfo);
+}
+
+uint64_t DeviceDriver::getBufferOpaqueCaptureAddressKHR (VkDevice device, const VkBufferDeviceAddressInfoKHR* pInfo) const
+{
+	return m_vk.getBufferOpaqueCaptureAddressKHR(device, pInfo);
+}
+
+uint64_t DeviceDriver::getDeviceMemoryOpaqueCaptureAddressKHR (VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfoKHR* pInfo) const
+{
+	return m_vk.getDeviceMemoryOpaqueCaptureAddressKHR(device, pInfo);
+}
+
 VkResult DeviceDriver::getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const
 {
 	return m_vk.getPipelineExecutablePropertiesKHR(device, pPipelineInfo, pExecutableCount, pProperties);
@@ -1257,7 +1272,7 @@ void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain
 	m_vk.setLocalDimmingAMD(device, swapChain, localDimmingEnable);
 }
 
-VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const
+VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoKHR* pInfo) const
 {
 	return m_vk.getBufferDeviceAddressEXT(device, pInfo);
 }

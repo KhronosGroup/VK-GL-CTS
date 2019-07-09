@@ -102,6 +102,8 @@ public:
 	bool										resultSetOnValidation			() const		{ return m_resultSetOnValidation;	}
 	void										resultSetOnValidation			(bool value)	{ m_resultSetOnValidation = value;	}
 
+	bool										isBufferDeviceAddressSupported						(void) const;
+
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;

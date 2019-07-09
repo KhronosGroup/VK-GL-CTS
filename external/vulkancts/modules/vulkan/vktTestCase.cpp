@@ -552,6 +552,12 @@ void* Context::getInstanceProcAddr	()
 	return (void*)m_platformInterface.getGetInstanceProcAddr();
 }
 
+bool Context::isBufferDeviceAddressSupported(void) const
+{
+	return isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ||
+		   isDeviceFunctionalitySupported("VK_EXT_buffer_device_address");
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

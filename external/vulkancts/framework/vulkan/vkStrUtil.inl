@@ -653,6 +653,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSeparateDepthSt
 std::ostream&	operator<<	(std::ostream& s, const VkAttachmentReferenceStencilLayoutKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAttachmentDescriptionStencilLayoutKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferOpaqueCaptureAddressCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryOpaqueCaptureAddressAllocateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceMemoryOpaqueCaptureAddressInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutablePropertiesKHR& value);
@@ -834,7 +839,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMemoryPriorityF
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryPriorityAllocateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageStencilUsageCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFeaturesEXT& value);

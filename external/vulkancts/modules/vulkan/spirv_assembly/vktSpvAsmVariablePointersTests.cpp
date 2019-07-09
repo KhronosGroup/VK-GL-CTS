@@ -211,8 +211,6 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 		incrAmuxBOutputFloats[i] = (inputSFloats[i] < 0) ? 1 + inputAFloats[i]	 : 1 + inputBFloats[i];
 	}
 
-	const char *extensions = physPtrs ? "VK_EXT_buffer_device_address" : "VK_KHR_variable_pointers";
-
 	std::string stringTemplate =
 		"OpCapability Shader\n"
 
@@ -399,7 +397,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpFunctionCall)
@@ -422,7 +421,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpPhi)
@@ -453,7 +453,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpCopyObject)
@@ -479,7 +480,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Test storing into Private variables.
@@ -511,7 +513,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 				spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-				spec.extensions.push_back(extensions);
+				if (!physPtrs)
+					spec.extensions.push_back("VK_KHR_variable_pointers");
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), description.c_str(), spec));
 			}
 		}
@@ -547,7 +550,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{   // Variable Pointer Writes
@@ -573,7 +577,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedIncrOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 
@@ -616,7 +621,8 @@ void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool 
 			spec.inputs.push_back (Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back (Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back(extensions);
+			if (!physPtrs)
+				spec.extensions.push_back("VK_KHR_variable_pointers");
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 	}
@@ -864,8 +870,6 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 		"%inputC_b				= OpAccessChain %outer_struct_ptr %inputC %c_i32_1\n"
 	);
 
-	const char *extensions = physPtrs ? "VK_EXT_buffer_device_address" : "VK_KHR_variable_pointers";
-
 	std::string stringTemplate =
 		"OpCapability Shader\n"
 
@@ -1091,7 +1095,8 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back(extensions);
+					if (!physPtrs)
+						spec.extensions.push_back("VK_KHR_variable_pointers");
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -1126,7 +1131,8 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back(extensions);
+					if (!physPtrs)
+						spec.extensions.push_back("VK_KHR_variable_pointers");
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -1170,7 +1176,8 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back(extensions);
+					if (!physPtrs)
+						spec.extensions.push_back("VK_KHR_variable_pointers");
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -1203,7 +1210,8 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back(extensions);
+					if (!physPtrs)
+						spec.extensions.push_back("VK_KHR_variable_pointers");
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -1237,7 +1245,8 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back(extensions);
+					if (!physPtrs)
+						spec.extensions.push_back("VK_KHR_variable_pointers");
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 			}

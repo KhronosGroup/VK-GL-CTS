@@ -2234,8 +2234,13 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vector<BlockDataPtr>  mappedBlockPtrs;
 
 	vk::VkFlags usageFlags = vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	bool memoryDeviceAddress = false;
 	if (m_usePhysStorageBuffer)
-		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
+	{
+		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+		if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+			memoryDeviceAddress = true;
+	}
 
 	// Upload base buffers
 	const std::vector<int> bufferSizes	= computeBufferSizes(m_interface, m_refLayout);
@@ -2256,7 +2261,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 				blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
 
 				vk::Move<vk::VkBuffer>				buffer		= createBuffer(m_context, bufferSize, usageFlags);
-				de::MovePtr<vk::Allocation>			alloc		= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+				de::MovePtr<vk::Allocation>			alloc		= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible | (memoryDeviceAddress ? vk::MemoryRequirement::DeviceAddress : vk::MemoryRequirement::Any));
 
 				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, 0ull, bufferSize);
 
@@ -2288,7 +2293,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 			const int						totalBufferSize = curOffset;
 			vk::Move<vk::VkBuffer>			buffer			= createBuffer(m_context, totalBufferSize, usageFlags);
-			de::MovePtr<vk::Allocation>		alloc			= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
+			de::MovePtr<vk::Allocation>		alloc			= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible | (memoryDeviceAddress ? vk::MemoryRequirement::DeviceAddress : vk::MemoryRequirement::Any));
 
 			mapPtrs.push_back(alloc->getHostPtr());
 
@@ -2336,9 +2341,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	// Query the buffer device addresses and push them via push constants
 	if (m_usePhysStorageBuffer)
 	{
-		vk::VkBufferDeviceAddressInfoEXT info =
+		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
+
+		vk::VkBufferDeviceAddressInfoKHR info =
 		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
+			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	sType;
 			DE_NULL,												// const void*		pNext;
 			0,														// VkBuffer			buffer
 		};
@@ -2346,7 +2353,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		for (deUint32 i = 0; i < descriptors.size(); ++i)
 		{
 			info.buffer = descriptors[i].buffer;
-			vk::VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &info);
+			vk::VkDeviceAddress addr;
+			if (useKHR)
+				addr = vk.getBufferDeviceAddressKHR(device, &info);
+			else
+				addr = vk.getBufferDeviceAddressEXT(device, &info);
 			addr += descriptors[i].offset;
 			gpuAddrs.push_back(addr);
 		}
@@ -2371,7 +2382,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		(vk::VkPipelineLayoutCreateFlags)0,
 		1u,													// deUint32						descriptorSetCount;
 		&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
-        m_usePhysStorageBuffer ? 1u : 0u,					// deUint32						pushConstantRangeCount;
+		m_usePhysStorageBuffer ? 1u : 0u,					// deUint32						pushConstantRangeCount;
 		&pushConstRange,									// const VkPushConstantRange*	pPushConstantRanges;
 	};
 	vk::Move<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutParams));
@@ -2545,7 +2556,7 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
 	if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesScalarLayout(m_interface))
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
-	if (!context.getBufferDeviceAddressFeatures().bufferDeviceAddress && m_usePhysStorageBuffer)
+	if (m_usePhysStorageBuffer && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
 }

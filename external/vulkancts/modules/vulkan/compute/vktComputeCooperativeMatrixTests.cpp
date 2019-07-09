@@ -167,8 +167,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "variable pointers not supported");
 	}
 
-	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-		!context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
+	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER && !context.isBufferDeviceAddressSupported())
 	{
 		TCU_THROW(NotSupportedError, "buffer device address not supported");
 	}
@@ -636,6 +635,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
+	MemoryRequirement		memoryDeviceAddress		= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
+														m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
 	qpTestResult			finalres				= QP_TEST_RESULT_PASS;
 	tcu::TestLog&			log						= m_context.getTestContext().getLog();
 
@@ -807,13 +808,13 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 			{
 				buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 					vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT),
-					MemoryRequirement::HostVisible | MemoryRequirement::Cached | MemoryRequirement::Coherent));
+					MemoryRequirement::HostVisible | MemoryRequirement::Cached | MemoryRequirement::Coherent | memoryDeviceAddress));
 			}
 			catch (const tcu::NotSupportedError&)
 			{
 				buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 					vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT),
-					MemoryRequirement::HostVisible));
+					MemoryRequirement::HostVisible | memoryDeviceAddress));
 			}
 
 			bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, bufferSizes[i]);
@@ -843,9 +844,11 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 		if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
 		{
-			VkBufferDeviceAddressInfoEXT info =
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
+
+			VkBufferDeviceAddressInfoKHR info =
 			{
-				VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	 sType;
+				VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
 				DE_NULL,											// const void*		 pNext;
 				0,													// VkBuffer			buffer
 			};
@@ -853,7 +856,11 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 			for (deUint32 i = 0; i < 4; ++i)
 			{
 				info.buffer = **buffers[i];
-				VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &info);
+				VkDeviceAddress addr;
+				if (useKHR)
+					addr = vk.getBufferDeviceAddressKHR(device, &info);
+				else
+					addr = vk.getBufferDeviceAddressEXT(device, &info);
 				addrsInMemory[i] = addr;
 			}
 			setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(4),

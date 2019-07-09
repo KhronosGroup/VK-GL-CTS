@@ -73,3 +73,4 @@ VK_KHR_spirv_1_4							DEVICE
 VK_KHR_shader_subgroup_extended_types		DEVICE
 VK_KHR_separate_depth_stencil_layouts		DEVICE
 VK_KHR_performance_query					DEVICE
+VK_KHR_buffer_device_address				DEVICE
