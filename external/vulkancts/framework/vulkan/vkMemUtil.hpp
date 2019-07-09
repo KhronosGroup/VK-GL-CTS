@@ -89,6 +89,7 @@ public:
 	static const MemoryRequirement	Local;
 	static const MemoryRequirement	Cached;
 	static const MemoryRequirement	NonLocal;
+	static const MemoryRequirement	DeviceAddress;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -118,6 +119,7 @@ private:
 		FLAG_LOCAL				= 1u << 4u,
 		FLAG_CACHED				= 1u << 5u,
 		FLAG_NON_LOCAL			= 1u << 6u,
+		FLAG_DEVICE_ADDRESS		= 1u << 7u,
 	};
 };
 
@@ -147,6 +149,7 @@ private:
 	const VkPhysicalDeviceMemoryProperties	m_memProps;
 };
 
+de::MovePtr<Allocation>	allocateExtended			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkMemoryRequirements& memReqs, const MemoryRequirement requirement, const void* pNext);
 de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkBuffer buffer, MemoryRequirement requirement);
 de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice& physDevice, const VkDevice device, const VkImage image, MemoryRequirement requirement);
 
