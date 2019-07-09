@@ -1519,37 +1519,24 @@ def generateDeviceFeaturesDefs(src):
 	# look for definitions
 	ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_FEATURES(\w*)\s*='
 	matches		= re.findall(ptrnSType, src, re.M)
-	# remove duplicates
-	i       = 0
-	sType	= 0
-	sSuffix = 1
-	while i < len(matches):
-		j = i + 1
-		while j < len(matches):
-			if matches[i][sType] == matches[j][sType]:
-				if not matches[i][sSuffix]:
-					matches.pop(i)
-					i = i - 1
-					break
-				if not matches[j][sSuffix]:
-					matches.pop(j)
-					j = j - 1
-			j = j + 1
-		i = i + 1
+	matches		= sorted(matches, key=lambda m: m[0])
 	# construct final list
 	defs = []
 	for sType, sSuffix in matches:
 		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
-		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features\w*)'
+		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features' + sSuffix[1:] + ')'
 		matchStructName		= re.search(ptrnStructName, src, re.M)
 		if matchStructName:
 			# handle special cases
 			if sType == "EXCLUSIVE_SCISSOR":
 				sType = "SCISSOR_EXCLUSIVE"
+			# TODO: Remove after spec change is merged
+			if sType == "FLOAT16_INT8":
+				sType = "SHADER_FLOAT16_INT8"
 			# end handling special cases
-			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sType + '_EXTENSION_NAME).+$'
+			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
-			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sType + '_SPEC_VERSION).+$'
+			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_SPEC_VERSION).+$'
 			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
 			defs.append( (sType, sSuffix, matchStructName.group(1), \
 							matchExtensionName.group(0)	if matchExtensionName	else None,
@@ -1573,6 +1560,9 @@ def writeDeviceFeatures(dfDefs, filename):
 		# handle special cases
 		if sType == "SCISSOR_EXCLUSIVE":
 			sType = "EXCLUSIVE_SCISSOR"
+		# TODO: Remove after spec change is merged
+		if sType == "SHADER_FLOAT16_INT8":
+			sType = "FLOAT16_INT8"
 		# end handling special cases
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)
