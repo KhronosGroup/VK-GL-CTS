@@ -254,7 +254,8 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 													vk::Allocator&				allocator,
 													vk::VkImage					image,
 													vk::VkFormat				format,
-													const tcu::UVec2&			renderSize)
+													const tcu::UVec2&			renderSize,
+													vk::VkImageLayout			currentLayout)
 {
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
@@ -312,7 +313,7 @@ de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	v
 	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *cmdBuffer);
-	copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, barrierAspect, VK_IMAGE_ASPECT_DEPTH_BIT);
+	copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, currentLayout, 1u, barrierAspect, VK_IMAGE_ASPECT_DEPTH_BIT);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -331,7 +332,8 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment (const vk::DeviceInterface&
 													  vk::Allocator&				allocator,
 													  vk::VkImage					image,
 													  vk::VkFormat					format,
-													  const tcu::UVec2&				renderSize)
+													  const tcu::UVec2&				renderSize,
+													  vk::VkImageLayout				currentLayout)
 {
 	Move<VkBuffer>					buffer;
 	de::MovePtr<Allocation>			bufferAlloc;
@@ -369,7 +371,7 @@ de::MovePtr<tcu::TextureLevel> readStencilAttachment (const vk::DeviceInterface&
 	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	beginCommandBuffer(vk, *cmdBuffer);
-	copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1u, barrierAspect, VK_IMAGE_ASPECT_STENCIL_BIT);
+	copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, currentLayout, 1u, barrierAspect, VK_IMAGE_ASPECT_STENCIL_BIT);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
