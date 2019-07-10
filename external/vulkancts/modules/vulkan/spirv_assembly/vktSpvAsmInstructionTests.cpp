@@ -9402,7 +9402,7 @@ struct ConvertCase
 
 			if (instruction == "OpUConvert" || instruction == "OpSConvert" || instruction == "OpFConvert")
 			{
-				// Conversions between 16 and 32 bit are provided by SPV_KHR_16bit_storage. The rest requires explicit Int16
+				// Width-only conversions between 16 and 32 bit are provided by SPV_KHR_16bit_storage. The rest requires explicit Int16
 				if (usesInt32(from, to) || usesFloat32(from, to))
 					requiresInt16Capability = false;
 			}
@@ -9420,8 +9420,8 @@ struct ConvertCase
 		{
 			decl += "%f16        = OpTypeFloat 16\n";
 
-			// Conversions between 16 and 32 bit are provided by SPV_KHR_16bit_storage. The rest requires explicit Float16
-			if (!(usesInt32(from, to) || usesFloat32(from, to)))
+			// Width-only conversions between 16 and 32 bit are provided by SPV_KHR_16bit_storage. The rest requires explicit Float16
+			if (!usesFloat32(from, to))
 				caps += "OpCapability Float16\n";
 		}
 
