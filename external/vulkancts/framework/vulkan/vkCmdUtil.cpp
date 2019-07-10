@@ -53,12 +53,13 @@ void beginRenderPass (const DeviceInterface&	vk,
 					  const VkRect2D&			renderArea,
 					  const deUint32			clearValueCount,
 					  const VkClearValue*		clearValues,
-					  const VkSubpassContents	contents)
+					  const VkSubpassContents	contents,
+					  const void*				pNext)
 {
 	const VkRenderPassBeginInfo	renderPassBeginInfo	=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-		DE_NULL,									// const void*             pNext;
+		pNext,										// const void*             pNext;
 		renderPass,									// VkRenderPass            renderPass;
 		framebuffer,								// VkFramebuffer           framebuffer;
 		renderArea,									// VkRect2D                renderArea;
@@ -91,6 +92,40 @@ void beginRenderPass (const DeviceInterface&	vk,
 	const VkClearValue clearValue = makeClearValueColor(clearColor);
 
 	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, clearValue, contents);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::Vec4&			clearColor,
+					  const void*				pNext,
+					  const VkSubpassContents	contents)
+{
+	const VkClearValue clearValue = makeClearValueColor(clearColor);
+
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, 1u, &clearValue, contents, pNext);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::Vec4&			clearColor,
+					  const float				clearDepth,
+					  const deUint32			clearStencil,
+					  const void*				pNext,
+					  const VkSubpassContents	contents)
+{
+	const VkClearValue			clearValues[]		=
+	{
+		makeClearValueColor(clearColor),						// attachment 0
+		makeClearValueDepthStencil(clearDepth, clearStencil),	// attachment 1
+	};
+
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, DE_LENGTH_OF_ARRAY(clearValues), clearValues, contents, pNext);
 }
 
 void beginRenderPass (const DeviceInterface&	vk,
