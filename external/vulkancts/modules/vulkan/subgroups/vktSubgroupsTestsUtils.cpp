@@ -48,7 +48,16 @@ deUint32 getMaxWidth ()
 
 deUint32 getNextWidth (const deUint32 width)
 {
-	return width + 1;
+	if (width < 128)
+	{
+		// This ensures we test every value up to 128 (the max subgroup size).
+		return width + 1;
+	}
+	else
+	{
+		// And once we hit 128 we increment to only power of 2's to reduce testing time.
+		return width * 2;
+	}
 }
 
 deUint32 getFormatSizeInBytes(const VkFormat format)
