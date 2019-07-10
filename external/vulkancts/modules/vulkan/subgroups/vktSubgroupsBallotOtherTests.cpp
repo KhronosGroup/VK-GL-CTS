@@ -577,7 +577,7 @@ tcu::TestCaseGroup* createSubgroupsBallotOtherTests(tcu::TestContext& testCtx)
 
 	for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 	{
-		const string	op		= de::toLower(getOpTypeName(opTypeIndex));
+		const string op = de::toLower(getOpTypeName(opTypeIndex));
 		{
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, de::SharedPtr<bool>(new bool)};
 			addFunctionCaseWithPrograms(computeGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);

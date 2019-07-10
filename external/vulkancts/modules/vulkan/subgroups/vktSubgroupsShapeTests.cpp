@@ -576,7 +576,6 @@ tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx)
 		{
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, de::SharedPtr<bool>(new bool)};
 			addFunctionCaseWithPrograms(computeGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
-
 		}
 
 		{
