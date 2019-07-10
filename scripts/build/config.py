@@ -73,10 +73,11 @@ class BuildConfig:
 		return "cmake"
 
 class CMakeGenerator:
-	def __init__ (self, name, isMultiConfig = False, extraBuildArgs = []):
+	def __init__ (self, name, isMultiConfig = False, extraBuildArgs = [], platform = None):
 		self.name			= name
 		self.isMultiConfig	= isMultiConfig
 		self.extraBuildArgs	= copy.copy(extraBuildArgs)
+		self.platform		= platform
 
 	def getName (self):
 		return self.name
@@ -85,6 +86,10 @@ class CMakeGenerator:
 		args = ['-G', self.name]
 		if not self.isMultiConfig:
 			args.append('-DCMAKE_BUILD_TYPE=%s' % buildType)
+		if self.platform:
+			# this is supported since CMake 3.1, needed for VS2019+
+			args.append('-A')
+			args.append(self.platform)
 		return args
 
 	def getBuildArgs (self, buildType):
@@ -125,10 +130,17 @@ class VSProjectGenerator(CMakeGenerator):
 
 	def __init__(self, version, arch):
 		name = "Visual Studio %d" % version
-		if arch == self.ARCH_64BIT:
-			name += " Win64"
 
-		CMakeGenerator.__init__(self, name, isMultiConfig = True, extraBuildArgs = ['/m'])
+		platform = None
+
+		if arch == self.ARCH_64BIT:
+			if version >= 16:
+				# From VS2019 onwards, the architecture is given by -A <platform-name> switch
+				platform = "x64"
+			else:
+				name += " Win64"
+
+		CMakeGenerator.__init__(self, name, isMultiConfig = True, extraBuildArgs = ['/m'], platform = platform)
 		self.version		= version
 		self.arch			= arch
 
@@ -167,7 +179,8 @@ class VSProjectGenerator(CMakeGenerator):
 				11:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.11.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\11.0")],
 				12:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.12.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\12.0")],
 				14:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.14.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\14.0")],
-				15:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.15.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\15.0")]
+				15:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.15.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\15.0")],
+				16:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.16.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\16.0")]
 			}
 
 			if not self.version in keyMap:
@@ -196,6 +209,8 @@ VS2015_X32_GENERATOR	= VSProjectGenerator(14, VSProjectGenerator.ARCH_32BIT)
 VS2015_X64_GENERATOR	= VSProjectGenerator(14, VSProjectGenerator.ARCH_64BIT)
 VS2017_X32_GENERATOR	= VSProjectGenerator(15, VSProjectGenerator.ARCH_32BIT)
 VS2017_X64_GENERATOR	= VSProjectGenerator(15, VSProjectGenerator.ARCH_64BIT)
+VS2019_X32_GENERATOR	= VSProjectGenerator(16, VSProjectGenerator.ARCH_32BIT)
+VS2019_X64_GENERATOR	= VSProjectGenerator(16, VSProjectGenerator.ARCH_64BIT)
 
 def selectFirstAvailableGenerator (generators):
 	for generator in generators:
@@ -204,6 +219,7 @@ def selectFirstAvailableGenerator (generators):
 	return None
 
 ANY_VS_X32_GENERATOR	= selectFirstAvailableGenerator([
+								VS2019_X32_GENERATOR,
 								VS2017_X32_GENERATOR,
 								VS2015_X32_GENERATOR,
 								VS2013_X32_GENERATOR,
@@ -211,6 +227,7 @@ ANY_VS_X32_GENERATOR	= selectFirstAvailableGenerator([
 								VS2010_X32_GENERATOR,
 							])
 ANY_VS_X64_GENERATOR	= selectFirstAvailableGenerator([
+								VS2019_X64_GENERATOR,
 								VS2017_X64_GENERATOR,
 								VS2015_X64_GENERATOR,
 								VS2013_X64_GENERATOR,
@@ -223,6 +240,8 @@ ANY_UNIX_GENERATOR		= selectFirstAvailableGenerator([
 								NMAKE_GENERATOR,
 							])
 ANY_GENERATOR			= selectFirstAvailableGenerator([
+								VS2019_X64_GENERATOR,
+								VS2019_X32_GENERATOR,
 								VS2017_X64_GENERATOR,
 								VS2017_X32_GENERATOR,
 								VS2015_X64_GENERATOR,
