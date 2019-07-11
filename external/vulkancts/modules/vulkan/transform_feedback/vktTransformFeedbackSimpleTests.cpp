@@ -818,9 +818,17 @@ protected:
 TransformFeedbackBuiltinTestInstance::TransformFeedbackBuiltinTestInstance (Context& context, const TestParameters& parameters)
 	: TransformFeedbackTestInstance	(context, parameters)
 {
+	const InstanceInterface&		vki			= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice	= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(vki, physDevice);
+
 	const deUint32 tfBuffersSupported	= m_transformFeedbackProperties.maxTransformFeedbackBuffers;
 	const deUint32 tfBuffersRequired	= m_parameters.partCount;
 
+	if ((m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE || m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) && !features.shaderClipDistance)
+		TCU_THROW(NotSupportedError, std::string("shaderClipDistance feature is not supported"));
+	if ((m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE || m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) && !features.shaderCullDistance)
+		TCU_THROW(NotSupportedError, std::string("shaderCullDistance feature is not supported"));
 	if (tfBuffersSupported < tfBuffersRequired)
 		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) + ", while test requires " + de::toString(tfBuffersRequired)).c_str());
 }
@@ -1353,6 +1361,8 @@ protected:
 TransformFeedbackBackwardDependencyTestInstance::TransformFeedbackBackwardDependencyTestInstance (Context& context, const TestParameters& parameters)
 	: TransformFeedbackTestInstance	(context, parameters)
 {
+	if (m_transformFeedbackProperties.transformFeedbackDraw == DE_FALSE)
+		TCU_THROW(NotSupportedError, "transformFeedbackDraw feature is not supported");
 }
 
 std::vector<VkDeviceSize> TransformFeedbackBackwardDependencyTestInstance::generateSizesList (const size_t bufBytes, const size_t chunkCount)
