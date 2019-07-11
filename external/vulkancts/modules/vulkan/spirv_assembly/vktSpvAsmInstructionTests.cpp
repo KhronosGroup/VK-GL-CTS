@@ -3141,9 +3141,9 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 
 		"%id       = OpVariable %uvec3ptr Input\n"
 		"%zero     = OpConstant %i32 0\n"
-		"%float_0  = OpConstant %f16 0.0\n"
-		"%float_1  = OpConstant %f16 1.0\n"
-		"%float_n1 = OpConstant %f16 -1.0\n"
+		"%float_0  = OpConstant %f32 0.0\n"
+		"%float_1  = OpConstant %f32 1.0\n"
+		"%float_n1 = OpConstant %f32 -1.0\n"
 
 		"%main     = OpFunction %void None %voidf\n"
 		"%entry    = OpLabel\n"
@@ -3151,8 +3151,9 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"%x        = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc    = OpAccessChain %f16ptr %indata %zero %x\n"
 		"%inval    = OpLoad %f16 %inloc\n"
+		"%f32_inval = OpFConvert %f32 %inval\n"
 
-		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"%comp     = OpFOrdGreaterThan %bool %f32_inval %float_0\n"
 		"            OpSelectionMerge %cm None\n"
 		"            OpBranchConditional %comp %tb %fb\n"
 		"%tb       = OpLabel\n"
@@ -3160,10 +3161,11 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"%fb       = OpLabel\n"
 		"            OpBranch %cm\n"
 		"%cm       = OpLabel\n"
-		"%res      = OpPhi %f16 %float_1 %tb %float_n1 %fb\n"
+		"%res      = OpPhi %f32 %float_1 %tb %float_n1 %fb\n"
+		"%f16_res  = OpFConvert %f16 %res\n"
 
 		"%outloc   = OpAccessChain %f16ptr %outdata %zero %x\n"
-		"            OpStore %outloc %res\n"
+		"            OpStore %outloc %f16_res\n"
 		"            OpReturn\n"
 
 		"            OpFunctionEnd\n";
