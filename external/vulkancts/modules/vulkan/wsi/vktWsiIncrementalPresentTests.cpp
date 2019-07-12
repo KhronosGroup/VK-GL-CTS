@@ -585,7 +585,7 @@ vk::Move<vk::VkPipeline> createPipeline (const vk::DeviceInterface&	vkd,
 		DE_NULL
 	};
 	const std::vector<vk::VkViewport>					viewports			(1, vk::makeViewport(tcu::UVec2(width, height)));
-	const std::vector<vk::VkRect2D>						noScissors;
+	const std::vector<vk::VkRect2D>						scissors			(1, vk::makeRect2D(tcu::UVec2(width, height)));
 
 	return vk::makeGraphicsPipeline(vkd,										// const DeviceInterface&                        vk
 									device,										// const VkDevice                                device
@@ -597,7 +597,7 @@ vk::Move<vk::VkPipeline> createPipeline (const vk::DeviceInterface&	vkd,
 									fragmentShaderModule,						// const VkShaderModule                          fragmentShaderModule
 									renderPass,									// const VkRenderPass                            renderPass
 									viewports,									// const std::vector<VkViewport>&                viewports
-									noScissors,									// const std::vector<VkRect2D>&                  scissors
+									scissors,									// const std::vector<VkRect2D>&                  scissors
 									vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
 									0u,											// const deUint32                                subpass
 									0u,											// const deUint32                                patchControlPoints
