@@ -10967,7 +10967,7 @@ tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
 		specs["type_decls"]			= testType.typeDecls;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability DerivativeControl\nOpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability DerivativeControl\nOpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
