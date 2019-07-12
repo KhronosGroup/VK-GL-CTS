@@ -593,6 +593,8 @@ public: // Type specific data:
 	string extensions;
 	string arrayStride;
 
+	bool loadStoreRequiresShaderFloat16;
+
 public: // Type specific spir-v snippets:
 
 	// Common annotations
@@ -774,6 +776,8 @@ TypeSnippets<deFloat16>::TypeSnippets()
 					"%tmp_vec2            = OpBitcast %type_f16_vec2 %packed_result\n"
 					"%result              = OpCompositeExtract %type_f16 %tmp_vec2 0\n";
 
+	loadStoreRequiresShaderFloat16 = true;
+
 	updateSpirvSnippets();
 }
 
@@ -801,6 +805,8 @@ TypeSnippets<float>::TypeSnippets()
 					"%packed_result       = OpLoad %type_u32 %BP_vertex_result\n"
 					"%result              = OpBitcast %type_f32 %packed_result\n";
 
+	loadStoreRequiresShaderFloat16 = false;
+
 	updateSpirvSnippets();
 }
 
@@ -827,6 +833,8 @@ TypeSnippets<double>::TypeSnippets()
 	loadVertexResultSnippet =
 					"%packed_result        = OpLoad %type_u32_vec2 %BP_vertex_result\n"
 					"%result               = OpBitcast %type_f64 %packed_result\n";
+
+	loadStoreRequiresShaderFloat16 = false;
 
 	updateSpirvSnippets();
 }
@@ -3087,6 +3095,11 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
 	FloatType		inFloatType			= specOpData.inFloatType;
 
+	// There may be several reasons why we need the shaderFloat16 Vulkan feature.
+	bool needsShaderFloat16 = false;
+	// There are some weird cases where we need the constants, but would otherwise drop them.
+	bool needsSpecialConstants = false;
+
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
 	FloatType		inFloatTypeForCaps		= inFloatType;
@@ -3190,6 +3203,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 		fragCommands			= "";
 		vertProcessResult		= outTypeSnippets->storeVertexResultSnippet;
 		fragProcessResult		= outTypeSnippets->loadVertexResultSnippet + outTypeSnippets->storeResultsSnippet;
+		needsShaderFloat16		|= outTypeSnippets->loadStoreRequiresShaderFloat16;
 	}
 	else // perform test in fragment stage - vertex stage is empty
 	{
@@ -3246,6 +3260,51 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 		fragCommands		= specOpData.commands;
 		vertProcessResult	= "";
 		fragProcessResult	= outTypeSnippets->storeResultsSnippet;
+
+		if (!testCaseInfo.argumentsFromInput)
+		{
+			switch(testCaseInfo.testCase.operationId)
+			{
+				case O_CONV_FROM_FP32:
+				case O_CONV_FROM_FP64:
+					needsSpecialConstants = true;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	// Another reason we need shaderFloat16 is the executable instructions uses fp16
+	// in a way not supported by the 16bit storage extension.
+	needsShaderFloat16 |= float16FeatureRequired && testOperation.floatUsage == FLOAT_ARITHMETIC;
+
+	// Constants are only needed sometimes.  Drop them in the fp16 case if the code doesn't need
+	// them, and if we don't otherwise need shaderFloat16.
+	bool needsFP16Constants = needsShaderFloat16 || needsSpecialConstants;
+
+	if (!needsFP16Constants && float16FeatureRequired)
+	{
+	    // Check various code fragments
+	    auto hasFP16Constants = [](const std::string& spirv) { return DE_NULL != strstr(spirv.c_str(), "%c_f16"); };
+	    if (hasFP16Constants(vertConstants) || hasFP16Constants(fragConstants))
+	    {
+			needsFP16Constants |=
+				hasFP16Constants(vertCommands) || hasFP16Constants(vertArguments)
+				|| hasFP16Constants(fragCommands) || hasFP16Constants(fragArguments);
+			if (!needsFP16Constants)
+			{
+				vertConstants = "";
+				fragConstants = "";
+			}
+	    }
+	}
+	needsShaderFloat16 |= needsFP16Constants;
+
+	if (needsShaderFloat16)
+	{
+	    vertCapabilities += "OpCapability Float16\n";
+	    fragCapabilities += "OpCapability Float16\n";
 	}
 
 	map<string, string> specializations;
@@ -3302,6 +3361,11 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 
 	vector<string> extensions;
 	extensions.push_back("VK_KHR_shader_float_controls");
+	if (needsShaderFloat16)
+	{
+		extensions.push_back("VK_KHR_shader_float16_int8");
+		vulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+	}
 	if (float16FeatureRequired)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
