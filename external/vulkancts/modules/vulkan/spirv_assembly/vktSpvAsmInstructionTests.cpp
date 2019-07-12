@@ -3110,6 +3110,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 	specFloat16.assembly =
 		"OpCapability Shader\n"
 		"OpCapability StorageUniformBufferBlock16\n"
+		"OpCapability Float16\n"
 		"OpExtension \"SPV_KHR_16bit_storage\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
@@ -7569,7 +7570,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	fragments4["pre_main"]		= typesAndConstants4;
 	fragments4["testfun"]		= function4;
-	fragments4["capability"]	= "OpCapability StorageUniformBufferBlock16\n";
+	fragments4["capability"]	= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 	fragments4["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
 
 	extensions4.push_back("VK_KHR_16bit_storage");
@@ -10130,7 +10131,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Float 16 logical tests"));
 
 	de::Random							rnd					(deStringHash(testGroup->getName()));
-	const string						spvCapabilities		= string("OpCapability StorageUniformBufferBlock16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
+	const string						spvCapabilities		= string("OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
 	const string						spvExtensions		= string("OpExtension \"SPV_KHR_16bit_storage\"\n") + (nanSupported ? "OpExtension \"SPV_KHR_float_controls\"\n" : "");
 	const string						spvExecutionMode	= nanSupported ? "OpExecutionMode %BP_main SignedZeroInfNanPreserve 16\n" : "";
 	const deUint32						numDataPoints		= 16;
@@ -10451,7 +10452,7 @@ tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "function", "Float 16 function call related tests"));
 
 	de::Random							rnd					(deStringHash(testGroup->getName()));
-	const StringTemplate				capabilities		("OpCapability ${cap}\n");
+	const StringTemplate				capabilities		("OpCapability ${cap}\nOpCapability Float16\n");
 	const deUint32						numDataPoints		= 256;
 	const vector<deFloat16>				float16InputData	= getFloat16s(rnd, numDataPoints);
 	const vector<deFloat16>				float16OutputDummy	(float16InputData.size(), 0);
@@ -11195,7 +11196,7 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 		specs["type_decl"]			= testType.typeDecls;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -11433,7 +11434,7 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 		specs["replacement"]		= de::toString(replacement);
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -11804,7 +11805,7 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 				specs["case_count"]			= de::toString(caseCount);
 
 				fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-				fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+				fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 				fragments["decoration"]		= decoration.specialize(specs);
 				fragments["pre_main"]		= preMain.specialize(specs);
 				fragments["testfun"]		= testFun.specialize(specs);
@@ -12064,7 +12065,7 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 		specs["consts"]				= consts;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -12457,7 +12458,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		specs["op_case_default_value"]	= opParts.caseDefaultValue;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -16876,7 +16877,7 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 	specs["arg_func_call"]		= funcCall;
 
 	fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"\n%ext_import = OpExtInstImport \"GLSL.std.450\"";
-	fragments["capability"]		= "OpCapability Matrix\nOpCapability StorageUniformBufferBlock16";
+	fragments["capability"]		= "OpCapability Matrix\nOpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 	fragments["decoration"]		= decoration.specialize(specs);
 	fragments["pre_main"]		= preMain.specialize(specs);
 	fragments["testfun"]		= testFun.specialize(specs);
