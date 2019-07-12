@@ -3126,6 +3126,21 @@ struct VkPipelineCoverageModulationStateCreateInfoNV
 	const float*									pCoverageModulationTable;
 };
 
+struct VkPhysicalDeviceShaderSMBuiltinsPropertiesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		shaderSMCount;
+	deUint32		shaderWarpsPerSM;
+};
+
+struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSMBuiltins;
+};
+
 struct VkDrmFormatModifierPropertiesEXT
 {
 	deUint64				drmFormatModifier;
@@ -3681,6 +3696,65 @@ struct VkPhysicalDeviceShaderIntegerFunctions2INTEL
 	VkBool32		shaderIntegerFunctions2;
 };
 
+union VkPerformanceValueDataINTEL
+{
+	deUint32	value32;
+	deUint64	value64;
+	float		valueFloat;
+	VkBool32	valueBool;
+	const char*	valueString;
+};
+
+struct VkPerformanceValueINTEL
+{
+	VkPerformanceValueTypeINTEL	type;
+	VkPerformanceValueDataINTEL	data;
+};
+
+struct VkInitializePerformanceApiInfoINTEL
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	void*			pUserData;
+};
+
+struct VkQueryPoolCreateInfoINTEL
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkQueryPoolSamplingModeINTEL	performanceCountersSampling;
+};
+
+struct VkPerformanceMarkerInfoINTEL
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint64		marker;
+};
+
+struct VkPerformanceStreamMarkerInfoINTEL
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		marker;
+};
+
+struct VkPerformanceOverrideInfoINTEL
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkPerformanceOverrideTypeINTEL	type;
+	VkBool32						enable;
+	deUint64						parameter;
+};
+
+struct VkPerformanceConfigurationAcquireInfoINTEL
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkPerformanceConfigurationTypeINTEL	type;
+};
+
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT
 {
 	VkStructureType	sType;
@@ -3860,6 +3934,15 @@ struct VkFramebufferMixedSamplesCombinationNV
 	VkSampleCountFlags			colorSamples;
 };
 
+struct VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentShaderSampleInterlock;
+	VkBool32		fragmentShaderPixelInterlock;
+	VkBool32		fragmentShaderShadingRateInterlock;
+};
+
 struct VkPhysicalDeviceYcbcrImageArraysFeaturesEXT
 {
 	VkStructureType	sType;
@@ -3879,6 +3962,30 @@ struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		hostQueryReset;
+};
+
+struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderDemoteToHelperInvocation;
+};
+
+struct VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		texelBufferAlignment;
+};
+
+struct VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	storageTexelBufferOffsetAlignmentBytes;
+	VkBool32		storageTexelBufferOffsetSingleTexelAlignment;
+	VkDeviceSize	uniformTexelBufferOffsetAlignmentBytes;
+	VkBool32		uniformTexelBufferOffsetSingleTexelAlignment;
 };
 
 struct VkAndroidSurfaceCreateInfoKHR

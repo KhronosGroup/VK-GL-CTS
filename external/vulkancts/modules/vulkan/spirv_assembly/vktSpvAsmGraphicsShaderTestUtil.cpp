@@ -834,6 +834,7 @@ string makeGeometryShaderAssembly (const map<string, string>& fragments)
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main Triangles\n"
+		"OpExecutionMode %BP_main Invocations 1\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${execution_mode:opt}\n"
@@ -1465,6 +1466,7 @@ void createCombinedModule (vk::SourceCollections& dst, InstanceContext ctx)
 	if (useGeometry)
 	{
 		combinedModule <<	"OpExecutionMode %geom_main Triangles\n"
+							"OpExecutionMode %geom_main Invocations 1\n"
 							"OpExecutionMode %geom_main OutputTriangleStrip\n"
 							"OpExecutionMode %geom_main OutputVertices 3\n";
 	}

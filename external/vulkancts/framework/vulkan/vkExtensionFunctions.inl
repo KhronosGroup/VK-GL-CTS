@@ -419,6 +419,18 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetCheckpointNV");
 		functions.push_back("vkGetQueueCheckpointDataNV");
 	}
+	else if (extName == "VK_INTEL_performance_query")
+	{
+		functions.push_back("vkInitializePerformanceApiINTEL");
+		functions.push_back("vkUninitializePerformanceApiINTEL");
+		functions.push_back("vkCmdSetPerformanceMarkerINTEL");
+		functions.push_back("vkCmdSetPerformanceStreamMarkerINTEL");
+		functions.push_back("vkCmdSetPerformanceOverrideINTEL");
+		functions.push_back("vkAcquirePerformanceConfigurationINTEL");
+		functions.push_back("vkReleasePerformanceConfigurationINTEL");
+		functions.push_back("vkQueueSetPerformanceConfigurationINTEL");
+		functions.push_back("vkGetPerformanceParameterINTEL");
+	}
 	else if (extName == "VK_AMD_display_native_hdr")
 	{
 		functions.push_back("vkSetLocalDimmingAMD");
@@ -541,6 +553,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_NV_mesh_shader",
 	"VK_NV_scissor_exclusive",
 	"VK_NV_device_diagnostic_checkpoints",
+	"VK_INTEL_performance_query",
 	"VK_AMD_display_native_hdr",
 	"VK_EXT_buffer_device_address",
 	"VK_EXT_host_query_reset",

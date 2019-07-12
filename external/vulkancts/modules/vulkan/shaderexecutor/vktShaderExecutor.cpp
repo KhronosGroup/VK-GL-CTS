@@ -44,6 +44,7 @@
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
+#include "deFloat16.h"
 
 #include <map>
 #include <sstream>
@@ -1535,7 +1536,7 @@ protected:
 	deUint32				getInputStride		(void) const		{ return getLayoutStride(m_inputLayout);	}
 	deUint32				getOutputStride		(void) const		{ return getLayoutStride(m_outputLayout);	}
 
-	void					uploadInputBuffer	(const void* const* inputPtrs, int numValues);
+	void					uploadInputBuffer	(const void* const* inputPtrs, int numValues, bool packFloat16Bit);
 	void					readOutputBuffer	(void* const* outputPtrs, int numValues);
 
 	static void				declareBufferBlocks	(std::ostream& src, const ShaderSpec& spec);
@@ -1558,7 +1559,7 @@ private:
 	static void				computeVarLayout	(const std::vector<Symbol>& symbols, std::vector<VarLayout>* layout);
 	static deUint32			getLayoutStride		(const vector<VarLayout>& layout);
 
-	static void				copyToBuffer		(const glu::VarType& varType, const VarLayout& layout, int numValues, const void* srcBasePtr, void* dstBasePtr);
+	static void				copyToBuffer		(const glu::VarType& varType, const VarLayout& layout, int numValues, const void* srcBasePtr, void* dstBasePtr, bool packFloat16Bit);
 	static void				copyFromBuffer		(const glu::VarType& varType, const VarLayout& layout, int numValues, const void* srcBasePtr, void* dstBasePtr);
 
 	de::MovePtr<Allocation>	m_inputAlloc;
@@ -1734,7 +1735,7 @@ void BufferIoExecutor::generateExecBufferIo (std::ostream& src, const ShaderSpec
 	}
 }
 
-void BufferIoExecutor::copyToBuffer (const glu::VarType& varType, const VarLayout& layout, int numValues, const void* srcBasePtr, void* dstBasePtr)
+void BufferIoExecutor::copyToBuffer (const glu::VarType& varType, const VarLayout& layout, int numValues, const void* srcBasePtr, void* dstBasePtr, bool packFloat16Bit)
 {
 	if (varType.isBasicType())
 	{
@@ -1754,7 +1755,20 @@ void BufferIoExecutor::copyToBuffer (const glu::VarType& varType, const VarLayou
 				const deUint8*	srcPtr			= (const deUint8*)srcBasePtr + srcOffset;
 				deUint8*		dstPtr			= (deUint8*)dstBasePtr + dstOffset;
 
-				deMemcpy(dstPtr, srcPtr, size * numComps);
+				if (packFloat16Bit)
+				{
+					// Convert the float values to 16 bit and store in the lower 16 bits of 32 bit ints.
+					for (int cmpNdx=0; cmpNdx < numComps; ++cmpNdx)
+					{
+						deFloat16 f16vals[2] = {};
+						f16vals[0] = deFloat32To16Round(((float*)srcPtr)[cmpNdx], DE_ROUNDINGMODE_TO_ZERO);
+						deMemcpy(dstPtr + cmpNdx * size, &f16vals[0], size);
+					}
+				}
+				else
+				{
+					deMemcpy(dstPtr, srcPtr, size * numComps);
+				}
 			}
 		}
 	}
@@ -1790,7 +1804,7 @@ void BufferIoExecutor::copyFromBuffer (const glu::VarType& varType, const VarLay
 		throw tcu::InternalError("Unsupported type");
 }
 
-void BufferIoExecutor::uploadInputBuffer (const void* const* inputPtrs, int numValues)
+void BufferIoExecutor::uploadInputBuffer (const void* const* inputPtrs, int numValues, bool packFloat16Bit)
 {
 	const VkDevice			vkDevice			= m_context.getDevice();
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
@@ -1807,7 +1821,7 @@ void BufferIoExecutor::uploadInputBuffer (const void* const* inputPtrs, int numV
 		const glu::VarType&		varType		= m_shaderSpec.inputs[inputNdx].varType;
 		const VarLayout&		layout		= m_inputLayout[inputNdx];
 
-		copyToBuffer(varType, layout, numValues, inputPtrs[inputNdx], m_inputAlloc->getHostPtr());
+		copyToBuffer(varType, layout, numValues, inputPtrs[inputNdx], m_inputAlloc->getHostPtr(), packFloat16Bit);
 	}
 
 	flushAlloc(vk, vkDevice, *m_inputAlloc);
@@ -1910,7 +1924,7 @@ ComputeShaderExecutor::~ComputeShaderExecutor	(void)
 {
 }
 
-std::string getTypeSpirv(const glu::DataType type)
+std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = false)
 {
 	switch(type)
 	{
@@ -1923,13 +1937,13 @@ std::string getTypeSpirv(const glu::DataType type)
 	case glu::TYPE_FLOAT16_VEC4:
 		return "%v4f16";
 	case glu::TYPE_FLOAT:
-		return "%f32";
+		return packFloat16Bit ? "%u32" : "%f32";		// f16 values will be bitcast from ui32.
 	case glu::TYPE_FLOAT_VEC2:
-		return "%v2f32";
+		return packFloat16Bit ? "%v2u32" : "%v2f32";	// f16 values will be bitcast from ui32.
 	case glu::TYPE_FLOAT_VEC3:
-		return "%v3f32";
+		return packFloat16Bit ? "%v3u32" : "%v3f32";	// f16 values will be bitcast from ui32.
 	case glu::TYPE_FLOAT_VEC4:
-		return "%v4f32";
+		return packFloat16Bit ? "%v4u32" : "%v4f32";	// f16 values will be bitcast from ui32.
 	case glu::TYPE_INT:
 		return "%i32";
 	case glu::TYPE_INT_VEC2:
@@ -2017,8 +2031,8 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 {
 	const int			operationAmount	= 10;
 	int					moveBitNdx		= 0;
-	const std::string	inputType1		= getTypeSpirv(spec.inputs[0].varType.getBasicType());
-	const std::string	inputType2		= getTypeSpirv(spec.inputs[1].varType.getBasicType());
+	const std::string	inputType1		= getTypeSpirv(spec.inputs[0].varType.getBasicType(), spec.packFloat16Bit);
+	const std::string	inputType2		= getTypeSpirv(spec.inputs[1].varType.getBasicType(), spec.packFloat16Bit);
 	const std::string	outputType		= getTypeSpirv(spec.outputs[0].varType.getBasicType());
 	const std::string	packType		= spec.packFloat16Bit ? getTypeSpirv(getDataTypeFloat16Scalars(spec.inputs[0].varType.getBasicType())) : "";
 
@@ -2138,7 +2152,9 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%v2i32 = OpTypeVector %i32 2\n"
 		"%v3i32 = OpTypeVector %i32 3\n"
 		"%v4i32 = OpTypeVector %i32 4\n"
+		"%v2u32 = OpTypeVector %u32 2\n"
 		"%v3u32 = OpTypeVector %u32 3\n"
+		"%v4u32 = OpTypeVector %u32 4\n"
 		"\n"
 		"%ip_u32   = OpTypePointer Input %u32\n"
 		"%ip_v3u32 = OpTypePointer Input %v3u32\n"
@@ -2217,8 +2233,38 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%src_val_0_0 = OpLoad " << inputType1 << " %src_ptr_0_0\n";
 
 	if(spec.packFloat16Bit)
-		src << "%val_f16_0_0 = OpFConvert " << packType <<" %src_val_0_0\n"
-			"OpStore %in0 %val_f16_0_0\n";
+	{
+		if (spec.inputs[0].varType.getScalarSize() > 1)
+		{
+			// Extract the val0 u32 input channels into individual f16 values.
+			for (int i=0;i<spec.inputs[0].varType.getScalarSize();++i)
+			{
+				src << "%src_val_0_0_" << i << " = OpCompositeExtract %u32 %src_val_0_0 " << i << "\n"
+					"%val_v2f16_0_0_" << i << " = OpBitcast %v2f16 %src_val_0_0_" << i << "\n"
+					"%val_f16_0_0_" << i << " = OpCompositeExtract %f16 %val_v2f16_0_0_" << i << " 0\n";
+			}
+
+			if (spec.inputs[0].varType.getScalarSize() > 1)
+			{
+				// Construct the input vector.
+				src << "%val_f16_0_0   = OpCompositeConstruct " << packType;
+				for (int i=0;i<spec.inputs[0].varType.getScalarSize();++i)
+				{
+					src << " %val_f16_0_0_" << i;
+				}
+
+				src << "\n";
+				src << "OpStore %in0 %val_f16_0_0\n";
+			}
+		}
+		else
+		{
+			src << "%val_v2f16_0_0 = OpBitcast %v2f16 %src_val_0_0\n"
+				"%val_f16_0_0 = OpCompositeExtract %f16 %val_v2f16_0_0 0\n";
+
+			src <<	"OpStore %in0 %val_f16_0_0\n";
+		}
+	}
 	else
 		src << "OpStore %in0 %src_val_0_0\n";
 
@@ -2227,8 +2273,38 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%src_val_0_1 = OpLoad " << inputType2 << " %src_ptr_0_1\n";
 
 	if (spec.packFloat16Bit)
-		src << "%val_f16_0_1 = OpFConvert " << packType << " %src_val_0_1\n"
-			"OpStore %in1 %val_f16_0_1\n";
+	{
+		if (spec.inputs[0].varType.getScalarSize() > 1)
+		{
+			// Extract the val1 u32 input channels into individual f16 values.
+			for (int i=0;i<spec.inputs[0].varType.getScalarSize();++i)
+			{
+				src << "%src_val_0_1_" << i << " = OpCompositeExtract %u32 %src_val_0_1 " << i << "\n"
+					"%val_v2f16_0_1_" << i << " = OpBitcast %v2f16 %src_val_0_1_" << i << "\n"
+					"%val_f16_0_1_" << i << " = OpCompositeExtract %f16 %val_v2f16_0_1_" << i << " 0\n";
+			}
+
+			if (spec.inputs[0].varType.getScalarSize() > 1)
+			{
+				// Construct the input vector.
+				src << "%val_f16_0_1   = OpCompositeConstruct " << packType;
+				for (int i=0;i<spec.inputs[0].varType.getScalarSize();++i)
+				{
+					src << " %val_f16_0_1_" << i;
+				}
+
+				src << "\n";
+				src <<	"OpStore %in1 %val_f16_0_1\n";
+			}
+		}
+		else
+		{
+			src << "%val_v2f16_0_1 = OpBitcast %v2f16 %src_val_0_1\n"
+				"%val_f16_0_1 = OpCompositeExtract %f16 %val_v2f16_0_1 0\n";
+
+			src <<	"OpStore %in1 %val_f16_0_1\n";
+		}
+	}
 	else
 		src << "OpStore %in1 %src_val_0_1\n";
 
@@ -2262,6 +2338,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"\n"
 		"OpReturn\n"
 		"OpFunctionEnd\n";
+
 	return src.str();
 }
 
@@ -2344,7 +2421,10 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	initBuffers(numValues);
 
 	// Setup input buffer & copy data
-	uploadInputBuffer(inputs, numValues);
+	// For spirv shaders using packed 16 bit float values as input, the floats are converted to 16 bit before
+	// storing in the lower 16 bits of 32 bit integers in the uniform buffer and cast back to 16 bit floats in
+	// the shader.
+	uploadInputBuffer(inputs, numValues, m_shaderSpec.packFloat16Bit && m_shaderSpec.spirVShader);
 
 	// Create command pool
 	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
@@ -2925,7 +3005,7 @@ void TessControlExecutor::execute (int numValues, const void* const* inputs, voi
 	initBuffers(numValues);
 
 	// Setup input buffer & copy data
-	uploadInputBuffer(inputs, numValues);
+	uploadInputBuffer(inputs, numValues, false);
 
 	renderTess(numValues, patchSize * numValues, patchSize, extraResources);
 
@@ -3026,7 +3106,7 @@ void TessEvaluationExecutor::execute (int numValues, const void* const* inputs, 
 	initBuffers(alignedValues);
 
 	// Setup input buffer & copy data
-	uploadInputBuffer(inputs, numValues);
+	uploadInputBuffer(inputs, numValues, false);
 
 	renderTess((deUint32)alignedValues, (deUint32)alignedValues, (deUint32)patchSize, extraResources);
 

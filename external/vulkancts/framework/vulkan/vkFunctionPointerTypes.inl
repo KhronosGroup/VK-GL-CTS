@@ -323,6 +323,15 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawMeshTasksIndirectCountNVFunc)			
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetExclusiveScissorNVFunc)											(VkCommandBuffer commandBuffer, deUint32 firstExclusiveScissor, deUint32 exclusiveScissorCount, const VkRect2D* pExclusiveScissors);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCheckpointNVFunc)												(VkCommandBuffer commandBuffer, const void* pCheckpointMarker);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetQueueCheckpointDataNVFunc)											(VkQueue queue, deUint32* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* InitializePerformanceApiINTELFunc)										(VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* UninitializePerformanceApiINTELFunc)									(VkDevice device);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdSetPerformanceMarkerINTELFunc)										(VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdSetPerformanceStreamMarkerINTELFunc)								(VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CmdSetPerformanceOverrideINTELFunc)									(VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquirePerformanceConfigurationINTELFunc)								(VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleasePerformanceConfigurationINTELFunc)								(VkDevice device, VkPerformanceConfigurationINTEL configuration);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueueSetPerformanceConfigurationINTELFunc)								(VkQueue queue, VkPerformanceConfigurationINTEL configuration);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPerformanceParameterINTELFunc)										(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue);
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetLocalDimmingAMDFunc)												(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressEXTFunc)											(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties);

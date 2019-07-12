@@ -5628,10 +5628,11 @@ public:
 		ReadPixelsFloat<api>(0, 0, getWindowWidth(), getWindowHeight() / 4, &bufferTest1[0]);
 		result.sub_result(BuffersCompare(bufferTest1, getWindowWidth(), getWindowHeight() / 4, bufferRef1,
 										 getWindowWidth(), getWindowHeight() / 4));
-
-		ReadPixelsFloat<api>(0, (getWindowHeight() + 3) / 4, getWindowWidth(), getWindowHeight() / 2, &bufferTest2[0]);
+		// height = 2 * (getWindowHeight() / 4)  to avoid border pixels
+		// in case the height is not a multiple of 4.
+		ReadPixelsFloat<api>(0, (getWindowHeight() + 3) / 4, getWindowWidth(), 2 * (getWindowHeight() / 4), &bufferTest2[0]);
 		result.sub_result(BuffersCompare(bufferTest2, getWindowWidth(), getWindowHeight() / 2, bufferRef2,
-										 getWindowWidth(), getWindowHeight() / 2));
+										 getWindowWidth(), 2 *(getWindowHeight() / 4)));
 
 		ReadPixelsFloat<api>(0, (getWindowHeight() * 3 + 3) / 4, getWindowWidth(), getWindowHeight() / 4,
 							 &bufferTest1[0]);

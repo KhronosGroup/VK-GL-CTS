@@ -92,7 +92,8 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_KHR_",
 		"VK_EXT_",
 		"VK_KHX_",
-		"VK_NV_cooperative_matrix"
+		"VK_NV_cooperative_matrix",
+		"VK_NV_shading_rate_image",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
