@@ -738,6 +738,25 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		vkdi.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, /* offset = */ 0, /* size = */ size, data);
 	}
 	vkdi.cmdDispatch(*cmdBuffer, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
+
+	// Insert a barrier so data written by the shader is available to the host
+	for (deUint32 outputBufferNdx = 0; outputBufferNdx < outputBuffers.size(); ++outputBufferNdx)
+	{
+		const VkBufferMemoryBarrier buf_barrier =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//    VkStructureType    sType;
+			DE_NULL,									//    const void*        pNext;
+			VK_ACCESS_SHADER_WRITE_BIT,					//    VkAccessFlags      srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,					//    VkAccessFlags      dstAccessMask;
+			VK_QUEUE_FAMILY_IGNORED,					//    uint32_t           srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					//    uint32_t           dstQueueFamilyIndex;
+			**outputBuffers[outputBufferNdx],			//    VkBuffer           buffer;
+			0,											//    VkDeviceSize       offset;
+			VK_WHOLE_SIZE								//    VkDeviceSize       size;
+		};
+
+		vkdi.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL, 1, &buf_barrier, 0, DE_NULL);
+	}
 	endCommandBuffer(vkdi, *cmdBuffer);
 
 	submitCommandsAndWait(vkdi, device, queue, *cmdBuffer);
