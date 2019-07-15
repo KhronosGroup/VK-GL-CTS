@@ -1,0 +1,142 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with matrices and a return in a loop
+
+# Checks that the top-left pixel is red.
+# Passes because main always writes red to _GLF_color.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: a2ef7be242bcacaa9127a3ce011602ec54b2c9ed
+
+# Derived from the following GLSL.
+
+# Fragment shader GLSL:
+# #version 310 es
+#
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# vec3 f(mat2 m)
+# {
+#  do
+#   {
+#    return vec3(1.0);
+#   }
+#  while(false);
+# }
+#
+# void main()
+# {
+#  mat2 m = mat2(0.0);
+#  if(gl_FragCoord.x >= 0.0)
+#   {
+#    m = mat2(1.0);
+#   }
+#  f(m * m);
+#  _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+# }
+
+[require]
+fbsize 256 256
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 52
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %31 %49
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %13 "f(mf22;"
+               OpName %12 "m"
+               OpName %31 "gl_FragCoord"
+               OpName %46 "param"
+               OpName %49 "_GLF_color"
+               OpDecorate %31 BuiltIn FragCoord
+               OpDecorate %49 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeMatrix %7 2
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeVector %6 3
+         %11 = OpTypeFunction %10 %9
+         %19 = OpConstant %6 1
+         %20 = OpConstantComposite %10 %19 %19 %19
+         %22 = OpTypeBool
+         %26 = OpConstant %6 0
+         %27 = OpConstantComposite %7 %26 %26
+         %28 = OpConstantComposite %8 %27 %27
+         %29 = OpTypeVector %6 4
+         %30 = OpTypePointer Input %29
+         %31 = OpVariable %30 Input
+         %32 = OpTypeInt 32 0
+         %33 = OpConstant %32 0
+         %34 = OpTypePointer Input %6
+         %40 = OpConstantComposite %7 %19 %26
+         %41 = OpConstantComposite %7 %26 %19
+         %42 = OpConstantComposite %8 %40 %41
+         %48 = OpTypePointer Output %29
+         %49 = OpVariable %48 Output
+         %50 = OpConstantComposite %29 %19 %26 %26 %19
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %46 = OpVariable %9 Function
+         %35 = OpAccessChain %34 %31 %33
+         %36 = OpLoad %6 %35
+         %37 = OpFOrdGreaterThanEqual %22 %36 %26
+               OpSelectionMerge %39 None
+               OpBranchConditional %37 %38 %39
+         %38 = OpLabel
+               OpBranch %39
+         %39 = OpLabel
+         %51 = OpPhi %8 %28 %5 %42 %38
+         %45 = OpMatrixTimesMatrix %8 %51 %51
+               OpStore %46 %45
+         %47 = OpFunctionCall %10 %13 %46
+               OpStore %49 %50
+               OpReturn
+               OpFunctionEnd
+         %13 = OpFunction %10 None %11
+         %12 = OpFunctionParameter %9
+         %14 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+               OpLoopMerge %17 %18 None
+               OpBranch %16
+         %16 = OpLabel
+               OpReturnValue %20
+         %18 = OpLabel
+               OpBranch %15
+         %17 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+
+
+[test]
+draw rect -1 -1 2 2
+probe rgba (0, 0) (1, 0, 0, 1)

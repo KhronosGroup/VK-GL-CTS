@@ -1,0 +1,185 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader that writes to color in a loop
+
+# Checks that the top-left pixel is red.
+# Passes because main ends by writing red to _GLF_color.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: a2ef7be242bcacaa9127a3ce011602ec54b2c9ed
+
+# Derived from the following GLSL.
+
+# Fragment shader GLSL:
+# #version 310 es
+#
+# precision highp float;
+#
+# struct S {
+#  int f0;
+#  mat4x3 f1;
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void g()
+# {
+#  S s = S(0, mat4x3(1.0));
+#  for(
+#      int l = 0;
+#      l < (gl_FragCoord.x == 0.0 ? 1 : 2);
+#      l ++
+#  )
+#   {
+#    _GLF_color = vec4(1.0);
+#    s.f0++;
+#   }
+#  if(s.f0 < 1000)
+#   {
+#     return;
+#   }
+# }
+# void main()
+# {
+#  g();
+#  for(
+#      int i = 0;
+#      i < (gl_FragCoord.x == 0.0 ? 1 : 2);
+#      i++
+#  )
+#   {
+#    _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#   }
+# }
+
+[require]
+fbsize 256 256
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 120
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %34 %47
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %12 "S"
+               OpMemberName %12 0 "f0"
+               OpMemberName %12 1 "f1"
+               OpName %34 "gl_FragCoord"
+               OpName %47 "_GLF_color"
+               OpMemberDecorate %12 0 RelaxedPrecision
+               OpDecorate %34 BuiltIn FragCoord
+               OpDecorate %47 Location 0
+               OpDecorate %76 RelaxedPrecision
+               OpDecorate %104 RelaxedPrecision
+               OpDecorate %105 RelaxedPrecision
+               OpDecorate %107 RelaxedPrecision
+               OpDecorate %109 RelaxedPrecision
+               OpDecorate %117 RelaxedPrecision
+               OpDecorate %119 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %8 = OpTypeInt 32 1
+          %9 = OpTypeFloat 32
+         %10 = OpTypeVector %9 3
+         %11 = OpTypeMatrix %10 4
+         %12 = OpTypeStruct %8 %11
+         %15 = OpConstant %8 0
+         %16 = OpConstant %9 1
+         %17 = OpConstant %9 0
+         %18 = OpConstantComposite %10 %16 %17 %17
+         %19 = OpConstantComposite %10 %17 %16 %17
+         %20 = OpConstantComposite %10 %17 %17 %16
+         %21 = OpConstantComposite %10 %17 %17 %17
+         %22 = OpConstantComposite %11 %18 %19 %20 %21
+         %23 = OpConstantComposite %12 %15 %22
+         %32 = OpTypeVector %9 4
+         %33 = OpTypePointer Input %32
+         %34 = OpVariable %33 Input
+         %35 = OpTypeInt 32 0
+         %36 = OpConstant %35 0
+         %37 = OpTypePointer Input %9
+         %40 = OpTypeBool
+         %42 = OpConstant %8 1
+         %43 = OpConstant %8 2
+         %46 = OpTypePointer Output %32
+         %47 = OpVariable %46 Output
+         %48 = OpConstantComposite %32 %16 %16 %16 %16
+         %56 = OpConstant %8 1000
+         %74 = OpConstantComposite %32 %16 %17 %17 %16
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %88
+         %88 = OpLabel
+               OpLoopMerge %89 %90 None
+               OpBranch %92
+         %92 = OpLabel
+        %118 = OpPhi %12 %23 %88 %115 %102
+        %117 = OpPhi %8 %15 %88 %107 %102
+         %97 = OpAccessChain %37 %34 %36
+         %98 = OpLoad %9 %97
+         %99 = OpFOrdEqual %40 %98 %17
+        %100 = OpSelect %8 %99 %42 %43
+        %101 = OpSLessThan %40 %117 %100
+               OpLoopMerge %93 %102 None
+               OpBranchConditional %101 %102 %93
+        %102 = OpLabel
+               OpStore %47 %48
+        %104 = OpCompositeExtract %8 %118 0
+        %105 = OpIAdd %8 %104 %42
+        %115 = OpCompositeInsert %12 %105 %118 0
+        %107 = OpIAdd %8 %117 %42
+               OpBranch %92
+         %93 = OpLabel
+        %109 = OpCompositeExtract %8 %118 0
+        %110 = OpSLessThan %40 %109 %56
+               OpSelectionMerge %111 None
+               OpBranchConditional %110 %112 %111
+        %112 = OpLabel
+               OpBranch %89
+        %111 = OpLabel
+               OpBranch %89
+         %90 = OpLabel
+               OpBranch %88
+         %89 = OpLabel
+               OpBranch %63
+         %63 = OpLabel
+        %119 = OpPhi %8 %15 %89 %76 %64
+         %73 = OpSLessThan %40 %119 %100
+               OpLoopMerge %65 %64 None
+               OpBranchConditional %73 %64 %65
+         %64 = OpLabel
+               OpStore %47 %74
+         %76 = OpIAdd %8 %119 %42
+               OpBranch %63
+         %65 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+
+[test]
+draw rect -1 -1 2 2
+probe rgba (0, 0) (1, 0, 0, 1)

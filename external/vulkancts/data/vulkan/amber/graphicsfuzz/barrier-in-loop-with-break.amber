@@ -1,0 +1,199 @@
+# Copyright 2018 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A compute shader with a barrier in a loop with a break
+
+# Derived from the following GLSL.
+
+# Compute shader GLSL:
+# #version 310 es
+#
+# layout(set = 0, binding = 1) uniform buf1 {
+#  vec2 injectionSwitch;
+# };
+# layout(std430, binding = 0) buffer doesNotMatter {
+#  int global_seed;
+#  int data[];
+# };
+# layout(local_size_x = 16, local_size_y = 1) in;
+# void main()
+# {
+#  int lid = int(gl_LocalInvocationID.x);
+#  int val = global_seed;
+#  for(
+#      int i = 0;
+#      i < 2;
+#      i ++
+#  )
+#   {
+#    if(lid > 0)
+#     {
+#      val += data[lid - 1];
+#      if(injectionSwitch.x > 100.0)
+#       {
+#        break;
+#       }
+#     }
+#    barrier();
+#  }
+#  if (lid == 0) {
+#    data[0] = 42;
+#  }
+# }
+
+[compute shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 74
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %12
+               OpExecutionMode %4 LocalSize 16 1 1
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "lid"
+               OpName %12 "gl_LocalInvocationID"
+               OpName %18 "val"
+               OpName %20 "doesNotMatter"
+               OpMemberName %20 0 "global_seed"
+               OpMemberName %20 1 "data"
+               OpName %22 ""
+               OpName %27 "i"
+               OpName %50 "buf1"
+               OpMemberName %50 0 "injectionSwitch"
+               OpName %52 ""
+               OpDecorate %12 BuiltIn LocalInvocationId
+               OpDecorate %19 ArrayStride 4
+               OpMemberDecorate %20 0 Offset 0
+               OpMemberDecorate %20 1 Offset 4
+               OpDecorate %20 BufferBlock
+               OpDecorate %22 DescriptorSet 0
+               OpDecorate %22 Binding 0
+               OpMemberDecorate %50 0 Offset 0
+               OpDecorate %50 Block
+               OpDecorate %52 DescriptorSet 0
+               OpDecorate %52 Binding 1
+               OpDecorate %73 BuiltIn WorkgroupSize
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpTypeInt 32 0
+         %10 = OpTypeVector %9 3
+         %11 = OpTypePointer Input %10
+         %12 = OpVariable %11 Input
+         %13 = OpConstant %9 0
+         %14 = OpTypePointer Input %9
+         %19 = OpTypeRuntimeArray %6
+         %20 = OpTypeStruct %6 %19
+         %21 = OpTypePointer Uniform %20
+         %22 = OpVariable %21 Uniform
+         %23 = OpConstant %6 0
+         %24 = OpTypePointer Uniform %6
+         %34 = OpConstant %6 2
+         %35 = OpTypeBool
+         %41 = OpConstant %6 1
+         %48 = OpTypeFloat 32
+         %49 = OpTypeVector %48 2
+         %50 = OpTypeStruct %49
+         %51 = OpTypePointer Uniform %50
+         %52 = OpVariable %51 Uniform
+         %53 = OpTypePointer Uniform %48
+         %56 = OpConstant %48 100
+         %61 = OpConstant %9 2
+         %62 = OpConstant %9 264
+         %69 = OpConstant %6 42
+         %71 = OpConstant %9 16
+         %72 = OpConstant %9 1
+         %73 = OpConstantComposite %10 %71 %72 %72
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %18 = OpVariable %7 Function
+         %27 = OpVariable %7 Function
+         %15 = OpAccessChain %14 %12 %13
+         %16 = OpLoad %9 %15
+         %17 = OpBitcast %6 %16
+               OpStore %8 %17
+         %25 = OpAccessChain %24 %22 %23
+         %26 = OpLoad %6 %25
+               OpStore %18 %26
+               OpStore %27 %23
+               OpBranch %28
+         %28 = OpLabel
+               OpLoopMerge %30 %31 None
+               OpBranch %32
+         %32 = OpLabel
+         %33 = OpLoad %6 %27
+         %36 = OpSLessThan %35 %33 %34
+               OpBranchConditional %36 %29 %30
+         %29 = OpLabel
+         %37 = OpLoad %6 %8
+         %38 = OpSGreaterThan %35 %37 %23
+               OpSelectionMerge %40 None
+               OpBranchConditional %38 %39 %40
+         %39 = OpLabel
+         %42 = OpLoad %6 %8
+         %43 = OpISub %6 %42 %41
+         %44 = OpAccessChain %24 %22 %41 %43
+         %45 = OpLoad %6 %44
+         %46 = OpLoad %6 %18
+         %47 = OpIAdd %6 %46 %45
+               OpStore %18 %47
+         %54 = OpAccessChain %53 %52 %23 %13
+         %55 = OpLoad %48 %54
+         %57 = OpFOrdGreaterThan %35 %55 %56
+               OpSelectionMerge %59 None
+               OpBranchConditional %57 %58 %59
+         %58 = OpLabel
+               OpBranch %30
+         %59 = OpLabel
+               OpBranch %40
+         %40 = OpLabel
+               OpControlBarrier %61 %61 %62
+               OpBranch %31
+         %31 = OpLabel
+         %63 = OpLoad %6 %27
+         %64 = OpIAdd %6 %63 %41
+               OpStore %27 %64
+               OpBranch %28
+         %30 = OpLabel
+         %65 = OpLoad %6 %8
+         %66 = OpIEqual %35 %65 %23
+               OpSelectionMerge %68 None
+               OpBranchConditional %66 %67 %68
+         %67 = OpLabel
+         %70 = OpAccessChain %24 %22 %41 %23
+               OpStore %70 %69
+               OpBranch %68
+         %68 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+
+[test]
+## Uniforms
+# injectionSwitch
+uniform ubo 0:1 vec2 0 0.0 1.0
+## SSBO
+ssbo 0 subdata int 0 12345
+ssbo 0 subdata int 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+compute 1 1 1
+probe ssbo int 0 4 == 42

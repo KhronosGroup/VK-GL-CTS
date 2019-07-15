@@ -1,0 +1,148 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A compute shader with an early return and a barrier
+
+# Checks that the output value is 42.
+# Passes because main always writes 42 to out_data.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: a2ef7be242bcacaa9127a3ce011602ec54b2c9ed
+
+# Derived from the following GLSL.
+
+# Compute shader GLSL:
+# #version 310 es
+#
+# precision highp float;
+#
+# layout(std430, binding = 0) buffer theSSBO {
+#  int out_data;
+# };
+#
+# layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+# void f(vec2 v)
+# {
+#  if(1.0 < v.x)
+#   {
+#    return;
+#   }
+#   barrier();
+# }
+# void main()
+# {
+#  out_data = 42;
+#  mat2 m;
+#  for(int i = 1; i > 0; i --)
+#   {
+#    m = mat2(1.0);
+#   }
+#  f(vec2(1.0) * (m - mat2(1.0)));
+# }
+
+[compute shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 87
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main"
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %27 "theSSBO"
+               OpMemberName %27 0 "out_data"
+               OpName %29 ""
+               OpMemberDecorate %27 0 Offset 0
+               OpDecorate %27 BufferBlock
+               OpDecorate %29 DescriptorSet 0
+               OpDecorate %29 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+         %13 = OpConstant %6 1
+         %14 = OpTypeInt 32 0
+         %19 = OpTypeBool
+         %24 = OpConstant %14 2
+         %25 = OpConstant %14 264
+         %26 = OpTypeInt 32 1
+         %27 = OpTypeStruct %26
+         %28 = OpTypePointer Uniform %27
+         %29 = OpVariable %28 Uniform
+         %30 = OpConstant %26 0
+         %31 = OpConstant %26 42
+         %32 = OpTypePointer Uniform %26
+         %36 = OpConstant %26 1
+         %44 = OpTypeMatrix %7 2
+         %47 = OpConstant %6 0
+         %48 = OpConstantComposite %7 %13 %47
+         %49 = OpConstantComposite %7 %47 %13
+         %50 = OpConstantComposite %44 %48 %49
+         %53 = OpConstantComposite %7 %13 %13
+         %86 = OpUndef %44
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %33 = OpAccessChain %32 %29 %30
+               OpStore %33 %31
+               OpBranch %37
+         %37 = OpLabel
+         %85 = OpPhi %44 %86 %5 %50 %38
+         %84 = OpPhi %26 %36 %5 %52 %38
+         %43 = OpSGreaterThan %19 %84 %30
+               OpLoopMerge %39 %38 None
+               OpBranchConditional %43 %38 %39
+         %38 = OpLabel
+         %52 = OpISub %26 %84 %36
+               OpBranch %37
+         %39 = OpLabel
+         %55 = OpCompositeExtract %7 %85 0
+         %57 = OpFSub %7 %55 %48
+         %58 = OpCompositeExtract %7 %85 1
+         %60 = OpFSub %7 %58 %49
+         %61 = OpCompositeConstruct %44 %57 %60
+         %62 = OpVectorTimesMatrix %7 %53 %61
+               OpBranch %74
+         %74 = OpLabel
+               OpLoopMerge %75 %76 None
+               OpBranch %77
+         %77 = OpLabel
+         %79 = OpCompositeExtract %6 %62 0
+         %80 = OpFOrdLessThan %19 %13 %79
+               OpSelectionMerge %81 None
+               OpBranchConditional %80 %82 %81
+         %82 = OpLabel
+               OpBranch %75
+         %81 = OpLabel
+               OpControlBarrier %24 %24 %25
+               OpBranch %75
+         %76 = OpLabel
+               OpBranch %74
+         %75 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+
+[test]
+## SSBO
+ssbo 0 subdata int 0 0
+
+compute 1 1 1
+probe ssbo int 0 0 == 42

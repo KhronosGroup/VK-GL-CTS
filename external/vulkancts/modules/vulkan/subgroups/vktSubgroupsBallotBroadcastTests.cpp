@@ -540,6 +540,16 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 		TCU_THROW(NotSupportedError, "Device does not support int64 data types");
 	}
 
+	if (caseDef.extShaderSubGroupBallotTests && !context.requireDeviceExtension("VK_EXT_shader_subgroup_ballot"))
+	{
+		TCU_THROW(NotSupportedError, "Device does not support VK_EXT_shader_subgroup_ballot extension");
+	}
+
+	if (caseDef.extShaderSubGroupBallotTests && !subgroups::isInt64SupportedForDevice(context))
+	{
+		TCU_THROW(NotSupportedError, "Device does not support int64 data types");
+	}
+
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
 

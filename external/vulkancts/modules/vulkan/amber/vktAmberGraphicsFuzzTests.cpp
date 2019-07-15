@@ -45,13 +45,19 @@ void createAmberTests (tcu::TestCaseGroup* group)
 	}
 	tests[] =
 	{
+		{	"barrier-in-loop-with-break.amber",				"barrier-in-loop-with-break",			"A compute shader with a barrier in a loop with a break"								},
+		{	"color-write-in-loop.amber",					"color-write-in-loop",					"A fragment shader that writes to color in a loop"										},
 		{	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
 		{	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
+		{	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
 		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
+		{	"early-return-and-barrier.amber",				"early-return-and-barrier",				"A compute shader with an early return and a barrier"									},
 		{	"fragcoord-control-flow.amber",					"fragcoord-control-flow",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
 		{	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
+		{	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
 		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
 		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
+		{	"matrices-and-return-in-loop.amber",			"matrices-and-return-in-loop",			"A fragment shader with matrices and a return in a loop"								},
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
 		{	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
 		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
