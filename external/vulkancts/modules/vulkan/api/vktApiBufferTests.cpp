@@ -94,7 +94,6 @@ public:
 																		 BufferCaseParameters		testCase)
 										: TestInstance					(ctx)
 										, m_testCase					(testCase)
-										, m_sparseContext				(createSparseContext())
 	{
 	}
 	virtual tcu::TestStatus				iterate							(void);
@@ -102,129 +101,6 @@ public:
 
 protected:
 	BufferCaseParameters				m_testCase;
-
-	// Wrapper functions around m_context calls to support sparse cases.
-	VkPhysicalDevice					getPhysicalDevice				(void) const
-	{
-		// Same in sparse and regular case
-		return m_context.getPhysicalDevice();
-	}
-
-	VkDevice							getDevice						(void) const
-	{
-		if (m_sparseContext)
-		{
-			return *(m_sparseContext->m_device);
-		}
-		return m_context.getDevice();
-	}
-
-	const InstanceInterface&			getInstanceInterface			(void) const
-	{
-		// Same in sparse and regular case
-		return m_context.getInstanceInterface();
-	}
-
-	const DeviceInterface&				getDeviceInterface				(void) const
-	{
-		if (m_sparseContext)
-		{
-			return m_sparseContext->m_deviceInterface;
-		}
-		return m_context.getDeviceInterface();
-	}
-
-	deUint32							getUniversalQueueFamilyIndex	(void) const
-	{
-		if (m_sparseContext)
-		{
-			return m_sparseContext->m_queueFamilyIndex;
-		}
-		return m_context.getUniversalQueueFamilyIndex();
-	}
-
-private:
-	// Custom context for sparse cases
-	struct SparseContext
-	{
-										SparseContext					(Move<VkDevice>&			device,
-																		 const deUint32				queueFamilyIndex,
-																		 const PlatformInterface&	platformInterface,
-																		 VkInstance					instance)
-										: m_device						(device)
-										, m_queueFamilyIndex			(queueFamilyIndex)
-										, m_deviceInterface				(platformInterface, instance, *m_device)
-		{
-		}
-
-		Unique<VkDevice>				m_device;
-		const deUint32					m_queueFamilyIndex;
-		DeviceDriver					m_deviceInterface;
-	};
-
-	de::UniquePtr<SparseContext>		m_sparseContext;
-
-	static deUint32						findQueueFamilyIndexWithCaps	(const InstanceInterface&	vkInstance,
-																		 VkPhysicalDevice			physicalDevice,
-																		 VkQueueFlags				requiredCaps)
-	{
-		const std::vector<vk::VkQueueFamilyProperties>
-										queueProps						= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-		for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-		{
-			if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			{
-				return (deUint32)queueNdx;
-			}
-		}
-
-		TCU_THROW(NotSupportedError, "No matching queue found");
-	}
-
-	// Create the sparseContext
-	SparseContext*						createSparseContext				(void) const
-	{
-		if ((m_testCase.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT)
-		||	(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT)
-		||	(m_testCase.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT))
-		{
-			const InstanceInterface&	vk								= getInstanceInterface();
-			const VkPhysicalDevice		physicalDevice					= getPhysicalDevice();
-			const vk::VkPhysicalDeviceFeatures
-										deviceFeatures					= getPhysicalDeviceFeatures(vk, physicalDevice);
-			const deUint32				queueIndex						= findQueueFamilyIndexWithCaps(vk, physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT);
-			const float					queuePriority					= 1.0f;
-			VkDeviceQueueCreateInfo		queueInfo						=
-			{
-				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				DE_NULL,
-				static_cast<VkDeviceQueueCreateFlags>(0u),
-				queueIndex,
-				1u,
-				&queuePriority
-			};
-			VkDeviceCreateInfo			deviceInfo						=
-			{
-				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-				DE_NULL,
-				static_cast<VkDeviceQueueCreateFlags>(0u),
-				1u,
-				&queueInfo,
-				0u,
-				DE_NULL,
-				0u,
-				DE_NULL,
-				&deviceFeatures
-			};
-
-			Move<VkDevice>				device							= createDevice(m_context.getPlatformInterface(), m_context.getInstance(), vk, physicalDevice, &deviceInfo);
-
-			return new SparseContext(device, queueIndex, m_context.getPlatformInterface(), m_context.getInstance());
-		}
-
-		return DE_NULL;
-	}
 };
 
 class DedicatedAllocationBufferTestInstance : public BufferTestInstance
@@ -320,11 +196,11 @@ private:
 
 tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				size)
 {
-	const VkPhysicalDevice				vkPhysicalDevice				= getPhysicalDevice();
-	const InstanceInterface&			vkInstance						= getInstanceInterface();
-	const VkDevice						vkDevice						= getDevice();
-	const DeviceInterface&				vk								= getDeviceInterface();
-	const deUint32						queueFamilyIndex				= getUniversalQueueFamilyIndex();
+	const VkPhysicalDevice				vkPhysicalDevice				= m_context.getPhysicalDevice();
+	const InstanceInterface&			vkInstance						= m_context.getInstanceInterface();
+	const VkDevice						vkDevice						= m_context.getDevice();
+	const DeviceInterface&				vk								= m_context.getDeviceInterface();
+	const deUint32						queueFamilyIndex				= m_context.getSparseQueueFamilyIndex();
 	const VkPhysicalDeviceMemoryProperties
 										memoryProperties				= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
 	const VkPhysicalDeviceLimits		limits							= getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
@@ -446,7 +322,7 @@ tcu::TestStatus BufferTestInstance::bufferCreateAndAllocTest			(VkDeviceSize				
 	// Bind the memory
 	if ((m_testCase.flags & (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT | VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)) != 0)
 	{
-		const VkQueue					queue							= getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
+		const VkQueue					queue							= m_context.getSparseQueue();
 
 		const VkSparseMemoryBind		sparseMemoryBind				=
 		{
@@ -519,11 +395,11 @@ tcu::TestStatus							BufferTestInstance::iterate		(void)
 tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllocTest
 																		(VkDeviceSize				size)
 {
-	const VkPhysicalDevice				vkPhysicalDevice				= getPhysicalDevice();
-	const InstanceInterface&			vkInstance						= getInstanceInterface();
-	const VkDevice						vkDevice						= getDevice();
-	const DeviceInterface&				vk								= getDeviceInterface();
-	const deUint32						queueFamilyIndex				= getUniversalQueueFamilyIndex();
+	const VkPhysicalDevice				vkPhysicalDevice				= m_context.getPhysicalDevice();
+	const InstanceInterface&			vkInstance						= m_context.getInstanceInterface();
+	const VkDevice						vkDevice						= m_context.getDevice();
+	const DeviceInterface&				vk								= m_context.getDeviceInterface();
+	const deUint32						queueFamilyIndex				= m_context.getUniversalQueueFamilyIndex();
 	const VkPhysicalDeviceMemoryProperties
 										memoryProperties				= getPhysicalDeviceMemoryProperties(vkInstance, vkPhysicalDevice);
 	const VkPhysicalDeviceLimits		limits							= getPhysicalDeviceProperties(vkInstance, vkPhysicalDevice).limits;
