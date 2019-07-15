@@ -14,7 +14,6 @@ const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	Context::g
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipEnableFeatures						(void) const { return m_device->getDepthClipEnableFeatures();					}
 const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT&				Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					Context::getExclusiveScissorFeatures					(void) const { return m_device->getExclusiveScissorFeatures();					}
-const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&						Context::getFloat16Int8Features							(void) const { return m_device->getFloat16Int8Features();						}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				Context::getFragmentDensityMapFeatures					(void) const { return m_device->getFragmentDensityMapFeatures();				}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			Context::getFragmentShaderBarycentricFeatures			(void) const { return m_device->getFragmentShaderBarycentricFeatures();			}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeatures				(void) const { return m_device->getFragmentShaderInterlockFeatures();			}
@@ -31,7 +30,9 @@ const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&					Context::getScalarBl
 const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					Context::getShaderAtomicInt64Features					(void) const { return m_device->getShaderAtomicInt64Features();					}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	Context::getShaderDemoteToHelperInvocationFeatures		(void) const { return m_device->getShaderDemoteToHelperInvocationFeatures();	}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					Context::getShaderDrawParametersFeatures				(void) const { return m_device->getShaderDrawParametersFeatures();				}
+const vk::VkPhysicalDeviceShaderFloat16Int8FeaturesKHR&					Context::getShaderFloat16Int8Features					(void) const { return m_device->getShaderFloat16Int8Features();					}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();				}
+const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			Context::getShaderIntegerFunctions2FeaturesINTEL		(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();		}
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					Context::getShadingRateImageFeatures					(void) const { return m_device->getShadingRateImageFeatures();					}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				Context::getTexelBufferAlignmentFeatures				(void) const { return m_device->getTexelBufferAlignmentFeatures();				}
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					Context::getTransformFeedbackFeatures					(void) const { return m_device->getTransformFeedbackFeatures();					}
