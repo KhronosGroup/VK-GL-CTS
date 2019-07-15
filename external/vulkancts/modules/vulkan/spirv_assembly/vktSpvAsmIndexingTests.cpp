@@ -531,6 +531,7 @@ void addGraphicsOutputComponentIndexingTests (tcu::TestCaseGroup* testGroup)
 		"          %ip_a3u32 = OpTypePointer Input %a3u32\n"
 		"%v4f32_u32_function = OpTypeFunction %v4f32 %u32\n";
 
+	fragments["interface_op_call"] = "OpFunctionCall %v4f32 %interface_op_func";
 	fragments["interface_op_func"] =
 		"%interface_op_func = OpFunction %v4f32 None %v4f32_u32_function\n"
 		"        %io_param1 = OpFunctionParameter %u32\n"
