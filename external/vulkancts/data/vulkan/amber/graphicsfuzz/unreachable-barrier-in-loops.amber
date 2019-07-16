@@ -1,0 +1,373 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A compute shader with an unreachable barrier in a loop nest
+
+# The test passes because the compute shader has a single global invocation that
+# is guaranteed to set 'value' to (0.0, 0.0, 0.0, 1.0), and that writes the
+# components of 'value', cast to integers, to '_compute_data' at the end of
+# execution.  The early return is unreachable.
+
+# Derived from the following GLSL.
+
+# Compute shader GLSL:
+# #version 310 es
+#
+# precision highp float;
+#
+# layout(set = 0, binding = 2) uniform buf2 {
+#  vec2 resolution;
+# };
+#
+# layout(set = 0, binding = 1) uniform buf1 {
+#  vec2 injectionSwitch;
+# };
+#
+# layout(std430, binding = 0) buffer doesNotMatter {
+#  int _compute_data[];
+# };
+#
+# layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+#
+# void main(void)
+# {
+#  vec4 value;
+#  float A[1];
+#  A[0] = 0.0;
+#  for(int i = 0; i < 50; i++) {
+#    if(i > 0) {
+#      A[0] += A[0];
+#    }
+#  }
+#  do {
+#   if(gl_GlobalInvocationID.x < 100u) {
+#    value = vec4(0.0, 0.0, 0.0, 1.0);
+#    for(int m = 0; m < 1; m++) {
+#     for(int l = 0; l < 1; l++) {
+#      if(injectionSwitch.x > injectionSwitch.y)
+#       return;
+#     }
+#    }
+#    for(int n = 0; n < 1; n ++) {
+#     if(injectionSwitch.x > injectionSwitch.y)
+#      barrier();
+#    }
+#   } else {
+#    if(gl_GlobalInvocationID.x < 120u) {
+#     value = vec4(A[0] / resolution.x, A[0] / resolution.y, 0.0, 1.0);
+#    } else {
+#     if(injectionSwitch.x > injectionSwitch.y)
+#      continue;
+#    }
+#   }
+#  } while(false);
+#  _compute_data[0] = int(value.x);
+#  _compute_data[1] = int(value.y);
+#  _compute_data[2] = int(value.z);
+#  _compute_data[3] = int(value.w);
+# }
+
+[compute shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 168
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %47
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %11 "A"
+               OpName %18 "i"
+               OpName %47 "gl_GlobalInvocationID"
+               OpName %58 "value"
+               OpName %61 "m"
+               OpName %69 "l"
+               OpName %78 "buf1"
+               OpMemberName %78 0 "injectionSwitch"
+               OpName %80 ""
+               OpName %94 "n"
+               OpName %122 "buf2"
+               OpMemberName %122 0 "resolution"
+               OpName %124 ""
+               OpName %145 "doesNotMatter"
+               OpMemberName %145 0 "_compute_data"
+               OpName %147 ""
+               OpDecorate %47 BuiltIn GlobalInvocationId
+               OpMemberDecorate %78 0 Offset 0
+               OpDecorate %78 Block
+               OpDecorate %80 DescriptorSet 0
+               OpDecorate %80 Binding 1
+               OpMemberDecorate %122 0 Offset 0
+               OpDecorate %122 Block
+               OpDecorate %124 DescriptorSet 0
+               OpDecorate %124 Binding 2
+               OpDecorate %144 ArrayStride 4
+               OpMemberDecorate %145 0 Offset 0
+               OpDecorate %145 BufferBlock
+               OpDecorate %147 DescriptorSet 0
+               OpDecorate %147 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeInt 32 0
+          %8 = OpConstant %7 1
+          %9 = OpTypeArray %6 %8
+         %10 = OpTypePointer Function %9
+         %12 = OpTypeInt 32 1
+         %13 = OpConstant %12 0
+         %14 = OpConstant %6 0
+         %15 = OpTypePointer Function %6
+         %17 = OpTypePointer Function %12
+         %25 = OpConstant %12 50
+         %26 = OpTypeBool
+         %39 = OpConstant %12 1
+         %45 = OpTypeVector %7 3
+         %46 = OpTypePointer Input %45
+         %47 = OpVariable %46 Input
+         %48 = OpConstant %7 0
+         %49 = OpTypePointer Input %7
+         %52 = OpConstant %7 100
+         %56 = OpTypeVector %6 4
+         %57 = OpTypePointer Function %56
+         %59 = OpConstant %6 1
+         %60 = OpConstantComposite %56 %14 %14 %14 %59
+         %77 = OpTypeVector %6 2
+         %78 = OpTypeStruct %77
+         %79 = OpTypePointer Uniform %78
+         %80 = OpVariable %79 Uniform
+         %81 = OpTypePointer Uniform %6
+        %109 = OpConstant %7 2
+        %110 = OpConstant %7 264
+        %116 = OpConstant %7 120
+        %122 = OpTypeStruct %77
+        %123 = OpTypePointer Uniform %122
+        %124 = OpVariable %123 Uniform
+        %143 = OpConstantFalse %26
+        %144 = OpTypeRuntimeArray %12
+        %145 = OpTypeStruct %144
+        %146 = OpTypePointer Uniform %145
+        %147 = OpVariable %146 Uniform
+        %151 = OpTypePointer Uniform %12
+        %157 = OpConstant %12 2
+        %162 = OpConstant %12 3
+        %163 = OpConstant %7 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+         %18 = OpVariable %17 Function
+         %58 = OpVariable %57 Function
+         %61 = OpVariable %17 Function
+         %69 = OpVariable %17 Function
+         %94 = OpVariable %17 Function
+         %16 = OpAccessChain %15 %11 %13
+               OpStore %16 %14
+               OpStore %18 %13
+               OpBranch %19
+         %19 = OpLabel
+               OpLoopMerge %21 %22 None
+               OpBranch %23
+         %23 = OpLabel
+         %24 = OpLoad %12 %18
+         %27 = OpSLessThan %26 %24 %25
+               OpBranchConditional %27 %20 %21
+         %20 = OpLabel
+         %28 = OpLoad %12 %18
+         %29 = OpSGreaterThan %26 %28 %13
+               OpSelectionMerge %31 None
+               OpBranchConditional %29 %30 %31
+         %30 = OpLabel
+         %32 = OpAccessChain %15 %11 %13
+         %33 = OpLoad %6 %32
+         %34 = OpAccessChain %15 %11 %13
+         %35 = OpLoad %6 %34
+         %36 = OpFAdd %6 %35 %33
+         %37 = OpAccessChain %15 %11 %13
+               OpStore %37 %36
+               OpBranch %31
+         %31 = OpLabel
+               OpBranch %22
+         %22 = OpLabel
+         %38 = OpLoad %12 %18
+         %40 = OpIAdd %12 %38 %39
+               OpStore %18 %40
+               OpBranch %19
+         %21 = OpLabel
+               OpBranch %41
+         %41 = OpLabel
+               OpLoopMerge %43 %44 None
+               OpBranch %42
+         %42 = OpLabel
+         %50 = OpAccessChain %49 %47 %48
+         %51 = OpLoad %7 %50
+         %53 = OpULessThan %26 %51 %52
+               OpSelectionMerge %55 None
+               OpBranchConditional %53 %54 %113
+         %54 = OpLabel
+               OpStore %58 %60
+               OpStore %61 %13
+               OpBranch %62
+         %62 = OpLabel
+               OpLoopMerge %64 %65 None
+               OpBranch %66
+         %66 = OpLabel
+         %67 = OpLoad %12 %61
+         %68 = OpSLessThan %26 %67 %39
+               OpBranchConditional %68 %63 %64
+         %63 = OpLabel
+               OpStore %69 %13
+               OpBranch %70
+         %70 = OpLabel
+               OpLoopMerge %72 %73 None
+               OpBranch %74
+         %74 = OpLabel
+         %75 = OpLoad %12 %69
+         %76 = OpSLessThan %26 %75 %39
+               OpBranchConditional %76 %71 %72
+         %71 = OpLabel
+         %82 = OpAccessChain %81 %80 %13 %48
+         %83 = OpLoad %6 %82
+         %84 = OpAccessChain %81 %80 %13 %8
+         %85 = OpLoad %6 %84
+         %86 = OpFOrdGreaterThan %26 %83 %85
+               OpSelectionMerge %88 None
+               OpBranchConditional %86 %87 %88
+         %87 = OpLabel
+               OpReturn
+         %88 = OpLabel
+               OpBranch %73
+         %73 = OpLabel
+         %90 = OpLoad %12 %69
+         %91 = OpIAdd %12 %90 %39
+               OpStore %69 %91
+               OpBranch %70
+         %72 = OpLabel
+               OpBranch %65
+         %65 = OpLabel
+         %92 = OpLoad %12 %61
+         %93 = OpIAdd %12 %92 %39
+               OpStore %61 %93
+               OpBranch %62
+         %64 = OpLabel
+               OpStore %94 %13
+               OpBranch %95
+         %95 = OpLabel
+               OpLoopMerge %97 %98 None
+               OpBranch %99
+         %99 = OpLabel
+        %100 = OpLoad %12 %94
+        %101 = OpSLessThan %26 %100 %39
+               OpBranchConditional %101 %96 %97
+         %96 = OpLabel
+        %102 = OpAccessChain %81 %80 %13 %48
+        %103 = OpLoad %6 %102
+        %104 = OpAccessChain %81 %80 %13 %8
+        %105 = OpLoad %6 %104
+        %106 = OpFOrdGreaterThan %26 %103 %105
+               OpSelectionMerge %108 None
+               OpBranchConditional %106 %107 %108
+        %107 = OpLabel
+               OpControlBarrier %109 %109 %110
+               OpBranch %108
+        %108 = OpLabel
+               OpBranch %98
+         %98 = OpLabel
+        %111 = OpLoad %12 %94
+        %112 = OpIAdd %12 %111 %39
+               OpStore %94 %112
+               OpBranch %95
+         %97 = OpLabel
+               OpBranch %55
+        %113 = OpLabel
+        %114 = OpAccessChain %49 %47 %48
+        %115 = OpLoad %7 %114
+        %117 = OpULessThan %26 %115 %116
+               OpSelectionMerge %119 None
+               OpBranchConditional %117 %118 %134
+        %118 = OpLabel
+        %120 = OpAccessChain %15 %11 %13
+        %121 = OpLoad %6 %120
+        %125 = OpAccessChain %81 %124 %13 %48
+        %126 = OpLoad %6 %125
+        %127 = OpFDiv %6 %121 %126
+        %128 = OpAccessChain %15 %11 %13
+        %129 = OpLoad %6 %128
+        %130 = OpAccessChain %81 %124 %13 %8
+        %131 = OpLoad %6 %130
+        %132 = OpFDiv %6 %129 %131
+        %133 = OpCompositeConstruct %56 %127 %132 %14 %59
+               OpStore %58 %133
+               OpBranch %119
+        %134 = OpLabel
+        %135 = OpAccessChain %81 %80 %13 %48
+        %136 = OpLoad %6 %135
+        %137 = OpAccessChain %81 %80 %13 %8
+        %138 = OpLoad %6 %137
+        %139 = OpFOrdGreaterThan %26 %136 %138
+               OpSelectionMerge %141 None
+               OpBranchConditional %139 %140 %141
+        %140 = OpLabel
+               OpBranch %44
+        %141 = OpLabel
+               OpBranch %119
+        %119 = OpLabel
+               OpBranch %55
+         %55 = OpLabel
+               OpBranch %44
+         %44 = OpLabel
+               OpBranchConditional %143 %41 %43
+         %43 = OpLabel
+        %148 = OpAccessChain %15 %58 %48
+        %149 = OpLoad %6 %148
+        %150 = OpConvertFToS %12 %149
+        %152 = OpAccessChain %151 %147 %13 %13
+               OpStore %152 %150
+        %153 = OpAccessChain %15 %58 %8
+        %154 = OpLoad %6 %153
+        %155 = OpConvertFToS %12 %154
+        %156 = OpAccessChain %151 %147 %13 %39
+               OpStore %156 %155
+        %158 = OpAccessChain %15 %58 %109
+        %159 = OpLoad %6 %158
+        %160 = OpConvertFToS %12 %159
+        %161 = OpAccessChain %151 %147 %13 %157
+               OpStore %161 %160
+        %164 = OpAccessChain %15 %58 %163
+        %165 = OpLoad %6 %164
+        %166 = OpConvertFToS %12 %165
+        %167 = OpAccessChain %151 %147 %13 %162
+               OpStore %167 %166
+               OpReturn
+               OpFunctionEnd
+
+
+[test]
+## Uniforms
+# injectionSwitch
+uniform ubo 0:1 vec2 0 0.0 1.0
+# resolution
+uniform ubo 0:2 vec2 0 256.0 256.0
+## SSBO
+ssbo 0 subdata int 0 0 0 0 0
+
+compute 3 1 1
+probe ssbo int 0 0 == 0
+probe ssbo int 0 4 == 0
+probe ssbo int 0 8 == 0
+probe ssbo int 0 12 == 1
