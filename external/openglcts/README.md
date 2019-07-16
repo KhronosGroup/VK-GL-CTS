@@ -642,6 +642,10 @@ Full list of parameters for the `glcts` binary:
     Run tests that exhaust memory on purpose
     default: 'disable'
 
+  --deqp-case-fraction=<value>,<value>
+    Run a fraction of the test cases (e.g. N,M means run group%M==N)
+    default: ''
+
   --deqp-egl-config-id=<value>
     Legacy name for --deqp-gl-config-id
     default: '-1'
