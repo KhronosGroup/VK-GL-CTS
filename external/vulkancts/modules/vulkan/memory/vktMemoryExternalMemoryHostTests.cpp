@@ -67,6 +67,21 @@ struct TestParams
 	TestParams		(VkFormat f, bool offset = false) : m_format(f) , m_useOffset(offset) {}
 };
 
+void checkExternalMemoryProperties (const vk::VkExternalMemoryProperties& properties)
+{
+	// If obtaining the properties did not fail, the compatible handle types should indicate our handle type at least.
+	if ((properties.compatibleHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT) == 0)
+		TCU_FAIL("compatibleHandleTypes does not include the host allocation bit");
+
+	// If this is host memory, it cannot require dedicated allocation.
+	if ((properties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+		TCU_FAIL("externalMemoryFeatures for host allocated format includes dedicated allocation bit");
+
+	// Memory should be importable to bind it to an image or buffer.
+	if ((properties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
+		TCU_FAIL("externalMemoryFeatures for host allocated format does not include the importable bit");
+}
+
 class ExternalMemoryHostBaseTestInstance : public TestInstance
 {
 public:
@@ -101,7 +116,7 @@ public:
 									ExternalMemoryHostRenderImageTestInstance	(Context& context, TestParams testParams);
 protected:
 	virtual tcu::TestStatus			iterate										(void);
-	Move<VkImage>					createImage									(VkImageTiling tiling);
+	Move<VkImage>					createImage									(VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage);
 	Move<VkImageView>				createImageView								(void);
 	Move<VkBuffer>					createBindMemoryInitializeVertexBuffer		(void);
 	Move<VkBuffer>					createBindMemoryResultBuffer				(void);
@@ -114,6 +129,7 @@ protected:
 	void							draw										(void);
 	void							copyResultImagetoBuffer						(void);
 	void							prepareReferenceImage						(tcu::PixelBufferAccess& reference);
+	void							verifyFormatProperties						(VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage);
 
 	TestParams										m_testParams;
 	Move<VkImage>									m_image;
@@ -141,11 +157,12 @@ public:
 								ExternalMemoryHostSynchronizationTestInstance	(Context& context, TestParams testParams);
 protected:
 	virtual tcu::TestStatus		iterate											(void);
-	void						prepareBufferForHostAccess						(void);
-	void						copyResultBuffertoBuffer						(void);
+	void						prepareBufferForHostAccess						(VkDeviceSize size);
+	void						copyResultBuffertoBuffer						(VkDeviceSize size);
 	void						submitCommands									(VkCommandBuffer commandBuffer, VkFence fence);
-	Move<VkBuffer>				createDataBuffer								(void);
-	void						fillBuffer										(void);
+	Move<VkBuffer>				createDataBuffer								(VkDeviceSize size, VkBufferUsageFlags usage);
+	void						fillBuffer										(VkDeviceSize size);
+	void						verifyBufferProperties							(VkBufferUsageFlags usage);
 
 	Move<VkBuffer>				m_dataBuffer;
 	Move<VkCommandPool>			m_cmdPoolCopy;
@@ -303,8 +320,10 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 	deUint32							hostPointerMemoryTypeBits;
 	deUint32							memoryTypeIndexToTest;
 	VkMemoryRequirements				imageMemoryRequirements;
+	const VkImageTiling					tiling							= VK_IMAGE_TILING_OPTIMAL;
+	const VkImageUsageFlags				usageFlags						= (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |	VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-	m_image								= createImage(VK_IMAGE_TILING_OPTIMAL);
+	m_image								= createImage(m_testParams.m_format, tiling, usageFlags);
 
 	//check memory requirements and reallocate memory if needed
 	imageMemoryRequirements				= getImageMemoryRequirements(m_vkd, m_device, *m_image);
@@ -350,6 +369,9 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 		m_deviceMemoryAllocatedFromHostPointer = allocateMemoryFromHostPointer(memoryTypeIndexToTest);
 	else
 		TCU_THROW(NotSupportedError, "Compatible memory type not found");
+
+	// Verify image format properties before proceeding.
+	verifyFormatProperties(m_testParams.m_format, tiling, usageFlags);
 
 	VK_CHECK(m_vkd.bindImageMemory(m_device, *m_image, *m_deviceMemoryAllocatedFromHostPointer, (m_testParams.m_useOffset ? imageMemoryRequirements.alignment : 0)));
 
@@ -404,27 +426,25 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
-Move<VkImage>  ExternalMemoryHostRenderImageTestInstance::createImage (VkImageTiling tiling)
+Move<VkImage>  ExternalMemoryHostRenderImageTestInstance::createImage (VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage)
 {
 	const VkImageCreateInfo			imageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType
-		DE_NULL,												// const void*				pNext
-		DE_NULL,												// VkImageCreateFlags		flags
-		VK_IMAGE_TYPE_2D,										// VkImageType				imageType
-		m_testParams.m_format,									// VkFormat					format
-		{ 100, 100, 1 },										// VkExtent3D				extent
-		1,														// deUint32					mipLevels
-		1,														// deUint32					arrayLayers
-		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples
-		tiling,													// VkImageTiling			tiling
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT,						// VkImageUsageFlags		usage
-		VK_SHARING_MODE_EXCLUSIVE,								// VkSharingMode			sharingMode
-		0,														// deUint32					queueFamilyIndexCount
-		DE_NULL,												// const deUint32*			pQueueFamilyIndices
-		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
+		DE_NULL,								// const void*				pNext
+		0u,										// VkImageCreateFlags		flags
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType
+		format,									// VkFormat					format
+		{ 100, 100, 1 },						// VkExtent3D				extent
+		1,										// deUint32					mipLevels
+		1,										// deUint32					arrayLayers
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples
+		tiling,									// VkImageTiling			tiling
+		usage,									// VkImageUsageFlags		usage
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode
+		0,										// deUint32					queueFamilyIndexCount
+		DE_NULL,								// const deUint32*			pQueueFamilyIndices
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			initialLayout
 	};
 
 	return vk::createImage(m_vkd, m_device, &imageCreateInfo, DE_NULL);
@@ -726,6 +746,42 @@ Move<VkRenderPass> ExternalMemoryHostRenderImageTestInstance::createRenderPass (
 	return vk::createRenderPass(m_vkd, m_device, &renderPassInfo);
 }
 
+void ExternalMemoryHostRenderImageTestInstance::verifyFormatProperties (VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage)
+{
+	const VkPhysicalDeviceExternalImageFormatInfo externalInfo = {
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+		DE_NULL,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+	};
+
+	const VkPhysicalDeviceImageFormatInfo2 formatInfo = {
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	// VkStructureType       sType;
+		&externalInfo,											// const void*           pNext;
+		format,													// VkFormat              format;
+		VK_IMAGE_TYPE_2D,										// VkImageType           type;
+		tiling,													// VkImageTiling         tiling;
+		usage,													// VkImageUsageFlags     usage;
+		0u														// VkImageCreateFlags    flags;
+	};
+
+	vk::VkExternalImageFormatProperties externalProperties = {
+		VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
+		DE_NULL,
+		vk::VkExternalMemoryProperties()
+	};
+
+	vk::VkImageFormatProperties2 formatProperties = {
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+		&externalProperties,
+		vk::VkImageFormatProperties()
+	};
+
+	// Memory type bits have been verified to be compatible previously. The call below should not fail.
+	VK_CHECK(m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &formatProperties));
+
+	checkExternalMemoryProperties(externalProperties.externalMemoryProperties);
+}
+
 ExternalMemoryHostSynchronizationTestInstance::ExternalMemoryHostSynchronizationTestInstance (Context& context, TestParams testParams)
 	: ExternalMemoryHostRenderImageTestInstance (context, testParams)
 {
@@ -737,12 +793,13 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 
 	const deUint32							queueFamilyIndex							= m_context.getUniversalQueueFamilyIndex();
 	const VkDeviceSize						dataBufferSize								= 10000 * vk::mapVkFormat(m_testParams.m_format).getPixelSize();
+	const VkBufferUsageFlags				usageFlags									= (VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	void*									pointerReturnedByMapMemory;
 	deUint32								hostPointerMemoryTypeBits;
 	deUint32								memoryTypeIndexToTest;
 	VkMemoryRequirements					bufferMemoryRequirements;
 
-	m_dataBuffer							= createDataBuffer();
+	m_dataBuffer							= createDataBuffer(dataBufferSize, usageFlags);
 
 	//check memory requirements
 	bufferMemoryRequirements				= getBufferMemoryRequirements(m_vkd, m_device, *m_dataBuffer);
@@ -772,6 +829,9 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 	else
 		TCU_THROW(NotSupportedError, "Compatible memory type not found");
 
+	// Verify buffer properties with external host memory.
+	verifyBufferProperties(usageFlags);
+
 	VK_CHECK(m_vkd.bindBufferMemory(m_device, *m_dataBuffer, *m_deviceMemoryAllocatedFromHostPointer, 0));
 
 	m_resultBuffer							= createBindMemoryResultBuffer();
@@ -785,13 +845,13 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 
 	//record first command buffer
 	beginCommandBuffer(m_vkd, *m_cmdBuffer);
-	fillBuffer();
-	prepareBufferForHostAccess();
+	fillBuffer(dataBufferSize);
+	prepareBufferForHostAccess(dataBufferSize);
 	endCommandBuffer(m_vkd, *m_cmdBuffer);
 
 	//record second command buffer
 	beginCommandBuffer(m_vkd, *m_cmdBufferCopy);
-	copyResultBuffertoBuffer();
+	copyResultBuffertoBuffer(dataBufferSize);
 	endCommandBuffer(m_vkd, *m_cmdBufferCopy);
 
 	submitCommands(*m_cmdBuffer, *m_fence_1);
@@ -800,10 +860,10 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 	//wait for fence_1 and modify image on host
 	VK_CHECK(m_vkd.waitForFences(m_device, 1u, &m_fence_1.get(), DE_TRUE, ~0ull));
 	pointerReturnedByMapMemory				= mapMemory(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, dataBufferSize, 0);
-	invalidateMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, dataBufferSize);
+	invalidateMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, VK_WHOLE_SIZE);
 	tcu::PixelBufferAccess bufferSurface(mapVkFormat(m_testParams.m_format), 100, 100, 1, (100 * vk::mapVkFormat(m_testParams.m_format).getPixelSize()), 0, m_hostMemoryAlloc);
 	prepareReferenceImage(bufferSurface);
-	flushMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, dataBufferSize);
+	flushMappedMemoryRange(m_vkd, m_device, *m_deviceMemoryAllocatedFromHostPointer, 0, VK_WHOLE_SIZE);
 	//compare memory pointed by both pointers
 	if (deMemCmp(m_hostMemoryAlloc, pointerReturnedByMapMemory, (size_t)dataBufferSize) != 0)
 		TCU_FAIL("Failed memcmp check.");
@@ -827,9 +887,8 @@ tcu::TestStatus ExternalMemoryHostSynchronizationTestInstance::iterate ()
 	return tcu::TestStatus::pass("Pass");
 }
 
-void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess ()
+void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess (VkDeviceSize size)
 {
-	VkDeviceSize					size								= 10000 * vk::mapVkFormat(m_testParams.m_format).getPixelSize();
 	const VkBufferMemoryBarrier		bufferBarrier =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
@@ -846,9 +905,8 @@ void ExternalMemoryHostSynchronizationTestInstance::prepareBufferForHostAccess (
 	m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 }
 
-void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer ()
+void ExternalMemoryHostSynchronizationTestInstance::copyResultBuffertoBuffer (VkDeviceSize size)
 {
-	VkDeviceSize					size								= 10000 * vk::mapVkFormat(m_testParams.m_format).getPixelSize();
 	const VkBufferMemoryBarrier		bufferBarrier =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
@@ -891,17 +949,15 @@ void ExternalMemoryHostSynchronizationTestInstance::submitCommands (VkCommandBuf
 	VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, fence));
 }
 
-Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer ()
+Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer (VkDeviceSize size, VkBufferUsageFlags usage)
 {
-	VkDeviceSize					size								= 10000 * vk::mapVkFormat(m_testParams.m_format).getPixelSize();
 	const VkBufferCreateInfo		dataBufferCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType
 		DE_NULL,								// const void*			pNext
 		0,										// VkBufferCreateFlags	flag
 		size,									// VkDeviceSize			size
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage
+		usage,									// VkBufferUsageFlags	usage
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode
 		0,										// deUint32				queueFamilyCount
 		DE_NULL									// const deUint32*		pQueueFamilyIndices
@@ -909,9 +965,8 @@ Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer (
 	return vk::createBuffer(m_vkd, m_device, &dataBufferCreateInfo, DE_NULL);
 }
 
-void ExternalMemoryHostSynchronizationTestInstance::fillBuffer ()
+void ExternalMemoryHostSynchronizationTestInstance::fillBuffer (VkDeviceSize size)
 {
-	VkDeviceSize					size								= 10000 * vk::mapVkFormat(m_testParams.m_format).getPixelSize();
 	const VkBufferMemoryBarrier		bufferBarrier =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
@@ -927,6 +982,27 @@ void ExternalMemoryHostSynchronizationTestInstance::fillBuffer ()
 
 	m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 	m_vkd.cmdFillBuffer(*m_cmdBuffer, *m_dataBuffer, 0, size, 0xFFFFFFFF);
+}
+
+void ExternalMemoryHostSynchronizationTestInstance::verifyBufferProperties (VkBufferUsageFlags usage)
+{
+	const VkPhysicalDeviceExternalBufferInfo bufferInfo = {
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,	// VkStructureType                       sType;
+		DE_NULL,												// const void*                           pNext;
+		0,														// VkBufferCreateFlags                   flags;
+		usage,													// VkBufferUsageFlags                    usage;
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT	// VkExternalMemoryHandleTypeFlagBits    handleType;
+	};
+
+	VkExternalBufferProperties props = {
+		VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,	// VkStructureType               sType;
+		DE_NULL,										// void*                         pNext;
+		VkExternalMemoryProperties()					// VkExternalMemoryProperties    externalMemoryProperties;
+	};
+
+	m_context.getInstanceInterface().getPhysicalDeviceExternalBufferProperties(m_context.getPhysicalDevice(), &bufferInfo, &props);
+
+	checkExternalMemoryProperties(props.externalMemoryProperties);
 }
 
 struct AddPrograms
@@ -968,6 +1044,11 @@ struct AddPrograms
 	}
 };
 
+struct FormatName {
+	vk::VkFormat	format;
+	std::string		name;
+};
+
 } // unnamed namespace
 
 tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testCtx)
@@ -986,35 +1067,26 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 																									  "allocate minImportedHostPointerAlignment multiplied by 3", 3));
 	group ->addChild(simpleAllocation.release());
 
-	const VkFormat testFormats[] = {
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_R16G16B16A16_UNORM,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
-		VK_FORMAT_R32G32B32A32_SFLOAT
+	const std::vector<FormatName> testFormats = {
+		{ vk::VK_FORMAT_R8G8B8A8_UNORM,			"r8g8b8a8_unorm"		},
+		{ vk::VK_FORMAT_R16G16B16A16_UNORM,		"r16g16b16a16_unorm"	},
+		{ vk::VK_FORMAT_R16G16B16A16_SFLOAT,	"r16g16b16a16_sfloat"	},
+		{ vk::VK_FORMAT_R32G32B32A32_SFLOAT,	"r32g32b32a32_sfloat"	},
 	};
 
-	const std::string testNames[] = {
-		"r8g8b8a8_unorm",
-		"r16g16b16a16_unorm",
-		"r16g16b16a16_sfloat",
-		"r32g32b32a32_sfloat"
-	};
-
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(testFormats); formatNdx++)
+	for (const auto& formatName : testFormats)
 	{
-		std::string testName = testNames[formatNdx];
 		with_zero_offset->addChild(new InstanceFactory1<ExternalMemoryHostRenderImageTestInstance, TestParams, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
-																															testName, testName, AddPrograms(),
-																															TestParams(testFormats[formatNdx])));
+																															formatName.name, formatName.name, AddPrograms(),
+																															TestParams(formatName.format)));
 	}
 	bind_image_memory_and_render->addChild(with_zero_offset.release());
 
-	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(testFormats); formatNdx++)
+	for (const auto& formatName : testFormats)
 	{
-		std::string testName = testNames[formatNdx];
 		with_non_zero_offset->addChild(new InstanceFactory1<ExternalMemoryHostRenderImageTestInstance, TestParams, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
-																																testName, testName, AddPrograms(),
-																																TestParams(testFormats[formatNdx], true)));
+																																formatName.name, formatName.name, AddPrograms(),
+																																TestParams(formatName.format, true)));
 	}
 	bind_image_memory_and_render->addChild(with_non_zero_offset.release());
 
@@ -1022,7 +1094,7 @@ tcu::TestCaseGroup* createMemoryExternalMemoryHostTests (tcu::TestContext& testC
 
 	synchronization->addChild(new InstanceFactory1<ExternalMemoryHostSynchronizationTestInstance, TestParams, AddPrograms>	(testCtx, tcu::NODETYPE_SELF_VALIDATE,
 																															"synchronization", "synchronization", AddPrograms(),
-																															TestParams(testFormats[0], true)));
+																															TestParams(testFormats[0].format, true)));
 	group->addChild(synchronization.release());
 	return group.release();
 }
