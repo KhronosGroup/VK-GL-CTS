@@ -195,6 +195,9 @@ private:
 	// Current session state.
 	std::vector<NodeIter>	m_sessionStack;
 	std::string				m_nodePath;
+
+	// Counter that increments by one for each bottom-level test group
+	int						m_groupNumber;
 };
 
 } // tcu

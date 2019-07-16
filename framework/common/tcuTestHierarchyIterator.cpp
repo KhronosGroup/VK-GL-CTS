@@ -90,6 +90,7 @@ TestHierarchyIterator::TestHierarchyIterator (TestPackageRoot&			rootNode,
 											  const CaseListFilter&		caseListFilter)
 	: m_inflater		(inflater)
 	, m_caseListFilter	(caseListFilter)
+	, m_groupNumber		(0)
 {
 	// Init traverse state and "seek" to first reportable node.
 	NodeIter iter(&rootNode);
@@ -215,6 +216,13 @@ void TestHierarchyIterator::next (void)
 				{
 					// Push child to stack.
 					TestNode* childNode = iter.children[iter.curChildNdx];
+
+					// Check whether this is a bottom-level group (child is executable)
+					// and whether that group should be filtered out.
+					if (isTestNodeTypeExecutable(childNode->getNodeType()) &&
+						!m_caseListFilter.checkCaseFraction(m_groupNumber)) {
+						break;
+					}
 					m_sessionStack.push_back(NodeIter(childNode));
 				}
 				else
@@ -240,6 +248,7 @@ void TestHierarchyIterator::next (void)
 						default:
 							DE_ASSERT(false);
 					}
+					m_groupNumber++;
 				}
 
 				m_sessionStack.pop_back();
