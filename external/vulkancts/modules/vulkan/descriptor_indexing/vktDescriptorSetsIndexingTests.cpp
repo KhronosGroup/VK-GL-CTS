@@ -1019,7 +1019,7 @@ void CommonDescriptorInstance::copyBuffersToImages					(IterateCommonVariables&	
 			variables.descriptorsImages[infoIdx]->extent,	// imageExtent
 			variables.descriptorsImages[infoIdx]->format,	// imageFormat
 			VK_IMAGE_LAYOUT_UNDEFINED,						// oldImageLayout
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newImageLayout
+			VK_IMAGE_LAYOUT_GENERAL,						// newImageLayout
 			variables.descriptorsImages[infoIdx]->levels);	// mipLevelCount
 	}
 }
@@ -1042,8 +1042,8 @@ void CommonDescriptorInstance::copyImagesToBuffers					(IterateCommonVariables&	
 			*(variables.descriptorsImages[infoIdx]->image),	// image
 			variables.descriptorsImages[infoIdx]->extent,	// imageExtent
 			variables.descriptorsImages[infoIdx]->format,	// imageFormat
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// oldImageLayout
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newImageLayout
+			VK_IMAGE_LAYOUT_GENERAL,						// oldImageLayout
+			VK_IMAGE_LAYOUT_GENERAL,						// newImageLayout
 			variables.descriptorsBufferInfos[infoIdx]);		// bufferInfo
 	}
 }
@@ -2296,14 +2296,14 @@ Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateComm
 				VK_ATTACHMENT_STORE_OP_STORE,					// VkAttachmentStoreOp				storeOp;
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,				// VkAttachmentLoadOp				stencilLoadOp;
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,				// VkAttachmentStoreOp				stencilStoreOp;
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout					initialLayout;
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL		// VkImageLayout					finalLayout;
+				VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout					initialLayout;
+				VK_IMAGE_LAYOUT_GENERAL							// VkImageLayout					finalLayout;
 			};
 
 			const VkAttachmentReference		inputAttachmentRef =
 			{
 				inputIdx + 1,								// deUint32							attachment;
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout					layout;
+				VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					layout;
 			};
 
 			inputAttachmentRefs.push_back(inputAttachmentRef);

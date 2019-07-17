@@ -252,6 +252,27 @@ deUint32 chooseMemoryType (deUint32 bits)
 	return -1;
 }
 
+bool isOpaqueHandleType (const vk::VkExternalMemoryHandleTypeFlagBits handleType)
+{
+	switch (handleType)
+	{
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
+		return true;
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT:
+	case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID:
+		return false;
+	default:
+		TCU_THROW(InternalError, "Unknown handle type or multiple bits set");
+	}
+}
+
 vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				vkd,
 										   vk::VkDevice								device,
 										   const vk::VkMemoryRequirements&			requirements,
@@ -274,15 +295,28 @@ vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				vkd,
 		(requiresDedicated) ? &dedicatedInfo : DE_NULL,
 		externalType,
 		handle.getWin32Handle(),
-        NULL
+		NULL
 	};
+
+	deUint32 handleCompatibleMemoryTypeBits = ~0u;
+	if(!isOpaqueHandleType(externalType))
+	{
+		vk::VkMemoryWin32HandlePropertiesKHR memoryWin32HandleProperties =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR,
+			DE_NULL,
+			0u
+		};
+		VK_CHECK(vkd.getMemoryWin32HandlePropertiesKHR(device, externalType, handle.getWin32Handle(), &memoryWin32HandleProperties));
+		handleCompatibleMemoryTypeBits &= memoryWin32HandleProperties.memoryTypeBits;
+	}
 
 	const vk::VkMemoryAllocateInfo				info			=
 	{
 		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		&importInfo,
 		requirements.size,
-		chooseMemoryType(requirements.memoryTypeBits)
+		chooseMemoryType(requirements.memoryTypeBits & handleCompatibleMemoryTypeBits)
 	};
 
 	vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
