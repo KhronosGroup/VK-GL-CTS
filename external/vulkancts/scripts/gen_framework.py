@@ -143,12 +143,11 @@ def prefixName (prefix, name):
 	name = name.replace("TEXTURE_LOD", "TEXTURE_LOD_")
 	name = name.replace("VIEWPORT_W", "VIEWPORT_W_")
 	name = name.replace("_IDPROPERTIES", "_ID_PROPERTIES")
-	name = name.replace("PHYSICAL_DEVICE_FLOAT_16_INT_8_FEATURES", "PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES")
+	name = name.replace("PHYSICAL_DEVICE_SHADER_FLOAT_16_INT_8_FEATURES", "PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES")
 	name = name.replace("_PCIBUS_", "_PCI_BUS_")
 	name = name.replace("ASTCD", "ASTC_D")
 	name = name.replace("AABBNV", "AABB_NV")
 	name = name.replace("IMAGE_PIPE", "IMAGEPIPE")
-	name = name.replace("FUNCTIONS_2", "FUNCTIONS2_FEATURES")
 	name = name.replace("SMBUILTINS", "SM_BUILTINS")
 
 	return prefix + name
@@ -601,10 +600,12 @@ def parseDefinitions (extensionName, src):
 	def skipDefinition (extensionName, definition):
 		if extensionName == None:
 			return True
+		extNameUpper = extensionName.upper()
+		extNameUpper = extNameUpper.replace("VK_INTEL_SHADER_INTEGER_FUNCTIONS2", "VK_INTEL_SHADER_INTEGER_FUNCTIONS_2")
 		# SPEC_VERSION enums
-		if definition[0].startswith(extensionName.upper()) and definition[1].isdigit():
+		if definition[0].startswith(extNameUpper) and definition[1].isdigit():
 			return False
-		if definition[0].startswith(extensionName.upper()):
+		if definition[0].startswith(extNameUpper):
 			return True
 		if definition[1].isdigit():
 			return True
@@ -1530,9 +1531,6 @@ def generateDeviceFeaturesDefs(src):
 			# handle special cases
 			if sType == "EXCLUSIVE_SCISSOR":
 				sType = "SCISSOR_EXCLUSIVE"
-			# TODO: Remove after spec change is merged
-			if sType == "FLOAT16_INT8":
-				sType = "SHADER_FLOAT16_INT8"
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
@@ -1560,9 +1558,6 @@ def writeDeviceFeatures(dfDefs, filename):
 		# handle special cases
 		if sType == "SCISSOR_EXCLUSIVE":
 			sType = "EXCLUSIVE_SCISSOR"
-		# TODO: Remove after spec change is merged
-		if sType == "SHADER_FLOAT16_INT8":
-			sType = "FLOAT16_INT8"
 		# end handling special cases
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)

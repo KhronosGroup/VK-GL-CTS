@@ -582,7 +582,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloat16Int8FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat16Int8FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
@@ -774,7 +774,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineViewportExclusiveScis
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExclusiveScissorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCheckpointDataNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderIntegerFunctions2INTEL& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceValueDataINTEL& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceValueINTEL& value);
 std::ostream&	operator<<	(std::ostream& s, const VkInitializePerformanceApiInfoINTEL& value);

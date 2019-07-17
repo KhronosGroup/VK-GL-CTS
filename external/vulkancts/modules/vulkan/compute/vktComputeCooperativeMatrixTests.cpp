@@ -185,7 +185,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "buffer device address not supported");
 	}
 
-	if (!context.getFloat16Int8Features().shaderFloat16 &&
+	if (!context.getShaderFloat16Int8Features().shaderFloat16 &&
 		(m_data.inputType == VK_COMPONENT_TYPE_FLOAT16_NV || m_data.outputType == VK_COMPONENT_TYPE_FLOAT16_NV))
 	{
 		TCU_THROW(NotSupportedError, "shaderFloat16 not supported");

@@ -145,7 +145,7 @@ void areFeaturesSupported (const Context& context, deUint32 toCheck)
 	if ((toCheck & EXT16BITSTORAGEFEATURES_INPUT_OUTPUT) != 0 && extensionFeatures.storageInputOutput16 == VK_FALSE)
 		TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 
-	if (!context.getFloat16Int8Features().shaderFloat16)
+	if (!context.getShaderFloat16Int8Features().shaderFloat16)
 		TCU_THROW(NotSupportedError, "Requested 16-bit floats (halfs) are not supported in shader code");
 }
 
@@ -5712,7 +5712,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 		env.lookup(*m_variables.in3) = convert<In3>(fmt, round(fmt, inputs.in3[valueNdx]));
 
 		{
-			EvalContext	ctx (fmt, m_caseCtx.precision, env, 0, m_context.getFloat16Int8Features().shaderFloat16 != 0u);
+			EvalContext	ctx (fmt, m_caseCtx.precision, env, 0, m_context.getShaderFloat16Int8Features().shaderFloat16 != 0u);
 			m_stmt->execute(ctx);
 
 		switch (outCount)

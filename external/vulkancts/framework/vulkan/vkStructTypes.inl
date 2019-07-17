@@ -1972,7 +1972,7 @@ struct VkPhysicalDevicePushDescriptorPropertiesKHR
 	deUint32		maxPushDescriptors;
 };
 
-struct VkPhysicalDeviceFloat16Int8FeaturesKHR
+struct VkPhysicalDeviceShaderFloat16Int8FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3689,7 +3689,7 @@ struct VkCheckpointDataNV
 	void*					pCheckpointMarker;
 };
 
-struct VkPhysicalDeviceShaderIntegerFunctions2INTEL
+struct VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -4422,6 +4422,8 @@ typedef VkPhysicalDeviceMaintenance3Properties VkPhysicalDeviceMaintenance3Prope
 typedef VkDescriptorSetLayoutSupport VkDescriptorSetLayoutSupportKHR;
 
 typedef VkPhysicalDeviceShaderDrawParametersFeatures VkPhysicalDeviceShaderDrawParameterFeatures;
+
+typedef VkPhysicalDeviceShaderFloat16Int8FeaturesKHR VkPhysicalDeviceFloat16Int8FeaturesKHR;
 
 typedef VkPhysicalDeviceBufferDeviceAddressFeaturesEXT VkPhysicalDeviceBufferAddressFeaturesEXT;
 

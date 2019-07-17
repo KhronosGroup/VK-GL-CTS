@@ -293,7 +293,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT:		return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT:							return "VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:												return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:									return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:						return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -441,7 +441,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV:												return "VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL";
 		case VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL:									return "VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL";
 		case VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL:							return "VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL:									return "VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL";
@@ -5816,9 +5816,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushDescriptorP
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFloat16Int8FeaturesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderFloat16Int8FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceFloat16Int8FeaturesKHR = {\n";
+	s << "VkPhysicalDeviceShaderFloat16Int8FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderFloat16 = " << value.shaderFloat16 << '\n';
@@ -8109,9 +8109,9 @@ std::ostream& operator<< (std::ostream& s, const VkCheckpointDataNV& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderIntegerFunctions2INTEL& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL& value)
 {
-	s << "VkPhysicalDeviceShaderIntegerFunctions2INTEL = {\n";
+	s << "VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderIntegerFunctions2 = " << value.shaderIntegerFunctions2 << '\n';

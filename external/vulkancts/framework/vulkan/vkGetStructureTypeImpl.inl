@@ -646,9 +646,9 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePushDescriptorProper
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceFloat16Int8FeaturesKHR> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFloat16Int8FeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPresentRegionsKHR> (void)
@@ -1446,9 +1446,9 @@ template<> VkStructureType getStructureType<VkCheckpointDataNV> (void)
 	return VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderIntegerFunctions2INTEL> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL;
 }
 
 template<> VkStructureType getStructureType<VkInitializePerformanceApiInfoINTEL> (void)
