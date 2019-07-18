@@ -27,12 +27,14 @@
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "deSharedPtr.hpp"
 
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
 #include "vktSynchronizationOperationResources.hpp"
 #include "vktExternalMemoryUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
@@ -46,6 +48,8 @@ namespace synchronization
 {
 namespace
 {
+using namespace vk;
+using de::SharedPtr;
 
 struct TestConfig
 {
@@ -397,50 +401,37 @@ vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface& vki, vk::Vk
 	return (vk::VkPhysicalDevice)0;
 }
 
-vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
+vk::Move<vk::VkDevice> createDevice (const Context&		context,
 									 const vk::PlatformInterface&					vkp,
 									 vk::VkInstance									instance,
 									 const vk::InstanceInterface&					vki,
-									 vk::VkPhysicalDevice							physicalDevice,
-									 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleType,
-									 vk::VkExternalSemaphoreHandleTypeFlagBits	semaphoreHandleType,
-									 bool											dedicated,
-									 bool										    khrMemReqSupported)
+									 const vk::VkPhysicalDevice						physicalDevice)
 {
 	const float										priority				= 0.0f;
 	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
 	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
 	std::vector<const char*>						extensions;
 
-	if (dedicated)
-		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
-			extensions.push_back("VK_KHR_dedicated_allocation");
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+		extensions.push_back("VK_KHR_dedicated_allocation");
 
-	if (khrMemReqSupported)
-		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
-			extensions.push_back("VK_KHR_get_memory_requirements2");
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
+		extensions.push_back("VK_KHR_get_memory_requirements2");
 
-	if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_semaphore"))
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore"))
 		extensions.push_back("VK_KHR_external_semaphore");
-	if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory"))
 		extensions.push_back("VK_KHR_external_memory");
 
-	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
-	{
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_fd"))
 		extensions.push_back("VK_KHR_external_semaphore_fd");
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory_fd"))
 		extensions.push_back("VK_KHR_external_memory_fd");
-	}
 
-	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
-		|| memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
-		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
-	{
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_win32"))
 		extensions.push_back("VK_KHR_external_semaphore_win32");
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory_win32"))
 		extensions.push_back("VK_KHR_external_memory_win32");
-	}
 
 	try
 	{
@@ -489,6 +480,63 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			throw;
 	}
 }
+
+// Class to wrap a singleton instance and device
+class InstanceAndDevice
+{
+	InstanceAndDevice	(const Context& context)
+		: m_instance		(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
+		, m_vki				(context.getPlatformInterface(), *m_instance)
+		, m_physicalDevice	(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
+		, m_logicalDevice	(createDevice(context, context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
+	{
+	}
+
+public:
+
+	static const vk::Unique<vk::VkInstance>& getInstanceA(const Context& context)
+	{
+		if (!m_instanceA)
+			m_instanceA = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
+
+		return m_instanceA->m_instance;
+	}
+	static const Unique<vk::VkInstance>& getInstanceB(const Context& context)
+	{
+		if (!m_instanceB)
+			m_instanceB = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
+
+		return m_instanceB->m_instance;
+	}
+	static const Unique<vk::VkDevice>& getDeviceA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_logicalDevice;
+	}
+	static const Unique<vk::VkDevice>& getDeviceB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_logicalDevice;
+	}
+
+	static void destroy()
+	{
+		m_instanceA.clear();
+		m_instanceB.clear();
+	}
+
+private:
+	const Unique<vk::VkInstance>	m_instance;
+	const vk::InstanceDriver		m_vki;
+	const vk::VkPhysicalDevice		m_physicalDevice;
+	const Unique<vk::VkDevice>		m_logicalDevice;
+
+	static SharedPtr<InstanceAndDevice>	m_instanceA;
+	static SharedPtr<InstanceAndDevice>	m_instanceB;
+};
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceA;
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceB;
+
 
 vk::VkQueue getQueue (const vk::DeviceInterface&	vkd,
 					  const vk::VkDevice			device,
@@ -1003,7 +1051,7 @@ private:
 	const de::UniquePtr<OperationSupport>				m_supportReadOp;
 	const NotSupportedChecker							m_notSupportedChecker; // Must declare before VkInstance to effectively reduce runtimes!
 
-	const vk::Unique<vk::VkInstance>					m_instanceA;
+	const vk::Unique<vk::VkInstance>&					m_instanceA;
 
 	const vk::InstanceDriver							m_vkiA;
 	const vk::VkPhysicalDevice							m_physicalDeviceA;
@@ -1012,15 +1060,15 @@ private:
 
 	const bool											m_getMemReq2Supported;
 
-	const vk::Unique<vk::VkDevice>						m_deviceA;
+	const vk::Unique<vk::VkDevice>&						m_deviceA;
 	const vk::DeviceDriver								m_vkdA;
 
-	const vk::Unique<vk::VkInstance>					m_instanceB;
+	const vk::Unique<vk::VkInstance>&					m_instanceB;
 	const vk::InstanceDriver							m_vkiB;
 	const vk::VkPhysicalDevice							m_physicalDeviceB;
 	const std::vector<vk::VkQueueFamilyProperties>		m_queueFamiliesB;
 	const std::vector<deUint32>							m_queueFamilyIndicesB;
-	const vk::Unique<vk::VkDevice>						m_deviceB;
+	const vk::Unique<vk::VkDevice>&						m_deviceB;
 	const vk::DeviceDriver								m_vkdB;
 
 	const vk::VkExternalSemaphoreHandleTypeFlagBits	m_semaphoreHandleType;
@@ -1041,23 +1089,23 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 	, m_notSupportedChecker		(context, m_config, *m_supportWriteOp, *m_supportReadOp)
 
-	, m_instanceA				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
+	, m_instanceA				(InstanceAndDevice::getInstanceA(context))
 
 	, m_vkiA					(context.getPlatformInterface(), *m_instanceA) // \todo [2017-06-13 pyry] Provide correct extension list
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
 	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
-	, m_deviceA					(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instanceA, m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
+	, m_deviceA					(InstanceAndDevice::getDeviceA())
 	, m_vkdA					(context.getPlatformInterface(), *m_instanceA, *m_deviceA)
 
-	, m_instanceB				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
+	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
 
 	, m_vkiB					(context.getPlatformInterface(), *m_instanceB) // \todo [2017-06-13 pyry] Provide correct extension list
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instanceB, m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
+	, m_deviceB					(InstanceAndDevice::getDeviceB())
 	, m_vkdB					(context.getPlatformInterface(), *m_instanceB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
@@ -1280,8 +1328,9 @@ struct Progs
 
 } // anonymous
 
-tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
+static void createTests (tcu::TestCaseGroup* group)
 {
+	tcu::TestContext& testCtx = group->getTestContext();
 	const struct
 	{
 		vk::VkExternalMemoryHandleTypeFlagBits		memoryType;
@@ -1310,7 +1359,6 @@ tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
 			"_win32"
 		},
 	};
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "cross_instance", ""));
 
 	for (size_t dedicatedNdx = 0; dedicatedNdx < 2; dedicatedNdx++)
 	{
@@ -1351,8 +1399,18 @@ tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
 
 		group->addChild(dedicatedGroup.release());
 	}
+}
 
-	return group.release();
+static void cleanupGroup (tcu::TestCaseGroup* group)
+{
+	DE_UNREF(group);
+	// Destroy singleton object
+	InstanceAndDevice::destroy();
+}
+
+tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "cross_instance", "", createTests, cleanupGroup);
 }
 
 } // synchronization
