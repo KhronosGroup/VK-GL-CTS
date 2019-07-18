@@ -26,13 +26,14 @@
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
-
 #include "vktTestCaseUtil.hpp"
+#include "deSharedPtr.hpp"
 
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
 #include "vktSynchronizationOperationTestData.hpp"
 #include "vktExternalMemoryUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
@@ -71,6 +72,8 @@ namespace synchronization
 {
 namespace
 {
+using namespace vk;
+using de::SharedPtr;
 
 static const ResourceDescription s_resourcesWin32KeyedMutex[] =
 {
@@ -1238,11 +1241,9 @@ class DX11OperationSupport
 {
 public:
 	DX11OperationSupport (const vk::InstanceInterface&	vki,
-						  vk::VkPhysicalDevice			physicalDevice,
-						  const ResourceDescription&	resourceDesc)
-		: m_resourceDesc			(resourceDesc)
+						  vk::VkPhysicalDevice			physicalDevice)
 #if (DE_OS == DE_OS_WIN32)
-		, m_hD3D11Lib					(0)
+		: m_hD3D11Lib					(0)
 		, m_hD3DX11Lib					(0)
 		, m_hD3DCompilerLib				(0)
 		, m_hDxgiLib					(0)
@@ -1406,7 +1407,6 @@ public:
 	}
 
 private:
-	const ResourceDescription	m_resourceDesc;
 
 #if (DE_OS == DE_OS_WIN32)
 	typedef HRESULT				(WINAPI *LPD3D11CREATEDEVICE)(IDXGIAdapter*,
@@ -1432,6 +1432,55 @@ private:
 #endif
 };
 
+// Class to wrap a singleton instance and device
+class InstanceAndDevice
+{
+	InstanceAndDevice	(const Context& context)
+		: m_instance		(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
+		, m_vki				(context.getPlatformInterface(), *m_instance)
+		, m_physicalDevice	(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
+		, m_logicalDevice	(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
+		, m_supportDX11		(new DX11OperationSupport(m_vki, m_physicalDevice))
+	{
+	}
+
+public:
+
+	static const vk::Unique<vk::VkInstance>& getInstance(const Context& context)
+	{
+		if (!m_instanceAndDevice)
+			m_instanceAndDevice = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
+
+		return m_instanceAndDevice->m_instance;
+	}
+	static const Unique<vk::VkDevice>& getDevice()
+	{
+		DE_ASSERT(m_instanceAndDevice);
+		return m_instanceAndDevice->m_logicalDevice;
+	}
+	static const de::UniquePtr<DX11OperationSupport>& getSupportDX11()
+	{
+		DE_ASSERT(m_instanceAndDevice);
+		return m_instanceAndDevice->m_supportDX11;
+	}
+
+	static void destroy()
+	{
+		m_instanceAndDevice.clear();
+	}
+
+private:
+	const Unique<vk::VkInstance>				m_instance;
+	const vk::InstanceDriver					m_vki;
+	const vk::VkPhysicalDevice					m_physicalDevice;
+	const Unique<vk::VkDevice>					m_logicalDevice;
+	const de::UniquePtr<DX11OperationSupport>	m_supportDX11;
+
+	static SharedPtr<InstanceAndDevice>	m_instanceAndDevice;
+};
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceAndDevice;
+
+
 class Win32KeyedMutexTestInstance : public TestInstance
 {
 public:
@@ -1445,16 +1494,14 @@ private:
 	const de::UniquePtr<OperationSupport>				m_supportWriteOp;
 	const de::UniquePtr<OperationSupport>				m_supportReadOp;
 
-	const vk::Unique<vk::VkInstance>					m_instance;
+	const vk::Unique<vk::VkInstance>&					m_instance;
 
 	const vk::InstanceDriver							m_vki;
 	const vk::VkPhysicalDevice							m_physicalDevice;
 	const std::vector<vk::VkQueueFamilyProperties>		m_queueFamilies;
 	const std::vector<deUint32>							m_queueFamilyIndices;
-	const vk::Unique<vk::VkDevice>						m_device;
+	const vk::Unique<vk::VkDevice>&						m_device;
 	const vk::DeviceDriver								m_vkd;
-
-	const de::UniquePtr<DX11OperationSupport>			m_supportDX11;
 
 	const vk::VkExternalMemoryHandleTypeFlagBits		m_memoryHandleType;
 
@@ -1473,16 +1520,14 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 	, m_supportWriteOp			(makeOperationSupport(config.writeOp, config.resource))
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 
-	, m_instance				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
+	, m_instance				(InstanceAndDevice::getInstance(context))
 
 	, m_vki						(context.getPlatformInterface(), *m_instance)
 	, m_physicalDevice			(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilies			(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
 	, m_queueFamilyIndices		(getFamilyIndices(m_queueFamilies))
-	, m_device					(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
+	, m_device					(InstanceAndDevice::getDevice())
 	, m_vkd						(context.getPlatformInterface(), *m_instance, *m_device)
-
-	, m_supportDX11				(new DX11OperationSupport(m_vki, m_physicalDevice, config.resource))
 
 	, m_memoryHandleType		((m_config.resource.type == RESOURCE_TYPE_IMAGE) ? m_config.memoryHandleTypeImage : m_config.memoryHandleTypeBuffer)
 
@@ -1605,7 +1650,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 		if (!checkQueueFlags(m_queueFamilies[m_queueNdx].queueFlags, vk::VK_QUEUE_GRAPHICS_BIT))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
 
-		const de::UniquePtr<DX11Operation>		dx11Op				(m_supportDX11->build(m_config.resource, m_memoryHandleType));
+		const de::UniquePtr<DX11Operation>		dx11Op				(InstanceAndDevice::getSupportDX11()->build(m_config.resource, m_memoryHandleType));
 
 		NativeHandle nativeHandleWrite = dx11Op->getNativeHandle(DX11Operation::BUFFER_VK_WRITE);
 		const de::UniquePtr<Resource>			resourceWrite		(importResource(m_vkd, *m_device, m_config.resource, m_queueFamilyIndices, *m_supportReadOp, *m_supportWriteOp, nativeHandleWrite, m_memoryHandleType));
@@ -1800,8 +1845,9 @@ struct Progs
 
 } // anonymous
 
-tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
+static void createTests (tcu::TestCaseGroup* group)
 {
+	tcu::TestContext& testCtx = group->getTestContext();
 	const struct
 	{
 		vk::VkExternalMemoryHandleTypeFlagBits			memoryHandleTypeBuffer;
@@ -1820,7 +1866,6 @@ tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
 			"_kmt"
 		},
 	};
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "win32_keyed_mutex", ""));
 
 	for (size_t writeOpNdx = 0; writeOpNdx < DE_LENGTH_OF_ARRAY(s_writeOps); ++writeOpNdx)
 	for (size_t readOpNdx = 0; readOpNdx < DE_LENGTH_OF_ARRAY(s_readOps); ++readOpNdx)
@@ -1859,8 +1904,18 @@ tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
 		if (!empty)
 			group->addChild(opGroup.release());
 	}
+}
 
-	return group.release();
+static void cleanupGroup (tcu::TestCaseGroup* group)
+{
+	DE_UNREF(group);
+	// Destroy singleton object
+	InstanceAndDevice::destroy();
+}
+
+tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "win32_keyed_mutex", "", createTests, cleanupGroup);
 }
 
 } // synchronization
