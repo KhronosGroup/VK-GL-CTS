@@ -29,9 +29,11 @@ namespace vkt
 TestGroupHelper0::TestGroupHelper0 (tcu::TestContext&	testCtx,
 									const std::string&	name,
 									const std::string&	description,
-									CreateChildrenFunc	createChildren)
+									CreateChildrenFunc	createChildren,
+									CleanupGroupFunc	cleanupGroup)
 	: tcu::TestCaseGroup	(testCtx, name.c_str(), description.c_str())
 	, m_createChildren		(createChildren)
+	, m_cleanupGroup		(cleanupGroup)
 {
 }
 
@@ -42,6 +44,12 @@ TestGroupHelper0::~TestGroupHelper0 (void)
 void TestGroupHelper0::init (void)
 {
 	m_createChildren(this);
+}
+
+void TestGroupHelper0::deinit(void)
+{
+	if (m_cleanupGroup)
+		m_cleanupGroup(this);
 }
 
 } // vkt

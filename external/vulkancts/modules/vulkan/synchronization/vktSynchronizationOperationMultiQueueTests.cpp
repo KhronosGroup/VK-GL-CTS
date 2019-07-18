@@ -34,6 +34,7 @@
 #include "vkPlatform.hpp"
 #include "vkCmdUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deSharedPtr.hpp"
 #include "tcuTestLog.hpp"
 #include "vktSynchronizationUtil.hpp"
 #include "vktSynchronizationOperation.hpp"
@@ -50,6 +51,7 @@ namespace
 using namespace vk;
 using de::MovePtr;
 using de::UniquePtr;
+using de::SharedPtr;
 
 enum QueueType
 {
@@ -88,7 +90,6 @@ class MultiQueues
 		std::vector<VkQueue>	queue;
 	};
 
-public:
 	MultiQueues	(const Context& context)
 	{
 		const InstanceInterface&					instance				= context.getInstanceInterface();
@@ -152,13 +153,14 @@ public:
 		m_queues[queueFamilyIndex] = dataToPush;
 	}
 
-	std::vector<QueuePair> getQueuesPairs (const VkQueueFlags flagsWrite, const VkQueueFlags flagsRead)
+public:
+	std::vector<QueuePair> getQueuesPairs (const VkQueueFlags flagsWrite, const VkQueueFlags flagsRead) const
 	{
 		std::map<deUint32, QueueData>	queuesWrite;
 		std::map<deUint32, QueueData>	queuesRead;
 		std::vector<QueuePair>			queuesPairs;
 
-		for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)
+		for (std::map<deUint32, QueueData>::const_iterator it = m_queues.begin(); it != m_queues.end(); ++it)
 		{
 			const bool writeQueue	= checkQueueFlags(it->second.flags, flagsWrite);
 			const bool readQueue	= checkQueueFlags(it->second.flags, flagsRead);
@@ -215,12 +217,27 @@ public:
 		return *m_allocator;
 	}
 
+	static SharedPtr<MultiQueues> getInstance(const Context& context)
+	{
+		if (!m_multiQueues)
+			m_multiQueues = SharedPtr<MultiQueues>(new MultiQueues(context));
+
+		return m_multiQueues;
+	}
+	static void destroy()
+	{
+		m_multiQueues.clear();
+	}
+
 private:
 	Move<VkDevice>					m_logicalDevice;
 	MovePtr<DeviceDriver>			m_deviceDriver;
 	MovePtr<Allocator>				m_allocator;
 	std::map<deUint32, QueueData>	m_queues;
+
+	static SharedPtr<MultiQueues>	m_multiQueues;
 };
+SharedPtr<MultiQueues>				MultiQueues::m_multiQueues;
 
 void createBarrierMultiQueue (const DeviceInterface&	vk,
 							  const VkCommandBuffer&	cmdBuffer,
@@ -272,7 +289,7 @@ class BaseTestInstance : public TestInstance
 public:
 	BaseTestInstance (Context& context, const ResourceDescription& resourceDesc, const OperationSupport& writeOp, const OperationSupport& readOp, PipelineCacheData& pipelineCacheData)
 		: TestInstance		(context)
-		, m_queues			(new MultiQueues(context))
+		, m_queues			(MultiQueues::getInstance(context))
 		, m_opContext		(new OperationContext(context, pipelineCacheData, m_queues->getDeviceInterface(), m_queues->getDevice(), m_queues->getAllocator()))
 		, m_resourceDesc	(resourceDesc)
 		, m_writeOp			(writeOp)
@@ -281,7 +298,7 @@ public:
 	}
 
 protected:
-	const UniquePtr<MultiQueues>		m_queues;
+	const SharedPtr<MultiQueues>		m_queues;
 	const UniquePtr<OperationContext>	m_opContext;
 	const ResourceDescription			m_resourceDesc;
 	const OperationSupport&				m_writeOp;
@@ -561,11 +578,19 @@ void createTests (tcu::TestCaseGroup* group, PipelineCacheData* pipelineCacheDat
 	}
 }
 
+void cleanupGroup (tcu::TestCaseGroup* group, PipelineCacheData* pipelineCacheData)
+{
+	DE_UNREF(group);
+	DE_UNREF(pipelineCacheData);
+	// Destroy singleton object
+	MultiQueues::destroy();
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createSynchronizedOperationMultiQueueTests (tcu::TestContext& testCtx, PipelineCacheData& pipelineCacheData)
 {
-	return createTestGroup(testCtx, "multi_queue", "Synchronization of a memory-modifying operation", createTests, &pipelineCacheData);
+	return createTestGroup(testCtx, "multi_queue", "Synchronization of a memory-modifying operation", createTests, &pipelineCacheData, cleanupGroup);
 }
 
 } // synchronization
