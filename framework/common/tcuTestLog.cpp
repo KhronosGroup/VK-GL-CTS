@@ -21,6 +21,7 @@
  * \brief Test Log C++ Wrapper.
  *//*--------------------------------------------------------------------*/
 
+#include "deCommandLine.h"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuSurface.hpp"
@@ -183,6 +184,20 @@ TestLog& SampleBuilder::operator<< (const TestLog::EndSampleToken&)
 TestLog::TestLog (const char* fileName, int argc, char** argv, deUint32 flags)
 	: m_log(qpTestLog_createFileLog(fileName, argc, argv, flags))
 {
+	if (!m_log)
+		throw ResourceError(std::string("Failed to open test log file '") + fileName + "'");
+}
+
+TestLog::TestLog (const char* fileName, const std::string& cmdLine, deUint32 flags)
+{
+
+	deCommandLine* parsedCmdLine = deCommandLine_parse(cmdLine.c_str());
+	if (!parsedCmdLine)
+		throw std::bad_alloc();
+
+	m_log = qpTestLog_createFileLog(fileName, parsedCmdLine->numArgs, parsedCmdLine->args, flags);
+	deCommandLine_destroy(parsedCmdLine);
+
 	if (!m_log)
 		throw ResourceError(std::string("Failed to open test log file '") + fileName + "'");
 }

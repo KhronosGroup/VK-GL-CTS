@@ -667,7 +667,7 @@ int main (int argc, const char* argv[])
 	try
 	{
 		tcu::DirArchive			archive					(".");
-		tcu::TestLog			log						(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
+		tcu::TestLog			log					(deqpCmdLine.getLogFileName(), (argc - 1), (char **)(argv + 1), deqpCmdLine.getLogFlags());
 		tcu::Platform			platform;
 		tcu::TestContext		testCtx					(platform, archive, log, deqpCmdLine, DE_NULL);
 		vk::SpirvVersion		baselineSpirvVersion	= vk::getBaselineSpirvVersion(cmdLine.getOption<opt::VulkanVersion>());
