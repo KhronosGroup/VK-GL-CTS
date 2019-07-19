@@ -1941,6 +1941,9 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 		TCU_THROW(NotSupportedError, "Format storage feature not supported");
 	if ((usageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) && !(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
 		TCU_THROW(NotSupportedError, "Format color attachment feature not supported");
+	if ((usageFlags & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT) && !(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
+		!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT))
+		TCU_THROW(NotSupportedError, "Format color/depth/stencil attachment feature not supported for input attachment usage");
 
 	const VkImageCreateInfo createImageInfo =
 	{

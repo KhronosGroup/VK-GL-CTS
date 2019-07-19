@@ -2622,10 +2622,7 @@ double LogFunc<Signature<float, float> >::precision(const EvalContext& ctx, doub
 		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -21) : ctx.format.ulp(ret, 3.0);
 	case glu::PRECISION_MEDIUMP:
 	case glu::PRECISION_LAST:
-		if (ctx.isShaderFloat16Int8)
-			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 3.0);
-		else
-			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 2.0);
+		return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -7) : ctx.format.ulp(ret, 3.0);
 	default:
 		DE_FATAL("Impossible");
 	}
@@ -2864,11 +2861,9 @@ Interval TrigFunc<Signature<deFloat16, deFloat16> >::getInputRange(const bool is
 template<>
 double TrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, double ret, double arg) const
 {
-	DE_ASSERT(!ctx.isShaderFloat16Int8 || (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE));
-
+	DE_UNREF(ret);
 	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 	{
-		// Use precision from OpenCL fast relaxed math
 		if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
 			return deLdExp(1.0, -11);
 		else
@@ -2883,16 +2878,11 @@ double TrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, dou
 		DE_ASSERT(ctx.floatPrecision == glu::PRECISION_MEDIUMP || ctx.floatPrecision == glu::PRECISION_LAST);
 
 		if (-DE_PI_DOUBLE <= arg && arg <= DE_PI_DOUBLE)
-		{
-			if (ctx.isShaderFloat16Int8)
-				return deLdExp(1.0, -7);
-			else
-				return ctx.format.ulp(ret, 2.0);			// from OpenCL half-float extension specification
-		}
+			return deLdExp(1.0, -7);
 		else
 		{
-			// |x| * 2^-10, slightly larger than 2 ULP at x == pi
-			return deLdExp(deAbs(arg), -10);
+			// |x| * 2^-8, slightly larger than 2^-7 at x == pi
+			return deLdExp(deAbs(arg), -8);
 		}
 	}
 }
@@ -2972,7 +2962,7 @@ double ArcTrigFunc<Signature<deFloat16, deFloat16> >::precision (const EvalConte
 	if (!m_domain.contains(x))
 		return TCU_NAN;
 
-	// Form the spec 5 ULP.
+	// From the spec 5 ULP.
 	return ctx.format.ulp(ret, 5.0);
 }
 
@@ -2985,7 +2975,7 @@ double ArcTrigFunc<Signature<float, float> >::precision(const EvalContext& ctx, 
 	if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 		return ctx.format.ulp(ret, 4096.0);
 	else
-		return ctx.format.ulp(ret, ctx.isShaderFloat16Int8 ? 5.0 : 2.0);
+		return ctx.format.ulp(ret, 5.0);
 }
 
 class ASin : public CFloatFunc1<Signature<float, float> >
@@ -5120,9 +5110,11 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 										 Random&			rnd,
 										 const Interval&	inputRange) const
 {
+	DE_UNREF(prec);
+	// No testing of subnormals. TODO: Could integrate float controls for some operations.
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
-	const bool		haveSubnormal	= format.hasSubnormal() != tcu::NO;
+	const bool		haveSubnormal	= false;
 	const float		midpoint		= static_cast<float>(inputRange.midpoint());
 
 	// Choose exponent so that the cumulative distribution is cubic.
@@ -5173,34 +5165,7 @@ float DefaultSampling<float>::genRandom (const FloatFormat&	format,
 	// Produce positive numbers more often than negative.
 	value = (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 
-	value = inputRange.contains(static_cast<double>(value)) ? value : midpoint;
-
-	//not denormalized values
-	{
-		DE_ASSERT(sizeof(float) == sizeof(deUint32));
-
-		const deUint32 mantissa	= 0x007fffff;
-		const deUint32 exponent	= 0x7f800000;
-		deUint32 valueInt		= 0u;
-		deMemcpy(&valueInt, &value, sizeof(deUint32));
-
-		if((exponent & valueInt) == 0 && (mantissa & valueInt) != 0)
-		{
-			deUint32 toReturn = 0x00800000 | valueInt;
-			deMemcpy(&value, &toReturn, sizeof(float));
-		}
-
-		// For 16bit-but-32bit-storage tests we must also avoid any value that
-		// becomes a denorm in fp16. The tests don't specify a rounding mode so
-		// assume the worst and use round-to-zero. Add an offset to put values
-		// back into the normal range.
-		// NOTE: The large offset means that all denorms will come out equal,
-		// except for differences that will round away in fp16. This catches
-		// some cases of operations incorrectly using the full fp32 precision.
-		if (prec == glu::PRECISION_LAST && isDenorm16(deFloat32To16Round(value, DE_ROUNDINGMODE_TO_ZERO)))
-			value += 1.0099f;
-	}
-	return value;
+	return inputRange.contains(static_cast<double>(value)) ? value : midpoint;
 }
 
 //! Generate a standard set of floats that should always be tested.
@@ -5267,7 +5232,7 @@ deFloat16 DefaultSampling<deFloat16>::genRandom (const FloatFormat& format, cons
 	DE_UNREF(prec);
 	const int		minExp			= format.getMinExp();
 	const int		maxExp			= format.getMaxExp();
-	const bool		haveSubnormal	= format.hasSubnormal() != tcu::NO;
+	const bool		haveSubnormal	= false;
 	const deUint16	midpoint		= deFloat32To16Round(static_cast<float>(inputRange.midpoint()), DE_ROUNDINGMODE_TO_NEAREST_EVEN);
 
 	// Choose exponent so that the cumulative distribution is cubic.
@@ -5318,10 +5283,6 @@ deFloat16 DefaultSampling<deFloat16>::genRandom (const FloatFormat& format, cons
 	// Produce positive numbers more often than negative.
 	float value			= (rnd.getInt(0, 3) == 0 ? -1.0f : 1.0f) * (base + significand);
 	deFloat16 value16b	= deFloat32To16Round(value, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-
-	// Offset denormalised values to put them into the normal range
-	if (isDenorm16(value16b))
-		value16b = 0x4000 | value16b;
 
 	return inputRange.contains(static_cast<double>(value16b)) ? value16b : midpoint;
 }
@@ -6606,7 +6567,7 @@ TestCaseGroup* createFuncGroup (TestContext& ctx, const CaseFactory& factory, in
 										 tcu::MAYBE,	// subnormals
 										 tcu::YES,		// infinities
 										 tcu::MAYBE);	// NaN
-	const FloatFormat       mediump		(-13, 13, 9, false, tcu::MAYBE);
+	const FloatFormat       mediump		(-14, 13, 10, false, tcu::MAYBE);
 
 	for (int precNdx = glu::PRECISION_MEDIUMP; precNdx < glu::PRECISION_LAST; ++precNdx)
 	{

@@ -103,6 +103,7 @@ public:
 	typedef LogNumber<deInt64>		Integer;
 
 	explicit			TestLog					(const char* fileName, int argc = 0, char** argv = DE_NULL, deUint32 flags = 0);
+	explicit			TestLog					(const char* fileName, const std::string& cmdLine, deUint32 flags = 0);
 						~TestLog				(void);
 
 	MessageBuilder		operator<<				(const BeginMessageToken&);

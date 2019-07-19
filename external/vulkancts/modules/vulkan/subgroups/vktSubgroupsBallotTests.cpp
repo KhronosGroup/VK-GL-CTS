@@ -760,6 +760,14 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 	else
 	{
+		const string cmpStr = (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot");
+		const string testSrc =
+			"  uint tempResult = 0;\n"
+			"  tempResult |= !bool(" + cmpStr + "(true)) ? 0x1 : 0;\n"
+			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
+			"  tempResult |= !bool(" + cmpStr + "(bData)) ? 0x2 : 0;\n"
+			"  tempResult |= " + cmpStr + "(false) ? 0x4 : 0;\n";
+
 		const string vertex =
 			"#version 450\n"
 			+ extensionHeader +
@@ -774,11 +782,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= " + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(false) ? 0x4 : 0;\n"
+			+ testSrc +
 			"  result[gl_VertexIndex] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
@@ -801,11 +805,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= " + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(false) ? 0x4 : 0;\n"
+			+ testSrc +
 			"  result[gl_PrimitiveID] = tempResult;\n"
 			"  if (gl_InvocationID == 0)\n"
 			"  {\n"
@@ -830,11 +830,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= " + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(false) ? 0x4 : 0;\n"
+			+ testSrc +
 			"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
@@ -856,11 +852,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= " + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(false) ? 0x4 : 0;\n"
+			+ testSrc +
 			"  result[gl_PrimitiveIDIn] = tempResult;\n"
 			"  gl_Position = gl_in[0].gl_Position;\n"
 			"  EmitVertex();\n"
@@ -877,11 +869,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"};\n"
 			"void main (void)\n"
 			"{\n"
-			"  uint tempResult = 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(true)) ? 0x1 : 0;\n"
-			"  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
-			"  tempResult |= !bool(" + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(bData)) ? 0x2 : 0;\n"
-			"  tempResult |= " + (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") + "(false) ? 0x4 : 0;\n"
+			+ testSrc +
 			"  result = tempResult;\n"
 			"}\n";
 

@@ -56,8 +56,10 @@ namespace
 
 enum testDynamicStaticMode
 {
-	TEST_MODE_VIEWPORT_STATIC				= 0,
+	TEST_MODE_VIEWPORT_DEPTH_BOUNDS_STATIC	= 0,
 	TEST_MODE_VIEWPORT_DYNAMIC				= 1,
+	TEST_MODE_DEPTH_BOUNDS_DYNAMIC			= 2,
+	TEST_MODE_VIEWPORT_DEPTH_BOUNDS_DYNAMIC	= 3,
 };
 
 struct DepthRangeUnrestrictedParam
@@ -67,9 +69,10 @@ struct DepthRangeUnrestrictedParam
 	VkClearValue	depthBufferClearValue;
 	VkBool32		depthClampEnable;
 	float			wc;							// Component W of the vertices
-	deUint32		viewportMode;
+	deUint32		viewportDepthBoundsMode;
 	float			viewportMinDepth;
 	float			viewportMaxDepth;
+	VkBool32		depthBoundsTestEnable;
 	float			minDepthBounds;
 	float			maxDepthBounds;
 	VkCompareOp		depthCompareOp;
@@ -97,16 +100,25 @@ const std::string generateTestName (struct DepthRangeUnrestrictedParam param)
 	if (param.depthClampEnable == VK_FALSE)
 		result << "_wc_" << (int) param.wc;
 
-	if (param.viewportMode & TEST_MODE_VIEWPORT_DYNAMIC)
+	if (param.viewportDepthBoundsMode & TEST_MODE_VIEWPORT_DYNAMIC)
 		result << "_dynamic";
 	result << "_viewport_min_" << (int)param.viewportMinDepth << "_max_" << (int)param.viewportMaxDepth;
+
+	if (param.depthBoundsTestEnable)
+	{
+		if (param.viewportDepthBoundsMode & TEST_MODE_DEPTH_BOUNDS_DYNAMIC)
+			result << "_dynamic";
+		result << "_boundstest_min" << (int)param.minDepthBounds << "_max_" << (int)param.maxDepthBounds;
+	}
 
 	return result.str();
 }
 
-const std::string generateTestDescription ()
+const std::string generateTestDescription (struct DepthRangeUnrestrictedParam param)
 {
 	std::string result("Test unrestricted depth ranges on viewport");
+	if (param.depthBoundsTestEnable)
+		result += " , depth bounds test";
 	return result;
 }
 
@@ -218,7 +230,7 @@ static inline std::vector<Vertex4RGBA> createPoints (float wc)
 	//
 	// Vertex    Depth    Color
 	//   0        0.0     white
-	//   1        1.0     magenta
+	//   1        0.25    magenta
 	//   2       -2.0     yellow
 	//   3        2.0     red
 	//   4       -5.0     black
@@ -233,7 +245,7 @@ static inline std::vector<Vertex4RGBA> createPoints (float wc)
 	};
 	const Vertex4RGBA vertex1 =
 	{
-		Vec4(-0.25f * wc, -0.25f * wc, 1.0f, wc),
+		Vec4(-0.25f * wc, -0.25f * wc, 0.25f, wc),
 		Vec4(1.0f, 0.0f, 1.0f, 1.0)
 	};
 	const Vertex4RGBA vertex2 =
@@ -286,7 +298,7 @@ vkt::TestCase* newTestCase (tcu::TestContext&					testContext,
 {
 	return new Test(testContext,
 					generateTestName(testParam).c_str(),
-					generateTestDescription().c_str(),
+					generateTestDescription(testParam).c_str(),
 					testParam);
 }
 
@@ -354,6 +366,92 @@ Move<VkImage> createImage2DAndBindMemory (Context&							context,
 
 	return image;
 }
+Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
+								   const VkDevice						device,
+								   const VkFormat						colorFormat,
+								   const VkFormat						depthStencilFormat,
+								   const VkAttachmentLoadOp				loadOperationColor,
+								   const VkAttachmentLoadOp				loadOperationDepthStencil)
+{
+	const bool								hasColor							= colorFormat != VK_FORMAT_UNDEFINED;
+	const bool								hasDepthStencil						= depthStencilFormat != VK_FORMAT_UNDEFINED;
+	const VkImageLayout						initialLayoutColor					= loadOperationColor == VK_ATTACHMENT_LOAD_OP_LOAD ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+	const VkImageLayout						initialLayoutDepthStencil			= loadOperationDepthStencil == VK_ATTACHMENT_LOAD_OP_LOAD ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+
+	const VkAttachmentDescription			colorAttachmentDescription			=
+	{
+		(VkAttachmentDescriptionFlags)0,				// VkAttachmentDescriptionFlags    flags
+		colorFormat,									// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits           samples
+		loadOperationColor,								// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,					// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,				// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,				// VkAttachmentStoreOp             stencilStoreOp
+		initialLayoutColor,								// VkImageLayout                   initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL		// VkImageLayout                   finalLayout
+	};
+
+	const VkAttachmentDescription			depthStencilAttachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags    flags
+		depthStencilFormat,									// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits           samples
+		loadOperationDepthStencil,							// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp             storeOp
+		loadOperationDepthStencil,							// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp             stencilStoreOp
+		initialLayoutDepthStencil,							// VkImageLayout                   initialLayout
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout
+	};
+
+	std::vector<VkAttachmentDescription>	attachmentDescriptions;
+
+	if (hasColor)
+		attachmentDescriptions.push_back(colorAttachmentDescription);
+	if (hasDepthStencil)
+		attachmentDescriptions.push_back(depthStencilAttachmentDescription);
+
+	const VkAttachmentReference				colorAttachmentRef					=
+	{
+		0u,											// deUint32         attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout
+	};
+
+	const VkAttachmentReference				depthStencilAttachmentRef			=
+	{
+		hasColor ? 1u : 0u,									// deUint32         attachment
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout    layout
+	};
+
+	const VkSubpassDescription				subpassDescription					=
+	{
+		(VkSubpassDescriptionFlags)0,							// VkSubpassDescriptionFlags       flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,						// VkPipelineBindPoint             pipelineBindPoint
+		0u,														// deUint32                        inputAttachmentCount
+		DE_NULL,												// const VkAttachmentReference*    pInputAttachments
+		hasColor ? 1u : 0u,										// deUint32                        colorAttachmentCount
+		hasColor ? &colorAttachmentRef : DE_NULL,				// const VkAttachmentReference*    pColorAttachments
+		DE_NULL,												// const VkAttachmentReference*    pResolveAttachments
+		hasDepthStencil ? &depthStencilAttachmentRef : DE_NULL,	// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,														// deUint32                        preserveAttachmentCount
+		DE_NULL													// const deUint32*                 pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo			renderPassInfo						=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,									// VkStructureType                   sType
+		DE_NULL,																	// const void*                       pNext
+		(VkRenderPassCreateFlags)0,													// VkRenderPassCreateFlags           flags
+		(deUint32)attachmentDescriptions.size(),									// deUint32                          attachmentCount
+		attachmentDescriptions.size() > 0 ? &attachmentDescriptions[0] : DE_NULL,	// const VkAttachmentDescription*    pAttachments
+		1u,																			// deUint32                          subpassCount
+		&subpassDescription,														// const VkSubpassDescription*       pSubpasses
+		0u,																			// deUint32                          dependencyCount
+		DE_NULL																		// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo, DE_NULL);
+}
 
 // Test Classes
 class DepthRangeUnrestrictedTestInstance : public vkt::TestInstance
@@ -364,9 +462,9 @@ public:
 	virtual						~DepthRangeUnrestrictedTestInstance		(void);
 	virtual tcu::TestStatus		iterate									(void);
 protected:
-			void				prepareRenderPass						(VkFramebuffer framebuffer, VkPipeline pipeline);
+			void				prepareRenderPass						(VkRenderPass renderPass, VkFramebuffer framebuffer, VkPipeline pipeline);
 			void				prepareCommandBuffer					(void);
-			void				buildPipeline							(void);
+			Move<VkPipeline>	buildPipeline							(VkRenderPass renderpass);
 			void				bindShaderStage							(VkShaderStageFlagBits					stage,
 																		 const char*							sourceName,
 																		 const char*							entryName);
@@ -435,7 +533,7 @@ void DepthRangeUnrestrictedTestInstance::bindShaderStage (VkShaderStageFlagBits	
 	m_shaderStageCount++;
 }
 
-void DepthRangeUnrestrictedTestInstance::buildPipeline ()
+Move<VkPipeline> DepthRangeUnrestrictedTestInstance::buildPipeline (VkRenderPass renderPass)
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				vkDevice			= m_context.getDevice();
@@ -487,7 +585,7 @@ void DepthRangeUnrestrictedTestInstance::buildPipeline ()
 	const VkRect2D		scissor		= makeRect2D(m_renderSize);
 	VkViewport			viewport	= makeViewport(m_renderSize);
 
-	if (!(m_param.viewportMode & TEST_MODE_VIEWPORT_DYNAMIC))
+	if (!(m_param.viewportDepthBoundsMode & TEST_MODE_VIEWPORT_DYNAMIC))
 	{
 		viewport.minDepth				= m_param.viewportMinDepth;
 		viewport.maxDepth				= m_param.viewportMaxDepth;
@@ -561,6 +659,15 @@ void DepthRangeUnrestrictedTestInstance::buildPipeline ()
 		VK_FALSE,													// VkBool32										alphaToOneEnable;
 	};
 
+	float minDepthBounds = m_param.minDepthBounds;
+	float maxDepthBounds = m_param.maxDepthBounds;
+
+	if (m_param.viewportDepthBoundsMode & TEST_MODE_DEPTH_BOUNDS_DYNAMIC)
+	{
+		minDepthBounds = 0.0f;
+		maxDepthBounds = 1.0f;
+	}
+
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType								sType;
@@ -569,7 +676,7 @@ void DepthRangeUnrestrictedTestInstance::buildPipeline ()
 		VK_TRUE,													// VkBool32										depthTestEnable;
 		VK_TRUE,													// VkBool32										depthWriteEnable;
 		m_param.depthCompareOp,										// VkCompareOp									depthCompareOp;
-		VK_FALSE,													// VkBool32										depthBoundsTestEnable;
+		m_param.depthBoundsTestEnable,								// VkBool32										depthBoundsTestEnable;
 		VK_FALSE,													// VkBool32										stencilTestEnable;
 		// VkStencilOpState front;
 		{
@@ -591,13 +698,15 @@ void DepthRangeUnrestrictedTestInstance::buildPipeline ()
 			0u,						// deUint32		writeMask;
 			0u,						// deUint32		reference;
 		},
-		0.0f,														// float										minDepthBounds;
-		1.0f,														// float										maxDepthBounds;
+		minDepthBounds,												// float										minDepthBounds;
+		maxDepthBounds,												// float										maxDepthBounds;
 	};
 
 	std::vector<VkDynamicState> dynamicStates;
-	if (m_param.viewportMode & TEST_MODE_VIEWPORT_DYNAMIC)
+	if (m_param.viewportDepthBoundsMode & TEST_MODE_VIEWPORT_DYNAMIC)
 		dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+	if (m_param.viewportDepthBoundsMode & TEST_MODE_DEPTH_BOUNDS_DYNAMIC)
+		dynamicStates.push_back(VK_DYNAMIC_STATE_DEPTH_BOUNDS);
 
 	const VkPipelineDynamicStateCreateInfo			dynamicStateParams			=
 	{
@@ -625,16 +734,16 @@ void DepthRangeUnrestrictedTestInstance::buildPipeline ()
 		&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*			pColorBlendState;
 		&dynamicStateParams,								// const VkPipelineDynamicStateCreateInfo*				pDynamicState;
 		*m_pipelineLayout,									// VkPipelineLayout										layout;
-		*m_renderPass,										// VkRenderPass											renderPass;
+		renderPass,											// VkRenderPass											renderPass;
 		0u,													// deUint32												subpass;
 		DE_NULL,											// VkPipeline											basePipelineHandle;
 		0u,													// deInt32												basePipelineIndex;
 	};
 
-	m_pipeline = createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
+	return createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
 }
 
-void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkFramebuffer framebuffer, VkPipeline pipeline)
+void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkRenderPass renderPass, VkFramebuffer framebuffer, VkPipeline pipeline)
 {
 	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
 
@@ -644,19 +753,22 @@ void DepthRangeUnrestrictedTestInstance::prepareRenderPass (VkFramebuffer frameb
 		m_param.depthBufferClearValue,
 	};
 
-	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
+	beginRenderPass(vk, *m_cmdBuffer, renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 
-	if (m_param.viewportMode & TEST_MODE_VIEWPORT_DYNAMIC)
+	if (m_param.viewportDepthBoundsMode & TEST_MODE_VIEWPORT_DYNAMIC)
 	{
 		VkViewport	viewport	= makeViewport(m_renderSize);
 		viewport.minDepth		= m_param.viewportMinDepth;
 		viewport.maxDepth		= m_param.viewportMaxDepth;
 		vk.cmdSetViewport(*m_cmdBuffer, 0u, 1u, &viewport);
 	}
+
+	if (m_param.viewportDepthBoundsMode & TEST_MODE_DEPTH_BOUNDS_DYNAMIC)
+		vk.cmdSetDepthBounds(*m_cmdBuffer, m_param.minDepthBounds, m_param.maxDepthBounds);
 
 	if (!m_vertices.empty() && !m_param.testClearValueOnly)
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
@@ -673,7 +785,7 @@ void DepthRangeUnrestrictedTestInstance::prepareCommandBuffer (void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
-	prepareRenderPass(*m_framebuffer, *m_pipeline);
+	prepareRenderPass(*m_renderPass, *m_framebuffer, *m_pipeline);
 
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
@@ -702,6 +814,11 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 		throw tcu::NotSupportedError("Unsupported feature: depthClamp");
 	}
 
+	if (param.depthBoundsTestEnable && features.depthBounds == DE_FALSE)
+	{
+		throw tcu::NotSupportedError("Unsupported feature: depthBounds");
+	}
+
 	// Create vertex buffer
 	{
 		m_vertexBuffer	= createBufferAndBindMemory(m_context, 1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferMemory);
@@ -712,7 +829,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR);
+	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_CLEAR);
 
 	const VkComponentMapping	ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 	// Create color image
@@ -759,7 +876,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 
 		m_imageLayoutBarriers[0] = colorImageBarrier;
 
-		const VkImageMemoryBarrier depthImageBarrier =
+		VkImageMemoryBarrier depthImageBarrier =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
 			DE_NULL,											// const void*				pNext;
@@ -856,10 +973,10 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 	}
 
 	// Create pipeline
-	buildPipeline();
+	m_pipeline = buildPipeline(*m_renderPass);
 
 	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -917,6 +1034,8 @@ tcu::TestStatus DepthRangeUnrestrictedTestInstance::verifyTestResult (void)
 			// Depth Clamp is enabled, then we clamp point depth to viewport's maxDepth and minDepth values, or [0.0f, 1.0f] is depth format is fixed-point.
 			float scaling = ((vertex->position.z() / vertex->position.w()) * (m_param.viewportMaxDepth - m_param.viewportMinDepth)) + m_param.viewportMinDepth;
 			float depth = de::min(de::max(scaling, m_param.viewportMinDepth), m_param.viewportMaxDepth);
+
+			// For non-float depth formats, depth value is clampled to the range [0, 1].
 			if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
 				depth = de::min(de::max(depth, 0.0f), 1.0f);
 
@@ -929,6 +1048,7 @@ tcu::TestStatus DepthRangeUnrestrictedTestInstance::verifyTestResult (void)
 		}
 	}
 
+	// Check the rendered image
 	{
 		de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
 
@@ -945,6 +1065,7 @@ tcu::TestStatus DepthRangeUnrestrictedTestInstance::verifyTestResult (void)
 			return tcu::TestStatus::fail("Image mismatch");
 	}
 
+	// Check depth buffer contents
 	{
 		de::MovePtr<tcu::TextureLevel>	depthResult		= readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, m_param.depthFormat, m_renderSize);
 
@@ -1042,10 +1163,264 @@ tcu::TestStatus DepthRangeUnrestrictedTestInstance::verifyTestResult (void)
 	return tcu::TestStatus::pass("Result images matches references");
 }
 
+// Test Classes
+class DepthBoundsRangeUnrestrictedTestInstance : public DepthRangeUnrestrictedTestInstance
+{
+public:
+								DepthBoundsRangeUnrestrictedTestInstance		(Context&				context,
+																				 const DepthRangeUnrestrictedParam	param);
+	virtual						~DepthBoundsRangeUnrestrictedTestInstance		(void);
+	virtual tcu::TestStatus		iterate											(void);
+
+protected:
+			tcu::TestStatus		verifyTestResult								(bool firstDraw);
+			void				prepareCommandBuffer							(bool firstDraw);
+
+protected:
+			Move<VkRenderPass>					m_renderPassSecondDraw;
+			Move<VkFramebuffer>					m_framebufferSecondDraw;
+			Move<VkPipeline>					m_pipelineSecondDraw;
+			std::vector<bool>					m_vertexWasRendered;
+
+};
+
+DepthBoundsRangeUnrestrictedTestInstance::DepthBoundsRangeUnrestrictedTestInstance	(Context&							context,
+																					 const DepthRangeUnrestrictedParam	param)
+	: DepthRangeUnrestrictedTestInstance(context, param)
+{
+	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
+	const VkDevice			vkDevice		 = m_context.getDevice();
+
+	// Create render pass for second draw, we keep the first draw's contents of the depth buffer.
+	m_renderPassSecondDraw = makeRenderPass(vk, vkDevice, m_colorFormat, m_param.depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_LOAD);
+
+	// Create framebuffer for second draw.
+	{
+		VkImageView attachmentBindInfos[2] =
+		{
+			*m_colorAttachmentView,
+			*m_depthAttachmentView,
+		};
+
+		const VkFramebufferCreateInfo framebufferParams =
+		{
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,			// VkStructureType				sType;
+			DE_NULL,											// const void*					pNext;
+			0u,													// VkFramebufferCreateFlags		flags;
+			*m_renderPassSecondDraw,							// VkRenderPass					renderPass;
+			2u,													// deUint32						attachmentCount;
+			attachmentBindInfos,								// const VkImageView*			pAttachments;
+			(deUint32)m_renderSize.x(),							// deUint32						width;
+			(deUint32)m_renderSize.y(),							// deUint32						height;
+			1u,													// deUint32						layers;
+		};
+
+		m_framebufferSecondDraw = createFramebuffer(vk, vkDevice, &framebufferParams);
+	}
+
+		// Create pipeline
+	m_pipelineSecondDraw = buildPipeline(*m_renderPassSecondDraw);
+}
+
+DepthBoundsRangeUnrestrictedTestInstance::~DepthBoundsRangeUnrestrictedTestInstance (void)
+{
+}
+
+tcu::TestStatus DepthBoundsRangeUnrestrictedTestInstance::iterate (void)
+{
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDevice			vkDevice			= m_context.getDevice();
+	const VkQueue			queue				= m_context.getUniversalQueue();
+
+	// This test will draw the same scene two times.
+	// First one will render the points depending on if the pass the depth test and if clear depth value passes the
+	// depthBounds test.
+	//
+	// The second one, will render the same scene but the the point positions will have depth buffer values from
+	// the first draw. If they pass the depth test, the depthBounds test will check the content of the depth buffer,
+	// which is most cases, will make that the second result differs from the first one, hence the need to split
+	// the verification in two steps.
+	prepareCommandBuffer(true);
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	tcu::TestStatus status = verifyTestResult(true);
+	if (status.getCode() != QP_TEST_RESULT_PASS)
+		return status;
+
+	prepareCommandBuffer(false);
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+	return verifyTestResult(false);
+}
+
+void DepthBoundsRangeUnrestrictedTestInstance::prepareCommandBuffer (bool firstDraw)
+{
+	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
+
+	if (!firstDraw)
+	{
+		vk.resetCommandBuffer(*m_cmdBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		// Color image layout changed after verifying the first draw call, restore it.
+		m_imageLayoutBarriers[0].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		m_imageLayoutBarriers[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		// Depth image layout changed after verifying the first draw call, restore it.
+		m_imageLayoutBarriers[1].srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		m_imageLayoutBarriers[1].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	}
+
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+	vk.cmdPipelineBarrier(*m_cmdBuffer, (firstDraw ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
+		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
+
+	prepareRenderPass((firstDraw ? *m_renderPass : *m_renderPassSecondDraw),
+					  (firstDraw ? *m_framebuffer : *m_framebufferSecondDraw),
+					  (firstDraw ? *m_pipeline : *m_pipelineSecondDraw));
+
+	endCommandBuffer(vk, *m_cmdBuffer);
+}
+
+tcu::TestStatus DepthBoundsRangeUnrestrictedTestInstance::verifyTestResult (bool firstDraw)
+{
+	deBool					compareOk			= DE_TRUE;
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDevice			vkDevice			= m_context.getDevice();
+	const VkQueue			queue				= m_context.getUniversalQueue();
+	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	tcu::TestLog&			log					= m_context.getTestContext().getLog();
+	Allocator&				allocator			= m_context.getDefaultAllocator();
+	tcu::TextureLevel		refImage			(vk::mapVkFormat(m_colorFormat), 32, 32);
+	float					clearValue			= m_param.depthBufferClearValue.depthStencil.depth;
+	double					epsilon				= 1e-5;
+
+	// For non-float depth formats, depth value is clampled to the range [0, 1].
+	if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
+		clearValue = de::min(de::max(clearValue, 0.0f), 1.0f);
+
+	// Generate reference image
+	{
+		VkClearValue			clearColor		= defaultClearValue(m_colorFormat);
+		tcu::Vec4				clearColorVec4  (clearColor.color.float32[0], clearColor.color.float32[1],
+												 clearColor.color.float32[2], clearColor.color.float32[3]);
+		tcu::clear(refImage.getAccess(), clearColorVec4);
+		for (std::vector<Vertex4RGBA>::const_iterator vertex = m_vertices.begin(); vertex != m_vertices.end(); ++vertex)
+		{
+			// Depth Clamp is enabled, then we clamp point depth to viewport's maxDepth and minDepth values and later check if it is inside depthBounds volume.
+			float scaling = ((vertex->position.z() / vertex->position.w()) * (m_param.viewportMaxDepth - m_param.viewportMinDepth)) + m_param.viewportMinDepth;
+			float depth = de::min(de::max(scaling, m_param.viewportMinDepth), m_param.viewportMaxDepth);
+			if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
+				depth = de::min(de::max(depth, 0.0f), 1.0f);
+
+			long i = vertex - m_vertices.begin();
+
+			// Depending if the first draw call succeed, we need to know if the second draw call will render the points because the depth buffer content
+			// will determine if it passes the depth test and the depth bounds test.
+			bool firstDrawHasPassedDepthBoundsTest = !firstDraw && m_vertexWasRendered[i];
+			float depthBufferValue = firstDrawHasPassedDepthBoundsTest ? depth : clearValue;
+
+			// For non-float depth formats, depth value is clampled to the range [0, 1].
+			if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
+				depthBufferValue = de::min(de::max(depthBufferValue, 0.0f), 1.0f);
+
+			// Check that the point passes the depth test and the depth bounds test.
+			if (compareDepthResult(m_param.depthCompareOp, depth, depthBufferValue) &&
+				depthBufferValue >= m_param.minDepthBounds && depthBufferValue <= m_param.maxDepthBounds)
+			{
+				deInt32 x = static_cast<deInt32>((((vertex->position.x() / vertex->position.w()) + 1.0f) / 2.0f) * static_cast<float>(m_renderSize.x() - 1));
+				deInt32 y = static_cast<deInt32>((((vertex->position.y() / vertex->position.w()) + 1.0f) / 2.0f) * static_cast<float>(m_renderSize.y() - 1));
+				refImage.getAccess().setPixel(vertex->color, x, y);
+				if (firstDraw)
+					m_vertexWasRendered.push_back(true);
+				continue;
+			}
+
+			if (firstDraw)
+				m_vertexWasRendered.push_back(false);
+		}
+	}
+
+	// Check the rendered image
+	{
+		de::MovePtr<tcu::TextureLevel> result = vkt::pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
+		std::string description = "Image comparison draw ";
+		description += (firstDraw ? "1" : "2");
+
+		compareOk = tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
+															  "IntImageCompare",
+															  description.c_str(),
+															  refImage.getAccess(),
+															  result->getAccess(),
+															  tcu::UVec4(2, 2, 2, 2),
+															  tcu::IVec3(1, 1, 0),
+															  true,
+															  tcu::COMPARE_LOG_RESULT);
+		if (!compareOk)
+			return tcu::TestStatus::fail("Image mismatch");
+	}
+
+	// Check depth buffer contents
+	{
+		de::MovePtr<tcu::TextureLevel>	depthResult		= readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, m_param.depthFormat, m_renderSize);
+
+		log << tcu::TestLog::Message;
+		for (std::vector<Vertex4RGBA>::const_iterator vertex = m_vertices.begin(); vertex != m_vertices.end(); ++vertex)
+		{
+			deInt32 x = static_cast<deInt32>((((vertex->position.x() / vertex->position.w()) + 1.0f) / 2.0f) * static_cast<float>(m_renderSize.x() - 1));
+			deInt32 y = static_cast<deInt32>((((vertex->position.y() / vertex->position.w()) + 1.0f) / 2.0f) * static_cast<float>(m_renderSize.y() - 1));
+			tcu::Vec4 depth	= depthResult->getAccess().getPixel(x, y);
+
+			// Check depth values are valid
+			if (depth.y() != 0.0f || depth.z() != 0.0f || depth.w() != 1.0f)
+			{
+				log << tcu::TestLog::Message << "Draw " << (firstDraw ? "1" : "2") << ": Invalid depth buffer values for pixel (" << x << ", " << y << ") = ("
+					<< depth.x() << ", " << depth.y() << ", " << depth.z() << ", " << depth.w() << "." << tcu::TestLog::EndMessage;
+				compareOk = DE_FALSE;
+			}
+
+			// Depth Clamp is enabled, so we clamp point depth to viewport's maxDepth and minDepth values, or 0.0f and 1.0f is format is not float.
+			float scaling = (vertex->position.z() / vertex->position.w()) * (m_param.viewportMaxDepth - m_param.viewportMinDepth) + m_param.viewportMinDepth;
+			float expectedDepth = de::min(de::max(scaling, m_param.viewportMinDepth), m_param.viewportMaxDepth);
+
+			long i = vertex - m_vertices.begin();
+
+			// Depending if the first draw call succeed, we need to know if the second draw call will render the points because the depth buffer content
+			// will determine if it passes the depth test and the depth bounds test.
+			bool firstDrawHasPassedDepthBoundsTest = !firstDraw && m_vertexWasRendered[i];
+
+			// If we are in the first draw call, the depth buffer content is clearValue. If we are in the second draw call, it is going to be depth.x() if the first
+			// succeeded.
+			float depthBufferValue = firstDrawHasPassedDepthBoundsTest ? depth.x() : clearValue;
+
+			// For non-float depth formats, depth value is clampled to the range [0, 1].
+			if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
+				depthBufferValue = de::min(de::max(depthBufferValue, 0.0f), 1.0f);
+
+			// Calculate the expectd depth depending on the depth test and the depth bounds test results.
+			expectedDepth =
+				(compareDepthResult(m_param.depthCompareOp, expectedDepth, depthBufferValue) && depthBufferValue <= m_param.maxDepthBounds && depthBufferValue >= m_param.minDepthBounds)
+				? expectedDepth : depthBufferValue;
+
+			// For non-float depth formats, depth value is clampled to the range [0, 1].
+			if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
+				expectedDepth = de::min(de::max(expectedDepth, 0.0f), 1.0f);
+
+			if (fabs(expectedDepth - depth.x()) > epsilon)
+			{
+				log << tcu::TestLog::Message << "Draw " << (firstDraw ? "1" : "2") << ": Error pixel (" << x << ", " << y
+					<< "). Depth value " << depth.x() << ", expected " << expectedDepth << ", error " << fabs(expectedDepth - depth.x()) << tcu::TestLog::EndMessage;
+				compareOk = DE_FALSE;
+			}
+		}
+
+		if (!compareOk)
+			return tcu::TestStatus::fail("Depth buffer mismatch");
+	}
+
+	return tcu::TestStatus::pass("Result images matches references");
+}
+
 class DepthRangeUnrestrictedTest : public vkt::TestCase
 {
 public:
-							DepthRangeUnrestrictedTest	(tcu::TestContext&					testContext,
+							DepthRangeUnrestrictedTest			(tcu::TestContext&					testContext,
 																 const std::string&					name,
 																 const std::string&					description,
 																 const DepthRangeUnrestrictedParam	param)
@@ -1089,6 +1464,8 @@ void DepthRangeUnrestrictedTest::initPrograms (SourceCollections& programCollect
 
 TestInstance* DepthRangeUnrestrictedTest::createInstance (Context& context) const
 {
+	if (m_param.depthBoundsTestEnable)
+		return new DepthBoundsRangeUnrestrictedTestInstance(context, m_param);
 	return new DepthRangeUnrestrictedTestInstance(context, m_param);
 }
 } // anonymous
@@ -1112,6 +1489,7 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 	};
 
 	float viewportValues[]			= {2.0f, 6.0f, 12.0f};
+	float depthBoundsValues[]		= {2.0f, 4.0f, 8.0f};
 	float wcValues[]				= {2.0f, 6.0f, 12.0f};
 	float clearValues[]				= {2.0f, -3.0f, 6.0f, -7.0f};
 
@@ -1126,8 +1504,9 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 		testParams.viewportMaxDepth				= 1.0f;
 		testParams.minDepthBounds				= 0.0f;
 		testParams.maxDepthBounds				= 1.0f;
+		testParams.depthBoundsTestEnable		= VK_FALSE;
 		testParams.depthCompareOp				= VK_COMPARE_OP_LESS_OR_EQUAL;
-		testParams.viewportMode		= TEST_MODE_VIEWPORT_STATIC;
+		testParams.viewportDepthBoundsMode		= TEST_MODE_VIEWPORT_DEPTH_BOUNDS_STATIC;
 
 		for (int format = 0; format < DE_LENGTH_OF_ARRAY(depthFormats); ++format)
 		{
@@ -1151,6 +1530,7 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 		testParams.depthClampEnable			= VK_TRUE;
 		testParams.minDepthBounds			= 0.0f;
 		testParams.maxDepthBounds			= 1.0f;
+		testParams.depthBoundsTestEnable	= VK_FALSE;
 
 		for (int format = 0; format < DE_LENGTH_OF_ARRAY(depthFormats); ++format)
 		{
@@ -1166,9 +1546,9 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 					{
 						testParams.viewportMinDepth			= -viewportValues[viewportValue];
 						testParams.viewportMaxDepth			= viewportValues[viewportValue];
-						testParams.viewportMode				= TEST_MODE_VIEWPORT_STATIC;
+						testParams.viewportDepthBoundsMode	= TEST_MODE_VIEWPORT_DEPTH_BOUNDS_STATIC;
 						viewportTests->addChild(newTestCase<DepthRangeUnrestrictedTest>(testCtx, testParams));
-						testParams.viewportMode				= TEST_MODE_VIEWPORT_DYNAMIC;
+						testParams.viewportDepthBoundsMode	= TEST_MODE_VIEWPORT_DYNAMIC;
 						viewportTests->addChild(newTestCase<DepthRangeUnrestrictedTest>(testCtx, testParams));
 					}
 				}
@@ -1176,6 +1556,49 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 		}
 
 		depthTests->addChild(viewportTests.release());
+	}
+
+	// DepthBounds's depth unrestricted range
+	{
+		de::MovePtr<tcu::TestCaseGroup> depthBoundsTests (new tcu::TestCaseGroup(testCtx, "depthbounds", "Depthbounds unrestricted range"));
+		DepthRangeUnrestrictedParam testParams;
+		testParams.testClearValueOnly							= VK_FALSE;
+		testParams.wc											= 1.0f;
+		testParams.depthClampEnable								= VK_TRUE;
+		testParams.depthBoundsTestEnable						= VK_TRUE;
+
+		for (int format = 0; format < DE_LENGTH_OF_ARRAY(depthFormats); ++format)
+		{
+			testParams.depthFormat				= depthFormats[format];
+			testParams.depthBufferClearValue	= defaultClearValue(testParams.depthFormat);
+			for (int compareOp = 0; compareOp < DE_LENGTH_OF_ARRAY(compareOps); compareOp++)
+			{
+				testParams.depthCompareOp		= compareOps[compareOp];
+				for (int clearValue = 0; clearValue < DE_LENGTH_OF_ARRAY(clearValues); clearValue++)
+				{
+					testParams.depthBufferClearValue.depthStencil.depth		= clearValues[clearValue];
+					for (int viewportValue = 0; viewportValue < DE_LENGTH_OF_ARRAY(viewportValues); viewportValue++)
+					{
+						testParams.viewportMinDepth				= -viewportValues[viewportValue];
+						testParams.viewportMaxDepth				= viewportValues[viewportValue];
+						for (int depthValue = 0; depthValue < DE_LENGTH_OF_ARRAY(depthBoundsValues); depthValue++)
+						{
+							testParams.minDepthBounds			= -depthBoundsValues[depthValue];
+							testParams.maxDepthBounds			= depthBoundsValues[depthValue];
+
+							testParams.viewportDepthBoundsMode	= TEST_MODE_VIEWPORT_DEPTH_BOUNDS_STATIC;
+							depthBoundsTests->addChild(newTestCase<DepthRangeUnrestrictedTest>(testCtx, testParams));
+							testParams.viewportDepthBoundsMode	= TEST_MODE_DEPTH_BOUNDS_DYNAMIC;
+							depthBoundsTests->addChild(newTestCase<DepthRangeUnrestrictedTest>(testCtx, testParams));
+							testParams.viewportDepthBoundsMode  = TEST_MODE_VIEWPORT_DEPTH_BOUNDS_DYNAMIC;
+							depthBoundsTests->addChild(newTestCase<DepthRangeUnrestrictedTest>(testCtx, testParams));
+						}
+					}
+				}
+			}
+		}
+
+		depthTests->addChild(depthBoundsTests.release());
 	}
 
 	// Depth clamping disabled
@@ -1186,7 +1609,8 @@ tcu::TestCaseGroup* createDepthRangeUnrestrictedTests (tcu::TestContext& testCtx
 		testParams.depthClampEnable				= VK_FALSE;
 		testParams.minDepthBounds				= 0.0f;
 		testParams.maxDepthBounds				= 1.0f;
-		testParams.viewportMode					= TEST_MODE_VIEWPORT_STATIC;
+		testParams.depthBoundsTestEnable		= VK_FALSE;
+		testParams.viewportDepthBoundsMode		= TEST_MODE_VIEWPORT_DEPTH_BOUNDS_STATIC;
 
 		for (int format = 0; format < DE_LENGTH_OF_ARRAY(depthFormats); ++format)
 		{

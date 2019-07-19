@@ -100,7 +100,8 @@ de::MovePtr<tcu::TextureLevel>	readDepthAttachment			 (const vk::DeviceInterface
 															  vk::Allocator&				allocator,
 															  vk::VkImage					image,
 															  vk::VkFormat					format,
-															  const tcu::UVec2&				renderSize);
+															  const tcu::UVec2&				renderSize,
+															  vk::VkImageLayout				currentLayout = vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Gets a tcu::TextureLevel initialized with data from a VK stencil
@@ -116,7 +117,8 @@ de::MovePtr<tcu::TextureLevel>	readStencilAttachment		 (const vk::DeviceInterfac
 															  vk::Allocator&				allocator,
 															  vk::VkImage					image,
 															  vk::VkFormat					format,
-															  const tcu::UVec2&				renderSize);
+															  const tcu::UVec2&				renderSize,
+															  vk::VkImageLayout				currentLayout = vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 
 /*--------------------------------------------------------------------*//*!

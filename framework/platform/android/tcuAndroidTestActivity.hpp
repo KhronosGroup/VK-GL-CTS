@@ -39,7 +39,7 @@ namespace Android
 class TestThread : public RenderThread
 {
 public:
-							TestThread					(NativeActivity& activity, const CommandLine& cmdLine);
+							TestThread					(NativeActivity& activity, const std::string& cmdLineString, const CommandLine& cmdLine);
 							~TestThread					(void);
 
 	void					run							(void);
