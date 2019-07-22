@@ -2487,7 +2487,7 @@ TestCase::IterateResult ConcurrentAtomicCounterCase::iterate (void)
 			throw tcu::TestError("u_callNdx location was -1");
 
 		gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_intermediateResultBuffer);
-		gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_counterBuffer);
+		gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_counterBuffer);
 
 		for (int callNdx = 0; callNdx < m_numCalls; ++callNdx)
 		{
@@ -3062,7 +3062,7 @@ TestCase::IterateResult ConcurrentSSBOAtomicCounterMixedCase::iterate (void)
 			<< tcu::TestLog::EndMessage;
 
 		gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_bufferID);
-		gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 2, m_bufferID);
+		gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_bufferID);
 
 		for (int callNdx = 0; callNdx < m_numCalls; ++callNdx)
 		{
@@ -3133,7 +3133,7 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genAtomicCounterComputeSource 
 	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "\n"
-		<< "layout (binding = 2, offset = 0) uniform atomic_uint u_counter;\n"
+		<< "layout (binding = 0, offset = 0) uniform atomic_uint u_counter;\n"
 		<< "\n"
 		<< "void main ()\n"
 		<< "{\n"
