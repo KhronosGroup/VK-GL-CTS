@@ -238,6 +238,7 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 	case SPIRV_VERSION_1_1:
 	case SPIRV_VERSION_1_2:
 	case SPIRV_VERSION_1_3:
+	case SPIRV_VERSION_1_4:
 		return VK_API_VERSION_1_1;
 	default:
 		DE_ASSERT(0);
