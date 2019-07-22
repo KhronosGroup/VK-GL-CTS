@@ -14,7 +14,7 @@
 #   data[i] = A[i] * B[i];
 #
 #   if (i == 0) data[16] = 0;
-#
+#   barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
 #   C[i] = get_data(&data[i]);
 #}
 #
@@ -57,8 +57,10 @@
 %_ptr_Workgroup__arr_uint_uint_17 = OpTypePointer Workgroup %_arr_uint_uint_17
        %bool = OpTypeBool
      %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
      %uint_0 = OpConstant %uint 0
     %uint_16 = OpConstant %uint 16
+   %uint_336 = OpConstant %uint 336
          %20 = OpVariable %_ptr_Workgroup__arr_uint_uint_17 Workgroup
 %gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
          %22 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
@@ -90,6 +92,7 @@
                OpStore %42 %uint_0
                OpBranch %43
          %43 = OpLabel
+               OpControlBarrier %uint_2 %uint_1 %uint_336
          %44 = OpFunctionCall %uint %25 %39
          %45 = OpAccessChain %_ptr_StorageBuffer_uint %24 %uint_0 %33
                OpStore %45 %44
