@@ -44,7 +44,7 @@ if __name__ == "__main__":
 		files = getAllProjectFiles()
 
 	# filter out original Vulkan header sources
-	files = [f for f in files if "vulkancts/scripts/src" not in f]
+	files = [f for f in files if "vulkancts/scripts/src" not in f.replace("\\", "/")]
 
 	error = not all([
 		checkBOMs(files, args.fixBOMs),
