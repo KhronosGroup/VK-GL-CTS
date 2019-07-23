@@ -352,7 +352,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 	const deUint32					numVertices				= 6;
 	const VkDeviceSize				vertexBufferSizeBytes	= sizeof(tcu::Vec4) * numVertices;
-	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)));
+	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, vertexBufferSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	const UniquePtr<Allocation>		vertexBufferAlloc		(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
 
 	{
@@ -373,7 +373,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	// Result buffer
 
 	const VkDeviceSize				resultBufferSizeBytes	= sizeof(deUint32);
-	const Unique<VkBuffer>			resultBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)));
+	const Unique<VkBuffer>			resultBuffer			(makeBuffer(vk, device, resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT));
 	const UniquePtr<Allocation>		resultBufferAlloc		(bindBuffer(vk, device, allocator, *resultBuffer, MemoryRequirement::HostVisible));
 
 	{
@@ -386,7 +386,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 	// Render result buffer (to retrieve color attachment contents)
 
 	const VkDeviceSize				colorBufferSizeBytes	= tcu::getPixelSize(mapVkFormat(colorFormat)) * renderSize.x() * renderSize.y();
-	const Unique<VkBuffer>			colorBuffer				(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>			colorBuffer				(makeBuffer(vk, device, colorBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc		(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	// Descriptors

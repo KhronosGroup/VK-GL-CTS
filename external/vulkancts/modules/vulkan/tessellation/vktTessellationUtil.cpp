@@ -86,21 +86,6 @@ VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat fo
 	return imageInfo;
 }
 
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
-									   const VkImageSubresourceLayers	subresourceLayers)
-{
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,										//	VkDeviceSize				bufferOffset;
-		0u,											//	deUint32					bufferRowLength;
-		0u,											//	deUint32					bufferImageHeight;
-		subresourceLayers,							//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),						//	VkOffset3D					imageOffset;
-		extent,										//	VkExtent3D					imageExtent;
-	};
-	return copyParams;
-}
-
 void beginRenderPassWithRasterizationDisabled (const DeviceInterface&	vk,
 											   const VkCommandBuffer	commandBuffer,
 											   const VkRenderPass		renderPass,

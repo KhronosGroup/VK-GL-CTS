@@ -724,8 +724,8 @@ public:
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
-		const DeviceInterface&		vk					= m_context.getDeviceInterface();
-		const VkBufferImageCopy		bufferCopyRegion	= makeBufferImageCopy(m_resource.getImage().subresourceLayers, m_resource.getImage().extent);
+		const DeviceInterface&	vk					= m_context.getDeviceInterface();
+		const VkBufferImageCopy	bufferCopyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
 
 		const VkImageMemoryBarrier stagingImageTransferSrcLayoutBarrier = makeImageMemoryBarrier(
 			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -1352,7 +1352,7 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		const DeviceInterface&	vk					= m_context.getDeviceInterface();
-		const VkBufferImageCopy	bufferCopyRegion	= makeBufferImageCopy(m_resource.getImage().subresourceLayers, m_resource.getImage().extent);
+		const VkBufferImageCopy	bufferCopyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
 
 		// Destination image layout
 		{
@@ -1787,7 +1787,7 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().subresourceLayers, m_resource.getImage().extent);
+		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
 
 		const VkImageMemoryBarrier layoutBarrier = makeImageMemoryBarrier(
 			(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -1853,7 +1853,7 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_subresourceLayers, m_imageExtent);
+		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_imageExtent, m_subresourceLayers);
 
 		// Resource -> Image
 		{
@@ -1990,7 +1990,7 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_subresourceLayers, m_imageExtent);
+		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_imageExtent, m_subresourceLayers);
 
 		// Host buffer -> Image
 		{
@@ -2065,7 +2065,7 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		const DeviceInterface&	vk			= m_context.getDeviceInterface();
-		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().subresourceLayers, m_resource.getImage().extent);
+		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().extent, m_resource.getImage().subresourceLayers);
 
 		vk.cmdCopyImageToBuffer(cmdBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_hostBuffer, 1u, &copyRegion);
 	}

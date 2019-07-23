@@ -264,12 +264,6 @@ VkPrimitiveTopology	getTopology (const TestPrimitive primitive)
 	}
 }
 
-void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize size)
-{
-	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(size));
-	flushAlloc(vk, device, alloc);
-}
-
 //! Transform from normalized coords to framebuffer space.
 inline IVec4 getAreaRect (const Vec4& area, const int width, const int height)
 {
@@ -365,7 +359,7 @@ public:
 		m_colorImageAlloc		= bindImage(vk, device, allocator, *m_colorImage, MemoryRequirement::Any);
 		m_colorAttachment		= makeImageView(vk, device, *m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
 
-		m_vertexBuffer			= makeBuffer(vk, device, makeBufferCreateInfo(m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+		m_vertexBuffer			= makeBuffer(vk, device, m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 		m_vertexBufferAlloc		= bindBuffer(vk, device, allocator, *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 		{
@@ -454,10 +448,10 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	const Vec4						clearColor					(0.5f, 0.5f, 1.0f, 1.0f);
 
 	const VkDeviceSize				colorBufferSize				= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Unique<VkBuffer>			colorBufferFull				(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>			colorBufferFull				(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferFullAlloc		(bindBuffer(vk, device, allocator, *colorBufferFull, MemoryRequirement::HostVisible));
 
-	const Unique<VkBuffer>			colorBufferScissored		(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>			colorBufferScissored		(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferScissoredAlloc	(bindBuffer(vk, device, allocator, *colorBufferScissored, MemoryRequirement::HostVisible));
 
 	zeroBuffer(vk, device, *colorBufferFullAlloc, colorBufferSize);

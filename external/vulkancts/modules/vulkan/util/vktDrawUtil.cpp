@@ -98,21 +98,6 @@ Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevi
 	return allocateCommandBuffer(vk, device, &info);
 }
 
-VkBufferImageCopy makeBufferImageCopy (const VkImageSubresourceLayers	subresourceLayers,
-									   const VkExtent3D					extent)
-{
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,										//	VkDeviceSize				bufferOffset;
-		0u,											//	deUint32					bufferRowLength;
-		0u,											//	deUint32					bufferImageHeight;
-		subresourceLayers,							//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),						//	VkOffset3D					imageOffset;
-		extent,										//	VkExtent3D					imageExtent;
-	};
-	return copyParams;
-}
-
 std::string getPrimitiveTopologyShortName (const VkPrimitiveTopology topology)
 {
 	std::string name(getPrimitiveTopologyName(topology));
@@ -610,8 +595,9 @@ VulkanDrawContext::VulkanDrawContext (Context&				context,
 			else
 				m_resolveImage = m_colorImage;
 
-			const VkBufferImageCopy copyRegion = makeBufferImageCopy(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),
-					makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u));
+			const VkBufferImageCopy copyRegion = makeBufferImageCopy(
+				makeExtent3D(m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u),
+				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
 			vk.cmdCopyImageToBuffer(*m_cmdBuffer, **m_resolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_colorAttachmentBuffer, 1u, &copyRegion);
 		}
 

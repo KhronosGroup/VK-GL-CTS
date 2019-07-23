@@ -139,18 +139,6 @@ vk::Move<vk::VkPipeline>		makeComputePipeline					(const vk::DeviceInterface&			
 																	 const vk::VkShaderModule			shaderModule,
 																	 const vk::VkSpecializationInfo*	specializationInfo	= 0);
 
-de::MovePtr<vk::Allocation>		bindImage							(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 vk::Allocator&						allocator,
-																	 const vk::VkImage					image,
-																	 const vk::MemoryRequirement		requirement);
-
-de::MovePtr<vk::Allocation>		bindBuffer							(const vk::DeviceInterface&			vk,
-																	 const vk::VkDevice					device,
-																	 vk::Allocator&						allocator,
-																	 const vk::VkBuffer					buffer,
-																	 const vk::MemoryRequirement		requirement);
-
 vk::VkBufferImageCopy			makeBufferImageCopy					(const vk::VkExtent3D				extent,
 																	 const deUint32						layersCount,
 																	 const deUint32						mipmapLevel		= 0u,
@@ -220,16 +208,6 @@ bool							checkImageFormatFeatureSupport		(const vk::InstanceInterface&		instan
 
 deUint32						getSparseAspectRequirementsIndex	(const std::vector<vk::VkSparseImageMemoryRequirements>&	requirements,
 																	 const vk::VkImageAspectFlags								aspectFlags);
-
-inline vk::Move<vk::VkBuffer> makeBuffer (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkBufferCreateInfo& createInfo)
-{
-	return createBuffer(vk, device, &createInfo);
-}
-
-inline vk::Move<vk::VkImage> makeImage (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImageCreateInfo& createInfo)
-{
-	return createImage(vk, device, &createInfo);
-}
 
 template<typename T>
 inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr (vk::Move<T> vkMove)
