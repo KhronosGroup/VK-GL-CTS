@@ -370,12 +370,6 @@ tcu::PixelBufferAccess getExpectedData (tcu::TextureLevel& textureLevel, const C
 	return expectedImage;
 }
 
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
-}
-
 inline VkImageSubresourceRange makeColorSubresourceRange (const deUint32 baseArrayLayer, const deUint32 layerCount)
 {
 	return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, baseArrayLayer, layerCount);

@@ -89,20 +89,6 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&		vk,
 	return createComputePipeline(vk, device, DE_NULL , &pipelineInfo);
 }
 
-MovePtr<Allocation> bindImage (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkImage image, const MemoryRequirement requirement)
-{
-	MovePtr<Allocation> alloc = allocator.allocate(getImageMemoryRequirements(vk, device, image), requirement);
-	VK_CHECK(vk.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
-MovePtr<Allocation> bindBuffer (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkBuffer buffer, const MemoryRequirement requirement)
-{
-	MovePtr<Allocation> alloc(allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), requirement));
-	VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
 MovePtr<Allocation> bindImageDedicated (const InstanceInterface& vki, const DeviceInterface& vkd, const VkPhysicalDevice physDevice, const VkDevice device, const VkImage image, const MemoryRequirement requirement)
 {
 	MovePtr<Allocation> alloc(allocateDedicated(vki, vkd, physDevice, device, image, requirement));

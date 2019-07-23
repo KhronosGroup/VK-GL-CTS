@@ -1204,7 +1204,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	const UniquePtr<Allocation>		colorImageAlloc			(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
 	const Unique<VkImageView>		colorAttachment			(makeImageView			(vk, device, *colorImage, viewType, colorFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers)));
 
-	const Unique<VkBuffer>			colorBuffer				(makeBuffer				(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>			colorBuffer				(makeBuffer				(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc		(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>	vertexModule			(createShaderModule		(vk, device, context.getBinaryCollection().get("vert"), 0u));
@@ -1282,15 +1282,15 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const Unique<VkImage>				colorImage			(makeImage				(vk, device, makeImageCreateInfo(imageCreateFlags, imageType, colorFormat, params.image.size, params.image.numLayers, colorImageUsage)));
 	const UniquePtr<Allocation>			colorImageAlloc		(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
 	const Unique<VkImageView>			colorAttachment		(makeImageView			(vk, device, *colorImage, viewType, colorFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers)));
-	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const Unique<VkImage>				dsImage				(makeImage				(vk, device, makeImageCreateInfo(imageCreateFlags, imageType, dsFormat, params.image.size, params.image.numLayers, dsImageUsage)));
 	const UniquePtr<Allocation>			dsImageAlloc		(bindImage				(vk, device, allocator, *dsImage, MemoryRequirement::Any));
 	const Unique<VkImageView>			dsAttachment		(makeImageView			(vk, device, *dsImage, viewType, dsFormat, makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, numLayers)));
-	const Unique<VkBuffer>				depthBuffer			(makeBuffer				(vk, device, makeBufferCreateInfo(depthBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>				depthBuffer			(makeBuffer				(vk, device, depthBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			depthBufferAlloc	(bindBuffer				(vk, device, allocator, *depthBuffer, MemoryRequirement::HostVisible));
-	const Unique<VkBuffer>				stencilBuffer		(makeBuffer				(vk, device, makeBufferCreateInfo(stencilBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>				stencilBuffer		(makeBuffer				(vk, device, stencilBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			stencilBufferAlloc	(bindBuffer				(vk, device, allocator, *stencilBuffer, MemoryRequirement::HostVisible));
 
 	const VkImageView					attachments[]		= {*colorAttachment, *dsAttachment};
@@ -1530,7 +1530,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 	const Unique<VkImageView>			offscreenImageView	(makeImageView(vk, device, *offscreenImage, params.image.viewType, colorFormat,
 																		   makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers)));
 
-	const Unique<VkBuffer>				colorBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>				colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const Move<VkDescriptorPool>		descriptorPool		= DescriptorPoolBuilder() .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u) .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);

@@ -436,21 +436,6 @@ VkBufferCreateInfo makeBufferCreateInfo (const void*				pNext,
 	return bufferCreateInfo;
 }
 
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
-									   const VkImageSubresourceLayers	subresourceLayers)
-{
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,										//	VkDeviceSize				bufferOffset;
-		0u,											//	deUint32					bufferRowLength;
-		0u,											//	deUint32					bufferImageHeight;
-		subresourceLayers,							//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),						//	VkOffset3D					imageOffset;
-		extent,										//	VkExtent3D					imageExtent;
-	};
-	return copyParams;
-}
-
 tcu::TestStatus BufferAddressTestInstance::iterate (void)
 {
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();

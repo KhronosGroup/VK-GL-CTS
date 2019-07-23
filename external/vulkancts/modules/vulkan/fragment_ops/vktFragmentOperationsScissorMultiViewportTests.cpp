@@ -136,12 +136,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									VK_PRIMITIVE_TOPOLOGY_POINT_LIST);	// const VkPrimitiveTopology         topology
 }
 
-void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize size)
-{
-	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(size));
-	flushAlloc(vk, device, alloc);
-}
-
 std::vector<IVec4> generateScissors (const int numScissors, const IVec2& renderSize)
 {
 	// Scissor rects will be arranged in a grid-like fashion.
@@ -329,7 +323,7 @@ public:
 		m_colorImageAlloc	= bindImage				(vk, device, allocator, *m_colorImage, MemoryRequirement::Any);
 		m_colorAttachment	= makeImageView			(vk, device, *m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, m_colorSubresourceRange);
 
-		m_vertexBuffer		= makeBuffer			(vk, device, makeBufferCreateInfo(m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+		m_vertexBuffer		= makeBuffer			(vk, device, m_vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 		m_vertexBufferAlloc	= bindBuffer			(vk, device, allocator, *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 		{
@@ -415,7 +409,7 @@ tcu::TestStatus test (Context& context, const int numViewports)
 	const std::vector<IVec4>		scissors			= generateScissors(numViewports, renderSize);
 
 	const VkDeviceSize				colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);

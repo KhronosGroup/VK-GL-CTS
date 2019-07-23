@@ -480,12 +480,6 @@ Move<VkSampler> makeSampler (const DeviceInterface& vk, const VkDevice device)
 	return createSampler(vk, device, &samplerParams);
 }
 
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
-}
-
 inline VkImageSubresourceRange makeColorSubresourceRange (const int baseArrayLayer, const int layerCount)
 {
 	return makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, static_cast<deUint32>(baseArrayLayer), static_cast<deUint32>(layerCount));
@@ -517,12 +511,6 @@ void checkImageFormatRequirements (const InstanceInterface&		vki,
 
 	if ((imageFormatProperties.sampleCounts & sampleCount) != sampleCount)
 		TCU_THROW(NotSupportedError, "Requested sample count is not supported");
-}
-
-void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize bufferSize)
-{
-	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(bufferSize));
-	flushAlloc(vk, device, alloc);
 }
 
 //! The default foreground color.

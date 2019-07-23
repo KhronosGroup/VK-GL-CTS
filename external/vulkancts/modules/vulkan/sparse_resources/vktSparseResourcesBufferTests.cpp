@@ -650,7 +650,7 @@ public:
 		m_sharedQueueFamilyIndices[0]	= m_sparseQueue.queueFamilyIndex;
 		m_sharedQueueFamilyIndices[1]	= m_universalQueue.queueFamilyIndex;
 
-		m_colorBuffer					= makeBuffer(vk, getDevice(), makeBufferCreateInfo(m_colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+		m_colorBuffer					= makeBuffer(vk, getDevice(), m_colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		m_colorBufferAlloc				= bindBuffer(vk, getDevice(), getAllocator(), *m_colorBuffer, MemoryRequirement::HostVisible);
 
 		deMemset(m_colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(m_colorBufferSize));
@@ -920,7 +920,7 @@ public:
 				const VkDeviceSize			stagingBufferSize	= sparseAllocation->resourceSize - (hasAliasedChunk ? chunkSize : 0);
 				const deUint32				numBufferEntries	= static_cast<deUint32>(stagingBufferSize / sizeof(IVec4));
 
-				const Unique<VkBuffer>		stagingBuffer		(makeBuffer(vk, getDevice(), makeBufferCreateInfo(stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT)));
+				const Unique<VkBuffer>		stagingBuffer		(makeBuffer(vk, getDevice(), stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
 				const UniquePtr<Allocation>	stagingBufferAlloc	(bindBuffer(vk, getDevice(), getAllocator(), *stagingBuffer, MemoryRequirement::HostVisible));
 
 				{
@@ -990,7 +990,7 @@ public:
 
 				const VkDeviceSize	vertexBufferSize	= sizeof(vertexData);
 
-				m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+				m_vertexBuffer		= makeBuffer(vk, getDevice(), vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 				m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 				deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertexData[0], vertexBufferSize);
@@ -1163,7 +1163,7 @@ public:
 
 		m_perDrawBufferOffset	= m_sparseAllocation->resourceSize / m_sparseAllocation->numResourceChunks;
 		m_stagingBufferSize		= 2 * m_perDrawBufferOffset;
-		m_stagingBuffer			= makeBuffer(vk, getDevice(), makeBufferCreateInfo(m_stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
+		m_stagingBuffer			= makeBuffer(vk, getDevice(), m_stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 		m_stagingBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_stagingBuffer, MemoryRequirement::HostVisible);
 	}
 
@@ -1341,7 +1341,7 @@ public:
 		// Vertex buffer
 		const DeviceInterface&	vk					= getDeviceInterface();
 		const VkDeviceSize		vertexBufferSize	= 2 * m_halfVertexCount * sizeof(Vec4);
-								m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+								m_vertexBuffer		= makeBuffer(vk, getDevice(), vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 								m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 		{
@@ -1406,7 +1406,7 @@ public:
 		// Vertex buffer
 		const DeviceInterface&	vk					= getDeviceInterface();
 		const VkDeviceSize		vertexBufferSize	= 2 * 3 * sizeof(Vec4);
-								m_vertexBuffer		= makeBuffer(vk, getDevice(), makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+								m_vertexBuffer		= makeBuffer(vk, getDevice(), vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 								m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 		{
