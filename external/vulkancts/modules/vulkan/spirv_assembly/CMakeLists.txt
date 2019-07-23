@@ -35,6 +35,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmPointerParameterTests.hpp
 	vktSpvAsmSignedIntCompareTests.cpp
 	vktSpvAsmSignedIntCompareTests.hpp
+	vktSpvAsm64bitCompareTests.cpp
+	vktSpvAsm64bitCompareTests.hpp
 	vktSpvAsmTypeTests.cpp
 	vktSpvAsmTypeTests.hpp
 	vktSpvAsmTests.cpp
