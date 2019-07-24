@@ -194,7 +194,8 @@ public:
 																					 float					minSampleShading,
 																					 GeometryType			geometryType,
 																					 float					pointSize,
-																					 ImageBackingMode		backingMode);
+																					 ImageBackingMode		backingMode,
+																					 const bool				minSampleShadingEnabled = true);
 	virtual										~MinSampleShadingTest				(void) {}
 
 protected:
@@ -206,10 +207,13 @@ protected:
 																					 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																					 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
 
-	static VkPipelineMultisampleStateCreateInfo	getMinSampleShadingStateParams		(VkSampleCountFlagBits rasterizationSamples, float minSampleShading);
+	static VkPipelineMultisampleStateCreateInfo	getMinSampleShadingStateParams		(VkSampleCountFlagBits	rasterizationSamples,
+																					 float					minSampleShading,
+																					 bool					minSampleShadingEnabled);
 
 	const float									m_pointSize;
 	const ImageBackingMode						m_backingMode;
+	const bool									m_minSampleShadingEnabled;
 };
 
 class SampleMaskTest : public MultisampleTest
@@ -522,6 +526,23 @@ protected:
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
 	const ImageBackingMode						m_backingMode;
+};
+
+class MinSampleShadingDisabledInstance : public MinSampleShadingInstance
+{
+public:
+												MinSampleShadingDisabledInstance	(Context&										context,
+																					 VkPrimitiveTopology							topology,
+																					 float											pointSize,
+																					 const std::vector<Vertex4RGBA>&				vertices,
+																					 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																					 const VkPipelineColorBlendAttachmentState&		blendState,
+																					 ImageBackingMode								backingMode);
+	virtual										~MinSampleShadingDisabledInstance	(void) {}
+
+protected:
+	virtual tcu::TestStatus						verifySampleShadedImage				(const std::vector<tcu::TextureLevel>&	sampleShadedImages,
+																					 const tcu::ConstPixelBufferAccess&		noSampleshadingImage);
 };
 
 class SampleMaskInstance : public vkt::TestInstance
@@ -1149,10 +1170,12 @@ MinSampleShadingTest::MinSampleShadingTest (tcu::TestContext&		testContext,
 											float					minSampleShading,
 											GeometryType			geometryType,
 											float					pointSize,
-											ImageBackingMode		backingMode)
-	: MultisampleTest	(testContext, name, description, getMinSampleShadingStateParams(rasterizationSamples, minSampleShading), getDefaultColorBlendAttachmentState(), geometryType, pointSize, backingMode)
-	, m_pointSize		(pointSize)
-	, m_backingMode		(backingMode)
+											ImageBackingMode		backingMode,
+											const bool				minSampleShadingEnabled)
+	: MultisampleTest			(testContext, name, description, getMinSampleShadingStateParams(rasterizationSamples, minSampleShading, minSampleShadingEnabled), getDefaultColorBlendAttachmentState(), geometryType, pointSize, backingMode)
+	, m_pointSize				(pointSize)
+	, m_backingMode				(backingMode)
+	, m_minSampleShadingEnabled	(minSampleShadingEnabled)
 {
 }
 
@@ -1169,10 +1192,13 @@ TestInstance* MinSampleShadingTest::createMultisampleTestInstance (Context&					
 																   const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																   const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
-	return new MinSampleShadingInstance(context, topology, pointSize, vertices, multisampleStateParams, colorBlendState, m_backingMode);
+	if (m_minSampleShadingEnabled)
+		return new MinSampleShadingInstance(context, topology, pointSize, vertices, multisampleStateParams, colorBlendState, m_backingMode);
+	else
+		return new MinSampleShadingDisabledInstance(context, topology, pointSize, vertices, multisampleStateParams, colorBlendState, m_backingMode);
 }
 
-VkPipelineMultisampleStateCreateInfo MinSampleShadingTest::getMinSampleShadingStateParams (VkSampleCountFlagBits rasterizationSamples, float minSampleShading)
+VkPipelineMultisampleStateCreateInfo MinSampleShadingTest::getMinSampleShadingStateParams (VkSampleCountFlagBits rasterizationSamples, float minSampleShading, bool minSampleShadingEnabled)
 {
 	const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
 	{
@@ -1180,7 +1206,7 @@ VkPipelineMultisampleStateCreateInfo MinSampleShadingTest::getMinSampleShadingSt
 		DE_NULL,													// const void*								pNext;
 		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
 		rasterizationSamples,										// VkSampleCountFlagBits					rasterizationSamples;
-		true,														// VkBool32									sampleShadingEnable;
+		minSampleShadingEnabled ? VK_TRUE : VK_FALSE,				// VkBool32									sampleShadingEnable;
 		minSampleShading,											// float									minSampleShading;
 		DE_NULL,													// const VkSampleMask*						pSampleMask;
 		false,														//  VkBool32								alphaToCoverageEnable;
@@ -1724,6 +1750,70 @@ tcu::TestStatus MinSampleShadingInstance::verifySampleShadedImage (const std::ve
 	if (!anyPixelCovered)
 	{
 		return tcu::TestStatus::fail("Did not get any covered pixel, cannot test minSampleShading");
+	}
+
+	return tcu::TestStatus::pass("Got proper count of unique colors");
+}
+
+MinSampleShadingDisabledInstance::MinSampleShadingDisabledInstance	(Context&										context,
+																	 VkPrimitiveTopology							topology,
+																	 float											pointSize,
+																	 const std::vector<Vertex4RGBA>&				vertices,
+																	 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
+																	 const VkPipelineColorBlendAttachmentState&		blendState,
+																	 ImageBackingMode								backingMode)
+	: MinSampleShadingInstance	(context, topology, pointSize, vertices, multisampleStateParams, blendState, backingMode)
+{
+}
+
+tcu::TestStatus MinSampleShadingDisabledInstance::verifySampleShadedImage	(const std::vector<tcu::TextureLevel>&	sampleShadedImages,
+																			 const tcu::ConstPixelBufferAccess&		noSampleshadingImage)
+{
+	const deUint32		samplesCount		= (int)sampleShadedImages.size();
+	const deUint32		width				= noSampleshadingImage.getWidth();
+	const deUint32		height				= noSampleshadingImage.getHeight();
+	const deUint32		depth				= noSampleshadingImage.getDepth();
+	const tcu::UVec4	zeroPixel			= tcu::UVec4();
+	bool				anyPixelCovered		= false;
+
+	DE_ASSERT(depth == 1);
+	DE_UNREF(depth);
+
+	for (deUint32 y = 0; y < height; ++y)
+	for (deUint32 x = 0; x < width; ++x)
+	{
+		const tcu::UVec4	noSampleShadingValue	= noSampleshadingImage.getPixelUint(x, y);
+
+		if (noSampleShadingValue == zeroPixel)
+			continue;
+
+		anyPixelCovered = true;
+		tcu::UVec4	sampleShadingValue	= tcu::UVec4();
+
+		// Collect histogram of occurrences or each pixel across all samples
+		for (size_t i = 0; i < samplesCount; ++i)
+		{
+			const tcu::UVec4	sampleShadedValue	= sampleShadedImages[i].getAccess().getPixelUint(x, y);
+
+			sampleShadingValue += sampleShadedValue;
+		}
+
+		sampleShadingValue = sampleShadingValue / samplesCount;
+
+		if (sampleShadingValue.w() != 255)
+		{
+			return tcu::TestStatus::fail("Invalid Alpha channel value");
+		}
+
+		if (sampleShadingValue != noSampleShadingValue)
+		{
+			return tcu::TestStatus::fail("Invalid color");
+		}
+	}
+
+	if (!anyPixelCovered)
+	{
+		return tcu::TestStatus::fail("Did not get any covered pixel, cannot test minSampleShadingDisabled");
 	}
 
 	return tcu::TestStatus::pass("Got proper count of unique colors");
@@ -3553,37 +3643,91 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			{ "min_1_0",	1.0f }
 		};
 
-		de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading", ""));
-
-		for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 		{
-			const TestConfig&				testConfig				= testConfigs[configNdx];
-			de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading", ""));
 
-			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
 			{
-				std::ostringstream caseName;
-				caseName << "samples_" << samples[samplesNdx];
+				const TestConfig&				testConfig				= testConfigs[configNdx];
+				de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
 
-				de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+				{
+					std::ostringstream caseName;
+					caseName << "samples_" << samples[samplesNdx];
 
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_REGULAR));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_REGULAR));
+					de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_SPARSE));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_REGULAR));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_REGULAR));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_REGULAR));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_REGULAR));
 
-				minShadingValueTests->addChild(samplesTests.release());
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle_sparse",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line_sparse",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, 1.0f, IMAGE_BACKING_MODE_SPARSE));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_1px_sparse",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 1.0f, IMAGE_BACKING_MODE_SPARSE));
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_sparse",		"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, 3.0f, IMAGE_BACKING_MODE_SPARSE));
+
+					minShadingValueTests->addChild(samplesTests.release());
+				}
+
+				minSampleShadingTests->addChild(minShadingValueTests.release());
 			}
 
-			minSampleShadingTests->addChild(minShadingValueTests.release());
+			multisampleTests->addChild(minSampleShadingTests.release());
 		}
 
-		multisampleTests->addChild(minSampleShadingTests.release());
+		{
+			de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_enabled", ""));
+
+			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
+			{
+				const TestConfig&				testConfig				= testConfigs[configNdx];
+				de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
+
+				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+				{
+					std::ostringstream caseName;
+					caseName << "samples_" << samples[samplesNdx];
+
+					de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "quad",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_QUAD, 1.0f, IMAGE_BACKING_MODE_REGULAR, true));
+
+					minShadingValueTests->addChild(samplesTests.release());
+				}
+
+				minSampleShadingTests->addChild(minShadingValueTests.release());
+			}
+
+			multisampleTests->addChild(minSampleShadingTests.release());
+		}
+
+		{
+			de::MovePtr<tcu::TestCaseGroup> minSampleShadingTests(new tcu::TestCaseGroup(testCtx, "min_sample_shading_disabled", ""));
+
+			for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testConfigs); configNdx++)
+			{
+				const TestConfig&				testConfig				= testConfigs[configNdx];
+				de::MovePtr<tcu::TestCaseGroup>	minShadingValueTests	(new tcu::TestCaseGroup(testCtx, testConfigs[configNdx].name, ""));
+
+				for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
+				{
+					std::ostringstream caseName;
+					caseName << "samples_" << samples[samplesNdx];
+
+					de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
+
+					samplesTests->addChild(new MinSampleShadingTest(testCtx, "quad",	"", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_QUAD, 1.0f, IMAGE_BACKING_MODE_REGULAR, false));
+
+					minShadingValueTests->addChild(samplesTests.release());
+				}
+
+				minSampleShadingTests->addChild(minShadingValueTests.release());
+			}
+
+			multisampleTests->addChild(minSampleShadingTests.release());
+		}
 	}
 
 	// SampleMask tests

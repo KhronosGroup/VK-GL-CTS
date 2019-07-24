@@ -61,6 +61,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
 		{	"return-in-loop-in-function.amber",				"return-in-loop-in-function",			"A fragment shader with early return from loop in function"								},
 		{	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
+		{	"unreachable-loops-in-switch.amber",			"unreachable-loops-in-switch",			"A fragment shader with unreachable loops in a switch"									},
 		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
 	};
 
