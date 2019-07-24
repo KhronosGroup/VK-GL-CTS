@@ -773,6 +773,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkFramebufferMixedSamplesCombin
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHostQueryResetFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value);

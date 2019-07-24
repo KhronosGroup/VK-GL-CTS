@@ -33,6 +33,7 @@ const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				getCoverageReducti
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeatures					(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		getUniformBufferStandardLayoutFeatures		(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&					getHostQueryResetFeatures					(void) const;
+const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8Features					(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures		(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures						(void) const;
 const vk::VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures						(void) const;

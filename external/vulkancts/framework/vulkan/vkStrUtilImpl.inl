@@ -464,6 +464,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT:					return "VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT";
 		case VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR:												return "VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR";
@@ -1207,6 +1208,7 @@ const char* getIndexTypeName (VkIndexType value)
 		case VK_INDEX_TYPE_UINT16:		return "VK_INDEX_TYPE_UINT16";
 		case VK_INDEX_TYPE_UINT32:		return "VK_INDEX_TYPE_UINT32";
 		case VK_INDEX_TYPE_NONE_NV:		return "VK_INDEX_TYPE_NONE_NV";
+		case VK_INDEX_TYPE_UINT8_EXT:	return "VK_INDEX_TYPE_UINT8_EXT";
 		case VK_INDEX_TYPE_MAX_ENUM:	return "VK_INDEX_TYPE_MAX_ENUM";
 		default:						return DE_NULL;
 	}
@@ -8225,6 +8227,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostQueryResetF
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\thostQueryReset = " << value.hostQueryReset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceIndexTypeUint8FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindexTypeUint8 = " << value.indexTypeUint8 << '\n';
 	s << '}';
 	return s;
 }

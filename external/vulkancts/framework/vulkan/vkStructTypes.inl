@@ -3866,6 +3866,13 @@ struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 	VkBool32		hostQueryReset;
 };
 
+struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		indexTypeUint8;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;

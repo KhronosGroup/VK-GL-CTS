@@ -33,6 +33,7 @@ const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				Context::getCovera
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					Context::getYcbcrImageArraysFeatures					(void) const { return m_device->getYcbcrImageArraysFeatures();					}
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		Context::getUniformBufferStandardLayoutFeatures			(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&					Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}
+const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					Context::getIndexTypeUint8Features						(void) const { return m_device->getIndexTypeUint8Features();					}
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::getPipelineExecutablePropertiesFeatures		(void) const { return m_device->getPipelineExecutablePropertiesFeatures();		}
 const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures							(void) const { return m_device->getMultiviewFeatures();							}
 const vk::VkPhysicalDevice16BitStorageFeatures&							Context::get16BitStorageFeatures						(void) const { return m_device->get16BitStorageFeatures();						}

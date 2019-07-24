@@ -1556,6 +1556,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceHostQueryResetFeatur
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
