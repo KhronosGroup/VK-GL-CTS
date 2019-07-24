@@ -690,21 +690,25 @@ struct OpAtomicCase
 						, numOutputElements	(_numOutputElements) {}
 };
 
-tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer, int numElements = 65535, bool verifyReturnValues = false)
+tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer, int numElements = 65535, bool verifyReturnValues = false, bool volatileAtomic = false)
 {
 	std::string						groupName			("opatomic");
 	if (useStorageBuffer)
 		groupName += "_storage_buffer";
 	if (verifyReturnValues)
 		groupName += "_return_values";
+	if (volatileAtomic)
+		groupName += "_volatile";
 	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpAtomic* opcodes"));
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
 
 		string("OpCapability Shader\n") +
+		(volatileAtomic ? "OpCapability VulkanMemoryModelKHR\n" : "") +
 		(useStorageBuffer ? "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n" : "") +
-		"OpMemoryModel Logical GLSL450\n"
+		(volatileAtomic ? "OpExtension \"SPV_KHR_vulkan_memory_model\"\n" : "") +
+		(volatileAtomic ? "OpMemoryModel Logical VulkanKHR\n" : "OpMemoryModel Logical GLSL450\n") +
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n" +
 
@@ -723,7 +727,6 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"OpDecorate %sumbuf ${BLOCK_DECORATION}\n"
 		"OpDecorate %sum DescriptorSet 0\n"
 		"OpDecorate %sum Binding 1\n"
-		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
 		"${RETVAL_BUF_DECORATE}"
@@ -745,6 +748,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"%zero      = OpConstant %i32 0\n"
 		"%one       = OpConstant %u32 1\n"
 		"%two       = OpConstant %i32 2\n"
+		"%five      = OpConstant %i32 5\n"
+		"%volbit    = OpConstant %i32 32768\n"
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
@@ -769,24 +774,24 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, 1)
 	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, numElements)
 
-	ADD_OPATOMIC_CASE_1(iadd,	"%retv      = OpAtomicIAdd %i32 %outloc %one %zero %inval\n",
+	ADD_OPATOMIC_CASE_1(iadd,	"%retv      = OpAtomicIAdd %i32 %outloc ${SCOPE} ${SEMANTICS} %inval\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_IADD );
-	ADD_OPATOMIC_CASE_1(isub,	"%retv      = OpAtomicISub %i32 %outloc %one %zero %inval\n",
+	ADD_OPATOMIC_CASE_1(isub,	"%retv      = OpAtomicISub %i32 %outloc ${SCOPE} ${SEMANTICS} %inval\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_ISUB );
-	ADD_OPATOMIC_CASE_1(iinc,	"%retv      = OpAtomicIIncrement %i32 %outloc %one %zero\n",
+	ADD_OPATOMIC_CASE_1(iinc,	"%retv      = OpAtomicIIncrement %i32 %outloc ${SCOPE} ${SEMANTICS}\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_IINC );
-	ADD_OPATOMIC_CASE_1(idec,	"%retv      = OpAtomicIDecrement %i32 %outloc %one %zero\n",
+	ADD_OPATOMIC_CASE_1(idec,	"%retv      = OpAtomicIDecrement %i32 %outloc ${SCOPE} ${SEMANTICS}\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_IDEC );
 	if (!verifyReturnValues)
 	{
-		ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
+		ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc ${SCOPE} ${SEMANTICS}\n"
 									"             OpStore %outloc %inval2\n", "", OPATOMIC_LOAD );
-		ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n", "", OPATOMIC_STORE );
+		ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc ${SCOPE} ${SEMANTICS} %inval\n", "", OPATOMIC_STORE );
 	}
 
 	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
 								"             OpStore %outloc %even\n"
-								"%retv      = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",
+								"%retv      = OpAtomicCompareExchange %i32 %outloc ${SCOPE} ${SEMANTICS} ${SEMANTICS} %minusone %zero\n",
 								"			  OpStore %retloc %retv\n", OPATOMIC_COMPEX );
 
 
@@ -801,6 +806,19 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		vector<deInt32>				inputInts		(numElements, 0);
 		vector<deInt32>				expected		(cases[caseNdx].numOutputElements, -1);
 
+		if (volatileAtomic)
+		{
+			spec.extensions.push_back("VK_KHR_vulkan_memory_model");
+			// volatile, queuefamily scope
+			specializations["SEMANTICS"] = "%volbit";
+			specializations["SCOPE"] = "%five";
+		}
+		else
+		{
+			// non-volatile, device scope
+			specializations["SEMANTICS"] = "%zero";
+			specializations["SCOPE"] = "%one";
+		}
 		specializations["INDEX"]				= (cases[caseNdx].numOutputElements == 1) ? "%zero" : "%x";
 		specializations["INSTRUCTION"]			= cases[caseNdx].assembly;
 		specializations["BLOCK_DECORATION"]		= useStorageBuffer ? "Block" : "BufferBlock";
@@ -836,6 +854,10 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		}
 
 		spec.assembly							= shaderTemplate.specialize(specializations);
+
+		// Specialize one more time, to catch things that were in a template parameter
+		const StringTemplate					assemblyTemplate(spec.assembly);
+		spec.assembly							= assemblyTemplate.specialize(specializations);
 
 		if (useStorageBuffer)
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -18593,6 +18615,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
 	computeTests->addChild(createOpAtomicGroup(testCtx, true));					// Using new StorageBuffer decoration
 	computeTests->addChild(createOpAtomicGroup(testCtx, false, 1024, true));	// Return value validation
+	computeTests->addChild(createOpAtomicGroup(testCtx, true, 65536, false, true));	// volatile atomics
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpModuleProcessedGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));
