@@ -153,6 +153,7 @@ def prefixName (prefix, name):
 	name = name.replace("VULKAN_11_PROPERTIES", "VULKAN_1_1_PROPERTIES")
 	name = name.replace("VULKAN_12_FEATURES", "VULKAN_1_2_FEATURES")
 	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
+	name = name.replace("INT_8_", "INT8_")
 
 	return prefix + name
 
