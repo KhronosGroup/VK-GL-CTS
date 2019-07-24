@@ -151,6 +151,7 @@ def prefixName (prefix, name):
 	name = name.replace("SMBUILTINS", "SM_BUILTINS")
 	name = name.replace("ASTCHDRFEATURES", "ASTC_HDR_FEATURES")
 	name = name.replace("UINT_8", "UINT8")
+	name = name.replace("INT_8_", "INT8_")
 
 	return prefix + name
 

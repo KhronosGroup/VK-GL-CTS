@@ -64,6 +64,7 @@ public:
 	const static VkPrimitiveTopology	s_primitiveTopologies[];
 	const static deUint32				s_restartIndex32;
 	const static deUint16				s_restartIndex16;
+    const static deUint8				s_restartIndex8;
 
 										InputAssemblyTest		(tcu::TestContext&		testContext,
 																 const std::string&		name,
@@ -99,7 +100,8 @@ public:
 										PrimitiveTopologyTest	(tcu::TestContext&		testContext,
 																 const std::string&		name,
 																 const std::string&		description,
-																 VkPrimitiveTopology	primitiveTopology);
+																 VkPrimitiveTopology	primitiveTopology,
+																 VkIndexType			indexType);
 	virtual								~PrimitiveTopologyTest	(void) {}
 
 protected:
@@ -150,6 +152,7 @@ public:
 private:
 	tcu::TestStatus						verifyImage				(void);
 	void								uploadIndexBufferData16	(deUint16* destPtr, const std::vector<deUint32>& indexBufferData);
+	void								uploadIndexBufferData8	(deUint8* destPtr, const std::vector<deUint32>& indexBufferData);
 
 	VkPrimitiveTopology					m_primitiveTopology;
 	bool								m_primitiveRestartEnable;
@@ -202,6 +205,7 @@ const VkPrimitiveTopology InputAssemblyTest::s_primitiveTopologies[] =
 
 const deUint32 InputAssemblyTest::s_restartIndex32	= ~((deUint32)0u);
 const deUint16 InputAssemblyTest::s_restartIndex16	= ~((deUint16)0u);
+const deUint8 InputAssemblyTest::s_restartIndex8	= ~((deUint8)0u);
 
 InputAssemblyTest::InputAssemblyTest (tcu::TestContext&		testContext,
 									  const std::string&	name,
@@ -221,6 +225,9 @@ InputAssemblyTest::InputAssemblyTest (tcu::TestContext&		testContext,
 
 void InputAssemblyTest::checkSupport (Context& context) const
 {
+	if (m_indexType == VK_INDEX_TYPE_UINT8_EXT)
+		context.requireDeviceExtension("VK_EXT_index_type_uint8");
+
 	switch (m_primitiveTopology)
 	{
 		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
@@ -280,16 +287,20 @@ void InputAssemblyTest::initPrograms (SourceCollections& sourceCollections) cons
 
 bool InputAssemblyTest::isRestartIndex (VkIndexType indexType, deUint32 indexValue)
 {
-	if (indexType == VK_INDEX_TYPE_UINT32)
-		return indexValue == s_restartIndex32;
-	else
+	if (indexType == VK_INDEX_TYPE_UINT16)
 		return indexValue == s_restartIndex16;
+	else if (indexType == VK_INDEX_TYPE_UINT8_EXT)
+		return indexValue == s_restartIndex8;
+	else
+		return indexValue == s_restartIndex32;
 }
 
 deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 {
 	if (indexType == VK_INDEX_TYPE_UINT16)
 		return InputAssemblyTest::s_restartIndex16;
+	else if (indexType == VK_INDEX_TYPE_UINT8_EXT)
+		return InputAssemblyTest::s_restartIndex8;
 	else
 		return InputAssemblyTest::s_restartIndex32;
 }
@@ -300,8 +311,9 @@ deUint32 InputAssemblyTest::getRestartIndex (VkIndexType indexType)
 PrimitiveTopologyTest::PrimitiveTopologyTest (tcu::TestContext&		testContext,
 											  const std::string&	name,
 											  const std::string&	description,
-											  VkPrimitiveTopology	primitiveTopology)
-	: InputAssemblyTest	(testContext, name, description, primitiveTopology, 10, false, VK_INDEX_TYPE_UINT32)
+											  VkPrimitiveTopology	primitiveTopology,
+											  VkIndexType			indexType)
+	: InputAssemblyTest	(testContext, name, description, primitiveTopology, 10, false, indexType)
 {
 }
 
@@ -1270,6 +1282,10 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 		{
 			deMemcpy(m_indexBufferAlloc->getHostPtr(), m_indices.data(), m_indices.size() * sizeof(deUint32));
 		}
+		else if (m_indexType == VK_INDEX_TYPE_UINT8_EXT)
+		{
+			uploadIndexBufferData8((deUint8*)m_indexBufferAlloc->getHostPtr(), m_indices);
+		}
 		else // m_indexType == VK_INDEX_TYPE_UINT16
 		{
 			uploadIndexBufferData16((deUint16*)m_indexBufferAlloc->getHostPtr(), m_indices);
@@ -1426,6 +1442,15 @@ void InputAssemblyInstance::uploadIndexBufferData16	(deUint16* destPtr, const st
 	}
 }
 
+void InputAssemblyInstance::uploadIndexBufferData8	(deUint8* destPtr, const std::vector<deUint32>& indexBufferData)
+{
+	for (size_t i = 0; i < indexBufferData.size(); i++)
+	{
+		DE_ASSERT(indexBufferData[i] <= 0xFF);
+		destPtr[i] = (deUint8)indexBufferData[i];
+	}
+}
+
 
 // Utilities for test names
 
@@ -1442,15 +1467,36 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests (tcu::TestContext& 
 {
 	de::MovePtr<tcu::TestCaseGroup> primitiveTopologyTests (new tcu::TestCaseGroup(testCtx, "primitive_topology", ""));
 
+	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
+
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(InputAssemblyTest::s_primitiveTopologies); topologyNdx++)
 	{
 		const VkPrimitiveTopology topology = InputAssemblyTest::s_primitiveTopologies[topologyNdx];
 
-		primitiveTopologyTests->addChild(new PrimitiveTopologyTest(testCtx,
-																   getPrimitiveTopologyCaseName(topology),
-																   "",
-																   topology));
+		indexUint16Tests->addChild(new PrimitiveTopologyTest(testCtx,
+															 getPrimitiveTopologyCaseName(topology),
+															 "",
+															 topology,
+															 VK_INDEX_TYPE_UINT16));
+
+		indexUint32Tests->addChild(new PrimitiveTopologyTest(testCtx,
+															 getPrimitiveTopologyCaseName(topology),
+															 "",
+															 topology,
+															 VK_INDEX_TYPE_UINT32));
+
+		indexUint8Tests->addChild(new PrimitiveTopologyTest(testCtx,
+															 getPrimitiveTopologyCaseName(topology),
+															 "",
+															 topology,
+															 VK_INDEX_TYPE_UINT8_EXT));
 	}
+
+	primitiveTopologyTests->addChild(indexUint16Tests.release());
+	primitiveTopologyTests->addChild(indexUint32Tests.release());
+	primitiveTopologyTests->addChild(indexUint8Tests.release());
 
 	return primitiveTopologyTests;
 }
@@ -1470,6 +1516,7 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 
 	de::MovePtr<tcu::TestCaseGroup> indexUint16Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint16", ""));
 	de::MovePtr<tcu::TestCaseGroup> indexUint32Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint32", ""));
+	de::MovePtr<tcu::TestCaseGroup> indexUint8Tests (new tcu::TestCaseGroup(testCtx, "index_type_uint8", ""));
 
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(primitiveRestartTopologies); topologyNdx++)
 	{
@@ -1486,10 +1533,17 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests (tcu::TestContext& t
 															"",
 															topology,
 															VK_INDEX_TYPE_UINT32));
+
+		indexUint8Tests->addChild(new PrimitiveRestartTest(testCtx,
+															getPrimitiveTopologyCaseName(topology),
+															"",
+															topology,
+															VK_INDEX_TYPE_UINT8_EXT));
 	}
 
 	primitiveRestartTests->addChild(indexUint16Tests.release());
 	primitiveRestartTests->addChild(indexUint32Tests.release());
+	primitiveRestartTests->addChild(indexUint8Tests.release());
 
 	return primitiveRestartTests;
 }
