@@ -191,6 +191,303 @@ Move<VkRenderPass> makeRenderPass(Context& context, VkFormat format)
 							&renderPassCreateInfo);
 }
 
+Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
+									  const VkDevice								device,
+									  const VkPipelineLayout						pipelineLayout,
+									  const VkShaderModule							vertexShaderModule,
+									  const VkShaderModule							tessellationControlShaderModule,
+									  const VkShaderModule							tessellationEvalShaderModule,
+									  const VkShaderModule							geometryShaderModule,
+									  const VkShaderModule							fragmentShaderModule,
+									  const VkRenderPass							renderPass,
+									  const std::vector<VkViewport>&				viewports,
+									  const std::vector<VkRect2D>&					scissors,
+									  const VkPrimitiveTopology						topology,
+									  const deUint32								subpass,
+									  const deUint32								patchControlPoints,
+									  const VkPipelineVertexInputStateCreateInfo*	vertexInputStateCreateInfo,
+									  const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo,
+									  const VkPipelineMultisampleStateCreateInfo*	multisampleStateCreateInfo,
+									  const VkPipelineDepthStencilStateCreateInfo*	depthStencilStateCreateInfo,
+									  const VkPipelineColorBlendStateCreateInfo*	colorBlendStateCreateInfo,
+									  const VkPipelineDynamicStateCreateInfo*		dynamicStateCreateInfo,
+									  const deUint32								vertexShaderStageCreateFlags,
+									  const deUint32								tessellationControlShaderStageCreateFlags,
+									  const deUint32								tessellationEvalShaderStageCreateFlags,
+									  const deUint32								geometryShaderStageCreateFlags,
+									  const deUint32								fragmentShaderStageCreateFlags,
+									  const deUint32								requiredSubgroupSize[5])
+{
+	const VkBool32									disableRasterization				= (fragmentShaderModule == DE_NULL);
+	const bool										hasTessellation						= (tessellationControlShaderModule != DE_NULL || tessellationEvalShaderModule != DE_NULL);
+
+	VkPipelineShaderStageCreateInfo					stageCreateInfo						=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType
+		DE_NULL,												// const void*                         pNext
+		0u,														// VkPipelineShaderStageCreateFlags    flags
+		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage
+		DE_NULL,												// VkShaderModule                      module
+		"main",													// const char*                         pName
+		DE_NULL													// const VkSpecializationInfo*         pSpecializationInfo
+	};
+
+	std::vector<VkPipelineShaderStageCreateInfo>	pipelineShaderStageParams;
+
+	const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT requiredSubgroupSizeCreateInfo[5] =
+		{
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,
+				DE_NULL,
+				requiredSubgroupSize != DE_NULL ? requiredSubgroupSize[0] : 0u,
+			},
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,
+				DE_NULL,
+				requiredSubgroupSize != DE_NULL ? requiredSubgroupSize[1] : 0u,
+			},
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,
+				DE_NULL,
+				requiredSubgroupSize != DE_NULL ? requiredSubgroupSize[2] : 0u,
+			},
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,
+				DE_NULL,
+				requiredSubgroupSize != DE_NULL ? requiredSubgroupSize[3] : 0u,
+			},
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,
+				DE_NULL,
+				requiredSubgroupSize != DE_NULL ? requiredSubgroupSize[4] : 0u,
+			},
+		};
+	{
+		stageCreateInfo.pNext	= (requiredSubgroupSizeCreateInfo[0].requiredSubgroupSize != 0u) ? &requiredSubgroupSizeCreateInfo[0] : DE_NULL;
+		stageCreateInfo.flags	= vertexShaderStageCreateFlags;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_VERTEX_BIT;
+		stageCreateInfo.module	= vertexShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (tessellationControlShaderModule != DE_NULL)
+	{
+		stageCreateInfo.pNext	= (requiredSubgroupSizeCreateInfo[1].requiredSubgroupSize != 0u) ? &requiredSubgroupSizeCreateInfo[1] : DE_NULL;
+		stageCreateInfo.flags	= tessellationControlShaderStageCreateFlags;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		stageCreateInfo.module	= tessellationControlShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (tessellationEvalShaderModule != DE_NULL)
+	{
+		stageCreateInfo.pNext	= (requiredSubgroupSize != DE_NULL && requiredSubgroupSizeCreateInfo[2].requiredSubgroupSize != 0u) ? &requiredSubgroupSizeCreateInfo[2] : DE_NULL;
+		stageCreateInfo.flags	= tessellationEvalShaderStageCreateFlags;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		stageCreateInfo.module	= tessellationEvalShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (geometryShaderModule != DE_NULL)
+	{
+		stageCreateInfo.pNext	= (requiredSubgroupSizeCreateInfo[3].requiredSubgroupSize != 0u) ? &requiredSubgroupSizeCreateInfo[3] : DE_NULL;
+		stageCreateInfo.flags	= geometryShaderStageCreateFlags;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_GEOMETRY_BIT;
+		stageCreateInfo.module	= geometryShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (fragmentShaderModule != DE_NULL)
+	{
+		stageCreateInfo.pNext	= (requiredSubgroupSizeCreateInfo[4].requiredSubgroupSize != 0u) ? &requiredSubgroupSizeCreateInfo[4] : DE_NULL;
+		stageCreateInfo.flags	= fragmentShaderStageCreateFlags;
+		stageCreateInfo.stage	= VK_SHADER_STAGE_FRAGMENT_BIT;
+		stageCreateInfo.module	= fragmentShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	const VkVertexInputBindingDescription			vertexInputBindingDescription		=
+	{
+		0u,								// deUint32             binding
+		sizeof(tcu::Vec4),				// deUint32             stride
+		VK_VERTEX_INPUT_RATE_VERTEX,	// VkVertexInputRate    inputRate
+	};
+
+	const VkVertexInputAttributeDescription			vertexInputAttributeDescription		=
+	{
+		0u,								// deUint32    location
+		0u,								// deUint32    binding
+		VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat    format
+		0u								// deUint32    offset
+	};
+
+	const VkPipelineVertexInputStateCreateInfo		vertexInputStateCreateInfoDefault	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType
+		DE_NULL,													// const void*                                 pNext
+		(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags       flags
+		1u,															// deUint32                                    vertexBindingDescriptionCount
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+		1u,															// deUint32                                    vertexAttributeDescriptionCount
+		&vertexInputAttributeDescription							// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+	};
+
+	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType
+		DE_NULL,														// const void*                                pNext
+		0u,																// VkPipelineInputAssemblyStateCreateFlags    flags
+		topology,														// VkPrimitiveTopology                        topology
+		VK_FALSE														// VkBool32                                   primitiveRestartEnable
+	};
+
+	const VkPipelineTessellationStateCreateInfo		tessStateCreateInfo					=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,	// VkStructureType                           sType
+		DE_NULL,													// const void*                               pNext
+		0u,															// VkPipelineTessellationStateCreateFlags    flags
+		patchControlPoints											// deUint32                                  patchControlPoints
+	};
+
+	const VkPipelineViewportStateCreateInfo			viewportStateCreateInfo				=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                             sType
+		DE_NULL,												// const void*                                 pNext
+		(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags          flags
+		viewports.empty() ? 1u : (deUint32)viewports.size(),	// deUint32                                    viewportCount
+		viewports.empty() ? DE_NULL : &viewports[0],			// const VkViewport*                           pViewports
+		viewports.empty() ? 1u : (deUint32)scissors.size(),		// deUint32                                    scissorCount
+		scissors.empty() ? DE_NULL : &scissors[0]				// const VkRect2D*                             pScissors
+	};
+
+	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfoDefault	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType
+		DE_NULL,													// const void*                                pNext
+		0u,															// VkPipelineRasterizationStateCreateFlags    flags
+		VK_FALSE,													// VkBool32                                   depthClampEnable
+		disableRasterization,										// VkBool32                                   rasterizerDiscardEnable
+		VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode
+		VK_CULL_MODE_NONE,											// VkCullModeFlags                            cullMode
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace                                frontFace
+		VK_FALSE,													// VkBool32                                   depthBiasEnable
+		0.0f,														// float                                      depthBiasConstantFactor
+		0.0f,														// float                                      depthBiasClamp
+		0.0f,														// float                                      depthBiasSlopeFactor
+		1.0f														// float                                      lineWidth
+	};
+
+	const VkPipelineMultisampleStateCreateInfo		multisampleStateCreateInfoDefault	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType
+		DE_NULL,													// const void*                              pNext
+		0u,															// VkPipelineMultisampleStateCreateFlags    flags
+		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits                    rasterizationSamples
+		VK_FALSE,													// VkBool32                                 sampleShadingEnable
+		1.0f,														// float                                    minSampleShading
+		DE_NULL,													// const VkSampleMask*                      pSampleMask
+		VK_FALSE,													// VkBool32                                 alphaToCoverageEnable
+		VK_FALSE													// VkBool32                                 alphaToOneEnable
+	};
+
+	const VkStencilOpState							stencilOpState						=
+	{
+		VK_STENCIL_OP_KEEP,		// VkStencilOp    failOp
+		VK_STENCIL_OP_KEEP,		// VkStencilOp    passOp
+		VK_STENCIL_OP_KEEP,		// VkStencilOp    depthFailOp
+		VK_COMPARE_OP_NEVER,	// VkCompareOp    compareOp
+		0,						// deUint32       compareMask
+		0,						// deUint32       writeMask
+		0						// deUint32       reference
+	};
+
+	const VkPipelineDepthStencilStateCreateInfo		depthStencilStateCreateInfoDefault	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType
+		DE_NULL,													// const void*                              pNext
+		0u,															// VkPipelineDepthStencilStateCreateFlags   flags
+		VK_FALSE,													// VkBool32                                 depthTestEnable
+		VK_FALSE,													// VkBool32                                 depthWriteEnable
+		VK_COMPARE_OP_LESS_OR_EQUAL,								// VkCompareOp                              depthCompareOp
+		VK_FALSE,													// VkBool32                                 depthBoundsTestEnable
+		VK_FALSE,													// VkBool32                                 stencilTestEnable
+		stencilOpState,												// VkStencilOpState                         front
+		stencilOpState,												// VkStencilOpState                         back
+		0.0f,														// float                                    minDepthBounds
+		1.0f,														// float                                    maxDepthBounds
+	};
+
+	const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState			=
+	{
+		VK_FALSE,					// VkBool32                 blendEnable
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            srcColorBlendFactor
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstColorBlendFactor
+		VK_BLEND_OP_ADD,			// VkBlendOp                colorBlendOp
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            srcAlphaBlendFactor
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstAlphaBlendFactor
+		VK_BLEND_OP_ADD,			// VkBlendOp                alphaBlendOp
+		VK_COLOR_COMPONENT_R_BIT	// VkColorComponentFlags    colorWriteMask
+		| VK_COLOR_COMPONENT_G_BIT
+		| VK_COLOR_COMPONENT_B_BIT
+		| VK_COLOR_COMPONENT_A_BIT
+	};
+
+	const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfoDefault	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType
+		DE_NULL,													// const void*                                   pNext
+		0u,															// VkPipelineColorBlendStateCreateFlags          flags
+		VK_FALSE,													// VkBool32                                      logicOpEnable
+		VK_LOGIC_OP_CLEAR,											// VkLogicOp                                     logicOp
+		1u,															// deUint32                                      attachmentCount
+		&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*    pAttachments
+		{ 0.0f, 0.0f, 0.0f, 0.0f }									// float                                         blendConstants[4]
+	};
+
+	std::vector<VkDynamicState>						dynamicStates;
+
+	if (viewports.empty())
+		dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+	if (scissors.empty())
+		dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
+	const VkPipelineDynamicStateCreateInfo			dynamicStateCreateInfoDefault		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType                      sType
+		DE_NULL,												// const void*                          pNext
+		0u,														// VkPipelineDynamicStateCreateFlags    flags
+		(deUint32)dynamicStates.size(),							// deUint32                             dynamicStateCount
+		dynamicStates.empty() ? DE_NULL : &dynamicStates[0]		// const VkDynamicState*                pDynamicStates
+	};
+
+	const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfoDefaultPtr	= dynamicStates.empty() ? DE_NULL : &dynamicStateCreateInfoDefault;
+
+	const VkGraphicsPipelineCreateInfo				pipelineCreateInfo					=
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,														// VkStructureType                                  sType
+		DE_NULL,																								// const void*                                      pNext
+		0u,																										// VkPipelineCreateFlags                            flags
+		(deUint32)pipelineShaderStageParams.size(),																// deUint32                                         stageCount
+		&pipelineShaderStageParams[0],																			// const VkPipelineShaderStageCreateInfo*           pStages
+		vertexInputStateCreateInfo ? vertexInputStateCreateInfo : &vertexInputStateCreateInfoDefault,			// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
+		&inputAssemblyStateCreateInfo,																			// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState
+		hasTessellation ? &tessStateCreateInfo : DE_NULL,														// const VkPipelineTessellationStateCreateInfo*     pTessellationState
+		&viewportStateCreateInfo,																				// const VkPipelineViewportStateCreateInfo*         pViewportState
+		rasterizationStateCreateInfo ? rasterizationStateCreateInfo : &rasterizationStateCreateInfoDefault,		// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState
+		multisampleStateCreateInfo ? multisampleStateCreateInfo: &multisampleStateCreateInfoDefault,			// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState
+		depthStencilStateCreateInfo ? depthStencilStateCreateInfo : &depthStencilStateCreateInfoDefault,		// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState
+		colorBlendStateCreateInfo ? colorBlendStateCreateInfo : &colorBlendStateCreateInfoDefault,				// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState
+		dynamicStateCreateInfo ? dynamicStateCreateInfo : dynamicStateCreateInfoDefaultPtr,						// const VkPipelineDynamicStateCreateInfo*          pDynamicState
+		pipelineLayout,																							// VkPipelineLayout                                 layout
+		renderPass,																								// VkRenderPass                                     renderPass
+		subpass,																								// deUint32                                         subpass
+		DE_NULL,																								// VkPipeline                                       basePipelineHandle
+		0																										// deInt32                                          basePipelineIndex;
+	};
+
+	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+}
+
 Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 									  const VkPipelineLayout					pipelineLayout,
 									  const VkShaderStageFlags					stages,
@@ -204,7 +501,13 @@ Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 									  const VkVertexInputBindingDescription*	vertexInputBindingDescription = DE_NULL,
 									  const VkVertexInputAttributeDescription*	vertexInputAttributeDescriptions = DE_NULL,
 									  const bool								frameBufferTests = false,
-									  const vk::VkFormat						attachmentFormat = VK_FORMAT_R32G32B32A32_SFLOAT)
+									  const vk::VkFormat						attachmentFormat = VK_FORMAT_R32G32B32A32_SFLOAT,
+									  const deUint32							vertexShaderStageCreateFlags = 0u,
+									  const deUint32							tessellationControlShaderStageCreateFlags = 0u,
+									  const deUint32							tessellationEvalShaderStageCreateFlags = 0u,
+									  const deUint32							geometryShaderStageCreateFlags = 0u,
+									  const deUint32							fragmentShaderStageCreateFlags = 0u,
+									  const deUint32							requiredSubgroupSize[5] = DE_NULL)
 {
 	std::vector<VkViewport>	noViewports;
 	std::vector<VkRect2D>	noScissors;
@@ -243,73 +546,32 @@ Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 
 	const deUint32 patchControlPoints = (VK_SHADER_STAGE_FRAGMENT_BIT & stages && frameBufferTests) ? 2u : 1u;
 
-	return vk::makeGraphicsPipeline(context.getDeviceInterface(),	// const DeviceInterface&                        vk
-									context.getDevice(),			// const VkDevice                                device
-									pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-									vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
-									tessellationControlModule,		// const VkShaderModule                          tessellationControlShaderModule
-									tessellationEvaluationModule,	// const VkShaderModule                          tessellationEvalShaderModule
-									geometryShaderModule,			// const VkShaderModule                          geometryShaderModule
-									fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
-									renderPass,						// const VkRenderPass                            renderPass
-									noViewports,					// const std::vector<VkViewport>&                viewports
-									noScissors,						// const std::vector<VkRect2D>&                  scissors
-									topology,						// const VkPrimitiveTopology                     topology
-									0u,								// const deUint32                                subpass
-									patchControlPoints,				// const deUint32                                patchControlPoints
-									&vertexInputStateCreateInfo,	// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-									DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-									DE_NULL,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-									DE_NULL,						// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-									&colorBlendStateCreateInfo);	// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
-}
-
-Move<VkPipeline> makeComputePipeline(Context& context,
-									 const VkPipelineLayout pipelineLayout, const VkShaderModule shaderModule,
-									 const deUint32 pipelineCreateFlags, VkPipeline basePipelineHandle,
-									 deUint32 localSizeX, deUint32 localSizeY, deUint32 localSizeZ)
-{
-	const deUint32 localSize[3] = {localSizeX, localSizeY, localSizeZ};
-
-	const vk::VkSpecializationMapEntry entries[3] =
-	{
-		{0, sizeof(deUint32) * 0, sizeof(deUint32)},
-		{1, sizeof(deUint32) * 1, sizeof(deUint32)},
-		{2, static_cast<deUint32>(sizeof(deUint32) * 2), sizeof(deUint32)},
-	};
-
-	const vk::VkSpecializationInfo info =
-	{
-		/* mapEntryCount = */ 3,
-		/* pMapEntries   = */ entries,
-		/* dataSize      = */ sizeof(localSize),
-		/* pData         = */ localSize
-	};
-
-	const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,				// VkStructureType					sType;
-		DE_NULL,															// const void*						pNext;
-		0u,																	// VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,										// VkShaderStageFlagBits			stage;
-		shaderModule,														// VkShaderModule					module;
-		"main",																// const char*						pName;
-		&info,																// const VkSpecializationInfo*		pSpecializationInfo;
-	};
-
-	const vk::VkComputePipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	// VkStructureType	sType;
-		DE_NULL,										// const void*						pNext;
-		pipelineCreateFlags,							// VkPipelineCreateFlags			flags;
-		pipelineShaderStageParams,						// VkPipelineShaderStageCreateInfo	stage;
-		pipelineLayout,									// VkPipelineLayout					layout;
-		basePipelineHandle,								// VkPipeline						basePipelineHandle;
-		-1,												// deInt32							basePipelineIndex;
-	};
-
-	return createComputePipeline(context.getDeviceInterface(),
-								 context.getDevice(), DE_NULL, &pipelineCreateInfo);
+	return makeGraphicsPipeline(context.getDeviceInterface(),	// const DeviceInterface&                        vk
+								context.getDevice(),			// const VkDevice                                device
+								pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
+								vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
+								tessellationControlModule,		// const VkShaderModule                          tessellationControlShaderModule
+								tessellationEvaluationModule,	// const VkShaderModule                          tessellationEvalShaderModule
+								geometryShaderModule,			// const VkShaderModule                          geometryShaderModule
+								fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
+								renderPass,						// const VkRenderPass                            renderPass
+								noViewports,					// const std::vector<VkViewport>&                viewports
+								noScissors,						// const std::vector<VkRect2D>&                  scissors
+								topology,						// const VkPrimitiveTopology                     topology
+								0u,								// const deUint32                                subpass
+								patchControlPoints,				// const deUint32                                patchControlPoints
+								&vertexInputStateCreateInfo,	// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+								DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+								DE_NULL,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+								DE_NULL,						// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+								&colorBlendStateCreateInfo,		// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+								DE_NULL,						// const VkPipelineDynamicStateCreateInfo*
+								vertexShaderStageCreateFlags,	// const deUint32								 vertexShaderStageCreateFlags,
+								tessellationControlShaderStageCreateFlags,	// const deUint32					 tessellationControlShaderStageCreateFlags
+								tessellationEvalShaderStageCreateFlags,		// const deUint32					 tessellationEvalShaderStageCreateFlags
+								geometryShaderStageCreateFlags,	// const deUint32								 geometryShaderStageCreateFlags
+								fragmentShaderStageCreateFlags,	// const deUint32								 fragmentShaderStageCreateFlags
+								requiredSubgroupSize);			// const deUint32								 requiredSubgroupSize[5]
 }
 
 Move<VkCommandBuffer> makeCommandBuffer(
@@ -2183,11 +2445,20 @@ deUint32 getResultBinding (const VkShaderStageFlagBits shaderStage)
 	return -1;
 }
 
-tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
+tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	Context& context, VkFormat format, SSBOData* extraData,
-	deUint32 extraDataCount,
-	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
 	const VkShaderStageFlags shaderStage)
+{
+	return makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(context, format, extraData, extraDataCount, internalData, checkResult, shaderStage, 0u, 0u);
+}
+
+tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTestRequiredSubgroupSize(
+	Context& context, VkFormat format, SSBOData* extraData,
+	deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const VkShaderStageFlags shaderStage, const deUint32 tessShaderStageCreateFlags, const deUint32 requiredSubgroupSize)
 {
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
@@ -2246,11 +2517,20 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
+	const deUint32 requiredSubgroupSizes[5] = {0u,
+											   ((shaderStage & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? requiredSubgroupSize : 0u),
+											   ((shaderStage & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? requiredSubgroupSize : 0u),
+											   0u,
+											   0u};
+
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(context, *pipelineLayout,
-																	VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT |
-																	VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-																	*vertexShaderModule, *fragmentShaderModule, DE_NULL, *teCtrlShaderModule, *teEvalShaderModule,
-																	*renderPass, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, &vertexInputBinding, &vertexInputAttribute, true, format));
+																						  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT |
+																						  VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+																						  *vertexShaderModule, *fragmentShaderModule, DE_NULL, *teCtrlShaderModule, *teEvalShaderModule,
+																						  *renderPass, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, &vertexInputBinding, &vertexInputAttribute, true, format,
+																						  0u, ((shaderStage & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? tessShaderStageCreateFlags : 0u),
+																						  ((shaderStage & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? tessShaderStageCreateFlags : 0u),
+																						  0u, 0u, requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
 
 	for (deUint32 ndx = 0u; ndx < extraDataCount; ndx++)
 		poolBuilder.addType(inputBuffers[ndx]->getType());
@@ -2361,7 +2641,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest (
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
-			if (!checkResult(datas, width/2u, subgroupSize))
+			if (!checkResult(internalData, datas, width/2u, subgroupSize))
 				failedIterations++;
 		}
 	}
@@ -2408,8 +2688,18 @@ bool vkt::subgroups::checkCompute(std::vector<const void*> datas,
 
 tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	Context& context, VkFormat format, SSBOData* extraData,
-	deUint32 extraDataCount,
-	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize))
+	deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize))
+{
+	return makeGeometryFrameBufferTestRequiredSubgroupSize(context, format, extraData, extraDataCount, internalData, checkResult,
+														   0u, 0u);
+}
+
+tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(
+	Context& context, VkFormat format, SSBOData* extraData,
+	deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const deUint32 geometryShaderStageCreateFlags, const deUint32 requiredSubgroupSize)
 {
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
@@ -2462,10 +2752,14 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
+	const deUint32 requiredSubgroupSizes[5] = {0u, 0u, 0u, requiredSubgroupSize, 0u};
+
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(context, *pipelineLayout,
-																	VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT,
-																	*vertexShaderModule, *fragmentShaderModule, *geometryShaderModule, DE_NULL, DE_NULL,
-																	*renderPass, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, &vertexInputBinding, &vertexInputAttribute, true, format));
+																						  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT,
+																						  *vertexShaderModule, *fragmentShaderModule, *geometryShaderModule, DE_NULL, DE_NULL,
+																						  *renderPass, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, &vertexInputBinding, &vertexInputAttribute, true, format,
+																						  0u, 0u, 0u, geometryShaderStageCreateFlags, 0u,
+																						  requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
 
 	for (deUint32 ndx = 0u; ndx < extraDataCount; ndx++)
 		poolBuilder.addType(inputBuffers[ndx]->getType());
@@ -2582,7 +2876,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
-			if (!checkResult(datas, width, subgroupSize))
+			if (!checkResult(internalData, datas, width, subgroupSize))
 				failedIterations++;
 		}
 	}
@@ -2601,12 +2895,27 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	return tcu::TestStatus::pass("OK");
 }
 
-
 tcu::TestStatus vkt::subgroups::allStages(
+	Context& context, VkFormat format, SSBOData* extraData,
+	deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const vk::VkShaderStageFlags shaderStage)
+{
+	return vkt::subgroups::allStagesRequiredSubgroupSize(context, format, extraData, extraDataCount, internalData, checkResult, shaderStage,
+														 0u, 0u, 0u, 0u, 0u, DE_NULL);
+}
+
+tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
 	Context& context, VkFormat format, SSBOData* extraDatas,
-	deUint32 extraDatasCount,
-	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
-	const VkShaderStageFlags shaderStageTested)
+	deUint32 extraDatasCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const VkShaderStageFlags shaderStageTested,
+	const deUint32 vertexShaderStageCreateFlags,
+	const deUint32 tessellationControlShaderStageCreateFlags,
+	const deUint32 tessellationEvalShaderStageCreateFlags,
+	const deUint32 geometryShaderStageCreateFlags,
+	const deUint32 fragmentShaderStageCreateFlags,
+	const deUint32 requiredSubgroupSize[5])
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -2717,10 +3026,13 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 	const Unique<VkRenderPass> renderPass(makeRenderPass(context, format));
 	const Unique<VkPipeline> pipeline(makeGraphicsPipeline(context, *pipelineLayout,
-										shaderStageRequired,
-										*vertexShaderModule, *fragmentShaderModule, *geometryShaderModule, *teCtrlShaderModule, *teEvalShaderModule,
-										*renderPass,
-										(shaderStageRequired & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_POINT_LIST));
+														   shaderStageRequired,
+														   *vertexShaderModule, *fragmentShaderModule, *geometryShaderModule, *teCtrlShaderModule, *teEvalShaderModule,
+														   *renderPass,
+														   (shaderStageRequired & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+														   DE_NULL, DE_NULL, false, VK_FORMAT_R32G32B32A32_SFLOAT,
+														   vertexShaderStageCreateFlags, tessellationControlShaderStageCreateFlags, tessellationEvalShaderStageCreateFlags,
+														   geometryShaderStageCreateFlags, fragmentShaderStageCreateFlags, requiredSubgroupSize));
 
 	Move <VkDescriptorPool>	descriptorPool;
 	Move <VkDescriptorSet>	descriptorSet;
@@ -2861,7 +3173,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					}
 				}
 
-				if (!checkResult(datas, (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? width * 2 : width , subgroupSize))
+				if (!checkResult(internalData, datas, (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? width * 2 : width , subgroupSize))
 					failedIterations++;
 			}
 			if (shaderStageTested & VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -2885,7 +3197,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					}
 				}
 
-				if (!checkResult(datas, width, subgroupSize))
+				if (!checkResult(internalData, datas, width, subgroupSize))
 					failedIterations++;
 			}
 
@@ -2908,8 +3220,17 @@ tcu::TestStatus vkt::subgroups::allStages(
 }
 
 tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::VkFormat format,
-	SSBOData* extraData, deUint32 extraDataCount,
-	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize))
+	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize))
+{
+	return makeVertexFrameBufferTestRequiredSubgroupSize(context, format, extraData, extraDataCount, internalData, checkResult,
+														 0u, 0u);
+}
+
+tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTestRequiredSubgroupSize(Context& context, vk::VkFormat format,
+	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const deUint32 vertexShaderStageCreateFlags, const deUint32 requiredSubgroupSize)
 {
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
@@ -2959,12 +3280,15 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 	const Unique<VkPipelineLayout>			pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 
+	const deUint32 requiredSubgroupSizes[5] = {requiredSubgroupSize, 0u, 0u, 0u, 0u};
 	const Unique<VkPipeline>				pipeline				(makeGraphicsPipeline(context, *pipelineLayout,
-																		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-																		*vertexShaderModule, *fragmentShaderModule,
-																		DE_NULL, DE_NULL, DE_NULL,
-																		*renderPass, VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-																		&vertexInputBinding, &vertexInputAttribute, true, format));
+																						  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+																						  *vertexShaderModule, *fragmentShaderModule,
+																						  DE_NULL, DE_NULL, DE_NULL,
+																						  *renderPass, VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+																						  &vertexInputBinding, &vertexInputAttribute, true, format,
+																						  vertexShaderStageCreateFlags, 0u, 0u, 0u, 0u,
+																						  requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
 	DescriptorPoolBuilder					poolBuilder;
 	DescriptorSetUpdateBuilder				updateBuilder;
 
@@ -3094,7 +3418,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
-			if (!checkResult(datas, width, subgroupSize))
+			if (!checkResult(internalData, datas, width, subgroupSize))
 				failedIterations++;
 		}
 	}
@@ -3113,11 +3437,22 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	return tcu::TestStatus::pass("OK");
 }
 
-
-tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, VkFormat format, SSBOData* extraDatas,
-	deUint32 extraDatasCount,
-	bool (*checkResult)(std::vector<const void*> datas, deUint32 width,
+tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest(
+	Context& context, VkFormat format, SSBOData* extraDatas,
+	deUint32 extraDatasCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width,
 						deUint32 height, deUint32 subgroupSize))
+{
+	return makeFragmentFrameBufferTestRequiredSubgroupSize(context, format, extraDatas, extraDatasCount, internalData, checkResult,
+														   0u, 0u);
+}
+
+tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTestRequiredSubgroupSize(
+	Context& context, VkFormat format, SSBOData* extraDatas,
+	deUint32 extraDatasCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width,
+						deUint32 height, deUint32 subgroupSize),
+	const deUint32 fragmentShaderStageCreateFlags, const deUint32 requiredSubgroupSize)
 {
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
@@ -3163,10 +3498,13 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 		makePipelineLayout(vk, device, *descriptorSetLayout));
 
 	const Unique<VkRenderPass> renderPass(makeRenderPass(context, format));
+
+	const deUint32 requiredSubgroupSizes[5] = {0u, 0u, 0u, 0u, requiredSubgroupSize};
 	const Unique<VkPipeline> pipeline(makeGraphicsPipeline(context, *pipelineLayout,
-									  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-									  *vertexShaderModule, *fragmentShaderModule, DE_NULL, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-									  DE_NULL, DE_NULL, true));
+														   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+														   *vertexShaderModule, *fragmentShaderModule, DE_NULL, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+														   DE_NULL, DE_NULL, true, VK_FORMAT_R32G32B32A32_SFLOAT,
+														   0u, 0u, 0u, 0u, fragmentShaderStageCreateFlags, requiredSubgroupSize != 0u ? requiredSubgroupSizes : DE_NULL));
 
 	DescriptorPoolBuilder poolBuilder;
 
@@ -3295,7 +3633,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 				datas.push_back(resultAlloc.getHostPtr());
 			}
 
-			if (!checkResult(datas, width, height, subgroupSize))
+			if (!checkResult(internalData, datas, width, height, subgroupSize))
 			{
 				failedIterations++;
 			}
@@ -3318,11 +3656,68 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	return tcu::TestStatus::pass("OK");
 }
 
-tcu::TestStatus vkt::subgroups::makeComputeTest(
-	Context& context, VkFormat format, SSBOData* inputs, deUint32 inputsCount,
-	bool (*checkResult)(std::vector<const void*> datas,
+Move<VkPipeline> makeComputePipeline(Context& context,
+									 const VkPipelineLayout pipelineLayout, const VkShaderModule shaderModule,
+									 const deUint32 pipelineShaderStageFlags, const deUint32 pipelineCreateFlags, VkPipeline basePipelineHandle,
+									 deUint32 localSizeX, deUint32 localSizeY, deUint32 localSizeZ, deUint32 requiredSubgroupSize)
+{
+	const deUint32 localSize[3] = {localSizeX, localSizeY, localSizeZ};
+
+	const vk::VkSpecializationMapEntry entries[3] =
+	{
+		{0, sizeof(deUint32) * 0, sizeof(deUint32)},
+		{1, sizeof(deUint32) * 1, sizeof(deUint32)},
+		{2, static_cast<deUint32>(sizeof(deUint32) * 2), sizeof(deUint32)},
+	};
+
+	const vk::VkSpecializationInfo info =
+	{
+		/* mapEntryCount = */ 3,
+		/* pMapEntries   = */ entries,
+		/* dataSize      = */ sizeof(localSize),
+		/* pData         = */ localSize
+	};
+
+	const vk::VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT,	// VkStructureType    sType;
+		DE_NULL,																		// void*              pNext;
+		requiredSubgroupSize															// uint32_t           requiredSubgroupSize;
+	};
+
+	const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,				// VkStructureType					sType;
+		(requiredSubgroupSize != 0u ? &subgroupSizeCreateInfo : DE_NULL),	// const void*						pNext;
+		pipelineShaderStageFlags,											// VkPipelineShaderStageCreateFlags	flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,										// VkShaderStageFlagBits			stage;
+		shaderModule,														// VkShaderModule					module;
+		"main",																// const char*						pName;
+		&info,																// const VkSpecializationInfo*		pSpecializationInfo;
+	};
+
+	const vk::VkComputePipelineCreateInfo pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	// VkStructureType	sType;
+		DE_NULL,										// const void*						pNext;
+		pipelineCreateFlags,							// VkPipelineCreateFlags			flags;
+		pipelineShaderStageParams,						// VkPipelineShaderStageCreateInfo	stage;
+		pipelineLayout,									// VkPipelineLayout					layout;
+		basePipelineHandle,								// VkPipeline						basePipelineHandle;
+		0,												// deInt32							basePipelineIndex;
+	};
+
+	return createComputePipeline(context.getDeviceInterface(),
+								 context.getDevice(), DE_NULL, &pipelineCreateInfo);
+}
+
+tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
+	Context& context, VkFormat format, SSBOData* inputs, deUint32 inputsCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas,
 						const deUint32 numWorkgroups[3], const deUint32 localSize[3],
-						deUint32 subgroupSize))
+						deUint32 subgroupSize),
+	const deUint32 pipelineShaderStageCreateFlags, const deUint32 numWorkgroups[3],
+	const deBool isRequiredSubgroupSize, const deUint32 subgroupSize, const deUint32 localSizesToTest[][3], const deUint32 localSizesToTestCount)
 {
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
@@ -3330,9 +3725,25 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	VkDeviceSize							elementSize				= getFormatSizeInBytes(format);
 
-	const VkDeviceSize resultBufferSize = maxSupportedSubgroupSize() *
-										  maxSupportedSubgroupSize() *
-										  maxSupportedSubgroupSize();
+	VkDeviceSize maxSubgroupSize = maxSupportedSubgroupSize();
+
+	if (isRequiredSubgroupSize)
+	{
+		VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
+		subgroupSizeControlProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
+		subgroupSizeControlProperties.pNext = DE_NULL;
+
+		VkPhysicalDeviceProperties2 properties2;
+		properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		properties2.pNext = &subgroupSizeControlProperties;
+		context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
+		maxSubgroupSize = deMax32(subgroupSizeControlProperties.maxSubgroupSize, static_cast<deUint32>(maxSubgroupSize));
+	}
+
+	const VkDeviceSize resultBufferSize = maxSubgroupSize *
+										  maxSubgroupSize *
+										  maxSubgroupSize;
+
 	const VkDeviceSize resultBufferSizeInBytes = resultBufferSize * elementSize;
 
 	Buffer resultBuffer(
@@ -3435,31 +3846,15 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	unsigned totalIterations = 0;
 	unsigned failedIterations = 0;
 
-	const deUint32 subgroupSize = getSubgroupSize(context);
-
 	const Unique<VkCommandBuffer> cmdBuffer(
 		makeCommandBuffer(context, *cmdPool));
 
-	const deUint32 numWorkgroups[3] = {4, 2, 2};
-
-	const deUint32 localSizesToTestCount = 8;
-	deUint32 localSizesToTest[localSizesToTestCount][3] =
-	{
-		{1, 1, 1},
-		{subgroupSize, 1, 1},
-		{1, subgroupSize, 1},
-		{1, 1, subgroupSize},
-		{32, 4, 1},
-		{1, 4, 32},
-		{3, 5, 7},
-		{1, 1, 1} // Isn't used, just here to make double buffering checks easier
-	};
-
-	Move<VkPipeline> pipelines[localSizesToTestCount - 1];
+	Move<VkPipeline> *pipelines = new Move<VkPipeline>[localSizesToTestCount - 1];
 	pipelines[0] =
 		makeComputePipeline(context, *pipelineLayout, *shaderModule,
-							VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, (VkPipeline) DE_NULL,
-							localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2]);
+							pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, (VkPipeline) DE_NULL,
+							localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2],
+							isRequiredSubgroupSize ? subgroupSize : 0u);
 
 	for (deUint32 index = 1; index < (localSizesToTestCount - 1); index++)
 	{
@@ -3469,8 +3864,9 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 
 		pipelines[index] =
 			makeComputePipeline(context, *pipelineLayout, *shaderModule,
-								VK_PIPELINE_CREATE_DERIVATIVE_BIT, *pipelines[0],
-								nextX, nextY, nextZ);
+								pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_DERIVATIVE_BIT, *pipelines[0],
+								nextX, nextY, nextZ,
+								isRequiredSubgroupSize ? subgroupSize : 0u);
 	}
 
 	for (deUint32 index = 0; index < (localSizesToTestCount - 1); index++)
@@ -3515,13 +3911,15 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 			}
 		}
 
-		if (!checkResult(datas, numWorkgroups, localSizesToTest[index], subgroupSize))
+		if (!checkResult(internalData, datas, numWorkgroups, localSizesToTest[index], subgroupSize))
 		{
 			failedIterations++;
 		}
 
 		vk.resetCommandBuffer(*cmdBuffer, 0);
 	}
+
+	delete[] pipelines;
 
 	if (0 < failedIterations)
 	{
@@ -3535,4 +3933,34 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	}
 
 	return tcu::TestStatus::pass("OK");
+}
+
+tcu::TestStatus vkt::subgroups::makeComputeTest(
+	Context& context, VkFormat format, SSBOData* inputs, deUint32 inputsCount, const void* internalData,
+	bool (*checkResult)(const void* internalData, std::vector<const void*> datas,
+						const deUint32 numWorkgroups[3], const deUint32 localSize[3],
+						deUint32 subgroupSize),
+	deUint32 requiredSubgroupSize, const deUint32 pipelineShaderStageCreateFlags)
+{
+	const deUint32 numWorkgroups[3] = {4, 2, 2};
+	deUint32 subgroupSize = requiredSubgroupSize;
+
+	if(requiredSubgroupSize == 0)
+		subgroupSize = vkt::subgroups::getSubgroupSize(context);
+
+	const deUint32 localSizesToTestCount = 8;
+	deUint32 localSizesToTest[localSizesToTestCount][3] =
+	{
+		{1, 1, 1},
+		{subgroupSize, 1, 1},
+		{1, subgroupSize, 1},
+		{1, 1, subgroupSize},
+		{32, 4, 1},
+		{1, 4, 32},
+		{3, 5, 7},
+		{1, 1, 1} // Isn't used, just here to make double buffering checks easier
+	};
+
+	return makeComputeTestRequiredSubgroupSize(context, format, inputs, inputsCount, internalData, checkResult, pipelineShaderStageCreateFlags,
+											   numWorkgroups, requiredSubgroupSize != 0u, subgroupSize, localSizesToTest, localSizesToTestCount);
 }

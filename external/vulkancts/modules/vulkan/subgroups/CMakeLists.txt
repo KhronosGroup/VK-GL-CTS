@@ -33,6 +33,8 @@ set(DEQP_VK_SUBGROUPS_SRCS
   vktSubgroupsTestsUtils.hpp
   vktSubgroupsBallotMasksTests.cpp
   vktSubgroupsBallotMasksTests.hpp
+  vktSubgroupsSizeControlTests.cpp
+  vktSubgroupsSizeControlTests.hpp
   )
 
 set(DEQP_VK_SUBGROUPS_LIBS
