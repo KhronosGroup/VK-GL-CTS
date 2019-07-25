@@ -1705,7 +1705,7 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 					&imageNdx,
 					(VkResult*)DE_NULL
 				};
-				VK_CHECK(vkd.queuePresentKHR(queue, &presentInfo));
+				VK_CHECK_WSI(vkd.queuePresentKHR(queue, &presentInfo));
 			}
 		}
 
