@@ -180,6 +180,47 @@ inline VkViewport makeViewport(const deUint32 width, const deUint32 height)
 	return makeViewport(0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f);
 }
 
+inline VkPrimitiveTopology primitiveTopologyCastToList (const VkPrimitiveTopology primitiveTopology)
+{
+	DE_STATIC_ASSERT(static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) + 1 == static_cast<deUint64>(VK_PRIMITIVE_TOPOLOGY_LAST));
+
+	switch (primitiveTopology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:						return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:						return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:						return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:					return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:					return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:					return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:						return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+		default: TCU_THROW(InternalError, "Unknown primitive topology.");
+	}
+}
+
+inline bool isPrimitiveTopologyPoint (const VkPrimitiveTopology primitiveTopology)
+{
+	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+}
+
+inline bool isPrimitiveTopologyLine (const VkPrimitiveTopology primitiveTopology)
+{
+	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+}
+
+inline bool isPrimitiveTopologyTriangle (const VkPrimitiveTopology primitiveTopology)
+{
+	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+}
+
+inline bool isPrimitiveTopologyPatch (const VkPrimitiveTopology primitiveTopology)
+{
+	return primitiveTopologyCastToList(primitiveTopology) == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+}
+
 } // vk
 
 #endif // _VKTYPEUTIL_HPP

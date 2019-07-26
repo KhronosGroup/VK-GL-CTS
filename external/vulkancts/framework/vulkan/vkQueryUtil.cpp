@@ -525,6 +525,24 @@ void* findStructureInChain (void* first, VkStructureType type)
 	return const_cast<void*>(findStructureInChain(const_cast<const void*>(first), type));
 }
 
+void appendStructurePtrToVulkanChain (const void**	chainHead, const void*	structurePtr)
+{
+	struct StructureBase
+	{
+		VkStructureType		sType;
+		const void*			pNext;
+	};
+
+	while (*chainHead != DE_NULL)
+	{
+		StructureBase* ptr = (StructureBase*)(*chainHead);
+
+		chainHead = &(ptr->pNext);
+	}
+
+	(*chainHead) = structurePtr;
+}
+
 // getStructureType<T> implementations
 #include "vkGetStructureTypeImpl.inl"
 

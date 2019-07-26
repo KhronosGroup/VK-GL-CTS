@@ -144,6 +144,18 @@ struct VerifyTriangleGroupInterpolationLogStash
 CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize, int subpixelBits, bool multisample);
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Calculates line coverage at given pixel
+ * Calculates the coverage of a reactangle given by line coordinates and width.
+ *//*--------------------------------------------------------------------*/
+CoverageType calculateUnderestimateLineCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const float lineWidth, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize);
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Calculates triangle coverage at given pixel
+ * Calculates the coverage of a triangle given by by three vertices.
+ *//*--------------------------------------------------------------------*/
+CoverageType calculateUnderestimateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, int subpixelBits, const tcu::IVec2& viewportSize);
+
+/*--------------------------------------------------------------------*//*!
  * \brief Verify triangle rasterization result
  * Verifies pixels in the surface are rasterized within the bounds given
  * by RasterizationArguments. Triangles should not be z-clipped.

@@ -34,6 +34,7 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuFloatFormat.hpp"
 #include "vkImageUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
@@ -90,6 +91,7 @@ static const char* const s_shaderFragmentTemplate =	"#version 310 es\n"
 													"{\n"
 													"	fragColor = v_color;\n"
 													"}\n";
+
 enum InterpolationCaseFlags
 {
 	INTERPOLATIONFLAGS_NONE = 0,
@@ -131,6 +133,7 @@ enum PrimitiveStrictness
 
 	PRIMITIVESTRICTNESS_LAST
 };
+
 
 class BaseRenderingTestCase : public TestCase
 {
@@ -176,7 +179,7 @@ public:
 
 protected:
 	void											addImageTransitionBarrier		(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const;
-	void											drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology);
+	virtual void									drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology);
 	void											drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, const std::vector<tcu::Vec4>& coloDrata, VkPrimitiveTopology primitiveTopology);
 	void											drawPrimitives					(tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, const std::vector<tcu::Vec4>& colorData, VkPrimitiveTopology primitiveTopology,
 																						VkImage image, VkImage resolvedImage, VkFramebuffer frameBuffer, const deUint32 renderSize, VkBuffer resultBuffer, const Allocation& resultBufferMemory);
@@ -188,7 +191,10 @@ protected:
 	const VkPipelineRasterizationStateCreateInfo*	getRasterizationStateCreateInfo	(void) const;
 
 	virtual
-	VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void);
+	VkPipelineRasterizationLineStateCreateInfoEXT	initLineRasterizationStateCreateInfo	(void) const;
+
+	virtual
+	const VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void) const;
 
 	virtual
 	const VkPipelineColorBlendStateCreateInfo*		getColorBlendStateCreateInfo	(void) const;
@@ -236,6 +242,9 @@ protected:
 	const VkDeviceSize								m_additionalResultBufferSize;
 
 	VkPipelineRasterizationLineStateCreateInfoEXT	m_lineRasterizationStateInfo;
+
+private:
+	virtual int										getIteration					(void) const { TCU_THROW(InternalError, "Iteration undefined in the base class"); }
 };
 
 BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderSize, VkFormat imageFormat, deUint32 additionalRenderSize)
@@ -250,6 +259,7 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 	, m_resultBufferSize	(renderSize * renderSize * m_textureFormat.getPixelSize())
 	, m_additionalRenderSize(additionalRenderSize)
 	, m_additionalResultBufferSize(additionalRenderSize * additionalRenderSize * m_textureFormat.getPixelSize())
+	, m_lineRasterizationStateInfo	(initLineRasterizationStateCreateInfo())
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
@@ -729,7 +739,10 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 
 		VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = *getRasterizationStateCreateInfo();
 
-		rasterizationStateInfo.pNext = getLineRasterizationStateCreateInfo();
+		const VkPipelineRasterizationLineStateCreateInfoEXT* lineRasterizationStateInfo = getLineRasterizationStateCreateInfo();
+
+		if (lineRasterizationStateInfo != DE_NULL)
+			appendStructurePtrToVulkanChain(&rasterizationStateInfo.pNext, lineRasterizationStateInfo);
 
 		VkPipelineDynamicStateCreateInfo			dynamicStateCreateInfo =
 		{
@@ -883,9 +896,9 @@ const VkPipelineRasterizationStateCreateInfo* BaseRenderingTestInstance::getRast
 	return &rasterizationStateCreateInfo;
 }
 
-VkPipelineRasterizationLineStateCreateInfoEXT* BaseRenderingTestInstance::getLineRasterizationStateCreateInfo (void)
+VkPipelineRasterizationLineStateCreateInfoEXT BaseRenderingTestInstance::initLineRasterizationStateCreateInfo (void) const
 {
-	m_lineRasterizationStateInfo =
+	VkPipelineRasterizationLineStateCreateInfoEXT lineRasterizationStateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT,	// VkStructureType				sType;
 		DE_NULL,																// const void*					pNext;
@@ -895,6 +908,11 @@ VkPipelineRasterizationLineStateCreateInfoEXT* BaseRenderingTestInstance::getLin
 		0xFFFF,																	// uint16_t						lineStipplePattern;
 	};
 
+	return lineRasterizationStateInfo;
+}
+
+const VkPipelineRasterizationLineStateCreateInfoEXT* BaseRenderingTestInstance::getLineRasterizationStateCreateInfo (void) const
+{
 	return &m_lineRasterizationStateInfo;
 }
 
@@ -938,11 +956,18 @@ const tcu::TextureFormat& BaseRenderingTestInstance::getTextureFormat (void) con
 class BaseTriangleTestInstance : public BaseRenderingTestInstance
 {
 public:
-							BaseTriangleTestInstance	(Context& context, VkPrimitiveTopology primitiveTopology, VkSampleCountFlagBits sampleCount);
+							BaseTriangleTestInstance	(Context& context, VkPrimitiveTopology primitiveTopology, VkSampleCountFlagBits sampleCount, deUint32 renderSize = RESOLUTION_POT);
 	virtual tcu::TestStatus	iterate						(void);
+
+protected:
+	int						getIteration				(void) const	{ return m_iteration;		}
+	int						getIterationCount			(void) const	{ return m_iterationCount;	}
 
 private:
 	virtual void			generateTriangles			(int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles) = DE_NULL;
+	virtual bool			compareAndVerify			(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
+														 tcu::Surface&									resultImage,
+														 std::vector<tcu::Vec4>&						drawBuffer);
 
 	int						m_iteration;
 	const int				m_iterationCount;
@@ -950,8 +975,8 @@ private:
 	bool					m_allIterationsPassed;
 };
 
-BaseTriangleTestInstance::BaseTriangleTestInstance (Context& context, VkPrimitiveTopology primitiveTopology, VkSampleCountFlagBits sampleCount)
-	: BaseRenderingTestInstance		(context, sampleCount)
+BaseTriangleTestInstance::BaseTriangleTestInstance (Context& context, VkPrimitiveTopology primitiveTopology, VkSampleCountFlagBits sampleCount, deUint32 renderSize)
+	: BaseRenderingTestInstance		(context, sampleCount, renderSize)
 	, m_iteration					(0)
 	, m_iterationCount				(3)
 	, m_primitiveTopology			(primitiveTopology)
@@ -974,21 +999,7 @@ tcu::TestStatus BaseTriangleTestInstance::iterate (void)
 
 	// compare
 	{
-		bool					compareOk;
-		RasterizationArguments	args;
-		TriangleSceneSpec		scene;
-
-		tcu::IVec4				colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
-
-		args.numSamples		= m_multisampling ? 1 : 0;
-		args.subpixelBits	= m_subpixelBits;
-		args.redBits		= colorBits[0];
-		args.greenBits		= colorBits[1];
-		args.blueBits		= colorBits[2];
-
-		scene.triangles.swap(triangles);
-
-		compareOk = verifyTriangleGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog());
+		const bool compareOk = compareAndVerify(triangles, resultImage, drawBuffer);
 
 		if (!compareOk)
 			m_allIterationsPassed = false;
@@ -1006,6 +1017,24 @@ tcu::TestStatus BaseTriangleTestInstance::iterate (void)
 		return tcu::TestStatus::incomplete();
 }
 
+bool BaseTriangleTestInstance::compareAndVerify (std::vector<TriangleSceneSpec::SceneTriangle>& triangles, tcu::Surface& resultImage, std::vector<tcu::Vec4>&)
+{
+	RasterizationArguments	args;
+	TriangleSceneSpec		scene;
+
+	tcu::IVec4				colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
+
+	args.numSamples		= m_multisampling ? 1 : 0;
+	args.subpixelBits	= m_subpixelBits;
+	args.redBits		= colorBits[0];
+	args.greenBits		= colorBits[1];
+	args.blueBits		= colorBits[2];
+
+	scene.triangles.swap(triangles);
+
+	return verifyTriangleGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog());
+}
+
 class BaseLineTestInstance : public BaseRenderingTestInstance
 {
 public:
@@ -1016,17 +1045,29 @@ public:
 														 VkSampleCountFlagBits		sampleCount,
 														 LineStipple				stipple,
 														 VkLineRasterizationModeEXT	lineRasterizationMode,
-														 const deUint32				additionalRenderSize = 0);
+														 const deUint32				additionalRenderSize = 0,
+														 const deUint32				renderSize = RESOLUTION_POT,
+														 const float				narrowLineWidth = 1.0f);
 	virtual tcu::TestStatus		iterate					(void);
 	virtual float				getLineWidth			(void) const;
 	bool						getLineStippleEnable	(void) const { return m_stipple != LINESTIPPLE_DISABLED; }
 	virtual bool				getLineStippleDynamic	(void) const { return m_stipple == LINESTIPPLE_DYNAMIC; };
 
 	virtual
-	VkPipelineRasterizationLineStateCreateInfoEXT*		getLineRasterizationStateCreateInfo	(void);
+	VkPipelineRasterizationLineStateCreateInfoEXT	initLineRasterizationStateCreateInfo	(void) const;
+
+	virtual
+	const VkPipelineRasterizationLineStateCreateInfoEXT*	getLineRasterizationStateCreateInfo	(void) const;
+
+protected:
+	int							getIteration			(void) const	{ return m_iteration;		}
+	int							getIterationCount		(void) const	{ return m_iterationCount;	}
 
 private:
 	virtual void				generateLines			(int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines) = DE_NULL;
+	virtual bool				compareAndVerify		(std::vector<LineSceneSpec::SceneLine>&	lines,
+														 tcu::Surface&							resultImage,
+														 std::vector<tcu::Vec4>&				drawBuffer);
 
 	bool						resultHasAlpha			(tcu::Surface& result);
 
@@ -1059,8 +1100,10 @@ BaseLineTestInstance::BaseLineTestInstance (Context&					context,
 											VkSampleCountFlagBits		sampleCount,
 											LineStipple					stipple,
 											VkLineRasterizationModeEXT	lineRasterizationMode,
-											const deUint32 additionalRenderSize)
-	: BaseRenderingTestInstance	(context, sampleCount, RESOLUTION_POT, VK_FORMAT_R8G8B8A8_UNORM, additionalRenderSize)
+											const deUint32				additionalRenderSize,
+											const deUint32				renderSize,
+											const float					narrowLineWidth)
+	: BaseRenderingTestInstance	(context, sampleCount, renderSize, VK_FORMAT_R8G8B8A8_UNORM, additionalRenderSize)
 	, m_iteration				(0)
 	, m_iterationCount			(3)
 	, m_primitiveTopology		(primitiveTopology)
@@ -1073,6 +1116,8 @@ BaseLineTestInstance::BaseLineTestInstance (Context&					context,
 	, m_lineRasterizationMode	(lineRasterizationMode)
 {
 	DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
+
+	m_lineRasterizationStateInfo = initLineRasterizationStateCreateInfo();
 
 	if (m_lineRasterizationMode != VK_LINE_RASTERIZATION_MODE_EXT_LAST)
 	{
@@ -1098,7 +1143,11 @@ BaseLineTestInstance::BaseLineTestInstance (Context&					context,
 	// create line widths
 	if (m_primitiveWideness == PRIMITIVEWIDENESS_NARROW)
 	{
-		m_lineWidths.resize(m_iterationCount, 1.0f);
+		m_lineWidths.resize(m_iterationCount, narrowLineWidth);
+
+		// Bump up m_maxLineWidth for conservative rasterization
+		if (narrowLineWidth > m_maxLineWidth)
+			m_maxLineWidth = narrowLineWidth;
 	}
 	else if (m_primitiveWideness == PRIMITIVEWIDENESS_WIDE)
 	{
@@ -1305,7 +1354,6 @@ tcu::TestStatus BaseLineTestInstance::iterate (void)
 	const tcu::ScopedLogSection				section					(m_context.getTestContext().getLog(), iterationDescription, iterationDescription);
 	const float								lineWidth				= getLineWidth();
 	tcu::Surface							resultImage				(m_renderSize, m_renderSize);
-	tcu::Surface							additionalResultImage	(m_additionalRenderSize, m_additionalRenderSize);
 	std::vector<tcu::Vec4>					drawBuffer;
 	std::vector<LineSceneSpec::SceneLine>	lines;
 
@@ -1319,98 +1367,11 @@ tcu::TestStatus BaseLineTestInstance::iterate (void)
 		drawPrimitives(resultImage, drawBuffer, m_primitiveTopology);
 
 		// compare
-		RasterizationArguments	args;
-		LineSceneSpec			scene;
-		tcu::IVec4				colorBits	= tcu::getTextureFormatBitDepth(getTextureFormat());
-		bool					strict		= m_primitiveStrictness == PRIMITIVESTRICTNESS_STRICT;
-
-		args.numSamples		= m_multisampling ? 1 : 0;
-		args.subpixelBits	= m_subpixelBits;
-		args.redBits		= colorBits[0];
-		args.greenBits		= colorBits[1];
-		args.blueBits		= colorBits[2];
-
-		scene.lines.swap(lines);
-		scene.lineWidth = lineWidth;
-		scene.stippleEnable = getLineStippleEnable();
-		scene.stippleFactor = getLineStippleEnable() ? lineStippleFactor : 1;
-		scene.stipplePattern = getLineStippleEnable() ? lineStipplePattern : 0xFFFF;
-		scene.isStrip = m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-		scene.isSmooth = m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
-
-		// Choose verification mode. Smooth lines assume mostly over-rasterization (bloated lines with a falloff).
-		// Stippled lines lose some precision across segments in a strip, so need a weaker threshold than normal
-		// lines. For simple cases, check for an exact match (STRICT).
-		if (scene.isSmooth)
-			scene.verificationMode = tcu::VERIFICATIONMODE_SMOOTH;
-		else if (scene.stippleEnable)
-			scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
-		else
-			scene.verificationMode = tcu::VERIFICATIONMODE_STRICT;
-
-		if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT)
 		{
-			// bresenham is "no AA" in GL, so set numSamples to zero.
-			args.numSamples = 0;
-			if (!verifyLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog()))
+			const bool compareOk = compareAndVerify(lines, resultImage, drawBuffer);
+
+			if (!compareOk)
 				m_allIterationsPassed = false;
-		}
-		else
-		{
-			if (scene.isSmooth)
-			{
-				// Smooth lines get the fractional coverage multiplied into the alpha component,
-				// so do a sanity check to validate that there is at least one pixel in the image
-				// with a fractional opacity.
-				bool hasAlpha = resultHasAlpha(resultImage);
-				if (!hasAlpha)
-				{
-					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Missing alpha transparency (failed)." << tcu::TestLog::EndMessage;
-					m_allIterationsPassed = false;
-				}
-			}
-
-			if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling), strict))
-			{
-				// Retry with weaker verification. If it passes, consider it a quality warning.
-				scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
-				if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), false, strict))
-					m_allIterationsPassed = false;
-				else
-					m_qualityWarning = true;
-			}
-
-			if (m_additionalRenderSize != 0)
-			{
-				const std::vector<tcu::Vec4> colorData(drawBuffer.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-				if (scene.isSmooth)
-					scene.verificationMode = tcu::VERIFICATIONMODE_SMOOTH;
-				else if (scene.stippleEnable)
-					scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
-				else
-					scene.verificationMode = tcu::VERIFICATIONMODE_STRICT;
-
-				drawPrimitives(additionalResultImage, drawBuffer, colorData, m_primitiveTopology, *m_additionalImage, *m_additionalResolvedImage, *m_additionalFrameBuffer, m_additionalRenderSize, *m_additionalResultBuffer, *m_additionalResultBufferMemory);
-
-				// Compare
-				if (!verifyRelaxedLineGroupRasterization(additionalResultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling), strict))
-				{
-					if (strict)
-					{
-						m_allIterationsPassed = false;
-					}
-					else
-					{
-						// Retry with weaker verification. If it passes, consider it a quality warning.
-						scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
-						if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling), strict))
-							m_allIterationsPassed = false;
-						else
-							m_qualityWarning = true;
-					}
-				}
-			}
 		}
 	}
 	else
@@ -1430,18 +1391,116 @@ tcu::TestStatus BaseLineTestInstance::iterate (void)
 		return tcu::TestStatus::incomplete();
 }
 
+bool BaseLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::SceneLine>&	lines, tcu::Surface& resultImage, std::vector<tcu::Vec4>& drawBuffer)
+{
+	const float				lineWidth				= getLineWidth();
+	bool					result					= true;
+	tcu::Surface			additionalResultImage	(m_additionalRenderSize, m_additionalRenderSize);
+	RasterizationArguments	args;
+	LineSceneSpec			scene;
+	tcu::IVec4				colorBits	= tcu::getTextureFormatBitDepth(getTextureFormat());
+	bool					strict		= m_primitiveStrictness == PRIMITIVESTRICTNESS_STRICT;
+
+	args.numSamples		= m_multisampling ? 1 : 0;
+	args.subpixelBits	= m_subpixelBits;
+	args.redBits		= colorBits[0];
+	args.greenBits		= colorBits[1];
+	args.blueBits		= colorBits[2];
+
+	scene.lines.swap(lines);
+	scene.lineWidth = lineWidth;
+	scene.stippleEnable = getLineStippleEnable();
+	scene.stippleFactor = getLineStippleEnable() ? lineStippleFactor : 1;
+	scene.stipplePattern = getLineStippleEnable() ? lineStipplePattern : 0xFFFF;
+	scene.isStrip = m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+	scene.isSmooth = m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
+
+	// Choose verification mode. Smooth lines assume mostly over-rasterization (bloated lines with a falloff).
+	// Stippled lines lose some precision across segments in a strip, so need a weaker threshold than normal
+	// lines. For simple cases, check for an exact match (STRICT).
+	if (scene.isSmooth)
+		scene.verificationMode = tcu::VERIFICATIONMODE_SMOOTH;
+	else if (scene.stippleEnable)
+		scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
+	else
+		scene.verificationMode = tcu::VERIFICATIONMODE_STRICT;
+
+	if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT)
+	{
+		// bresenham is "no AA" in GL, so set numSamples to zero.
+		args.numSamples = 0;
+		if (!verifyLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog()))
+			result = false;
+	}
+	else
+	{
+		if (scene.isSmooth)
+		{
+			// Smooth lines get the fractional coverage multiplied into the alpha component,
+			// so do a sanity check to validate that there is at least one pixel in the image
+			// with a fractional opacity.
+			bool hasAlpha = resultHasAlpha(resultImage);
+			if (!hasAlpha)
+			{
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Missing alpha transparency (failed)." << tcu::TestLog::EndMessage;
+				result = false;
+			}
+		}
+
+		if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling), strict))
+		{
+			// Retry with weaker verification. If it passes, consider it a quality warning.
+			scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
+			if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), false, strict))
+				result = false;
+			else
+				m_qualityWarning = true;
+		}
+
+		if (m_additionalRenderSize != 0)
+		{
+			const std::vector<tcu::Vec4> colorData(drawBuffer.size(), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+			if (scene.isSmooth)
+				scene.verificationMode = tcu::VERIFICATIONMODE_SMOOTH;
+			else if (scene.stippleEnable)
+				scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
+			else
+				scene.verificationMode = tcu::VERIFICATIONMODE_STRICT;
+
+			drawPrimitives(additionalResultImage, drawBuffer, colorData, m_primitiveTopology, *m_additionalImage, *m_additionalResolvedImage, *m_additionalFrameBuffer, m_additionalRenderSize, *m_additionalResultBuffer, *m_additionalResultBufferMemory);
+
+			// Compare
+			if (!verifyRelaxedLineGroupRasterization(additionalResultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling), strict))
+			{
+				if (strict)
+				{
+					result = false;
+				}
+				else
+				{
+					// Retry with weaker verification. If it passes, consider it a quality warning.
+					scene.verificationMode = tcu::VERIFICATIONMODE_WEAKER;
+					if (!verifyRelaxedLineGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog(), (0 == m_multisampling), strict))
+						result = false;
+					else
+						m_qualityWarning = true;
+				}
+			}
+		}
+	}
+
+	return result;
+}
 
 float BaseLineTestInstance::getLineWidth (void) const
 {
 	return m_lineWidths[m_iteration];
 }
 
-VkPipelineRasterizationLineStateCreateInfoEXT* BaseLineTestInstance::getLineRasterizationStateCreateInfo (void)
+VkPipelineRasterizationLineStateCreateInfoEXT BaseLineTestInstance::initLineRasterizationStateCreateInfo (void) const
 {
-	if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_EXT_LAST)
-		return DE_NULL;
-
-	m_lineRasterizationStateInfo	=
+	VkPipelineRasterizationLineStateCreateInfoEXT lineRasterizationStateInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT,	// VkStructureType				sType;
 		DE_NULL,																// const void*					pNext;
@@ -1453,9 +1512,17 @@ VkPipelineRasterizationLineStateCreateInfoEXT* BaseLineTestInstance::getLineRast
 
 	if (m_stipple == LINESTIPPLE_STATIC)
 	{
-		m_lineRasterizationStateInfo.lineStippleFactor = lineStippleFactor;
-		m_lineRasterizationStateInfo.lineStipplePattern = lineStipplePattern;
+		lineRasterizationStateInfo.lineStippleFactor = lineStippleFactor;
+		lineRasterizationStateInfo.lineStipplePattern = lineStipplePattern;
 	}
+
+	return lineRasterizationStateInfo;
+}
+
+const VkPipelineRasterizationLineStateCreateInfoEXT* BaseLineTestInstance::getLineRasterizationStateCreateInfo (void) const
+{
+	if (m_lineRasterizationMode == VK_LINE_RASTERIZATION_MODE_EXT_LAST)
+		return DE_NULL;
 
 	return &m_lineRasterizationStateInfo;
 }
@@ -1469,12 +1536,21 @@ public:
 													 VkSampleCountFlagBits		sampleCount,
 													 LineStipple				stipple,				// ignored
 													 VkLineRasterizationModeEXT	lineRasterizationMode,	// ignored
-													 deUint32					renderSize);			// ignored
+													 deUint32					additionalRenderSize,	// ignored
+													 deUint32					renderSize				= RESOLUTION_POT,
+													 float						pointSizeNarrow			= 1.0f);
 	virtual tcu::TestStatus	iterate					(void);
 	virtual float			getPointSize			(void) const;
 
+protected:
+	int						getIteration				(void) const	{ return m_iteration;		}
+	int						getIterationCount			(void) const	{ return m_iterationCount;	}
+
 private:
 	virtual void			generatePoints			(int iteration, std::vector<tcu::Vec4>& outData, std::vector<PointSceneSpec::ScenePoint>& outPoints);
+	virtual bool			compareAndVerify		(std::vector<PointSceneSpec::ScenePoint>&	points,
+													 tcu::Surface&								resultImage,
+													 std::vector<tcu::Vec4>&					drawBuffer);
 
 	int						m_iteration;
 	const int				m_iterationCount;
@@ -1490,23 +1566,25 @@ PointTestInstance::PointTestInstance (Context&						context,
 									  VkSampleCountFlagBits			sampleCount,
 									  LineStipple					stipple,
 									  VkLineRasterizationModeEXT	lineRasterizationMode,
-									  deUint32						renderSize)
-	: BaseRenderingTestInstance	(context, sampleCount)
+									  deUint32						additionalRenderSize,
+									  deUint32						renderSize,
+									  float							pointSizeNarrow)
+	: BaseRenderingTestInstance	(context, sampleCount, renderSize)
 	, m_iteration				(0)
 	, m_iterationCount			(3)
 	, m_primitiveWideness		(wideness)
 	, m_allIterationsPassed		(true)
-	, m_maxPointSize			(1.0f)
+	, m_maxPointSize			(pointSizeNarrow)
 {
 	DE_UNREF(strictness);
 	DE_UNREF(stipple);
 	DE_UNREF(lineRasterizationMode);
-	DE_UNREF(renderSize);
+	DE_UNREF(additionalRenderSize);
 
 	// create point sizes
 	if (m_primitiveWideness == PRIMITIVEWIDENESS_NARROW)
 	{
-		m_pointSizes.resize(m_iterationCount, 1.0f);
+		m_pointSizes.resize(m_iterationCount, pointSizeNarrow);
 	}
 	else if (m_primitiveWideness == PRIMITIVEWIDENESS_WIDE)
 	{
@@ -1548,21 +1626,7 @@ tcu::TestStatus PointTestInstance::iterate (void)
 
 		// compare
 		{
-			bool					compareOk;
-			RasterizationArguments	args;
-			PointSceneSpec			scene;
-
-			tcu::IVec4				colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
-
-			args.numSamples		= m_multisampling ? 1 : 0;
-			args.subpixelBits	= m_subpixelBits;
-			args.redBits		= colorBits[0];
-			args.greenBits		= colorBits[1];
-			args.blueBits		= colorBits[2];
-
-			scene.points.swap(points);
-
-			compareOk = verifyPointGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog());
+			const bool compareOk = compareAndVerify(points, resultImage, drawBuffer);
 
 			if (!compareOk)
 				m_allIterationsPassed = false;
@@ -1581,6 +1645,28 @@ tcu::TestStatus PointTestInstance::iterate (void)
 	}
 	else
 		return tcu::TestStatus::incomplete();
+}
+
+bool PointTestInstance::compareAndVerify (std::vector<PointSceneSpec::ScenePoint>&	points,
+										  tcu::Surface&								resultImage,
+										  std::vector<tcu::Vec4>&					drawBuffer)
+{
+	RasterizationArguments	args;
+	PointSceneSpec			scene;
+
+	tcu::IVec4				colorBits = tcu::getTextureFormatBitDepth(getTextureFormat());
+
+	args.numSamples		= m_multisampling ? 1 : 0;
+	args.subpixelBits	= m_subpixelBits;
+	args.redBits		= colorBits[0];
+	args.greenBits		= colorBits[1];
+	args.blueBits		= colorBits[2];
+
+	scene.points.swap(points);
+
+	DE_UNREF(drawBuffer);
+
+	return verifyPointGroupRasterization(resultImage, scene, args, m_context.getTestContext().getLog());
 }
 
 float PointTestInstance::getPointSize (void) const
@@ -2173,6 +2259,2141 @@ void TriangleFanTestInstance::generateTriangles (int iteration, std::vector<tcu:
 			<< tcu::TestLog::EndMessage;
 	}
 }
+
+struct ConservativeTestConfig
+{
+	VkConservativeRasterizationModeEXT	conservativeRasterizationMode;
+	float								extraOverestimationSize;
+	VkPrimitiveTopology					primitiveTopology;
+	bool								degeneratePrimitives;
+	float								lineWidth;
+	deUint32							resolution;
+};
+
+float getExtraOverestimationSize (const float overestimationSizeDesired, const VkPhysicalDeviceConservativeRasterizationPropertiesEXT& conservativeRasterizationProperties)
+{
+	const float extraOverestimationSize	= overestimationSizeDesired == TCU_INFINITY ? conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize
+										: overestimationSizeDesired == -TCU_INFINITY ? conservativeRasterizationProperties.extraPrimitiveOverestimationSizeGranularity
+										: overestimationSizeDesired;
+
+	return extraOverestimationSize;
+}
+
+template <typename ConcreteTestInstance>
+class ConservativeTestCase : public BaseRenderingTestCase
+{
+public:
+									ConservativeTestCase		(tcu::TestContext&					context,
+																 const std::string&					name,
+																 const std::string&					description,
+																 const ConservativeTestConfig&		conservativeTestConfig,
+																 VkSampleCountFlagBits				sampleCount = VK_SAMPLE_COUNT_1_BIT)
+										: BaseRenderingTestCase		(context, name, description, sampleCount)
+										, m_conservativeTestConfig	(conservativeTestConfig)
+									{}
+
+	virtual void					checkSupport				(Context& context) const;
+
+	virtual TestInstance*			createInstance				(Context& context) const
+									{
+										return new ConcreteTestInstance(context, m_conservativeTestConfig, m_sampleCount);
+									}
+
+protected:
+	bool							isUseLineSubPixel			(Context& context) const;
+	deUint32						getSubPixelResolution		(Context& context) const;
+
+	const ConservativeTestConfig	m_conservativeTestConfig;
+};
+
+template <typename ConcreteTestInstance>
+bool ConservativeTestCase<ConcreteTestInstance>::isUseLineSubPixel (Context& context) const
+{
+	return (isPrimitiveTopologyLine(m_conservativeTestConfig.primitiveTopology) && context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"));
+}
+
+template <typename ConcreteTestInstance>
+deUint32 ConservativeTestCase<ConcreteTestInstance>::getSubPixelResolution (Context& context) const
+{
+	if (isUseLineSubPixel(context))
+	{
+		const VkPhysicalDeviceLineRasterizationPropertiesEXT	lineRasterizationPropertiesEXT	= context.getLineRasterizationPropertiesEXT();
+
+		return lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits;
+	}
+	else
+	{
+		return context.getDeviceProperties().limits.subPixelPrecisionBits;
+	}
+}
+
+template <typename ConcreteTestInstance>
+void ConservativeTestCase<ConcreteTestInstance>::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
+
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT	conservativeRasterizationProperties	= context.getConservativeRasterizationPropertiesEXT();
+	const deUint32													subPixelPrecisionBits				= getSubPixelResolution(context);
+	const deUint32													subPixelPrecision					= 1<<subPixelPrecisionBits;
+	const bool														linesPrecision						= isUseLineSubPixel(context);
+	const float														primitiveOverestimationSizeMult		= float(subPixelPrecision) * conservativeRasterizationProperties.primitiveOverestimationSize;
+	const bool														topologyLineOrPoint					= isPrimitiveTopologyLine(m_conservativeTestConfig.primitiveTopology) || isPrimitiveTopologyPoint(m_conservativeTestConfig.primitiveTopology);
+
+	DE_ASSERT(subPixelPrecisionBits < sizeof(deUint32) * 8);
+
+	context.getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< "maxExtraPrimitiveOverestimationSize="			<< conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize << '\n'
+		<< "extraPrimitiveOverestimationSizeGranularity="	<< conservativeRasterizationProperties.extraPrimitiveOverestimationSizeGranularity << '\n'
+		<< "degenerateLinesRasterized="						<< conservativeRasterizationProperties.degenerateLinesRasterized << '\n'
+		<< "degenerateTrianglesRasterized="					<< conservativeRasterizationProperties.degenerateTrianglesRasterized << '\n'
+		<< "primitiveOverestimationSize="					<< conservativeRasterizationProperties.primitiveOverestimationSize << " (==" << primitiveOverestimationSizeMult << '/' << subPixelPrecision << ")\n"
+		<< "subPixelPrecisionBits="							<< subPixelPrecisionBits << (linesPrecision ? " (using VK_EXT_line_rasterization)" : " (using limits)") << '\n'
+		<< tcu::TestLog::EndMessage;
+
+	if (conservativeRasterizationProperties.extraPrimitiveOverestimationSizeGranularity > conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize)
+		TCU_FAIL("Granularity cannot be greater than maximum extra size");
+
+	if (topologyLineOrPoint)
+	{
+		if (!conservativeRasterizationProperties.conservativePointAndLineRasterization)
+			TCU_THROW(NotSupportedError, "Conservative line and point rasterization is not supported");
+	}
+
+	if (m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT)
+	{
+		if (conservativeRasterizationProperties.primitiveUnderestimation == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Underestimation is not supported");
+
+		if (isPrimitiveTopologyLine(m_conservativeTestConfig.primitiveTopology))
+		{
+			const float	testLineWidth	= m_conservativeTestConfig.lineWidth;
+
+			if (testLineWidth != 1.0f)
+			{
+				const VkPhysicalDeviceLimits&	limits					= context.getDeviceProperties().limits;
+				const float						lineWidthRange[2]		= { limits.lineWidthRange[0], limits.lineWidthRange[1] };
+				const float						lineWidthGranularity	= limits.lineWidthGranularity;
+
+				context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_WIDE_LINES);
+
+				if (lineWidthGranularity == 0.0f)
+					TCU_THROW(NotSupportedError, "Wide lines required for test, but are not supported");
+
+				DE_ASSERT(lineWidthGranularity > 0.0f && lineWidthRange[0] > 0.0f && lineWidthRange[1] >= lineWidthRange[0]);
+
+				if (!de::inBounds(testLineWidth, lineWidthRange[0], lineWidthRange[1]))
+					TCU_THROW(NotSupportedError, "Tested line width is not supported");
+
+				const float	n	= (testLineWidth - lineWidthRange[0]) / lineWidthGranularity;
+
+				if (deFloatFrac(n) != 0.0f || n * lineWidthGranularity + lineWidthRange[0] != testLineWidth)
+					TCU_THROW(NotSupportedError, "Exact match of line width is required for the test");
+			}
+		}
+		else if (isPrimitiveTopologyPoint(m_conservativeTestConfig.primitiveTopology))
+		{
+			const float	testPointSize	= m_conservativeTestConfig.lineWidth;
+
+			if (testPointSize != 1.0f)
+			{
+				const VkPhysicalDeviceLimits&	limits					= context.getDeviceProperties().limits;
+				const float						pointSizeRange[2]		= { limits.pointSizeRange[0], limits.pointSizeRange[1] };
+				const float						pointSizeGranularity	= limits.pointSizeGranularity;
+
+				context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+
+				if (pointSizeGranularity == 0.0f)
+					TCU_THROW(NotSupportedError, "Large points required for test, but are not supported");
+
+				DE_ASSERT(pointSizeGranularity > 0.0f && pointSizeRange[0] > 0.0f && pointSizeRange[1] >= pointSizeRange[0]);
+
+				if (!de::inBounds(testPointSize, pointSizeRange[0], pointSizeRange[1]))
+					TCU_THROW(NotSupportedError, "Tested point size is not supported");
+
+				const float	n	= (testPointSize - pointSizeRange[0]) / pointSizeGranularity;
+
+				if (deFloatFrac(n) != 0.0f || n * pointSizeGranularity + pointSizeRange[0] != testPointSize)
+					TCU_THROW(NotSupportedError, "Exact match of point size is required for the test");
+			}
+		}
+	}
+	else if (m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT)
+	{
+		const float extraOverestimationSize	= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, conservativeRasterizationProperties);
+
+		if (extraOverestimationSize > conservativeRasterizationProperties.maxExtraPrimitiveOverestimationSize)
+			TCU_THROW(NotSupportedError, "Specified overestimation size is not supported");
+
+		if (topologyLineOrPoint)
+		{
+			if (!conservativeRasterizationProperties.conservativePointAndLineRasterization)
+				TCU_THROW(NotSupportedError, "Conservative line and point rasterization is not supported");
+		}
+
+		if (isPrimitiveTopologyTriangle(m_conservativeTestConfig.primitiveTopology))
+		{
+			if (m_conservativeTestConfig.degeneratePrimitives)
+			{
+				// Enforce specification minimum required limit to avoid division by zero
+				DE_ASSERT(subPixelPrecisionBits >= 4);
+
+				// Make sure float precision of 22 bits is enough, i.e. resoultion in subpixel quarters less than float precision
+				if (m_conservativeTestConfig.resolution * (1<<(subPixelPrecisionBits + 2)) > (1<<21))
+					TCU_THROW(NotSupportedError, "Subpixel resolution is too high to generate degenerate primitives");
+			}
+		}
+	}
+	else
+		TCU_THROW(InternalError, "Non-conservative mode tests are not supported by this class");
+}
+
+class ConservativeTraingleTestInstance : public BaseTriangleTestInstance
+{
+public:
+																				ConservativeTraingleTestInstance				(Context&				context,
+																																 ConservativeTestConfig	conservativeTestConfig,
+																																 VkSampleCountFlagBits	sampleCount)
+																					: BaseTriangleTestInstance						(context,
+																																	 conservativeTestConfig.primitiveTopology,
+																																	 sampleCount,
+																																	 conservativeTestConfig.resolution)
+																					, m_conservativeTestConfig						(conservativeTestConfig)
+																					, m_conservativeRasterizationProperties			(context.getConservativeRasterizationPropertiesEXT())
+																					, m_rasterizationConservativeStateCreateInfo	(initRasterizationConservativeStateCreateInfo())
+																					, m_rasterizationStateCreateInfo				(initRasterizationStateCreateInfo())
+																				{}
+
+	void																		generateTriangles								(int											iteration,
+																																 std::vector<tcu::Vec4>&						outData,
+																																 std::vector<TriangleSceneSpec::SceneTriangle>&	outTriangles);
+	const VkPipelineRasterizationStateCreateInfo*								getRasterizationStateCreateInfo					(void) const;
+
+protected:
+	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void) const;
+
+	virtual bool																compareAndVerify								(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
+																																 tcu::Surface&									resultImage,
+																																 std::vector<tcu::Vec4>&						drawBuffer);
+	virtual bool																compareAndVerifyOverestimatedNormal				(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
+																																 tcu::Surface&									resultImage);
+	virtual bool																compareAndVerifyOverestimatedDegenerate			(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
+																																 tcu::Surface&									resultImage);
+	virtual bool																compareAndVerifyUnderestimatedNormal			(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
+																																 tcu::Surface&									resultImage);
+	virtual bool																compareAndVerifyUnderestimatedDegenerate		(std::vector<TriangleSceneSpec::SceneTriangle>&	triangles,
+																																 tcu::Surface&									resultImage);
+	void																		generateNormalTriangles							(int											iteration,
+																																 std::vector<tcu::Vec4>&						outData,
+																																 std::vector<TriangleSceneSpec::SceneTriangle>&	outTriangles);
+	void																		generateDegenerateTriangles					(int											iteration,
+																																 std::vector<tcu::Vec4>&						outData,
+																																 std::vector<TriangleSceneSpec::SceneTriangle>&	outTriangles);
+	void																		drawPrimitives									(tcu::Surface&									result,
+																																 const std::vector<tcu::Vec4>&					vertexData,
+																																 VkPrimitiveTopology							primitiveTopology);
+
+private:
+	const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	initRasterizationConservativeStateCreateInfo	(void);
+	const std::vector<VkPipelineRasterizationStateCreateInfo>					initRasterizationStateCreateInfo				(void);
+
+	const ConservativeTestConfig												m_conservativeTestConfig;
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT				m_conservativeRasterizationProperties;
+	const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	m_rasterizationConservativeStateCreateInfo;
+	const std::vector<VkPipelineRasterizationStateCreateInfo>					m_rasterizationStateCreateInfo;
+};
+
+void ConservativeTraingleTestInstance::generateTriangles (int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles)
+{
+	if (m_conservativeTestConfig.degeneratePrimitives)
+		generateDegenerateTriangles(iteration, outData, outTriangles);
+	else
+		generateNormalTriangles(iteration, outData, outTriangles);
+}
+
+void ConservativeTraingleTestInstance::generateNormalTriangles (int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles)
+{
+	const float	halfPixel						= 1.0f / float(m_renderSize);
+	const float extraOverestimationSize			= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+	const float	overestimate					= 2.0f * halfPixel * (m_conservativeRasterizationProperties.primitiveOverestimationSize + extraOverestimationSize);
+	const float	overestimateMargin				= overestimate;
+	const float	underestimateMargin				= 0.0f;
+	const bool	isOverestimate					= m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+	const float	margin							= isOverestimate ? overestimateMargin : underestimateMargin;
+	const char*	overestimateIterationComments[]	= { "Corner touch", "Any portion pixel coverage", "Edge touch" };
+
+	outData.resize(6);
+
+	switch (iteration)
+	{
+		case 0:
+		{
+			// Corner touch
+			const float edge	= 2 * halfPixel + margin;
+			const float left	= -1.0f + edge;
+			const float right	= +1.0f - edge;
+			const float up		= -1.0f + edge;
+			const float down	= +1.0f - edge;
+
+			outData[0] = tcu::Vec4( left, down, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4( left,   up, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(right, down, 0.0f, 1.0f);
+
+			outData[3] = tcu::Vec4( left,   up, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4(right, down, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(right,   up, 0.0f, 1.0f);
+
+			break;
+		}
+
+		case 1:
+		{
+			// Partial coverage
+			const float eps		= halfPixel / 32.0f;
+			const float edge	= 4.0f * halfPixel  + margin - eps;
+			const float left	= -1.0f + edge;
+			const float right	= +1.0f - edge;
+			const float up		= -1.0f + edge;
+			const float down	= +1.0f - edge;
+
+			outData[0] = tcu::Vec4( left, down, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4( left,   up, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(right, down, 0.0f, 1.0f);
+
+			outData[3] = tcu::Vec4( left,   up, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4(right, down, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(right,   up, 0.0f, 1.0f);
+
+			break;
+		}
+
+		case 2:
+		{
+			// Edge touch
+			const float edge	= 6.0f * halfPixel + margin;
+			const float left	= -1.0f + edge;
+			const float right	= +1.0f - edge;
+			const float up		= -1.0f + edge;
+			const float down	= +1.0f - edge;
+
+			outData[0] = tcu::Vec4( left, down, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4( left,   up, 0.0f, 1.0f);
+			outData[2] = tcu::Vec4(right, down, 0.0f, 1.0f);
+
+			outData[3] = tcu::Vec4( left,   up, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4(right, down, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(right,   up, 0.0f, 1.0f);
+
+			break;
+		}
+
+		default:
+			TCU_THROW(InternalError, "Unexpected iteration");
+	}
+
+	outTriangles.resize(outData.size() / 3);
+
+	for (size_t ndx = 0; ndx < outTriangles.size(); ++ndx)
+	{
+		outTriangles[ndx].positions[0] = outData[3 * ndx + 0];	outTriangles[ndx].sharedEdge[0] = false;
+		outTriangles[ndx].positions[1] = outData[3 * ndx + 1];	outTriangles[ndx].sharedEdge[1] = false;
+		outTriangles[ndx].positions[2] = outData[3 * ndx + 2];	outTriangles[ndx].sharedEdge[2] = false;
+	}
+
+	// log
+	if (isOverestimate)
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Testing " << overestimateIterationComments[iteration] << " "
+			<< "with rendering " << outTriangles.size() << " triangle(s):"
+			<< tcu::TestLog::EndMessage;
+	}
+	else
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Rendering " << outTriangles.size() << " triangle(s):"
+			<< tcu::TestLog::EndMessage;
+	}
+
+	for (size_t ndx = 0; ndx < outTriangles.size(); ++ndx)
+	{
+		const deUint32	 multiplier	= m_renderSize / 2;
+
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Triangle " << (ndx + 1) << ":"
+			<< "\n\t" << outTriangles[ndx].positions[0] << " == " << (float(multiplier) * outTriangles[ndx].positions[0]) << "/" << multiplier
+			<< "\n\t" << outTriangles[ndx].positions[1] << " == " << (float(multiplier) * outTriangles[ndx].positions[1]) << "/" << multiplier
+			<< "\n\t" << outTriangles[ndx].positions[2] << " == " << (float(multiplier) * outTriangles[ndx].positions[2]) << "/" << multiplier
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
+void ConservativeTraingleTestInstance::generateDegenerateTriangles (int iteration, std::vector<tcu::Vec4>& outData, std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles)
+{
+	tcu::TestLog&	log								= m_context.getTestContext().getLog();
+	const float		pixelSize						= 2.0f / float(m_renderSize);
+	const deUint32	subPixels						= 1u << m_context.getDeviceProperties().limits.subPixelPrecisionBits;
+	const float		subPixelSize					= pixelSize / float(subPixels);
+	const float		extraOverestimationSize			= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+	const float		totalOverestimate				= m_conservativeRasterizationProperties.primitiveOverestimationSize + extraOverestimationSize;
+	const float		totalOverestimateInSubPixels	= deFloatCeil(totalOverestimate * float(subPixels));
+	const float		overestimate					= subPixelSize * totalOverestimateInSubPixels;
+	const float		overestimateSafetyMargin		= subPixelSize * 0.125f;
+	const float		overestimateMargin				= overestimate + overestimateSafetyMargin;
+	const float		underestimateMargin				= 0.0f;
+	const bool		isOverestimate					= m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+	const float		margin							= isOverestimate ? overestimateMargin : underestimateMargin;
+	const char*		overestimateIterationComments[]	= { "Backfacing", "Generate pixels", "Use provoking vertex" };
+
+	if (pixelSize < 2 * overestimateMargin)
+		TCU_THROW(NotSupportedError, "Could not generate degenerate triangle for such overestimate parameters");
+
+	outData.clear();
+
+	switch (iteration)
+	{
+		case 0:
+		case 1:
+		case 2:
+		{
+			for (int rowNdx = 0; rowNdx < 3; ++rowNdx)
+			for (int colNdx = 0; colNdx < 4; ++colNdx)
+			{
+				const float	offsetX		= -1.0f + float(4 * (colNdx + 1)) * pixelSize;
+				const float	offsetY		= -1.0f + float(4 * (rowNdx + 1)) * pixelSize;
+				const float	left		= offsetX + margin;
+				const float	right		= offsetX + margin + 0.25f * subPixelSize;
+				const float	up			= offsetY + margin;
+				const float	down		= offsetY + margin + 0.25f * subPixelSize;
+				const bool	luPresent	= (rowNdx & 1) == 0;
+				const bool	rdPresent	= (rowNdx & 2) == 0;
+				const bool	luCW		= (colNdx & 1) == 0;
+				const bool	rdCW		= (colNdx & 2) == 0;
+
+				DE_ASSERT(left < right);
+				DE_ASSERT(up < down);
+
+				if (luPresent)
+				{
+					if (luCW)
+					{
+						// CW triangle left up
+						outData.push_back(tcu::Vec4( left, down, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4( left,   up, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4(right,   up, 0.0f, 1.0f));
+					}
+					else
+					{
+						// CCW triangle left up
+						outData.push_back(tcu::Vec4(right,   up, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4( left,   up, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4( left, down, 0.0f, 1.0f));
+					}
+				}
+
+				if (rdPresent)
+				{
+					if (rdCW)
+					{
+						// CW triangle right down
+						outData.push_back(tcu::Vec4(right,   up, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4(right, down, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4( left, down, 0.0f, 1.0f));
+					}
+					else
+					{
+						// CCW triangle right down
+						outData.push_back(tcu::Vec4( left, down, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4(right, down, 0.0f, 1.0f));
+						outData.push_back(tcu::Vec4(right,   up, 0.0f, 1.0f));
+					}
+				}
+			}
+
+			break;
+		}
+
+		default:
+			TCU_THROW(InternalError, "Unexpected iteration");
+	}
+
+	outTriangles.resize(outData.size() / 3);
+
+	for (size_t ndx = 0; ndx < outTriangles.size(); ++ndx)
+	{
+		outTriangles[ndx].positions[0] = outData[3 * ndx + 0];	outTriangles[ndx].sharedEdge[0] = false;
+		outTriangles[ndx].positions[1] = outData[3 * ndx + 1];	outTriangles[ndx].sharedEdge[1] = false;
+		outTriangles[ndx].positions[2] = outData[3 * ndx + 2];	outTriangles[ndx].sharedEdge[2] = false;
+	}
+
+	// log
+	if (isOverestimate)
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Testing " << overestimateIterationComments[iteration] << " "
+			<< "with rendering " << outTriangles.size() << " triangle(s):"
+			<< tcu::TestLog::EndMessage;
+	}
+	else
+	{
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Rendering " << outTriangles.size() << " triangle(s):"
+			<< tcu::TestLog::EndMessage;
+	}
+
+	for (int ndx = 0; ndx < (int)outTriangles.size(); ++ndx)
+	{
+		const deUint32	multiplierInt	= m_renderSize / 2;
+		const deUint32	multiplierFrac	= subPixels;
+		std::string		coordsString;
+
+		for (size_t vertexNdx = 0; vertexNdx < 3; ++vertexNdx)
+		{
+			const tcu::Vec4&	pos				= outTriangles[ndx].positions[vertexNdx];
+			std::ostringstream	coordsFloat;
+			std::ostringstream	coordsNatural;
+
+			for (int coordNdx = 0; coordNdx < 2; ++coordNdx)
+			{
+				const char*	sep		= (coordNdx < 1) ? "," : "";
+				const float	coord	= pos[coordNdx];
+				const char	sign	= deSign(coord) < 0 ? '-' : '+';
+				const float	m		= deFloatFloor(float(multiplierInt) * deFloatAbs(coord));
+				const float	r		= deFloatFrac(float(multiplierInt) * deFloatAbs(coord)) * float(multiplierFrac);
+
+				coordsFloat << std::fixed << std::setw(13) << std::setprecision(10) << coord << sep;
+				coordsNatural << sign << '(' << m << '+' << r << '/' << multiplierFrac << ')' << sep;
+			}
+
+			coordsString += "\n\t[" + coordsFloat.str() + "] == [" + coordsNatural.str() + "] / " + de::toString(multiplierInt);
+		}
+
+		log << tcu::TestLog::Message
+			<< "Triangle " << (ndx + 1) << ':'
+			<< coordsString
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
+void ConservativeTraingleTestInstance::drawPrimitives (tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology)
+{
+	if (m_conservativeTestConfig.degeneratePrimitives && getIteration() == 2)
+	{
+		// Set provoking vertex color to white
+		tcu::Vec4				colorProvoking	(1.0f, 1.0f, 1.0f, 1.0f);
+		tcu::Vec4				colorOther		(0.0f, 1.0f, 1.0f, 1.0f);
+		std::vector<tcu::Vec4>	colorData;
+
+		colorData.reserve(vertexData.size());
+
+		for (size_t vertexNdx = 0; vertexNdx < vertexData.size(); ++vertexNdx)
+			if (vertexNdx % 3 == 0)
+				colorData.push_back(colorProvoking);
+			else
+				colorData.push_back(colorOther);
+
+		BaseRenderingTestInstance::drawPrimitives(result, vertexData, colorData, primitiveTopology);
+	}
+	else
+		BaseRenderingTestInstance::drawPrimitives(result, vertexData, primitiveTopology);
+}
+
+bool ConservativeTraingleTestInstance::compareAndVerify (std::vector<TriangleSceneSpec::SceneTriangle>& triangles, tcu::Surface& resultImage, std::vector<tcu::Vec4>& drawBuffer)
+{
+	DE_UNREF(drawBuffer);
+
+	switch (m_conservativeTestConfig.conservativeRasterizationMode)
+	{
+		case VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT:
+		{
+			if (m_conservativeTestConfig.degeneratePrimitives)
+				return compareAndVerifyOverestimatedDegenerate(triangles, resultImage);
+			else
+				return compareAndVerifyOverestimatedNormal(triangles, resultImage);
+
+			break;
+		}
+
+		case VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT:
+		{
+			if (m_conservativeTestConfig.degeneratePrimitives)
+				return compareAndVerifyUnderestimatedDegenerate(triangles, resultImage);
+			else
+				return compareAndVerifyUnderestimatedNormal(triangles, resultImage);
+
+			break;
+		}
+
+		default:
+			TCU_THROW(InternalError, "Unknown conservative rasterization mode");
+	}
+}
+
+bool ConservativeTraingleTestInstance::compareAndVerifyOverestimatedNormal (std::vector<TriangleSceneSpec::SceneTriangle>& triangles, tcu::Surface& resultImage)
+{
+	DE_UNREF(triangles);
+
+	const int			start					= getIteration() + 1;
+	const int			end						= resultImage.getHeight() - start;
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= 0;
+	int					errY					= 0;
+	deUint32			errValue				= 0;
+	bool				result					= true;
+
+	DE_ASSERT(resultImage.getHeight() == resultImage.getWidth());
+
+	for (int y = start; result && y < end; ++y)
+	for (int x = start; result && x < end; ++x)
+	{
+		if (resultImage.getPixel(x,y).getPacked() != foregroundColor.getPacked())
+		{
+			result		= false;
+			errX		= x;
+			errY		= y;
+			errValue	= resultImage.getPixel(x,y).getPacked();
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask		(resultImage.getWidth(), resultImage.getHeight());
+		tcu::Surface	expectedImage	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			errorMask.setPixel(x, y, backgroundColor);
+			expectedImage.setPixel(x, y, backgroundColor);
+		}
+
+		for (int y = start; y < end; ++y)
+		for (int x = start; x < end; ++x)
+		{
+			expectedImage.setPixel(x, y, foregroundColor);
+
+			if (resultImage.getPixel(x, y).getPacked() != foregroundColor.getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found starting at " << errX << "," << errY << " value=0x" << std::hex << errValue
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Expected",	"Expected",		expectedImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativeTraingleTestInstance::compareAndVerifyOverestimatedDegenerate (std::vector<TriangleSceneSpec::SceneTriangle>& triangles, tcu::Surface& resultImage)
+{
+	DE_UNREF(triangles);
+
+	const char*			iterationComments[]		= { "Cull back face triangles", "Cull front face triangles", "Cull none" };
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	bool				result					= true;
+	tcu::Surface		referenceImage			(resultImage.getWidth(), resultImage.getHeight());
+
+	for (int y = 0; y < resultImage.getHeight(); ++y)
+	for (int x = 0; x < resultImage.getWidth(); ++x)
+		referenceImage.setPixel(x, y, backgroundColor);
+
+	if (m_conservativeRasterizationProperties.degenerateTrianglesRasterized)
+	{
+		if (getIteration() != 0)
+		{
+			log << tcu::TestLog::Message << "Triangles expected to be rasterized with one pixel of white color each" << tcu::TestLog::EndMessage;
+
+			for (int rowNdx = 0; rowNdx < 3; ++rowNdx)
+			for (int colNdx = 0; colNdx < 4; ++colNdx)
+				referenceImage.setPixel(4 * (colNdx + 1), 4 * (rowNdx + 1), foregroundColor);
+		}
+		else
+			log << tcu::TestLog::Message << "Triangles expected to be culled due to backfacing culling and all degenerate triangles assumed to be backfacing" << tcu::TestLog::EndMessage;
+	}
+	else
+		log << tcu::TestLog::Message << "Triangles expected to be culled due to degenerateTrianglesRasterized=false" << tcu::TestLog::EndMessage;
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+	{
+		if (resultImage.getPixel(x,y).getPacked() != referenceImage.getPixel(x,y).getPacked())
+		{
+			result = false;
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found for mode '" << iterationComments[getIteration()] << "'"
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativeTraingleTestInstance::compareAndVerifyUnderestimatedNormal (std::vector<TriangleSceneSpec::SceneTriangle>& triangles, tcu::Surface& resultImage)
+{
+	DE_UNREF(triangles);
+
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	const tcu::IVec2	viewportSize			= tcu::IVec2(resultImage.getWidth(), resultImage.getHeight());
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= -1;
+	int					errY					= -1;
+	deUint32			errValue				= 0;
+	tcu::Surface		referenceImage			(resultImage.getWidth(), resultImage.getHeight());
+	bool				result					= true;
+
+	DE_ASSERT(resultImage.getHeight() == resultImage.getWidth());
+
+	for (int y = 0; y < resultImage.getHeight(); ++y)
+	for (int x = 0; x < resultImage.getWidth(); ++x)
+		referenceImage.setPixel(x, y, backgroundColor);
+
+	for (size_t triangleNdx = 0; triangleNdx < triangles.size(); ++triangleNdx)
+	{
+		const tcu::Vec4&	p0	= triangles[triangleNdx].positions[0];
+		const tcu::Vec4&	p1	= triangles[triangleNdx].positions[1];
+		const tcu::Vec4&	p2	= triangles[triangleNdx].positions[2];
+
+		for (int y = 0; y < resultImage.getHeight(); ++y)
+		for (int x = 0; x < resultImage.getWidth(); ++x)
+		{
+			if (calculateUnderestimateTriangleCoverage(p0, p1, p2, tcu::IVec2(x,y), m_subpixelBits, viewportSize) == tcu::COVERAGE_FULL)
+				referenceImage.setPixel(x, y, foregroundColor);
+		}
+	}
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+		if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+		{
+			result		= false;
+			errX		= x;
+			errY		= y;
+			errValue	= resultImage.getPixel(x,y).getPacked();
+		}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x,y).getPacked() != referenceImage.getPixel(x,y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found starting at " << errX << "," << errY << " value=0x" << std::hex << errValue
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Refernce",	"Refernce",		referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativeTraingleTestInstance::compareAndVerifyUnderestimatedDegenerate (std::vector<TriangleSceneSpec::SceneTriangle>& triangles, tcu::Surface& resultImage)
+{
+	DE_UNREF(triangles);
+
+	const char*			iterationComments[]		= { "Cull back face triangles", "Cull front face triangles", "Cull none" };
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= 0;
+	int					errY					= 0;
+	deUint32			errValue				= 0;
+	bool				result					= true;
+
+	if (m_conservativeRasterizationProperties.degenerateTrianglesRasterized)
+	{
+		if (getIteration() != 0)
+			log << tcu::TestLog::Message << "Triangles expected to be not rendered due to no one triangle can fully cover fragment" << tcu::TestLog::EndMessage;
+		else
+			log << tcu::TestLog::Message << "Triangles expected to be culled due to backfacing culling and all degenerate triangles assumed to be backfacing" << tcu::TestLog::EndMessage;
+	}
+	else
+		log << tcu::TestLog::Message << "Triangles expected to be culled due to degenerateTrianglesRasterized=false" << tcu::TestLog::EndMessage;
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+	{
+		if (resultImage.getPixel(x, y).getPacked() != backgroundColor.getPacked())
+		{
+			result		= false;
+			errX		= x;
+			errY		= y;
+			errValue	= resultImage.getPixel(x,y).getPacked();
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	referenceImage	(resultImage.getWidth(), resultImage.getHeight());
+		tcu::Surface	errorMask		(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < resultImage.getHeight(); ++y)
+		for (int x = 0; x < resultImage.getWidth(); ++x)
+			referenceImage.setPixel(x, y, backgroundColor);
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found for mode '" << iterationComments[getIteration()] << "' starting at " << errX << "," << errY << " value=0x" << std::hex << errValue
+			<< tcu::TestLog::EndMessage;
+
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT> ConservativeTraingleTestInstance::initRasterizationConservativeStateCreateInfo (void)
+{
+	const float															extraOverestimationSize	= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+	std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	result;
+
+	result.reserve(getIterationCount());
+
+	for (int iteration = 0; iteration < getIterationCount(); ++iteration)
+	{
+		const VkPipelineRasterizationConservativeStateCreateInfoEXT	rasterizationConservativeStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,	//  VkStructureType											sType;
+			DE_NULL,																		//  const void*												pNext;
+			(VkPipelineRasterizationConservativeStateCreateFlagsEXT)0,						//  VkPipelineRasterizationConservativeStateCreateFlagsEXT	flags;
+			m_conservativeTestConfig.conservativeRasterizationMode,							//  VkConservativeRasterizationModeEXT						conservativeRasterizationMode;
+			extraOverestimationSize															//  float													extraPrimitiveOverestimationSize;
+		};
+
+		result.push_back(rasterizationConservativeStateCreateInfo);
+	}
+
+	return result;
+}
+
+const std::vector<VkPipelineRasterizationStateCreateInfo> ConservativeTraingleTestInstance::initRasterizationStateCreateInfo (void)
+{
+	std::vector<VkPipelineRasterizationStateCreateInfo>	result;
+
+	result.reserve(getIterationCount());
+
+	for (int iteration = 0; iteration < getIterationCount(); ++iteration)
+	{
+		const VkCullModeFlags							cullModeFlags					= (!m_conservativeTestConfig.degeneratePrimitives) ? VK_CULL_MODE_NONE
+																						: (iteration == 0) ? VK_CULL_MODE_BACK_BIT
+																						: (iteration == 1) ? VK_CULL_MODE_FRONT_BIT
+																						: VK_CULL_MODE_NONE;
+
+		const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//  VkStructureType							sType;
+			&m_rasterizationConservativeStateCreateInfo[iteration],			//  const void*								pNext;
+			0,																//  VkPipelineRasterizationStateCreateFlags	flags;
+			false,															//  VkBool32								depthClampEnable;
+			false,															//  VkBool32								rasterizerDiscardEnable;
+			VK_POLYGON_MODE_FILL,											//  VkPolygonMode							polygonMode;
+			cullModeFlags,													//  VkCullModeFlags							cullMode;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								//  VkFrontFace								frontFace;
+			VK_FALSE,														//  VkBool32								depthBiasEnable;
+			0.0f,															//  float									depthBiasConstantFactor;
+			0.0f,															//  float									depthBiasClamp;
+			0.0f,															//  float									depthBiasSlopeFactor;
+			getLineWidth(),													//  float									lineWidth;
+		};
+
+		result.push_back(rasterizationStateCreateInfo);
+	}
+
+	return result;
+}
+
+const VkPipelineRasterizationStateCreateInfo* ConservativeTraingleTestInstance::getRasterizationStateCreateInfo	(void) const
+{
+	return &m_rasterizationStateCreateInfo[getIteration()];
+}
+
+const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativeTraingleTestInstance::getLineRasterizationStateCreateInfo	(void) const
+{
+	return DE_NULL;
+}
+
+
+class ConservativeLineTestInstance : public BaseLineTestInstance
+{
+public:
+																				ConservativeLineTestInstance					(Context&								context,
+																																 ConservativeTestConfig					conservativeTestConfig,
+																																 VkSampleCountFlagBits					sampleCount);
+
+	void																		generateLines									(int									iteration,
+																																 std::vector<tcu::Vec4>&				outData,
+																																 std::vector<LineSceneSpec::SceneLine>&	outLines);
+	const VkPipelineRasterizationStateCreateInfo*								getRasterizationStateCreateInfo					(void) const;
+
+protected:
+	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void) const;
+
+	virtual bool																compareAndVerify								(std::vector<LineSceneSpec::SceneLine>&	lines,
+																																 tcu::Surface&							resultImage,
+																																 std::vector<tcu::Vec4>&				drawBuffer);
+	virtual bool																compareAndVerifyOverestimatedNormal				(std::vector<LineSceneSpec::SceneLine>&	lines,
+																																 tcu::Surface&							resultImage);
+	virtual bool																compareAndVerifyOverestimatedDegenerate			(std::vector<LineSceneSpec::SceneLine>&	lines,
+																																 tcu::Surface&							resultImage);
+	virtual bool																compareAndVerifyUnderestimatedNormal			(std::vector<LineSceneSpec::SceneLine>&	lines,
+																																 tcu::Surface&							resultImage);
+	virtual bool																compareAndVerifyUnderestimatedDegenerate		(std::vector<LineSceneSpec::SceneLine>&	lines,
+																																 tcu::Surface&							resultImage);
+	void																		generateNormalLines								(int									iteration,
+																																 std::vector<tcu::Vec4>&				outData,
+																																 std::vector<LineSceneSpec::SceneLine>&	outLines);
+	void																		generateDegenerateLines							(int									iteration,
+																																 std::vector<tcu::Vec4>&				outData,
+																																 std::vector<LineSceneSpec::SceneLine>&	outLines);
+	void																		drawPrimitives									(tcu::Surface&							result,
+																																 const std::vector<tcu::Vec4>&			vertexData,
+																																 VkPrimitiveTopology					primitiveTopology);
+
+private:
+	const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	initRasterizationConservativeStateCreateInfo	(void);
+	const std::vector<VkPipelineRasterizationStateCreateInfo>					initRasterizationStateCreateInfo				(void);
+
+	const ConservativeTestConfig												m_conservativeTestConfig;
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT				m_conservativeRasterizationProperties;
+	const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	m_rasterizationConservativeStateCreateInfo;
+	const std::vector<VkPipelineRasterizationStateCreateInfo>					m_rasterizationStateCreateInfo;
+};
+
+ConservativeLineTestInstance::ConservativeLineTestInstance (Context&				context,
+															ConservativeTestConfig	conservativeTestConfig,
+															VkSampleCountFlagBits	sampleCount)
+	: BaseLineTestInstance							(
+														context,
+														conservativeTestConfig.primitiveTopology,
+														PRIMITIVEWIDENESS_NARROW,
+														PRIMITIVESTRICTNESS_IGNORE,
+														sampleCount,
+														LINESTIPPLE_DISABLED,
+														VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT,
+														0,
+														conservativeTestConfig.resolution,
+														conservativeTestConfig.lineWidth
+													)
+	, m_conservativeTestConfig						(conservativeTestConfig)
+	, m_conservativeRasterizationProperties			(context.getConservativeRasterizationPropertiesEXT())
+	, m_rasterizationConservativeStateCreateInfo	(initRasterizationConservativeStateCreateInfo())
+	, m_rasterizationStateCreateInfo				(initRasterizationStateCreateInfo())
+{
+}
+
+void ConservativeLineTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
+{
+	if (m_conservativeTestConfig.degeneratePrimitives)
+		generateDegenerateLines(iteration, outData, outLines);
+	else
+		generateNormalLines(iteration, outData, outLines);
+}
+
+void ConservativeLineTestInstance::generateNormalLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
+{
+	const char*		iterationComment		= "";
+	const float		halfPixel				= 1.0f / float(m_renderSize);
+	const float		extraOverestimationSize	= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+	const float		overestimate			= 2.0f * halfPixel * (m_conservativeRasterizationProperties.primitiveOverestimationSize + extraOverestimationSize);
+	const float		overestimateMargin		= overestimate;
+	const float		underestimateMargin		= 0.0f;
+	const bool		isOverestimate			= m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+	const float		margin					= isOverestimate ? overestimateMargin : underestimateMargin;
+	const float		edge					= 4 * halfPixel + margin;
+	const float		left					= -1.0f + edge;
+	const float		right					= +1.0f - edge;
+	const float		up						= -1.0f + edge;
+	const float		down					= +1.0f - edge;
+
+	outData.reserve(2);
+
+	if (isOverestimate)
+	{
+		const char*		iterationComments[]		= { "Horizontal up line", "Vertical line", "Horizontal down line" };
+
+		iterationComment = iterationComments[iteration];
+
+		switch (iteration)
+		{
+			case 0:
+			{
+				outData.push_back(tcu::Vec4(              left,   up + halfPixel, 0.0f, 1.0f));
+				outData.push_back(tcu::Vec4(             right,   up + halfPixel, 0.0f, 1.0f));
+
+				break;
+			}
+
+			case 1:
+			{
+				outData.push_back(tcu::Vec4(  left + halfPixel,               up, 0.0f, 1.0f));
+				outData.push_back(tcu::Vec4(  left + halfPixel,             down, 0.0f, 1.0f));
+
+				break;
+			}
+
+			case 2:
+			{
+				outData.push_back(tcu::Vec4(              left, down - halfPixel, 0.0f, 1.0f));
+				outData.push_back(tcu::Vec4(             right, down - halfPixel, 0.0f, 1.0f));
+
+				break;
+			}
+
+			default:
+				TCU_THROW(InternalError, "Unexpected iteration");
+		}
+	}
+	else
+	{
+		const char*		iterationComments[]	= { "Horizontal lines", "Vertical lines", "Diagonal lines" };
+		const deUint32	subPixels			= 1u << m_subpixelBits;
+		const float		subPixelSize		= 2.0f * halfPixel / float(subPixels);
+		const float		blockStep			= 16.0f * 2.0f * halfPixel;
+		const float		lineWidth			= 2.0f * halfPixel * getLineWidth();
+		const float		offsets[]			=
+		{
+			float(1) * blockStep,
+			float(2) * blockStep + halfPixel,
+			float(3) * blockStep + 0.5f * lineWidth + 2.0f * subPixelSize,
+			float(4) * blockStep + 0.5f * lineWidth - 2.0f * subPixelSize,
+		};
+
+		iterationComment = iterationComments[iteration];
+
+		outData.reserve(DE_LENGTH_OF_ARRAY(offsets));
+
+		switch (iteration)
+		{
+			case 0:
+			{
+				for (size_t lineNdx = 0; lineNdx < DE_LENGTH_OF_ARRAY(offsets); ++lineNdx)
+				{
+					outData.push_back(tcu::Vec4( left + halfPixel, up + offsets[lineNdx], 0.0f, 1.0f));
+					outData.push_back(tcu::Vec4(right - halfPixel, up + offsets[lineNdx], 0.0f, 1.0f));
+				}
+
+				break;
+			}
+
+			case 1:
+			{
+				for (size_t lineNdx = 0; lineNdx < DE_LENGTH_OF_ARRAY(offsets); ++lineNdx)
+				{
+					outData.push_back(tcu::Vec4(left + offsets[lineNdx],   up + halfPixel, 0.0f, 1.0f));
+					outData.push_back(tcu::Vec4(left + offsets[lineNdx], down - halfPixel, 0.0f, 1.0f));
+				}
+
+				break;
+			}
+
+			case 2:
+			{
+				for (size_t lineNdx = 0; lineNdx < DE_LENGTH_OF_ARRAY(offsets); ++lineNdx)
+				{
+					outData.push_back(tcu::Vec4(left + offsets[lineNdx],          up + halfPixel, 0.0f, 1.0f));
+					outData.push_back(tcu::Vec4(      right - halfPixel, down - offsets[lineNdx], 0.0f, 1.0f));
+				}
+
+				break;
+			}
+
+			default:
+				TCU_THROW(InternalError, "Unexpected iteration");
+		}
+	}
+
+	DE_ASSERT(outData.size() % 2 == 0);
+	outLines.resize(outData.size() / 2);
+	for(size_t lineNdx = 0; lineNdx < outLines.size(); ++lineNdx)
+	{
+		outLines[lineNdx].positions[0] = outData[2 * lineNdx + 0];
+		outLines[lineNdx].positions[1] = outData[2 * lineNdx + 1];
+	}
+
+	// log
+	m_context.getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< "Testing " << iterationComment << " "
+		<< "with rendering " << outLines.size() << " line(s):"
+		<< tcu::TestLog::EndMessage;
+
+	for (int ndx = 0; ndx < (int)outLines.size(); ++ndx)
+	{
+		const deUint32	 multiplier	= m_renderSize / 2;
+
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Line " << (ndx+1) << ":"
+			<< "\n\t" << outLines[ndx].positions[0] << " == " << (float(multiplier) * outLines[ndx].positions[0]) << "/" << multiplier
+			<< "\n\t" << outLines[ndx].positions[1] << " == " << (float(multiplier) * outLines[ndx].positions[1]) << "/" << multiplier
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
+void ConservativeLineTestInstance::generateDegenerateLines (int iteration, std::vector<tcu::Vec4>& outData, std::vector<LineSceneSpec::SceneLine>& outLines)
+{
+	const bool		isOverestimate		= m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+	const float		pixelSize			= 2.0f / float(m_renderSize);
+	const deUint32	subPixels			= 1u << m_context.getDeviceProperties().limits.subPixelPrecisionBits;
+	const float		subPixelSize		= pixelSize / float(subPixels);
+	const char*		iterationComments[]	= { "Horizontal line", "Vertical line", "Diagonal line" };
+
+	outData.clear();
+
+	if (isOverestimate)
+	{
+		const float		extraOverestimationSize			= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+		const float		totalOverestimate				= m_conservativeRasterizationProperties.primitiveOverestimationSize + extraOverestimationSize;
+		const float		totalOverestimateInSubPixels	= deFloatCeil(totalOverestimate * float(subPixels));
+		const float		overestimate					= subPixelSize * totalOverestimateInSubPixels;
+		const float		overestimateSafetyMargin		= subPixelSize * 0.125f;
+		const float		margin							= overestimate + overestimateSafetyMargin;
+		const float		originOffset					= -1.0f + 1 * pixelSize;
+		const float		originLeft						= originOffset + margin;
+		const float		originRight						= originOffset + margin + 0.25f * subPixelSize;
+		const float		originUp						= originOffset + margin;
+		const float		originDown						= originOffset + margin + 0.25f * subPixelSize;
+
+		switch (iteration)
+		{
+			case 0:
+			{
+				outData.push_back(tcu::Vec4( originLeft,   originUp, 0.0f, 1.0f));
+				outData.push_back(tcu::Vec4(originRight,   originUp, 0.0f, 1.0f));
+
+				break;
+			}
+
+			case 1:
+			{
+				outData.push_back(tcu::Vec4( originLeft,   originUp, 0.0f, 1.0f));
+				outData.push_back(tcu::Vec4( originLeft, originDown, 0.0f, 1.0f));
+
+				break;
+			}
+
+			case 2:
+			{
+				outData.push_back(tcu::Vec4( originLeft,   originUp, 0.0f, 1.0f));
+				outData.push_back(tcu::Vec4(originRight, originDown, 0.0f, 1.0f));
+
+				break;
+			}
+
+			default:
+				TCU_THROW(InternalError, "Unexpected iteration");
+		}
+	}
+	else
+	{
+		size_t rowStart	= 3 * getIteration();
+		size_t rowEnd	= 3 * (getIteration() + 1);
+
+		for (size_t rowNdx = rowStart; rowNdx < rowEnd; ++rowNdx)
+		for (size_t colNdx = 0; colNdx < 3 * 3; ++colNdx)
+		{
+			const float		originOffsetY	= -1.0f + float(4 * (1 + rowNdx)) * pixelSize;
+			const float		originOffsetX	= -1.0f + float(4 * (1 + colNdx)) * pixelSize;
+			const float		x0				= float(rowNdx % 3);
+			const float		y0				= float(rowNdx / 3);
+			const float		x1				= float(colNdx % 3);
+			const float		y1				= float(colNdx / 3);
+			const tcu::Vec4	p0				= tcu::Vec4(originOffsetX + x0 * pixelSize / 2.0f, originOffsetY + y0 * pixelSize / 2.0f, 0.0f, 1.0f);
+			const tcu::Vec4	p1				= tcu::Vec4(originOffsetX + x1 * pixelSize / 2.0f, originOffsetY + y1 * pixelSize / 2.0f, 0.0f, 1.0f);
+
+			if (x0 == x1 && y0 == y1)
+				continue;
+
+			outData.push_back(p0);
+			outData.push_back(p1);
+		}
+	}
+
+	outLines.resize(outData.size() / 2);
+
+	for (size_t ndx = 0; ndx < outLines.size(); ++ndx)
+	{
+		outLines[ndx].positions[0] = outData[2 * ndx + 0];
+		outLines[ndx].positions[1] = outData[2 * ndx + 1];
+	}
+
+	// log
+	m_context.getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< "Testing " << iterationComments[iteration] << " "
+		<< "with rendering " << outLines.size() << " line(s):"
+		<< tcu::TestLog::EndMessage;
+
+	for (int ndx = 0; ndx < (int)outLines.size(); ++ndx)
+	{
+		const deUint32	multiplierInt	= m_renderSize / 2;
+		const deUint32	multiplierFrac	= subPixels;
+		std::string		coordsString;
+
+		for (size_t vertexNdx = 0; vertexNdx < 2; ++vertexNdx)
+		{
+			const tcu::Vec4&	pos				= outLines[ndx].positions[vertexNdx];
+			std::ostringstream	coordsFloat;
+			std::ostringstream	coordsNatural;
+
+			for (int coordNdx = 0; coordNdx < 2; ++coordNdx)
+			{
+				const char*	sep		= (coordNdx < 1) ? "," : "";
+				const float	coord	= pos[coordNdx];
+				const char	sign	= deSign(coord) < 0 ? '-' : '+';
+				const float	m		= deFloatFloor(float(multiplierInt) * deFloatAbs(coord));
+				const float	r		= deFloatFrac(float(multiplierInt) * deFloatAbs(coord)) * float(multiplierFrac);
+
+				coordsFloat << std::fixed << std::setw(13) << std::setprecision(10) << coord << sep;
+				coordsNatural << sign << '(' << m << '+' << r << '/' << multiplierFrac << ')' << sep;
+			}
+
+			coordsString += "\n\t[" + coordsFloat.str() + "] == [" + coordsNatural.str() + "] / " + de::toString(multiplierInt);
+		}
+
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Line " << (ndx + 1) << ':'
+			<< coordsString
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
+void ConservativeLineTestInstance::drawPrimitives (tcu::Surface& result, const std::vector<tcu::Vec4>& vertexData, VkPrimitiveTopology primitiveTopology)
+{
+	if (m_conservativeTestConfig.degeneratePrimitives)
+	{
+		// Set provoking vertex color to white
+		tcu::Vec4				colorProvoking	(1.0f, 1.0f, 1.0f, 1.0f);
+		tcu::Vec4				colorOther		(0.0f, 1.0f, 1.0f, 1.0f);
+		std::vector<tcu::Vec4>	colorData;
+
+		colorData.reserve(vertexData.size());
+
+		for (size_t vertexNdx = 0; vertexNdx < vertexData.size(); ++vertexNdx)
+			if (vertexNdx % 2 == 0)
+				colorData.push_back(colorProvoking);
+			else
+				colorData.push_back(colorOther);
+
+		BaseRenderingTestInstance::drawPrimitives(result, vertexData, colorData, primitiveTopology);
+	}
+	else
+		BaseRenderingTestInstance::drawPrimitives(result, vertexData, primitiveTopology);
+}
+
+bool ConservativeLineTestInstance::compareAndVerify (std::vector<LineSceneSpec::SceneLine>& lines, tcu::Surface& resultImage, std::vector<tcu::Vec4>& drawBuffer)
+{
+	DE_UNREF(drawBuffer);
+
+	switch (m_conservativeTestConfig.conservativeRasterizationMode)
+	{
+		case VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT:
+		{
+			if (m_conservativeTestConfig.degeneratePrimitives)
+				return compareAndVerifyOverestimatedDegenerate(lines, resultImage);
+			else
+				return compareAndVerifyOverestimatedNormal(lines, resultImage);
+
+			break;
+		}
+		case VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT:
+		{
+			if (m_conservativeTestConfig.degeneratePrimitives)
+				return compareAndVerifyUnderestimatedDegenerate(lines, resultImage);
+			else
+				return compareAndVerifyUnderestimatedNormal(lines, resultImage);
+
+			break;
+		}
+
+		default:
+			TCU_THROW(InternalError, "Unknown conservative rasterization mode");
+	}
+}
+
+bool ConservativeLineTestInstance::compareAndVerifyOverestimatedNormal (std::vector<LineSceneSpec::SceneLine>& lines, tcu::Surface& resultImage)
+{
+	DE_UNREF(lines);
+
+	const int			b						= 3; // bar width
+	const int			w						= resultImage.getWidth() - 1;
+	const int			h						= resultImage.getHeight() - 1;
+	const int			xStarts[]				= {     1,     1,     1 };
+	const int			xEnds[]					= { w - 1,     b, w - 1 };
+	const int			yStarts[]				= {     1,     1, h - b };
+	const int			yEnds[]					= {     b, h - 1, h - 1 };
+	const int			xStart					= xStarts[getIteration()];
+	const int			xEnd					= xEnds[getIteration()];
+	const int			yStart					= yStarts[getIteration()];
+	const int			yEnd					= yEnds[getIteration()];
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= 0;
+	int					errY					= 0;
+	deUint32			errValue				= 0;
+	bool				result					= true;
+
+	DE_ASSERT(resultImage.getHeight() == resultImage.getWidth());
+
+	for (int y = yStart; result && y < yEnd; ++y)
+	for (int x = xStart; result && x < xEnd; ++x)
+	{
+		if (resultImage.getPixel(x,y).getPacked() != foregroundColor.getPacked())
+		{
+			result		= false;
+			errX		= x;
+			errY		= y;
+			errValue	= resultImage.getPixel(x,y).getPacked();
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+			errorMask.setPixel(x, y, backgroundColor);
+
+		for (int y = yStart; y < yEnd; ++y)
+		for (int x = xStart; x < xEnd; ++x)
+		{
+			if (resultImage.getPixel(x,y).getPacked() != foregroundColor.getPacked())
+				errorMask.setPixel(x,y, unexpectedPixelColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found starting at " << errX << "," << errY << " value=0x" << std::hex << errValue
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativeLineTestInstance::compareAndVerifyOverestimatedDegenerate (std::vector<LineSceneSpec::SceneLine>& lines, tcu::Surface& resultImage)
+{
+	DE_UNREF(lines);
+
+	const char*			iterationComments[]		= { "Horizontal line", "Vertical line", "Diagonal line" };
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	bool				result					= true;
+	tcu::Surface		referenceImage			(resultImage.getWidth(), resultImage.getHeight());
+
+	for (int y = 0; y < resultImage.getHeight(); ++y)
+	for (int x = 0; x < resultImage.getWidth(); ++x)
+		referenceImage.setPixel(x, y, backgroundColor);
+
+	if (m_conservativeRasterizationProperties.degenerateLinesRasterized)
+	{
+		log << tcu::TestLog::Message << "Lines expected to be rasterized with white color" << tcu::TestLog::EndMessage;
+
+		// This pixel will alway be covered due to the placement of the line.
+		referenceImage.setPixel(1, 1, foregroundColor);
+
+		// Additional pixels will be covered based on the extra bloat added to the primitive.
+		const float extraOverestimation = getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+		const int xExtent = 1 + int((extraOverestimation * 2.0f) + 0.5f);
+		const int yExtent = xExtent;
+
+		for (int y = 0; y <= yExtent; ++y)
+		for (int x = 0; x <= xExtent; ++x)
+			referenceImage.setPixel(x, y, foregroundColor);
+	}
+	else
+		log << tcu::TestLog::Message << "Lines expected to be culled" << tcu::TestLog::EndMessage;
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+	{
+		if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+		{
+			result = false;
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found for mode " << iterationComments[getIteration()]
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativeLineTestInstance::compareAndVerifyUnderestimatedNormal (std::vector<LineSceneSpec::SceneLine>& lines, tcu::Surface& resultImage)
+{
+	DE_UNREF(lines);
+
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= -1;
+	int					errY					= -1;
+	tcu::RGBA			errValue;
+	bool				result					= true;
+	tcu::Surface		referenceImage			(resultImage.getWidth(), resultImage.getHeight());
+
+	DE_ASSERT(resultImage.getHeight() == resultImage.getWidth());
+
+	for (int y = 0; y < referenceImage.getHeight(); ++y)
+	for (int x = 0; x < referenceImage.getWidth(); ++x)
+		referenceImage.setPixel(x, y, backgroundColor);
+
+	if (getLineWidth() > 1.0f)
+	{
+		const tcu::IVec2	viewportSize(resultImage.getWidth(), resultImage.getHeight());
+
+		for (size_t lineNdx = 0; lineNdx < lines.size(); ++lineNdx)
+		for (int y = 0; y < resultImage.getHeight(); ++y)
+		for (int x = 0; x < resultImage.getWidth(); ++x)
+		{
+			if (calculateUnderestimateLineCoverage(lines[lineNdx].positions[0], lines[lineNdx].positions[1], getLineWidth(), tcu::IVec2(x,y), viewportSize) == tcu::COVERAGE_FULL)
+				referenceImage.setPixel(x, y, foregroundColor);
+		}
+	}
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+	{
+		if (resultImage.getPixel(x,y).getPacked() != referenceImage.getPixel(x,y).getPacked())
+		{
+			result		= false;
+			errX		= x;
+			errY		= y;
+			errValue	= resultImage.getPixel(x,y);
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+			errorMask.setPixel(x, y, backgroundColor);
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth();  ++x)
+		{
+			if (resultImage.getPixel(x,y).getPacked() != referenceImage.getPixel(x,y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found starting at " << errX << "," << errY << " errValue=" << errValue
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativeLineTestInstance::compareAndVerifyUnderestimatedDegenerate (std::vector<LineSceneSpec::SceneLine>& lines, tcu::Surface& resultImage)
+{
+	DE_UNREF(lines);
+
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	bool				result					= true;
+	tcu::Surface		referenceImage			(resultImage.getWidth(), resultImage.getHeight());
+
+	for (int y = 0; y < resultImage.getHeight(); ++y)
+	for (int x = 0; x < resultImage.getWidth(); ++x)
+		referenceImage.setPixel(x, y, backgroundColor);
+
+	log << tcu::TestLog::Message << "No lines expected to be rasterized" << tcu::TestLog::EndMessage;
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+	{
+		if (resultImage.getPixel(x,y).getPacked() != referenceImage.getPixel(x,y).getPacked())
+		{
+			result = false;
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface	errorMask	(resultImage.getWidth(), resultImage.getHeight());
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found" << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT> ConservativeLineTestInstance::initRasterizationConservativeStateCreateInfo (void)
+{
+	const float															extraOverestimationSize	= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+	std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	result;
+
+	result.reserve(getIterationCount());
+
+	for (int iteration = 0; iteration < getIterationCount(); ++iteration)
+	{
+		const VkPipelineRasterizationConservativeStateCreateInfoEXT	rasterizationConservativeStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,	//  VkStructureType											sType;
+			DE_NULL,																		//  const void*												pNext;
+			(VkPipelineRasterizationConservativeStateCreateFlagsEXT)0,						//  VkPipelineRasterizationConservativeStateCreateFlagsEXT	flags;
+			m_conservativeTestConfig.conservativeRasterizationMode,							//  VkConservativeRasterizationModeEXT						conservativeRasterizationMode;
+			extraOverestimationSize															//  float													extraPrimitiveOverestimationSize;
+		};
+
+		result.push_back(rasterizationConservativeStateCreateInfo);
+	}
+
+	return result;
+}
+
+const std::vector<VkPipelineRasterizationStateCreateInfo> ConservativeLineTestInstance::initRasterizationStateCreateInfo (void)
+{
+	std::vector<VkPipelineRasterizationStateCreateInfo>	result;
+
+	result.reserve(getIterationCount());
+
+	for (int iteration = 0; iteration < getIterationCount(); ++iteration)
+	{
+		const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//  VkStructureType							sType;
+			&m_rasterizationConservativeStateCreateInfo[iteration],			//  const void*								pNext;
+			0,																//  VkPipelineRasterizationStateCreateFlags	flags;
+			false,															//  VkBool32								depthClampEnable;
+			false,															//  VkBool32								rasterizerDiscardEnable;
+			VK_POLYGON_MODE_FILL,											//  VkPolygonMode							polygonMode;
+			VK_CULL_MODE_NONE,												//  VkCullModeFlags							cullMode;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								//  VkFrontFace								frontFace;
+			VK_FALSE,														//  VkBool32								depthBiasEnable;
+			0.0f,															//  float									depthBiasConstantFactor;
+			0.0f,															//  float									depthBiasClamp;
+			0.0f,															//  float									depthBiasSlopeFactor;
+			getLineWidth(),													//  float									lineWidth;
+		};
+
+		result.push_back(rasterizationStateCreateInfo);
+	}
+
+	return result;
+}
+
+const VkPipelineRasterizationStateCreateInfo* ConservativeLineTestInstance::getRasterizationStateCreateInfo	(void) const
+{
+	return &m_rasterizationStateCreateInfo[getIteration()];
+}
+
+const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativeLineTestInstance::getLineRasterizationStateCreateInfo	(void) const
+{
+	return DE_NULL;
+}
+
+
+class ConservativePointTestInstance : public PointTestInstance
+{
+public:
+																				ConservativePointTestInstance					(Context&				context,
+																																 ConservativeTestConfig	conservativeTestConfig,
+																																 VkSampleCountFlagBits	sampleCount)
+																					: PointTestInstance								(
+																																		context,
+																																		PRIMITIVEWIDENESS_NARROW,
+																																		PRIMITIVESTRICTNESS_IGNORE,
+																																		sampleCount,
+																																		LINESTIPPLE_DISABLED,
+																																		VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT,
+																																		0,
+																																		conservativeTestConfig.resolution,
+																																		conservativeTestConfig.lineWidth
+																																	)
+																					, m_conservativeTestConfig						(conservativeTestConfig)
+																					, m_conservativeRasterizationProperties			(context.getConservativeRasterizationPropertiesEXT())
+																					, m_rasterizationConservativeStateCreateInfo	(initRasterizationConservativeStateCreateInfo())
+																					, m_rasterizationStateCreateInfo				(initRasterizationStateCreateInfo())
+																					, m_renderStart									()
+																					, m_renderEnd									()
+																				{}
+
+	void																		generatePoints									(int										iteration,
+																																 std::vector<tcu::Vec4>&					outData,
+																																 std::vector<PointSceneSpec::ScenePoint>&	outPoints);
+	const VkPipelineRasterizationStateCreateInfo*								getRasterizationStateCreateInfo					(void) const;
+
+protected:
+	virtual const VkPipelineRasterizationLineStateCreateInfoEXT*				getLineRasterizationStateCreateInfo				(void) const;
+
+	virtual bool																compareAndVerify								(std::vector<PointSceneSpec::ScenePoint>&	points,
+																																 tcu::Surface&								resultImage,
+																																 std::vector<tcu::Vec4>&					drawBuffer);
+	virtual bool																compareAndVerifyOverestimated					(std::vector<PointSceneSpec::ScenePoint>&	points,
+																																 tcu::Surface&								resultImage);
+	virtual bool																compareAndVerifyUnderestimated					(std::vector<PointSceneSpec::ScenePoint>&	points,
+																																 tcu::Surface&								resultImage);
+
+private:
+	const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	initRasterizationConservativeStateCreateInfo	(void);
+	const std::vector<VkPipelineRasterizationStateCreateInfo>					initRasterizationStateCreateInfo				(void);
+
+	const ConservativeTestConfig												m_conservativeTestConfig;
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT				m_conservativeRasterizationProperties;
+	const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	m_rasterizationConservativeStateCreateInfo;
+	const std::vector<VkPipelineRasterizationStateCreateInfo>					m_rasterizationStateCreateInfo;
+	std::vector<int>															m_renderStart;
+	std::vector<int>															m_renderEnd;
+};
+
+void ConservativePointTestInstance::generatePoints (int iteration, std::vector<tcu::Vec4>& outData, std::vector<PointSceneSpec::ScenePoint>& outPoints)
+{
+	const float	pixelSize		= 2.0f / float(m_renderSize);
+	const bool	isOverestimate	= m_conservativeTestConfig.conservativeRasterizationMode == VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+
+	m_renderStart.clear();
+	m_renderEnd.clear();
+
+	if (isOverestimate)
+	{
+		const float	extraOverestimationSize	= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+		const float	overestimate			= m_conservativeRasterizationProperties.primitiveOverestimationSize + extraOverestimationSize;
+		const float	halfRenderAreaSize		= overestimate + 0.5f;
+		const float	pointCenterOffset		= 2.0f + 0.5f * float(iteration) + halfRenderAreaSize;
+		const float	pointEdgeStart			= pointCenterOffset - halfRenderAreaSize;
+		const float	pointEdgeEnd			= pointEdgeStart + 2 * halfRenderAreaSize;
+		const int	renderStart				= int(deFloatFloor(pointEdgeStart)) + int((deFloatFrac(pointEdgeStart) > 0.0f) ? 0 : -1);
+		const int	renderEnd				= int(deFloatCeil(pointEdgeEnd)) + int((deFloatFrac(pointEdgeEnd) > 0.0f) ? 0 : 1);
+
+		outData.push_back(tcu::Vec4(-1.0f + pixelSize * pointCenterOffset, -1.0f + pixelSize * pointCenterOffset, 0.0f, 1.0f));
+
+		m_renderStart.push_back(renderStart);
+		m_renderEnd.push_back(renderEnd);
+	}
+	else
+	{
+		const float	pointSize			= m_conservativeTestConfig.lineWidth;
+		const float	halfRenderAreaSize	= pointSize / 2.0f;
+
+		switch (iteration)
+		{
+			case 0:
+			{
+				const float	pointCenterOffset	= (pointSize + 1.0f + deFloatFrac(pointSize)) / 2.0f;
+				const float	pointEdgeStart		= pointCenterOffset - halfRenderAreaSize;
+				const float	pointEdgeEnd		= pointEdgeStart + 2.0f * halfRenderAreaSize;
+				const int	renderStart			= (m_renderSize / 2) + int(deFloatCeil(pointEdgeStart));
+				const int	renderEnd			= (m_renderSize / 2) + int(deFloatFloor(pointEdgeEnd));
+
+				outData.push_back(tcu::Vec4(pixelSize * pointCenterOffset, pixelSize * pointCenterOffset, 0.0f, 1.0f));
+
+				m_renderStart.push_back(renderStart);
+				m_renderEnd.push_back(renderEnd);
+
+				break;
+			}
+
+			case 1:
+			{
+				const float subPixelSize		= 1.0f / float(1u<<(m_subpixelBits - 1));
+				const float	pointBottomLeft		= 1.0f - subPixelSize;
+				const float	pointCenterOffset	= pointBottomLeft + pointSize / 2.0f;
+				const float	pointEdgeStart		= pointCenterOffset - halfRenderAreaSize;
+				const float	pointEdgeEnd		= pointEdgeStart + 2.0f * halfRenderAreaSize;
+				const int	renderStart			= (m_renderSize / 2) + int(deFloatCeil(pointEdgeStart));
+				const int	renderEnd			= (m_renderSize / 2) + int(deFloatFloor(pointEdgeEnd));
+
+				outData.push_back(tcu::Vec4(pixelSize * pointCenterOffset, pixelSize * pointCenterOffset, 0.0f, 1.0f));
+
+				m_renderStart.push_back(renderStart);
+				m_renderEnd.push_back(renderEnd);
+
+				break;
+			}
+
+			case 2:
+			{
+				// Edges of a point are considered not covered. Top-left coverage rule is not applicable for underestimate rasterization.
+				const float	pointCenterOffset	= (pointSize + deFloatFrac(pointSize)) / 2.0f;
+				const float	pointEdgeStart		= pointCenterOffset - halfRenderAreaSize;
+				const float	pointEdgeEnd		= pointEdgeStart + 2.0f * halfRenderAreaSize;
+				const int	renderStart			= (m_renderSize / 2) + int(deFloatCeil(pointEdgeStart)) + 1;
+				const int	renderEnd			= (m_renderSize / 2) + int(deFloatFloor(pointEdgeEnd)) - 1;
+
+				outData.push_back(tcu::Vec4(pixelSize * pointCenterOffset, pixelSize * pointCenterOffset, 0.0f, 1.0f));
+
+				m_renderStart.push_back(renderStart);
+				m_renderEnd.push_back(renderEnd);
+
+				break;
+			}
+
+			default:
+				TCU_THROW(InternalError, "Unexpected iteration");
+		}
+	}
+
+	outPoints.resize(outData.size());
+	for (size_t ndx = 0; ndx < outPoints.size(); ++ndx)
+	{
+		outPoints[ndx].position = outData[ndx];
+		outPoints[ndx].pointSize = getPointSize();
+	}
+
+	// log
+	m_context.getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< "Testing conservative point rendering "
+		<< "with rendering " << outPoints.size() << " points(s):"
+		<< tcu::TestLog::EndMessage;
+	for (int ndx = 0; ndx < (int)outPoints.size(); ++ndx)
+	{
+		const deUint32	 multiplier	= m_renderSize / 2;
+
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message
+			<< "Point " << (ndx+1) << ":"
+			<< "\n\t" << outPoints[ndx].position << " == " << (float(multiplier) * outPoints[ndx].position) << "/" << multiplier
+			<< tcu::TestLog::EndMessage;
+	}
+}
+
+bool ConservativePointTestInstance::compareAndVerify (std::vector<PointSceneSpec::ScenePoint>& points, tcu::Surface& resultImage, std::vector<tcu::Vec4>& drawBuffer)
+{
+	DE_UNREF(drawBuffer);
+
+	switch (m_conservativeTestConfig.conservativeRasterizationMode)
+	{
+		case VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT:
+		{
+			return compareAndVerifyOverestimated(points, resultImage);
+		}
+		case VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT:
+		{
+			return compareAndVerifyUnderestimated(points, resultImage);
+		}
+
+		default:
+			TCU_THROW(InternalError, "Unknown conservative rasterization mode");
+	}
+}
+
+bool ConservativePointTestInstance::compareAndVerifyOverestimated (std::vector<PointSceneSpec::ScenePoint>& points, tcu::Surface& resultImage)
+{
+	DE_UNREF(points);
+
+	const char*			iterationComments[]		= { "Edges and corners", "Partial coverage", "Edges and corners" };
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= 0;
+	int					errY					= 0;
+	deUint32			errValue				= 0;
+	bool				result					= true;
+
+	log << tcu::TestLog::Message << "Points expected to be rasterized with white color" << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Testing " << iterationComments[getIteration()] << tcu::TestLog::EndMessage;
+
+	for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+	{
+		const int renderStart	= m_renderStart[renderAreaNdx];
+		const int renderEnd		= m_renderEnd[renderAreaNdx];
+
+		for (int y = renderStart; result && y < renderEnd; ++y)
+		for (int x = renderStart; result && x < renderEnd; ++x)
+		{
+			if (resultImage.getPixel(x,y).getPacked() != foregroundColor.getPacked())
+			{
+				result		= false;
+				errX		= x;
+				errY		= y;
+				errValue	= resultImage.getPixel(x, y).getPacked();
+
+				break;
+			}
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface		referenceImage	(resultImage.getWidth(), resultImage.getHeight());
+		tcu::Surface		errorMask		(resultImage.getWidth(), resultImage.getHeight());
+		std::ostringstream	css;
+
+		for (int y = 0; y < resultImage.getHeight(); ++y)
+		for (int x = 0; x < resultImage.getWidth(); ++x)
+			referenceImage.setPixel(x, y, backgroundColor);
+
+		for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+		{
+			const int renderStart	= m_renderStart[renderAreaNdx];
+			const int renderEnd		= m_renderEnd[renderAreaNdx];
+
+			for (int y = renderStart; y < renderEnd; ++y)
+			for (int x = renderStart; x < renderEnd; ++x)
+				referenceImage.setPixel(x, y, foregroundColor);
+		}
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		css << std::endl;
+		for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+		{
+			const int renderStart	= m_renderStart[renderAreaNdx];
+			const int renderEnd		= m_renderEnd[renderAreaNdx];
+
+			css << "[" << renderStart << "," << renderEnd << ") x [" << renderStart << "," << renderEnd << ")" << std::endl;
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found starting at " << errX << "," << errY << " value=0x" << std::hex << errValue
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "Expected area(s) to be filled:" << css.str()
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+bool ConservativePointTestInstance::compareAndVerifyUnderestimated (std::vector<PointSceneSpec::ScenePoint>& points, tcu::Surface& resultImage)
+{
+	DE_UNREF(points);
+
+	const char*			iterationComments[]		= { "Full coverage", "Full coverage with subpixel", "Exact coverage" };
+	const tcu::RGBA		backgroundColor			= tcu::RGBA(0, 0, 0, 255);
+	const tcu::RGBA		foregroundColor			= tcu::RGBA(255, 255, 255, 255);
+	const tcu::RGBA		unexpectedPixelColor	= tcu::RGBA(255, 0, 0, 255);
+	tcu::TestLog&		log						= m_context.getTestContext().getLog();
+	int					errX					= 0;
+	int					errY					= 0;
+	deUint32			errValue				= 0;
+	bool				result					= true;
+	tcu::Surface		referenceImage			(resultImage.getWidth(), resultImage.getHeight());
+
+	log << tcu::TestLog::Message << "Points expected to be rasterized with white color" << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Testing " << iterationComments[getIteration()] << tcu::TestLog::EndMessage;
+
+	for (int y = 0; y < resultImage.getHeight(); ++y)
+	for (int x = 0; x < resultImage.getWidth(); ++x)
+		referenceImage.setPixel(x, y, backgroundColor);
+
+	for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+	{
+		const int renderStart	= m_renderStart[renderAreaNdx];
+		const int renderEnd		= m_renderEnd[renderAreaNdx];
+
+		for (int y = renderStart; y < renderEnd; ++y)
+		for (int x = renderStart; x < renderEnd; ++x)
+			referenceImage.setPixel(x, y, foregroundColor);
+	}
+
+	for (int y = 0; result && y < resultImage.getHeight(); ++y)
+	for (int x = 0; result && x < resultImage.getWidth(); ++x)
+	{
+		if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+		{
+			result		= false;
+			errX		= x;
+			errY		= y;
+			errValue	= resultImage.getPixel(x, y).getPacked();
+
+			break;
+		}
+	}
+
+	if (!result)
+	{
+		tcu::Surface		errorMask	(resultImage.getWidth(), resultImage.getHeight());
+		std::ostringstream	css;
+
+		for (int y = 0; y < errorMask.getHeight(); ++y)
+		for (int x = 0; x < errorMask.getWidth(); ++x)
+		{
+			if (resultImage.getPixel(x, y).getPacked() != referenceImage.getPixel(x, y).getPacked())
+				errorMask.setPixel(x, y, unexpectedPixelColor);
+			else
+				errorMask.setPixel(x, y, backgroundColor);
+		}
+
+		css << std::endl;
+		for (size_t renderAreaNdx = 0; result && renderAreaNdx < m_renderStart.size(); ++renderAreaNdx)
+		{
+			const int renderStart	= m_renderStart[renderAreaNdx];
+			const int renderEnd		= m_renderEnd[renderAreaNdx];
+
+			css << "[" << renderStart << "," << renderEnd << ") x [" << renderStart << "," << renderEnd << ")" << std::endl;
+		}
+
+		log << tcu::TestLog::Message << "Invalid pixels found starting at " << errX << "," << errY << " value=0x" << std::hex << errValue
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "Expected area(s) to be filled:" << css.str()
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result",	"Result",		resultImage)
+			<< tcu::TestLog::Image("Reference",	"Reference",	referenceImage)
+			<< tcu::TestLog::Image("ErrorMask", "ErrorMask",	errorMask)
+			<< tcu::TestLog::EndImageSet;
+	}
+	else
+	{
+		log << tcu::TestLog::Message << "No invalid pixels found." << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::ImageSet("Verification result", "Result of rendering")
+			<< tcu::TestLog::Image("Result", "Result", resultImage)
+			<< tcu::TestLog::EndImageSet;
+	}
+
+	return result;
+}
+
+const std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT> ConservativePointTestInstance::initRasterizationConservativeStateCreateInfo (void)
+{
+	const float															extraOverestimationSize	= getExtraOverestimationSize(m_conservativeTestConfig.extraOverestimationSize, m_conservativeRasterizationProperties);
+	std::vector<VkPipelineRasterizationConservativeStateCreateInfoEXT>	result;
+
+	result.reserve(getIterationCount());
+
+	for (int iteration = 0; iteration < getIterationCount(); ++iteration)
+	{
+		const VkPipelineRasterizationConservativeStateCreateInfoEXT	rasterizationConservativeStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,	//  VkStructureType											sType;
+			DE_NULL,																		//  const void*												pNext;
+			(VkPipelineRasterizationConservativeStateCreateFlagsEXT)0,						//  VkPipelineRasterizationConservativeStateCreateFlagsEXT	flags;
+			m_conservativeTestConfig.conservativeRasterizationMode,							//  VkConservativeRasterizationModeEXT						conservativeRasterizationMode;
+			extraOverestimationSize															//  float													extraPrimitiveOverestimationSize;
+		};
+
+		result.push_back(rasterizationConservativeStateCreateInfo);
+	}
+
+	return result;
+}
+
+const std::vector<VkPipelineRasterizationStateCreateInfo> ConservativePointTestInstance::initRasterizationStateCreateInfo (void)
+{
+	std::vector<VkPipelineRasterizationStateCreateInfo>	result;
+
+	result.reserve(getIterationCount());
+
+	for (int iteration = 0; iteration < getIterationCount(); ++iteration)
+	{
+		const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		//  VkStructureType							sType;
+			&m_rasterizationConservativeStateCreateInfo[iteration],			//  const void*								pNext;
+			0,																//  VkPipelineRasterizationStateCreateFlags	flags;
+			false,															//  VkBool32								depthClampEnable;
+			false,															//  VkBool32								rasterizerDiscardEnable;
+			VK_POLYGON_MODE_FILL,											//  VkPolygonMode							polygonMode;
+			VK_CULL_MODE_NONE,												//  VkCullModeFlags							cullMode;
+			VK_FRONT_FACE_COUNTER_CLOCKWISE,								//  VkFrontFace								frontFace;
+			VK_FALSE,														//  VkBool32								depthBiasEnable;
+			0.0f,															//  float									depthBiasConstantFactor;
+			0.0f,															//  float									depthBiasClamp;
+			0.0f,															//  float									depthBiasSlopeFactor;
+			0.0f,															//  float									lineWidth;
+		};
+
+		result.push_back(rasterizationStateCreateInfo);
+	}
+
+	return result;
+}
+
+const VkPipelineRasterizationStateCreateInfo* ConservativePointTestInstance::getRasterizationStateCreateInfo	(void) const
+{
+	return &m_rasterizationStateCreateInfo[getIteration()];
+}
+
+const VkPipelineRasterizationLineStateCreateInfoEXT* ConservativePointTestInstance::getLineRasterizationStateCreateInfo	(void) const
+{
+	return DE_NULL;
+}
+
 
 template <typename ConcreteTestInstance>
 class WidenessTestCase : public BaseRenderingTestCase
@@ -3054,7 +5275,7 @@ private:
 	void													extractTriangles					(std::vector<TriangleSceneSpec::SceneTriangle>& outTriangles, const std::vector<tcu::Vec4>& vertices) const;
 	void													extractLines						(std::vector<LineSceneSpec::SceneLine>& outLines, const std::vector<tcu::Vec4>& vertices) const;
 	void													extractPoints						(std::vector<PointSceneSpec::ScenePoint>& outPoints, const std::vector<tcu::Vec4>& vertices) const;
-	void													drawPrimitives						(tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, VkPrimitiveTopology primitiveTopology, Move<VkQueryPool>& queryPool);
+	void													drawPrimitivesDiscard				(tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, VkPrimitiveTopology primitiveTopology, Move<VkQueryPool>& queryPool);
 
 	const VkPrimitiveTopology								m_primitiveTopology;
 	const deBool											m_queryFragmentShaderInvocations;
@@ -3108,7 +5329,7 @@ tcu::TestStatus DiscardTestInstance::iterate (void)
 	{
 		Move<VkQueryPool> queryPool	= createQueryPool(vkd, vkDevice, &queryPoolCreateInfo);
 
-		drawPrimitives(resultImage, drawBuffer, m_primitiveTopology, queryPool);
+		drawPrimitivesDiscard(resultImage, drawBuffer, m_primitiveTopology, queryPool);
 		vkd.getQueryPoolResults(vkDevice, *queryPool, 0u, 1u, sizeof(deUint64), &queryResult, 0u, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 	}
 	else
@@ -3306,7 +5527,7 @@ const VkPipelineRasterizationStateCreateInfo* DiscardTestInstance::getRasterizat
 	return &rasterizationStateCreateInfo;
 }
 
-void DiscardTestInstance::drawPrimitives (tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, VkPrimitiveTopology primitiveTopology, Move<VkQueryPool>& queryPool)
+void DiscardTestInstance::drawPrimitivesDiscard (tcu::Surface& result, const std::vector<tcu::Vec4>& positionData, VkPrimitiveTopology primitiveTopology, Move<VkQueryPool>& queryPool)
 {
 	const DeviceInterface&				vkd					= m_context.getDeviceInterface();
 	const VkDevice						vkDevice			= m_context.getDevice();
@@ -4547,6 +6768,277 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		}
 
 		rasterizationTests->addChild(discard);
+	}
+
+	// .conservative
+	{
+		typedef struct
+		{
+			float			size;
+			const char*		name;
+		} overestimateSizes;
+
+		const overestimateSizes overestimateNormalSizes[]	=
+		{
+			{ 0.00f,			"0_00" },
+			{ 0.25f,			"0_25" },
+			{ 0.50f,			"0_50" },
+			{ 0.75f,			"0_75" },
+			{ 1.00f,			"1_00" },
+			{ 2.00f,			"2_00" },
+			{ 4.00f,			"4_00" },
+			{ -TCU_INFINITY,	"min" },
+			{ TCU_INFINITY,		"max" },
+		};
+		const overestimateSizes overestimateDegenerate[]	=
+		{
+			{ 0.00f,			"0_00" },
+			{ 0.25f,			"0_25" },
+			{ -TCU_INFINITY,	"min" },
+			{ TCU_INFINITY,		"max" },
+		};
+		const overestimateSizes underestimateLineWidths[]	=
+		{
+			{ 0.50f,			"0_50" },
+			{ 1.00f,			"1_00" },
+			{ 1.50f,			"1_50" },
+		};
+		const overestimateSizes underestimatePointSizes[]	=
+		{
+			{ 1.00f,			"1_00" },
+			{ 1.50f,			"1_50" },
+			{ 2.00f,			"2_00" },
+			{ 3.00f,			"3_00" },
+			{ 4.00f,			"4_00" },
+			{ 8.00f,			"8_00" },
+		};
+		const struct PrimitiveType
+		{
+			VkPrimitiveTopology	type;
+			const char*			name;
+		}
+		primitiveTypes[] =
+		{
+			{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	"triangles"		},
+			{ VK_PRIMITIVE_TOPOLOGY_LINE_LIST,		"lines"			},
+			{ VK_PRIMITIVE_TOPOLOGY_POINT_LIST,		"points"		}
+		};
+		const VkSampleCountFlagBits samples[] =
+		{
+			VK_SAMPLE_COUNT_1_BIT,
+			VK_SAMPLE_COUNT_2_BIT,
+			VK_SAMPLE_COUNT_4_BIT,
+			VK_SAMPLE_COUNT_8_BIT,
+			VK_SAMPLE_COUNT_16_BIT,
+			VK_SAMPLE_COUNT_32_BIT,
+			VK_SAMPLE_COUNT_64_BIT
+		};
+
+		tcu::TestCaseGroup* const conservative = new tcu::TestCaseGroup(testCtx, "conservative", "Conservative rasterization tests");
+
+		rasterizationTests->addChild(conservative);
+
+		{
+			tcu::TestCaseGroup* const overestimate = new tcu::TestCaseGroup(testCtx, "overestimate", "Overestimate tests");
+
+			conservative->addChild(overestimate);
+
+			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
+			{
+				const std::string samplesGroupName = "samples_" + de::toString(samples[samplesNdx]);
+
+				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str(), "Samples tests");
+
+				overestimate->addChild(samplesGroup);
+
+				for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveTypeNdx)
+				{
+					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name, "Primitive tests");
+
+					samplesGroup->addChild(primitiveGroup);
+
+					{
+						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal", "Normal conservative rasterization tests");
+
+						primitiveGroup->addChild(normal);
+
+						for (int overestimateSizesNdx = 0; overestimateSizesNdx < DE_LENGTH_OF_ARRAY(overestimateNormalSizes); ++overestimateSizesNdx)
+						{
+							const ConservativeTestConfig	config	=
+							{
+								VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT,	//  VkConservativeRasterizationModeEXT	conservativeRasterizationMode;
+								overestimateNormalSizes[overestimateSizesNdx].size,		//  float								extraOverestimationSize;
+								primitiveTypes[primitiveTypeNdx].type,					//  VkPrimitiveTopology					primitiveTopology;
+								false,													//  bool								degeneratePrimitives;
+								1.0f,													//  float								lineWidth;
+								RESOLUTION_POT,											//  deUint32							resolution;
+							};
+
+							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+								normal->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
+																											 overestimateNormalSizes[overestimateSizesNdx].name,
+																											 "Overestimate test, verify rasterization result",
+																											 config,
+																											 samples[samplesNdx]));
+
+							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+								normal->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
+																											 overestimateNormalSizes[overestimateSizesNdx].name,
+																											 "Overestimate test, verify rasterization result",
+																											 config,
+																											 samples[samplesNdx]));
+
+							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+								normal->addChild(new ConservativeTestCase<ConservativePointTestInstance>	(testCtx,
+																											 overestimateNormalSizes[overestimateSizesNdx].name,
+																											 "Overestimate test, verify rasterization result",
+																											 config,
+																											 samples[samplesNdx]));
+						}
+					}
+
+					{
+						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate", "Degenerate primitives conservative rasterization tests");
+
+						primitiveGroup->addChild(degenerate);
+
+						for (int overestimateSizesNdx = 0; overestimateSizesNdx < DE_LENGTH_OF_ARRAY(overestimateDegenerate); ++overestimateSizesNdx)
+						{
+							const ConservativeTestConfig	config	=
+							{
+								VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT,	//  VkConservativeRasterizationModeEXT	conservativeRasterizationMode;
+								overestimateDegenerate[overestimateSizesNdx].size,		//  float								extraOverestimationSize;
+								primitiveTypes[primitiveTypeNdx].type,					//  VkPrimitiveTopology					primitiveTopology;
+								true,													//  bool								degeneratePrimitives;
+								1.0f,													//  float								lineWidth;
+								64u,													//  deUint32							resolution;
+							};
+
+							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+								degenerate->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
+																												 overestimateDegenerate[overestimateSizesNdx].name,
+																												 "Overestimate triangle test, verify rasterization result",
+																												 config,
+																												 samples[samplesNdx]));
+
+							if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+								degenerate->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
+																												 overestimateDegenerate[overestimateSizesNdx].name,
+																												 "Overestimate line test, verify rasterization result",
+																												 config,
+																												 samples[samplesNdx]));
+						}
+					}
+				}
+			}
+		}
+
+		{
+			tcu::TestCaseGroup* const underestimate = new tcu::TestCaseGroup(testCtx, "underestimate", "Underestimate tests");
+
+			conservative->addChild(underestimate);
+
+			for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
+			{
+				const std::string samplesGroupName = "samples_" + de::toString(samples[samplesNdx]);
+
+				tcu::TestCaseGroup* const samplesGroup = new tcu::TestCaseGroup(testCtx, samplesGroupName.c_str(), "Samples tests");
+
+				underestimate->addChild(samplesGroup);
+
+				for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitiveTypes); ++primitiveTypeNdx)
+				{
+					tcu::TestCaseGroup* const primitiveGroup = new tcu::TestCaseGroup(testCtx, primitiveTypes[primitiveTypeNdx].name, "Primitive tests");
+
+					samplesGroup->addChild(primitiveGroup);
+
+					{
+						tcu::TestCaseGroup* const normal = new tcu::TestCaseGroup(testCtx, "normal", "Normal conservative rasterization tests");
+
+						primitiveGroup->addChild(normal);
+
+						ConservativeTestConfig	config	=
+						{
+							VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	//  VkConservativeRasterizationModeEXT	conservativeRasterizationMode;
+							0.0f,													//  float								extraOverestimationSize;
+							primitiveTypes[primitiveTypeNdx].type,					//  VkPrimitiveTopology					primitiveTopology;
+							false,													//  bool								degeneratePrimitives;
+							1.0f,													//  float								lineWidth;
+							64u,													//  deUint32							resolution;
+						};
+
+						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+							normal->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
+																										 "test",
+																										 "Underestimate test, verify rasterization result",
+																										 config,
+																										 samples[samplesNdx]));
+
+						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+						{
+							for (int underestimateWidthNdx = 0; underestimateWidthNdx < DE_LENGTH_OF_ARRAY(underestimateLineWidths); ++underestimateWidthNdx)
+							{
+								config.lineWidth = underestimateLineWidths[underestimateWidthNdx].size;
+								normal->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
+																											 underestimateLineWidths[underestimateWidthNdx].name,
+																											 "Underestimate test, verify rasterization result",
+																											 config,
+																											 samples[samplesNdx]));
+							}
+						}
+
+						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+						{
+							for (int underestimatePointSizeNdx = 0; underestimatePointSizeNdx < DE_LENGTH_OF_ARRAY(underestimatePointSizes); ++underestimatePointSizeNdx)
+							{
+								config.lineWidth = underestimatePointSizes[underestimatePointSizeNdx].size;
+								normal->addChild(new ConservativeTestCase<ConservativePointTestInstance>	(testCtx,
+																											 underestimatePointSizes[underestimatePointSizeNdx].name,
+																											 "Underestimate test, verify rasterization result",
+																											 config,
+																											 samples[samplesNdx]));
+							}
+						}
+					}
+
+					{
+						tcu::TestCaseGroup* const degenerate = new tcu::TestCaseGroup(testCtx, "degenerate", "Degenerate primitives conservative rasterization tests");
+
+						primitiveGroup->addChild(degenerate);
+
+						ConservativeTestConfig	config	=
+						{
+							VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT,	//  VkConservativeRasterizationModeEXT	conservativeRasterizationMode;
+							0.0f,													//  float								extraOverestimationSize;
+							primitiveTypes[primitiveTypeNdx].type,					//  VkPrimitiveTopology					primitiveTopology;
+							true,													//  bool								degeneratePrimitives;
+							1.0f,													//  float								lineWidth;
+							64u,													//  deUint32							resolution;
+						};
+
+						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+							degenerate->addChild(new ConservativeTestCase<ConservativeTraingleTestInstance>	(testCtx,
+																											 "test",
+																											 "Underestimate triangle test, verify rasterization result",
+																											 config,
+																											 samples[samplesNdx]));
+
+						if (primitiveTypes[primitiveTypeNdx].type == VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+						{
+							for (int underestimateWidthNdx = 0; underestimateWidthNdx < DE_LENGTH_OF_ARRAY(underestimateLineWidths); ++underestimateWidthNdx)
+							{
+								config.lineWidth = underestimateLineWidths[underestimateWidthNdx].size;
+								degenerate->addChild(new ConservativeTestCase<ConservativeLineTestInstance>		(testCtx,
+																												 underestimateLineWidths[underestimateWidthNdx].name,
+																												 "Underestimate line test, verify rasterization result",
+																												 config,
+																												 samples[samplesNdx]));
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// .interpolation

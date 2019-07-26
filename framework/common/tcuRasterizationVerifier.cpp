@@ -2490,6 +2490,149 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 	}
 }
 
+CoverageType calculateUnderestimateLineCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const float lineWidth, const tcu::IVec2& pixel, const tcu::IVec2& viewportSize)
+{
+	DE_ASSERT(viewportSize.x() == viewportSize.y() && viewportSize.x() > 0);
+	DE_ASSERT(p0.w() == 1.0f && p1.w() == 1.0f);
+
+	const Vec2		p		= Vec2(p0.x(), p0.y());
+	const Vec2		q		= Vec2(p1.x(), p1.y());
+	const Vec2		pq		= Vec2(p1.x() - p0.x(), p1.y() - p0.y());
+	const Vec2		pqn		= normalize(pq);
+	const Vec2		lw		= 0.5f * lineWidth * pqn;
+	const Vec2		n		= Vec2(lw.y(), -lw.x());
+	const Vec2		vp		= Vec2(float(viewportSize.x()), float(viewportSize.y()));
+	const Vec2		a		= 0.5f * (p + Vec2(1.0f, 1.0f)) * vp + n;
+	const Vec2		b		= 0.5f * (p + Vec2(1.0f, 1.0f)) * vp - n;
+	const Vec2		c		= 0.5f * (q + Vec2(1.0f, 1.0f)) * vp - n;
+	const Vec2		ba		= b - a;
+	const Vec2		bc		= b - c;
+	const float		det		= ba.x() * bc.y() - ba.y() * bc.x();
+	int				within	= 0;
+
+	if (det != 0.0f)
+	{
+		for (int cornerNdx = 0; cornerNdx < 4; ++cornerNdx)
+		{
+			const int		pixelCornerOffsetX	= ((cornerNdx & 1) ? 1 : 0);
+			const int		pixelCornerOffsetY	= ((cornerNdx & 2) ? 1 : 0);
+			const Vec2		f					= Vec2(float(pixel.x() + pixelCornerOffsetX), float(pixel.y() + pixelCornerOffsetY));
+			const Vec2		bf					= b - f;
+			const float		alpha				= (bf.x() * bc.y() - bc.x() * bf.y()) / det;
+			const float		beta				= (ba.x() * bf.y() - bf.x() * ba.y()) / det;
+			bool			cornerWithin		= de::inRange(alpha, 0.0f, 1.0f) && de::inRange(beta, 0.0f, 1.0f);
+
+			if (cornerWithin)
+				within++;
+		}
+	}
+
+	if (within == 0)
+		return COVERAGE_NONE;
+	else if (within == 4)
+		return COVERAGE_FULL;
+	else
+		return COVERAGE_PARTIAL;
+}
+
+CoverageType calculateUnderestimateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1, const tcu::Vec4& p2, const tcu::IVec2& pixel, int subpixelBits, const tcu::IVec2& viewportSize)
+{
+	typedef tcu::Vector<deInt64, 2> I64Vec2;
+
+	const deUint64		numSubPixels						= ((deUint64)1) << subpixelBits;
+	const bool			order								= isTriangleClockwise(p0, p1, p2);			//!< clockwise / counter-clockwise
+	const tcu::Vec4&	orderedP0							= p0;										//!< vertices of a clockwise triangle
+	const tcu::Vec4&	orderedP1							= (order) ? (p1) : (p2);
+	const tcu::Vec4&	orderedP2							= (order) ? (p2) : (p1);
+	const tcu::Vec2		triangleNormalizedDeviceSpace[3]	=
+	{
+		tcu::Vec2(orderedP0.x() / orderedP0.w(), orderedP0.y() / orderedP0.w()),
+		tcu::Vec2(orderedP1.x() / orderedP1.w(), orderedP1.y() / orderedP1.w()),
+		tcu::Vec2(orderedP2.x() / orderedP2.w(), orderedP2.y() / orderedP2.w()),
+	};
+	const tcu::Vec2		triangleScreenSpace[3]				=
+	{
+		(triangleNormalizedDeviceSpace[0] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * tcu::Vec2((float)viewportSize.x(), (float)viewportSize.y()),
+		(triangleNormalizedDeviceSpace[1] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * tcu::Vec2((float)viewportSize.x(), (float)viewportSize.y()),
+		(triangleNormalizedDeviceSpace[2] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * tcu::Vec2((float)viewportSize.x(), (float)viewportSize.y()),
+	};
+
+	// Broad bounding box - pixel check
+	{
+		const float minX = de::min(de::min(triangleScreenSpace[0].x(), triangleScreenSpace[1].x()), triangleScreenSpace[2].x());
+		const float minY = de::min(de::min(triangleScreenSpace[0].y(), triangleScreenSpace[1].y()), triangleScreenSpace[2].y());
+		const float maxX = de::max(de::max(triangleScreenSpace[0].x(), triangleScreenSpace[1].x()), triangleScreenSpace[2].x());
+		const float maxY = de::max(de::max(triangleScreenSpace[0].y(), triangleScreenSpace[1].y()), triangleScreenSpace[2].y());
+
+		if ((float)pixel.x() > maxX + 1 ||
+			(float)pixel.y() > maxY + 1 ||
+			(float)pixel.x() < minX - 1 ||
+			(float)pixel.y() < minY - 1)
+			return COVERAGE_NONE;
+	}
+
+	// Accurate intersection for edge pixels
+	{
+		//  In multisampling, the sample points can be anywhere in the pixel, and in single sampling only in the center.
+		const I64Vec2 pixelCorners[4] =
+		{
+			I64Vec2((pixel.x()+0) * numSubPixels, (pixel.y()+0) * numSubPixels),
+			I64Vec2((pixel.x()+1) * numSubPixels, (pixel.y()+0) * numSubPixels),
+			I64Vec2((pixel.x()+1) * numSubPixels, (pixel.y()+1) * numSubPixels),
+			I64Vec2((pixel.x()+0) * numSubPixels, (pixel.y()+1) * numSubPixels),
+		};
+		// both rounding directions
+		const I64Vec2 triangleSubPixelSpaceFloor[3] =
+		{
+			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[0].x() * (float)numSubPixels), deFloorFloatToInt32(triangleScreenSpace[0].y() * (float)numSubPixels)),
+			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[1].x() * (float)numSubPixels), deFloorFloatToInt32(triangleScreenSpace[1].y() * (float)numSubPixels)),
+			I64Vec2(deFloorFloatToInt32(triangleScreenSpace[2].x() * (float)numSubPixels), deFloorFloatToInt32(triangleScreenSpace[2].y() * (float)numSubPixels)),
+		};
+		const I64Vec2 triangleSubPixelSpaceCeil[3] =
+		{
+			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[0].x() * (float)numSubPixels), deCeilFloatToInt32(triangleScreenSpace[0].y() * (float)numSubPixels)),
+			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[1].x() * (float)numSubPixels), deCeilFloatToInt32(triangleScreenSpace[1].y() * (float)numSubPixels)),
+			I64Vec2(deCeilFloatToInt32(triangleScreenSpace[2].x() * (float)numSubPixels), deCeilFloatToInt32(triangleScreenSpace[2].y() * (float)numSubPixels)),
+		};
+
+		// Test if any edge (with any rounding) intersects the pixel (boundary). If it does => Partial. If not => fully inside or outside
+
+		for (int edgeNdx = 0; edgeNdx < 3; ++edgeNdx)
+		for (int startRounding = 0; startRounding < 4; ++startRounding)
+		for (int endRounding = 0; endRounding < 4; ++endRounding)
+		{
+			const int		nextEdgeNdx	= (edgeNdx+1) % 3;
+			const I64Vec2	startPos	((startRounding&0x01)	? (triangleSubPixelSpaceFloor[edgeNdx].x())		: (triangleSubPixelSpaceCeil[edgeNdx].x()),		(startRounding&0x02)	? (triangleSubPixelSpaceFloor[edgeNdx].y())		: (triangleSubPixelSpaceCeil[edgeNdx].y()));
+			const I64Vec2	endPos		((endRounding&0x01)		? (triangleSubPixelSpaceFloor[nextEdgeNdx].x())	: (triangleSubPixelSpaceCeil[nextEdgeNdx].x()),	(endRounding&0x02)		? (triangleSubPixelSpaceFloor[nextEdgeNdx].y())	: (triangleSubPixelSpaceCeil[nextEdgeNdx].y()));
+
+			for (int pixelEdgeNdx = 0; pixelEdgeNdx < 4; ++pixelEdgeNdx)
+			{
+				const int pixelEdgeEnd = (pixelEdgeNdx + 1) % 4;
+
+				if (lineLineIntersect(startPos, endPos, pixelCorners[pixelEdgeNdx], pixelCorners[pixelEdgeEnd]))
+					return COVERAGE_PARTIAL;
+			}
+		}
+
+		// fully inside or outside
+		for (int edgeNdx = 0; edgeNdx < 3; ++edgeNdx)
+		{
+			const int		nextEdgeNdx		= (edgeNdx+1) % 3;
+			const I64Vec2&	startPos		= triangleSubPixelSpaceFloor[edgeNdx];
+			const I64Vec2&	endPos			= triangleSubPixelSpaceFloor[nextEdgeNdx];
+			const I64Vec2	edge			= endPos - startPos;
+			const I64Vec2	v				= pixelCorners[0] - endPos;
+			const deInt64	crossProduct	= (edge.x() * v.y() - edge.y() * v.x());
+
+			// a corner of the pixel is outside => "fully inside" option is impossible
+			if (crossProduct < 0)
+				return COVERAGE_NONE;
+		}
+
+		return COVERAGE_FULL;
+	}
+}
+
 static void logTriangleGroupRasterizationStash (const tcu::Surface& surface, tcu::TestLog& log, VerifyTriangleGroupRasterizationLogStash& logStash)
 {
 	// Output results

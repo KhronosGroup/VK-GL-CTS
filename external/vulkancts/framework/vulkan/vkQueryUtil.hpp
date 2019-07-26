@@ -232,6 +232,9 @@ private:
 	const VkPhysicalDevice		m_physicalDevice;
 };
 
+// Walks through chain to find empty pNext and assigns what to found pNext
+void appendStructurePtrToVulkanChain (const void**	chainHead, const void*	structurePtr);
+
 namespace ValidateQueryBits
 {
 
