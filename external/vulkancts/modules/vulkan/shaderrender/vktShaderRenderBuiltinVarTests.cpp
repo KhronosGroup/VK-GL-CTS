@@ -305,6 +305,9 @@ BuiltinFragDepthCaseInstance::BuiltinFragDepthCaseInstance (Context& context, Vk
 		if (m_context.getDeviceFeatures().fragmentStoresAndAtomics == VK_FALSE)
 			throw tcu::NotSupportedError("fragmentStoresAndAtomics not supported");
 
+		if (m_context.getDeviceFeatures().sampleRateShading == VK_FALSE)
+			throw tcu::NotSupportedError("sampleRateShading not supported");
+
 		imageFormatProperties = getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, VK_IMAGE_TYPE_2D,
 				VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, (VkImageCreateFlags)0);
 
@@ -1021,6 +1024,9 @@ BuiltinFragCoordMsaaCaseInstance::BuiltinFragCoordMsaaCaseInstance (Context& con
 
 		if (m_context.getDeviceFeatures().fragmentStoresAndAtomics == VK_FALSE)
 			throw tcu::NotSupportedError("fragmentStoresAndAtomics not supported");
+
+		if (m_context.getDeviceFeatures().sampleRateShading == VK_FALSE)
+			throw tcu::NotSupportedError("sampleRateShading not supported");
 
 		imageFormatProperties = getPhysicalDeviceImageFormatProperties(vki, physicalDevice, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TYPE_2D,
 				VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, (VkImageCreateFlags)0);
