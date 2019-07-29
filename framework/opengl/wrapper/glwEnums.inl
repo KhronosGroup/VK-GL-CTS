@@ -1,11 +1,16 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision a7b53cf072129a0218a4a56c00843289225eba0e.
+ * Generated from Khronos GL API description (gl.xml) revision 9d534f9312e56c72df763207e449c6719576fd54.
  */
 #define GL_DEPTH_BUFFER_BIT												0x00000100
 #define GL_STENCIL_BUFFER_BIT											0x00000400
 #define GL_COLOR_BUFFER_BIT												0x00004000
+#define GL_DYNAMIC_STORAGE_BIT											0x0100
+#define GL_CLIENT_STORAGE_BIT											0x0200
+#define GL_SPARSE_STORAGE_BIT_ARB										0x0400
+#define GL_PER_GPU_STORAGE_BIT_NV										0x0800
+#define GL_EXTERNAL_STORAGE_BIT_NVX										0x2000
 #define GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT							0x00000001
 #define GL_CONTEXT_FLAG_DEBUG_BIT										0x00000002
 #define GL_CONTEXT_FLAG_DEBUG_BIT_KHR									0x00000002
@@ -22,11 +27,6 @@
 #define GL_MAP_UNSYNCHRONIZED_BIT										0x0020
 #define GL_MAP_PERSISTENT_BIT											0x0040
 #define GL_MAP_COHERENT_BIT												0x0080
-#define GL_DYNAMIC_STORAGE_BIT											0x0100
-#define GL_CLIENT_STORAGE_BIT											0x0200
-#define GL_SPARSE_STORAGE_BIT_ARB										0x0400
-#define GL_PER_GPU_STORAGE_BIT_NV										0x0800
-#define GL_EXTERNAL_STORAGE_BIT_NVX										0x2000
 #define GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT								0x00000001
 #define GL_ELEMENT_ARRAY_BARRIER_BIT									0x00000002
 #define GL_UNIFORM_BARRIER_BIT											0x00000004

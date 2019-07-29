@@ -36,10 +36,10 @@ EGL_DIR				= os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "framework",
 OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
-						"git@gitlab.khronos.org:opengl/registry.git",
+						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"a7b53cf072129a0218a4a56c00843289225eba0e",
-						"217dfcc9ce003f2123856d58488c9ab413c1735ee85fec657a02f6f1e125649d")
+						"9d534f9312e56c72df763207e449c6719576fd54",
+						"245e90331c83c4c743a2b9d0dad51e27a699f2040ebd34dd5338637adf276752")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',

@@ -2562,11 +2562,14 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_gpu_shader5
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_internalformat_sample_query
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_memory_attachment
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_mesh_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_non_square_matrices
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_path_rendering
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_polygon_mode
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_read_buffer
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_sample_locations
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_scissor_exclusive
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_shading_rate_image
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_viewport_array
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_viewport_swizzle
 dEQP-EGL.functional.get_proc_address.extension.gl_oes_copy_image

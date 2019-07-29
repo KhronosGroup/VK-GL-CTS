@@ -1632,6 +1632,14 @@ static const char* s_GL_NV_memory_attachment[] =
 	"glTextureAttachMemoryNV",
 };
 
+static const char* s_GL_NV_mesh_shader[] =
+{
+	"glDrawMeshTasksNV",
+	"glDrawMeshTasksIndirectNV",
+	"glMultiDrawMeshTasksIndirectNV",
+	"glMultiDrawMeshTasksIndirectCountNV",
+};
+
 static const char* s_GL_NV_non_square_matrices[] =
 {
 	"glUniformMatrix2x3fvNV",
@@ -1737,6 +1745,23 @@ static const char* s_GL_NV_sample_locations[] =
 	"glFramebufferSampleLocationsfvNV",
 	"glNamedFramebufferSampleLocationsfvNV",
 	"glResolveDepthValuesNV",
+};
+
+static const char* s_GL_NV_scissor_exclusive[] =
+{
+	"glScissorExclusiveArrayvNV",
+	"glScissorExclusiveNV",
+};
+
+static const char* s_GL_NV_shading_rate_image[] =
+{
+	"glBindShadingRateImageNV",
+	"glGetShadingRateImagePaletteNV",
+	"glGetShadingRateSampleLocationivNV",
+	"glShadingRateImageBarrierNV",
+	"glShadingRateImagePaletteNV",
+	"glShadingRateSampleOrderNV",
+	"glShadingRateSampleOrderCustomNV",
 };
 
 static const char* s_GL_NV_viewport_array[] =
@@ -2056,11 +2081,14 @@ static const struct
 	{ "GL_NV_instanced_arrays",								DE_LENGTH_OF_ARRAY(s_GL_NV_instanced_arrays),							s_GL_NV_instanced_arrays							},
 	{ "GL_NV_internalformat_sample_query",					DE_LENGTH_OF_ARRAY(s_GL_NV_internalformat_sample_query),				s_GL_NV_internalformat_sample_query					},
 	{ "GL_NV_memory_attachment",							DE_LENGTH_OF_ARRAY(s_GL_NV_memory_attachment),							s_GL_NV_memory_attachment							},
+	{ "GL_NV_mesh_shader",									DE_LENGTH_OF_ARRAY(s_GL_NV_mesh_shader),								s_GL_NV_mesh_shader									},
 	{ "GL_NV_non_square_matrices",							DE_LENGTH_OF_ARRAY(s_GL_NV_non_square_matrices),						s_GL_NV_non_square_matrices							},
 	{ "GL_NV_path_rendering",								DE_LENGTH_OF_ARRAY(s_GL_NV_path_rendering),								s_GL_NV_path_rendering								},
 	{ "GL_NV_polygon_mode",									DE_LENGTH_OF_ARRAY(s_GL_NV_polygon_mode),								s_GL_NV_polygon_mode								},
 	{ "GL_NV_read_buffer",									DE_LENGTH_OF_ARRAY(s_GL_NV_read_buffer),								s_GL_NV_read_buffer									},
 	{ "GL_NV_sample_locations",								DE_LENGTH_OF_ARRAY(s_GL_NV_sample_locations),							s_GL_NV_sample_locations							},
+	{ "GL_NV_scissor_exclusive",							DE_LENGTH_OF_ARRAY(s_GL_NV_scissor_exclusive),							s_GL_NV_scissor_exclusive							},
+	{ "GL_NV_shading_rate_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_shading_rate_image),							s_GL_NV_shading_rate_image							},
 	{ "GL_NV_viewport_array",								DE_LENGTH_OF_ARRAY(s_GL_NV_viewport_array),								s_GL_NV_viewport_array								},
 	{ "GL_NV_viewport_swizzle",								DE_LENGTH_OF_ARRAY(s_GL_NV_viewport_swizzle),							s_GL_NV_viewport_swizzle							},
 	{ "GL_OES_copy_image",									DE_LENGTH_OF_ARRAY(s_GL_OES_copy_image),								s_GL_OES_copy_image									},
