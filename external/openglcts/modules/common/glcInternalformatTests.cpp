@@ -707,7 +707,12 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 		formatMap[GL_LUMINANCE]		  = TextureFormat(GL_LUMINANCE, GL_UNSIGNED_BYTE, GL_LUMINANCE);
 		formatMap[GL_LUMINANCE_ALPHA] = TextureFormat(GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GL_LUMINANCE_ALPHA);
 		formatMap[GL_DEPTH_COMPONENT] = TextureFormat(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT);
-		formatMap[GL_DEPTH_STENCIL]   = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8);
+		formatMap[GL_DEPTH_STENCIL] = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL);
+
+		if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 0)))
+		{
+			formatMap[GL_DEPTH_STENCIL] = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8_OES);
+		}
 	}
 
 	ReferenceFormatMap::iterator formatIterator = formatMap.find(m_testFormat.format);
