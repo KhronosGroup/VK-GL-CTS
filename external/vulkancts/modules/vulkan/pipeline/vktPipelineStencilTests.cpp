@@ -823,15 +823,6 @@ tcu::TestStatus StencilTestInstance::verifyImage (void)
 
 // Utilities for test names
 
-std::string getShortName (VkCompareOp compareOp)
-{
-	const std::string  fullName = getCompareOpName(compareOp);
-
-	DE_ASSERT(de::beginsWith(fullName, "VK_COMPARE_OP_"));
-
-	return de::toLower(fullName.substr(14));
-}
-
 const char* getShortName (VkStencilOp stencilOp)
 {
 	switch (stencilOp)
@@ -881,6 +872,21 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx)
 		VK_FORMAT_D16_UNORM_S8_UINT,
 		VK_FORMAT_D24_UNORM_S8_UINT,
 		VK_FORMAT_D32_SFLOAT_S8_UINT
+	};
+
+	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(compareOps) == 8);
+	DE_STATIC_ASSERT(vk::VK_COMPARE_OP_LAST == 8);
+
+	static const char* compareOpNames[8] =
+	{
+		"comp_never",
+		"comp_less",
+		"comp_equal",
+		"comp_less_or_equal",
+		"comp_greater",
+		"comp_not_equal",
+		"comp_greater_or_equal",
+		"comp_always"
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>		stencilTests				(new tcu::TestCaseGroup(testCtx, "stencil", "Stencil tests"));
@@ -955,7 +961,7 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx)
 
 							// Iterate back set of stencil state in random order
 							const VkStencilOpState	stencilStateBack	= stencilOpItr.next();
-							const std::string		caseName			= std::string("comp_") + getShortName(compareOps[compareOpNdx]);
+							const std::string		caseName			= compareOpNames[compareOpNdx];
 							const std::string		caseDesc			= getStencilStateSetDescription(stencilStateFront, stencilStateBack);
 
 							dFailOpTest->addChild(new StencilTest(testCtx, caseName, caseDesc, stencilFormat, stencilStateFront, stencilStateBack, colorEnabled));

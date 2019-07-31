@@ -1964,7 +1964,7 @@ TestInstance* InterfaceBlockCase::createInstance (Context& context) const
 	return new InterfaceBlockCaseInstance(context, m_interfaceLayout, m_blockPointers, m_data, m_tfBufBindingOffsets, m_tfBufBindingSizes, m_locationsRequired, m_testStageFlags);
 }
 
-void InterfaceBlockCase::init (void)
+void InterfaceBlockCase::delayedInit (void)
 {
 	BufferGeneralMapping	xfbBufferSize;
 	std::string				notSupportedComment;
