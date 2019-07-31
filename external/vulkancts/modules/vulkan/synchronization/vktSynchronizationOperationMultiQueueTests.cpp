@@ -553,20 +553,20 @@ void createTests (tcu::TestCaseGroup* group, PipelineCacheData* pipelineCacheDat
 			for (int resourceNdx = 0; resourceNdx < DE_LENGTH_OF_ARRAY(s_resources); ++resourceNdx)
 			{
 				const ResourceDescription&	resource	= s_resources[resourceNdx];
-				std::string					name		= getResourceName(resource);
-				VkSharingMode				sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-				// queue family sharing mode used for resource
-				if (optionNdx)
-				{
-					name += "_concurrent";
-					sharingMode = VK_SHARING_MODE_CONCURRENT;
-				}
-				else
-					name += "_exclusive";
-
 				if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 				{
+					std::string					name		= getResourceName(resource);
+					VkSharingMode				sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+					// queue family sharing mode used for resource
+					if (optionNdx)
+					{
+						name += "_concurrent";
+						sharingMode = VK_SHARING_MODE_CONCURRENT;
+					}
+					else
+						name += "_exclusive";
+
 					opGroup->addChild(new BaseTestCase(testCtx, name, "", groups[groupNdx].syncPrimitive, resource, writeOp, readOp, sharingMode, *pipelineCacheData));
 					empty = false;
 				}
