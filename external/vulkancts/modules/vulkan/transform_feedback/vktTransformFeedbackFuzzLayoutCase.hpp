@@ -324,12 +324,11 @@ public:
 														 bool					shuffleInterfaceMembers = false);
 							~InterfaceBlockCase			(void);
 
+	virtual void			delayedInit					(void);
 	virtual	void			initPrograms				(vk::SourceCollections&	programCollection) const;
 	virtual TestInstance*	createInstance				(Context&				context) const;
 
 protected:
-	void					init						(void);
-
 	ShaderInterface			m_interface;
 	MatrixLoadFlags			m_matrixLoadFlag;
 	TestStageFlags			m_testStageFlags;

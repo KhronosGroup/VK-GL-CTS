@@ -1381,11 +1381,10 @@ static void createTests (tcu::TestCaseGroup* group)
 
 				for (size_t caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); caseNdx++)
 				{
-					std::string	name= getResourceName(resource) + cases[caseNdx].nameSuffix;
-
 					if (isResourceSupported(writeOp, resource) && isResourceSupported(readOp, resource))
 					{
-						const TestConfig config (resource, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
+						const TestConfig	config	(resource, writeOp, readOp, cases[caseNdx].memoryType, cases[caseNdx].semaphoreType, dedicated);
+						std::string			name	= getResourceName(resource) + cases[caseNdx].nameSuffix;
 
 						opGroup->addChild(new InstanceFactory1<SharingTestInstance, TestConfig, Progs>(testCtx, tcu::NODETYPE_SELF_VALIDATE,  name, "", Progs(), config));
 						empty = false;
