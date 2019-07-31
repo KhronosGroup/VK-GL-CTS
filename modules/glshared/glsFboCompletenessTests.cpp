@@ -176,7 +176,6 @@ static const FormatKey s_extSrgbRenderableTexFormats[] =
 static const FormatKey s_extSrgbNonRenderableTexFormats[] =
 {
 	GLS_UNSIZED_FORMATKEY(GL_SRGB,			GL_UNSIGNED_BYTE),
-	GL_SRGB8,
 };
 
 static const FormatKey s_nvSrgbFormatsRboFormats[] =
