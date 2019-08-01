@@ -38,7 +38,7 @@ void checkConditionalRenderingCapabilities (vkt::Context& context, const Conditi
 
 	if (data.conditionInherited)
 	{
-		const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT& conditionalRenderingFeatures = context.getConditionalRenderingFeatures();
+		const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT& conditionalRenderingFeatures = context.getConditionalRenderingFeaturesEXT();
 		if (!conditionalRenderingFeatures.inheritedConditionalRendering)
 		{
 			TCU_THROW(NotSupportedError, "Device does not support inherited conditional rendering");

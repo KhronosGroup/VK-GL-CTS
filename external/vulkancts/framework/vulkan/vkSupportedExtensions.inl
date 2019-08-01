@@ -12,6 +12,7 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_create_renderpass2");
 		dst.push_back("VK_KHR_image_format_list");
 		dst.push_back("VK_KHR_draw_indirect_count");
+		dst.push_back("VK_KHR_shader_subgroup_extended_types");
 		dst.push_back("VK_KHR_8bit_storage");
 		dst.push_back("VK_KHR_shader_atomic_int64");
 		dst.push_back("VK_KHR_driver_properties");
@@ -19,12 +20,11 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_depth_stencil_resolve");
 		dst.push_back("VK_KHR_vulkan_memory_model");
 		dst.push_back("VK_KHR_uniform_buffer_standard_layout");
-		dst.push_back("VK_KHR_shader_subgroup_extended_types");
+		dst.push_back("VK_KHR_buffer_device_address");
 		dst.push_back("VK_EXT_sampler_filter_minmax");
 		dst.push_back("VK_EXT_descriptor_indexing");
 		dst.push_back("VK_EXT_shader_viewport_index_layer");
 		dst.push_back("VK_EXT_scalar_block_layout");
-		dst.push_back("VK_EXT_buffer_device_address");
 		dst.push_back("VK_EXT_host_query_reset");
 	}
 	if (coreVersion >= VK_API_VERSION_1_1)

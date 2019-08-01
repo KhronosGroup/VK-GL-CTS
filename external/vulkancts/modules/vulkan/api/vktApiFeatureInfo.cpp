@@ -2641,7 +2641,7 @@ bool checkExtension (vector<VkExtensionProperties>& properties, const char* exte
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
 	{
-		if (strcmp(properties[ndx].extensionName, extension) == 0)
+		if (strncmp(properties[ndx].extensionName, extension, VK_MAX_EXTENSION_NAME_SIZE) == 0)
 			return true;
 	}
 	return false;
@@ -2675,164 +2675,399 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
 
-	vector<VkExtensionProperties>	properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_8bit_storage				= checkExtension(properties,"VK_KHR_8bit_storage") || context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool ext_conditional_rendering	= checkExtension(properties,"VK_EXT_conditional_rendering");
-	const bool scalar_block_layout			= checkExtension(properties,"VK_EXT_scalar_block_layout");
-	const bool performance_counter			= checkExtension(properties,"VK_KHR_performance_query");
-	bool khr_16bit_storage					= true;
-	bool khr_multiview						= true;
-	bool deviceProtectedMemory				= true;
-	bool sampler_ycbcr_conversion			= true;
-	bool variable_pointers					= true;
-	if (getPhysicalDeviceProperties(vki, physicalDevice).apiVersion < VK_API_VERSION_1_1)
-	{
-		khr_16bit_storage = checkExtension(properties,"VK_KHR_16bit_storage");
-		khr_multiview = checkExtension(properties,"VK_KHR_multiview");
-		deviceProtectedMemory = false;
-		sampler_ycbcr_conversion = checkExtension(properties,"VK_KHR_sampler_ycbcr_conversion");
-		variable_pointers = checkExtension(properties,"VK_KHR_variable_pointers");
-	}
+	vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const bool ext_conditional_rendering		= checkExtension(properties, "VK_EXT_conditional_rendering");
+	const bool ext_scalar_block_layout			= checkExtension(properties, "VK_EXT_scalar_block_layout");
+	const bool khr_performance_counter			= checkExtension(properties, "VK_KHR_performance_query");
+	const bool khr_16bit_storage				= checkExtension(properties, "VK_KHR_16bit_storage")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_multiview					= checkExtension(properties, "VK_KHR_multiview")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_device_protected_memory		=																	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_sampler_ycbcr_conversion		= checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion")	||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_variable_pointers			= checkExtension(properties, "VK_KHR_variable_pointers")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_8bit_storage					= checkExtension(properties, "VK_KHR_8bit_storage")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_shader_atomic_int64			= checkExtension(properties, "VK_KHR_shader_atomic_int64")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_shader_float16_int8			= checkExtension(properties, "VK_KHR_shader_float16_int8")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool ext_buffer_device_address		= checkExtension(properties, "VK_EXT_buffer_device_address")	||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool ext_descriptor_indexing			= checkExtension(properties, "VK_EXT_descriptor_indexing")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
 
 	const int count = 2u;
-	VkPhysicalDevice8BitStorageFeaturesKHR				device8BitStorageFeatures[count];
-	VkPhysicalDeviceConditionalRenderingFeaturesEXT		deviceConditionalRenderingFeatures[count];
-	VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures[count];
-	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
-	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
-	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
-	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures[count];
-	VkPhysicalDeviceScalarBlockLayoutFeatures			scalarBlockLayoutFeatures[count];
-	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures[count];
+	VkPhysicalDeviceConditionalRenderingFeaturesEXT	deviceConditionalRenderingFeatures[count];
+	VkPhysicalDeviceScalarBlockLayoutFeatures		scalarBlockLayoutFeatures[count];
+	VkPhysicalDevicePerformanceCounterFeaturesKHR	performanceCounterFeatures[count];
+	VkPhysicalDevice16BitStorageFeatures			device16BitStorageFeatures[count];
+	VkPhysicalDeviceMultiviewFeatures				deviceMultiviewFeatures[count];
+	VkPhysicalDeviceProtectedMemoryFeatures			protectedMemoryFeatures[count];
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures	samplerYcbcrConversionFeatures[count];
+	VkPhysicalDeviceVariablePointersFeatures		variablePointerFeatures[count];
+	VkPhysicalDevice8BitStorageFeatures				device8BitStorageFeatures[count];
+	VkPhysicalDeviceShaderAtomicInt64Features		deviceShaderAtomicInt64Features[count];
+	VkPhysicalDeviceShaderFloat16Int8Features		deviceShaderFloat16Int8Features[count];
+	VkPhysicalDeviceBufferDeviceAddressFeatures		deviceBufferDeviceAddressFeatures[count];
+	VkPhysicalDeviceDescriptorIndexingFeatures		deviceDescriptorIndexingFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
-		deMemset(&device8BitStorageFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevice8BitStorageFeaturesKHR));
-		deMemset(&deviceConditionalRenderingFeatures[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceConditionalRenderingFeaturesEXT));
-		deMemset(&device16BitStorageFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
-		deMemset(&deviceMultiviewFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
-		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
-		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
-		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointersFeatures));
-		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeatures));
-		deMemset(&performanceCounterFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePerformanceCounterFeaturesKHR));
+		deMemset(&deviceConditionalRenderingFeatures[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceConditionalRenderingFeaturesEXT));
+		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeatures));
+		deMemset(&performanceCounterFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDevicePerformanceCounterFeaturesKHR));
+		deMemset(&device16BitStorageFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
+		deMemset(&deviceMultiviewFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
+		deMemset(&protectedMemoryFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
+		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
+		deMemset(&variablePointerFeatures[ndx],				0xFF * ndx, sizeof(VkPhysicalDeviceVariablePointersFeatures));
+		deMemset(&device8BitStorageFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDevice8BitStorageFeaturesKHR));
+		deMemset(&deviceShaderAtomicInt64Features[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceShaderAtomicInt64Features));
+		deMemset(&deviceShaderFloat16Int8Features[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceShaderFloat16Int8Features));
+		deMemset(&deviceBufferDeviceAddressFeatures[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
+		deMemset(&deviceDescriptorIndexingFeatures[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
 
-		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
-		device8BitStorageFeatures[ndx].pNext = &deviceConditionalRenderingFeatures[ndx];
+		deviceConditionalRenderingFeatures[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
+		deviceConditionalRenderingFeatures[ndx].pNext	= &scalarBlockLayoutFeatures[ndx];
 
-		deviceConditionalRenderingFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
-		deviceConditionalRenderingFeatures[ndx].pNext = &device16BitStorageFeatures[ndx];
+		scalarBlockLayoutFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+		scalarBlockLayoutFeatures[ndx].pNext			= &performanceCounterFeatures[ndx];
 
-		device16BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
-		device16BitStorageFeatures[ndx].pNext = &deviceMultiviewFeatures[ndx];
+		performanceCounterFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
+		performanceCounterFeatures[ndx].pNext			= &device16BitStorageFeatures[ndx];
 
-		deviceMultiviewFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
-		deviceMultiviewFeatures[ndx].pNext = &protectedMemoryFeatures[ndx];
+		device16BitStorageFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+		device16BitStorageFeatures[ndx].pNext			= &deviceMultiviewFeatures[ndx];
 
-		protectedMemoryFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
-		protectedMemoryFeatures[ndx].pNext = &samplerYcbcrConversionFeatures[ndx];
+		deviceMultiviewFeatures[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
+		deviceMultiviewFeatures[ndx].pNext				= &protectedMemoryFeatures[ndx];
 
-		samplerYcbcrConversionFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
-		samplerYcbcrConversionFeatures[ndx].pNext = &variablePointerFeatures[ndx];
+		protectedMemoryFeatures[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+		protectedMemoryFeatures[ndx].pNext				= &samplerYcbcrConversionFeatures[ndx];
 
-		variablePointerFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
-		variablePointerFeatures[ndx].pNext = &scalarBlockLayoutFeatures[ndx];
+		samplerYcbcrConversionFeatures[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
+		samplerYcbcrConversionFeatures[ndx].pNext		= &variablePointerFeatures[ndx];
 
-		scalarBlockLayoutFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		scalarBlockLayoutFeatures[ndx].pNext = &performanceCounterFeatures[ndx];
+		variablePointerFeatures[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
+		variablePointerFeatures[ndx].pNext				= &device8BitStorageFeatures[ndx];
 
-		performanceCounterFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
-		performanceCounterFeatures[ndx].pNext = DE_NULL;
+		device8BitStorageFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+		device8BitStorageFeatures[ndx].pNext			= &deviceShaderAtomicInt64Features[ndx];
+
+		deviceShaderAtomicInt64Features[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
+		deviceShaderAtomicInt64Features[ndx].pNext		= &deviceShaderFloat16Int8Features[ndx];
+
+		deviceShaderFloat16Int8Features[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
+		deviceShaderFloat16Int8Features[ndx].pNext		= &deviceBufferDeviceAddressFeatures[ndx];
+
+		deviceBufferDeviceAddressFeatures[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+		deviceBufferDeviceAddressFeatures[ndx].pNext	= &deviceDescriptorIndexingFeatures[ndx];
+
+		deviceDescriptorIndexingFeatures[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+		deviceDescriptorIndexingFeatures[ndx].pNext		= DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		extFeatures.pNext = &device8BitStorageFeatures[ndx];
+		extFeatures.pNext = &deviceConditionalRenderingFeatures[ndx];
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
 	}
 
-	if ( khr_8bit_storage &&
-		(device8BitStorageFeatures[0].storageBuffer8BitAccess				!= device8BitStorageFeatures[1].storageBuffer8BitAccess ||
-		device8BitStorageFeatures[0].uniformAndStorageBuffer8BitAccess		!= device8BitStorageFeatures[1].uniformAndStorageBuffer8BitAccess ||
-		device8BitStorageFeatures[0].storagePushConstant8					!= device8BitStorageFeatures[1].storagePushConstant8 )
-		)
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures");
-	}
+	if (ext_conditional_rendering)
+		log << TestLog::Message << deviceConditionalRenderingFeatures[0] << TestLog::EndMessage;
+	if (ext_scalar_block_layout)
+		log << TestLog::Message << scalarBlockLayoutFeatures[0] << TestLog::EndMessage;
+	if (khr_performance_counter)
+		log << TestLog::Message << performanceCounterFeatures[0] << TestLog::EndMessage;
+	if (khr_16bit_storage)
+		log << TestLog::Message << device16BitStorageFeatures[0] << TestLog::EndMessage;
+	if (khr_multiview)
+		log << TestLog::Message << deviceMultiviewFeatures[0] << TestLog::EndMessage;
+	if (khr_device_protected_memory)
+		log << TestLog::Message << protectedMemoryFeatures[0] << TestLog::EndMessage;
+	if (khr_sampler_ycbcr_conversion)
+		log << TestLog::Message << samplerYcbcrConversionFeatures[0] << TestLog::EndMessage;
+	if (khr_variable_pointers)
+		log << TestLog::Message << variablePointerFeatures[0] << TestLog::EndMessage;
+	if (khr_8bit_storage)
+		log << TestLog::Message << device8BitStorageFeatures[0] << TestLog::EndMessage;
+	if (khr_shader_atomic_int64)
+		log << TestLog::Message << deviceShaderAtomicInt64Features[0] << TestLog::EndMessage;
+	if (khr_shader_float16_int8)
+		log << TestLog::Message << deviceShaderFloat16Int8Features[0] << TestLog::EndMessage;
+	if (ext_buffer_device_address)
+		log << TestLog::Message << deviceBufferDeviceAddressFeatures[0] << TestLog::EndMessage;
+	if (ext_descriptor_indexing)
+		log << TestLog::Message << deviceDescriptorIndexingFeatures[0] << TestLog::EndMessage;
 
 	if ( ext_conditional_rendering &&
-		(deviceConditionalRenderingFeatures[0].conditionalRendering				!= deviceConditionalRenderingFeatures[1].conditionalRendering ||
-		deviceConditionalRenderingFeatures[0].inheritedConditionalRendering		!= deviceConditionalRenderingFeatures[1].inheritedConditionalRendering )
-		)
+		(	deviceConditionalRenderingFeatures[0].conditionalRendering				!= deviceConditionalRenderingFeatures[1].conditionalRendering ||
+			deviceConditionalRenderingFeatures[0].inheritedConditionalRendering		!= deviceConditionalRenderingFeatures[1].inheritedConditionalRendering ))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceConditionalRenderingFeaturesEXT");
 	}
 
+	if ( ext_scalar_block_layout &&
+		(	scalarBlockLayoutFeatures[0].scalarBlockLayout != scalarBlockLayoutFeatures[1].scalarBlockLayout ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeatures");
+	}
+
+	if ( khr_performance_counter &&
+		(	performanceCounterFeatures[0].performanceCounterQueryPools			!= performanceCounterFeatures[1].performanceCounterQueryPools ||
+			performanceCounterFeatures[0].performanceCounterMultipleQueryPools	!= performanceCounterFeatures[1].performanceCounterMultipleQueryPools ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceCounterFeaturesKHR");
+	}
+
 	if ( khr_16bit_storage &&
-		(device16BitStorageFeatures[0].storageBuffer16BitAccess				!= device16BitStorageFeatures[1].storageBuffer16BitAccess ||
-		device16BitStorageFeatures[0].uniformAndStorageBuffer16BitAccess	!= device16BitStorageFeatures[1].uniformAndStorageBuffer16BitAccess ||
-		device16BitStorageFeatures[0].storagePushConstant16					!= device16BitStorageFeatures[1].storagePushConstant16 ||
-		device16BitStorageFeatures[0].storageInputOutput16					!= device16BitStorageFeatures[1].storageInputOutput16)
-		)
+		(	device16BitStorageFeatures[0].storageBuffer16BitAccess				!= device16BitStorageFeatures[1].storageBuffer16BitAccess ||
+			device16BitStorageFeatures[0].uniformAndStorageBuffer16BitAccess	!= device16BitStorageFeatures[1].uniformAndStorageBuffer16BitAccess ||
+			device16BitStorageFeatures[0].storagePushConstant16					!= device16BitStorageFeatures[1].storagePushConstant16 ||
+			device16BitStorageFeatures[0].storageInputOutput16					!= device16BitStorageFeatures[1].storageInputOutput16 ))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDevice16BitStorageFeatures");
 	}
 
-	if (khr_multiview &&
-		(deviceMultiviewFeatures[0].multiview					!= deviceMultiviewFeatures[1].multiview ||
-		deviceMultiviewFeatures[0].multiviewGeometryShader		!= deviceMultiviewFeatures[1].multiviewGeometryShader ||
-		deviceMultiviewFeatures[0].multiviewTessellationShader	!= deviceMultiviewFeatures[1].multiviewTessellationShader)
-		)
+	if ( khr_multiview &&
+		(	deviceMultiviewFeatures[0].multiview					!= deviceMultiviewFeatures[1].multiview ||
+			deviceMultiviewFeatures[0].multiviewGeometryShader		!= deviceMultiviewFeatures[1].multiviewGeometryShader ||
+			deviceMultiviewFeatures[0].multiviewTessellationShader	!= deviceMultiviewFeatures[1].multiviewTessellationShader ))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewFeatures");
 	}
 
-	if (deviceProtectedMemory && protectedMemoryFeatures[0].protectedMemory != protectedMemoryFeatures[1].protectedMemory)
+	if ( khr_device_protected_memory && protectedMemoryFeatures[0].protectedMemory != protectedMemoryFeatures[1].protectedMemory )
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryFeatures");
 	}
 
-	if (sampler_ycbcr_conversion && samplerYcbcrConversionFeatures[0].samplerYcbcrConversion != samplerYcbcrConversionFeatures[1].samplerYcbcrConversion)
+	if ( khr_sampler_ycbcr_conversion && samplerYcbcrConversionFeatures[0].samplerYcbcrConversion != samplerYcbcrConversionFeatures[1].samplerYcbcrConversion )
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerYcbcrConversionFeatures");
 	}
 
-	if (variable_pointers &&
-		(variablePointerFeatures[0].variablePointersStorageBuffer	!= variablePointerFeatures[1].variablePointersStorageBuffer ||
-		variablePointerFeatures[0].variablePointers					!= variablePointerFeatures[1].variablePointers)
-		)
+	if ( khr_variable_pointers &&
+		(	variablePointerFeatures[0].variablePointersStorageBuffer	!= variablePointerFeatures[1].variablePointersStorageBuffer ||
+			variablePointerFeatures[0].variablePointers					!= variablePointerFeatures[1].variablePointers))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures");
 	}
-	if (scalar_block_layout &&
-		(scalarBlockLayoutFeatures[0].scalarBlockLayout	!= scalarBlockLayoutFeatures[1].scalarBlockLayout))
+
+	if ( khr_8bit_storage &&
+		(	device8BitStorageFeatures[0].storageBuffer8BitAccess			!= device8BitStorageFeatures[1].storageBuffer8BitAccess ||
+			device8BitStorageFeatures[0].uniformAndStorageBuffer8BitAccess	!= device8BitStorageFeatures[1].uniformAndStorageBuffer8BitAccess ||
+			device8BitStorageFeatures[0].storagePushConstant8				!= device8BitStorageFeatures[1].storagePushConstant8 ))
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeaturesEXT");
+		TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures");
 	}
-	if (performance_counter &&
-		((performanceCounterFeatures[0].performanceCounterQueryPools != performanceCounterFeatures[1].performanceCounterQueryPools) ||
-		(performanceCounterFeatures[0].performanceCounterMultipleQueryPools != performanceCounterFeatures[1].performanceCounterMultipleQueryPools)))
+
+	if ( khr_shader_atomic_int64 &&
+		(	deviceShaderAtomicInt64Features[0].shaderBufferInt64Atomics != deviceShaderAtomicInt64Features[1].shaderBufferInt64Atomics ||
+			deviceShaderAtomicInt64Features[0].shaderSharedInt64Atomics != deviceShaderAtomicInt64Features[1].shaderSharedInt64Atomics ))
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceCounterFeaturesKHR");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderAtomicInt64Features");
 	}
-	if (khr_8bit_storage)
-		log << TestLog::Message << device8BitStorageFeatures[0]		<< TestLog::EndMessage;
-	if (ext_conditional_rendering)
-		log << TestLog::Message << deviceConditionalRenderingFeatures[0]		<< TestLog::EndMessage;
-	if (khr_16bit_storage)
-		log << TestLog::Message << device16BitStorageFeatures[0]		<< TestLog::EndMessage;
-	if (khr_multiview)
-		log << TestLog::Message << deviceMultiviewFeatures[0]			<< TestLog::EndMessage;
-	if (deviceProtectedMemory)
-		log << TestLog::Message << protectedMemoryFeatures[0]			<< TestLog::EndMessage;
-	if (sampler_ycbcr_conversion)
-		log << TestLog::Message << samplerYcbcrConversionFeatures[0]	<< TestLog::EndMessage;
-	if (variable_pointers)
-		log << TestLog::Message << variablePointerFeatures[0]			<< TestLog::EndMessage;
-	if (scalar_block_layout)
-		log << TestLog::Message << scalarBlockLayoutFeatures[0]			<< TestLog::EndMessage;
-	if (performance_counter)
-		log << TestLog::Message << performanceCounterFeatures[0]		<< TestLog::EndMessage;
+
+	if ( khr_shader_float16_int8 &&
+		(	deviceShaderFloat16Int8Features[0].shaderFloat16	!= deviceShaderFloat16Int8Features[1].shaderFloat16 ||
+			deviceShaderFloat16Int8Features[0].shaderInt8		!= deviceShaderFloat16Int8Features[1].shaderInt8 ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features");
+	}
+
+	if ( ext_buffer_device_address &&
+		(	deviceBufferDeviceAddressFeatures[0].bufferDeviceAddress				!= deviceBufferDeviceAddressFeatures[1].bufferDeviceAddress ||
+			deviceBufferDeviceAddressFeatures[0].bufferDeviceAddressCaptureReplay	!= deviceBufferDeviceAddressFeatures[1].bufferDeviceAddressCaptureReplay ||
+			deviceBufferDeviceAddressFeatures[0].bufferDeviceAddressMultiDevice		!= deviceBufferDeviceAddressFeatures[1].bufferDeviceAddressMultiDevice ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceBufferDeviceAddressFeatures");
+	}
+
+	if ( ext_descriptor_indexing &&
+		(	deviceDescriptorIndexingFeatures[0].shaderInputAttachmentArrayDynamicIndexing			!= deviceDescriptorIndexingFeatures[1].shaderInputAttachmentArrayDynamicIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderUniformTexelBufferArrayDynamicIndexing		!= deviceDescriptorIndexingFeatures[1].shaderUniformTexelBufferArrayDynamicIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderStorageTexelBufferArrayDynamicIndexing		!= deviceDescriptorIndexingFeatures[1].shaderStorageTexelBufferArrayDynamicIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderUniformBufferArrayNonUniformIndexing			!= deviceDescriptorIndexingFeatures[1].shaderUniformBufferArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderSampledImageArrayNonUniformIndexing			!= deviceDescriptorIndexingFeatures[1].shaderSampledImageArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderStorageBufferArrayNonUniformIndexing			!= deviceDescriptorIndexingFeatures[1].shaderStorageBufferArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderStorageImageArrayNonUniformIndexing			!= deviceDescriptorIndexingFeatures[1].shaderStorageImageArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderInputAttachmentArrayNonUniformIndexing		!= deviceDescriptorIndexingFeatures[1].shaderInputAttachmentArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderUniformTexelBufferArrayNonUniformIndexing		!= deviceDescriptorIndexingFeatures[1].shaderUniformTexelBufferArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].shaderStorageTexelBufferArrayNonUniformIndexing		!= deviceDescriptorIndexingFeatures[1].shaderStorageTexelBufferArrayNonUniformIndexing ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingUniformBufferUpdateAfterBind		!= deviceDescriptorIndexingFeatures[1].descriptorBindingUniformBufferUpdateAfterBind ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingSampledImageUpdateAfterBind		!= deviceDescriptorIndexingFeatures[1].descriptorBindingSampledImageUpdateAfterBind ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingStorageImageUpdateAfterBind		!= deviceDescriptorIndexingFeatures[1].descriptorBindingStorageImageUpdateAfterBind ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingStorageBufferUpdateAfterBind		!= deviceDescriptorIndexingFeatures[1].descriptorBindingStorageBufferUpdateAfterBind ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingUniformTexelBufferUpdateAfterBind	!= deviceDescriptorIndexingFeatures[1].descriptorBindingUniformTexelBufferUpdateAfterBind ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingStorageTexelBufferUpdateAfterBind	!= deviceDescriptorIndexingFeatures[1].descriptorBindingStorageTexelBufferUpdateAfterBind ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingUpdateUnusedWhilePending			!= deviceDescriptorIndexingFeatures[1].descriptorBindingUpdateUnusedWhilePending ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingPartiallyBound						!= deviceDescriptorIndexingFeatures[1].descriptorBindingPartiallyBound ||
+			deviceDescriptorIndexingFeatures[0].descriptorBindingVariableDescriptorCount			!= deviceDescriptorIndexingFeatures[1].descriptorBindingVariableDescriptorCount ||
+			deviceDescriptorIndexingFeatures[0].runtimeDescriptorArray								!= deviceDescriptorIndexingFeatures[1].runtimeDescriptorArray ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingFeatures");
+	}
+
+	if (context.getUsedApiVersion() >= VK_API_VERSION_1_2)
+	{
+		VkPhysicalDeviceVulkan11Features vulkan11Features[count];
+		VkPhysicalDeviceVulkan12Features vulkan12Features[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&vulkan11Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan11Features));
+			deMemset(&vulkan12Features[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan12Features));
+
+			vulkan11Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+			vulkan11Features[ndx].pNext = &vulkan12Features[ndx];
+
+			vulkan12Features[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+			vulkan12Features[ndx].pNext = DE_NULL;
+
+			extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			extFeatures.pNext = &vulkan11Features[ndx];
+			vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+		}
+		log << TestLog::Message << vulkan11Features[0] << TestLog::EndMessage;
+		log << TestLog::Message << vulkan12Features[0] << TestLog::EndMessage;
+
+		if (	vulkan11Features[0].storageBuffer16BitAccess			!= vulkan11Features[1].storageBuffer16BitAccess ||
+				vulkan11Features[0].uniformAndStorageBuffer16BitAccess	!= vulkan11Features[1].uniformAndStorageBuffer16BitAccess ||
+				vulkan11Features[0].storagePushConstant16				!= vulkan11Features[1].storagePushConstant16 ||
+				vulkan11Features[0].storageInputOutput16				!= vulkan11Features[1].storageInputOutput16 ||
+				vulkan11Features[0].multiview							!= vulkan11Features[1].multiview ||
+				vulkan11Features[0].multiviewGeometryShader				!= vulkan11Features[1].multiviewGeometryShader ||
+				vulkan11Features[0].multiviewTessellationShader			!= vulkan11Features[1].multiviewTessellationShader ||
+				vulkan11Features[0].variablePointersStorageBuffer		!= vulkan11Features[1].variablePointersStorageBuffer ||
+				vulkan11Features[0].variablePointers					!= vulkan11Features[1].variablePointers ||
+				vulkan11Features[0].protectedMemory						!= vulkan11Features[1].protectedMemory ||
+				vulkan11Features[0].samplerYcbcrConversion				!= vulkan11Features[1].samplerYcbcrConversion ||
+				vulkan11Features[0].shaderDrawParameters				!= vulkan11Features[1].shaderDrawParameters )
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVulkan11Features");
+		}
+
+		if (	vulkan12Features[0].samplerMirrorClampToEdge							!= vulkan12Features[1].samplerMirrorClampToEdge ||
+				vulkan12Features[0].storageBuffer8BitAccess								!= vulkan12Features[1].storageBuffer8BitAccess ||
+				vulkan12Features[0].uniformAndStorageBuffer8BitAccess					!= vulkan12Features[1].uniformAndStorageBuffer8BitAccess ||
+				vulkan12Features[0].storagePushConstant8								!= vulkan12Features[1].storagePushConstant8 ||
+				vulkan12Features[0].shaderBufferInt64Atomics							!= vulkan12Features[1].shaderBufferInt64Atomics ||
+				vulkan12Features[0].shaderSharedInt64Atomics							!= vulkan12Features[1].shaderSharedInt64Atomics ||
+				vulkan12Features[0].shaderFloat16										!= vulkan12Features[1].shaderFloat16 ||
+				vulkan12Features[0].shaderInt8											!= vulkan12Features[1].shaderInt8 ||
+				vulkan12Features[0].shaderInputAttachmentArrayDynamicIndexing			!= vulkan12Features[1].shaderInputAttachmentArrayDynamicIndexing ||
+				vulkan12Features[0].shaderUniformTexelBufferArrayDynamicIndexing		!= vulkan12Features[1].shaderUniformTexelBufferArrayDynamicIndexing ||
+				vulkan12Features[0].shaderStorageTexelBufferArrayDynamicIndexing		!= vulkan12Features[1].shaderStorageTexelBufferArrayDynamicIndexing ||
+				vulkan12Features[0].shaderUniformBufferArrayNonUniformIndexing			!= vulkan12Features[1].shaderUniformBufferArrayNonUniformIndexing ||
+				vulkan12Features[0].shaderSampledImageArrayNonUniformIndexing			!= vulkan12Features[1].shaderSampledImageArrayNonUniformIndexing ||
+				vulkan12Features[0].shaderStorageBufferArrayNonUniformIndexing			!= vulkan12Features[1].shaderStorageBufferArrayNonUniformIndexing ||
+				vulkan12Features[0].shaderStorageImageArrayNonUniformIndexing			!= vulkan12Features[1].shaderStorageImageArrayNonUniformIndexing ||
+				vulkan12Features[0].shaderInputAttachmentArrayNonUniformIndexing		!= vulkan12Features[1].shaderInputAttachmentArrayNonUniformIndexing ||
+				vulkan12Features[0].shaderUniformTexelBufferArrayNonUniformIndexing		!= vulkan12Features[1].shaderUniformTexelBufferArrayNonUniformIndexing ||
+				vulkan12Features[0].shaderStorageTexelBufferArrayNonUniformIndexing		!= vulkan12Features[1].shaderStorageTexelBufferArrayNonUniformIndexing ||
+				vulkan12Features[0].descriptorBindingUniformBufferUpdateAfterBind		!= vulkan12Features[1].descriptorBindingUniformBufferUpdateAfterBind ||
+				vulkan12Features[0].descriptorBindingSampledImageUpdateAfterBind		!= vulkan12Features[1].descriptorBindingSampledImageUpdateAfterBind ||
+				vulkan12Features[0].descriptorBindingStorageImageUpdateAfterBind		!= vulkan12Features[1].descriptorBindingStorageImageUpdateAfterBind ||
+				vulkan12Features[0].descriptorBindingStorageBufferUpdateAfterBind		!= vulkan12Features[1].descriptorBindingStorageBufferUpdateAfterBind ||
+				vulkan12Features[0].descriptorBindingUniformTexelBufferUpdateAfterBind	!= vulkan12Features[1].descriptorBindingUniformTexelBufferUpdateAfterBind ||
+				vulkan12Features[0].descriptorBindingStorageTexelBufferUpdateAfterBind	!= vulkan12Features[1].descriptorBindingStorageTexelBufferUpdateAfterBind ||
+				vulkan12Features[0].descriptorBindingUpdateUnusedWhilePending			!= vulkan12Features[1].descriptorBindingUpdateUnusedWhilePending ||
+				vulkan12Features[0].descriptorBindingPartiallyBound						!= vulkan12Features[1].descriptorBindingPartiallyBound ||
+				vulkan12Features[0].descriptorBindingVariableDescriptorCount			!= vulkan12Features[1].descriptorBindingVariableDescriptorCount ||
+				vulkan12Features[0].runtimeDescriptorArray								!= vulkan12Features[1].runtimeDescriptorArray ||
+				vulkan12Features[0].scalarBlockLayout									!= vulkan12Features[1].scalarBlockLayout ||
+				vulkan12Features[0].bufferDeviceAddress									!= vulkan12Features[1].bufferDeviceAddress ||
+				vulkan12Features[0].bufferDeviceAddressCaptureReplay					!= vulkan12Features[1].bufferDeviceAddressCaptureReplay ||
+				vulkan12Features[0].bufferDeviceAddressMultiDevice						!= vulkan12Features[1].bufferDeviceAddressMultiDevice ||
+				vulkan12Features[0].subgroupBroadcastDynamicId							!= vulkan12Features[1].subgroupBroadcastDynamicId)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ( khr_16bit_storage &&
+			(	device16BitStorageFeatures[0].storageBuffer16BitAccess				!= vulkan11Features[0].storageBuffer16BitAccess ||
+				device16BitStorageFeatures[0].uniformAndStorageBuffer16BitAccess	!= vulkan11Features[0].uniformAndStorageBuffer16BitAccess ||
+				device16BitStorageFeatures[0].storagePushConstant16					!= vulkan11Features[0].storagePushConstant16 ||
+				device16BitStorageFeatures[0].storageInputOutput16					!= vulkan11Features[0].storageInputOutput16 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevice16BitStorageFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ( khr_multiview &&
+			(	deviceMultiviewFeatures[0].multiview					!= vulkan11Features[0].multiview ||
+				deviceMultiviewFeatures[0].multiviewGeometryShader		!= vulkan11Features[0].multiviewGeometryShader ||
+				deviceMultiviewFeatures[0].multiviewTessellationShader	!= vulkan11Features[0].multiviewTessellationShader ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ( khr_device_protected_memory && protectedMemoryFeatures[0].protectedMemory != vulkan11Features[0].protectedMemory )
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ( khr_sampler_ycbcr_conversion && samplerYcbcrConversionFeatures[0].samplerYcbcrConversion != vulkan11Features[0].samplerYcbcrConversion )
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerYcbcrConversionFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ( khr_variable_pointers &&
+			(	variablePointerFeatures[0].variablePointersStorageBuffer	!= vulkan11Features[0].variablePointersStorageBuffer ||
+				variablePointerFeatures[0].variablePointers					!= vulkan11Features[0].variablePointers))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ( khr_8bit_storage &&
+			(	device8BitStorageFeatures[0].storageBuffer8BitAccess			!= vulkan12Features[0].storageBuffer8BitAccess ||
+				device8BitStorageFeatures[0].uniformAndStorageBuffer8BitAccess	!= vulkan12Features[0].uniformAndStorageBuffer8BitAccess ||
+				device8BitStorageFeatures[0].storagePushConstant8				!= vulkan12Features[0].storagePushConstant8 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ( khr_shader_atomic_int64 &&
+			(	deviceShaderAtomicInt64Features[0].shaderBufferInt64Atomics != vulkan12Features[0].shaderBufferInt64Atomics ||
+				deviceShaderAtomicInt64Features[0].shaderSharedInt64Atomics != vulkan12Features[0].shaderSharedInt64Atomics ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderAtomicInt64Features and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ( khr_shader_float16_int8 &&
+			(	deviceShaderFloat16Int8Features[0].shaderFloat16	!= vulkan12Features[0].shaderFloat16 ||
+				deviceShaderFloat16Int8Features[0].shaderInt8		!= vulkan12Features[0].shaderInt8 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ( ext_buffer_device_address &&
+			(	deviceBufferDeviceAddressFeatures[0].bufferDeviceAddress				!= vulkan12Features[0].bufferDeviceAddress ||
+				deviceBufferDeviceAddressFeatures[0].bufferDeviceAddressCaptureReplay	!= vulkan12Features[0].bufferDeviceAddressCaptureReplay ||
+				deviceBufferDeviceAddressFeatures[0].bufferDeviceAddressMultiDevice		!= vulkan12Features[0].bufferDeviceAddressMultiDevice ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceBufferDeviceAddressFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ( ext_descriptor_indexing &&
+			(	deviceDescriptorIndexingFeatures[0].shaderInputAttachmentArrayDynamicIndexing			!= vulkan12Features[0].shaderInputAttachmentArrayDynamicIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderUniformTexelBufferArrayDynamicIndexing		!= vulkan12Features[0].shaderUniformTexelBufferArrayDynamicIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderStorageTexelBufferArrayDynamicIndexing		!= vulkan12Features[0].shaderStorageTexelBufferArrayDynamicIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderUniformBufferArrayNonUniformIndexing			!= vulkan12Features[0].shaderUniformBufferArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderSampledImageArrayNonUniformIndexing			!= vulkan12Features[0].shaderSampledImageArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderStorageBufferArrayNonUniformIndexing			!= vulkan12Features[0].shaderStorageBufferArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderStorageImageArrayNonUniformIndexing			!= vulkan12Features[0].shaderStorageImageArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderInputAttachmentArrayNonUniformIndexing		!= vulkan12Features[0].shaderInputAttachmentArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderUniformTexelBufferArrayNonUniformIndexing		!= vulkan12Features[0].shaderUniformTexelBufferArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].shaderStorageTexelBufferArrayNonUniformIndexing		!= vulkan12Features[0].shaderStorageTexelBufferArrayNonUniformIndexing ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingUniformBufferUpdateAfterBind		!= vulkan12Features[0].descriptorBindingUniformBufferUpdateAfterBind ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingSampledImageUpdateAfterBind		!= vulkan12Features[0].descriptorBindingSampledImageUpdateAfterBind ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingStorageImageUpdateAfterBind		!= vulkan12Features[0].descriptorBindingStorageImageUpdateAfterBind ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingStorageBufferUpdateAfterBind		!= vulkan12Features[0].descriptorBindingStorageBufferUpdateAfterBind ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingUniformTexelBufferUpdateAfterBind	!= vulkan12Features[0].descriptorBindingUniformTexelBufferUpdateAfterBind ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingStorageTexelBufferUpdateAfterBind	!= vulkan12Features[0].descriptorBindingStorageTexelBufferUpdateAfterBind ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingUpdateUnusedWhilePending			!= vulkan12Features[0].descriptorBindingUpdateUnusedWhilePending ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingPartiallyBound						!= vulkan12Features[0].descriptorBindingPartiallyBound ||
+				deviceDescriptorIndexingFeatures[0].descriptorBindingVariableDescriptorCount			!= vulkan12Features[0].descriptorBindingVariableDescriptorCount ||
+				deviceDescriptorIndexingFeatures[0].runtimeDescriptorArray								!= vulkan12Features[0].runtimeDescriptorArray ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+	}
 
 	return tcu::TestStatus::pass("Querying device features succeeded");
 }
@@ -2875,142 +3110,464 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 	const int count = 2u;
 
-	bool khr_external_memory_capabilities		= true;
-	bool khr_multiview							= true;
-	bool khr_maintenance2						= true;
-	bool khr_maintenance3						= true;
-	bool apiVersionSmallerThen_1_1				= (getPhysicalDeviceProperties(vki, physicalDevice).apiVersion < VK_API_VERSION_1_1);
-	if (apiVersionSmallerThen_1_1)
-	{
-		vector<VkExtensionProperties> properties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-		khr_external_memory_capabilities			= checkExtension(properties,"VK_KHR_external_memory_capabilities");
-		khr_multiview								= checkExtension(properties,"VK_KHR_multiview");
-		khr_maintenance2							= checkExtension(properties,"VK_KHR_maintenance2");
-		khr_maintenance3							= checkExtension(properties,"VK_KHR_maintenance3");
-	}
+	vector<VkExtensionProperties> properties		= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_device_protected_memory			=																			context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_device_subgroup					=																			context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
+	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
 
-	VkPhysicalDeviceIDProperties				IDProperties[count];
-	VkPhysicalDeviceMaintenance3Properties		maintenance3Properties[count];
-	VkPhysicalDeviceMultiviewProperties			multiviewProperties[count];
-	VkPhysicalDevicePointClippingProperties		pointClippingProperties[count];
-	VkPhysicalDeviceProtectedMemoryProperties	protectedMemoryPropertiesKHR[count];
-	VkPhysicalDeviceSubgroupProperties			subgroupProperties[count];
+	VkPhysicalDeviceIDProperties					idProperties[count];
+	VkPhysicalDeviceMultiviewProperties				multiviewProperties[count];
+	VkPhysicalDeviceProtectedMemoryProperties		protectedMemoryPropertiesKHR[count];
+	VkPhysicalDeviceSubgroupProperties				subgroupProperties[count];
+	VkPhysicalDevicePointClippingProperties			pointClippingProperties[count];
+	VkPhysicalDeviceMaintenance3Properties			maintenance3Properties[count];
+	VkPhysicalDeviceDepthStencilResolveProperties	depthStencilResolveProperties[count];
+	VkPhysicalDeviceDriverProperties				driverProperties[count];
+	VkPhysicalDeviceFloatControlsProperties			floatControlsProperties[count];
+	VkPhysicalDeviceDescriptorIndexingProperties	descriptorIndexingProperties[count];
+	VkPhysicalDeviceSamplerFilterMinmaxProperties	samplerFilterMinmaxProperties[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
-		deMemset(&IDProperties[ndx],					0xFF*ndx, sizeof(VkPhysicalDeviceIDProperties				));
-		deMemset(&maintenance3Properties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMaintenance3Properties		));
-		deMemset(&multiviewProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewProperties		));
-		deMemset(&pointClippingProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePointClippingProperties	));
-		deMemset(&protectedMemoryPropertiesKHR[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryProperties	));
-		deMemset(&subgroupProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupProperties			));
+		deMemset(&idProperties[ndx],					0xFF*ndx, sizeof(VkPhysicalDeviceIDProperties					));
+		deMemset(&multiviewProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewProperties			));
+		deMemset(&protectedMemoryPropertiesKHR[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryProperties		));
+		deMemset(&subgroupProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceSubgroupProperties				));
+		deMemset(&pointClippingProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePointClippingProperties		));
+		deMemset(&maintenance3Properties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMaintenance3Properties			));
+		deMemset(&depthStencilResolveProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDepthStencilResolveProperties	));
+		deMemset(&driverProperties[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceDriverProperties				));
+		deMemset(&floatControlsProperties[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceFloatControlsProperties		));
+		deMemset(&descriptorIndexingProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceDescriptorIndexingProperties	));
+		deMemset(&samplerFilterMinmaxProperties[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties	));
 
-		IDProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-		IDProperties[ndx].pNext = &maintenance3Properties[ndx];
+		idProperties[ndx].sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+		idProperties[ndx].pNext						= &multiviewProperties[ndx];
 
-		maintenance3Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
-		maintenance3Properties[ndx].pNext = &multiviewProperties[ndx];
+		multiviewProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
+		multiviewProperties[ndx].pNext				= &protectedMemoryPropertiesKHR[ndx];
 
-		multiviewProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
-		multiviewProperties[ndx].pNext = &pointClippingProperties[ndx];
+		protectedMemoryPropertiesKHR[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
+		protectedMemoryPropertiesKHR[ndx].pNext		= &subgroupProperties[ndx];
 
-		pointClippingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
-		pointClippingProperties[ndx].pNext = &protectedMemoryPropertiesKHR[ndx];
+		subgroupProperties[ndx].sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+		subgroupProperties[ndx].pNext				= &pointClippingProperties[ndx];
 
-		protectedMemoryPropertiesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
-		protectedMemoryPropertiesKHR[ndx].pNext = &subgroupProperties[ndx];
+		pointClippingProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
+		pointClippingProperties[ndx].pNext			= &maintenance3Properties[ndx];
 
-		subgroupProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties[ndx].pNext = DE_NULL;
+		maintenance3Properties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+		maintenance3Properties[ndx].pNext			= &depthStencilResolveProperties[ndx];
 
-		extProperties.pNext = &IDProperties[ndx];
+		depthStencilResolveProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+		depthStencilResolveProperties[ndx].pNext	= &driverProperties[ndx];
+
+		driverProperties[ndx].sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+		driverProperties[ndx].pNext					= &floatControlsProperties[ndx];
+
+		floatControlsProperties[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+		floatControlsProperties[ndx].pNext			= &descriptorIndexingProperties[ndx];
+
+		descriptorIndexingProperties[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+		descriptorIndexingProperties[ndx].pNext		= &samplerFilterMinmaxProperties[ndx];
+
+		samplerFilterMinmaxProperties[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
+		samplerFilterMinmaxProperties[ndx].pNext	= DE_NULL;
+
+		extProperties.pNext							= &idProperties[ndx];
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
-
-		IDProperties[ndx].pNext						= DE_NULL;
-		maintenance3Properties[ndx].pNext			= DE_NULL;
-		multiviewProperties[ndx].pNext				= DE_NULL;
-		pointClippingProperties[ndx].pNext			= DE_NULL;
-		protectedMemoryPropertiesKHR[ndx].pNext		= DE_NULL;
-		subgroupProperties[ndx].pNext				= DE_NULL;
 	}
 
-	if (khr_external_memory_capabilities)
+	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
+		log << TestLog::Message << idProperties[0]					<< TestLog::EndMessage;
+	if (khr_multiview)
+		log << TestLog::Message << multiviewProperties[0]			<< TestLog::EndMessage;
+	if (khr_device_protected_memory)
+		log << TestLog::Message << protectedMemoryPropertiesKHR[0]	<< TestLog::EndMessage;
+	if (khr_device_subgroup)
+		log << TestLog::Message << subgroupProperties[0]			<< TestLog::EndMessage;
+	if (khr_maintenance2)
+		log << TestLog::Message << pointClippingProperties[0]		<< TestLog::EndMessage;
+	if (khr_maintenance3)
+		log << TestLog::Message << maintenance3Properties[0]		<< TestLog::EndMessage;
+	if (khr_depth_stencil_resolve)
+		log << TestLog::Message << depthStencilResolveProperties[0] << TestLog::EndMessage;
+	if (khr_driver_properties)
+		log << TestLog::Message << driverProperties[0]				<< TestLog::EndMessage;
+	if (khr_shader_float_controls)
+		log << TestLog::Message << floatControlsProperties[0]		<< TestLog::EndMessage;
+	if (khr_descriptor_indexing)
+		log << TestLog::Message << descriptorIndexingProperties[0] << TestLog::EndMessage;
+	if (khr_sampler_filter_minmax)
+		log << TestLog::Message << samplerFilterMinmaxProperties[0] << TestLog::EndMessage;
+
+	if ( khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities )
 	{
-		if ((deMemCmp(IDProperties[0].deviceUUID, IDProperties[1].deviceUUID, VK_UUID_SIZE) != 0) ||
-			(deMemCmp(IDProperties[0].driverUUID, IDProperties[1].driverUUID, VK_UUID_SIZE) != 0) ||
-			(IDProperties[0].deviceLUIDValid	!= IDProperties[1].deviceLUIDValid))
+		if ((deMemCmp(idProperties[0].deviceUUID, idProperties[1].deviceUUID, VK_UUID_SIZE) != 0) ||
+			(deMemCmp(idProperties[0].driverUUID, idProperties[1].driverUUID, VK_UUID_SIZE) != 0) ||
+			(idProperties[0].deviceLUIDValid	!= idProperties[1].deviceLUIDValid))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties");
 		}
-		else if (IDProperties[0].deviceLUIDValid)
+		else if (idProperties[0].deviceLUIDValid)
 		{
 			// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
 			// so thay can only be compared when deviceLUIDValid is VK_TRUE.
-			if ((deMemCmp(IDProperties[0].deviceLUID, IDProperties[1].deviceLUID, VK_UUID_SIZE) != 0) ||
-				(IDProperties[0].deviceNodeMask		!= IDProperties[1].deviceNodeMask))
+			if ((deMemCmp(idProperties[0].deviceLUID, idProperties[1].deviceLUID, VK_UUID_SIZE) != 0) ||
+				(idProperties[0].deviceNodeMask		!= idProperties[1].deviceNodeMask))
 			{
 				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties");
 			}
 		}
 	}
-	if (khr_maintenance3 &&
-		((maintenance3Properties[0].maxPerSetDescriptors	!= maintenance3Properties[1].maxPerSetDescriptors) ||
-		(maintenance3Properties[0].maxMemoryAllocationSize	!= maintenance3Properties[1].maxMemoryAllocationSize))
-		)
-	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance3Properties");
-	}
 	if (khr_multiview &&
-		((multiviewProperties[0].maxMultiviewViewCount		!= multiviewProperties[1].maxMultiviewViewCount) ||
-		(multiviewProperties[0].maxMultiviewInstanceIndex	!= multiviewProperties[1].maxMultiviewInstanceIndex))
-		)
+		(multiviewProperties[0].maxMultiviewViewCount		!= multiviewProperties[1].maxMultiviewViewCount ||
+		 multiviewProperties[0].maxMultiviewInstanceIndex	!= multiviewProperties[1].maxMultiviewInstanceIndex))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewProperties");
 	}
+	if (khr_device_protected_memory &&
+		(protectedMemoryPropertiesKHR[0].protectedNoFault	!= protectedMemoryPropertiesKHR[1].protectedNoFault))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryProperties");
+	}
+	if (khr_device_subgroup &&
+		(subgroupProperties[0].subgroupSize					!= subgroupProperties[1].subgroupSize ||
+		 subgroupProperties[0].supportedStages				!= subgroupProperties[1].supportedStages ||
+		 subgroupProperties[0].supportedOperations			!= subgroupProperties[1].supportedOperations ||
+		 subgroupProperties[0].quadOperationsInAllStages	!= subgroupProperties[1].quadOperationsInAllStages ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupProperties");
+	}
 	if (khr_maintenance2 &&
-		(pointClippingProperties[0].pointClippingBehavior != pointClippingProperties[1].pointClippingBehavior))
+		(pointClippingProperties[0].pointClippingBehavior	!= pointClippingProperties[1].pointClippingBehavior))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDevicePointClippingProperties");
 	}
-	if (!apiVersionSmallerThen_1_1)
+	if (khr_maintenance3 &&
+		(maintenance3Properties[0].maxPerSetDescriptors		!= maintenance3Properties[1].maxPerSetDescriptors ||
+		 maintenance3Properties[0].maxMemoryAllocationSize	!= maintenance3Properties[1].maxMemoryAllocationSize))
 	{
-		if(protectedMemoryPropertiesKHR[0].protectedNoFault != protectedMemoryPropertiesKHR[1].protectedNoFault)
+		TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance3Properties");
+	}
+	if (khr_depth_stencil_resolve &&
+		(depthStencilResolveProperties[0].supportedDepthResolveModes	!= depthStencilResolveProperties[1].supportedDepthResolveModes ||
+		 depthStencilResolveProperties[0].supportedStencilResolveModes	!= depthStencilResolveProperties[1].supportedStencilResolveModes ||
+		 depthStencilResolveProperties[0].independentResolveNone		!= depthStencilResolveProperties[1].independentResolveNone ||
+		 depthStencilResolveProperties[0].independentResolve			!= depthStencilResolveProperties[1].independentResolve))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDepthStencilResolveProperties");
+	}
+	if (khr_driver_properties &&
+		(driverProperties[0].driverID												!= driverProperties[1].driverID ||
+		 strncmp(driverProperties[0].driverName, driverProperties[1].driverName, VK_MAX_DRIVER_NAME_SIZE)	!= 0 ||
+		 strncmp(driverProperties[0].driverInfo, driverProperties[1].driverInfo, VK_MAX_DRIVER_INFO_SIZE)		!= 0 ||
+		 driverProperties[0].conformanceVersion.major								!= driverProperties[1].conformanceVersion.major ||
+		 driverProperties[0].conformanceVersion.minor								!= driverProperties[1].conformanceVersion.minor ||
+		 driverProperties[0].conformanceVersion.subminor							!= driverProperties[1].conformanceVersion.subminor ||
+		 driverProperties[0].conformanceVersion.patch								!= driverProperties[1].conformanceVersion.patch))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDriverProperties");
+	}
+	if (khr_shader_float_controls &&
+		(floatControlsProperties[0].denormBehaviorIndependence				!= floatControlsProperties[1].denormBehaviorIndependence ||
+		 floatControlsProperties[0].roundingModeIndependence				!= floatControlsProperties[1].roundingModeIndependence ||
+		 floatControlsProperties[0].shaderSignedZeroInfNanPreserveFloat16	!= floatControlsProperties[1].shaderSignedZeroInfNanPreserveFloat16 ||
+		 floatControlsProperties[0].shaderSignedZeroInfNanPreserveFloat32	!= floatControlsProperties[1].shaderSignedZeroInfNanPreserveFloat32 ||
+		 floatControlsProperties[0].shaderSignedZeroInfNanPreserveFloat64	!= floatControlsProperties[1].shaderSignedZeroInfNanPreserveFloat64 ||
+		 floatControlsProperties[0].shaderDenormPreserveFloat16				!= floatControlsProperties[1].shaderDenormPreserveFloat16 ||
+		 floatControlsProperties[0].shaderDenormPreserveFloat32				!= floatControlsProperties[1].shaderDenormPreserveFloat32 ||
+		 floatControlsProperties[0].shaderDenormPreserveFloat64				!= floatControlsProperties[1].shaderDenormPreserveFloat64 ||
+		 floatControlsProperties[0].shaderDenormFlushToZeroFloat16			!= floatControlsProperties[1].shaderDenormFlushToZeroFloat16 ||
+		 floatControlsProperties[0].shaderDenormFlushToZeroFloat32			!= floatControlsProperties[1].shaderDenormFlushToZeroFloat32 ||
+		 floatControlsProperties[0].shaderDenormFlushToZeroFloat64			!= floatControlsProperties[1].shaderDenormFlushToZeroFloat64 ||
+		 floatControlsProperties[0].shaderRoundingModeRTEFloat16			!= floatControlsProperties[1].shaderRoundingModeRTEFloat16 ||
+		 floatControlsProperties[0].shaderRoundingModeRTEFloat32			!= floatControlsProperties[1].shaderRoundingModeRTEFloat32 ||
+		 floatControlsProperties[0].shaderRoundingModeRTEFloat64			!= floatControlsProperties[1].shaderRoundingModeRTEFloat64 ||
+		 floatControlsProperties[0].shaderRoundingModeRTZFloat16			!= floatControlsProperties[1].shaderRoundingModeRTZFloat16 ||
+		 floatControlsProperties[0].shaderRoundingModeRTZFloat32			!= floatControlsProperties[1].shaderRoundingModeRTZFloat32 ||
+		 floatControlsProperties[0].shaderRoundingModeRTZFloat64			!= floatControlsProperties[1].shaderRoundingModeRTZFloat64 ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceFloatControlsProperties");
+	}
+	if (khr_descriptor_indexing &&
+		(descriptorIndexingProperties[0].maxUpdateAfterBindDescriptorsInAllPools				!= descriptorIndexingProperties[1].maxUpdateAfterBindDescriptorsInAllPools ||
+		 descriptorIndexingProperties[0].shaderUniformBufferArrayNonUniformIndexingNative		!= descriptorIndexingProperties[1].shaderUniformBufferArrayNonUniformIndexingNative ||
+		 descriptorIndexingProperties[0].shaderSampledImageArrayNonUniformIndexingNative		!= descriptorIndexingProperties[1].shaderSampledImageArrayNonUniformIndexingNative ||
+		 descriptorIndexingProperties[0].shaderStorageBufferArrayNonUniformIndexingNative		!= descriptorIndexingProperties[1].shaderStorageBufferArrayNonUniformIndexingNative ||
+		 descriptorIndexingProperties[0].shaderStorageImageArrayNonUniformIndexingNative		!= descriptorIndexingProperties[1].shaderStorageImageArrayNonUniformIndexingNative ||
+		 descriptorIndexingProperties[0].shaderInputAttachmentArrayNonUniformIndexingNative		!= descriptorIndexingProperties[1].shaderInputAttachmentArrayNonUniformIndexingNative ||
+		 descriptorIndexingProperties[0].robustBufferAccessUpdateAfterBind						!= descriptorIndexingProperties[1].robustBufferAccessUpdateAfterBind ||
+		 descriptorIndexingProperties[0].quadDivergentImplicitLod								!= descriptorIndexingProperties[1].quadDivergentImplicitLod ||
+		 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindSamplers			!= descriptorIndexingProperties[1].maxPerStageDescriptorUpdateAfterBindSamplers ||
+		 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindUniformBuffers		!= descriptorIndexingProperties[1].maxPerStageDescriptorUpdateAfterBindUniformBuffers ||
+		 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindStorageBuffers		!= descriptorIndexingProperties[1].maxPerStageDescriptorUpdateAfterBindStorageBuffers ||
+		 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindSampledImages		!= descriptorIndexingProperties[1].maxPerStageDescriptorUpdateAfterBindSampledImages ||
+		 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindStorageImages		!= descriptorIndexingProperties[1].maxPerStageDescriptorUpdateAfterBindStorageImages ||
+		 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindInputAttachments	!= descriptorIndexingProperties[1].maxPerStageDescriptorUpdateAfterBindInputAttachments ||
+		 descriptorIndexingProperties[0].maxPerStageUpdateAfterBindResources					!= descriptorIndexingProperties[1].maxPerStageUpdateAfterBindResources ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindSamplers				!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindSamplers ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindUniformBuffers			!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindUniformBuffers ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindUniformBuffersDynamic	!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindUniformBuffersDynamic ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindStorageBuffers			!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindStorageBuffers ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindStorageBuffersDynamic	!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindStorageBuffersDynamic ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindSampledImages			!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindSampledImages ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindStorageImages			!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindStorageImages ||
+		 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindInputAttachments		!= descriptorIndexingProperties[1].maxDescriptorSetUpdateAfterBindInputAttachments ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingProperties");
+	}
+	if (khr_sampler_filter_minmax &&
+		(samplerFilterMinmaxProperties[0].filterMinmaxSingleComponentFormats	!= samplerFilterMinmaxProperties[1].filterMinmaxSingleComponentFormats ||
+		 samplerFilterMinmaxProperties[0].filterMinmaxImageComponentMapping		!= samplerFilterMinmaxProperties[1].filterMinmaxImageComponentMapping))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerFilterMinmaxProperties");
+	}
+
+	if (context.getUsedApiVersion() >= VK_API_VERSION_1_2)
+	{
+		VkPhysicalDeviceVulkan11Properties vulkan11Properties[count];
+		VkPhysicalDeviceVulkan12Properties vulkan12Properties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
 		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryProperties");
+			deMemset(&vulkan11Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan11Properties));
+			deMemset(&vulkan12Properties[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVulkan12Properties));
+
+			vulkan11Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
+			vulkan11Properties[ndx].pNext = &vulkan12Properties[ndx];
+
+			vulkan12Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES;
+			vulkan12Properties[ndx].pNext = DE_NULL;
+
+			extProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+			extProperties.pNext = &vulkan11Properties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 		}
-		if ((subgroupProperties[0].subgroupSize					!= subgroupProperties[1].subgroupSize) ||
-			(subgroupProperties[0].supportedStages				!= subgroupProperties[1].supportedStages) ||
-			(subgroupProperties[0].supportedOperations			!= subgroupProperties[1].supportedOperations) ||
-			(subgroupProperties[0].quadOperationsInAllStages	!= subgroupProperties[1].quadOperationsInAllStages))
+
+		log << TestLog::Message << vulkan11Properties[0] << TestLog::EndMessage;
+		log << TestLog::Message << vulkan12Properties[0] << TestLog::EndMessage;
+
+		if (deMemCmp(vulkan11Properties[0].deviceUUID, vulkan11Properties[1].deviceUUID, VK_UUID_SIZE) != 0 ||
+			deMemCmp(vulkan11Properties[0].driverUUID, vulkan11Properties[1].driverUUID, VK_UUID_SIZE) != 0 ||
+			vulkan11Properties[0].deviceLUIDValid				!= vulkan11Properties[1].deviceLUIDValid ||
+			(vulkan11Properties[0].deviceLUIDValid &&
+			  ( deMemCmp(vulkan11Properties[0].deviceLUID, vulkan11Properties[1].deviceLUID, VK_UUID_SIZE) != 0 ||
+			  vulkan11Properties[0].deviceNodeMask	!= vulkan11Properties[1].deviceNodeMask)) ||
+			 vulkan11Properties[0].subgroupSize					!= vulkan11Properties[1].subgroupSize ||
+			 vulkan11Properties[0].supportedStages				!= vulkan11Properties[1].supportedStages ||
+			 vulkan11Properties[0].supportedOperations			!= vulkan11Properties[1].supportedOperations ||
+			 vulkan11Properties[0].quadOperationsInAllStages	!= vulkan11Properties[1].quadOperationsInAllStages ||
+			 vulkan11Properties[0].pointClippingBehavior		!= vulkan11Properties[1].pointClippingBehavior ||
+			 vulkan11Properties[0].maxMultiviewViewCount		!= vulkan11Properties[1].maxMultiviewViewCount ||
+			 vulkan11Properties[0].maxMultiviewInstanceIndex	!= vulkan11Properties[1].maxMultiviewInstanceIndex ||
+			 vulkan11Properties[0].protectedNoFault				!= vulkan11Properties[1].protectedNoFault ||
+			 vulkan11Properties[0].maxPerSetDescriptors			!= vulkan11Properties[1].maxPerSetDescriptors ||
+			 vulkan11Properties[0].maxMemoryAllocationSize		!= vulkan11Properties[1].maxMemoryAllocationSize )
 		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupProperties");
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVulkan11Properties");
+		}
+		if ( vulkan12Properties[0].driverID												!= vulkan12Properties[1].driverID ||
+			 strncmp(vulkan12Properties[0].driverName, vulkan12Properties[1].driverName, VK_MAX_DRIVER_NAME_SIZE) != 0 ||
+			 strncmp(vulkan12Properties[0].driverInfo, vulkan12Properties[1].driverInfo, VK_MAX_DRIVER_INFO_SIZE) != 0 ||
+			 vulkan12Properties[0].conformanceVersion.major								!= vulkan12Properties[1].conformanceVersion.major ||
+			 vulkan12Properties[0].conformanceVersion.minor								!= vulkan12Properties[1].conformanceVersion.minor ||
+			 vulkan12Properties[0].conformanceVersion.subminor							!= vulkan12Properties[1].conformanceVersion.subminor ||
+			 vulkan12Properties[0].conformanceVersion.patch								!= vulkan12Properties[1].conformanceVersion.patch ||
+			 vulkan12Properties[0].denormBehaviorIndependence							!= vulkan12Properties[1].denormBehaviorIndependence ||
+			 vulkan12Properties[0].roundingModeIndependence								!= vulkan12Properties[1].roundingModeIndependence ||
+			 vulkan12Properties[0].shaderSignedZeroInfNanPreserveFloat16				!= vulkan12Properties[1].shaderSignedZeroInfNanPreserveFloat16 ||
+			 vulkan12Properties[0].shaderSignedZeroInfNanPreserveFloat32				!= vulkan12Properties[1].shaderSignedZeroInfNanPreserveFloat32 ||
+			 vulkan12Properties[0].shaderSignedZeroInfNanPreserveFloat64				!= vulkan12Properties[1].shaderSignedZeroInfNanPreserveFloat64 ||
+			 vulkan12Properties[0].shaderDenormPreserveFloat16							!= vulkan12Properties[1].shaderDenormPreserveFloat16 ||
+			 vulkan12Properties[0].shaderDenormPreserveFloat32							!= vulkan12Properties[1].shaderDenormPreserveFloat32 ||
+			 vulkan12Properties[0].shaderDenormPreserveFloat64							!= vulkan12Properties[1].shaderDenormPreserveFloat64 ||
+			 vulkan12Properties[0].shaderDenormFlushToZeroFloat16						!= vulkan12Properties[1].shaderDenormFlushToZeroFloat16 ||
+			 vulkan12Properties[0].shaderDenormFlushToZeroFloat32						!= vulkan12Properties[1].shaderDenormFlushToZeroFloat32 ||
+			 vulkan12Properties[0].shaderDenormFlushToZeroFloat64						!= vulkan12Properties[1].shaderDenormFlushToZeroFloat64 ||
+			 vulkan12Properties[0].shaderRoundingModeRTEFloat16							!= vulkan12Properties[1].shaderRoundingModeRTEFloat16 ||
+			 vulkan12Properties[0].shaderRoundingModeRTEFloat32							!= vulkan12Properties[1].shaderRoundingModeRTEFloat32 ||
+			 vulkan12Properties[0].shaderRoundingModeRTEFloat64							!= vulkan12Properties[1].shaderRoundingModeRTEFloat64 ||
+			 vulkan12Properties[0].shaderRoundingModeRTZFloat16							!= vulkan12Properties[1].shaderRoundingModeRTZFloat16 ||
+			 vulkan12Properties[0].shaderRoundingModeRTZFloat32							!= vulkan12Properties[1].shaderRoundingModeRTZFloat32 ||
+			 vulkan12Properties[0].shaderRoundingModeRTZFloat64							!= vulkan12Properties[1].shaderRoundingModeRTZFloat64 ||
+			 vulkan12Properties[0].maxUpdateAfterBindDescriptorsInAllPools				!= vulkan12Properties[1].maxUpdateAfterBindDescriptorsInAllPools ||
+			 vulkan12Properties[0].shaderUniformBufferArrayNonUniformIndexingNative		!= vulkan12Properties[1].shaderUniformBufferArrayNonUniformIndexingNative ||
+			 vulkan12Properties[0].shaderSampledImageArrayNonUniformIndexingNative		!= vulkan12Properties[1].shaderSampledImageArrayNonUniformIndexingNative ||
+			 vulkan12Properties[0].shaderStorageBufferArrayNonUniformIndexingNative		!= vulkan12Properties[1].shaderStorageBufferArrayNonUniformIndexingNative ||
+			 vulkan12Properties[0].shaderStorageImageArrayNonUniformIndexingNative		!= vulkan12Properties[1].shaderStorageImageArrayNonUniformIndexingNative ||
+			 vulkan12Properties[0].shaderInputAttachmentArrayNonUniformIndexingNative	!= vulkan12Properties[1].shaderInputAttachmentArrayNonUniformIndexingNative ||
+			 vulkan12Properties[0].robustBufferAccessUpdateAfterBind					!= vulkan12Properties[1].robustBufferAccessUpdateAfterBind ||
+			 vulkan12Properties[0].quadDivergentImplicitLod								!= vulkan12Properties[1].quadDivergentImplicitLod ||
+			 vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindSamplers			!= vulkan12Properties[1].maxPerStageDescriptorUpdateAfterBindSamplers ||
+			 vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindUniformBuffers	!= vulkan12Properties[1].maxPerStageDescriptorUpdateAfterBindUniformBuffers ||
+			 vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindStorageBuffers	!= vulkan12Properties[1].maxPerStageDescriptorUpdateAfterBindStorageBuffers ||
+			 vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindSampledImages	!= vulkan12Properties[1].maxPerStageDescriptorUpdateAfterBindSampledImages ||
+			 vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindStorageImages	!= vulkan12Properties[1].maxPerStageDescriptorUpdateAfterBindStorageImages ||
+			 vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindInputAttachments	!= vulkan12Properties[1].maxPerStageDescriptorUpdateAfterBindInputAttachments ||
+			 vulkan12Properties[0].maxPerStageUpdateAfterBindResources					!= vulkan12Properties[1].maxPerStageUpdateAfterBindResources ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindSamplers				!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindSamplers ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindUniformBuffers		!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindUniformBuffers ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindUniformBuffersDynamic	!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindUniformBuffersDynamic ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindStorageBuffers		!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindStorageBuffers ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindStorageBuffersDynamic	!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindStorageBuffersDynamic ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindSampledImages			!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindSampledImages ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindStorageImages			!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindStorageImages ||
+			 vulkan12Properties[0].maxDescriptorSetUpdateAfterBindInputAttachments		!= vulkan12Properties[1].maxDescriptorSetUpdateAfterBindInputAttachments ||
+			 vulkan12Properties[0].supportedDepthResolveModes							!= vulkan12Properties[1].supportedDepthResolveModes ||
+			 vulkan12Properties[0].supportedStencilResolveModes							!= vulkan12Properties[1].supportedStencilResolveModes ||
+			 vulkan12Properties[0].independentResolveNone								!= vulkan12Properties[1].independentResolveNone ||
+			 vulkan12Properties[0].independentResolve									!= vulkan12Properties[1].independentResolve ||
+			 vulkan12Properties[0].filterMinmaxSingleComponentFormats					!= vulkan12Properties[1].filterMinmaxSingleComponentFormats ||
+			 vulkan12Properties[0].filterMinmaxImageComponentMapping					!= vulkan12Properties[1].filterMinmaxImageComponentMapping ||
+			 vulkan12Properties[0].framebufferIntegerColorSampleCounts					!= vulkan12Properties[1].framebufferIntegerColorSampleCounts)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVulkan12Properties");
+		}
+		if (khr_external_fence_capabilities || khr_external_memory_capabilities || khr_external_semaphore_capabilities)
+		{
+			if ((deMemCmp(idProperties[0].deviceUUID, vulkan11Properties[0].deviceUUID, VK_UUID_SIZE) != 0) ||
+				(deMemCmp(idProperties[0].driverUUID, vulkan11Properties[0].driverUUID, VK_UUID_SIZE) != 0) ||
+				(idProperties[0].deviceLUIDValid != vulkan11Properties[0].deviceLUIDValid))
+			{
+				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties and VkPhysicalDeviceVulkan11Properties");
+			}
+			else if (idProperties[0].deviceLUIDValid)
+			{
+				// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
+				// so thay can only be compared when deviceLUIDValid is VK_TRUE.
+				if ((deMemCmp(idProperties[0].deviceLUID, vulkan11Properties[0].deviceLUID, VK_UUID_SIZE) != 0) ||
+					(idProperties[0].deviceNodeMask != vulkan11Properties[0].deviceNodeMask))
+				{
+					TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties and VkPhysicalDeviceVulkan11Properties");
+				}
+			}
+		}
+		if (khr_multiview &&
+			(multiviewProperties[0].maxMultiviewViewCount		!= vulkan11Properties[0].maxMultiviewViewCount ||
+			 multiviewProperties[0].maxMultiviewInstanceIndex	!= vulkan11Properties[0].maxMultiviewInstanceIndex))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewProperties and VkPhysicalDeviceVulkan11Properties");
+		}
+		if (khr_device_protected_memory &&
+			(protectedMemoryPropertiesKHR[0].protectedNoFault != vulkan11Properties[0].protectedNoFault))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryProperties and VkPhysicalDeviceVulkan11Properties");
+		}
+		if (khr_device_subgroup &&
+			(subgroupProperties[0].subgroupSize					!= vulkan11Properties[0].subgroupSize ||
+			 subgroupProperties[0].supportedStages				!= vulkan11Properties[0].supportedStages ||
+			 subgroupProperties[0].supportedOperations			!= vulkan11Properties[0].supportedOperations ||
+			 subgroupProperties[0].quadOperationsInAllStages	!= vulkan11Properties[0].quadOperationsInAllStages))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupProperties and VkPhysicalDeviceVulkan11Properties");
+		}
+		if (khr_maintenance2 &&
+			(pointClippingProperties[0].pointClippingBehavior != vulkan11Properties[0].pointClippingBehavior))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevicePointClippingProperties and VkPhysicalDeviceVulkan11Properties");
+		}
+		if (khr_maintenance3 &&
+			(maintenance3Properties[0].maxPerSetDescriptors		!= vulkan11Properties[0].maxPerSetDescriptors ||
+			 maintenance3Properties[0].maxMemoryAllocationSize	!= vulkan11Properties[0].maxMemoryAllocationSize))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance3Properties and VkPhysicalDeviceVulkan11Properties");
+		}
+
+		if (khr_depth_stencil_resolve &&
+			(depthStencilResolveProperties[0].supportedDepthResolveModes	!= vulkan12Properties[0].supportedDepthResolveModes ||
+			 depthStencilResolveProperties[0].supportedStencilResolveModes	!= vulkan12Properties[0].supportedStencilResolveModes ||
+			 depthStencilResolveProperties[0].independentResolveNone		!= vulkan12Properties[0].independentResolveNone ||
+			 depthStencilResolveProperties[0].independentResolve			!= vulkan12Properties[0].independentResolve))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceDepthStencilResolveProperties and VkPhysicalDeviceVulkan12Properties");
+		}
+		if (khr_driver_properties &&
+			(driverProperties[0].driverID												!= vulkan12Properties[0].driverID ||
+			 strncmp(driverProperties[0].driverName, vulkan12Properties[0].driverName, VK_MAX_DRIVER_NAME_SIZE)	!= 0 ||
+			 strncmp(driverProperties[0].driverInfo, vulkan12Properties[0].driverInfo, VK_MAX_DRIVER_INFO_SIZE)	!= 0 ||
+			 driverProperties[0].conformanceVersion.major								!= vulkan12Properties[0].conformanceVersion.major ||
+			 driverProperties[0].conformanceVersion.minor								!= vulkan12Properties[0].conformanceVersion.minor ||
+			 driverProperties[0].conformanceVersion.subminor							!= vulkan12Properties[0].conformanceVersion.subminor ||
+			 driverProperties[0].conformanceVersion.patch								!= vulkan12Properties[0].conformanceVersion.patch))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceDriverProperties and VkPhysicalDeviceVulkan12Properties");
+		}
+		if (khr_shader_float_controls &&
+			(floatControlsProperties[0].denormBehaviorIndependence				!= vulkan12Properties[0].denormBehaviorIndependence ||
+			 floatControlsProperties[0].roundingModeIndependence				!= vulkan12Properties[0].roundingModeIndependence ||
+			 floatControlsProperties[0].shaderSignedZeroInfNanPreserveFloat16	!= vulkan12Properties[0].shaderSignedZeroInfNanPreserveFloat16 ||
+			 floatControlsProperties[0].shaderSignedZeroInfNanPreserveFloat32	!= vulkan12Properties[0].shaderSignedZeroInfNanPreserveFloat32 ||
+			 floatControlsProperties[0].shaderSignedZeroInfNanPreserveFloat64	!= vulkan12Properties[0].shaderSignedZeroInfNanPreserveFloat64 ||
+			 floatControlsProperties[0].shaderDenormPreserveFloat16				!= vulkan12Properties[0].shaderDenormPreserveFloat16 ||
+			 floatControlsProperties[0].shaderDenormPreserveFloat32				!= vulkan12Properties[0].shaderDenormPreserveFloat32 ||
+			 floatControlsProperties[0].shaderDenormPreserveFloat64				!= vulkan12Properties[0].shaderDenormPreserveFloat64 ||
+			 floatControlsProperties[0].shaderDenormFlushToZeroFloat16			!= vulkan12Properties[0].shaderDenormFlushToZeroFloat16 ||
+			 floatControlsProperties[0].shaderDenormFlushToZeroFloat32			!= vulkan12Properties[0].shaderDenormFlushToZeroFloat32 ||
+			 floatControlsProperties[0].shaderDenormFlushToZeroFloat64			!= vulkan12Properties[0].shaderDenormFlushToZeroFloat64 ||
+			 floatControlsProperties[0].shaderRoundingModeRTEFloat16			!= vulkan12Properties[0].shaderRoundingModeRTEFloat16 ||
+			 floatControlsProperties[0].shaderRoundingModeRTEFloat32			!= vulkan12Properties[0].shaderRoundingModeRTEFloat32 ||
+			 floatControlsProperties[0].shaderRoundingModeRTEFloat64			!= vulkan12Properties[0].shaderRoundingModeRTEFloat64 ||
+			 floatControlsProperties[0].shaderRoundingModeRTZFloat16			!= vulkan12Properties[0].shaderRoundingModeRTZFloat16 ||
+			 floatControlsProperties[0].shaderRoundingModeRTZFloat32			!= vulkan12Properties[0].shaderRoundingModeRTZFloat32 ||
+			 floatControlsProperties[0].shaderRoundingModeRTZFloat64			!= vulkan12Properties[0].shaderRoundingModeRTZFloat64 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceFloatControlsProperties and VkPhysicalDeviceVulkan12Properties");
+		}
+		if (khr_descriptor_indexing &&
+			(descriptorIndexingProperties[0].maxUpdateAfterBindDescriptorsInAllPools				!= vulkan12Properties[0].maxUpdateAfterBindDescriptorsInAllPools ||
+			 descriptorIndexingProperties[0].shaderUniformBufferArrayNonUniformIndexingNative		!= vulkan12Properties[0].shaderUniformBufferArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties[0].shaderSampledImageArrayNonUniformIndexingNative		!= vulkan12Properties[0].shaderSampledImageArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties[0].shaderStorageBufferArrayNonUniformIndexingNative		!= vulkan12Properties[0].shaderStorageBufferArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties[0].shaderStorageImageArrayNonUniformIndexingNative		!= vulkan12Properties[0].shaderStorageImageArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties[0].shaderInputAttachmentArrayNonUniformIndexingNative		!= vulkan12Properties[0].shaderInputAttachmentArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties[0].robustBufferAccessUpdateAfterBind						!= vulkan12Properties[0].robustBufferAccessUpdateAfterBind ||
+			 descriptorIndexingProperties[0].quadDivergentImplicitLod								!= vulkan12Properties[0].quadDivergentImplicitLod ||
+			 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindSamplers			!= vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindSamplers ||
+			 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindUniformBuffers		!= vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindUniformBuffers ||
+			 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindStorageBuffers		!= vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindStorageBuffers ||
+			 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindSampledImages		!= vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindSampledImages ||
+			 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindStorageImages		!= vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindStorageImages ||
+			 descriptorIndexingProperties[0].maxPerStageDescriptorUpdateAfterBindInputAttachments	!= vulkan12Properties[0].maxPerStageDescriptorUpdateAfterBindInputAttachments ||
+			 descriptorIndexingProperties[0].maxPerStageUpdateAfterBindResources					!= vulkan12Properties[0].maxPerStageUpdateAfterBindResources ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindSamplers				!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindSamplers ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindUniformBuffers			!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindUniformBuffers ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindUniformBuffersDynamic	!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindUniformBuffersDynamic ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindStorageBuffers			!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindStorageBuffers ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindStorageBuffersDynamic	!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindStorageBuffersDynamic ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindSampledImages			!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindSampledImages ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindStorageImages			!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindStorageImages ||
+			 descriptorIndexingProperties[0].maxDescriptorSetUpdateAfterBindInputAttachments		!= vulkan12Properties[0].maxDescriptorSetUpdateAfterBindInputAttachments ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingProperties and VkPhysicalDeviceVulkan12Properties");
+		}
+		if (khr_sampler_filter_minmax &&
+			(samplerFilterMinmaxProperties[0].filterMinmaxSingleComponentFormats	!= vulkan12Properties[0].filterMinmaxSingleComponentFormats ||
+			 samplerFilterMinmaxProperties[0].filterMinmaxImageComponentMapping		!= vulkan12Properties[0].filterMinmaxImageComponentMapping))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerFilterMinmaxProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 	}
 
-	if (khr_external_memory_capabilities)
-		log << TestLog::Message << IDProperties[0]					<< TestLog::EndMessage;
-	if (khr_maintenance3)
-		log << TestLog::Message << maintenance3Properties[0]			<< TestLog::EndMessage;
-	if (khr_multiview)
-		log << TestLog::Message << multiviewProperties[0]				<< TestLog::EndMessage;
-	if (khr_maintenance2)
-		log << TestLog::Message << pointClippingProperties[0]			<< TestLog::EndMessage;
-	if (!apiVersionSmallerThen_1_1)
-	{
-		log << TestLog::Message << protectedMemoryPropertiesKHR[0]	<< TestLog::EndMessage
-			<< TestLog::Message << subgroupProperties[0]				<< TestLog::EndMessage;
-	}
-
-	const vector<VkExtensionProperties>	extensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-
-	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_push_descriptor")))
+	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_push_descriptor")))
 	{
 		VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
 
 		for (int ndx = 0; ndx < count; ++ndx)
 		{
-			deMemset(&pushDescriptorProperties[ndx], 0, sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR));
+			deMemset(&pushDescriptorProperties[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR));
 
 			pushDescriptorProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
 			pushDescriptorProperties[ndx].pNext	= DE_NULL;
@@ -3022,71 +3579,25 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			pushDescriptorProperties[ndx].pNext = DE_NULL;
 		}
 
-		if (deMemCmp(&pushDescriptorProperties[0], &pushDescriptorProperties[1], sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR)) != 0)
-		{
-			TCU_FAIL("Mismatch in vkGetPhysicalDeviceProperties2 in VkPhysicalDevicePushDescriptorPropertiesKHR ");
-		}
-
 		log << TestLog::Message << pushDescriptorProperties[0] << TestLog::EndMessage;
 
+		if ( pushDescriptorProperties[0].maxPushDescriptors != pushDescriptorProperties[1].maxPushDescriptors )
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevicePushDescriptorPropertiesKHR ");
+		}
 		if (pushDescriptorProperties[0].maxPushDescriptors < 32)
 		{
 			TCU_FAIL("VkPhysicalDevicePushDescriptorPropertiesKHR.maxPushDescriptors must be at least 32");
 		}
 	}
-	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_shader_float_controls")) || (context.getUsedApiVersion() >= VK_API_VERSION_1_2))
-	{
-		VkPhysicalDeviceFloatControlsProperties floatControlsProperties[count];
 
-		for (int ndx = 0; ndx < count; ++ndx)
-		{
-			deMemset(&floatControlsProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceFloatControlsProperties));
-			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
-			floatControlsProperties[ndx].pNext = DE_NULL;
-
-			extProperties.pNext = &floatControlsProperties[ndx];
-
-			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
-		}
-
-		if (deMemCmp(&floatControlsProperties[0], &floatControlsProperties[1], sizeof(VkPhysicalDeviceFloatControlsProperties)) != 0)
-		{
-			TCU_FAIL("Mismatch in VkPhysicalDeviceFloatControlsPropertiesKHR");
-		}
-
-		log << TestLog::Message << floatControlsProperties[0] << TestLog::EndMessage;
-	}
-
-	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_depth_stencil_resolve")))
-	{
-		VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties[count];
-
-		for (int ndx = 0; ndx < count; ++ndx)
-		{
-			deMemset(&dsResolveProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
-			dsResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-			dsResolveProperties[ndx].pNext = DE_NULL;
-
-			extProperties.pNext = &dsResolveProperties[ndx];
-
-			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
-		}
-
-		if (deMemCmp(&dsResolveProperties[0], &dsResolveProperties[1], sizeof(VkPhysicalDeviceDepthStencilResolveProperties)) != 0)
-		{
-			TCU_FAIL("Mismatch in VkPhysicalDeviceDepthStencilResolvePropertiesKHR");
-		}
-
-		log << TestLog::Message << dsResolveProperties[0] << TestLog::EndMessage;
-	}
-
-	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_performance_query")))
+	if (isExtensionSupported(properties, RequiredExtension("VK_KHR_performance_query")))
 	{
 		VkPhysicalDevicePerformanceCounterPropertiesKHR performanceCounterProperties[count];
 
 		for (int ndx = 0; ndx < count; ++ndx)
 		{
-			deMemset(&performanceCounterProperties[ndx], 0xFF, sizeof(VkPhysicalDevicePerformanceCounterPropertiesKHR));
+			deMemset(&performanceCounterProperties[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePerformanceCounterPropertiesKHR));
 			performanceCounterProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR;
 			performanceCounterProperties[ndx].pNext = DE_NULL;
 
@@ -3095,15 +3606,15 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 		}
 
-		if (deMemCmp(&performanceCounterProperties[0], &performanceCounterProperties[1], sizeof(VkPhysicalDevicePerformanceCounterPropertiesKHR)) != 0)
-		{
-			TCU_FAIL("Mismatch in VkPhysicalDevicePerformanceCounterPropertiesKHR");
-		}
-
 		log << TestLog::Message << performanceCounterProperties[0] << TestLog::EndMessage;
+
+		if (performanceCounterProperties[0].allowCommandBufferQueryCopies != performanceCounterProperties[0].allowCommandBufferQueryCopies)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceCounterPropertiesKHR");
+		}
 	}
 
-	if (isExtensionSupported(extensions, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
+	if (isExtensionSupported(properties, RequiredExtension("VK_EXT_pci_bus_info", 2, 2)))
 	{
 		VkPhysicalDevicePCIBusInfoPropertiesEXT pciBusInfoProperties[count];
 
@@ -3122,7 +3633,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			//
 			// [1] https://en.wikipedia.org/wiki/PCI_configuration_space
 			// [2] PCI Express Base Specification Revision 3.0, section 2.2.4.2.
-			deMemset(pciBusInfoProperties + ndx, 0, sizeof(pciBusInfoProperties[ndx]));
+			deMemset(pciBusInfoProperties + ndx, 0xFF * ndx, sizeof(pciBusInfoProperties[ndx]));
 			pciBusInfoProperties[ndx].pciDomain   = DEUINT32_MAX;
 			pciBusInfoProperties[ndx].pciBus      = DEUINT32_MAX;
 			pciBusInfoProperties[ndx].pciDevice   = DEUINT32_MAX;
@@ -3135,13 +3646,15 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 		}
 
-		if (deMemCmp(pciBusInfoProperties + 0, pciBusInfoProperties + 1, sizeof(pciBusInfoProperties[0])) != 0)
-		{
-			TCU_FAIL("Mismatch in VkPhysicalDevicePCIBusInfoPropertiesEXT");
-		}
-
 		log << TestLog::Message << toString(pciBusInfoProperties[0]) << TestLog::EndMessage;
 
+		if (pciBusInfoProperties[0].pciDomain	!= pciBusInfoProperties[1].pciDomain ||
+			pciBusInfoProperties[0].pciBus		!= pciBusInfoProperties[1].pciBus ||
+			pciBusInfoProperties[0].pciDevice	!= pciBusInfoProperties[1].pciDevice ||
+			pciBusInfoProperties[0].pciFunction	!= pciBusInfoProperties[1].pciFunction)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevicePCIBusInfoPropertiesEXT");
+		}
 		if (pciBusInfoProperties[0].pciDomain   == DEUINT32_MAX ||
 		    pciBusInfoProperties[0].pciBus      == DEUINT32_MAX ||
 		    pciBusInfoProperties[0].pciDevice   == DEUINT32_MAX ||

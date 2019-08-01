@@ -495,7 +495,13 @@ void initApisMap (ApisMap& apis)
 	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkCmdBeginRenderPass2",							FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkCmdNextSubpass2",								FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkCmdEndRenderPass2",								FUNCTIONORIGIN_DEVICE));
+	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkResetQueryPool",									FUNCTIONORIGIN_DEVICE));
+	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkGetSemaphoreCounterValue",						FUNCTIONORIGIN_DEVICE));
+	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkWaitSemaphores",									FUNCTIONORIGIN_DEVICE));
+	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkSignalSemaphore",								FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkGetBufferDeviceAddress",							FUNCTIONORIGIN_DEVICE));
+	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkGetBufferOpaqueCaptureAddress",					FUNCTIONORIGIN_DEVICE));
+	apis[VK_API_VERSION_1_2].push_back(FunctionInfo("vkGetDeviceMemoryOpaqueCaptureAddress",			FUNCTIONORIGIN_DEVICE));
 
 }
 

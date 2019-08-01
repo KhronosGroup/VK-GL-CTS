@@ -144,7 +144,13 @@ virtual VkResult			createRenderPass2								(VkDevice device, const VkRenderPass
 virtual void				cmdBeginRenderPass2								(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) const;
 virtual void				cmdNextSubpass2									(VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) const;
 virtual void				cmdEndRenderPass2								(VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) const;
+virtual void				resetQueryPool									(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const;
+virtual VkResult			getSemaphoreCounterValue						(VkDevice device, VkSemaphore semaphore, deUint64* pValue) const;
+virtual VkResult			waitSemaphores									(VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout) const;
+virtual VkResult			signalSemaphore									(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const;
 virtual VkDeviceAddress		getBufferDeviceAddress							(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
+virtual uint64_t			getBufferOpaqueCaptureAddress					(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
+virtual uint64_t			getDeviceMemoryOpaqueCaptureAddress				(VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) const;
 virtual VkResult			createSwapchainKHR								(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const;
 virtual void				destroySwapchainKHR								(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const;
 virtual VkResult			getSwapchainImagesKHR							(VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages) const;
@@ -165,6 +171,9 @@ virtual VkResult			importFenceFdKHR								(VkDevice device, const VkImportFence
 virtual VkResult			getFenceFdKHR									(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const;
 virtual VkResult			acquireProfilingLockKHR							(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const;
 virtual void				releaseProfilingLockKHR							(VkDevice device) const;
+virtual VkResult			getPipelineExecutablePropertiesKHR				(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const;
+virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const;
+virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;

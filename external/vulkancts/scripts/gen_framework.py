@@ -122,7 +122,7 @@ TYPE_SUBSTITUTIONS		= [
 	("LPCWSTR",		"char*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP"]
+EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR"]
 
 def prefixName (prefix, name):
@@ -149,6 +149,10 @@ def prefixName (prefix, name):
 	name = name.replace("SMBUILTINS", "SM_BUILTINS")
 	name = name.replace("ASTCHDRFEATURES", "ASTC_HDR_FEATURES")
 	name = name.replace("UINT_8", "UINT8")
+	name = name.replace("VULKAN_11_FEATURES", "VULKAN_1_1_FEATURES")
+	name = name.replace("VULKAN_11_PROPERTIES", "VULKAN_1_1_PROPERTIES")
+	name = name.replace("VULKAN_12_FEATURES", "VULKAN_1_2_FEATURES")
+	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
 
 	return prefix + name
 
@@ -1585,7 +1589,7 @@ def writeDeviceFeatures(dfDefs, filename):
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("EXT", "").replace("NV", "")
+		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 

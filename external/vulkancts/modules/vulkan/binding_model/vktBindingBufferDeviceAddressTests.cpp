@@ -551,7 +551,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		numBindings = numBindings*3+1;
 	}
 
-	VkBufferDeviceAddressCreateInfo addressCreateInfo =
+	VkBufferDeviceAddressCreateInfoEXT addressCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,													// const void*		 pNext;

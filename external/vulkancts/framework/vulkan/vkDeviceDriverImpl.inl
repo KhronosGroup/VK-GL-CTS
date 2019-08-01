@@ -717,9 +717,39 @@ void DeviceDriver::cmdEndRenderPass2 (VkCommandBuffer commandBuffer, const VkSub
 	m_vk.cmdEndRenderPass2(commandBuffer, pSubpassEndInfo);
 }
 
+void DeviceDriver::resetQueryPool (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const
+{
+	m_vk.resetQueryPool(device, queryPool, firstQuery, queryCount);
+}
+
+VkResult DeviceDriver::getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, deUint64* pValue) const
+{
+	return m_vk.getSemaphoreCounterValue(device, semaphore, pValue);
+}
+
+VkResult DeviceDriver::waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout) const
+{
+	return m_vk.waitSemaphores(device, pWaitInfo, timeout);
+}
+
+VkResult DeviceDriver::signalSemaphore (VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const
+{
+	return m_vk.signalSemaphore(device, pSignalInfo);
+}
+
 VkDeviceAddress DeviceDriver::getBufferDeviceAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
 {
 	return m_vk.getBufferDeviceAddress(device, pInfo);
+}
+
+uint64_t DeviceDriver::getBufferOpaqueCaptureAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
+{
+	return m_vk.getBufferOpaqueCaptureAddress(device, pInfo);
+}
+
+uint64_t DeviceDriver::getDeviceMemoryOpaqueCaptureAddress (VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) const
+{
+	return m_vk.getDeviceMemoryOpaqueCaptureAddress(device, pInfo);
 }
 
 VkResult DeviceDriver::createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const
@@ -820,6 +850,21 @@ VkResult DeviceDriver::acquireProfilingLockKHR (VkDevice device, const VkAcquire
 void DeviceDriver::releaseProfilingLockKHR (VkDevice device) const
 {
 	m_vk.releaseProfilingLockKHR(device);
+}
+
+VkResult DeviceDriver::getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const
+{
+	return m_vk.getPipelineExecutablePropertiesKHR(device, pPipelineInfo, pExecutableCount, pProperties);
+}
+
+VkResult DeviceDriver::getPipelineExecutableStatisticsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const
+{
+	return m_vk.getPipelineExecutableStatisticsKHR(device, pExecutableInfo, pStatisticCount, pStatistics);
+}
+
+VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const
+{
+	return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
 }
 
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const

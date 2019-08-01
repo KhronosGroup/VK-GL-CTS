@@ -52,7 +52,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_EXT_shader_viewport_index_layer",
 	"VK_EXT_descriptor_indexing",
 	"VK_EXT_scalar_block_layout",
-	"VK_EXT_buffer_device_address",
+	"VK_KHR_buffer_device_address",
 	"VK_EXT_host_query_reset",
 };
 
