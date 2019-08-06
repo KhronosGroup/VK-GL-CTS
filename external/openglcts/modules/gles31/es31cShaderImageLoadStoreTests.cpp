@@ -4178,7 +4178,7 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
 		const char* const glsl_vs =
 			NL "layout(location = 0) in vec4 i_position;" NL
 			   "layout(r32ui, binding = 3) coherent uniform uimage2D g_image;" NL "void main() {" NL
-			   "  gl_Position = i_position;" NL "  imageAtomicAdd(g_image, ivec2(0, gl_VertexID), 100u);" NL "}";
+			   "  gl_Position = i_position;" NL "  imageAtomicExchange(g_image, ivec2(0, gl_VertexID), 100u);" NL "}";
 		const char* const glsl_fs =
 			NL "#define KSIZE 64" NL "layout(r32ui, binding = 3) coherent uniform uimage2D g_image;" NL
 			   "void main() {" NL "  imageAtomicAdd(g_image, ivec2(0, int(gl_FragCoord.x) & 0x03), 0x1u);" NL "}";
