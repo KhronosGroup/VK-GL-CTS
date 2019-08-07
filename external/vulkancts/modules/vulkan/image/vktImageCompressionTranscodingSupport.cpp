@@ -969,6 +969,9 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 	else
 	{
 		UVec3 size = m_parameters.size;
+		if (m_parameters.imageType == IMAGE_TYPE_1D) {
+			size.y() = 1;
+		}
 		size.z() = 1;
 		const VkExtent3D originalResolutionInBlocks = makeExtent3D(getCompressedImageResolutionInBlocks(m_parameters.formatCompressed, size));
 
