@@ -275,6 +275,7 @@ m_vk.queueSetPerformanceConfigurationINTEL			= (QueueSetPerformanceConfiguration
 m_vk.getPerformanceParameterINTEL					= (GetPerformanceParameterINTELFunc)					GET_PROC_ADDR("vkGetPerformanceParameterINTEL");
 m_vk.setLocalDimmingAMD								= (SetLocalDimmingAMDFunc)								GET_PROC_ADDR("vkSetLocalDimmingAMD");
 m_vk.getBufferDeviceAddressEXT						= (GetBufferDeviceAddressEXTFunc)						GET_PROC_ADDR("vkGetBufferDeviceAddressEXT");
+m_vk.cmdSetLineStippleEXT							= (CmdSetLineStippleEXTFunc)							GET_PROC_ADDR("vkCmdSetLineStippleEXT");
 m_vk.resetQueryPoolEXT								= (ResetQueryPoolEXTFunc)								GET_PROC_ADDR("vkResetQueryPoolEXT");
 m_vk.getAndroidHardwareBufferPropertiesANDROID		= (GetAndroidHardwareBufferPropertiesANDROIDFunc)		GET_PROC_ADDR("vkGetAndroidHardwareBufferPropertiesANDROID");
 m_vk.getMemoryAndroidHardwareBufferANDROID			= (GetMemoryAndroidHardwareBufferANDROIDFunc)			GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");

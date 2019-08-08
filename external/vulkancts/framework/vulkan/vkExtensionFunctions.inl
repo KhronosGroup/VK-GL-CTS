@@ -429,6 +429,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetBufferDeviceAddressEXT");
 	}
+	else if (extName == "VK_EXT_line_rasterization")
+	{
+		functions.push_back("vkCmdSetLineStippleEXT");
+	}
 	else if (extName == "VK_EXT_host_query_reset")
 	{
 		functions.push_back("vkResetQueryPoolEXT");
@@ -545,6 +549,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_INTEL_performance_query",
 	"VK_AMD_display_native_hdr",
 	"VK_EXT_buffer_device_address",
+	"VK_EXT_line_rasterization",
 	"VK_EXT_host_query_reset",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
 	"VK_KHR_external_memory_win32",
