@@ -2858,7 +2858,7 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 
 		if (vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
 													  mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
-													  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+													  m_parameters.compressedImageUsage,
 													  VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
 													  &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Operation not supported with this image format");
