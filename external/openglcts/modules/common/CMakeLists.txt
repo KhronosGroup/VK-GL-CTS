@@ -5,6 +5,8 @@ if (DEQP_SUPPORT_WGL)
 	add_definitions(-DGLCTS_SUPPORT_WGL=1)
 endif ()
 
+add_subdirectory(subgroups)
+
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
@@ -115,6 +117,7 @@ set(GLCTS_COMMON_LIBS
 	glutil
 	tcutil
 	eglutil
+	deqp-gl-subgroups
 	)
 
 # Add glslang
@@ -149,6 +152,8 @@ add_library(glcts-common STATIC ${GLCTS_COMMON_SRCS})
 target_link_libraries(glcts-common ${GLCTS_COMMON_LIBS})
 
 set(GLCTS_COMMON_NOCONTEXTPACKAGE_SRCS
+	glcSingleConfigTestPackage.cpp
+	glcSingleConfigTestPackage.hpp
 	glcNoDefaultContextPackage.cpp
 	glcNoDefaultContextPackage.hpp
 	)

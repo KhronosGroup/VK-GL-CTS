@@ -38,8 +38,8 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"b7aee529f02340247e45621e9dbd054817d39c71",
-						"9a5e5d6b8b45df8d8f95c56f8fc0bc9ab99e675f43a9509aa2b222bcc9ed715a")
+						"9d534f9312e56c72df763207e449c6719576fd54",
+						"245e90331c83c4c743a2b9d0dad51e27a699f2040ebd34dd5338637adf276752")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
@@ -50,6 +50,7 @@ EXTENSIONS			= [
 	'GL_KHR_robustness',
 	'GL_KHR_no_error',
 	'GL_KHR_parallel_shader_compile',
+	'GL_KHR_shader_subgroup',
 	'GL_EXT_bgra',
 	'GL_EXT_geometry_point_size',
 	'GL_EXT_tessellation_shader',
@@ -134,6 +135,7 @@ EXTENSIONS			= [
 	'GL_NV_deep_texture3D',
 	'GL_NV_gpu_multicast',
 	'GL_NV_internalformat_sample_query',
+	'GL_NV_shader_subgroup_partitioned',
 	'GL_NVX_cross_process_interop',
 	'GL_OES_draw_elements_base_vertex',
 	'GL_OVR_multiview',
