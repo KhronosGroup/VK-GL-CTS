@@ -91,6 +91,9 @@ public:
 	bool					areInputs16Bit		(void) const;
 	bool					areOutputs16Bit		(void) const;
 	bool					isOutput16Bit		(const size_t ndx) const;
+	bool					areInputs64Bit		(void) const;
+	bool					areOutputs64Bit		(void) const;
+	bool					isOutput64Bit		(const size_t ndx) const;
 	bool					isSpirVShader		(void) { return (m_shaderSpec.spirvCase != SPIRV_CASETYPE_NONE); }
 	SpirVCaseT				spirvCase			(void) { return m_shaderSpec.spirvCase; }
 

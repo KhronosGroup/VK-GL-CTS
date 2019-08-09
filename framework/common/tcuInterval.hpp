@@ -29,6 +29,7 @@
 
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 #define TCU_INFINITY	(::std::numeric_limits<float>::infinity())
 #define TCU_NAN			(::std::numeric_limits<float>::quiet_NaN())
@@ -163,7 +164,32 @@ public:
 
 	double		midpoint		(void) const
 	{
-		return 0.5 * (hi() + lo()); // returns NaN when not bounded
+		const double	h = hi();
+		const double	l = lo();
+
+		if (h == -l)
+			return 0.0;
+		if (l == -TCU_INFINITY)
+			return -TCU_INFINITY;
+		if (h == TCU_INFINITY)
+			return TCU_INFINITY;
+
+		const bool		negativeH = ::std::signbit(h);
+		const bool		negativeL = ::std::signbit(l);
+		double			ret;
+
+		if (negativeH != negativeL)
+		{
+			// Different signs. Adding both values should be safe.
+			ret = (h + l) * 0.5;
+		}
+		else
+		{
+			// Same sign. Substracting low from high should be safe.
+			ret = l + (h - l) * 0.5;
+		}
+
+		return ret;
 	}
 
 	bool		operator==		(const Interval& other) const

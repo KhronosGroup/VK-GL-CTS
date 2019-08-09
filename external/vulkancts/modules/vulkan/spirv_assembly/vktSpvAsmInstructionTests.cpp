@@ -17221,7 +17221,7 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 	}
 
 	if (validatedCount < 16)
-		TCU_THROW(InternalError, "Too few samples has been validated.");
+		TCU_THROW(InternalError, "Too few samples have been validated.");
 
 	return success;
 }

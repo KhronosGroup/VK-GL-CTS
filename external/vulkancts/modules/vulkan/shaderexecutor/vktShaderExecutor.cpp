@@ -804,6 +804,8 @@ void FragmentOutExecutor::bindAttributes (int numValues, const void* const* inpu
 		int					elementSize		= 0;
 		int					numAttrsToAdd	= 1;
 
+		if (glu::isDataTypeDoubleOrDVec(basicType))
+			elementSize = sizeof(double);
 		if (glu::isDataTypeFloatOrVec(basicType))
 			elementSize = sizeof(float);
 		else if (glu::isDataTypeFloat16OrVec(basicType))
@@ -954,11 +956,12 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 		for (int outNdx = 0; outNdx < (int)m_outputLayout.locationSymbols.size(); ++outNdx)
 		{
+			const bool		isDouble	= glu::isDataTypeDoubleOrDVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
 			const bool		isFloat		= isDataTypeFloatOrVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
 			const bool		isFloat16b	= glu::isDataTypeFloat16OrVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
 			const bool		isSigned	= isDataTypeIntOrIVec (m_shaderSpec.outputs[outNdx].varType.getBasicType());
 			const bool		isBool		= isDataTypeBoolOrBVec(m_shaderSpec.outputs[outNdx].varType.getBasicType());
-			const VkFormat	colorFormat = isFloat16b ? VK_FORMAT_R16G16B16A16_SFLOAT : (isFloat ? VK_FORMAT_R32G32B32A32_SFLOAT : (isSigned || isBool ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT));
+			const VkFormat	colorFormat = (isDouble ? VK_FORMAT_R64G64B64A64_SFLOAT : (isFloat16b ? VK_FORMAT_R16G16B16A16_SFLOAT : (isFloat ? VK_FORMAT_R32G32B32A32_SFLOAT : (isSigned || isBool ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT))));
 
 			{
 				const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), colorFormat);
@@ -1518,21 +1521,21 @@ void FragmentShaderExecutor::generateSources (const ShaderSpec& shaderSpec, Sour
 
 static deUint32 getVecStd430ByteAlignment (glu::DataType type)
 {
-	switch (type)
+	deUint32 baseSize;
+
+	switch (glu::getDataTypeScalarType(type))
 	{
-		case glu::TYPE_FLOAT16:			return 2u;
-		case glu::TYPE_FLOAT16_VEC2:	return 4u;
-		case glu::TYPE_FLOAT16_VEC3:	return 8u;
-		case glu::TYPE_FLOAT16_VEC4:	return 8u;
-		default: break;
+		case glu::TYPE_FLOAT16:	baseSize = 2u; break;
+		case glu::TYPE_DOUBLE:	baseSize = 8u; break;
+		default:				baseSize = 4u; break;
 	}
 
 	switch (glu::getDataTypeScalarSize(type))
 	{
-		case 1:		return 4u;
-		case 2:		return 8u;
-		case 3:		return 16u;
-		case 4:		return 16u;
+		case 1:		return baseSize;
+		case 2:		return baseSize * 2u;;
+		case 3:		// fallthrough.
+		case 4:		return baseSize * 4u;
 		default:
 			DE_ASSERT(false);
 			return 0u;
@@ -1625,7 +1628,7 @@ void BufferIoExecutor::computeVarLayout (const std::vector<Symbol>& symbols, std
 		if (glu::isDataTypeScalarOrVector(basicType))
 		{
 			const deUint32	alignment	= getVecStd430ByteAlignment(basicType);
-			const deUint32	size		= (deUint32)glu::getDataTypeScalarSize(basicType) * (isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+			const deUint32	size		= (deUint32)glu::getDataTypeScalarSize(basicType) * (isDataTypeDoubleType(basicType) ? (int)(sizeof(deUint64)) : (isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32)));
 
 			curOffset		= (deUint32)deAlign32((int)curOffset, (int)alignment);
 			maxAlignment	= de::max(maxAlignment, alignment);
@@ -1638,8 +1641,8 @@ void BufferIoExecutor::computeVarLayout (const std::vector<Symbol>& symbols, std
 		else if (glu::isDataTypeMatrix(basicType))
 		{
 			const int				numVecs			= glu::getDataTypeMatrixNumColumns(basicType);
-			const glu::DataType		vecType			= glu::getDataTypeFloatVec(glu::getDataTypeMatrixNumRows(basicType));
-			const deUint32			vecAlignment	= isDataTypeFloat16OrVec(basicType) ? getVecStd430ByteAlignment(vecType)/2 : getVecStd430ByteAlignment(vecType);
+			const glu::DataType		vecType			= glu::getDataTypeVector(glu::getDataTypeScalarType(basicType), glu::getDataTypeMatrixNumRows(basicType));
+			const deUint32			vecAlignment	= getVecStd430ByteAlignment(vecType);
 
 			curOffset		= (deUint32)deAlign32((int)curOffset, (int)vecAlignment);
 			maxAlignment	= de::max(maxAlignment, vecAlignment);
@@ -1766,7 +1769,7 @@ void BufferIoExecutor::copyToBuffer (const glu::VarType& varType, const VarLayou
 		const int				scalarSize		= glu::getDataTypeScalarSize(basicType);
 		const int				numVecs			= isMatrix ? glu::getDataTypeMatrixNumColumns(basicType) : 1;
 		const int				numComps		= scalarSize / numVecs;
-		const int				size			= (glu::isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+		const int				size			= (glu::isDataTypeDoubleType(basicType) ? (int)sizeof(deUint64) : (glu::isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32)));
 
 		for (int elemNdx = 0; elemNdx < numValues; elemNdx++)
 		{
@@ -1812,7 +1815,7 @@ void BufferIoExecutor::copyFromBuffer (const glu::VarType& varType, const VarLay
 		{
 			for (int vecNdx = 0; vecNdx < numVecs; vecNdx++)
 			{
-				const int		size			= (glu::isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+				const int		size			= (glu::isDataTypeDoubleType(basicType) ? (int)sizeof(deUint64) : (glu::isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32)));
 				const int		srcOffset		= layout.offset + layout.stride * elemNdx + (isMatrix ? layout.matrixStride * vecNdx : 0);
 				const int		dstOffset		= size * (elemNdx * scalarSize + vecNdx * numComps);
 				const deUint8*	srcPtr			= (const deUint8*)srcBasePtr + srcOffset;
@@ -1974,6 +1977,14 @@ std::string getTypeSpirv(const glu::DataType type, const bool packFloat16Bit = f
 		return "%v3i32";
 	case glu::TYPE_INT_VEC4:
 		return "%v4i32";
+	case glu::TYPE_DOUBLE:
+		return "%f64";
+	case glu::TYPE_DOUBLE_VEC2:
+		return "%v2f64";
+	case glu::TYPE_DOUBLE_VEC3:
+		return "%v3f64";
+	case glu::TYPE_DOUBLE_VEC4:
+		return "%v4f64";
 	default:
 		DE_ASSERT(0);
 		return "";
@@ -2000,6 +2011,7 @@ std::string scalarComparison(const std::string operation, const int operationNdx
 	{
 	case glu::TYPE_FLOAT16:
 	case glu::TYPE_FLOAT:
+	case glu::TYPE_DOUBLE:
 		src << "\n"
 			<< "%operation_result_" << operationNdx << " = " << operation << " %bool %in0_val %in1_val\n"
 			<< "OpSelectionMerge %IF_" << operationNdx << " None\n"
@@ -2014,14 +2026,17 @@ std::string scalarComparison(const std::string operation, const int operationNdx
 		return src.str();
 	case glu::TYPE_FLOAT16_VEC2:
 	case glu::TYPE_FLOAT_VEC2:
+	case glu::TYPE_DOUBLE_VEC2:
 		boolType = "%v2bool";
 		break;
 	case glu::TYPE_FLOAT16_VEC3:
 	case glu::TYPE_FLOAT_VEC3:
+	case glu::TYPE_DOUBLE_VEC3:
 		boolType = "%v3bool";
 		break;
 	case glu::TYPE_FLOAT16_VEC4:
 	case glu::TYPE_FLOAT_VEC4:
+	case glu::TYPE_DOUBLE_VEC4:
 		boolType = "%v4bool";
 		break;
 	default:
@@ -2049,7 +2064,7 @@ std::string scalarComparison(const std::string operation, const int operationNdx
 	return src.str();
 }
 
-std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const bool isMediump)
+std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const bool are64Bit, const bool isMediump)
 {
 	static const std::string COMPARE_OPERATIONS[] =
 	{
@@ -2073,7 +2088,8 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 
 	const bool			floatResult		= glu::isDataTypeFloatType(spec.outputs[0].varType.getBasicType());
 	const bool			packFloatRes	= (floatResult && spec.packFloat16Bit);
-	const bool			useF32Types		= (!are16Bit);
+	const bool			useF32Types		= (!are16Bit && !are64Bit);
+	const bool			useF64Types		= are64Bit;
 	const bool			useF16Types		= (spec.packFloat16Bit || are16Bit);
 
 	if (floatResult)
@@ -2094,6 +2110,9 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		src << "OpCapability StorageBuffer16BitAccess\n"
 			"OpCapability UniformAndStorageBuffer16BitAccess\n";
 
+	if (useF64Types)
+		src << "OpCapability Float64\n";
+
 	if (are16Bit)
 		src << "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
@@ -2113,7 +2132,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			src << "OpMemberDecorate %SSB0_IN "<< ndx <<" Offset " << offset << "\n";
 			++ndx;
 			const int scalarSize = symIter->varType.getScalarSize();
-			offset += (scalarSize + ((scalarSize == 3) ? 1 : 0)) * (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+			offset += (scalarSize + ((scalarSize == 3) ? 1 : 0)) * (isDataTypeDoubleType(symIter->varType.getBasicType()) ? (int)sizeof(deUint64) : (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32)));
 		}
 		src << "OpDecorate %up_SSB0_IN ArrayStride "<< offset << "\n";
 	}
@@ -2158,7 +2177,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			src << "OpMemberDecorate %SSB0_OUT " << ndx << " Offset " << offset << "\n";
 			++ndx;
 			const int scalarSize = symIter->varType.getScalarSize();
-			offset += (scalarSize + ((scalarSize == 3) ? 1 : 0)) * (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+			offset += (scalarSize + ((scalarSize == 3) ? 1 : 0)) * (isDataTypeDoubleType(symIter->varType.getBasicType()) ? (int)sizeof(deUint64) : (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32)));
 		}
 		src << "OpDecorate %up_SSB0_OUT ArrayStride " << offset << "\n";
 	}
@@ -2180,6 +2199,12 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			"%v2f32 = OpTypeVector %f32 2\n"
 			"%v3f32 = OpTypeVector %f32 3\n"
 			"%v4f32 = OpTypeVector %f32 4\n";
+
+	if (useF64Types)
+		src << "%f64   = OpTypeFloat 64\n"
+			"%v2f64 = OpTypeVector %f64 2\n"
+			"%v3f64 = OpTypeVector %f64 3\n"
+			"%v4f64 = OpTypeVector %f64 4\n";
 
 	if (useF16Types)
 		src << "%f16   = OpTypeFloat 16\n"
@@ -2232,6 +2257,12 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			"%c_f16_minus1 = OpConstant %f16 -0x1p+0"
 			;
 
+	if (useF64Types)
+		src <<
+			"%c_f64_0 = OpConstant %f64 0\n"
+			"%c_f64_1 = OpConstant %f64 1\n"
+		;
+
 	src << "\n"
 		"%c_v2i32_0 = OpConstantComposite %v2i32 %c_i32_0 %c_i32_0\n"
 		"%c_v2i32_1 = OpConstantComposite %v2i32 %c_i32_1 %c_i32_1\n"
@@ -2259,6 +2290,16 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			"%c_v3f16_1 = OpConstantComposite %v3f16 %c_f16_1 %c_f16_1 %c_f16_1\n"
 			"%c_v4f16_0 = OpConstantComposite %v4f16 %c_f16_0 %c_f16_0 %c_f16_0 %c_f16_0\n"
 			"%c_v4f16_1 = OpConstantComposite %v4f16 %c_f16_1 %c_f16_1 %c_f16_1 %c_f16_1\n"
+			;
+
+	if (useF64Types)
+		src <<
+			"%c_v2f64_0 = OpConstantComposite %v2f64 %c_f64_0 %c_f64_0\n"
+			"%c_v2f64_1 = OpConstantComposite %v2f64 %c_f64_1 %c_f64_1\n"
+			"%c_v3f64_0 = OpConstantComposite %v3f64 %c_f64_0 %c_f64_0 %c_f64_0\n"
+			"%c_v3f64_1 = OpConstantComposite %v3f64 %c_f64_1 %c_f64_1 %c_f64_1\n"
+			"%c_v4f64_0 = OpConstantComposite %v4f64 %c_f64_0 %c_f64_0 %c_f64_0 %c_f64_0\n"
+			"%c_v4f64_1 = OpConstantComposite %v4f64 %c_f64_1 %c_f64_1 %c_f64_1 %c_f64_1\n"
 			;
 
 	src << "\n"
@@ -2469,11 +2510,15 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 	if (spec.spirvCase != SPIRV_CASETYPE_NONE)
 	{
 		bool	are16Bit	= false;
+		bool	are64Bit	= false;
 		bool	isMediump	= false;
 		for (vector<Symbol>::const_iterator symIter = spec.inputs.begin(); symIter != spec.inputs.end(); ++symIter)
 		{
 			if (glu::isDataTypeFloat16OrVec(symIter->varType.getBasicType()))
 				are16Bit = true;
+
+			if (glu::isDataTypeDoubleType(symIter->varType.getBasicType()))
+				are64Bit = true;
 
 			if (symIter->varType.getPrecision() == glu::PRECISION_MEDIUMP)
 				isMediump = true;
@@ -2482,7 +2527,7 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 				break;
 		}
 
-		return generateSpirv(spec, are16Bit, isMediump);
+		return generateSpirv(spec, are16Bit, are64Bit, isMediump);
 	}
 	else
 	{
@@ -3309,6 +3354,33 @@ bool ShaderExecutor::areOutputs16Bit (void) const
 bool ShaderExecutor::isOutput16Bit (const size_t ndx) const
 {
 	if (glu::isDataTypeFloat16OrVec(m_shaderSpec.outputs[ndx].varType.getBasicType()))
+		return true;
+	return false;
+}
+
+bool ShaderExecutor::areInputs64Bit (void) const
+{
+	for (vector<Symbol>::const_iterator symIter = m_shaderSpec.inputs.begin(); symIter != m_shaderSpec.inputs.end(); ++symIter)
+	{
+		if (glu::isDataTypeDoubleType(symIter->varType.getBasicType()))
+			return true;
+	}
+	return false;
+}
+
+bool ShaderExecutor::areOutputs64Bit (void) const
+{
+	for (vector<Symbol>::const_iterator symIter = m_shaderSpec.outputs.begin(); symIter != m_shaderSpec.outputs.end(); ++symIter)
+	{
+		if (glu::isDataTypeDoubleType(symIter->varType.getBasicType()))
+			return true;
+	}
+	return false;
+}
+
+bool ShaderExecutor::isOutput64Bit (const size_t ndx) const
+{
+	if (glu::isDataTypeDoubleType(m_shaderSpec.outputs[ndx].varType.getBasicType()))
 		return true;
 	return false;
 }

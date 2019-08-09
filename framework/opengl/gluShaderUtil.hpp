@@ -351,6 +351,7 @@ struct DataTypeTraits;
 
 template <> struct DataTypeTraits<deUint16>			{ enum { DATATYPE = TYPE_FLOAT16			}; };
 template <> struct DataTypeTraits<float>			{ enum { DATATYPE = TYPE_FLOAT				}; };
+template <> struct DataTypeTraits<double>			{ enum { DATATYPE = TYPE_DOUBLE				}; };
 template <> struct DataTypeTraits<bool>				{ enum { DATATYPE = TYPE_BOOL				}; };
 template <> struct DataTypeTraits<int>				{ enum { DATATYPE = TYPE_INT				}; };
 template <> struct DataTypeTraits<deUint32>			{ enum { DATATYPE = TYPE_UINT				}; };
@@ -372,6 +373,15 @@ template <> struct DataTypeTraits<tcu::Mat3x4_16b>	{ enum { DATATYPE = TYPE_FLOA
 template <> struct DataTypeTraits<tcu::Mat4x2_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT4X2		}; };
 template <> struct DataTypeTraits<tcu::Mat4x3_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT4X3		}; };
 template <> struct DataTypeTraits<tcu::Mat4_16b>	{ enum { DATATYPE = TYPE_FLOAT16_MAT4		}; };
+template <> struct DataTypeTraits<tcu::Matrix2d>	{ enum { DATATYPE = TYPE_DOUBLE_MAT2		}; };
+template <> struct DataTypeTraits<tcu::Matrix3d>	{ enum { DATATYPE = TYPE_DOUBLE_MAT3		}; };
+template <> struct DataTypeTraits<tcu::Matrix4d>	{ enum { DATATYPE = TYPE_DOUBLE_MAT4		}; };
+template <> struct DataTypeTraits<tcu::Mat2x3d>		{ enum { DATATYPE = TYPE_DOUBLE_MAT2X3		}; };
+template <> struct DataTypeTraits<tcu::Mat2x4d>		{ enum { DATATYPE = TYPE_DOUBLE_MAT2X4		}; };
+template <> struct DataTypeTraits<tcu::Mat3x2d>		{ enum { DATATYPE = TYPE_DOUBLE_MAT3X2		}; };
+template <> struct DataTypeTraits<tcu::Mat3x4d>		{ enum { DATATYPE = TYPE_DOUBLE_MAT3X4		}; };
+template <> struct DataTypeTraits<tcu::Mat4x2d>		{ enum { DATATYPE = TYPE_DOUBLE_MAT4X2		}; };
+template <> struct DataTypeTraits<tcu::Mat4x3d>		{ enum { DATATYPE = TYPE_DOUBLE_MAT4X3		}; };
 
 template <typename T, int Size>
 struct DataTypeTraits<tcu::Vector<T, Size> >
@@ -380,6 +390,7 @@ struct DataTypeTraits<tcu::Vector<T, Size> >
 	DE_STATIC_ASSERT(TYPE_INT_VEC4 == TYPE_INT + 3);
 	DE_STATIC_ASSERT(TYPE_UINT_VEC4 == TYPE_UINT + 3);
 	DE_STATIC_ASSERT(TYPE_BOOL_VEC4 == TYPE_BOOL + 3);
+	DE_STATIC_ASSERT(TYPE_DOUBLE_VEC4 == TYPE_DOUBLE + 3);
 	enum { DATATYPE = DataTypeTraits<T>::DATATYPE + Size - 1 };
 };
 

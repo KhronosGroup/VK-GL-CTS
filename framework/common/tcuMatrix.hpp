@@ -490,9 +490,6 @@ Vector<T, Cols> operator* (const Vector<T, Rows>& vec, const Matrix<T, Rows, Col
 typedef Matrix<float, 2, 2>		Matrix2f;
 typedef Matrix<float, 3, 3>		Matrix3f;
 typedef Matrix<float, 4, 4>		Matrix4f;
-typedef Matrix<double, 2, 2>	Matrix2d;
-typedef Matrix<double, 3, 3>	Matrix3d;
-typedef Matrix<double, 4, 4>	Matrix4d;
 
 // GLSL-style naming \note CxR.
 typedef Matrix2f			Mat2;
@@ -521,6 +518,22 @@ typedef Matrix<deUint16, 4, 3>	Mat3x4_16b;
 typedef Matrix<deUint16, 2, 4>	Mat4x2_16b;
 typedef Matrix<deUint16, 3, 4>	Mat4x3_16b;
 typedef Matrix4f16b				Mat4_16b;
+
+// 64-bit matrices.
+typedef Matrix<double, 2, 2>	Matrix2d;
+typedef Matrix<double, 3, 3>	Matrix3d;
+typedef Matrix<double, 4, 4>	Matrix4d;
+
+// GLSL-style naming \note CxR.
+typedef Matrix2d				Mat2d;
+typedef Matrix<double, 3, 2>	Mat2x3d;
+typedef Matrix<double, 4, 2>	Mat2x4d;
+typedef Matrix<double, 2, 3>	Mat3x2d;
+typedef Matrix3d				Mat3d;
+typedef Matrix<double, 4, 3>	Mat3x4d;
+typedef Matrix<double, 2, 4>	Mat4x2d;
+typedef Matrix<double, 3, 4>	Mat4x3d;
+typedef Matrix4d				Mat4d;
 
 // Matrix-scalar operators.
 
