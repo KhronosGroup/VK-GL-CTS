@@ -122,7 +122,7 @@ void	fillWithMetaballs				(const PixelBufferAccess& access, int numMetaballs, de
 void	fillWithRGBAQuads				(const PixelBufferAccess& access);
 
 //! Copies contents of src to dst. If formats of dst and src are equal, a bit-exact copy is made.
-void	copy							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src);
+void	copy							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, const bool clearUnused = DE_TRUE);
 
 void	scale							(const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, Sampler::FilterMode filter);
 
