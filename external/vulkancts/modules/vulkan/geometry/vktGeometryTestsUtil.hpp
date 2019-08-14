@@ -178,8 +178,6 @@ bool							compareWithFileImage		(Context& context, const tcu::ConstPixelBufferA
 void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const tcu::Vec4& color);
 void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const float depth);
 void							zeroBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size);
-
-void							checkGeometryShaderSupport	(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const int numGeometryShaderInvocations = 0);
 vk::VkBool32					checkPointSize				(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice);
 
 inline vk::Move<vk::VkBuffer> makeBuffer (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkBufferCreateInfo& createInfo)

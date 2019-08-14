@@ -43,7 +43,7 @@ extern "C" {
 #define VK_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((uint32_t)(version) & 0xfff)
 // Version of this file
-#define VK_HEADER_VERSION 115
+#define VK_HEADER_VERSION 117
 
 
 #define VK_NULL_HANDLE 0
@@ -307,6 +307,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV = 1000058000,
     VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT = 1000061000,
     VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN = 1000062000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT = 1000066000,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT = 1000067000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT = 1000067001,
     VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR = 1000073000,
@@ -492,6 +493,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT = 1000218001,
     VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT = 1000218002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT = 1000221000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT = 1000225000,
+    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT = 1000225001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT = 1000237000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT = 1000238000,
     VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT = 1000238001,
@@ -515,7 +518,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT = 1000255002,
     VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT = 1000255001,
     VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT = 1000256000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT = 1000259000,
+    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT = 1000259001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT = 1000259002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT = 1000261000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT = 1000265000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT = 1000276000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT = 1000281000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT = 1000281001,
@@ -839,6 +846,20 @@ typedef enum VkFormat {
     VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG = 1000054005,
     VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG = 1000054006,
     VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG = 1000054007,
+    VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT = 1000066000,
+    VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT = 1000066001,
+    VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT = 1000066002,
+    VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT = 1000066003,
+    VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT = 1000066004,
+    VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT = 1000066005,
+    VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT = 1000066006,
+    VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT = 1000066007,
+    VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT = 1000066008,
+    VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT = 1000066009,
+    VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT = 1000066010,
+    VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT = 1000066011,
+    VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT = 1000066012,
+    VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT = 1000066013,
     VK_FORMAT_G8B8G8R8_422_UNORM_KHR = VK_FORMAT_G8B8G8R8_422_UNORM,
     VK_FORMAT_B8G8R8G8_422_UNORM_KHR = VK_FORMAT_B8G8R8G8_422_UNORM,
     VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR = VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
@@ -1186,6 +1207,7 @@ typedef enum VkDynamicState {
     VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV = 1000164004,
     VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV = 1000164006,
     VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV = 1000205001,
+    VK_DYNAMIC_STATE_LINE_STIPPLE_EXT = 1000259000,
     VK_DYNAMIC_STATE_BEGIN_RANGE = VK_DYNAMIC_STATE_VIEWPORT,
     VK_DYNAMIC_STATE_END_RANGE = VK_DYNAMIC_STATE_STENCIL_REFERENCE,
     VK_DYNAMIC_STATE_RANGE_SIZE = (VK_DYNAMIC_STATE_STENCIL_REFERENCE - VK_DYNAMIC_STATE_VIEWPORT + 1),
@@ -1299,6 +1321,7 @@ typedef enum VkIndexType {
     VK_INDEX_TYPE_UINT16 = 0,
     VK_INDEX_TYPE_UINT32 = 1,
     VK_INDEX_TYPE_NONE_NV = 1000165000,
+    VK_INDEX_TYPE_UINT8_EXT = 1000265000,
     VK_INDEX_TYPE_BEGIN_RANGE = VK_INDEX_TYPE_UINT16,
     VK_INDEX_TYPE_END_RANGE = VK_INDEX_TYPE_UINT32,
     VK_INDEX_TYPE_RANGE_SIZE = (VK_INDEX_TYPE_UINT32 - VK_INDEX_TYPE_UINT16 + 1),
@@ -1636,6 +1659,10 @@ typedef enum VkImageViewCreateFlagBits {
     VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageViewCreateFlagBits;
 typedef VkFlags VkImageViewCreateFlags;
+
+typedef enum VkShaderModuleCreateFlagBits {
+    VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkShaderModuleCreateFlagBits;
 typedef VkFlags VkShaderModuleCreateFlags;
 typedef VkFlags VkPipelineCacheCreateFlags;
 
@@ -1651,6 +1678,12 @@ typedef enum VkPipelineCreateFlagBits {
     VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineCreateFlagBits;
 typedef VkFlags VkPipelineCreateFlags;
+
+typedef enum VkPipelineShaderStageCreateFlagBits {
+    VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT = 0x00000001,
+    VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT = 0x00000002,
+    VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkPipelineShaderStageCreateFlagBits;
 typedef VkFlags VkPipelineShaderStageCreateFlags;
 
 typedef enum VkShaderStageFlagBits {
@@ -1729,6 +1762,10 @@ typedef enum VkFramebufferCreateFlagBits {
     VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkFramebufferCreateFlagBits;
 typedef VkFlags VkFramebufferCreateFlags;
+
+typedef enum VkRenderPassCreateFlagBits {
+    VK_RENDER_PASS_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkRenderPassCreateFlagBits;
 typedef VkFlags VkRenderPassCreateFlags;
 
 typedef enum VkAttachmentDescriptionFlagBits {
@@ -1824,7 +1861,8 @@ typedef VkFlags VkCommandBufferResetFlags;
 typedef enum VkStencilFaceFlagBits {
     VK_STENCIL_FACE_FRONT_BIT = 0x00000001,
     VK_STENCIL_FACE_BACK_BIT = 0x00000002,
-    VK_STENCIL_FRONT_AND_BACK = 0x00000003,
+    VK_STENCIL_FACE_FRONT_AND_BACK = 0x00000003,
+    VK_STENCIL_FRONT_AND_BACK = VK_STENCIL_FACE_FRONT_AND_BACK,
     VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkStencilFaceFlagBits;
 typedef VkFlags VkStencilFaceFlags;
@@ -6367,28 +6405,38 @@ typedef struct VkPhysicalDeviceDriverPropertiesKHR {
 
 
 #define VK_KHR_shader_float_controls 1
-#define VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION 1
+#define VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION 4
 #define VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME "VK_KHR_shader_float_controls"
+
+typedef enum VkShaderFloatControlsIndependenceKHR {
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR = 0,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR = 1,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR = 2,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_BEGIN_RANGE_KHR = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_END_RANGE_KHR = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_RANGE_SIZE_KHR = (VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR - VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR + 1),
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkShaderFloatControlsIndependenceKHR;
 typedef struct VkPhysicalDeviceFloatControlsPropertiesKHR {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           separateDenormSettings;
-    VkBool32           separateRoundingModeSettings;
-    VkBool32           shaderSignedZeroInfNanPreserveFloat16;
-    VkBool32           shaderSignedZeroInfNanPreserveFloat32;
-    VkBool32           shaderSignedZeroInfNanPreserveFloat64;
-    VkBool32           shaderDenormPreserveFloat16;
-    VkBool32           shaderDenormPreserveFloat32;
-    VkBool32           shaderDenormPreserveFloat64;
-    VkBool32           shaderDenormFlushToZeroFloat16;
-    VkBool32           shaderDenormFlushToZeroFloat32;
-    VkBool32           shaderDenormFlushToZeroFloat64;
-    VkBool32           shaderRoundingModeRTEFloat16;
-    VkBool32           shaderRoundingModeRTEFloat32;
-    VkBool32           shaderRoundingModeRTEFloat64;
-    VkBool32           shaderRoundingModeRTZFloat16;
-    VkBool32           shaderRoundingModeRTZFloat32;
-    VkBool32           shaderRoundingModeRTZFloat64;
+    VkStructureType                         sType;
+    void*                                   pNext;
+    VkShaderFloatControlsIndependenceKHR    denormBehaviorIndependence;
+    VkShaderFloatControlsIndependenceKHR    roundingModeIndependence;
+    VkBool32                                shaderSignedZeroInfNanPreserveFloat16;
+    VkBool32                                shaderSignedZeroInfNanPreserveFloat32;
+    VkBool32                                shaderSignedZeroInfNanPreserveFloat64;
+    VkBool32                                shaderDenormPreserveFloat16;
+    VkBool32                                shaderDenormPreserveFloat32;
+    VkBool32                                shaderDenormPreserveFloat64;
+    VkBool32                                shaderDenormFlushToZeroFloat16;
+    VkBool32                                shaderDenormFlushToZeroFloat32;
+    VkBool32                                shaderDenormFlushToZeroFloat64;
+    VkBool32                                shaderRoundingModeRTEFloat16;
+    VkBool32                                shaderRoundingModeRTEFloat32;
+    VkBool32                                shaderRoundingModeRTEFloat64;
+    VkBool32                                shaderRoundingModeRTZFloat16;
+    VkBool32                                shaderRoundingModeRTZFloat32;
+    VkBool32                                shaderRoundingModeRTZFloat64;
 } VkPhysicalDeviceFloatControlsPropertiesKHR;
 
 
@@ -7026,6 +7074,17 @@ typedef struct VkValidationFlagsEXT {
 #define VK_EXT_shader_subgroup_vote 1
 #define VK_EXT_SHADER_SUBGROUP_VOTE_SPEC_VERSION 1
 #define VK_EXT_SHADER_SUBGROUP_VOTE_EXTENSION_NAME "VK_EXT_shader_subgroup_vote"
+
+
+#define VK_EXT_texture_compression_astc_hdr 1
+#define VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_SPEC_VERSION 1
+#define VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME "VK_EXT_texture_compression_astc_hdr"
+typedef struct VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           textureCompressionASTC_HDR;
+} VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT;
+
 
 
 #define VK_EXT_astc_decode_mode 1
@@ -9390,6 +9449,26 @@ typedef struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT {
 #define VK_GOOGLE_DECORATE_STRING_EXTENSION_NAME "VK_GOOGLE_decorate_string"
 
 
+#define VK_EXT_subgroup_size_control 1
+#define VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION 1
+#define VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME "VK_EXT_subgroup_size_control"
+typedef struct VkPhysicalDeviceSubgroupSizeControlPropertiesEXT {
+    VkStructureType       sType;
+    void*                 pNext;
+    uint32_t              minSubgroupSize;
+    uint32_t              maxSubgroupSize;
+    uint32_t              maxComputeWorkgroupSubgroups;
+    VkShaderStageFlags    requiredSubgroupSizeStages;
+} VkPhysicalDeviceSubgroupSizeControlPropertiesEXT;
+
+typedef struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           requiredSubgroupSize;
+} VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT;
+
+
+
 #define VK_EXT_memory_budget 1
 #define VK_EXT_MEMORY_BUDGET_SPEC_VERSION 1
 #define VK_EXT_MEMORY_BUDGET_EXTENSION_NAME "VK_EXT_memory_budget"
@@ -9670,6 +9749,56 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateHeadlessSurfaceEXT(
 #endif
 
 
+#define VK_EXT_line_rasterization 1
+#define VK_EXT_LINE_RASTERIZATION_SPEC_VERSION 1
+#define VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME "VK_EXT_line_rasterization"
+
+typedef enum VkLineRasterizationModeEXT {
+    VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT = 0,
+    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT = 1,
+    VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT = 2,
+    VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT = 3,
+    VK_LINE_RASTERIZATION_MODE_BEGIN_RANGE_EXT = VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT,
+    VK_LINE_RASTERIZATION_MODE_END_RANGE_EXT = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT,
+    VK_LINE_RASTERIZATION_MODE_RANGE_SIZE_EXT = (VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT - VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT + 1),
+    VK_LINE_RASTERIZATION_MODE_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkLineRasterizationModeEXT;
+typedef struct VkPhysicalDeviceLineRasterizationFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rectangularLines;
+    VkBool32           bresenhamLines;
+    VkBool32           smoothLines;
+    VkBool32           stippledRectangularLines;
+    VkBool32           stippledBresenhamLines;
+    VkBool32           stippledSmoothLines;
+} VkPhysicalDeviceLineRasterizationFeaturesEXT;
+
+typedef struct VkPhysicalDeviceLineRasterizationPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           lineSubPixelPrecisionBits;
+} VkPhysicalDeviceLineRasterizationPropertiesEXT;
+
+typedef struct VkPipelineRasterizationLineStateCreateInfoEXT {
+    VkStructureType               sType;
+    const void*                   pNext;
+    VkLineRasterizationModeEXT    lineRasterizationMode;
+    VkBool32                      stippledLineEnable;
+    uint32_t                      lineStippleFactor;
+    uint16_t                      lineStipplePattern;
+} VkPipelineRasterizationLineStateCreateInfoEXT;
+
+typedef void (VKAPI_PTR *PFN_vkCmdSetLineStippleEXT)(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdSetLineStippleEXT(
+    VkCommandBuffer                             commandBuffer,
+    uint32_t                                    lineStippleFactor,
+    uint16_t                                    lineStipplePattern);
+#endif
+
+
 #define VK_EXT_host_query_reset 1
 #define VK_EXT_HOST_QUERY_RESET_SPEC_VERSION 1
 #define VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME "VK_EXT_host_query_reset"
@@ -9688,6 +9817,17 @@ VKAPI_ATTR void VKAPI_CALL vkResetQueryPoolEXT(
     uint32_t                                    firstQuery,
     uint32_t                                    queryCount);
 #endif
+
+
+#define VK_EXT_index_type_uint8 1
+#define VK_EXT_INDEX_TYPE_UINT8_SPEC_VERSION 1
+#define VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME "VK_EXT_index_type_uint8"
+typedef struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           indexTypeUint8;
+} VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
+
 
 
 #define VK_EXT_shader_demote_to_helper_invocation 1

@@ -130,11 +130,17 @@ template<typename Instance, typename Arg0>
 void addInstanceTestCaseWithPrograms (tcu::TestCaseGroup*								group,
 									  const std::string&								name,
 									  const std::string&								desc,
+									  typename FunctionSupport1<Arg0>::Function			checkSupport,
 									  typename FunctionProgramsSimple1<Arg0>::Function	initPrograms,
 									  Arg0												arg0)
 {
-	group->addChild(new InstanceFactory1<Instance, Arg0, FunctionProgramsSimple1<Arg0> >(
-		group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0));
+	group->addChild(new InstanceFactory1WithSupport<Instance, Arg0, FunctionSupport1<Arg0>, FunctionProgramsSimple1<Arg0> >(
+		group->getTestContext(), tcu::NODETYPE_SELF_VALIDATE, name, desc, FunctionProgramsSimple1<Arg0>(initPrograms), arg0, typename FunctionSupport1<Arg0>::Args(checkSupport, arg0)));
+}
+
+void checkSupportSampleLocations (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_sample_locations");
 }
 
 std::string getString (const VkSampleCountFlagBits sampleCount)
@@ -180,17 +186,6 @@ VkImageAspectFlags getImageAspectFlags (const VkFormat format)
 
 	DE_FATAL("Format not handled");
 	return 0u;
-}
-
-//! Return NotSupported if required extensions are missing
-void requireExtensions (Context& context)
-{
-	const InstanceInterface&					vki					= context.getInstanceInterface();
-	const VkPhysicalDevice						physicalDevice		= context.getPhysicalDevice();
-	const std::vector<VkExtensionProperties>	supportedExtensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_sample_locations")))
-		TCU_THROW(NotSupportedError, "Missing extension: VK_EXT_sample_locations");
 }
 
 VkPhysicalDeviceSampleLocationsPropertiesEXT getSampleLocationsPropertiesEXT (Context& context)
@@ -1186,8 +1181,6 @@ void beginSecondaryCommandBuffer (const DeviceInterface&	vk,
 //! Verify results of a VkPhysicalDeviceSampleLocationsPropertiesEXT query with VkPhysicalDeviceProperties2KHR
 tcu::TestStatus testQuerySampleLocationProperties (Context& context)
 {
-	requireExtensions(context);
-
 	const VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProperties = getSampleLocationsPropertiesEXT(context);
 
 	context.getTestContext().getLog()
@@ -1236,8 +1229,6 @@ tcu::TestStatus testQuerySampleLocationProperties (Context& context)
 //! Verify results of vkGetPhysicalDeviceMultisamplePropertiesEXT queries
 tcu::TestStatus testQueryMultisampleProperties (Context& context)
 {
-	requireExtensions(context);
-
 	const InstanceInterface&	vki				= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
 	tcu::TestLog&				log				= context.getTestContext().getLog();
@@ -1333,6 +1324,20 @@ struct TestParams
 	VkSampleCountFlagBits	numSamples;
 	TestOptionFlags			options;
 };
+
+void checkSupportVerifyTests (Context& context, const TestParams params)
+{
+	checkSupportSampleLocations(context);
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+	if ((context.getDeviceProperties().limits.framebufferColorSampleCounts & params.numSamples) == 0u)
+		TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
+
+	if ((getSampleLocationsPropertiesEXT(context).sampleLocationSampleCounts & params.numSamples) == 0u)
+		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: sample count not supported");
+}
+
 
 std::string declareSampleDataSSBO (void)
 {
@@ -1453,8 +1458,6 @@ public:
 		, m_numVertices					(0)
 		, m_currentGridNdx				(0)
 	{
-		requireExtensions(context);
-
 		VkMultisamplePropertiesEXT multisampleProperties =
 		{
 			VK_STRUCTURE_TYPE_MULTISAMPLE_PROPERTIES_EXT,		// VkStructureType    sType;
@@ -1477,18 +1480,6 @@ public:
 	tcu::TestStatus iterate (void)
 	{
 		// Will be executed several times, for all possible pixel grid sizes
-
-		const VkPhysicalDeviceLimits&	limits	= m_context.getDeviceProperties().limits;
-
-		if (!m_context.getDeviceFeatures().sampleRateShading)
-			TCU_THROW(NotSupportedError, "Missing feature: sampleRateShading");
-
-		if ((limits.framebufferColorSampleCounts & m_params.numSamples) == 0u)
-			TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
-
-		if ((m_sampleLocationsProperties.sampleLocationSampleCounts & m_params.numSamples) == 0u)
-			TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: sample count not supported");
-
 		if (!(currentGridSize().x() >= 1 && currentGridSize().y() >= 1))
 			return tcu::TestStatus::fail("maxSampleLocationGridSize is invalid");
 
@@ -1828,13 +1819,13 @@ void addCases (tcu::TestCaseGroup* group, const VkSampleCountFlagBits numSamples
 	params.numSamples	= numSamples;
 	params.options		= (TestOptionFlags)0;
 
-	addInstanceTestCaseWithPrograms<Test>(group, getString(numSamples).c_str(), "", initPrograms, params);
+	addInstanceTestCaseWithPrograms<Test>(group, getString(numSamples).c_str(), "", checkSupportVerifyTests, initPrograms, params);
 
 	params.options = (TestOptionFlags)TEST_OPTION_DYNAMIC_STATE_BIT;
-	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic").c_str(), "", initPrograms, params);
+	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_dynamic").c_str(), "", checkSupportVerifyTests, initPrograms, params);
 
 	params.options = (TestOptionFlags)TEST_OPTION_CLOSELY_PACKED_BIT;
-	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed").c_str(), "", initPrograms, params);
+	addInstanceTestCaseWithPrograms<Test>(group, (getString(numSamples) + "_packed").c_str(), "", checkSupportVerifyTests, initPrograms, params);
 }
 
 } // VerifySamples
@@ -1888,6 +1879,21 @@ struct TestParams
 	TestClears				clears;
 	TestImageAspect			imageAspect;
 };
+
+void checkSupportDrawTests (Context& context, const TestParams params)
+{
+	checkSupportSampleLocations(context);
+
+	if ((context.getDeviceProperties().limits.framebufferColorSampleCounts & params.numSamples) == 0u)
+		TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
+
+	if ((getSampleLocationsPropertiesEXT(context).sampleLocationSampleCounts & params.numSamples) == 0u)
+		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: sample count not supported");
+
+	// Are we allowed to modify the sample pattern within the same subpass?
+	if (params.drawIn == TEST_DRAW_IN_SAME_SUBPASS && ((params.options & TEST_OPTION_SAME_PATTERN_BIT) == 0) && !getSampleLocationsPropertiesEXT(context).variableSampleLocations)
+		TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
+}
 
 const char* getString (const TestImageAspect aspect)
 {
@@ -2003,8 +2009,6 @@ public:
 		, m_depthStencilFormat			(VK_FORMAT_UNDEFINED)
 		, m_depthStencilAspect			(0)
 	{
-		requireExtensions(context);
-
 		VkMultisamplePropertiesEXT multisampleProperties =
 		{
 			VK_STRUCTURE_TYPE_MULTISAMPLE_PROPERTIES_EXT,		// VkStructureType    sType;
@@ -2022,22 +2026,8 @@ public:
 	tcu::TestStatus iterate (void)
 	{
 		// Requirements
-		{
-			const VkPhysicalDeviceLimits&	limits	= m_context.getDeviceProperties().limits;
-
-			if ((limits.framebufferColorSampleCounts & m_params.numSamples) == 0u)
-				TCU_THROW(NotSupportedError, "framebufferColorSampleCounts: sample count not supported");
-
-			if ((m_sampleLocationsProperties.sampleLocationSampleCounts & m_params.numSamples) == 0u)
-				TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: sample count not supported");
-
-			if (!(m_gridSize.x() >= 1 && m_gridSize.y() >= 1))
-				return tcu::TestStatus::fail("maxSampleLocationGridSize is invalid");
-
-			// Are we allowed to modify the sample pattern within the same subpass?
-			if (m_params.drawIn == TEST_DRAW_IN_SAME_SUBPASS && !useSameSamplePattern() && !m_sampleLocationsProperties.variableSampleLocations)
-				TCU_THROW(NotSupportedError, "VkPhysicalDeviceSampleLocationsPropertiesEXT: variableSampleLocations not supported");
-		}
+		if (!(m_gridSize.x() >= 1 && m_gridSize.y() >= 1))
+			return tcu::TestStatus::fail("maxSampleLocationGridSize is invalid");
 
 		// Images
 		{
@@ -3114,8 +3104,8 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup)
 	{
 		MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "query", ""));
 
-		addFunctionCase(group.get(), "sample_locations_properties", "", testQuerySampleLocationProperties);
-		addFunctionCase(group.get(), "multisample_properties",		"", testQueryMultisampleProperties);
+		addFunctionCase(group.get(), "sample_locations_properties", "", checkSupportSampleLocations, testQuerySampleLocationProperties);
+		addFunctionCase(group.get(), "multisample_properties",		"", checkSupportSampleLocations, testQueryMultisampleProperties);
 
 		rootGroup->addChild(group.release());
 	}
@@ -3230,7 +3220,7 @@ void createTestsInGroup (tcu::TestCaseGroup* rootGroup)
 							 << getString(params.clears) << (params.options != 0 ? "_" : "")
 							 << getTestOptionFlagsString(params.options);
 
-					addInstanceTestCaseWithPrograms<DrawTest>(samplesGroup.get(), caseName.str().c_str(), "", initPrograms, params);
+					addInstanceTestCaseWithPrograms<DrawTest>(samplesGroup.get(), caseName.str().c_str(), "", checkSupportDrawTests, initPrograms, params);
 				}
 				aspectGroup->addChild(samplesGroup.release());
 			}

@@ -962,10 +962,6 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 	// "Slices" is either the depth of a 3D image, or the number of layers of an arrayed image
 	const deInt32					numSlices			= maxLayersOrDepth(imageSize);
 
-
-	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))
-		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
-
 	// Determine the verification bounds. The checked region will be in the center of the rendered image
 	const IVec4	checkSize	= tcu::min(imageSize, IVec4(MAX_VERIFICATION_REGION_SIZE,
 														MAX_VERIFICATION_REGION_SIZE,
@@ -1222,12 +1218,22 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
-	if (viewType == VK_IMAGE_VIEW_TYPE_3D &&
-		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+	if (viewType == VK_IMAGE_VIEW_TYPE_3D)
+		context.requireDeviceExtension("VK_KHR_maintenance1");
 
-	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
-		TCU_THROW(NotSupportedError, "Missing feature: imageCubeArray");
+	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+}
+
+void checkSupportAttachmentSize (Context& context, const CaseDef caseDef)
+{
+	checkImageViewTypeRequirements(context, caseDef.viewType);
+
+	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
+		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+
+	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
+		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
 }
 
 //! A test that can exercise very big color and depth/stencil attachment sizes.
@@ -1235,14 +1241,6 @@ void checkImageViewTypeRequirements (Context& context, const VkImageViewType vie
 //! the test can be retried with a next increment of size reduction index, making the attachments smaller.
 tcu::TestStatus testAttachmentSize (Context& context, const CaseDef caseDef)
 {
-	checkImageViewTypeRequirements(context, caseDef.viewType);
-
-	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-	}
-
 	return testWithSizeReduction(context, caseDef);
 	// Never reached
 }
@@ -1370,11 +1368,20 @@ void drawToMipLevel (const Context&				context,
 	}
 }
 
-//! Use image mip levels as attachments
-tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
+void checkSupportRenderToMipMaps (Context& context, const CaseDef caseDef)
 {
 	checkImageViewTypeRequirements(context, caseDef.viewType);
 
+	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
+		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+
+	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
+		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
+}
+
+//! Use image mip levels as attachments
+tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
+{
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -1389,15 +1396,6 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 	const vector<VkDeviceSize>		mipLevelStorageSizes	= getPerMipLevelStorageSize(mipLevelSizes, tcu::getPixelSize(mapVkFormat(caseDef.colorFormat)));
 	const int						numMipLevels			= static_cast<int>(mipLevelSizes.size());
 	const bool						useDepthStencil			= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
-
-	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-	}
-
-	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))
-		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
 
 	// Create a color buffer big enough to hold all layers and mip levels
 	const VkDeviceSize				colorBufferSize		= sum(mipLevelStorageSizes);
@@ -1778,7 +1776,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 							depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
 							allocationKind						// AllocationKind	allocationKind;
 						};
-						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", initPrograms, testAttachmentSize, caseDef);
+						addFunctionCaseWithPrograms(smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 					}
 				}
 				else // All huge cases go into a separate group
@@ -1799,7 +1797,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 								depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
 								allocationKind						// AllocationKind	allocationKind;
 							};
-							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", initPrograms, testAttachmentSize, caseDef);
+							addFunctionCaseWithPrograms(sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]), "", checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
 						}
 						hugeGroup->addChild(sizeGroup.release());
 					}
@@ -1824,7 +1822,7 @@ void addTestCasesWithFunctions (tcu::TestCaseGroup* group, AllocationKind alloca
 					depthStencilFormat[dsFormatNdx],	// VkFormat			depthStencilFormat;
 					allocationKind						// AllocationKind	allocationKind;
 				};
-				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", initPrograms, testRenderToMipMaps, caseDef);
+				addFunctionCaseWithPrograms(mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]), "", checkSupportRenderToMipMaps, initPrograms, testRenderToMipMaps, caseDef);
 			}
 			imageGroup->addChild(mipmapGroup.release());
 		}

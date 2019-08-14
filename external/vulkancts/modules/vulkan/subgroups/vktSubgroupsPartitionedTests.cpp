@@ -1007,8 +1007,12 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsPartitionedTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "partitioned", "NV_shader_subgroup_partitioned category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup partitioned category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup partitioned category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup partitioned category tests: framebuffer"));
 
 	const VkShaderStageFlags stages[] =
 	{
@@ -1089,31 +1093,36 @@ tcu::TestCaseGroup* createSubgroupsPartitionedTests(tcu::TestContext& testCtx)
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, de::SharedPtr<bool>(new bool)};
-				addFunctionCaseWithPrograms(group.get(),
+				addFunctionCaseWithPrograms(computeGroup.get(),
 											de::toLower(op) + "_" +
-											subgroups::getFormatNameForGLSL(format) +
-											"_" + getShaderStageName(caseDef.shaderStage),
+											subgroups::getFormatNameForGLSL(format),
 											"", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format, de::SharedPtr<bool>(new bool)};
-				addFunctionCaseWithPrograms(group.get(),
+				addFunctionCaseWithPrograms(graphicGroup.get(),
 											de::toLower(op) + "_" +
-											subgroups::getFormatNameForGLSL(format) +
-											"_graphic",
+											subgroups::getFormatNameForGLSL(format),
 											"", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, de::SharedPtr<bool>(new bool)};
-				addFunctionCaseWithPrograms(group.get(), de::toLower(op) + "_" + subgroups::getFormatNameForGLSL(format) +
-											"_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
+				addFunctionCaseWithPrograms(framebufferGroup.get(), de::toLower(op) + "_" + subgroups::getFormatNameForGLSL(format) +
+											"_" + getShaderStageName(caseDef.shaderStage), "",
 											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "partitioned", "Subgroup partitioned category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 
 	return group.release();
 }

@@ -7937,7 +7937,7 @@ vk::VkImageLayout getRandomNextLayout (de::Random&			rng,
 
 	DE_ASSERT(supportedLayoutCount > 0);
 
-	size_t nextLayoutNdx = ((size_t)rng.getUint64()) % (previousLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED
+	size_t nextLayoutNdx = ((size_t)rng.getUint32()) % (previousLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED
 														? supportedLayoutCount
 														: supportedLayoutCount - 1);
 

@@ -393,14 +393,6 @@ public:
 	DepthBoundsParamTestInstance (Context &context, ShaderMap shaders)
 		: DepthStencilBaseCase (context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	{
-		// Check if depth bounds test is supported
-		{
-			const vk::VkPhysicalDeviceFeatures& deviceFeatures = m_context.getDeviceFeatures();
-
-			if (!deviceFeatures.depthBounds)
-				throw tcu::NotSupportedError("Depth bounds test is unsupported");
-		}
-
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(0.0f, 1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
 		m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 0.375f, 1.0f), tcu::RGBA::green().toVec()));
@@ -531,12 +523,7 @@ DepthBoundsTestInstance::DepthBoundsTestInstance(Context& context, ShaderMap sha
 	: DynamicStateBaseClass		(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
 	, m_depthAttachmentFormat	(vk::VK_FORMAT_D16_UNORM)
 {
-	// Check depthBounds support
-	if (!context.getDeviceFeatures().depthBounds)
-		TCU_THROW(NotSupportedError, "depthBounds feature is not supported");
-
 	const vk::VkDevice device = m_context.getDevice();
-
 	const vk::VkExtent3D depthImageExtent = { WIDTH, HEIGHT, 1 };
 	const ImageCreateInfo depthImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_depthAttachmentFormat, depthImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
 												vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
@@ -1034,6 +1021,11 @@ public:
 	}
 };
 
+void checkDepthBoundsSupport (Context& context)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BOUNDS);
+}
+
 } //anonymous
 
 DynamicStateDSTests::DynamicStateDSTests (tcu::TestContext& testCtx)
@@ -1052,8 +1044,8 @@ void DynamicStateDSTests::init (void)
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-	addChild(new InstanceFactory<DepthBoundsParamTestInstance>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", shaderPaths));
-	addChild(new InstanceFactory<DepthBoundsTestInstance>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", shaderPaths));
+	addChild(new InstanceFactory<DepthBoundsParamTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", shaderPaths, checkDepthBoundsSupport));
+	addChild(new InstanceFactory<DepthBoundsTestInstance, FunctionSupport0>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", shaderPaths, checkDepthBoundsSupport));
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1", "Perform basic stencil test 1", 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)));
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2", "Perform basic stencil test 2", 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)));
 	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", shaderPaths));

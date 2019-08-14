@@ -356,12 +356,8 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 tcu::TestStatus test (Context& context, const TestParams params)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const InstanceInterface&		vki					= context.getInstanceInterface();
 	const VkDevice					device				= context.getDevice();
-	const VkPhysicalDevice			physDevice			= context.getPhysicalDevice();
 	Allocator&						allocator			= context.getDefaultAllocator();
-
-	checkGeometryShaderSupport(vki, physDevice, params.numInvocations);
 
 	const UVec2						renderSize			(128u, 128u);
 	const VkFormat					colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
@@ -397,6 +393,14 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	}
 }
 
+void checkSupport (Context& context, TestParams params)
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+	if (context.getDeviceProperties().limits.maxGeometryShaderInvocations < (deUint32)params.numInvocations)
+		TCU_THROW(NotSupportedError, (std::string("Unsupported limit: maxGeometryShaderInvocations < ") + de::toString(params.numInvocations)).c_str());
+}
+
 } // anonymous
 
 //! \note CTS requires shaders to be known ahead of time (some platforms use precompiled shaders), so we can't query a limit at runtime and generate
@@ -427,7 +431,7 @@ tcu::TestCaseGroup* createInstancedRenderingTests (tcu::TestContext& testCtx)
 			*pNumInvocations,
 		};
 
-		addFunctionCaseWithPrograms(group.get(), caseName.str(), "", initPrograms, test, params);
+		addFunctionCaseWithPrograms(group.get(), caseName.str(), "", checkSupport, initPrograms, test, params);
 	}
 
 	return group.release();

@@ -96,15 +96,16 @@ void GeometryEmitTestInstance::genVertexAttribData (void)
 class EmitTest : public TestCase
 {
 public:
-							EmitTest		(TestContext&				testCtx,
-											 const EmitTestSpec&		emitTestSpec);
+							EmitTest		(TestContext&			testCtx,
+											 const EmitTestSpec&	emitTestSpec);
 
-	void					initPrograms	(SourceCollections&			sourceCollections) const;
-	virtual TestInstance*	createInstance	(Context&					context) const;
+	void					initPrograms	(SourceCollections&		sourceCollections) const;
+	virtual TestInstance*	createInstance	(Context&				context) const;
+	virtual void			checkSupport	(Context&				context) const;
 
 protected:
-	string					shaderGeometry	(bool						pointSize) const;
-	const EmitTestSpec	m_emitTestSpec;
+	string					shaderGeometry	(bool					pointSize) const;
+	const EmitTestSpec		m_emitTestSpec;
 };
 
 EmitTest::EmitTest (TestContext& testCtx, const EmitTestSpec& emitTestSpec)
@@ -113,6 +114,11 @@ EmitTest::EmitTest (TestContext& testCtx, const EmitTestSpec& emitTestSpec)
 
 {
 
+}
+
+void EmitTest::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void EmitTest::initPrograms (SourceCollections& sourceCollections) const

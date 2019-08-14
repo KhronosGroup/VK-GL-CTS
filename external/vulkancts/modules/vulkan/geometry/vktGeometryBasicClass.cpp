@@ -63,7 +63,6 @@ GeometryExpanderRenderTestInstance::GeometryExpanderRenderTestInstance (Context&
 	, m_primitiveType	(primitiveType)
 	, m_name			(name)
 {
-	checkGeometryShaderSupport(context.getInstanceInterface(), context.getPhysicalDevice());
 }
 
 tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)

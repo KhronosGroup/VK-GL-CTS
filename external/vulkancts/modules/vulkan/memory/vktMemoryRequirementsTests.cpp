@@ -170,11 +170,6 @@ protected:
 	virtual tcu::TestStatus execTest		(Context&									context,
 											 const VkBufferCreateFlags					bufferFlags) = 0;
 
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkBufferCreateFlags					flags) = 0;
-
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device,
 											 const VkDeviceSize							size,
@@ -205,11 +200,6 @@ protected:
 
 	virtual tcu::TestStatus execTest		(Context&									context,
 											 const VkBufferCreateFlags					bufferFlags);
-
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkBufferCreateFlags					flags);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device,
@@ -260,12 +250,24 @@ void BufferMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gr
 	group->addChild(bufferGroup.release());
 }
 
+void checkSupportBufferMemoryRequirementsOriginal (Context& context, VkBufferCreateFlags flags)
+{
+	if (flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+	if (flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
+
+	if (flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_ALIASED);
+}
+
 void BufferMemoryRequirementsOriginal::addFunctionTestCase (tcu::TestCaseGroup*	group,
 															const std::string&	name,
 															const std::string&	desc,
 															VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, testEntryPoint, arg0);
+	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsOriginal, testEntryPoint, arg0);
 }
 
 tcu::TestStatus BufferMemoryRequirementsOriginal::execTest (Context& context, const VkBufferCreateFlags bufferFlags)
@@ -274,8 +276,6 @@ tcu::TestStatus BufferMemoryRequirementsOriginal::execTest (Context& context, co
 	const InstanceInterface&				vki			= context.getInstanceInterface();
 	const VkDevice							device		= context.getDevice();
 	const VkPhysicalDevice					physDevice	= context.getPhysicalDevice();
-
-	preTestChecks(context, vki, physDevice, bufferFlags);
 
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
 	const VkPhysicalDeviceLimits			limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
@@ -339,23 +339,6 @@ tcu::TestStatus BufferMemoryRequirementsOriginal::execTest (Context& context, co
 	}
 
 	return allPass ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Some memory requirements were incorrect");
-}
-
-void BufferMemoryRequirementsOriginal::preTestChecks (Context&								,
-													  const InstanceInterface&				vki,
-													  const VkPhysicalDevice				physDevice,
-													  const VkBufferCreateFlags				flags)
-{
-	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-
-	if ((flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT) && !features.sparseBinding)
-		TCU_THROW(NotSupportedError, "Feature not supported: sparseBinding");
-
-	if ((flags & VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT) && !features.sparseResidencyBuffer)
-		TCU_THROW(NotSupportedError, "Feature not supported: sparseResidencyBuffer");
-
-	if ((flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT) && !features.sparseResidencyAliased)
-		TCU_THROW(NotSupportedError, "Feature not supported: sparseResidencyAliased");
 }
 
 void BufferMemoryRequirementsOriginal::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -451,11 +434,6 @@ protected:
 											 const std::string&			desc,
 											 VkBufferCreateFlags		arg0);
 
-	virtual void preTestChecks				(Context&					context,
-											 const InstanceInterface&	vki,
-											 const VkPhysicalDevice		physDevice,
-											 const VkBufferCreateFlags	flags);
-
 	virtual void updateMemoryRequirements	(const DeviceInterface&		vk,
 											 const VkDevice				device,
 											 const VkDeviceSize			size,
@@ -471,25 +449,19 @@ tcu::TestStatus BufferMemoryRequirementsExtended::testEntryPoint (Context& conte
 	return test.execTest(context, bufferFlags);
 }
 
+void checkSupportBufferMemoryRequirementsExtended (Context& context, VkBufferCreateFlags flags)
+{
+	checkSupportBufferMemoryRequirementsOriginal(context, flags);
+
+	context.requireDeviceExtension("VK_KHR_get_memory_requirements2");
+}
+
 void BufferMemoryRequirementsExtended::addFunctionTestCase (tcu::TestCaseGroup*	group,
 															const std::string&	name,
 															const std::string&	desc,
 															VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, testEntryPoint, arg0);
-}
-
-void BufferMemoryRequirementsExtended::preTestChecks (Context&					context,
-													  const InstanceInterface&	vki,
-													  const VkPhysicalDevice	physDevice,
-													  const VkBufferCreateFlags	flags)
-{
-	const std::string extensionName("VK_KHR_get_memory_requirements2");
-
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
-		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
-
-	BufferMemoryRequirementsOriginal::preTestChecks(context, vki, physDevice, flags);
+	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsExtended, testEntryPoint, arg0);
 }
 
 void BufferMemoryRequirementsExtended::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -521,11 +493,6 @@ protected:
 											 const std::string&							desc,
 											 VkBufferCreateFlags						arg0);
 
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkBufferCreateFlags					flags);
-
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device,
 											 const VkDeviceSize							size,
@@ -555,23 +522,19 @@ tcu::TestStatus BufferMemoryRequirementsDedicatedAllocation::testEntryPoint(Cont
 	return test.execTest(context, bufferFlags);
 }
 
+void checkSupportBufferMemoryRequirementsDedicatedAllocation (Context& context, VkBufferCreateFlags flags)
+{
+	checkSupportBufferMemoryRequirementsExtended(context, flags);
+
+	context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+}
+
 void BufferMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*	group,
 																	   const std::string&	name,
 																	   const std::string&	desc,
 																	   VkBufferCreateFlags	arg0)
 {
-	addFunctionCase(group, name, desc, testEntryPoint, arg0);
-}
-
-void BufferMemoryRequirementsDedicatedAllocation::preTestChecks (Context&					context,
-																 const InstanceInterface&	vki,
-																 const VkPhysicalDevice		physDevice,
-																 const VkBufferCreateFlags	flags)
-{
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-		TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-
-	BufferMemoryRequirementsExtended::preTestChecks(context, vki, physDevice, flags);
+	addFunctionCase(group, name, desc, checkSupportBufferMemoryRequirementsDedicatedAllocation, testEntryPoint, arg0);
 }
 
 void BufferMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -662,11 +625,6 @@ protected:
 	virtual tcu::TestStatus execTest		(Context&									context,
 											 const ImageTestParams						bufferFlags) = 0;
 
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkImageCreateFlags					flags) = 0;
-
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device) = 0;
 
@@ -690,11 +648,6 @@ protected:
 
 	virtual tcu::TestStatus execTest		(Context&									context,
 											 const ImageTestParams						params);
-
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkImageCreateFlags					flags);
 
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device);
@@ -774,36 +727,26 @@ void ImageMemoryRequirementsOriginal::populateTestGroup (tcu::TestCaseGroup* gro
 	group->addChild(imageGroup.release());
 }
 
+void checkSupportImageMemoryRequirementsOriginal (Context& context, ImageTestParams params)
+{
+	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+
+	if (params.flags & VK_BUFFER_CREATE_SPARSE_BINDING_BIT)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+	if (params.flags & VK_BUFFER_CREATE_SPARSE_ALIASED_BIT)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_ALIASED);
+
+	if ((params.flags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) && !(features.sparseResidencyImage2D || features.sparseResidencyImage3D))
+		TCU_THROW(NotSupportedError, "Feature not supported: sparseResidencyImage (2D and 3D)");
+}
+
 void ImageMemoryRequirementsOriginal::addFunctionTestCase (tcu::TestCaseGroup*		group,
 														   const std::string&		name,
 														   const std::string&		desc,
 														   const ImageTestParams	arg0)
 {
-	addFunctionCase(group, name, desc, testEntryPoint, arg0);
-}
-
-static void CheckImageFlagFeatures (const InstanceInterface&	vki,
-									const VkPhysicalDevice		physDevice,
-									const VkImageCreateFlags	createFlags)
-{
-	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-
-	if ((createFlags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) && !features.sparseBinding)
-		TCU_THROW(NotSupportedError, "Feature not supported: sparseBinding");
-
-	if ((createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) && !(features.sparseResidencyImage2D || features.sparseResidencyImage3D))
-		TCU_THROW(NotSupportedError, "Feature not supported: sparseResidencyImage (2D and 3D)");
-
-	if ((createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) && !features.sparseResidencyAliased)
-		TCU_THROW(NotSupportedError, "Feature not supported: sparseResidencyAliased");
-}
-
-void ImageMemoryRequirementsOriginal::preTestChecks (Context&					,
-													 const InstanceInterface&	vki,
-													 const VkPhysicalDevice		physDevice,
-													 const VkImageCreateFlags	createFlags)
-{
-   CheckImageFlagFeatures(vki, physDevice, createFlags);
+	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsOriginal, testEntryPoint, arg0);
 }
 
 void ImageMemoryRequirementsOriginal::updateMemoryRequirements	(const DeviceInterface&		vk,
@@ -1317,8 +1260,6 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 	const VkImageCreateFlags	sparseFlags		= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
 	const VkImageUsageFlags		transientFlags	= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 
-	preTestChecks(context, vki, physDevice, params.flags);
-
 	const VkPhysicalDeviceMemoryProperties	memoryProperties		= getPhysicalDeviceMemoryProperties(vki, physDevice);
 	const deUint32							notInitializedBits		= ~0u;
 	const VkImageAspectFlags				colorAspect				= VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1418,11 +1359,6 @@ protected:
 											 const std::string&							desc,
 											 const ImageTestParams						arg0);
 
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkImageCreateFlags					flags);
-
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device);
 };
@@ -1435,25 +1371,19 @@ tcu::TestStatus ImageMemoryRequirementsExtended::testEntryPoint (Context& contex
 	return test.execTest(context, params);
 }
 
+void checkSupportImageMemoryRequirementsExtended (Context& context, ImageTestParams params)
+{
+	checkSupportImageMemoryRequirementsOriginal(context, params);
+
+	context.requireDeviceExtension("VK_KHR_get_memory_requirements2");
+}
+
 void ImageMemoryRequirementsExtended::addFunctionTestCase (tcu::TestCaseGroup*		group,
 														   const std::string&		name,
 														   const std::string&		desc,
 														   const ImageTestParams	arg0)
 {
-	addFunctionCase(group, name, desc, testEntryPoint, arg0);
-}
-
-void ImageMemoryRequirementsExtended::preTestChecks (Context&					context,
-													 const InstanceInterface&	vki,
-													 const VkPhysicalDevice		physDevice,
-													 const VkImageCreateFlags	createFlags)
-{
-	const std::string extensionName("VK_KHR_get_memory_requirements2");
-
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
-		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
-
-	ImageMemoryRequirementsOriginal::preTestChecks (context, vki, physDevice, createFlags);
+	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsExtended, testEntryPoint, arg0);
 }
 
 void ImageMemoryRequirementsExtended::updateMemoryRequirements (const DeviceInterface&		vk,
@@ -1475,11 +1405,6 @@ protected:
 											 const std::string&							desc,
 											 const ImageTestParams						arg0);
 
-	virtual void preTestChecks				(Context&									context,
-											 const InstanceInterface&					vki,
-											 const VkPhysicalDevice						physDevice,
-											 const VkImageCreateFlags					flags);
-
 	virtual void updateMemoryRequirements	(const DeviceInterface&						vk,
 											 const VkDevice								device);
 
@@ -1499,25 +1424,20 @@ tcu::TestStatus ImageMemoryRequirementsDedicatedAllocation::testEntryPoint (Cont
 	return test.execTest(context, params);
 }
 
+void checkSupportImageMemoryRequirementsDedicatedAllocation (Context& context, ImageTestParams params)
+{
+	checkSupportImageMemoryRequirementsExtended(context, params);
+
+	context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+}
+
 void ImageMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*		group,
 																	  const std::string&		name,
 																	  const std::string&		desc,
 																	  const ImageTestParams		arg0)
 {
-	addFunctionCase(group, name, desc, testEntryPoint, arg0);
+	addFunctionCase(group, name, desc, checkSupportImageMemoryRequirementsDedicatedAllocation, testEntryPoint, arg0);
 }
-
-void ImageMemoryRequirementsDedicatedAllocation::preTestChecks (Context&					context,
-																const InstanceInterface&	vki,
-																const VkPhysicalDevice		physDevice,
-																const VkImageCreateFlags	createFlags)
-{
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-		TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-
-	ImageMemoryRequirementsExtended::preTestChecks (context, vki, physDevice, createFlags);
-}
-
 
 void ImageMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const DeviceInterface&	vk,
 																		   const VkDevice			device)
@@ -1649,24 +1569,9 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
 		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR
 	};
-	{
-		const std::string extensionName("VK_KHR_get_memory_requirements2");
-
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
-	}
-	{
-		const std::string extensionName("VK_KHR_sampler_ycbcr_conversion");
-
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
-	}
 
 	const InstanceInterface&				vki					= context.getInstanceInterface();
 	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
-
-	CheckImageFlagFeatures(vki, physicalDevice, params.flags);
-
 	const DeviceInterface&					vk					= context.getDeviceInterface();
 	const VkDevice							device				= context.getDevice();
 	const VkImageCreateFlags				sparseFlags			= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
@@ -1775,6 +1680,14 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 		return tcu::TestStatus(result.getResult(), result.getMessage());
 }
 
+void checkSupportMultiplane (Context& context, ImageTestParams params)
+{
+	checkSupportImageMemoryRequirementsOriginal(context, params);
+
+	context.requireDeviceExtension("VK_KHR_get_memory_requirements2");
+	context.requireDeviceExtension("VK_KHR_sampler_ycbcr_conversion");
+}
+
 void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
 {
 	const struct
@@ -1813,7 +1726,7 @@ void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)
 		if (tiling == VK_IMAGE_TILING_LINEAR && (flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) != 0)
 			continue;
 
-		addFunctionCase(group, name, name, testMultiplaneImages, params);
+		addFunctionCase(group, name, name, checkSupportMultiplane, testMultiplaneImages, params);
 	}
 }
 

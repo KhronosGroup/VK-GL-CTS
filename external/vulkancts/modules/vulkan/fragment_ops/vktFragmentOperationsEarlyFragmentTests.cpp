@@ -218,6 +218,7 @@ public:
 
 	void				initPrograms		(SourceCollections&		programCollection) const;
 	TestInstance*		createInstance		(Context&				context) const;
+	virtual void		checkSupport		(Context&				context) const;
 
 private:
 	const deUint32		m_flags;
@@ -501,17 +502,12 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 TestInstance* EarlyFragmentTest::createInstance (Context& context) const
 {
-	// Check required features
-	{
-		VkPhysicalDeviceFeatures features;
-		context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &features);
-
-		// SSBO writes in fragment shader
-		if (!features.fragmentStoresAndAtomics)
-			throw tcu::NotSupportedError("Missing required feature: fragmentStoresAndAtomics");
-	}
-
 	return new EarlyFragmentTestInstance(context, m_flags);
+}
+
+void EarlyFragmentTest::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
 }
 
 } // anonymous ns

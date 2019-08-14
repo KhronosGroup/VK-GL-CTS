@@ -531,17 +531,6 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 	const VkDeviceSize						nonCoherentAtomSize			= context.getDeviceProperties().limits.nonCoherentAtomSize;
 	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
 
-	if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE
-	||	config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
-	{
-		const std::vector<std::string>&		extensions					= context.getDeviceExtensions();
-		const deBool						isSupported					= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
-		if (!isSupported)
-		{
-			TCU_THROW(NotSupportedError, "Not supported");
-		}
-	}
-
 	{
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");
 
@@ -1633,6 +1622,15 @@ TestConfig fullMappedConfig (VkDeviceSize	allocationSize,
 	return subMappedConfig(allocationSize, MemoryRange(0, allocationSize), op, seed, allocationKind);
 }
 
+void checkSupport (Context& context, TestConfig config)
+{
+	if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE
+		|| config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
+	{
+		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+	}
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
@@ -1697,7 +1695,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 				const deUint32		seed	= (deUint32)(opNdx * allocationSizeNdx);
 				const TestConfig	config	= fullMappedConfig(allocationSize, op, seed, static_cast<AllocationKind>(allocationKindNdx));
 
-				addFunctionCase(allocationSizeGroup.get(), name, name, testMemoryMapping, config);
+				addFunctionCase(allocationSizeGroup.get(), name, name, checkSupport, testMemoryMapping, config);
 			}
 
 			fullGroup->addChild(allocationSizeGroup.release());
@@ -1744,7 +1742,7 @@ tcu::TestCaseGroup* createMappingTests (tcu::TestContext& testCtx)
 						const char* const	name	= ops[opNdx].name;
 						const TestConfig	config	= subMappedConfig(allocationSize, MemoryRange(offset, size), op, seed, static_cast<AllocationKind>(allocationKindNdx));
 
-						addFunctionCase(sizeGroup.get(), name, name, testMemoryMapping, config);
+						addFunctionCase(sizeGroup.get(), name, name, checkSupport, testMemoryMapping, config);
 					}
 
 					offsetGroup->addChild(sizeGroup.release());

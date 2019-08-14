@@ -186,85 +186,42 @@ static MovePtr<TestTexture> createTestTexture (const TcuFormatType format, VkIma
 
 } // anonymous
 
-ImageSamplingInstance::ImageSamplingInstance (Context&							context,
-											  const tcu::UVec2&					renderSize,
-											  VkImageViewType					imageViewType,
-											  VkFormat							imageFormat,
-											  const tcu::IVec3&					imageSize,
-											  int								layerCount,
-											  const VkComponentMapping&			componentMapping,
-											  const VkImageSubresourceRange&	subresourceRange,
-											  const VkSamplerCreateInfo&		samplerParams,
-											  float								samplerLod,
-											  const std::vector<Vertex4Tex4>&	vertices,
-											  bool								separateStencilUsage,
-											  VkDescriptorType					samplingType,
-											  int								imageCount,
-											  AllocationKind					allocationKind)
-	: vkt::TestInstance		(context)
-	, m_allocationKind		(allocationKind)
-	, m_samplingType		(samplingType)
-	, m_imageViewType		(imageViewType)
-	, m_imageFormat			(imageFormat)
-	, m_imageSize			(imageSize)
-	, m_layerCount			(layerCount)
-	, m_imageCount			(imageCount)
-	, m_componentMapping	(componentMapping)
-	, m_componentMask		(true)
-	, m_subresourceRange	(subresourceRange)
-	, m_samplerParams		(samplerParams)
-	, m_samplerLod			(samplerLod)
-	, m_renderSize			(renderSize)
-	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_vertices			(vertices)
-	, m_separateStencilUsage(separateStencilUsage)
+void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceParams params)
 {
-	const InstanceInterface&				vki						= context.getInstanceInterface();
-	const DeviceInterface&					vk						= context.getDeviceInterface();
-	const VkPhysicalDevice					physDevice				= context.getPhysicalDevice();
-	const VkDevice							vkDevice				= context.getDevice();
-	const VkQueue							queue					= context.getUniversalQueue();
-	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
-	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-	const vk::VkPhysicalDeviceLimits		limits					= getPhysicalDeviceProperties(vki, physDevice).limits;
-	const VkImageStencilUsageCreateInfoEXT  stencilUsage			=
-	{
-		VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,
-		DE_NULL,
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT
-	};
-
-	if (de::abs(samplerParams.mipLodBias) > limits.maxSamplerLodBias)
+	if (de::abs(params.samplerParams.mipLodBias) > context.getDeviceProperties().limits.maxSamplerLodBias)
 		TCU_THROW(NotSupportedError, "Unsupported sampler Lod bias value");
 
-	if (!isSupportedSamplableFormat(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat))
-		throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") + getFormatName(imageFormat));
+	if (!isSupportedSamplableFormat(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat))
+		throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") + getFormatName(params.imageFormat));
 
-	if ((deUint32)imageCount > context.getDeviceProperties().limits.maxColorAttachments)
-		throw tcu::NotSupportedError(std::string("Unsupported render target count: ") + de::toString(imageCount));
+	if ((deUint32)params.imageCount > context.getDeviceProperties().limits.maxColorAttachments)
+		throw tcu::NotSupportedError(std::string("Unsupported render target count: ") + de::toString(params.imageCount));
 
-	if ((samplerParams.minFilter == VK_FILTER_LINEAR ||
-		 samplerParams.magFilter == VK_FILTER_LINEAR ||
-		 samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
-		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
-		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(imageFormat));
+	if ((params.samplerParams.minFilter == VK_FILTER_LINEAR ||
+		 params.samplerParams.magFilter == VK_FILTER_LINEAR ||
+		 params.samplerParams.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR) &&
+		!isLinearFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+		throw tcu::NotSupportedError(std::string("Unsupported format for linear filtering: ") + getFormatName(params.imageFormat));
 
-	if (separateStencilUsage)
+	if (params.separateStencilUsage)
 	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_separate_stencil_usage"))
-			TCU_THROW(NotSupportedError, "VK_EXT_separate_stencil_usage not supported");
+		context.requireDeviceExtension("VK_EXT_separate_stencil_usage");
+		context.requireInstanceExtension("VK_KHR_get_physical_device_properties2");
 
-		if (!isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2"))
-			TCU_THROW(NotSupportedError, "VK_KHR_get_physical_device_properties2 not supported");
+		const VkImageStencilUsageCreateInfoEXT  stencilUsage	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,
+			DE_NULL,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT
+		};
 
 		const VkPhysicalDeviceImageFormatInfo2	formatInfo2		=
 		{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,		//	VkStructureType			sType
-			m_separateStencilUsage ? &stencilUsage
-								   : DE_NULL,							//	const void*				pNext
-			imageFormat,												//	VkFormat				format
-			getCompatibleImageType(m_imageViewType),					//	VkImageType				type
+			params.separateStencilUsage ? &stencilUsage
+										: DE_NULL,						//	const void*				pNext
+			params.imageFormat,											//	VkFormat				format
+			getCompatibleImageType(params.imageViewType),				//	VkImageType				type
 			VK_IMAGE_TILING_OPTIMAL,									//	VkImageTiling			tiling
 			VK_IMAGE_USAGE_SAMPLED_BIT
 			| VK_IMAGE_USAGE_TRANSFER_DST_BIT,							//	VkImageUsageFlags		usage
@@ -275,40 +232,113 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		{
 			VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 			DE_NULL,
-		{
 			{
-				0,	// width
-				0,	// height
-				0,	// depth
+				{
+					0,	// width
+					0,	// height
+					0,	// depth
+				},
+				0u,		// maxMipLevels
+				0u,		// maxArrayLayers
+				0,		// sampleCounts
+				0u,		// maxResourceSize
 			},
-			0u,		// maxMipLevels
-			0u,		// maxArrayLayers
-			0,		// sampleCounts
-			0u,		// maxResourceSize
-		},
 		};
 
-		if ((vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &formatInfo2, &extProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-			|| extProperties.imageFormatProperties.maxExtent.width < (deUint32)m_imageSize.x()
-			|| extProperties.imageFormatProperties.maxExtent.height < (deUint32)m_imageSize.y())
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &formatInfo2, &extProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			|| extProperties.imageFormatProperties.maxExtent.width < (deUint32)params.imageSize.x()
+			|| extProperties.imageFormatProperties.maxExtent.height < (deUint32)params.imageSize.y())
 		{
 			TCU_THROW(NotSupportedError, "Image format not supported");
 		}
 	}
 
-	if (samplerParams.pNext != DE_NULL)
+	if (params.samplerParams.pNext != DE_NULL)
 	{
-		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(samplerParams.pNext);
+		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(params.samplerParams.pNext);
+
+		if (nextType == VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT)
+		{
+			context.requireDeviceExtension("VK_EXT_sampler_filter_minmax");
+
+			if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+				throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
+		}
+	}
+
+	if (params.samplerParams.addressModeU == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
+		params.samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
+		params.samplerParams.addressModeW == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE)
+	{
+		context.requireDeviceExtension("VK_KHR_sampler_mirror_clamp_to_edge");
+	}
+
+	if ((isCompressedFormat(params.imageFormat) || isDepthStencilFormat(params.imageFormat)) && params.imageViewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
+		// \todo [2016-01-22 pyry] Mandate VK_ERROR_FORMAT_NOT_SUPPORTED
+		try
+		{
+			const VkImageFormatProperties	formatProperties	= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
+																										 context.getPhysicalDevice(),
+																										 params.imageFormat,
+																										 VK_IMAGE_TYPE_3D,
+																										 VK_IMAGE_TILING_OPTIMAL,
+																										 VK_IMAGE_USAGE_SAMPLED_BIT,
+																										 (VkImageCreateFlags)0);
+
+			if (formatProperties.maxExtent.width == 0 &&
+				formatProperties.maxExtent.height == 0 &&
+				formatProperties.maxExtent.depth == 0)
+				TCU_THROW(NotSupportedError, "3D compressed or depth format not supported");
+		}
+		catch (const Error&)
+		{
+			TCU_THROW(NotSupportedError, "3D compressed or depth format not supported");
+		}
+	}
+
+	if (params.imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if (params.allocationKind == ALLOCATION_KIND_DEDICATED)
+		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+}
+
+ImageSamplingInstance::ImageSamplingInstance (Context&						context,
+											  ImageSamplingInstanceParams	params)
+	: vkt::TestInstance		(context)
+	, m_allocationKind		(params.allocationKind)
+	, m_samplingType		(params.samplingType)
+	, m_imageViewType		(params.imageViewType)
+	, m_imageFormat			(params.imageFormat)
+	, m_imageSize			(params.imageSize)
+	, m_layerCount			(params.layerCount)
+	, m_imageCount			(params.imageCount)
+	, m_componentMapping	(params.componentMapping)
+	, m_componentMask		(true)
+	, m_subresourceRange	(params.subresourceRange)
+	, m_samplerParams		(params.samplerParams)
+	, m_samplerLod			(params.samplerLod)
+	, m_renderSize			(params.renderSize)
+	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_vertices			(params.vertices)
+{
+	const InstanceInterface&				vki						= context.getInstanceInterface();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkPhysicalDevice					physDevice				= context.getPhysicalDevice();
+	const VkDevice							vkDevice				= context.getDevice();
+	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	SimpleAllocator							memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	const VkComponentMapping				componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+	if (m_samplerParams.pNext != DE_NULL)
+	{
+		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(m_samplerParams.pNext);
 		switch (nextType)
 		{
 			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
 			{
-				if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_sampler_filter_minmax"))
-					TCU_THROW(NotSupportedError, "VK_EXT_sampler_filter_minmax not supported");
-
-				if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), imageFormat, VK_IMAGE_TILING_OPTIMAL))
-					throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(imageFormat));
-
 				VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT	physicalDeviceSamplerMinMaxProperties =
 				{
 					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
@@ -343,46 +373,6 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		}
 	}
 
-
-	if ((samplerParams.addressModeU == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
-		 samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
-		 samplerParams.addressModeW == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
-		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
-
-	if ((isCompressedFormat(imageFormat) || isDepthStencilFormat(imageFormat)) && imageViewType == VK_IMAGE_VIEW_TYPE_3D)
-	{
-		// \todo [2016-01-22 pyry] Mandate VK_ERROR_FORMAT_NOT_SUPPORTED
-		try
-		{
-			const VkImageFormatProperties	formatProperties	= getPhysicalDeviceImageFormatProperties(context.getInstanceInterface(),
-																										 context.getPhysicalDevice(),
-																										 imageFormat,
-																										 VK_IMAGE_TYPE_3D,
-																										 VK_IMAGE_TILING_OPTIMAL,
-																										 VK_IMAGE_USAGE_SAMPLED_BIT,
-																										 (VkImageCreateFlags)0);
-
-			if (formatProperties.maxExtent.width == 0 &&
-				formatProperties.maxExtent.height == 0 &&
-				formatProperties.maxExtent.depth == 0)
-				TCU_THROW(NotSupportedError, "3D compressed or depth format not supported");
-		}
-		catch (const Error&)
-		{
-			TCU_THROW(NotSupportedError, "3D compressed or depth format not supported");
-		}
-	}
-
-	if (imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
-		TCU_THROW(NotSupportedError, "imageCubeArray feature is not supported");
-
-	if (m_allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, std::string("VK_KHR_dedicated_allocation  is not supported").c_str());
-	}
-
 	// Create texture images, views and samplers
 	{
 		VkImageCreateFlags			imageFlags			= 0u;
@@ -391,10 +381,10 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			imageFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
 		// Initialize texture data
-		if (isCompressedFormat(imageFormat))
-			m_texture = createTestTexture(mapVkCompressedFormat(imageFormat), imageViewType, imageSize, layerCount);
+		if (isCompressedFormat(m_imageFormat))
+			m_texture = createTestTexture(mapVkCompressedFormat(m_imageFormat), m_imageViewType, m_imageSize, m_layerCount);
 		else
-			m_texture = createTestTexture(mapVkFormat(imageFormat), imageViewType, imageSize, layerCount);
+			m_texture = createTestTexture(mapVkFormat(m_imageFormat), m_imageViewType, m_imageSize, m_layerCount);
 
 		const VkImageCreateInfo	imageParams =
 		{
@@ -402,7 +392,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 			DE_NULL,														// const void*				pNext;
 			imageFlags,														// VkImageCreateFlags		flags;
 			getCompatibleImageType(m_imageViewType),						// VkImageType				imageType;
-			imageFormat,													// VkFormat					format;
+			m_imageFormat,													// VkFormat					format;
 			{																// VkExtent3D				extent;
 				(deUint32)m_imageSize.x(),
 				(deUint32)m_imageSize.y(),
@@ -440,7 +430,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 				0u,											// VkImageViewCreateFlags	flags;
 				**m_images[imgNdx],							// VkImage					image;
 				m_imageViewType,							// VkImageViewType			viewType;
-				imageFormat,								// VkFormat					format;
+				m_imageFormat,								// VkFormat					format;
 				m_componentMapping,							// VkComponentMapping		components;
 				m_subresourceRange,							// VkImageSubresourceRange	subresourceRange;
 			};

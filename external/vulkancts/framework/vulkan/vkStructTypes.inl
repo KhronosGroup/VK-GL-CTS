@@ -2316,25 +2316,25 @@ struct VkPhysicalDeviceDriverPropertiesKHR
 
 struct VkPhysicalDeviceFloatControlsPropertiesKHR
 {
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		separateDenormSettings;
-	VkBool32		separateRoundingModeSettings;
-	VkBool32		shaderSignedZeroInfNanPreserveFloat16;
-	VkBool32		shaderSignedZeroInfNanPreserveFloat32;
-	VkBool32		shaderSignedZeroInfNanPreserveFloat64;
-	VkBool32		shaderDenormPreserveFloat16;
-	VkBool32		shaderDenormPreserveFloat32;
-	VkBool32		shaderDenormPreserveFloat64;
-	VkBool32		shaderDenormFlushToZeroFloat16;
-	VkBool32		shaderDenormFlushToZeroFloat32;
-	VkBool32		shaderDenormFlushToZeroFloat64;
-	VkBool32		shaderRoundingModeRTEFloat16;
-	VkBool32		shaderRoundingModeRTEFloat32;
-	VkBool32		shaderRoundingModeRTEFloat64;
-	VkBool32		shaderRoundingModeRTZFloat16;
-	VkBool32		shaderRoundingModeRTZFloat32;
-	VkBool32		shaderRoundingModeRTZFloat64;
+	VkStructureType							sType;
+	void*									pNext;
+	VkShaderFloatControlsIndependenceKHR	denormBehaviorIndependence;
+	VkShaderFloatControlsIndependenceKHR	roundingModeIndependence;
+	VkBool32								shaderSignedZeroInfNanPreserveFloat16;
+	VkBool32								shaderSignedZeroInfNanPreserveFloat32;
+	VkBool32								shaderSignedZeroInfNanPreserveFloat64;
+	VkBool32								shaderDenormPreserveFloat16;
+	VkBool32								shaderDenormPreserveFloat32;
+	VkBool32								shaderDenormPreserveFloat64;
+	VkBool32								shaderDenormFlushToZeroFloat16;
+	VkBool32								shaderDenormFlushToZeroFloat32;
+	VkBool32								shaderDenormFlushToZeroFloat64;
+	VkBool32								shaderRoundingModeRTEFloat16;
+	VkBool32								shaderRoundingModeRTEFloat32;
+	VkBool32								shaderRoundingModeRTEFloat64;
+	VkBool32								shaderRoundingModeRTZFloat16;
+	VkBool32								shaderRoundingModeRTZFloat32;
+	VkBool32								shaderRoundingModeRTZFloat64;
 };
 
 struct VkSubpassDescriptionDepthStencilResolveKHR
@@ -2555,6 +2555,13 @@ struct VkValidationFlagsEXT
 	const void*					pNext;
 	deUint32					disabledValidationCheckCount;
 	const VkValidationCheckEXT*	pDisabledValidationChecks;
+};
+
+struct VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		textureCompressionASTC_HDR;
 };
 
 struct VkImageViewASTCDecodeModeEXT
@@ -3811,6 +3818,23 @@ struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT
 	VkBool32		scalarBlockLayout;
 };
 
+struct VkPhysicalDeviceSubgroupSizeControlPropertiesEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	deUint32			minSubgroupSize;
+	deUint32			maxSubgroupSize;
+	deUint32			maxComputeWorkgroupSubgroups;
+	VkShaderStageFlags	requiredSubgroupSizeStages;
+};
+
+struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		requiredSubgroupSize;
+};
+
 struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 {
 	VkStructureType	sType;
@@ -3957,11 +3981,47 @@ struct VkHeadlessSurfaceCreateInfoEXT
 	VkHeadlessSurfaceCreateFlagsEXT	flags;
 };
 
+struct VkPhysicalDeviceLineRasterizationFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rectangularLines;
+	VkBool32		bresenhamLines;
+	VkBool32		smoothLines;
+	VkBool32		stippledRectangularLines;
+	VkBool32		stippledBresenhamLines;
+	VkBool32		stippledSmoothLines;
+};
+
+struct VkPhysicalDeviceLineRasterizationPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		lineSubPixelPrecisionBits;
+};
+
+struct VkPipelineRasterizationLineStateCreateInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkLineRasterizationModeEXT	lineRasterizationMode;
+	VkBool32					stippledLineEnable;
+	deUint32					lineStippleFactor;
+	deUint16					lineStipplePattern;
+};
+
 struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		hostQueryReset;
+};
+
+struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		indexTypeUint8;
 };
 
 struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT

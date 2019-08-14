@@ -203,6 +203,7 @@ public:
 
 	virtual									~VertexInputTest			(void) {}
 	virtual void							initPrograms				(SourceCollections& programCollection) const;
+	virtual void							checkSupport				(Context& context) const;
 	virtual TestInstance*					createInstance				(Context& context) const;
 	static bool								isCompatibleType			(VkFormat format, GlslType glslType);
 
@@ -451,6 +452,14 @@ size_t VertexInputTest::getNumAttributes (void) const
 		return m_attributeInfos.size();
 }
 
+void VertexInputTest::checkSupport (Context& context) const
+{
+	const deUint32 maxAttributes = context.getDeviceProperties().limits.maxVertexInputAttributes;
+
+	if (m_attributeInfos.size() > maxAttributes)
+		TCU_THROW(NotSupportedError, "Unsupported number of vertex input attributes, maxVertexInputAttributes: " + de::toString(maxAttributes));
+}
+
 TestInstance* VertexInputTest::createInstance (Context& context) const
 {
 	typedef VertexInputInstance::VertexInputAttributeDescription VertexInputAttributeDescription;
@@ -462,12 +471,6 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 		const VkPhysicalDeviceLimits	limits			= getPhysicalDeviceProperties(vki, physDevice).limits;
 
 		const deUint32					maxAttributes	= limits.maxVertexInputAttributes;
-
-		if (m_attributeInfos.size() > maxAttributes)
-		{
-			const std::string notSupportedStr = "Unsupported number of vertex input attributes, maxVertexInputAttributes: " + de::toString(maxAttributes);
-			TCU_THROW(NotSupportedError, notSupportedStr.c_str());
-		}
 
 		// Use VkPhysicalDeviceLimits::maxVertexInputAttributes
 		if (m_queryMaxAttributes)

@@ -2519,6 +2519,7 @@ public:
 														 const TestParameters&		parameters);
 	void					initPrograms				(SourceCollections&			programCollection) const;
 	TestInstance*			createInstance				(Context&					context) const;
+	virtual void			checkSupport				(Context&					context) const;
 protected:
 	const TestParameters	m_parameters;
 };
@@ -2840,40 +2841,31 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 	}
 }
 
-TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
+void TexelViewCompatibleCase::checkSupport (Context& context) const
 {
 	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
 	const InstanceInterface&		vk						= context.getInstanceInterface();
 
-	if (!m_parameters.useMipmaps)
-	{
-		DE_ASSERT(getNumLayers(m_parameters.imageType, m_parameters.size)     == 1u);
-	}
-
-	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).x() >  0u);
-	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).y() >  0u);
-
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported");
+	context.requireDeviceExtension("VK_KHR_maintenance2");
 
 	{
 		VkImageFormatProperties imageFormatProperties;
 
-		if (VK_ERROR_FORMAT_NOT_SUPPORTED == vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatUncompressed,
-												mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
-												m_parameters.uncompressedImageUsage, 0u, &imageFormatProperties))
+		if (vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatUncompressed,
+													  mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
+													  m_parameters.uncompressedImageUsage, 0u, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Operation not supported with this image format");
 
-		if (VK_ERROR_FORMAT_NOT_SUPPORTED == vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
-												mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
-												VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-												VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
-												&imageFormatProperties))
+		if (vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
+													  mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
+													  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+													  VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
+													  &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 			TCU_THROW(NotSupportedError, "Operation not supported with this image format");
 	}
 
 	{
-		const VkPhysicalDeviceFeatures	physicalDeviceFeatures	= getPhysicalDeviceFeatures (vk, physicalDevice);
+		const VkPhysicalDeviceFeatures	physicalDeviceFeatures	= getPhysicalDeviceFeatures(vk, physicalDevice);
 
 		if (deInRange32(m_parameters.formatCompressed, VK_FORMAT_BC1_RGB_UNORM_BLOCK, VK_FORMAT_BC7_SRGB_BLOCK) &&
 			!physicalDeviceFeatures.textureCompressionBC)
@@ -2892,6 +2884,15 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 			!physicalDeviceFeatures.shaderStorageImageExtendedFormats)
 			TCU_THROW(NotSupportedError, "Storage view format requires shaderStorageImageExtended");
 	}
+}
+
+TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
+{
+	if (!m_parameters.useMipmaps)
+		DE_ASSERT(getNumLayers(m_parameters.imageType, m_parameters.size) == 1u);
+
+	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).x() > 0u);
+	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).y() > 0u);
 
 	switch (m_parameters.shader)
 	{

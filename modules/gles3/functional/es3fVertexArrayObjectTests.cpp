@@ -569,6 +569,14 @@ void VertexArrayObjectTest::makeDrawCall (const VertexArrayState& state)
 	GLU_CHECK_CALL(glClearColor(0.7f, 0.7f, 0.7f, 1.0f));
 	GLU_CHECK_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
+	for (int attribNdx = 0; attribNdx < (int)state.attributes.size(); attribNdx++)
+	{
+		if (state.attributes[attribNdx].integer)
+			glVertexAttribI4i(attribNdx, 0, 0, 0, 1);
+		else
+			glVertexAttrib4f(attribNdx, 0.0f, 0.0f, 0.0f, 1.0f);
+	}
+
 	if (m_spec.useDrawElements)
 	{
 		if (state.elementArrayBuffer == 0)

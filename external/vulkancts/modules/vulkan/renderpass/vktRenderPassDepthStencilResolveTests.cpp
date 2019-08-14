@@ -804,9 +804,15 @@ void DepthStencilResolveTest::submit (void)
 
 bool DepthStencilResolveTest::verifyDepth (void)
 {
+	// Invalidate allocation before attempting to read buffer memory.
+	invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_bufferMemory);
+
 	deUint32			layerSize	= m_config.width * m_config.height;
 	deUint32			valuesCount	= layerSize * m_config.viewLayers;
 	deUint8*			pixelPtr	= static_cast<deUint8*>(m_bufferMemory->getHostPtr());
+
+	const DeviceInterface&		vkd		(m_context.getDeviceInterface());
+	invalidateMappedMemoryRange(vkd, m_context.getDevice(), m_bufferMemory->getMemory(), m_bufferMemory->getOffset(), VK_WHOLE_SIZE);
 
 	float expectedValue = m_config.depthExpectedValue;
 	if (m_config.depthResolveMode == VK_RESOLVE_MODE_NONE_KHR)
@@ -885,9 +891,15 @@ bool DepthStencilResolveTest::verifyDepth (void)
 
 bool DepthStencilResolveTest::verifyStencil (void)
 {
+	// Invalidate allocation before attempting to read buffer memory.
+	invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_bufferMemory);
+
 	deUint32			layerSize	= m_config.width * m_config.height;
 	deUint32			valuesCount	= layerSize * m_config.viewLayers;
 	deUint8*			pixelPtr	= static_cast<deUint8*>(m_bufferMemory->getHostPtr());
+
+	const DeviceInterface&		vkd		(m_context.getDeviceInterface());
+	invalidateMappedMemoryRange(vkd, m_context.getDevice(), m_bufferMemory->getMemory(), m_bufferMemory->getOffset(), VK_WHOLE_SIZE);
 
 	// when stencil is tested we are discarding invocations and
 	// because of that depth and stencil need to be tested separately

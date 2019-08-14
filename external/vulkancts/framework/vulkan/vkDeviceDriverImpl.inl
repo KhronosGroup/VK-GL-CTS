@@ -1232,6 +1232,11 @@ VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const 
 	return m_vk.getBufferDeviceAddressEXT(device, pInfo);
 }
 
+void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern) const
+{
+	m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
+}
+
 void DeviceDriver::resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const
 {
 	m_vk.resetQueryPoolEXT(device, queryPool, firstQuery, queryCount);

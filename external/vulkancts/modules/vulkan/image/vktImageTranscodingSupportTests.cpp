@@ -714,6 +714,7 @@ public:
 														 const TestParameters&		parameters);
 	void					initPrograms				(SourceCollections&			programCollection) const;
 	TestInstance*			createInstance				(Context&					context) const;
+	virtual void			checkSupport				(Context&					context) const;
 	bool					isFormatUsageFlagSupported	(Context&					context,
 														 const VkFormat				format,
 														 VkImageUsageFlags			formatUsageFlags) const;
@@ -827,22 +828,23 @@ bool ImageTranscodingCase::isFormatUsageFlagSupported (Context& context, const V
 	return (queryResult == VK_SUCCESS);
 }
 
+void ImageTranscodingCase::checkSupport (Context& context) const
+{
+	context.requireDeviceExtension("VK_KHR_maintenance2");
+
+	if (!isFormatUsageFlagSupported(context, m_parameters.featuredFormat, m_parameters.testedImageUsageFeature))
+		TCU_THROW(NotSupportedError, "Test skipped due to feature is not supported by the format");
+
+	if (!isFormatUsageFlagSupported(context, m_parameters.featuredFormat, m_parameters.testedImageUsage | m_parameters.pairedImageUsage))
+		TCU_THROW(NotSupportedError, "Required image usage flags are not supported by the format");
+}
+
 TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 {
-	VkFormat					featuredFormat		= m_parameters.featuredFormat;
 	VkFormat					featurelessFormat	= VK_FORMAT_UNDEFINED;
 	bool						differenceFound		= false;
 
 	DE_ASSERT(m_parameters.testedImageUsageFeature != 0);
-
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported");
-
-	if (!isFormatUsageFlagSupported(context, featuredFormat, m_parameters.testedImageUsageFeature))
-		TCU_THROW(NotSupportedError, "Test skipped due to feature is not supported by the format");
-
-	if (!isFormatUsageFlagSupported(context, featuredFormat, m_parameters.testedImageUsage | m_parameters.pairedImageUsage))
-		TCU_THROW(NotSupportedError, "Required image usage flags are not supported by the format");
 
 	for (deUint32 i = 0; m_parameters.compatibleFormats[i] != VK_FORMAT_UNDEFINED; i++)
 	{

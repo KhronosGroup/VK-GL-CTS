@@ -109,12 +109,6 @@ struct MultisampleTestParams
 	ImageBackingMode	backingMode;
 };
 
-void checkLargePointsSupport (Context& context, VkPrimitiveTopology topology, float pointSize)
-{
-	if (topology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && pointSize > 1.0f && !context.getDeviceFeatures().largePoints)
-		TCU_THROW(NotSupportedError, "Large points feature not supported.");
-}
-
 void									initMultisamplePrograms				(SourceCollections& sources, MultisampleTestParams params);
 bool									isSupportedSampleCount				(const InstanceInterface& instanceInterface, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits rasterizationSamples);
 bool									isSupportedDepthStencilFormat		(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat format);
@@ -141,6 +135,7 @@ public:
 
 	virtual void								initPrograms						(SourceCollections& programCollection) const;
 	virtual TestInstance*						createInstance						(Context& context) const;
+	virtual void								checkSupport						(Context& context) const;
 
 protected:
 	virtual TestInstance*						createMultisampleTestInstance		(Context&										context,
@@ -200,6 +195,7 @@ public:
 
 protected:
 	virtual void								initPrograms						(SourceCollections& programCollection) const;
+	virtual void								checkSupport						(Context& context) const;
 	virtual TestInstance*						createMultisampleTestInstance		(Context&										context,
 																					 VkPrimitiveTopology							topology,
 																					 float											pointSize,
@@ -255,6 +251,7 @@ public:
 	virtual										~AlphaToOneTest					(void) {}
 
 protected:
+	virtual void								checkSupport					(Context& context) const;
 	virtual TestInstance*						createMultisampleTestInstance	(Context&										context,
 																				 VkPrimitiveTopology							topology,
 																				 float											pointSize,
@@ -361,6 +358,7 @@ public:
 
 	void										initPrograms					(SourceCollections&		programCollection)	const;
 	TestInstance*								createInstance					(Context&				context)			const;
+	virtual void								checkSupport					(Context&				context)			const;
 private:
 	const VkSampleCountFlagBits					m_rasterizationSamples;
 	const bool									m_enablePostDepthCoverage;
@@ -1115,6 +1113,11 @@ TestInstance* MultisampleTest::createInstance (Context& context) const
 	return createMultisampleTestInstance(context, getPrimitiveTopology(m_geometryType), m_pointSize, generateVertices(m_geometryType), m_multisampleStateParams, m_colorBlendState);
 }
 
+void MultisampleTest::checkSupport (Context& context) const
+{
+	if (m_geometryType == GEOMETRY_TYPE_OPAQUE_POINT && m_pointSize > 1.0f)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+}
 
 // RasterizationSamplesTest
 
@@ -1177,6 +1180,13 @@ MinSampleShadingTest::MinSampleShadingTest (tcu::TestContext&		testContext,
 	, m_backingMode				(backingMode)
 	, m_minSampleShadingEnabled	(minSampleShadingEnabled)
 {
+}
+
+void MinSampleShadingTest::checkSupport (Context& context) const
+{
+	MultisampleTest::checkSupport(context);
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 void MinSampleShadingTest::initPrograms (SourceCollections& programCollection) const
@@ -1272,6 +1282,13 @@ AlphaToOneTest::AlphaToOneTest (tcu::TestContext&		testContext,
 	: MultisampleTest	(testContext, name, description, getAlphaToOneStateParams(rasterizationSamples), getAlphaToOneBlendState(), GEOMETRY_TYPE_GRADIENT_QUAD, 1.0f, backingMode)
 	, m_backingMode(backingMode)
 {
+}
+
+void AlphaToOneTest::checkSupport (Context& context) const
+{
+	MultisampleTest::checkSupport(context);
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_ALPHA_TO_ONE);
 }
 
 TestInstance* AlphaToOneTest::createMultisampleTestInstance (Context&										context,
@@ -1469,6 +1486,14 @@ SampleMaskWithDepthTestTest::SampleMaskWithDepthTestTest (tcu::TestContext&					
 {
 }
 
+void SampleMaskWithDepthTestTest::checkSupport (Context& context) const
+{
+	if (!context.getDeviceProperties().limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "standardSampleLocations required");
+
+	context.requireDeviceExtension("VK_EXT_post_depth_coverage");
+}
+
 void SampleMaskWithDepthTestTest::initPrograms (SourceCollections& programCollection) const
 {
 	DE_ASSERT((int)m_rasterizationSamples <= 32);
@@ -1531,8 +1556,6 @@ RasterizationSamplesInstance::RasterizationSamplesInstance (Context&										co
 	, m_fullQuadVertices	(generateVertices(GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH))
 	, m_modeFlags			(modeFlags)
 {
-	checkLargePointsSupport(context, topology, pointSize);
-
 	if (m_modeFlags != 0)
 	{
 		const bool		useDepth			= (m_modeFlags & TEST_MODE_DEPTH_BIT) != 0;
@@ -1638,14 +1661,7 @@ MinSampleShadingInstance::MinSampleShadingInstance (Context&									context,
 	, m_colorBlendState			(colorBlendState)
 	, m_backingMode				(backingMode)
 {
-	checkLargePointsSupport(context, topology, pointSize);
-
-	VkPhysicalDeviceFeatures deviceFeatures;
-
-	m_context.getInstanceInterface().getPhysicalDeviceFeatures(m_context.getPhysicalDevice(), &deviceFeatures);
-
-	if (!deviceFeatures.sampleRateShading)
-		throw tcu::NotSupportedError("Sample shading is not supported");
+	DE_UNREF(pointSize);
 }
 
 tcu::TestStatus MinSampleShadingInstance::iterate (void)
@@ -1835,7 +1851,7 @@ SampleMaskInstance::SampleMaskInstance (Context&										context,
 	, m_colorBlendState			(blendState)
 	, m_backingMode				(backingMode)
 {
-	checkLargePointsSupport(context, topology, pointSize);
+	DE_UNREF(pointSize);
 }
 
 tcu::TestStatus SampleMaskInstance::iterate (void)
@@ -1990,12 +2006,6 @@ AlphaToOneInstance::AlphaToOneInstance (Context&									context,
 	, m_colorBlendState			(blendState)
 	, m_backingMode				(backingMode)
 {
-	VkPhysicalDeviceFeatures deviceFeatures;
-
-	context.getInstanceInterface().getPhysicalDeviceFeatures(context.getPhysicalDevice(), &deviceFeatures);
-
-	if (!deviceFeatures.alphaToOne)
-		throw tcu::NotSupportedError("Alpha-to-one is not supported");
 }
 
 tcu::TestStatus AlphaToOneInstance::iterate	(void)
@@ -2247,14 +2257,6 @@ SampleMaskWithDepthTestInstance::SampleMaskWithDepthTestInstance (Context&						
 	, m_imageBackingMode		(IMAGE_BACKING_MODE_REGULAR)
 	, m_depthClearValue			(0.667f)
 {
-	if (!m_context.getDeviceProperties().limits.standardSampleLocations)
-		TCU_THROW(NotSupportedError, "standardSampleLocations required");
-
-	std::vector<VkExtensionProperties> supportedExtensions = enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
-
-	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_post_depth_coverage")))
-		TCU_THROW(NotSupportedError, "VK_EXT_post_depth_coverage not supported");
-
 	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_2_BIT]	= SampleCoverage(1u, 1u);	// !< Sample coverage of the diagonally halved pixel,
 	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_4_BIT]	= SampleCoverage(2u, 2u);	// !< with max possible subPixelPrecisionBits threshold
 	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_8_BIT]	= SampleCoverage(2u, 6u);	// !<

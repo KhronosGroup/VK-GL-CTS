@@ -215,6 +215,7 @@ public:
 
 	virtual void				initPrograms				(SourceCollections&			programCollection) const;
 	virtual TestInstance*		createInstance				(Context&					context) const;
+	virtual void				checkSupport				(Context&					context) const;
 
 protected:
 
@@ -240,6 +241,12 @@ MemoryQualifierTestCase::MemoryQualifierTestCase (tcu::TestContext&			testCtx,
 	, m_format(format)
 	, m_glslVersion(glslVersion)
 {
+}
+
+void MemoryQualifierTestCase::checkSupport (Context& context) const
+{
+	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 }
 
 void MemoryQualifierTestCase::initPrograms (SourceCollections& programCollection) const
@@ -329,7 +336,6 @@ public:
 	virtual void					commandsAfterCompute			(const VkCommandBuffer		cmdBuffer,
 																	 const VkDeviceSize			bufferSizeInBytes) const = 0;
 
-	virtual void					checkRequirements				(void) const;
 protected:
 
 	tcu::TextureLevel				generateReferenceImage			(void) const;
@@ -358,14 +364,6 @@ MemoryQualifierInstanceBase::MemoryQualifierInstanceBase (Context&					context,
 {
 }
 
-void MemoryQualifierInstanceBase::checkRequirements (void) const
-{
-	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY && !m_context.getDeviceFeatures().imageCubeArray)
-	{
-		TCU_THROW(NotSupportedError, "imageCubeArray feature not supported");
-	}
-}
-
 tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 {
 	const VkDevice			device				= m_context.getDevice();
@@ -374,8 +372,6 @@ tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
 	const VkDeviceSize	bufferSizeInBytes = getNumPixels(m_imageType, m_imageSize) * tcu::getPixelSize(m_format);
-
-	checkRequirements();
 
 	// Prepare resources for the test
 	prepareResources(bufferSizeInBytes);

@@ -100,6 +100,7 @@ public:
 							VaryingTest		(TestContext&				testCtx,
 											 const VaryingTestSpec&		varyingTestSpec);
 
+	void					checkSupport	(Context&					context) const;
 	void					initPrograms	(SourceCollections&			sourceCollections) const;
 	virtual TestInstance*	createInstance	(Context&					context) const;
 
@@ -113,6 +114,11 @@ VaryingTest::VaryingTest (TestContext& testCtx, const VaryingTestSpec& varyingTe
 
 {
 
+}
+
+void VaryingTest::checkSupport (Context& context) const
+{
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 }
 
 void VaryingTest::initPrograms (SourceCollections& sourceCollections) const

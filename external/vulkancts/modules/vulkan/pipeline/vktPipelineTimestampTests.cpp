@@ -141,11 +141,12 @@ enum TransferMethod
 	TRANSFER_METHOD_LAST
 };
 
-std::string getTransferMethodStr(const TransferMethod method,
-								 bool                 isDescription)
+std::string getTransferMethodStr (const TransferMethod	method,
+								  bool					isDescription)
 {
-	std::ostringstream desc;
-	std::locale loc;
+	std::ostringstream	desc;
+	std::locale			loc;
+
 	switch(method)
 	{
 #define METHOD_CASE(p)                             \
@@ -179,7 +180,7 @@ constexpr deUint32 MIN_TIMESTAMP_VALID_BITS = 36;
 constexpr deUint32 MAX_TIMESTAMP_VALID_BITS = 64;
 
 // Checks the number of valid bits for the given queue meets the spec requirements.
-void checkValidBits(deUint32 validBits, deUint32 queueFamilyIndex)
+void checkValidBits (deUint32 validBits, deUint32 queueFamilyIndex)
 {
 	if (validBits < MIN_TIMESTAMP_VALID_BITS || validBits > MAX_TIMESTAMP_VALID_BITS)
 	{
@@ -190,13 +191,13 @@ void checkValidBits(deUint32 validBits, deUint32 queueFamilyIndex)
 }
 
 // Returns the timestamp mask given the number of valid timestamp bits.
-deUint64 timestampMaskFromValidBits(deUint32 validBits)
+deUint64 timestampMaskFromValidBits (deUint32 validBits)
 {
 	return ((validBits == MAX_TIMESTAMP_VALID_BITS) ? std::numeric_limits<deUint64>::max() : ((1ULL << validBits) - 1));
 }
 
 // Checks support for timestamps and returns the timestamp mask.
-deUint64 checkTimestampsSupported(Context& context)
+deUint64 checkTimestampsSupported (Context& context)
 {
 	const InstanceInterface&					vki					= context.getInstanceInterface();
 	const VkPhysicalDevice						physDevice			= context.getPhysicalDevice();
@@ -212,7 +213,7 @@ deUint64 checkTimestampsSupported(Context& context)
 	return timestampMaskFromValidBits(validBits);
 }
 
-void checkTimestampBits(deUint64 timestamp, deUint64 mask)
+void checkTimestampBits (deUint64 timestamp, deUint64 mask)
 {
 	// The spec says:
 	// timestampValidBits is the unsigned integer count of meaningful bits in
@@ -231,28 +232,28 @@ void checkTimestampBits(deUint64 timestamp, deUint64 mask)
 class TimestampTestParam
 {
 public:
-							  TimestampTestParam      (const VkPipelineStageFlagBits* stages,
-													   const deUint32                 stageCount,
-													   const bool                     inRenderPass,
-													   const bool                     hostQueryReset);
-							  ~TimestampTestParam     (void);
-	virtual const std::string generateTestName        (void) const;
-	virtual const std::string generateTestDescription (void) const;
-	StageFlagVector           getStageVector          (void) const { return m_stageVec; }
-	bool                      getInRenderPass         (void) const { return m_inRenderPass; }
-	bool                      getHostQueryReset       (void) const { return m_hostQueryReset; }
-	void                      toggleInRenderPass      (void)       { m_inRenderPass = !m_inRenderPass; }
-	void                      toggleHostQueryReset    (void)       { m_hostQueryReset = !m_hostQueryReset; }
+								TimestampTestParam		(const VkPipelineStageFlagBits*	stages,
+														 const deUint32					stageCount,
+														 const bool						inRenderPass,
+														 const bool						hostQueryReset);
+								~TimestampTestParam		(void);
+	virtual const std::string	generateTestName		(void) const;
+	virtual const std::string	generateTestDescription	(void) const;
+	StageFlagVector				getStageVector			(void) const	{ return m_stageVec; }
+	bool						getInRenderPass			(void) const	{ return m_inRenderPass; }
+	bool						getHostQueryReset		(void) const	{ return m_hostQueryReset; }
+	void						toggleInRenderPass		(void)			{ m_inRenderPass = !m_inRenderPass; }
+	void						toggleHostQueryReset	(void)			{ m_hostQueryReset = !m_hostQueryReset; }
 protected:
-	StageFlagVector           m_stageVec;
-	bool                      m_inRenderPass;
-	bool					  m_hostQueryReset;
+	StageFlagVector				m_stageVec;
+	bool						m_inRenderPass;
+	bool						m_hostQueryReset;
 };
 
-TimestampTestParam::TimestampTestParam(const VkPipelineStageFlagBits* stages,
-									   const deUint32                 stageCount,
-									   const bool                     inRenderPass,
-									   const bool                     hostQueryReset)
+TimestampTestParam::TimestampTestParam (const VkPipelineStageFlagBits*	stages,
+									    const deUint32					stageCount,
+									    const bool						inRenderPass,
+									    const bool						hostQueryReset)
 	: m_inRenderPass(inRenderPass)
 	, m_hostQueryReset(hostQueryReset)
 {
@@ -262,11 +263,11 @@ TimestampTestParam::TimestampTestParam(const VkPipelineStageFlagBits* stages,
 	}
 }
 
-TimestampTestParam::~TimestampTestParam(void)
+TimestampTestParam::~TimestampTestParam (void)
 {
 }
 
-const std::string TimestampTestParam::generateTestName(void) const
+const std::string TimestampTestParam::generateTestName (void) const
 {
 	std::string result("");
 
@@ -288,7 +289,7 @@ const std::string TimestampTestParam::generateTestName(void) const
 	return result;
 }
 
-const std::string TimestampTestParam::generateTestDescription(void) const
+const std::string TimestampTestParam::generateTestDescription (void) const
 {
 	std::string result("Record timestamp after ");
 
@@ -313,24 +314,24 @@ const std::string TimestampTestParam::generateTestDescription(void) const
 class TransferTimestampTestParam : public TimestampTestParam
 {
 public:
-					  TransferTimestampTestParam  (const VkPipelineStageFlagBits* stages,
-												   const deUint32                 stageCount,
-												   const bool                     inRenderPass,
-												   const bool                     hostQueryReset,
-												   const deUint32                 methodNdx);
-					  ~TransferTimestampTestParam (void)       { }
-	const std::string generateTestName            (void) const;
-	const std::string generateTestDescription     (void) const;
-	TransferMethod    getMethod                   (void) const { return m_method; }
+						TransferTimestampTestParam	(const VkPipelineStageFlagBits*	stages,
+													 const deUint32					stageCount,
+													 const bool						inRenderPass,
+													 const bool						hostQueryReset,
+													 const deUint32					methodNdx);
+						~TransferTimestampTestParam	(void) { }
+	const std::string	generateTestName			(void) const;
+	const std::string	generateTestDescription		(void) const;
+	TransferMethod		getMethod					(void) const { return m_method; }
 protected:
-	TransferMethod    m_method;
+	TransferMethod		m_method;
 };
 
-TransferTimestampTestParam::TransferTimestampTestParam(const VkPipelineStageFlagBits* stages,
-													   const deUint32                 stageCount,
-													   const bool                     inRenderPass,
-													   const bool                     hostQueryReset,
-													   const deUint32                 methodNdx)
+TransferTimestampTestParam::TransferTimestampTestParam (const VkPipelineStageFlagBits*	stages,
+													    const deUint32					stageCount,
+													    const bool						inRenderPass,
+													    const bool						hostQueryReset,
+													    const deUint32					methodNdx)
 	: TimestampTestParam(stages, stageCount, inRenderPass, hostQueryReset)
 {
 	DE_ASSERT(methodNdx < (deUint32)TRANSFER_METHOD_LAST);
@@ -338,7 +339,7 @@ TransferTimestampTestParam::TransferTimestampTestParam(const VkPipelineStageFlag
 	m_method = (TransferMethod)methodNdx;
 }
 
-const std::string TransferTimestampTestParam::generateTestName(void) const
+const std::string TransferTimestampTestParam::generateTestName (void) const
 {
 	std::string result("");
 
@@ -358,7 +359,7 @@ const std::string TransferTimestampTestParam::generateTestName(void) const
 	return result;
 }
 
-const std::string TransferTimestampTestParam::generateTestDescription(void) const
+const std::string TransferTimestampTestParam::generateTestDescription (void) const
 {
 	std::string result("");
 
@@ -404,13 +405,16 @@ TwoCmdBuffersTestParam::TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	s
 class SimpleGraphicsPipelineBuilder
 {
 public:
-					 SimpleGraphicsPipelineBuilder  (Context&              context);
-					 ~SimpleGraphicsPipelineBuilder (void) { }
-	void             bindShaderStage                (VkShaderStageFlagBits stage,
-													 const char*           source_name);
-	void             enableTessellationStage        (deUint32              patchControlPoints);
-	Move<VkPipeline> buildPipeline                  (tcu::UVec2            renderSize,
-													 VkRenderPass          renderPass);
+						 SimpleGraphicsPipelineBuilder  (Context& context);
+						 ~SimpleGraphicsPipelineBuilder (void) { }
+
+	void				bindShaderStage					(VkShaderStageFlagBits	stage,
+														 const char*			source_name);
+
+	void				enableTessellationStage			(deUint32              patchControlPoints);
+
+	Move<VkPipeline>	buildPipeline					(tcu::UVec2            renderSize,
+														 VkRenderPass          renderPass);
 protected:
 	enum
 	{
@@ -437,23 +441,23 @@ SimpleGraphicsPipelineBuilder::SimpleGraphicsPipelineBuilder(Context& context)
 	m_shaderStageCount   = 0;
 }
 
-void SimpleGraphicsPipelineBuilder::bindShaderStage(VkShaderStageFlagBits stage,
-													const char*           source_name)
+void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits	stage,
+													 const char*			source_name)
 {
-	const DeviceInterface&  vk        = m_context.getDeviceInterface();
-	const VkDevice          vkDevice  = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create shader module
-	deUint32*               pCode     = (deUint32*)m_context.getBinaryCollection().get(source_name).getBinary();
-	deUint32                codeSize  = (deUint32)m_context.getBinaryCollection().get(source_name).getSize();
+	deUint32*				pCode		= (deUint32*)m_context.getBinaryCollection().get(source_name).getBinary();
+	deUint32				codeSize	= (deUint32)m_context.getBinaryCollection().get(source_name).getSize();
 
 	const VkShaderModuleCreateInfo moduleCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                // VkStructureType             sType;
-		DE_NULL,                                                    // const void*                 pNext;
-		0u,                                                         // VkShaderModuleCreateFlags   flags;
-		codeSize,                                                   // deUintptr                   codeSize;
-		pCode,                                                      // const deUint32*             pCode;
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType             sType;
+		DE_NULL,										// const void*                 pNext;
+		0u,												// VkShaderModuleCreateFlags   flags;
+		codeSize,										// deUintptr                   codeSize;
+		pCode,											// const deUint32*             pCode;
 	};
 
 	m_shaderModules[m_shaderStageCount] = createShaderModule(vk, vkDevice, &moduleCreateInfo);
@@ -462,7 +466,7 @@ void SimpleGraphicsPipelineBuilder::bindShaderStage(VkShaderStageFlagBits stage,
 	m_shaderStageCount++;
 }
 
-Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderSize, VkRenderPass renderPass)
+Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, VkRenderPass renderPass)
 {
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const VkDevice			vkDevice				= m_context.getDevice();
@@ -490,13 +494,13 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 	{
 		const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,      // VkStructureType                  sType;
-			DE_NULL,                                            // const void*                      pNext;
-			0u,                                                 // VkPipelineLayoutCreateFlags      flags;
-			0u,                                                 // deUint32                         setLayoutCount;
-			DE_NULL,                                            // const VkDescriptorSetLayout*     pSetLayouts;
-			0u,                                                 // deUint32                         pushConstantRangeCount;
-			DE_NULL                                             // const VkPushConstantRange*       pPushConstantRanges;
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                  sType;
+			DE_NULL,										// const void*                      pNext;
+			0u,												// VkPipelineLayoutCreateFlags      flags;
+			0u,												// deUint32                         setLayoutCount;
+			DE_NULL,										// const VkDescriptorSetLayout*     pSetLayouts;
+			0u,												// deUint32                         pushConstantRangeCount;
+			DE_NULL											// const VkPushConstantRange*       pPushConstantRanges;
 		};
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -505,36 +509,36 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 	// Create pipeline
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
-		0u,                                 // deUint32                 binding;
-		sizeof(Vertex4RGBA),                // deUint32                 strideInBytes;
-		VK_VERTEX_INPUT_RATE_VERTEX,        // VkVertexInputRate        inputRate;
+		0u,								// deUint32                 binding;
+		sizeof(Vertex4RGBA),			// deUint32                 strideInBytes;
+		VK_VERTEX_INPUT_RATE_VERTEX,	// VkVertexInputRate        inputRate;
 	};
 
 	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
 	{
 		{
-			0u,                                 // deUint32 location;
-			0u,                                 // deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,      // VkFormat format;
-			0u                                  // deUint32 offsetInBytes;
+			0u,									// deUint32 location;
+			0u,									// deUint32 binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
+			0u									// deUint32 offsetInBytes;
 		},
 		{
-			1u,                                 // deUint32 location;
-			0u,                                 // deUint32 binding;
-			VK_FORMAT_R32G32B32A32_SFLOAT,      // VkFormat format;
-			DE_OFFSET_OF(Vertex4RGBA, color),   // deUint32 offsetInBytes;
+			1u,									// deUint32 location;
+			0u,									// deUint32 binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat format;
+			DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32 offsetInBytes;
 		}
 	};
 
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,      // VkStructureType                          sType;
-		DE_NULL,                                                        // const void*                              pNext;
-		0u,                                                             // VkPipelineVertexInputStateCreateFlags    flags;
-		1u,                                                             // deUint32                                 vertexBindingDescriptionCount;
-		&vertexInputBindingDescription,                                 // const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
-		2u,                                                             // deUint32                                 vertexAttributeDescriptionCount;
-		vertexInputAttributeDescriptions,                               // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineVertexInputStateCreateFlags    flags;
+		1u,															// deUint32                                 vertexBindingDescriptionCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*   pVertexBindingDescriptions;
+		2u,															// deUint32                                 vertexAttributeDescriptionCount;
+		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
 	};
 
 	VkPrimitiveTopology primitiveTopology = (m_patchControlPoints > 0) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -544,66 +548,66 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline(tcu::UVec2 renderS
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType;
-		DE_NULL,                                                    // const void*                              pNext;
-		0u,                                                         // VkPipelineDepthStencilStateCreateFlags   flags;
-		VK_TRUE,                                                    // VkBool32                                 depthTestEnable;
-		VK_TRUE,                                                    // VkBool32                                 depthWriteEnable;
-		VK_COMPARE_OP_LESS_OR_EQUAL,                                // VkCompareOp                              depthCompareOp;
-		VK_FALSE,                                                   // VkBool32                                 depthBoundsTestEnable;
-		VK_FALSE,                                                   // VkBool32                                 stencilTestEnable;
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkPipelineDepthStencilStateCreateFlags   flags;
+		VK_TRUE,													// VkBool32                                 depthTestEnable;
+		VK_TRUE,													// VkBool32                                 depthWriteEnable;
+		VK_COMPARE_OP_LESS_OR_EQUAL,								// VkCompareOp                              depthCompareOp;
+		VK_FALSE,													// VkBool32                                 depthBoundsTestEnable;
+		VK_FALSE,													// VkBool32                                 stencilTestEnable;
 		// VkStencilOpState front;
 		{
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,    // VkCompareOp  compareOp;
-			0u,                     // deUint32     compareMask;
-			0u,                     // deUint32     writeMask;
-			0u,                     // deUint32     reference;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
+			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
+			0u,						// deUint32     compareMask;
+			0u,						// deUint32     writeMask;
+			0u,						// deUint32     reference;
 		},
 		// VkStencilOpState back;
 		{
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  failOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  passOp;
-			VK_STENCIL_OP_KEEP,     // VkStencilOp  depthFailOp;
-			VK_COMPARE_OP_NEVER,    // VkCompareOp  compareOp;
-			0u,                     // deUint32     compareMask;
-			0u,                     // deUint32     writeMask;
-			0u,                     // deUint32     reference;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  failOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  passOp;
+			VK_STENCIL_OP_KEEP,		// VkStencilOp  depthFailOp;
+			VK_COMPARE_OP_NEVER,	// VkCompareOp  compareOp;
+			0u,						// deUint32     compareMask;
+			0u,						// deUint32     writeMask;
+			0u,						// deUint32     reference;
 		},
-		0.0f,                                                      // float                                    minDepthBounds;
-		1.0f,                                                      // float                                    maxDepthBounds;
+		0.0f,														// float                                    minDepthBounds;
+		1.0f,														// float                                    maxDepthBounds;
 	};
 
-	return makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
-								vkDevice,							// const VkDevice                                device
-								*m_pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
-								vertShaderModule,					// const VkShaderModule                          vertexShaderModule
-								tessControlShaderModule,			// const VkShaderModule                          tessellationControlModule
-								tessEvalShaderModule,				// const VkShaderModule                          tessellationEvalModule
-								geomShaderModule,					// const VkShaderModule                          geometryShaderModule
-								fragShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,							// const VkRenderPass                            renderPass
-								viewports,							// const std::vector<VkViewport>&                viewports
-								scissors,							// const std::vector<VkRect2D>&                  scissors
-								primitiveTopology,					// const VkPrimitiveTopology                     topology
-								0u,									// const deUint32                                subpass
-								m_patchControlPoints,				// const deUint32                                patchControlPoints
-								&vertexInputStateParams,			// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,							// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								&depthStencilStateParams);			// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+	return makeGraphicsPipeline(vk,							// const DeviceInterface&                        vk
+								vkDevice,					// const VkDevice                                device
+								*m_pipelineLayout,			// const VkPipelineLayout                        pipelineLayout
+								vertShaderModule,			// const VkShaderModule                          vertexShaderModule
+								tessControlShaderModule,	// const VkShaderModule                          tessellationControlModule
+								tessEvalShaderModule,		// const VkShaderModule                          tessellationEvalModule
+								geomShaderModule,			// const VkShaderModule                          geometryShaderModule
+								fragShaderModule,			// const VkShaderModule                          fragmentShaderModule
+								renderPass,					// const VkRenderPass                            renderPass
+								viewports,					// const std::vector<VkViewport>&                viewports
+								scissors,					// const std::vector<VkRect2D>&                  scissors
+								primitiveTopology,			// const VkPrimitiveTopology                     topology
+								0u,							// const deUint32                                subpass
+								m_patchControlPoints,		// const deUint32                                patchControlPoints
+								&vertexInputStateParams,	// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+								DE_NULL,					// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+								DE_NULL,					// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+								&depthStencilStateParams);	// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
 }
 
-void SimpleGraphicsPipelineBuilder::enableTessellationStage(deUint32 patchControlPoints)
+void SimpleGraphicsPipelineBuilder::enableTessellationStage (deUint32 patchControlPoints)
 {
 	m_patchControlPoints = patchControlPoints;
 }
 
 template <class Test>
-vkt::TestCase* newTestCase(tcu::TestContext&     testContext,
-						   TimestampTestParam*   testParam)
+vkt::TestCase* newTestCase	(tcu::TestContext&		testContext,
+							 TimestampTestParam*	testParam)
 {
 	return new Test(testContext,
 					testParam->generateTestName().c_str(),
@@ -620,19 +624,19 @@ public:
 		ENTRY_COUNT = 8
 	};
 
-							TimestampTest (tcu::TestContext&         testContext,
-										   const std::string&        name,
-										   const std::string&        description,
-										   const TimestampTestParam* param)
-							  : vkt::TestCase		(testContext, name, description)
-							  , m_stages			(param->getStageVector())
-							  , m_inRenderPass		(param->getInRenderPass())
-							  , m_hostQueryReset	(param->getHostQueryReset())
-							  { }
-
+							TimestampTest	(tcu::TestContext&			testContext,
+											 const std::string&			name,
+											 const std::string&			description,
+											 const TimestampTestParam*	param)
+											 : vkt::TestCase	(testContext, name, description)
+											 , m_stages			(param->getStageVector())
+											 , m_inRenderPass	(param->getInRenderPass())
+											 , m_hostQueryReset	(param->getHostQueryReset())
+											 { }
 	virtual					~TimestampTest	(void) { }
-	virtual void			initPrograms	(SourceCollections&	programCollection) const;
-	virtual TestInstance*	createInstance	(Context&			context) const;
+	virtual void			initPrograms	(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance	(Context& context) const;
+	virtual void			checkSupport	(Context& context) const;
 protected:
 	const StageFlagVector	m_stages;
 	const bool				m_inRenderPass;
@@ -642,81 +646,100 @@ protected:
 class TimestampTestInstance : public vkt::TestInstance
 {
 public:
-							TimestampTestInstance      (Context&                 context,
-														const StageFlagVector&   stages,
-														const bool               inRenderPass,
-														const bool               hostQueryReset);
-	virtual                 ~TimestampTestInstance     (void);
-	virtual tcu::TestStatus iterate                    (void);
-protected:
-	virtual tcu::TestStatus verifyTimestamp            (void);
-	virtual void            configCommandBuffer        (void);
-	Move<VkBuffer>          createBufferAndBindMemory  (VkDeviceSize             size,
-														VkBufferUsageFlags       usage,
-														de::MovePtr<Allocation>* pAlloc);
-	Move<VkImage>           createImage2DAndBindMemory (VkFormat                 format,
-														deUint32                 width,
-														deUint32                 height,
-														VkImageUsageFlags        usage,
-														VkSampleCountFlagBits    sampleCount,
-														de::MovePtr<Allocation>* pAlloc);
-protected:
-	const StageFlagVector   m_stages;
-	bool                    m_inRenderPass;
-	bool                    m_hostQueryReset;
+							TimestampTestInstance		(Context&				context,
+														 const StageFlagVector&	stages,
+														 const bool				inRenderPass,
+														 const bool				hostQueryReset);
 
-	Move<VkCommandPool>     m_cmdPool;
-	Move<VkCommandBuffer>   m_cmdBuffer;
-	Move<VkQueryPool>       m_queryPool;
-	deUint64*               m_timestampValues;
-	deUint64*               m_timestampValuesHostQueryReset;
+	virtual					~TimestampTestInstance		(void);
+	virtual tcu::TestStatus	iterate						(void);
+
+protected:
+	virtual tcu::TestStatus	verifyTimestamp				(void);
+	virtual void            configCommandBuffer			(void);
+
+	Move<VkBuffer>			createBufferAndBindMemory	(VkDeviceSize				size,
+														 VkBufferUsageFlags			usage,
+														 de::MovePtr<Allocation>*	pAlloc);
+
+	Move<VkImage>			createImage2DAndBindMemory	(VkFormat					format,
+														 deUint32					width,
+														 deUint32					height,
+														 VkImageUsageFlags			usage,
+														 VkSampleCountFlagBits		sampleCount,
+														 de::MovePtr<Allocation>*	pAlloc);
+
+protected:
+	const StageFlagVector	m_stages;
+	bool					m_inRenderPass;
+	bool					m_hostQueryReset;
+
+	Move<VkCommandPool>		m_cmdPool;
+	Move<VkCommandBuffer>	m_cmdBuffer;
+	Move<VkQueryPool>		m_queryPool;
+	deUint64*				m_timestampValues;
+	deUint64*				m_timestampValuesHostQueryReset;
 	deUint64				m_timestampMask;
 };
 
-void TimestampTest::initPrograms(SourceCollections& programCollection) const
+void TimestampTest::initPrograms (SourceCollections& programCollection) const
 {
 	vkt::TestCase::initPrograms(programCollection);
 }
 
-TestInstance* TimestampTest::createInstance(Context& context) const
+void TimestampTest::checkSupport (Context& context) const
 {
-	return new TimestampTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
-}
-
-TimestampTestInstance::TimestampTestInstance(Context&                context,
-											 const StageFlagVector&  stages,
-											 const bool              inRenderPass,
-											 const bool              hostQueryReset)
-	: TestInstance     (context)
-	, m_stages         (stages)
-	, m_inRenderPass   (inRenderPass)
-	, m_hostQueryReset (hostQueryReset)
-{
-	const DeviceInterface&      vk                  = context.getDeviceInterface();
-	const VkDevice              vkDevice            = context.getDevice();
-	const deUint32              queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
-
 	// Check support for timestamp queries
-	m_timestampMask = checkTimestampsSupported(context);
+	{
+		const deUint32								queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+		const std::vector<VkQueueFamilyProperties>	queueProperties		= vk::getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+
+		DE_ASSERT(queueFamilyIndex < (deUint32)queueProperties.size());
+
+		if (!queueProperties[queueFamilyIndex].timestampValidBits)
+			throw tcu::NotSupportedError("Universal queue does not support timestamps");
+	}
 
 	if (m_hostQueryReset)
 	{
 		// Check VK_EXT_host_query_reset is supported
-		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
-		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
-			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
+		context.requireDeviceExtension("VK_EXT_host_query_reset");
+
+		if(context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
+			throw tcu::NotSupportedError("Implementation doesn't support resetting queries from the host");
 	}
+}
+
+TestInstance* TimestampTest::createInstance (Context& context) const
+{
+	return new TimestampTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
+}
+
+TimestampTestInstance::TimestampTestInstance (Context&					context,
+											  const StageFlagVector&	stages,
+											  const bool				inRenderPass,
+											  const bool				hostQueryReset)
+	: TestInstance		(context)
+	, m_stages			(stages)
+	, m_inRenderPass	(inRenderPass)
+	, m_hostQueryReset	(hostQueryReset)
+{
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+
+	m_timestampMask = checkTimestampsSupported(context);
 
 	// Create Query Pool
 	{
 		const VkQueryPoolCreateInfo queryPoolParams =
 		{
-		   VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,    // VkStructureType               sType;
-		   DE_NULL,                                     // const void*                   pNext;
-		   0u,                                          // VkQueryPoolCreateFlags        flags;
-		   VK_QUERY_TYPE_TIMESTAMP,                     // VkQueryType                   queryType;
-		   TimestampTest::ENTRY_COUNT,                  // deUint32                      entryCount;
-		   0u,                                          // VkQueryPipelineStatisticFlags pipelineStatistics;
+		   VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	// VkStructureType               sType;
+		   DE_NULL,										// const void*                   pNext;
+		   0u,											// VkQueryPoolCreateFlags        flags;
+		   VK_QUERY_TYPE_TIMESTAMP,						// VkQueryType                   queryType;
+		   TimestampTest::ENTRY_COUNT,					// deUint32                      entryCount;
+		   0u,											// VkQueryPipelineStatisticFlags pipelineStatistics;
 		};
 
 		m_queryPool = createQueryPool(vk, vkDevice, &queryPoolParams);
@@ -737,7 +760,7 @@ TimestampTestInstance::TimestampTestInstance(Context&                context,
 		m_timestampValuesHostQueryReset = DE_NULL;
 }
 
-TimestampTestInstance::~TimestampTestInstance(void)
+TimestampTestInstance::~TimestampTestInstance (void)
 {
 	delete[] m_timestampValues;
 	m_timestampValues = NULL;
@@ -746,7 +769,7 @@ TimestampTestInstance::~TimestampTestInstance(void)
 	m_timestampValuesHostQueryReset = NULL;
 }
 
-void TimestampTestInstance::configCommandBuffer(void)
+void TimestampTestInstance::configCommandBuffer (void)
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
@@ -764,7 +787,7 @@ void TimestampTestInstance::configCommandBuffer(void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-tcu::TestStatus TimestampTestInstance::iterate(void)
+tcu::TestStatus TimestampTestInstance::iterate (void)
 {
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			vkDevice			= m_context.getDevice();
@@ -790,6 +813,7 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 	{
 		// Initialize timestampValuesHostQueryReset values
 		deMemset(m_timestampValuesHostQueryReset, 0, sizeof(deUint64) * stageSize * 2);
+
 		for (deUint32 ndx = 0; ndx < stageSize; ndx++)
 		{
 			m_timestampValuesHostQueryReset[2 * ndx] = m_timestampValues[ndx];
@@ -821,7 +845,7 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 	return verifyTimestamp();
 }
 
-tcu::TestStatus TimestampTestInstance::verifyTimestamp(void)
+tcu::TestStatus TimestampTestInstance::verifyTimestamp (void)
 {
 	for (deUint32 first = 0; first < m_stages.size(); first++)
 	{
@@ -837,23 +861,23 @@ tcu::TestStatus TimestampTestInstance::verifyTimestamp(void)
 	return tcu::TestStatus::pass("Timestamp increases steadily.");
 }
 
-Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize size, VkBufferUsageFlags usage, de::MovePtr<Allocation>* pAlloc)
+Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory (VkDeviceSize size, VkBufferUsageFlags usage, de::MovePtr<Allocation>* pAlloc)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
-	const VkDevice              vkDevice            = m_context.getDevice();
-	const deUint32              queueFamilyIndex    = m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator             memAlloc            (vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				vkDevice			= m_context.getDevice();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
-	const VkBufferCreateInfo vertexBufferParams =
+	const VkBufferCreateInfo	vertexBufferParams	=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,       // VkStructureType      sType;
-		DE_NULL,                                    // const void*          pNext;
-		0u,                                         // VkBufferCreateFlags  flags;
-		size,                                       // VkDeviceSize         size;
-		usage,                                      // VkBufferUsageFlags   usage;
-		VK_SHARING_MODE_EXCLUSIVE,                  // VkSharingMode        sharingMode;
-		1u,                                         // deUint32             queueFamilyCount;
-		&queueFamilyIndex                           // const deUint32*      pQueueFamilyIndices;
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType      sType;
+		DE_NULL,								// const void*          pNext;
+		0u,										// VkBufferCreateFlags  flags;
+		size,									// VkDeviceSize         size;
+		usage,									// VkBufferUsageFlags   usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode        sharingMode;
+		1u,										// deUint32             queueFamilyCount;
+		&queueFamilyIndex						// const deUint32*      pQueueFamilyIndices;
 	};
 
 	Move<VkBuffer> vertexBuffer = createBuffer(vk, vkDevice, &vertexBufferParams);
@@ -867,21 +891,23 @@ Move<VkBuffer> TimestampTestInstance::createBufferAndBindMemory(VkDeviceSize siz
 	return vertexBuffer;
 }
 
-Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat                          format,
-																deUint32                          width,
-																deUint32                          height,
-																VkImageUsageFlags                 usage,
-																VkSampleCountFlagBits             sampleCount,
-																de::details::MovePtr<Allocation>* pAlloc)
+Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory (VkFormat							format,
+																 deUint32							width,
+																 deUint32							height,
+																 VkImageUsageFlags					usage,
+																 VkSampleCountFlagBits				sampleCount,
+																 de::details::MovePtr<Allocation>*	pAlloc)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
-	const VkDevice              vkDevice            = m_context.getDevice();
-	const deUint32              queueFamilyIndex    = m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator             memAlloc            (vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const DeviceInterface&	vk					= m_context.getDeviceInterface();
+	const VkDevice			vkDevice			= m_context.getDevice();
+	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator			memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 
 	// Optimal tiling feature check
-	VkFormatProperties          formatProperty;
+	VkFormatProperties		formatProperty;
+
 	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), format, &formatProperty);
+
 	if((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) && !(formatProperty.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT))
 	{
 		// Remove color attachment usage if the optimal tiling feature does not support it
@@ -895,21 +921,21 @@ Move<VkImage> TimestampTestInstance::createImage2DAndBindMemory(VkFormat        
 
 	const VkImageCreateInfo colorImageParams =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                        // VkStructureType      sType;
-		DE_NULL,                                                                    // const void*          pNext;
-		0u,                                                                         // VkImageCreateFlags   flags;
-		VK_IMAGE_TYPE_2D,                                                           // VkImageType          imageType;
-		format,                                                                     // VkFormat             format;
-		{ width, height, 1u },                                                      // VkExtent3D           extent;
-		1u,                                                                         // deUint32             mipLevels;
-		1u,                                                                         // deUint32             arraySize;
-		sampleCount,                                                                // deUint32             samples;
-		VK_IMAGE_TILING_OPTIMAL,                                                    // VkImageTiling        tiling;
-		usage,                                                                      // VkImageUsageFlags    usage;
-		VK_SHARING_MODE_EXCLUSIVE,                                                  // VkSharingMode        sharingMode;
-		1u,                                                                         // deUint32             queueFamilyCount;
-		&queueFamilyIndex,                                                          // const deUint32*      pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,                                                  // VkImageLayout        initialLayout;
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType      sType;
+		DE_NULL,								// const void*          pNext;
+		0u,										// VkImageCreateFlags   flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType          imageType;
+		format,									// VkFormat             format;
+		{ width, height, 1u },					// VkExtent3D           extent;
+		1u,										// deUint32             mipLevels;
+		1u,										// deUint32             arraySize;
+		sampleCount,							// deUint32             samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling        tiling;
+		usage,									// VkImageUsageFlags    usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode        sharingMode;
+		1u,										// deUint32             queueFamilyCount;
+		&queueFamilyIndex,						// const deUint32*      pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout        initialLayout;
 	};
 
 	Move<VkImage> image = createImage(vk, vkDevice, &colorImageParams);
@@ -933,15 +959,17 @@ public:
 															 const std::string&		description)
 									: vkt::TestCase{testContext, name, description}
 									{ }
+
 	virtual						~CalibratedTimestampTest	(void) override { }
 	virtual void				initPrograms				(SourceCollections&		programCollection) const override;
+	virtual void				checkSupport				(Context&				context) const override;
 	virtual vkt::TestInstance*	createInstance				(Context&				context) const override;
 };
 
 class CalibratedTimestampTestInstance : public vkt::TestInstance
 {
 public:
-							CalibratedTimestampTestInstance		(Context&	context);
+							CalibratedTimestampTestInstance		(Context& context);
 	virtual                 ~CalibratedTimestampTestInstance	(void) override { }
 	virtual tcu::TestStatus iterate								(void) override;
 	virtual tcu::TestStatus runTest								(void) = 0;
@@ -996,9 +1024,10 @@ protected:
 class CalibratedTimestampDevDomainTestInstance : public CalibratedTimestampTestInstance
 {
 public:
-							CalibratedTimestampDevDomainTestInstance	(Context&	context)
+							CalibratedTimestampDevDomainTestInstance	(Context& context)
 								: CalibratedTimestampTestInstance{context}
 								{ }
+
 	virtual                 ~CalibratedTimestampDevDomainTestInstance	(void) { }
 	virtual tcu::TestStatus runTest										(void) override;
 };
@@ -1006,9 +1035,10 @@ public:
 class CalibratedTimestampHostDomainTestInstance : public CalibratedTimestampTestInstance
 {
 public:
-							CalibratedTimestampHostDomainTestInstance	(Context&	context)
+							CalibratedTimestampHostDomainTestInstance	(Context& context)
 								: CalibratedTimestampTestInstance{context}
 								{ }
+
 	virtual                 ~CalibratedTimestampHostDomainTestInstance	(void) { }
 	virtual tcu::TestStatus runTest										(void) override;
 };
@@ -1016,30 +1046,35 @@ public:
 class CalibratedTimestampCalibrationTestInstance : public CalibratedTimestampTestInstance
 {
 public:
-							CalibratedTimestampCalibrationTestInstance	(Context&	context)
+							CalibratedTimestampCalibrationTestInstance	(Context& context)
 								: CalibratedTimestampTestInstance{context}
 								{ }
+
 	virtual                 ~CalibratedTimestampCalibrationTestInstance	(void) { }
 	virtual tcu::TestStatus runTest										(void) override;
 };
 
 template <class T>
-void CalibratedTimestampTest<T>::initPrograms(SourceCollections& programCollection) const
+void CalibratedTimestampTest<T>::initPrograms (SourceCollections& programCollection) const
 {
 	vkt::TestCase::initPrograms(programCollection);
 }
 
 template <class T>
-vkt::TestInstance* CalibratedTimestampTest<T>::createInstance(Context& context) const
+vkt::TestInstance* CalibratedTimestampTest<T>::createInstance (Context& context) const
 {
 	return new T{context};
 }
 
-CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& context)
-	: TestInstance{context}
+template <class T>
+void CalibratedTimestampTest<T>::checkSupport (Context& context) const
 {
 	context.requireDeviceExtension("VK_EXT_calibrated_timestamps");
+}
 
+CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& context)
+	: TestInstance{context}
+{
 #if (DE_OS == DE_OS_WIN32)
 	LARGE_INTEGER freq;
 	if (!QueryPerformanceFrequency(&freq))
@@ -1090,17 +1125,17 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& contex
 	m_hostDomains = getDomainSubset(domains, preferredHostDomains);
 
 	// Initialize command buffers and queries.
-	const DeviceInterface&      vk                  = context.getDeviceInterface();
-	const VkDevice				vkDevice			= context.getDevice();
+	const DeviceInterface&		vk				= context.getDeviceInterface();
+	const VkDevice				vkDevice		= context.getDevice();
 
-	const VkQueryPoolCreateInfo queryPoolParams =
+	const VkQueryPoolCreateInfo	queryPoolParams	=
 	{
-		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,    // VkStructureType               sType;
-		DE_NULL,                                     // const void*                   pNext;
-		0u,                                          // VkQueryPoolCreateFlags        flags;
-		VK_QUERY_TYPE_TIMESTAMP,                     // VkQueryType                   queryType;
-		1u,                                          // deUint32                      entryCount;
-		0u,                                          // VkQueryPipelineStatisticFlags pipelineStatistics;
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	// VkStructureType               sType;
+		DE_NULL,									// const void*                   pNext;
+		0u,											// VkQueryPoolCreateFlags        flags;
+		VK_QUERY_TYPE_TIMESTAMP,					// VkQueryType                   queryType;
+		1u,											// deUint32                      entryCount;
+		0u,											// VkQueryPipelineStatisticFlags pipelineStatistics;
 	};
 
 	m_queryPool	= createQueryPool(vk, vkDevice, &queryPoolParams);
@@ -1113,7 +1148,7 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance(Context& contex
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-std::vector<VkTimeDomainEXT> CalibratedTimestampTestInstance::getDomainSubset(const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const
+std::vector<VkTimeDomainEXT> CalibratedTimestampTestInstance::getDomainSubset (const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const
 {
 	std::vector<VkTimeDomainEXT> subset;
 	std::set_intersection(begin(available), end(available), begin(interesting), end(interesting), std::back_inserter(subset));
@@ -1132,7 +1167,7 @@ std::string CalibratedTimestampTestInstance::domainName(VkTimeDomainEXT domain) 
 	}
 }
 
-deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp(VkTimeDomainEXT hostDomain) const
+deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp (VkTimeDomainEXT hostDomain) const
 {
 #if (DE_OS == DE_OS_WIN32)
 	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT);
@@ -1160,11 +1195,12 @@ deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp(VkTimeDomainEXT
 #endif
 }
 
-deUint64 CalibratedTimestampTestInstance::getHostNanoseconds(deUint64 hostTimestamp) const
+deUint64 CalibratedTimestampTestInstance::getHostNanoseconds (deUint64 hostTimestamp) const
 {
 #if (DE_OS == DE_OS_WIN32)
-	deUint64 secs	= hostTimestamp / m_frequency;
-	deUint64 nanos	= ((hostTimestamp % m_frequency) * kNanosecondsPerSecond) / m_frequency;
+	deUint64	secs	= hostTimestamp / m_frequency;
+	deUint64	nanos	= ((hostTimestamp % m_frequency) * kNanosecondsPerSecond) / m_frequency;
+
 	return ((secs * kNanosecondsPerSecond) + nanos);
 #else
 	return hostTimestamp;
@@ -1173,7 +1209,7 @@ deUint64 CalibratedTimestampTestInstance::getHostNanoseconds(deUint64 hostTimest
 
 // This method will be used when devTicksDelta is (supposedly) a small amount of ticks between two events. We will check
 // devTicksDelta is reasonably small for the calculation below to succeed without losing precision.
-deUint64 CalibratedTimestampTestInstance::getDeviceNanoseconds(deUint64 devTicksDelta) const
+deUint64 CalibratedTimestampTestInstance::getDeviceNanoseconds (deUint64 devTicksDelta) const
 {
 	if (devTicksDelta > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
 	{
@@ -1184,7 +1220,7 @@ deUint64 CalibratedTimestampTestInstance::getDeviceNanoseconds(deUint64 devTicks
 	return static_cast<deUint64>(static_cast<double>(devTicksDelta) * m_timestampPeriod);
 }
 
-tcu::TestStatus CalibratedTimestampTestInstance::iterate(void)
+tcu::TestStatus CalibratedTimestampTestInstance::iterate (void)
 {
 	// Notes:
 	//	1) Clocks may overflow.
@@ -1203,14 +1239,14 @@ tcu::TestStatus CalibratedTimestampTestInstance::iterate(void)
 }
 
 // Verify all invalid timestamp bits are zero.
-void CalibratedTimestampTestInstance::verifyDevTimestampMask(deUint64 value) const
+void CalibratedTimestampTestInstance::verifyDevTimestampMask (deUint64 value) const
 {
 	checkTimestampBits(value, m_devTimestampMask);
 }
 
 // Absolute difference between two timestamps A and B taking overflow into account. Pick the smallest difference between the two
 // possibilities. We don't know beforehand if B > A or vice versa. Take the valid bit mask into account.
-deUint64 CalibratedTimestampTestInstance::absDiffWithOverflow(deUint64 a, deUint64 b, deUint64 mask) const
+deUint64 CalibratedTimestampTestInstance::absDiffWithOverflow (deUint64 a, deUint64 b, deUint64 mask) const
 {
 	//	<---------+ range +-------->
 	//
@@ -1228,14 +1264,17 @@ deUint64 CalibratedTimestampTestInstance::absDiffWithOverflow(deUint64 a, deUint
 	DE_ASSERT(b <= mask);
 
 	const deUint64 c = ((a >= b) ? (a - b) : (b - a));
+
 	if (c == 0u)
 		return c;
+
 	const deUint64 d = (mask - c) + 1;
+
 	return ((c < d) ? c : d);
 }
 
 // Positive difference between both marks, advancing from before to after, taking overflow and the valid bit mask into account.
-deUint64 CalibratedTimestampTestInstance::positiveDiffWithOverflow(deUint64 before, deUint64 after, deUint64 mask) const
+deUint64 CalibratedTimestampTestInstance::positiveDiffWithOverflow (deUint64 before, deUint64 after, deUint64 mask) const
 {
 	DE_ASSERT(before <= mask);
 	DE_ASSERT(after  <= mask);
@@ -1244,15 +1283,16 @@ deUint64 CalibratedTimestampTestInstance::positiveDiffWithOverflow(deUint64 befo
 }
 
 // Return true if middle is not between begin and end, taking overflow into account.
-bool CalibratedTimestampTestInstance::outOfRange(deUint64 begin, deUint64 middle, deUint64 end) const
+bool CalibratedTimestampTestInstance::outOfRange (deUint64 begin, deUint64 middle, deUint64 end) const
 {
 	return (((begin <= end) && (middle < begin || middle > end	)) ||
 			((begin >  end) && (middle > end   && middle < begin)));
 }
 
-std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTimestampTestInstance::getCalibratedTimestamps(const std::vector<VkTimeDomainEXT>& domains)
+std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTimestampTestInstance::getCalibratedTimestamps (const std::vector<VkTimeDomainEXT>& domains)
 {
 	std::vector<VkCalibratedTimestampInfoEXT> infos;
+
 	for (auto domain : domains)
 	{
 		VkCalibratedTimestampInfoEXT info;
@@ -1285,30 +1325,33 @@ std::vector<CalibratedTimestampTestInstance::CalibratedTimestamp> CalibratedTime
 
 	// Pack results.
 	std::vector<CalibratedTimestamp> results;
+
 	for (size_t i = 0; i < domains.size(); ++i)
 	{
 		if (domains[i] == VK_TIME_DOMAIN_DEVICE_EXT)
 			verifyDevTimestampMask(timestamps[i]);
 		results.emplace_back(timestamps[i], deviation);
 	}
+
 	return results;
 }
 
-CalibratedTimestampTestInstance::CalibratedTimestamp CalibratedTimestampTestInstance::getCalibratedTimestamp(VkTimeDomainEXT domain)
+CalibratedTimestampTestInstance::CalibratedTimestamp CalibratedTimestampTestInstance::getCalibratedTimestamp (VkTimeDomainEXT domain)
 {
 	// Single domain, single result.
 	return getCalibratedTimestamps(std::vector<VkTimeDomainEXT>(1, domain))[0];
 }
 
-void CalibratedTimestampTestInstance::appendQualityMessage(const std::string& message)
+void CalibratedTimestampTestInstance::appendQualityMessage (const std::string& message)
 {
 	if (!m_qualityMessage.empty())
 		m_qualityMessage += "; ";
+
 	m_qualityMessage += message;
 }
 
 // Test device domain makes sense and is consistent with vkCmdWriteTimestamp().
-tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest()
+tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest (void)
 {
 	if (m_devDomains.empty())
 		throw tcu::NotSupportedError("No suitable device time domains found");
@@ -1342,7 +1385,7 @@ tcu::TestStatus CalibratedTimestampDevDomainTestInstance::runTest()
 }
 
 // Test host domain makes sense and is consistent with native host values.
-tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest()
+tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest (void)
 {
 	if (m_hostDomains.empty())
 		throw tcu::NotSupportedError("No suitable host time domains found");
@@ -1369,7 +1412,7 @@ tcu::TestStatus CalibratedTimestampHostDomainTestInstance::runTest()
 }
 
 // Verify predictable timestamps and calibration possible.
-tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest()
+tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest (void)
 {
 	if (m_devDomains.empty())
 		throw tcu::NotSupportedError("No suitable device time domains found");
@@ -1427,15 +1470,15 @@ tcu::TestStatus CalibratedTimestampCalibrationTestInstance::runTest()
 class BasicGraphicsTest : public TimestampTest
 {
 public:
-						  BasicGraphicsTest(tcu::TestContext&         testContext,
-											const std::string&        name,
-											const std::string&        description,
-											const TimestampTestParam* param)
-							  : TimestampTest (testContext, name, description, param)
-							  { }
-	virtual               ~BasicGraphicsTest (void) { }
-	virtual void          initPrograms       (SourceCollections&      programCollection) const;
-	virtual TestInstance* createInstance     (Context&                context) const;
+							BasicGraphicsTest	(tcu::TestContext&			testContext,
+												 const std::string&			name,
+												 const std::string&			description,
+												 const TimestampTestParam*	param)
+							: TimestampTest (testContext, name, description, param)
+{ }
+	virtual					~BasicGraphicsTest	(void) { }
+	virtual void			initPrograms		(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
 class BasicGraphicsTestInstance : public TimestampTestInstance
@@ -1445,40 +1488,43 @@ public:
 	{
 		VK_MAX_SHADER_STAGES = 6,
 	};
-				 BasicGraphicsTestInstance  (Context&              context,
-											 const StageFlagVector stages,
-											 const bool            inRenderPass,
-											 const bool            hostQueryReset);
-	virtual      ~BasicGraphicsTestInstance (void);
+					BasicGraphicsTestInstance	(Context&				context,
+												 const StageFlagVector	stages,
+												 const bool				inRenderPass,
+												 const bool				hostQueryReset);
+
+	virtual			~BasicGraphicsTestInstance	(void);
 protected:
-	virtual void configCommandBuffer        (void);
-	virtual void buildVertexBuffer          (void);
-	virtual void buildRenderPass            (VkFormat colorFormat,
-											 VkFormat depthFormat);
-	virtual void buildFrameBuffer           (tcu::UVec2 renderSize,
-											 VkFormat colorFormat,
-											 VkFormat depthFormat);
+	virtual void	configCommandBuffer			(void);
+	virtual void	buildVertexBuffer			(void);
+	virtual void	buildRenderPass				(VkFormat	colorFormat,
+												 VkFormat	depthFormat);
+
+	virtual void	buildFrameBuffer			(tcu::UVec2	renderSize,
+												 VkFormat	colorFormat,
+												 VkFormat	depthFormat);
+
 protected:
-	const tcu::UVec2                    m_renderSize;
-	const VkFormat                      m_colorFormat;
-	const VkFormat                      m_depthFormat;
+	const tcu::UVec2				m_renderSize;
+	const VkFormat					m_colorFormat;
+	const VkFormat					m_depthFormat;
 
-	Move<VkImage>                       m_colorImage;
-	de::MovePtr<Allocation>             m_colorImageAlloc;
-	Move<VkImage>                       m_depthImage;
-	de::MovePtr<Allocation>             m_depthImageAlloc;
-	Move<VkImageView>                   m_colorAttachmentView;
-	Move<VkImageView>                   m_depthAttachmentView;
-	Move<VkRenderPass>                  m_renderPass;
-	Move<VkFramebuffer>                 m_framebuffer;
-	VkImageMemoryBarrier				m_imageLayoutBarriers[2];
+	Move<VkImage>					m_colorImage;
+	de::MovePtr<Allocation>			m_colorImageAlloc;
+	Move<VkImage>					m_depthImage;
+	de::MovePtr<Allocation>			m_depthImageAlloc;
+	Move<VkImageView>				m_colorAttachmentView;
+	Move<VkImageView>				m_depthAttachmentView;
+	Move<VkRenderPass>				m_renderPass;
+	Move<VkFramebuffer>				m_framebuffer;
+	VkImageMemoryBarrier			m_imageLayoutBarriers[2];
 
-	de::MovePtr<Allocation>             m_vertexBufferAlloc;
-	Move<VkBuffer>                      m_vertexBuffer;
-	std::vector<Vertex4RGBA>            m_vertices;
+	de::MovePtr<Allocation>			m_vertexBufferAlloc;
+	Move<VkBuffer>					m_vertexBuffer;
+	std::vector<Vertex4RGBA>		m_vertices;
 
-	SimpleGraphicsPipelineBuilder       m_pipelineBuilder;
-	Move<VkPipeline>                    m_graphicsPipelines;
+	SimpleGraphicsPipelineBuilder	m_pipelineBuilder;
+	Move<VkPipeline>				m_graphicsPipelines;
 };
 
 void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) const
@@ -1504,41 +1550,41 @@ void BasicGraphicsTest::initPrograms (SourceCollections& programCollection) cons
 		"}\n");
 }
 
-TestInstance* BasicGraphicsTest::createInstance(Context& context) const
+TestInstance* BasicGraphicsTest::createInstance (Context& context) const
 {
 	return new BasicGraphicsTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
 }
 
-void BasicGraphicsTestInstance::buildVertexBuffer(void)
+void BasicGraphicsTestInstance::buildVertexBuffer (void)
 {
-	const DeviceInterface&      vk       = m_context.getDeviceInterface();
-	const VkDevice              vkDevice = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create vertex buffer
 	{
-		m_vertexBuffer = createBufferAndBindMemory(1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferAlloc);
+		m_vertexBuffer	= createBufferAndBindMemory(1024u, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &m_vertexBufferAlloc);
+		m_vertices		= createOverlappingQuads();
 
-		m_vertices          = createOverlappingQuads();
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
 		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 }
 
-void BasicGraphicsTestInstance::buildRenderPass(VkFormat colorFormat, VkFormat depthFormat)
+void BasicGraphicsTestInstance::buildRenderPass (VkFormat colorFormat, VkFormat depthFormat)
 {
-	const DeviceInterface&      vk       = m_context.getDeviceInterface();
-	const VkDevice              vkDevice = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	// Create render pass
 	m_renderPass = makeRenderPass(vk, vkDevice, colorFormat, depthFormat);
 }
 
-void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat)
+void BasicGraphicsTestInstance::buildFrameBuffer (tcu::UVec2 renderSize, VkFormat colorFormat, VkFormat depthFormat)
 {
-	const DeviceInterface&      vk                   = m_context.getDeviceInterface();
-	const VkDevice              vkDevice             = m_context.getDevice();
-	const VkComponentMapping    ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+	const DeviceInterface&		vk						= m_context.getDeviceInterface();
+	const VkDevice				vkDevice				= m_context.getDevice();
+	const VkComponentMapping	ComponentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 
 	// Create color image
 	{
@@ -1597,14 +1643,14 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 	{
 		const VkImageViewCreateInfo colorAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,       // VkStructureType          sType;
-			DE_NULL,                                        // const void*              pNext;
-			0u,                                             // VkImageViewCreateFlags   flags;
-			*m_colorImage,                                  // VkImage                  image;
-			VK_IMAGE_VIEW_TYPE_2D,                          // VkImageViewType          viewType;
-			colorFormat,                                    // VkFormat                 format;
-			ComponentMappingRGBA,                           // VkComponentMapping       components;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange  subresourceRange;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType          sType;
+			DE_NULL,										// const void*              pNext;
+			0u,												// VkImageViewCreateFlags   flags;
+			*m_colorImage,									// VkImage                  image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType          viewType;
+			colorFormat,									// VkFormat                 format;
+			ComponentMappingRGBA,							// VkComponentMapping       components;
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange  subresourceRange;
 		};
 
 		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
@@ -1614,14 +1660,14 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 	{
 		const VkImageViewCreateInfo depthAttachmentViewParams =
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,       // VkStructureType          sType;
-			DE_NULL,                                        // const void*              pNext;
-			0u,                                             // VkImageViewCreateFlags   flags;
-			*m_depthImage,                                  // VkImage                  image;
-			VK_IMAGE_VIEW_TYPE_2D,                          // VkImageViewType          viewType;
-			depthFormat,                                    // VkFormat                 format;
-			ComponentMappingRGBA,                           // VkComponentMapping       components;
-			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },  // VkImageSubresourceRange  subresourceRange;
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType          sType;
+			DE_NULL,										// const void*              pNext;
+			0u,												// VkImageViewCreateFlags   flags;
+			*m_depthImage,									// VkImage                  image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType          viewType;
+			depthFormat,									// VkFormat                 format;
+			ComponentMappingRGBA,							// VkComponentMapping       components;
+			{ VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange  subresourceRange;
 		};
 
 		m_depthAttachmentView = createImageView(vk, vkDevice, &depthAttachmentViewParams);
@@ -1637,15 +1683,15 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 
 		const VkFramebufferCreateInfo framebufferParams =
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,          // VkStructureType              sType;
-			DE_NULL,                                            // const void*                  pNext;
-			0u,                                                 // VkFramebufferCreateFlags     flags;
-			*m_renderPass,                                      // VkRenderPass                 renderPass;
-			2u,                                                 // deUint32                     attachmentCount;
-			attachmentBindInfos,                                // const VkImageView*           pAttachments;
-			(deUint32)renderSize.x(),                           // deUint32                     width;
-			(deUint32)renderSize.y(),                           // deUint32                     height;
-			1u,                                                 // deUint32                     layers;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType              sType;
+			DE_NULL,									// const void*                  pNext;
+			0u,											// VkFramebufferCreateFlags     flags;
+			*m_renderPass,								// VkRenderPass                 renderPass;
+			2u,											// deUint32                     attachmentCount;
+			attachmentBindInfos,						// const VkImageView*           pAttachments;
+			(deUint32)renderSize.x(),					// deUint32                     width;
+			(deUint32)renderSize.y(),					// deUint32                     height;
+			1u,											// deUint32                     layers;
 		};
 
 		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
@@ -1653,15 +1699,15 @@ void BasicGraphicsTestInstance::buildFrameBuffer(tcu::UVec2 renderSize, VkFormat
 
 }
 
-BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context&              context,
-													 const StageFlagVector stages,
-													 const bool            inRenderPass,
-													 const bool            hostQueryReset)
-													 : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset)
-													 , m_renderSize  (32, 32)
-													 , m_colorFormat (VK_FORMAT_R8G8B8A8_UNORM)
-													 , m_depthFormat (VK_FORMAT_D16_UNORM)
-													 , m_pipelineBuilder (context)
+BasicGraphicsTestInstance::BasicGraphicsTestInstance (Context&				context,
+													  const StageFlagVector	stages,
+													  const bool			inRenderPass,
+													  const bool			hostQueryReset)
+													  : TimestampTestInstance (context,stages,inRenderPass, hostQueryReset)
+													  , m_renderSize		(32, 32)
+													  , m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
+													  , m_depthFormat		(VK_FORMAT_D16_UNORM)
+													  , m_pipelineBuilder	(context)
 {
 	buildVertexBuffer();
 
@@ -1676,11 +1722,11 @@ BasicGraphicsTestInstance::BasicGraphicsTestInstance(Context&              conte
 
 }
 
-BasicGraphicsTestInstance::~BasicGraphicsTestInstance(void)
+BasicGraphicsTestInstance::~BasicGraphicsTestInstance (void)
 {
 }
 
-void BasicGraphicsTestInstance::configCommandBuffer(void)
+void BasicGraphicsTestInstance::configCommandBuffer (void)
 {
 	const DeviceInterface&		vk							= m_context.getDeviceInterface();
 
@@ -1708,6 +1754,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	if(m_inRenderPass)
 	{
 	  deUint32 timestampEntry = 0u;
+
 	  for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	  {
 		  vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
@@ -1719,6 +1766,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	if(!m_inRenderPass)
 	{
 	  deUint32 timestampEntry = 0u;
+
 	  for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	  {
 		  vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
@@ -1731,36 +1779,40 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 class AdvGraphicsTest : public BasicGraphicsTest
 {
 public:
-						  AdvGraphicsTest  (tcu::TestContext&         testContext,
-											const std::string&        name,
-											const std::string&        description,
-											const TimestampTestParam* param)
+						  AdvGraphicsTest	(tcu::TestContext&			testContext,
+											 const std::string&			name,
+											 const std::string&			description,
+											 const TimestampTestParam*	param)
 							  : BasicGraphicsTest(testContext, name, description, param)
 							  { }
+
 	virtual               ~AdvGraphicsTest (void) { }
-	virtual void          initPrograms     (SourceCollections&        programCollection) const;
-	virtual TestInstance* createInstance   (Context&                  context) const;
+	virtual void          initPrograms     (SourceCollections& programCollection) const;
+	virtual TestInstance* createInstance   (Context& context) const;
 };
 
 class AdvGraphicsTestInstance : public BasicGraphicsTestInstance
 {
 public:
-				 AdvGraphicsTestInstance  (Context&              context,
-										   const StageFlagVector stages,
-										   const bool            inRenderPass,
-										   const bool            hostQueryReset);
-	virtual      ~AdvGraphicsTestInstance (void);
-	virtual void configCommandBuffer      (void);
+				 AdvGraphicsTestInstance	(Context&				context,
+											 const StageFlagVector	stages,
+											 const bool				inRenderPass,
+											 const bool				hostQueryReset);
+
+	virtual      ~AdvGraphicsTestInstance	(void);
+	virtual void configCommandBuffer		(void);
+
 protected:
-	virtual void featureSupportCheck      (void);
+	virtual void featureSupportCheck		(void);
+
 protected:
-	VkPhysicalDeviceFeatures m_features;
-	deUint32                 m_draw_count;
-	de::MovePtr<Allocation>  m_indirectBufferAlloc;
-	Move<VkBuffer>           m_indirectBuffer;
+	VkPhysicalDeviceFeatures	m_features;
+	deUint32					m_draw_count;
+	de::MovePtr<Allocation>		m_indirectBufferAlloc;
+	Move<VkBuffer>				m_indirectBuffer;
 };
 
-void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
+void AdvGraphicsTest::initPrograms (SourceCollections& programCollection) const
 {
 	BasicGraphicsTest::initPrograms(programCollection);
 
@@ -1824,12 +1876,12 @@ void AdvGraphicsTest::initPrograms(SourceCollections& programCollection) const
 		"}\n");
 }
 
-TestInstance* AdvGraphicsTest::createInstance(Context& context) const
+TestInstance* AdvGraphicsTest::createInstance (Context& context) const
 {
 	return new AdvGraphicsTestInstance(context,m_stages,m_inRenderPass,m_hostQueryReset);
 }
 
-void AdvGraphicsTestInstance::featureSupportCheck(void)
+void AdvGraphicsTestInstance::featureSupportCheck (void)
 {
 	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	{
@@ -1855,10 +1907,10 @@ void AdvGraphicsTestInstance::featureSupportCheck(void)
 	}
 }
 
-AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
-												 const StageFlagVector stages,
-												 const bool            inRenderPass,
-												 const bool            hostQueryReset)
+AdvGraphicsTestInstance::AdvGraphicsTestInstance (Context&				context,
+												  const StageFlagVector	stages,
+												  const bool			inRenderPass,
+												  const bool			hostQueryReset)
 	: BasicGraphicsTestInstance(context, stages, inRenderPass, hostQueryReset)
 {
 	m_features = m_context.getDeviceFeatures();
@@ -1881,8 +1933,8 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
 	m_graphicsPipelines = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass);
 
 	// Prepare the indirect draw buffer
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
-	const VkDevice              vkDevice            = m_context.getDevice();
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
 
 	if(m_features.multiDrawIndirect == VK_TRUE)
 	{
@@ -1892,34 +1944,36 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
 	{
 		m_draw_count = 1;
 	}
+
 	m_indirectBuffer = createBufferAndBindMemory(32u, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, &m_indirectBufferAlloc);
 
 	const VkDrawIndirectCommand indirectCmds[] =
 	{
 		{
-			12u,                    // deUint32    vertexCount;
-			1u,                     // deUint32    instanceCount;
-			0u,                     // deUint32    firstVertex;
-			0u,                     // deUint32    firstInstance;
+			12u,	// deUint32    vertexCount;
+			1u,		// deUint32    instanceCount;
+			0u,		// deUint32    firstVertex;
+			0u,		// deUint32    firstInstance;
 		},
 		{
-			12u,                    // deUint32    vertexCount;
-			1u,                     // deUint32    instanceCount;
-			11u,                    // deUint32    firstVertex;
-			0u,                     // deUint32    firstInstance;
+			12u,	// deUint32    vertexCount;
+			1u,		// deUint32    instanceCount;
+			11u,	// deUint32    firstVertex;
+			0u,		// deUint32    firstInstance;
 		},
 	};
+
 	// Load data into indirect draw buffer
 	deMemcpy(m_indirectBufferAlloc->getHostPtr(), indirectCmds, m_draw_count * sizeof(VkDrawIndirectCommand));
 	flushAlloc(vk, vkDevice, *m_indirectBufferAlloc);
 
 }
 
-AdvGraphicsTestInstance::~AdvGraphicsTestInstance(void)
+AdvGraphicsTestInstance::~AdvGraphicsTestInstance (void)
 {
 }
 
-void AdvGraphicsTestInstance::configCommandBuffer(void)
+void AdvGraphicsTestInstance::configCommandBuffer (void)
 {
 	const DeviceInterface&		vk							= m_context.getDeviceInterface();
 
@@ -1972,26 +2026,28 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 class BasicComputeTest : public TimestampTest
 {
 public:
-						  BasicComputeTest  (tcu::TestContext&         testContext,
-											 const std::string&        name,
-											 const std::string&        description,
-											 const TimestampTestParam* param)
+							BasicComputeTest	(tcu::TestContext&			testContext,
+												 const std::string&			name,
+												 const std::string&			description,
+												 const TimestampTestParam*	param)
 							  : TimestampTest(testContext, name, description, param)
 							  { }
-	virtual               ~BasicComputeTest (void) { }
-	virtual void          initPrograms      (SourceCollections&        programCollection) const;
-	virtual TestInstance* createInstance    (Context&                  context) const;
+
+	virtual					~BasicComputeTest	(void) { }
+	virtual void			initPrograms		(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance		(Context& context) const;
 };
 
 class BasicComputeTestInstance : public TimestampTestInstance
 {
 public:
-				 BasicComputeTestInstance  (Context&              context,
-											const StageFlagVector stages,
-											const bool            inRenderPass,
-											const bool            hostQueryReset);
-	virtual      ~BasicComputeTestInstance (void);
-	virtual void configCommandBuffer       (void);
+					BasicComputeTestInstance	(Context&				context,
+												 const StageFlagVector	stages,
+												 const bool				inRenderPass,
+												 const bool				hostQueryReset);
+
+	virtual			~BasicComputeTestInstance	(void);
+	virtual void	configCommandBuffer			(void);
 protected:
 	de::MovePtr<Allocation>     m_inputBufAlloc;
 	Move<VkBuffer>              m_inputBuf;
@@ -2007,7 +2063,7 @@ protected:
 	Move<VkPipeline>            m_computePipelines;
 };
 
-void BasicComputeTest::initPrograms(SourceCollections& programCollection) const
+void BasicComputeTest::initPrograms (SourceCollections& programCollection) const
 {
 	TimestampTest::initPrograms(programCollection);
 
@@ -2030,25 +2086,28 @@ void BasicComputeTest::initPrograms(SourceCollections& programCollection) const
 		"}");
 }
 
-TestInstance* BasicComputeTest::createInstance(Context& context) const
+TestInstance* BasicComputeTest::createInstance (Context& context) const
 {
 	return new BasicComputeTestInstance(context,m_stages,m_inRenderPass, m_hostQueryReset);
 }
 
-BasicComputeTestInstance::BasicComputeTestInstance(Context&              context,
-												   const StageFlagVector stages,
-												   const bool            inRenderPass,
-												   const bool            hostQueryReset)
+BasicComputeTestInstance::BasicComputeTestInstance (Context&				context,
+												    const StageFlagVector	stages,
+												    const bool				inRenderPass,
+												    const bool				hostQueryReset)
 	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset)
 {
-	const DeviceInterface&      vk                  = context.getDeviceInterface();
-	const VkDevice              vkDevice            = context.getDevice();
+	const DeviceInterface&	vk			= context.getDeviceInterface();
+	const VkDevice			vkDevice	= context.getDevice();
 
 	// Create buffer object, allocate storage, and generate input data
-	const VkDeviceSize          size                = sizeof(tcu::Vec4) * 128u * 128u;
+	const VkDeviceSize		size		= sizeof(tcu::Vec4) * 128u * 128u;
+
 	m_inputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_inputBufAlloc);
+
 	// Load vertices into buffer
-	tcu::Vec4* pVec = reinterpret_cast<tcu::Vec4*>(m_inputBufAlloc->getHostPtr());
+	tcu::Vec4*				pVec		= reinterpret_cast<tcu::Vec4*>(m_inputBufAlloc->getHostPtr());
+
 	for (deUint32 ndx = 0u; ndx < (128u * 128u); ndx++)
 	{
 		for (deUint32 component = 0u; component < 4u; component++)
@@ -2056,11 +2115,13 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 			pVec[ndx][component]= (float)(ndx * (component + 1u));
 		}
 	}
+
 	flushAlloc(vk, vkDevice, *m_inputBufAlloc);
 
 	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_outputBufAlloc);
 
-	std::vector<VkDescriptorBufferInfo>        descriptorInfos;
+	std::vector<VkDescriptorBufferInfo> descriptorInfos;
+
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_inputBuf, 0u, size));
 	descriptorInfos.push_back(makeDescriptorBufferInfo(*m_outputBuf, 0u, size));
 
@@ -2080,11 +2141,11 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	// Create descriptor set
 	const VkDescriptorSetAllocateInfo descriptorSetAllocInfo =
 	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,     // VkStructureType                 sType;
-		DE_NULL,                                            // const void*                     pNext;
-		*m_descriptorPool,                                  // VkDescriptorPool                descriptorPool;
-		1u,                                                 // deUint32                        setLayoutCount;
-		&m_descriptorSetLayout.get(),                       // const VkDescriptorSetLayout*    pSetLayouts;
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType                 sType;
+		DE_NULL,										// const void*                     pNext;
+		*m_descriptorPool,								// VkDescriptorPool                descriptorPool;
+		1u,												// deUint32                        setLayoutCount;
+		&m_descriptorSetLayout.get(),					// const VkDescriptorSetLayout*    pSetLayouts;
 	};
 	m_descriptorSet   = allocateDescriptorSet(vk, vkDevice, &descriptorSetAllocInfo);
 
@@ -2098,13 +2159,13 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	// Create compute pipeline layout
 	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,  // VkStructureType                 sType;
-		DE_NULL,                                        // const void*                     pNext;
-		0u,                                             // VkPipelineLayoutCreateFlags     flags;
-		1u,                                             // deUint32                        setLayoutCount;
-		&m_descriptorSetLayout.get(),                   // const VkDescriptorSetLayout*    pSetLayouts;
-		0u,                                             // deUint32                        pushConstantRangeCount;
-		DE_NULL,                                        // const VkPushConstantRange*      pPushConstantRanges;
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                 sType;
+		DE_NULL,										// const void*                     pNext;
+		0u,												// VkPipelineLayoutCreateFlags     flags;
+		1u,												// deUint32                        setLayoutCount;
+		&m_descriptorSetLayout.get(),					// const VkDescriptorSetLayout*    pSetLayouts;
+		0u,												// deUint32                        pushConstantRangeCount;
+		DE_NULL,										// const VkPushConstantRange*      pPushConstantRanges;
 	};
 
 	m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo);
@@ -2112,11 +2173,11 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	// Create compute shader
 	VkShaderModuleCreateInfo shaderModuleCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,                        // VkStructureType             sType;
-		DE_NULL,                                                            // const void*                 pNext;
-		0u,                                                                 // VkShaderModuleCreateFlags   flags;
-		m_context.getBinaryCollection().get("basic_compute").getSize(),     // deUintptr                   codeSize;
-		(deUint32*)m_context.getBinaryCollection().get("basic_compute").getBinary(),   // const deUint32*             pCode;
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,									// VkStructureType             sType;
+		DE_NULL,																		// const void*                 pNext;
+		0u,																				// VkShaderModuleCreateFlags   flags;
+		m_context.getBinaryCollection().get("basic_compute").getSize(),					// deUintptr                   codeSize;
+		(deUint32*)m_context.getBinaryCollection().get("basic_compute").getBinary(),	// const deUint32*             pCode;
 
 	};
 
@@ -2125,35 +2186,34 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 	// Create compute pipeline
 	const VkPipelineShaderStageCreateInfo stageCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType                     sType;
-		DE_NULL,                                             // const void*                         pNext;
-		0u,                                                  // VkPipelineShaderStageCreateFlags    flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits               stage;
-		*m_computeShaderModule,                              // VkShaderModule                      module;
-		"main",                                              // const char*                         pName;
-		DE_NULL,                                             // const VkSpecializationInfo*         pSpecializationInfo;
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+		DE_NULL,												// const void*                         pNext;
+		0u,														// VkPipelineShaderStageCreateFlags    flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits               stage;
+		*m_computeShaderModule,									// VkShaderModule                      module;
+		"main",													// const char*                         pName;
+		DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
 	};
 
 	const VkComputePipelineCreateInfo pipelineCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,      // VkStructureType                 sType;
-		DE_NULL,                                             // const void*                     pNext;
-		0u,                                                  // VkPipelineCreateFlags           flags;
-		stageCreateInfo,                                     // VkPipelineShaderStageCreateInfo stage;
-		*m_pipelineLayout,                                   // VkPipelineLayout                layout;
-		(VkPipeline)0,                                       // VkPipeline                      basePipelineHandle;
-		0u,                                                  // deInt32                         basePipelineIndex;
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	// VkStructureType                 sType;
+		DE_NULL,										// const void*                     pNext;
+		0u,												// VkPipelineCreateFlags           flags;
+		stageCreateInfo,								// VkPipelineShaderStageCreateInfo stage;
+		*m_pipelineLayout,								// VkPipelineLayout                layout;
+		(VkPipeline)0,									// VkPipeline                      basePipelineHandle;
+		0u,												// deInt32                         basePipelineIndex;
 	};
 
 	m_computePipelines = createComputePipeline(vk, vkDevice, (VkPipelineCache)0u, &pipelineCreateInfo);
-
 }
 
-BasicComputeTestInstance::~BasicComputeTestInstance(void)
+BasicComputeTestInstance::~BasicComputeTestInstance (void)
 {
 }
 
-void BasicComputeTestInstance::configCommandBuffer(void)
+void BasicComputeTestInstance::configCommandBuffer (void)
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
@@ -2178,13 +2238,15 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 class TransferTest : public TimestampTest
 {
 public:
-						  TransferTest   (tcu::TestContext&          testContext,
-										  const std::string&         name,
-										  const std::string&         description,
-										  const TimestampTestParam*  param);
-	virtual               ~TransferTest  (void) { }
-	virtual void          initPrograms   (SourceCollections&         programCollection) const;
-	virtual TestInstance* createInstance (Context&                   context) const;
+							TransferTest	(tcu::TestContext&			testContext,
+											 const std::string&			name,
+											 const std::string&			description,
+											 const TimestampTestParam*	param);
+
+	virtual					~TransferTest	(void) { }
+	virtual void			initPrograms	(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance	(Context& context) const;
+
 protected:
 	TransferMethod        m_method;
 };
@@ -2197,6 +2259,7 @@ public:
 											 const bool					inRenderPass,
 											 const bool					hostQueryReset,
 											 const TransferMethod		method);
+
 	virtual         ~TransferTestInstance	(void);
 	virtual void    configCommandBuffer		(void);
 	virtual void	initialImageTransition	(VkCommandBuffer			cmdBuffer,
@@ -2226,31 +2289,31 @@ protected:
 	de::MovePtr<Allocation>	m_msImageAlloc;
 };
 
-TransferTest::TransferTest(tcu::TestContext&                 testContext,
-						   const std::string&                name,
-						   const std::string&                description,
-						   const TimestampTestParam*         param)
+TransferTest::TransferTest (tcu::TestContext&			testContext,
+						    const std::string&			name,
+						    const std::string&			description,
+						    const TimestampTestParam*	param)
 	: TimestampTest(testContext, name, description, param)
 {
 	const TransferTimestampTestParam* transferParam = dynamic_cast<const TransferTimestampTestParam*>(param);
 	m_method = transferParam->getMethod();
 }
 
-void TransferTest::initPrograms(SourceCollections& programCollection) const
+void TransferTest::initPrograms (SourceCollections& programCollection) const
 {
 	TimestampTest::initPrograms(programCollection);
 }
 
-TestInstance* TransferTest::createInstance(Context& context) const
+TestInstance* TransferTest::createInstance (Context& context) const
 {
   return new TransferTestInstance(context, m_stages, m_inRenderPass, m_hostQueryReset, m_method);
 }
 
-TransferTestInstance::TransferTestInstance(Context&              context,
-										   const StageFlagVector stages,
-										   const bool            inRenderPass,
-										   const bool            hostQueryReset,
-										   const TransferMethod  method)
+TransferTestInstance::TransferTestInstance (Context&				context,
+										    const StageFlagVector	stages,
+										    const bool				inRenderPass,
+										    const bool				hostQueryReset,
+										    const TransferMethod	method)
 	: TimestampTestInstance(context, stages, inRenderPass, hostQueryReset)
 	, m_method(method)
 	, m_bufSize(256u)
@@ -2259,8 +2322,8 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 	, m_imageHeight(4u)
 	, m_imageSize(256u)
 {
-	const DeviceInterface&      vk                  = context.getDeviceInterface();
-	const VkDevice              vkDevice            = context.getDevice();
+	const DeviceInterface&	vk			= context.getDeviceInterface();
+	const VkDevice			vkDevice	= context.getDevice();
 
 	// Create src buffer
 	m_srcBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &m_srcBufferAlloc);
@@ -2271,32 +2334,32 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 	flushAlloc(vk, vkDevice, *m_srcBufferAlloc);
 
 	// Create dst buffer
-	m_dstBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, &m_dstBufferAlloc);
+	m_dstBuffer	= createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, &m_dstBufferAlloc);
 
 	// Create src/dst/depth image
-	m_srcImage   = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-											  VK_SAMPLE_COUNT_1_BIT,
-											  &m_srcImageAlloc);
-	m_dstImage   = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-											  VK_SAMPLE_COUNT_1_BIT,
-											  &m_dstImageAlloc);
-	m_depthImage = createImage2DAndBindMemory(VK_FORMAT_D16_UNORM, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-											  VK_SAMPLE_COUNT_1_BIT,
-											  &m_depthImageAlloc);
-	m_msImage    = createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
-											  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-											  VK_SAMPLE_COUNT_4_BIT,
-											  &m_msImageAlloc);
+	m_srcImage		= createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
+												 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+												 VK_SAMPLE_COUNT_1_BIT,
+												 &m_srcImageAlloc);
+	m_dstImage		= createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
+												 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+												 VK_SAMPLE_COUNT_1_BIT,
+												 &m_dstImageAlloc);
+	m_depthImage	= createImage2DAndBindMemory(VK_FORMAT_D16_UNORM, m_imageWidth, m_imageHeight,
+												 VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+												 VK_SAMPLE_COUNT_1_BIT,
+												 &m_depthImageAlloc);
+	m_msImage		= createImage2DAndBindMemory(m_imageFormat, m_imageWidth, m_imageHeight,
+												 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+												 VK_SAMPLE_COUNT_4_BIT,
+												 &m_msImageAlloc);
 }
 
-TransferTestInstance::~TransferTestInstance(void)
+TransferTestInstance::~TransferTestInstance (void)
 {
 }
 
-void TransferTestInstance::configCommandBuffer(void)
+void TransferTestInstance::configCommandBuffer (void)
 {
 	const DeviceInterface& vk = m_context.getDeviceInterface();
 
@@ -2315,19 +2378,19 @@ void TransferTestInstance::configCommandBuffer(void)
 	};
 	const struct VkImageSubresourceRange subRangeColor =
 	{
-		VK_IMAGE_ASPECT_COLOR_BIT,  // VkImageAspectFlags  aspectMask;
-		0u,                         // deUint32            baseMipLevel;
-		1u,                         // deUint32            mipLevels;
-		0u,                         // deUint32            baseArrayLayer;
-		1u,                         // deUint32            arraySize;
+		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags  aspectMask;
+		0u,							// deUint32            baseMipLevel;
+		1u,							// deUint32            mipLevels;
+		0u,							// deUint32            baseArrayLayer;
+		1u,							// deUint32            arraySize;
 	};
 	const struct VkImageSubresourceRange subRangeDepth =
 	{
-		VK_IMAGE_ASPECT_DEPTH_BIT,  // VkImageAspectFlags  aspectMask;
-		0u,                  // deUint32            baseMipLevel;
-		1u,                  // deUint32            mipLevels;
-		0u,                  // deUint32            baseArrayLayer;
-		1u,                  // deUint32            arraySize;
+		VK_IMAGE_ASPECT_DEPTH_BIT,	// VkImageAspectFlags  aspectMask;
+		0u,							// deUint32            baseMipLevel;
+		1u,							// deUint32            mipLevels;
+		0u,							// deUint32            baseArrayLayer;
+		1u,							// deUint32            arraySize;
 	};
 
 	initialImageTransition(*m_cmdBuffer, *m_srcImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
@@ -2342,25 +2405,27 @@ void TransferTestInstance::configCommandBuffer(void)
 	// Copy Operations
 	const VkImageSubresourceLayers imgSubResCopy =
 	{
-		VK_IMAGE_ASPECT_COLOR_BIT,              // VkImageAspectFlags  aspectMask;
-		0u,                                     // deUint32            mipLevel;
-		0u,                                     // deUint32            baseArrayLayer;
-		1u,                                     // deUint32            layerCount;
+		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags  aspectMask;
+		0u,							// deUint32            mipLevel;
+		0u,							// deUint32            baseArrayLayer;
+		1u,							// deUint32            layerCount;
 	};
 
 	const VkOffset3D nullOffset  = {0u, 0u, 0u};
 	const VkExtent3D imageExtent = {(deUint32)m_imageWidth, (deUint32)m_imageHeight, 1u};
 	const VkOffset3D imageOffset = {(int)m_imageWidth, (int)m_imageHeight, 1};
+
 	switch(m_method)
 	{
 		case TRANSFER_METHOD_COPY_BUFFER:
 			{
 				const VkBufferCopy  copyBufRegion =
 				{
-					0u,           // VkDeviceSize    srcOffset;
-					0u,           // VkDeviceSize    destOffset;
-					m_bufSize,    // VkDeviceSize    copySize;
+					0u,			// VkDeviceSize    srcOffset;
+					0u,			// VkDeviceSize    destOffset;
+					m_bufSize,	// VkDeviceSize    copySize;
 				};
+
 				vk.cmdCopyBuffer(*m_cmdBuffer, *m_srcBuffer, *m_dstBuffer, 1u, &copyBufRegion);
 				break;
 			}
@@ -2368,13 +2433,14 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				const VkImageCopy copyImageRegion =
 				{
-					imgSubResCopy,                          // VkImageSubresourceCopy  srcSubresource;
-					nullOffset,                             // VkOffset3D              srcOffset;
-					imgSubResCopy,                          // VkImageSubresourceCopy  destSubresource;
-					nullOffset,                             // VkOffset3D              destOffset;
-					imageExtent,                            // VkExtent3D              extent;
+					imgSubResCopy,	// VkImageSubresourceCopy  srcSubresource;
+					nullOffset,		// VkOffset3D              srcOffset;
+					imgSubResCopy,	// VkImageSubresourceCopy  destSubresource;
+					nullOffset,		// VkOffset3D              destOffset;
+					imageExtent,	// VkExtent3D              extent;
 
 				};
+
 				vk.cmdCopyImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &copyImageRegion);
 				break;
 			}
@@ -2382,13 +2448,14 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				const VkBufferImageCopy bufImageCopy =
 				{
-					0u,                                     // VkDeviceSize            bufferOffset;
-					(deUint32)m_imageWidth,                 // deUint32                bufferRowLength;
-					(deUint32)m_imageHeight,                // deUint32                bufferImageHeight;
-					imgSubResCopy,                          // VkImageSubresourceCopy  imageSubresource;
-					nullOffset,                             // VkOffset3D              imageOffset;
-					imageExtent,                            // VkExtent3D              imageExtent;
+					0u,							// VkDeviceSize            bufferOffset;
+					(deUint32)m_imageWidth,		// deUint32                bufferRowLength;
+					(deUint32)m_imageHeight,	// deUint32                bufferImageHeight;
+					imgSubResCopy,				// VkImageSubresourceCopy  imageSubresource;
+					nullOffset,					// VkOffset3D              imageOffset;
+					imageExtent,				// VkExtent3D              imageExtent;
 				};
+
 				vk.cmdCopyBufferToImage(*m_cmdBuffer, *m_srcBuffer, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &bufImageCopy);
 				break;
 			}
@@ -2396,13 +2463,14 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				const VkBufferImageCopy imgBufferCopy =
 				{
-					0u,                                     // VkDeviceSize            bufferOffset;
-					(deUint32)m_imageWidth,                 // deUint32                bufferRowLength;
-					(deUint32)m_imageHeight,                // deUint32                bufferImageHeight;
-					imgSubResCopy,                          // VkImageSubresourceCopy  imageSubresource;
-					nullOffset,                             // VkOffset3D              imageOffset;
-					imageExtent,                            // VkExtent3D              imageExtent;
+					0u,							// VkDeviceSize            bufferOffset;
+					(deUint32)m_imageWidth,		// deUint32                bufferRowLength;
+					(deUint32)m_imageHeight,	// deUint32                bufferImageHeight;
+					imgSubResCopy,				// VkImageSubresourceCopy  imageSubresource;
+					nullOffset,					// VkOffset3D              imageOffset;
+					imageExtent,				// VkExtent3D              imageExtent;
 				};
+
 				vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstBuffer, 1u, &imgBufferCopy);
 				break;
 			}
@@ -2410,17 +2478,18 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				const VkImageBlit imageBlt =
 				{
-					imgSubResCopy,                          // VkImageSubresourceCopy  srcSubresource;
+					imgSubResCopy,	// VkImageSubresourceCopy  srcSubresource;
 					{
 						nullOffset,
 						imageOffset,
 					},
-					imgSubResCopy,                          // VkImageSubresourceCopy  destSubresource;
+					imgSubResCopy,	// VkImageSubresourceCopy  destSubresource;
 					{
 						nullOffset,
 						imageOffset,
 					}
 				};
+
 				vk.cmdBlitImage(*m_cmdBuffer, *m_srcImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &imageBlt, VK_FILTER_NEAREST);
 				break;
 			}
@@ -2432,11 +2501,13 @@ void TransferTestInstance::configCommandBuffer(void)
 		case TRANSFER_METHOD_CLEAR_DEPTH_STENCIL_IMAGE:
 			{
 				initialImageTransition(*m_cmdBuffer, *m_depthImage, subRangeDepth, VK_IMAGE_LAYOUT_GENERAL);
+
 				const VkClearDepthStencilValue clearDSValue =
 				{
-					1.0f,                                   // float       depth;
-					0u,                                     // deUint32    stencil;
+					1.0f,	// float       depth;
+					0u,		// deUint32    stencil;
 				};
+
 				vk.cmdClearDepthStencilImage(*m_cmdBuffer, *m_depthImage, VK_IMAGE_LAYOUT_GENERAL, &clearDSValue, 1u, &subRangeDepth);
 				break;
 			}
@@ -2451,6 +2522,7 @@ void TransferTestInstance::configCommandBuffer(void)
 				{
 					0xdeadbeef, 0xabcdef00, 0x12345678
 				};
+
 				vk.cmdUpdateBuffer(*m_cmdBuffer, *m_dstBuffer, 0x10, sizeof(data), data);
 				break;
 			}
@@ -2471,6 +2543,7 @@ void TransferTestInstance::configCommandBuffer(void)
 					0ull,											// VkDeviceSize		offset;
 					VK_WHOLE_SIZE									// VkDeviceSize		size;
 				};
+
 				vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
 									  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 
@@ -2487,6 +2560,7 @@ void TransferTestInstance::configCommandBuffer(void)
 					nullOffset,                                 // VkOffset3D                destOffset;
 					imageExtent,                                // VkExtent3D                extent;
 				};
+
 				initialImageTransition(*m_cmdBuffer, *m_msImage, subRangeColor, VK_IMAGE_LAYOUT_GENERAL);
 				vk.cmdClearColorImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, &srcClearValue, 1u, &subRangeColor);
 				vk.cmdResolveImage(*m_cmdBuffer, *m_msImage, VK_IMAGE_LAYOUT_GENERAL, *m_dstImage, VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolve);
@@ -2498,6 +2572,7 @@ void TransferTestInstance::configCommandBuffer(void)
 	};
 
 	deUint32 timestampEntry = 0u;
+
 	for (StageFlagVector::const_iterator it = m_stages.begin(); it != m_stages.end(); it++)
 	{
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
@@ -2509,18 +2584,19 @@ void TransferTestInstance::configCommandBuffer(void)
 void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, VkImage image, VkImageSubresourceRange subRange, VkImageLayout layout)
 {
 	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+
 	const VkImageMemoryBarrier	imageMemBarrier	=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType          sType;
-		DE_NULL,                                // const void*              pNext;
-		0u,                                     // VkAccessFlags            srcAccessMask;
-		0u,                                     // VkAccessFlags            dstAccessMask;
-		VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout            oldLayout;
-		layout,                                 // VkImageLayout            newLayout;
-		VK_QUEUE_FAMILY_IGNORED,                // uint32_t                 srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,                // uint32_t                 dstQueueFamilyIndex;
-		image,                                  // VkImage                  image;
-		subRange                                // VkImageSubresourceRange  subresourceRange;
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType          sType;
+		DE_NULL,								// const void*              pNext;
+		0u,										// VkAccessFlags            srcAccessMask;
+		0u,										// VkAccessFlags            dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout            oldLayout;
+		layout,									// VkImageLayout            newLayout;
+		VK_QUEUE_FAMILY_IGNORED,				// uint32_t                 srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,				// uint32_t                 dstQueueFamilyIndex;
+		image,									// VkImage                  image;
+		subRange								// VkImageSubresourceRange  subresourceRange;
 	};
 
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
@@ -2560,17 +2636,17 @@ protected:
 	de::MovePtr<Allocation>	m_resultBufferMemory;
 };
 
-void ResetTimestampQueryBeforeCopyTest::initPrograms(SourceCollections& programCollection) const
+void ResetTimestampQueryBeforeCopyTest::initPrograms (SourceCollections& programCollection) const
 {
 	vkt::TestCase::initPrograms(programCollection);
 }
 
-TestInstance* ResetTimestampQueryBeforeCopyTest::createInstance(Context& context) const
+TestInstance* ResetTimestampQueryBeforeCopyTest::createInstance (Context& context) const
 {
 	return new ResetTimestampQueryBeforeCopyTestInstance(context);
 }
 
-ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInstance(Context& context)
+ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInstance (Context& context)
 	: vkt::TestInstance(context)
 {
 	const DeviceInterface&	vk					= context.getDeviceInterface();
@@ -2635,11 +2711,11 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-tcu::TestStatus ResetTimestampQueryBeforeCopyTestInstance::iterate(void)
+tcu::TestStatus ResetTimestampQueryBeforeCopyTestInstance::iterate (void)
 {
-	const DeviceInterface&      vk          = m_context.getDeviceInterface();
-	const VkDevice              vkDevice    = m_context.getDevice();
-	const VkQueue               queue       = m_context.getUniversalQueue();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				vkDevice	= m_context.getDevice();
+	const VkQueue				queue		= m_context.getUniversalQueue();
 	TimestampWithAvailability	ta;
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
@@ -2670,7 +2746,7 @@ public:
 							TwoCmdBuffersTestInstance	(Context&				context,
 														 const StageFlagVector	stages,
 														 const bool				inRenderPass,
-														 const bool             hostQueryReset,
+														 const bool				hostQueryReset,
 														 VkCommandBufferLevel	cmdBufferLevel);
 	virtual					~TwoCmdBuffersTestInstance	(void);
 	virtual tcu::TestStatus	iterate						(void);
@@ -2692,7 +2768,7 @@ TestInstance* TwoCmdBuffersTest::createInstance (Context& context) const
 TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance (Context&					context,
 													  const StageFlagVector		stages,
 													  const bool				inRenderPass,
-													  const bool                hostQueryReset,
+													  const bool				hostQueryReset,
 													  VkCommandBufferLevel		cmdBufferLevel)
 : TimestampTestInstance (context, stages, inRenderPass, hostQueryReset), m_cmdBufferLevel(cmdBufferLevel)
 {

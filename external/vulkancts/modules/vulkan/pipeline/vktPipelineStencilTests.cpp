@@ -119,6 +119,7 @@ public:
 																	 const bool					colorAttachmentEnable);
 	virtual									~StencilTest			(void);
 	virtual void							initPrograms			(SourceCollections& sourceCollections) const;
+	virtual void							checkSupport			(Context& context) const;
 	virtual TestInstance*					createInstance			(Context& context) const;
 
 private:
@@ -277,6 +278,12 @@ StencilTest::~StencilTest (void)
 {
 }
 
+void StencilTest::checkSupport (Context& context) const
+{
+	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_stencilFormat))
+		throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_stencilFormat));
+}
+
 TestInstance* StencilTest::createInstance (Context& context) const
 {
 	return new StencilTestInstance(context, m_stencilFormat, m_stencilOpStateFront, m_stencilOpStateBack, m_colorAttachmentEnable);
@@ -379,10 +386,6 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 
 	// Create stencil image
 	{
-		// Check format support
-		if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_stencilFormat))
-			throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_stencilFormat));
-
 		const VkImageUsageFlags	usageFlags			= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
 		const VkImageCreateInfo	stencilImageParams	=

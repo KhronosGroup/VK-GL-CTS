@@ -77,7 +77,7 @@ struct CaseDef
 //          Write back results as a checksum image and verify them on the host.
 //  Each checksum image pixel should contain an integer equal to the number of samples.
 
-void initPrograms (SourceCollections& programCollection, const  CaseDef caseDef)
+void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 {
 	const int			dimension			= (caseDef.singleLayerBind ? caseDef.texture.layerDimension() : caseDef.texture.dimension());
 	const std::string	texelCoordStr		= (dimension == 1 ? "gx" : dimension == 2 ? "ivec2(gx, gy)" : dimension == 3 ? "ivec3(gx, gy, gz)" : "");
@@ -180,17 +180,13 @@ void initPrograms (SourceCollections& programCollection, const  CaseDef caseDef)
 	}
 }
 
-void checkRequirements (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const CaseDef& caseDef)
+void checkSupport (Context& context, const CaseDef caseDef)
 {
-	VkPhysicalDeviceFeatures	features;
-	vki.getPhysicalDeviceFeatures(physDevice, &features);
-
-	if (!features.shaderStorageImageMultisample)
-		TCU_THROW(NotSupportedError, "Multisampled storage images are not supported");
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_MULTISAMPLE);
 
 	VkImageFormatProperties		imageFormatProperties;
-	const VkResult				imageFormatResult		= vki.getPhysicalDeviceImageFormatProperties(
-		physDevice, caseDef.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT, (VkImageCreateFlags)0, &imageFormatProperties);
+	const VkResult				imageFormatResult		= context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+		context.getPhysicalDevice(), caseDef.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT, (VkImageCreateFlags)0, &imageFormatProperties);
 
 	if (imageFormatResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		TCU_THROW(NotSupportedError, "Format is not supported");
@@ -250,8 +246,6 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	const VkQueue				queue				= context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					allocator			= context.getDefaultAllocator();
-
-	checkRequirements(vki, physDevice, caseDef);
 
 	// Images
 
@@ -531,7 +525,7 @@ tcu::TestCaseGroup* createImageMultisampleLoadStoreTests (tcu::TestContext& test
 					singleLayerBind,
 				};
 
-				addFunctionCaseWithPrograms(formatGroup.get(), samplesCaseName, "", initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(formatGroup.get(), samplesCaseName, "", checkSupport, initPrograms, test, caseDef);
 			}
 			imageViewGroup->addChild(formatGroup.release());
 		}

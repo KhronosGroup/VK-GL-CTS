@@ -111,6 +111,7 @@ public:
 																 const VkPipelineColorBlendAttachmentState	blendStates[QUAD_COUNT]);
 	virtual								~BlendTest				(void);
 	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
+	virtual void						checkSupport			(Context& context) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 
 private:
@@ -265,6 +266,12 @@ TestInstance* BlendTest::createInstance(Context& context) const
 	return new BlendTestInstance(context, m_colorFormat, m_blendStates);
 }
 
+void BlendTest::checkSupport (Context& context) const
+{
+	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
+		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
+}
+
 void BlendTest::initPrograms (SourceCollections& sourceCollections) const
 {
 	std::ostringstream fragmentSource;
@@ -311,9 +318,6 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 
 	// Create color image
 	{
-		if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
-			throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
-
 		const VkImageCreateInfo	colorImageParams =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;

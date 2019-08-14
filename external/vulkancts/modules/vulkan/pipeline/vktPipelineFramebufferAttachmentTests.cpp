@@ -777,14 +777,6 @@ vector<tcu::Vec4> genPointVertices (void)
 // 4-sample multi-sampling
 tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 {
-	const VkPhysicalDeviceFeatures		features				= context.getDeviceFeatures();
-	if (!features.fragmentStoresAndAtomics)
-		throw tcu::NotSupportedError("fragmentStoresAndAtomics feature not supported");
-	if (!features.geometryShader && !features.tessellationShader) // Shader uses gl_PrimitiveID
-		throw tcu::NotSupportedError("geometryShader or tessellationShader feature not supported");
-	if (multisample && !features.sampleRateShading) // MS shader uses gl_SampleID
-		throw tcu::NotSupportedError("sampleRateShading feature not supported");
-
 	const DeviceInterface&				vk						= context.getDeviceInterface();
 	const VkDevice						device					= context.getDevice();
 	const VkQueue						queue					= context.getUniversalQueue();
@@ -1478,6 +1470,19 @@ std::string getTestCaseString (const CaseDef& caseDef)
 	return str.str();
 }
 
+void checkSupport (Context& context, const bool multisample)
+{
+	const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+
+	if (!features.geometryShader && !features.tessellationShader) // Shader uses gl_PrimitiveID
+		throw tcu::NotSupportedError("geometryShader or tessellationShader feature not supported");
+
+	if (multisample)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING); // MS shader uses gl_SampleID
+}
+
 void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group)
 {
 
@@ -1532,8 +1537,8 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group)
 
 	// Add tests for the case where there are no color attachments but the
 	// fragment shader writes to an image via imageStore().
-	addFunctionCaseWithPrograms(group, "no_attachments", "", initImagePrograms, testNoAtt, false);
-	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", initImagePrograms, testNoAtt, true);
+	addFunctionCaseWithPrograms(group, "no_attachments", "", checkSupport, initImagePrograms, testNoAtt, false);
+	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", checkSupport, initImagePrograms, testNoAtt, true);
 
 	// Test render pass with attachment set as unused.
 	addFunctionCase(group, "unused_attachment", "", testUnusedAtt);

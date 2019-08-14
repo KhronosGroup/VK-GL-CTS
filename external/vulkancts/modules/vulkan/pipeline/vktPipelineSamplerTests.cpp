@@ -52,34 +52,39 @@ namespace
 class SamplerTest : public vkt::TestCase
 {
 public:
-										SamplerTest				(tcu::TestContext&	testContext,
-																 const char*		name,
-																 const char*		description,
-																 VkImageViewType	imageViewType,
-																 VkFormat			imageFormat,
-																 int				imageSize,
-																 float				samplerLod,
-																 bool				separateStencilUsage);
-	virtual								~SamplerTest			(void) {}
+										SamplerTest						(tcu::TestContext&	testContext,
+																		 const char*		name,
+																		 const char*		description,
+																		 VkImageViewType	imageViewType,
+																		 VkFormat			imageFormat,
+																		 int				imageSize,
+																		 float				samplerLod,
+																		 bool				separateStencilUsage);
+	virtual								~SamplerTest					(void) {}
 
-	tcu::Vec4							swizzle					(tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const;
-	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
-	virtual TestInstance*				createInstance			(Context& context) const;
-	virtual tcu::UVec2					getRenderSize			(VkImageViewType viewType) const;
-	virtual std::vector<Vertex4Tex4>	createVertices			(void) const;
-	virtual VkSamplerCreateInfo			getSamplerCreateInfo	(void) const;
-	virtual VkComponentMapping			getComponentMapping		(void) const;
+	virtual ImageSamplingInstanceParams	getImageSamplingInstanceParams	(VkImageViewType	imageViewType,
+																		 VkFormat			imageFormat,
+																		 int				imageSize,
+																		 float				samplerLod,
+																		 bool				separateStencilUsage) const;
 
-	static std::string					getGlslSamplerType		(const tcu::TextureFormat& format, VkImageViewType type);
-	static tcu::IVec3					getImageSize			(VkImageViewType viewType, int size);
-	static int							getArraySize			(VkImageViewType viewType);
+	tcu::Vec4							swizzle							(tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const;
+	virtual void						initPrograms					(SourceCollections& sourceCollections) const;
+	virtual void						checkSupport					(Context& context) const;
+	virtual TestInstance*				createInstance					(Context& context) const;
+	virtual tcu::UVec2					getRenderSize					(VkImageViewType viewType) const;
+	virtual std::vector<Vertex4Tex4>	createVertices					(void) const;
+	virtual VkSamplerCreateInfo			getSamplerCreateInfo			(void) const;
+	virtual VkComponentMapping			getComponentMapping				(void) const;
+
+	static std::string					getGlslSamplerType				(const tcu::TextureFormat& format, VkImageViewType type);
+	static tcu::IVec3					getImageSize					(VkImageViewType viewType, int size);
+	static int							getArraySize					(VkImageViewType viewType);
 
 protected:
 	VkImageViewType						m_imageViewType;
 	VkFormat							m_imageFormat;
 	int									m_imageSize;
-	VkImageViewCreateInfo				m_imageViewParams;
-	VkSamplerCreateInfo					m_samplerParams;
 	float								m_samplerLod;
 	bool								m_separateStencilUsage;
 };
@@ -220,13 +225,47 @@ SamplerTest::SamplerTest	(tcu::TestContext&	testContext,
 							 int				imageSize,
 							 float				samplerLod,
 							 bool				separateStencilUsage)
-	: vkt::TestCase			(testContext, name, description)
-	, m_imageViewType		(imageViewType)
-	, m_imageFormat			(imageFormat)
-	, m_imageSize			(imageSize)
-	, m_samplerLod			(samplerLod)
-	, m_separateStencilUsage(separateStencilUsage)
+	: vkt::TestCase					(testContext, name, description)
+	, m_imageViewType				(imageViewType)
+	, m_imageFormat					(imageFormat)
+	, m_imageSize					(imageSize)
+	, m_samplerLod					(samplerLod)
+	, m_separateStencilUsage		(separateStencilUsage)
 {
+}
+
+ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (VkImageViewType	imageViewType,
+																		 VkFormat			imageFormat,
+																		 int				imageSize,
+																		 float				samplerLod,
+																		 bool				separateStencilUsage) const
+{
+	const tcu::UVec2				renderSize			= getRenderSize(imageViewType);
+	const std::vector<Vertex4Tex4>	vertices			= createVertices();
+	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
+	const VkComponentMapping		componentMapping	= getComponentMapping();
+
+	const VkImageAspectFlags		imageAspect			= (!isCompressedFormat(imageFormat) && hasDepthComponent(mapVkFormat(imageFormat).order)) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+	const VkImageSubresourceRange	subresourceRange	=
+	{
+		imageAspect,										// VkImageAspectFlags	aspectMask;
+		0u,													// deUint32				baseMipLevel;
+		(deUint32)deLog2Floor32(imageSize) + 1,				// deUint32				mipLevels;
+		0u,													// deUint32				baseArrayLayer;
+		(deUint32)SamplerTest::getArraySize(imageViewType)	// deUint32				arraySize;
+	};
+
+	return ImageSamplingInstanceParams(renderSize, imageViewType, imageFormat,
+									   getImageSize(imageViewType, imageSize),
+									   getArraySize(imageViewType),
+									   componentMapping, subresourceRange,
+									   samplerParams, samplerLod, vertices, separateStencilUsage);
+}
+
+void SamplerTest::checkSupport (Context& context) const
+{
+	checkSupportImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage));
 }
 
 tcu::Vec4 SamplerTest::swizzle (tcu::Vec4 inputData, VkComponentMapping componentMapping, float zeroOrOneValue) const
@@ -331,29 +370,7 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 
 TestInstance* SamplerTest::createInstance (Context& context) const
 {
-	const tcu::UVec2				renderSize			= getRenderSize(m_imageViewType);
-	const std::vector<Vertex4Tex4>	vertices			= createVertices();
-	const VkSamplerCreateInfo		samplerParams		= getSamplerCreateInfo();
-	const VkComponentMapping		componentMapping	= getComponentMapping();
-
-	const VkImageAspectFlags		imageAspect			= (!isCompressedFormat(m_imageFormat) && hasDepthComponent(mapVkFormat(m_imageFormat).order)) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-
-	const VkImageSubresourceRange	subresourceRange	=
-	{
-		imageAspect,											// VkImageAspectFlags	aspectMask;
-		0u,														// deUint32				baseMipLevel;
-		(deUint32)deLog2Floor32(m_imageSize) + 1,				// deUint32				mipLevels;
-		0u,														// deUint32				baseArrayLayer;
-		(deUint32)SamplerTest::getArraySize(m_imageViewType)	// deUint32				arraySize;
-	};
-
-
-
-	return new ImageSamplingInstance(context, renderSize, m_imageViewType, m_imageFormat,
-									 getImageSize(m_imageViewType, m_imageSize),
-									 getArraySize(m_imageViewType),
-									 componentMapping, subresourceRange,
-									 samplerParams, m_samplerLod,vertices, m_separateStencilUsage);
+	return new ImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage));
 }
 
 tcu::UVec2 SamplerTest::getRenderSize (VkImageViewType viewType) const
@@ -565,7 +582,7 @@ VkSamplerReductionModeCreateInfoEXT getSamplerReductionCreateInfo (VkSamplerRedu
 
 // SamplerMagReduceFilterTest
 
-SamplerMagReduceFilterTest::SamplerMagReduceFilterTest (tcu::TestContext&	testContext,
+SamplerMagReduceFilterTest::SamplerMagReduceFilterTest (tcu::TestContext&			testContext,
 														const char*					name,
 														const char*					description,
 														VkImageViewType				imageViewType,
@@ -595,7 +612,7 @@ VkComponentMapping SamplerMagReduceFilterTest::getComponentMapping (void) const
 
 // SamplerMinReduceFilterTest
 
-SamplerMinReduceFilterTest::SamplerMinReduceFilterTest (tcu::TestContext&	testContext,
+SamplerMinReduceFilterTest::SamplerMinReduceFilterTest (tcu::TestContext&			testContext,
 														const char*					name,
 														const char*					description,
 														VkImageViewType				imageViewType,

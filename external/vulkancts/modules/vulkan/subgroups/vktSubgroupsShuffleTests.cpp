@@ -506,26 +506,6 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	switch (caseDef.opType)
-	{
-		case OPTYPE_SHUFFLE:
-		case OPTYPE_SHUFFLE_XOR:
-			if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_SHUFFLE_BIT))
-			{
-				TCU_THROW(NotSupportedError, "Device does not support subgroup shuffle operations");
-			}
-			break;
-		default:
-			if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT))
-			{
-				TCU_THROW(NotSupportedError, "Device does not support subgroup shuffle relative operations");
-			}
-			break;
-	}
-
-	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
-		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
-
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))

@@ -19,7 +19,9 @@ const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShad
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			getFragmentShaderInterlockFeatures			(void) const;
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&					getHostQueryResetFeatures					(void) const;
 const vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR&				getImagelessFramebufferFeatures				(void) const;
+const vk::VkPhysicalDeviceIndexTypeUint8FeaturesEXT&					getIndexTypeUint8Features					(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				getInlineUniformBlockFeatures				(void) const;
+const vk::VkPhysicalDeviceLineRasterizationFeaturesEXT&					getLineRasterizationFeatures				(void) const;
 const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeatures					(void) const;
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures						(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures						(void) const;

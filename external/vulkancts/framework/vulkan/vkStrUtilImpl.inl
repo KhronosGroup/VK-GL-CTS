@@ -273,6 +273,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV:						return "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_NV";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:											return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		case VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN:										return "VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT:									return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR:								return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR";
@@ -458,6 +459,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT:	return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT";
@@ -481,7 +484,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT:					return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT";
 		case VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT:					return "VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT";
 		case VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT";
@@ -745,6 +752,20 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:					return "VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG";
 		case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:					return "VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG";
 		case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:					return "VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG";
+		case VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT";
 		case VK_FORMAT_MAX_ENUM:									return "VK_FORMAT_MAX_ENUM";
 		default:													return DE_NULL;
 	}
@@ -1092,6 +1113,7 @@ const char* getDynamicStateName (VkDynamicState value)
 		case VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV:	return "VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV";
 		case VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV:	return "VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV";
 		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:				return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV";
+		case VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:					return "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT";
 		case VK_DYNAMIC_STATE_MAX_ENUM:							return "VK_DYNAMIC_STATE_MAX_ENUM";
 		default:												return DE_NULL;
 	}
@@ -1224,6 +1246,7 @@ const char* getIndexTypeName (VkIndexType value)
 		case VK_INDEX_TYPE_UINT16:		return "VK_INDEX_TYPE_UINT16";
 		case VK_INDEX_TYPE_UINT32:		return "VK_INDEX_TYPE_UINT32";
 		case VK_INDEX_TYPE_NONE_NV:		return "VK_INDEX_TYPE_NONE_NV";
+		case VK_INDEX_TYPE_UINT8_EXT:	return "VK_INDEX_TYPE_UINT8_EXT";
 		case VK_INDEX_TYPE_MAX_ENUM:	return "VK_INDEX_TYPE_MAX_ENUM";
 		default:						return DE_NULL;
 	}
@@ -1474,6 +1497,18 @@ const char* getDriverIdKHRName (VkDriverIdKHR value)
 		case VK_DRIVER_ID_BROADCOM_PROPRIETARY_KHR:			return "VK_DRIVER_ID_BROADCOM_PROPRIETARY_KHR";
 		case VK_DRIVER_ID_MAX_ENUM_KHR:						return "VK_DRIVER_ID_MAX_ENUM_KHR";
 		default:											return DE_NULL;
+	}
+}
+
+const char* getShaderFloatControlsIndependenceKHRName (VkShaderFloatControlsIndependenceKHR value)
+{
+	switch (value)
+	{
+		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR:	return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR";
+		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR:			return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR";
+		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR:		return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR";
+		case VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR:	return "VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR";
+		default:													return DE_NULL;
 	}
 }
 
@@ -1963,6 +1998,19 @@ const char* getCoverageReductionModeNVName (VkCoverageReductionModeNV value)
 	}
 }
 
+const char* getLineRasterizationModeEXTName (VkLineRasterizationModeEXT value)
+{
+	switch (value)
+	{
+		case VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT:			return "VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:		return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT";
+		case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:			return "VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT";
+		case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:	return "VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT";
+		case VK_LINE_RASTERIZATION_MODE_MAX_ENUM_EXT:			return "VK_LINE_RASTERIZATION_MODE_MAX_ENUM_EXT";
+		default:												return DE_NULL;
+	}
+}
+
 const char* getFullScreenExclusiveEXTName (VkFullScreenExclusiveEXT value)
 {
 	switch (value)
@@ -2306,6 +2354,15 @@ tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags val
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM,	"VK_SHADER_MODULE_CREATE_FLAG_BITS_MAX_ENUM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2319,6 +2376,17 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,	"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,						"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,						"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPipelineShaderStageCreateFlagsStr (VkPipelineShaderStageCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT,	"VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT,		"VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM,					"VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2413,6 +2481,15 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	{
 		tcu::Format::BitDesc(VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR,	"VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM,	"VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_RENDER_PASS_CREATE_FLAG_BITS_MAX_ENUM,	"VK_RENDER_PASS_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2549,6 +2626,7 @@ tcu::Format::Bitfield<32> getStencilFaceFlagsStr (VkStencilFaceFlags value)
 	{
 		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_BIT,				"VK_STENCIL_FACE_FRONT_BIT"),
 		tcu::Format::BitDesc(VK_STENCIL_FACE_BACK_BIT,				"VK_STENCIL_FACE_BACK_BIT"),
+		tcu::Format::BitDesc(VK_STENCIL_FACE_FRONT_AND_BACK,		"VK_STENCIL_FACE_FRONT_AND_BACK"),
 		tcu::Format::BitDesc(VK_STENCIL_FRONT_AND_BACK,				"VK_STENCIL_FRONT_AND_BACK"),
 		tcu::Format::BitDesc(VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM,	"VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM"),
 	};
@@ -3027,17 +3105,7 @@ tcu::Format::Bitfield<32> getBufferViewCreateFlagsStr (VkBufferViewCreateFlags v
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
 
-tcu::Format::Bitfield<32> getShaderModuleCreateFlagsStr (VkShaderModuleCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
 tcu::Format::Bitfield<32> getPipelineCacheCreateFlagsStr (VkPipelineCacheCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getPipelineShaderStageCreateFlagsStr (VkPipelineShaderStageCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -3093,11 +3161,6 @@ tcu::Format::Bitfield<32> getPipelineLayoutCreateFlagsStr (VkPipelineLayoutCreat
 }
 
 tcu::Format::Bitfield<32> getDescriptorPoolResetFlagsStr (VkDescriptorPoolResetFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -6280,8 +6343,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFloatControlsPr
 	s << "VkPhysicalDeviceFloatControlsPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tseparateDenormSettings = " << value.separateDenormSettings << '\n';
-	s << "\tseparateRoundingModeSettings = " << value.separateRoundingModeSettings << '\n';
+	s << "\tdenormBehaviorIndependence = " << value.denormBehaviorIndependence << '\n';
+	s << "\troundingModeIndependence = " << value.roundingModeIndependence << '\n';
 	s << "\tshaderSignedZeroInfNanPreserveFloat16 = " << value.shaderSignedZeroInfNanPreserveFloat16 << '\n';
 	s << "\tshaderSignedZeroInfNanPreserveFloat32 = " << value.shaderSignedZeroInfNanPreserveFloat32 << '\n';
 	s << "\tshaderSignedZeroInfNanPreserveFloat64 = " << value.shaderSignedZeroInfNanPreserveFloat64 << '\n';
@@ -6595,6 +6658,16 @@ std::ostream& operator<< (std::ostream& s, const VkValidationFlagsEXT& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tdisabledValidationCheckCount = " << value.disabledValidationCheckCount << '\n';
 	s << "\tpDisabledValidationChecks = " << value.pDisabledValidationChecks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttextureCompressionASTC_HDR = " << value.textureCompressionASTC_HDR << '\n';
 	s << '}';
 	return s;
 }
@@ -8279,6 +8352,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceScalarBlockLayo
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceSubgroupSizeControlPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminSubgroupSize = " << value.minSubgroupSize << '\n';
+	s << "\tmaxSubgroupSize = " << value.maxSubgroupSize << '\n';
+	s << "\tmaxComputeWorkgroupSubgroups = " << value.maxComputeWorkgroupSubgroups << '\n';
+	s << "\trequiredSubgroupSizeStages = " << getShaderStageFlagsStr(value.requiredSubgroupSizeStages) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT& value)
+{
+	s << "VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trequiredSubgroupSize = " << value.requiredSubgroupSize << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMemoryBudgetPropertiesEXT& value)
 {
 	s << "VkPhysicalDeviceMemoryBudgetPropertiesEXT = {\n";
@@ -8479,12 +8575,60 @@ std::ostream& operator<< (std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT&
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceLineRasterizationFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trectangularLines = " << value.rectangularLines << '\n';
+	s << "\tbresenhamLines = " << value.bresenhamLines << '\n';
+	s << "\tsmoothLines = " << value.smoothLines << '\n';
+	s << "\tstippledRectangularLines = " << value.stippledRectangularLines << '\n';
+	s << "\tstippledBresenhamLines = " << value.stippledBresenhamLines << '\n';
+	s << "\tstippledSmoothLines = " << value.stippledSmoothLines << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceLineRasterizationPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlineSubPixelPrecisionBits = " << value.lineSubPixelPrecisionBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value)
+{
+	s << "VkPipelineRasterizationLineStateCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlineRasterizationMode = " << value.lineRasterizationMode << '\n';
+	s << "\tstippledLineEnable = " << value.stippledLineEnable << '\n';
+	s << "\tlineStippleFactor = " << value.lineStippleFactor << '\n';
+	s << "\tlineStipplePattern = " << value.lineStipplePattern << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostQueryResetFeaturesEXT& value)
 {
 	s << "VkPhysicalDeviceHostQueryResetFeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\thostQueryReset = " << value.hostQueryReset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceIndexTypeUint8FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindexTypeUint8 = " << value.indexTypeUint8 << '\n';
 	s << '}';
 	return s;
 }

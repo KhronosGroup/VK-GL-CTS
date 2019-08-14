@@ -555,9 +555,7 @@ tcu::TestStatus testStencilExportReplace (Context& context)
 
 void checkSupport (Context& context)
 {
-	const std::vector<std::string>&	extensions = context.getDeviceExtensions();
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_EXT_shader_stencil_export"))
-		TCU_THROW(NotSupportedError, "Extension VK_EXT_shader_stencil_export not supported");
+	context.requireDeviceExtension("VK_EXT_shader_stencil_export");
 
 	const VkFormat stencilFormat = VK_FORMAT_S8_UINT;
 	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), stencilFormat))

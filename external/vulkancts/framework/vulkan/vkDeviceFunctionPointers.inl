@@ -247,6 +247,7 @@ QueueSetPerformanceConfigurationINTELFunc			queueSetPerformanceConfigurationINTE
 GetPerformanceParameterINTELFunc					getPerformanceParameterINTEL;
 SetLocalDimmingAMDFunc								setLocalDimmingAMD;
 GetBufferDeviceAddressEXTFunc						getBufferDeviceAddressEXT;
+CmdSetLineStippleEXTFunc							cmdSetLineStippleEXT;
 ResetQueryPoolEXTFunc								resetQueryPoolEXT;
 GetAndroidHardwareBufferPropertiesANDROIDFunc		getAndroidHardwareBufferPropertiesANDROID;
 GetMemoryAndroidHardwareBufferANDROIDFunc			getMemoryAndroidHardwareBufferANDROID;

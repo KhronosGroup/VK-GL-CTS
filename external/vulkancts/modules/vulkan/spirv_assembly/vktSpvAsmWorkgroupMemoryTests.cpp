@@ -333,9 +333,10 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["dataTypeDecl"]	= "%f16 = OpTypeFloat 16";
 		shaderSpec["dataType"]		= "f16";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
-		shaderSpec["capabilities"]	= "OpCapability StorageUniformBufferBlock16\n";
+		shaderSpec["capabilities"]	= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 
 		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
 		vector<deFloat16>	inputData	= getFloat16s(rnd, numElements);
 		vector<deFloat16>	outputData;
@@ -348,6 +349,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.assembly		= shaderSource.specialize(shaderSpec);
 		spec.numWorkGroups	= IVec3(1, 1, 1);
 		spec.extensions.push_back("VK_KHR_16bit_storage");
+		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 		spec.requestedVulkanFeatures = features;
 		spec.verifyIO		= checkResultsFloat16;
 
@@ -452,10 +454,11 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["sizeBytes"]		= "1";
 		shaderSpec["dataTypeDecl"]	= "%i8 = OpTypeInt 8 1";
 		shaderSpec["dataType"]		= "i8";
-		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\n";
+		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\nOpCapability Int8\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 
 		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_INT8;
 
 		vector<deInt8>		inputData	= getInt8s(rnd, numElements);
 		vector<deInt8>		outputData;
@@ -468,6 +471,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.assembly		= shaderSource.specialize(shaderSpec);
 		spec.numWorkGroups	= IVec3(1, 1, 1);
 		spec.extensions.push_back("VK_KHR_8bit_storage");
+		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 		spec.requestedVulkanFeatures = features;
 
 		spec.inputs.push_back(Resource(BufferSp(new Int8Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
@@ -583,10 +587,11 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		shaderSpec["sizeBytes"]		= "1";
 		shaderSpec["dataTypeDecl"]	= "%u8 = OpTypeInt 8 0";
 		shaderSpec["dataType"]		= "u8";
-		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\n";
+		shaderSpec["capabilities"]	= "OpCapability UniformAndStorageBuffer8BitAccess\nOpCapability Int8\n";
 		shaderSpec["extensions"]	= "OpExtension \"SPV_KHR_8bit_storage\"\n";
 
 		features.ext8BitStorage = EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_INT8;
 
 		vector<deUint8>		inputData;
 		vector<deUint8>		outputData;
@@ -603,6 +608,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 		spec.assembly		= shaderSource.specialize(shaderSpec);
 		spec.numWorkGroups	= IVec3(1, 1, 1);
 		spec.extensions.push_back("VK_KHR_8bit_storage");
+		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 		spec.requestedVulkanFeatures = features;
 
 		spec.inputs.push_back(Resource(BufferSp(new Uint8Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
