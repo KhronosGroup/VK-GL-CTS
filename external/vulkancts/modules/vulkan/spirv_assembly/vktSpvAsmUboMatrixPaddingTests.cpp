@@ -25,6 +25,7 @@
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
+#include "tcuVectorUtil.hpp"
 
 namespace vkt
 {
@@ -130,7 +131,7 @@ void addComputeUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 	inputData.reserve(numElements);
 	for (deUint32 numIdx = 0; numIdx < numElements; ++numIdx)
-		inputData.push_back(tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
+		inputData.push_back(tcu::randomVec4(rnd));
 
 	spec.assembly			= shaderSource;
 	spec.numWorkGroups		= IVec3(numElements, 1, 1);
@@ -158,7 +159,7 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 	vector<tcu::Vec4> inputData(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputData[numIdx] = tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat());
+		inputData[numIdx] = tcu::randomVec4(rnd);
 
 	resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
 	// Shader is expected to pass the input data by treating the input vec4 as mat2x2

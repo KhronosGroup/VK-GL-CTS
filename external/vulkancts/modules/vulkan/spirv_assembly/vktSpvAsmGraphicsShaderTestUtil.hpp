@@ -325,10 +325,6 @@ const std::string numberToString (T number)
 	return ss.str();
 }
 
-template<typename T>	T			randomScalar	(de::Random& rnd, T minValue, T maxValue);
-template<> inline		float		randomScalar	(de::Random& rnd, float minValue, float maxValue)		{ return rnd.getFloat(minValue, maxValue);	}
-template<> inline		deInt32		randomScalar	(de::Random& rnd, deInt32 minValue, deInt32 maxValue)	{ return rnd.getInt(minValue, maxValue);	}
-
 void getDefaultColors (tcu::RGBA (&colors)[4]);
 
 void getHalfColorsFullAlpha (tcu::RGBA (&colors)[4]);
