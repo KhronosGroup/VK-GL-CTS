@@ -135,10 +135,12 @@ std::string getBodySource(CaseDefinition caseDef)
 				<< "  }\n";
 			break;
 		case OPTYPE_BALLOT_BIT_COUNT:
-			bdy << "  tempResult |= gl_SubgroupSize == subgroupBallotBitCount(allOnes) ? 0x1 : 0;\n"
+			bdy << "  /* To ensure a 32-bit computation, use a variable with default highp precision. */\n"
+				<< "  uint SubgroupSize = gl_SubgroupSize;\n"
+				<< "  tempResult |= SubgroupSize == subgroupBallotBitCount(allOnes) ? 0x1 : 0;\n"
 				<< "  tempResult |= 0 == subgroupBallotBitCount(allZeros) ? 0x2 : 0;\n"
 				<< "  tempResult |= 0 < subgroupBallotBitCount(subgroupBallot(true)) ? 0x4 : 0;\n"
-				<< "  tempResult |= 0 == subgroupBallotBitCount(MAKE_HIGH_BALLOT_RESULT(gl_SubgroupSize)) ? 0x8 : 0;\n";
+				<< "  tempResult |= 0 == subgroupBallotBitCount(MAKE_HIGH_BALLOT_RESULT(SubgroupSize)) ? 0x8 : 0;\n";
 			break;
 		case OPTYPE_BALLOT_INCLUSIVE_BIT_COUNT:
 			bdy << "  uint inclusiveOffset = gl_SubgroupInvocationID + 1;\n"
@@ -447,6 +449,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"#version 450\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			"layout(location = 0) out uint result;\n"
+			"precision highp int;\n"
 			"void main (void)\n"
 			"{\n"
 			+ bdyStr +
