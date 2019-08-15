@@ -1,0 +1,117 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug reduced by GraphicsFuzz.
+
+# Short description: A fragment shader that uses a temporary struct variable
+
+# The test passes because the fragment shader is provided with a red vec4
+# as input, and copies this through to the output (via a struct)
+
+# The following GLSL, produced by SPIRV-Cross (and then manually edited for
+# readability) shows what the shader does.
+
+# Fragment shader GLSL:
+# #version 310 es
+# precision mediump float;
+# precision highp int;
+#
+# struct S
+# {
+#     highp vec4 v;
+# };
+#
+# layout(binding = 0, std140) uniform somename
+# {
+#     highp vec4 v;
+# } buf;
+#
+# layout(location = 0) out highp vec4 color;
+#
+# S undef;
+#
+# void main()
+# {
+#     S temp = undef;
+#     temp.v = buf.v;
+#     color = temp.v;
+# }
+
+SHADER vertex gfz_vert PASSTHROUGH
+
+SHADER fragment gfz_frag SPIRV-ASM
+; SPIR-V
+; Version: 1.3
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 22
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %9
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpDecorate %9 Location 0
+               OpMemberDecorate %10 0 Offset 0
+               OpDecorate %10 Block
+               OpDecorate %12 DescriptorSet 0
+               OpDecorate %12 Binding 0
+               OpDecorate %21 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypePointer Output %7
+          %9 = OpVariable %8 Output
+         %10 = OpTypeStruct %7
+         %11 = OpTypePointer Uniform %10
+         %12 = OpVariable %11 Uniform
+         %13 = OpTypeInt 32 1
+         %14 = OpConstant %13 0
+         %15 = OpTypePointer Uniform %7
+         %18 = OpTypeStruct %7
+         %19 = OpUndef %18
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %15 %12 %14
+         %17 = OpLoad %7 %16
+         %20 = OpCompositeInsert %18 %17 %19 0
+         %21 = OpCompositeExtract %7 %20 0
+               OpStore %9 %21
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+# f
+BUFFER f DATA_TYPE vec4<float> DATA
+ 1.0 0.0 0.0 1.0
+END
+
+PIPELINE graphics gfz_pipeline
+  ATTACH gfz_vert
+  ATTACH gfz_frag
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+BIND BUFFER f AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+
+CLEAR_COLOR gfz_pipeline 0 0 0 255
+CLEAR gfz_pipeline
+RUN gfz_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT framebuffer IDX 0 0 SIZE 256 256 EQ_RGB 255 0 0
