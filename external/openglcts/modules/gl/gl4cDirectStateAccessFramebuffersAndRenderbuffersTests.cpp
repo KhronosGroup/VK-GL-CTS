@@ -8468,11 +8468,6 @@ tcu::TestNode::IterateResult StorageMultisampleTest::iterate()
 		gl.getIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv call failed.");
 
-		glw::GLint max_integer_samples = 1 /* Specification minimum. */;
-
-		gl.getIntegerv(GL_MAX_INTEGER_SAMPLES, &max_integer_samples);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv call failed.");
-
 		const struct
 		{
 			glw::GLuint width;
@@ -8487,6 +8482,8 @@ tcu::TestNode::IterateResult StorageMultisampleTest::iterate()
 		{
 			for (glw::GLuint j = 0; j < s_renderbuffer_internalformat_configuration_count; ++j)
 			{
+				glw::GLint max_integer_samples = GetMaxConformantSampleCount(
+					GL_RENDERBUFFER, s_renderbuffer_internalformat_configuration[j].internalformat);
 				for (glw::GLint k = 0; k <= max_integer_samples; ++k)
 				{
 					if (PrepareRenderbuffer(s_renderbuffer_internalformat_configuration[j], test_cases[i].width,
@@ -8852,6 +8849,57 @@ void StorageMultisampleTest::Clean()
 	/* Errors clean up. */
 	while (gl.getError())
 		;
+}
+
+/** @brief Retrieve max conformant sample count when GL_NV_internalformat_sample_query is supported
+ *
+ *  @param [in] target			Target indicating usage of internal format
+ *  @param [in] internalFormat		Internal format about which to retrieve information
+ *
+ *  @return Max conformant sample count
+ */
+glw::GLint StorageMultisampleTest::GetMaxConformantSampleCount(glw::GLenum target, glw::GLenum internalFormat)
+{
+	glw::GLint max_conformant_samples = 0;
+
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	/* Return the max conformant sample count if extension is supported */
+	if (m_context.getContextInfo().isExtensionSupported("GL_NV_internalformat_sample_query"))
+	{
+		glw::GLint gl_sample_counts = 0;
+		gl.getInternalformativ(target, internalFormat, GL_NUM_SAMPLE_COUNTS, 1, &gl_sample_counts);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetInternalformativ() failed for GL_NUM_SAMPLE_COUNTS pname");
+
+		/* Check and return the max conformant sample count */
+		glw::GLint* gl_supported_samples = new glw::GLint[gl_sample_counts];
+		if (gl_supported_samples)
+		{
+			gl.getInternalformativ(target, internalFormat, GL_SAMPLES, gl_sample_counts, gl_supported_samples);
+
+			for (glw::GLint i = 0; i < gl_sample_counts; i++)
+			{
+				glw::GLint isConformant = 0;
+				gl.getInternalformatSampleivNV(target, internalFormat, gl_supported_samples[i], GL_CONFORMANT_NV, 1,
+											   &isConformant);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glGetInternalformatSampleivNV() call(s) failed");
+
+				if (isConformant && gl_supported_samples[i] > max_conformant_samples)
+				{
+					max_conformant_samples = gl_supported_samples[i];
+				}
+			}
+			delete[] gl_supported_samples;
+		}
+	}
+	else
+	{
+		/* Otherwise return GL_MAX_INTEGER_SAMPLES */
+		gl.getIntegerv(GL_MAX_INTEGER_SAMPLES, &max_conformant_samples);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() call failed for GL_MAX_INTEGER_SAMPLES pname.");
+	}
+
+	return max_conformant_samples;
 }
 
 /** Tested internal format */
