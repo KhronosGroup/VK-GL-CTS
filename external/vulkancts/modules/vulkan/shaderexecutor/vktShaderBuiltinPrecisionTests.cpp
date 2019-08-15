@@ -1497,6 +1497,8 @@ public:
 	//! Index of output parameter, or -1 if none of the parameters is output.
 	virtual int			getOutParamIndex		(void)					const { return -1; }
 
+	virtual SpirVCaseT	getSpirvCase			(void)					const { return SPIRV_CASETYPE_NONE; }
+
 	void				printDefinition			(ostream& os)			const
 	{
 		doPrintDefinition(os);
@@ -2302,11 +2304,13 @@ template <class T>
 class Comparison : public InfixOperator < T >
 {
 public:
-	string		getName(void) const { return "comparison"; }
-	string		getSymbol(void) const { return ""; }
+	string		getName			(void) const	{ return "comparison"; }
+	string		getSymbol		(void) const	{ return ""; }
 
-	Interval	doApply(const EvalContext&	ctx,
-		const Signature<int, float, float>::IArgs&		iargs) const
+	SpirVCaseT	getSpirvCase	() const		{ return SPIRV_CASETYPE_COMPARE; }
+
+	Interval	doApply			(const EvalContext&						ctx,
+								 const typename Comparison<T>::IArgs&	iargs) const
 	{
 		DE_UNREF(ctx);
 		if (iargs.a.hasNaN() || iargs.b.hasNaN())
@@ -2704,11 +2708,13 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1)		\
 	return app<CLASS>(arg0, arg1);									\
 }
 
-#define DEFINE_DERIVED2(CLASS, TRET, NAME, T0, Arg0, T1, Arg1, EXPANSION) \
+#define DEFINE_CASED_DERIVED2(CLASS, TRET, NAME, T0, Arg0, T1, Arg1, EXPANSION, SPIRVCASE) \
 class CLASS : public DerivedFunc<Signature<TRET, T0, T1> > /* NOLINT(CLASS) */ \
 {																		\
 public:																	\
-	string			getName		(void) const		{ return #NAME; }	\
+	string			getName		(void) const	{ return #NAME; }		\
+																		\
+	SpirVCaseT		getSpirvCase(void) const	{ return SPIRVCASE; }	\
 																		\
 protected:																\
 	ExprP<TRET>		doExpand	(ExpandContext&, const ArgExprs& args_) const \
@@ -2720,11 +2726,23 @@ protected:																\
 };																		\
 DEFINE_CONSTRUCTOR2(CLASS, TRET, NAME, T0, T1)
 
+#define DEFINE_DERIVED2(CLASS, TRET, NAME, T0, Arg0, T1, Arg1, EXPANSION) \
+	DEFINE_CASED_DERIVED2(CLASS, TRET, NAME, T0, Arg0, T1, Arg1, EXPANSION, SPIRV_CASETYPE_NONE)
+
 #define DEFINE_DERIVED_FLOAT2(CLASS, NAME, Arg0, Arg1, EXPANSION)		\
 	DEFINE_DERIVED2(CLASS, float, NAME, float, Arg0, float, Arg1, EXPANSION)
 
 #define DEFINE_DERIVED_FLOAT2_16BIT(CLASS, NAME, Arg0, Arg1, EXPANSION)		\
 	DEFINE_DERIVED2(CLASS, deFloat16, NAME, deFloat16, Arg0, deFloat16, Arg1, EXPANSION)
+
+#define DEFINE_CASED_DERIVED_FLOAT2(CLASS, NAME, Arg0, Arg1, EXPANSION, SPIRVCASE) \
+	DEFINE_CASED_DERIVED2(CLASS, float, NAME, float, Arg0, float, Arg1, EXPANSION, SPIRVCASE)
+
+#define DEFINE_CASED_DERIVED_FLOAT2_16BIT(CLASS, NAME, Arg0, Arg1, EXPANSION, SPIRVCASE) \
+	DEFINE_CASED_DERIVED2(CLASS, deFloat16, NAME, deFloat16, Arg0, deFloat16, Arg1, EXPANSION, SPIRVCASE)
+
+#define DEFINE_CASED_DERIVED_DOUBLE2(CLASS, NAME, Arg0, Arg1, EXPANSION, SPIRVCASE) \
+	DEFINE_CASED_DERIVED2(CLASS, double, NAME, double, Arg0, double, Arg1, EXPANSION, SPIRVCASE)
 
 #define DEFINE_CONSTRUCTOR3(CLASS, TRET, NAME, T0, T1, T2)				\
 ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1, const ExprP<T2>& arg2) \
@@ -2765,7 +2783,7 @@ ExprP<TRET> NAME (const ExprP<T0>& arg0, const ExprP<T1>& arg1,			\
 typedef	 InverseSqrt< Signature<deFloat16, deFloat16> >	InverseSqrt16Bit;
 typedef	 InverseSqrt< Signature<float, float> >			InverseSqrt32Bit;
 
-DEFINE_DERIVED_FLOAT1(Sqrt,				sqrt,		x,		constant(1.0f) / app<InverseSqrt32Bit>(x));
+DEFINE_DERIVED_FLOAT1(Sqrt32Bit,		sqrt,		x,		constant(1.0f) / app<InverseSqrt32Bit>(x));
 DEFINE_DERIVED_FLOAT1_16BIT(Sqrt16Bit,	sqrt,		x,		constant((deFloat16)FLOAT16_1_0) / app<InverseSqrt16Bit>(x));
 DEFINE_DERIVED_FLOAT2(Pow,				pow,		x,	y,	exp2<float>(y * log2(x)));
 DEFINE_DERIVED_FLOAT2_16BIT(Pow16,		pow,		x,	y,	exp2<deFloat16>(y * log2(x)));
@@ -3929,6 +3947,9 @@ public:
 typedef Floor< Signature<float, float> > Floor32Bit;
 typedef Floor< Signature<deFloat16, deFloat16> > Floor16Bit;
 
+typedef Trunc< Signature<float, float> > Trunc32Bit;
+typedef Trunc< Signature<deFloat16, deFloat16> > Trunc16Bit;
+
 DEFINE_DERIVED_FLOAT1(Fract, fract, x, x - app<Floor32Bit>(x));
 DEFINE_DERIVED_FLOAT1_16BIT(Fract16Bit, fract, x, x - app<Floor16Bit>(x));
 
@@ -3941,8 +3962,11 @@ protected:
 	double	precision		(const EvalContext&, double, double, double) const { return 0.0; }
 };
 
-DEFINE_DERIVED_FLOAT2(Mod, mod, x, y, x - y * app<Floor32Bit>(x / y));
+DEFINE_DERIVED_FLOAT2(Mod32Bit, mod, x, y, x - y * app<Floor32Bit>(x / y));
 DEFINE_DERIVED_FLOAT2_16BIT(Mod16Bit, mod, x, y, x - y * app<Floor16Bit>(x / y));
+
+DEFINE_CASED_DERIVED_FLOAT2(FRem32Bit, frem, x, y, x - y * app<Trunc32Bit>(x / y), SPIRV_CASETYPE_FREM);
+DEFINE_CASED_DERIVED_FLOAT2_16BIT(FRem16Bit, frem, x, y, x - y * app<Trunc16Bit>(x / y), SPIRV_CASETYPE_FREM);
 
 template <class T>
 class Modf : public PrimitiveFunc<T>
@@ -4801,6 +4825,11 @@ public:
 
 				GenFunc					(const Func<Sig_>&	scalarFunc) : m_func (scalarFunc) {}
 
+	SpirVCaseT	getSpirvCase			(void) const
+	{
+		return m_func.getSpirvCase();
+	}
+
 	string		getName					(void) const
 	{
 		return m_func.getName();
@@ -4883,6 +4912,11 @@ public:
 	string						getName			(void) const
 	{
 		return this->doGetScalarFunc().getName();
+	}
+
+	SpirVCaseT					getSpirvCase	(void) const
+	{
+		return this->doGetScalarFunc().getSpirvCase();
 	}
 
 protected:
@@ -5729,7 +5763,7 @@ tcu::TestStatus BuiltinPrecisionCaseTestInstance<In, Out>::iterate (void)
 
 			if (outCount > 0)
 			{
-				if (m_executor->isSpirVShader())
+				if (m_executor->spirvCase() == SPIRV_CASETYPE_COMPARE)
 				{
 					builder << "Output:\n"
 							<< comparisonMessage(outputs.out0[valueNdx])
@@ -5801,7 +5835,7 @@ protected:
 	const FloatFormat&	getFormat		(void) const			{ return m_ctx.floatFormat; }
 
 	template <typename In, typename Out>
-	void				testStatement	(const Variables<In, Out>& variables, const Statement& stmt);
+	void				testStatement	(const Variables<In, Out>& variables, const Statement& stmt, SpirVCaseT spirvCase);
 
 	template<typename T>
 	Symbol				makeSymbol		(const Variable<T>& variable)
@@ -5815,7 +5849,7 @@ protected:
 };
 
 template <typename In, typename Out>
-void PrecisionCase::testStatement (const Variables<In, Out>& variables, const Statement& stmt)
+void PrecisionCase::testStatement (const Variables<In, Out>& variables, const Statement& stmt, SpirVCaseT spirvCase)
 {
 	const int		inCount		= numInputs<In>();
 	const int		outCount	= numOutputs<Out>();
@@ -5874,7 +5908,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>& variables, const St
 	}
 
 	m_spec.source = de::toString(stmt);
-	m_spec.spirVShader = isInteger<typename Out::Out0>();
+	m_spec.spirvCase = spirvCase;
 }
 
 template <typename T>
@@ -6099,7 +6133,7 @@ void FuncCase<Sig>::buildTest (void)
 		ExprP<Ret> expr	= applyVar(m_func, m_variables.in0, m_variables.in1, m_variables.in2, m_variables.in3);
 		m_stmt			= variableAssignment(m_variables.out0, expr);
 
-		this->testStatement(m_variables, *m_stmt);
+		this->testStatement(m_variables, *m_stmt, m_func.getSpirvCase());
 	}
 }
 
@@ -6153,7 +6187,7 @@ void InOutFuncCase<Sig>::buildTest (void)
 		ExprP<Ret> expr	= applyVar(m_func, m_variables.in0, m_variables.out1, m_variables.in1, m_variables.in2);
 		m_stmt			= variableAssignment(m_variables.out0, expr);
 
-		this->testStatement(m_variables, *m_stmt);
+		this->testStatement(m_variables, *m_stmt, m_func.getSpirvCase());
 	}
 }
 
@@ -6386,19 +6420,20 @@ MovePtr<const CaseFactories> createBuiltinCases (bool is16BitTest = false)
 	addScalarFactory<Log< Signature<float, float> > >(*funcs);
 	addScalarFactory<Exp2<Signature<float, float> > >(*funcs);
 	addScalarFactory<Log2< Signature<float, float> > >(*funcs);
-	addScalarFactory<Sqrt>(*funcs);
+	addScalarFactory<Sqrt32Bit>(*funcs);
 	addScalarFactory<InverseSqrt< Signature<float, float> > >(*funcs);
 
 	addScalarFactory<Abs< Signature<float, float> > >(*funcs);
 	addScalarFactory<Sign< Signature<float, float> > >(*funcs);
 	addScalarFactory<Floor32Bit>(*funcs);
-	addScalarFactory<Trunc< Signature<float, float> > >(*funcs);
+	addScalarFactory<Trunc32Bit>(*funcs);
 	addScalarFactory<Round< Signature<float, float> > >(*funcs);
 	addScalarFactory<RoundEven< Signature<float, float> > >(*funcs);
 	addScalarFactory<Ceil< Signature<float, float> > >(*funcs);
 	addScalarFactory<Fract>(*funcs);
 
-	addScalarFactory<Mod>(*funcs);
+	addScalarFactory<Mod32Bit>(*funcs);
+	addScalarFactory<FRem32Bit>(*funcs);
 
 	funcs->addFactory(createSimpleFuncCaseFactory<Modf32Bit>());
 	addScalarFactory<Min< Signature<float, float, float> > >(*funcs);
@@ -6469,13 +6504,14 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 	addScalarFactory<Abs< Signature<deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Sign< Signature<deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Floor16Bit>(*funcs);
-	addScalarFactory<Trunc< Signature<deFloat16, deFloat16> > >(*funcs);
+	addScalarFactory<Trunc16Bit>(*funcs);
 	addScalarFactory<Round< Signature<deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<RoundEven< Signature<deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Ceil< Signature<deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Fract16Bit>(*funcs);
 
 	addScalarFactory<Mod16Bit>(*funcs);
+	addScalarFactory<FRem16Bit>(*funcs);
 
 	funcs->addFactory(createSimpleFuncCaseFactory<Modf16Bit>());
 	addScalarFactory<Min< Signature<deFloat16, deFloat16, deFloat16> > >(*funcs);
