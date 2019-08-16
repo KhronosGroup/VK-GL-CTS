@@ -48,6 +48,7 @@
 #include "vktPipelineDerivativeTests.hpp"
 #include "vktPipelineCreationFeedbackTests.hpp"
 #include "vktPipelineDepthRangeUnrestrictedTests.hpp"
+#include "vktPipelineExecutablePropertiesTests.hpp"
 #include "vktPipelineVertexOnlyTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -88,6 +89,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createDerivativeTests				(testCtx));
 	pipelineTests->addChild(createCreationFeedbackTests			(testCtx));
 	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
+	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
 	pipelineTests->addChild(createVertexOnlyTests				(testCtx));
 }
 

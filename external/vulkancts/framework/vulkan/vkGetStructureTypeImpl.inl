@@ -816,6 +816,36 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandar
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineExecutablePropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineExecutableInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineExecutableStatisticKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineExecutableInternalRepresentationKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
