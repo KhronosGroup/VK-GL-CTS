@@ -169,6 +169,30 @@ bool validateInitComplete(Context context, void (Interface::*Function)(Context, 
 	return true;
 }
 
+template <typename Type>
+//!< Return variable initialization validation
+bool validateStructsWithGuard (const QueryMemberTableEntry* queryMemberTableEntry, Type* vec[2], const deUint8 guardValue, const deUint32 guardSize)
+{
+	const QueryMemberTableEntry	*iterator;
+
+	for (iterator = queryMemberTableEntry; iterator->size != 0; iterator++)
+	{
+		if (deMemCmp(((deUint8*)(vec[0]))+iterator->offset, ((deUint8*)(vec[1]))+iterator->offset, iterator->size) != 0)
+			return false;
+	}
+
+	for (deUint32 vecNdx = 0; vecNdx < 2; ++vecNdx)
+	{
+		for (deUint32 ndx = 0; ndx < guardSize; ndx++)
+		{
+			if (((deUint8*)(vec[vecNdx]))[ndx + sizeof(Type)] != guardValue)
+				return false;
+		}
+	}
+
+	return true;
+}
+
 template<typename IterT>
 //! Overwrite a range of objects with an 8-bit pattern.
 inline void fillBits (IterT beg, const IterT end, const deUint8 pattern = 0xdeu)

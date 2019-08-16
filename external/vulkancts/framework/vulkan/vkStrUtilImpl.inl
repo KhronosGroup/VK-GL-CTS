@@ -5767,7 +5767,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan12Feature
 	s << "\tdescriptorBindingPartiallyBound = " << value.descriptorBindingPartiallyBound << '\n';
 	s << "\tdescriptorBindingVariableDescriptorCount = " << value.descriptorBindingVariableDescriptorCount << '\n';
 	s << "\truntimeDescriptorArray = " << value.runtimeDescriptorArray << '\n';
-	s << "\tshaderNonUniform = " << value.shaderNonUniform << '\n';
 	s << "\tsamplerFilterMinmax = " << value.samplerFilterMinmax << '\n';
 	s << "\tscalarBlockLayout = " << value.scalarBlockLayout << '\n';
 	s << "\timagelessFramebuffer = " << value.imagelessFramebuffer << '\n';
@@ -5782,8 +5781,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan12Feature
 	s << "\tvulkanMemoryModel = " << value.vulkanMemoryModel << '\n';
 	s << "\tvulkanMemoryModelDeviceScope = " << value.vulkanMemoryModelDeviceScope << '\n';
 	s << "\tvulkanMemoryModelAvailabilityVisibilityChains = " << value.vulkanMemoryModelAvailabilityVisibilityChains << '\n';
-	s << "\tshaderViewportIndex = " << value.shaderViewportIndex << '\n';
-	s << "\tshaderLayer = " << value.shaderLayer << '\n';
+	s << "\tshaderOutputViewportIndex = " << value.shaderOutputViewportIndex << '\n';
+	s << "\tshaderOutputLayer = " << value.shaderOutputLayer << '\n';
 	s << "\tsubgroupBroadcastDynamicId = " << value.subgroupBroadcastDynamicId << '\n';
 	s << '}';
 	return s;

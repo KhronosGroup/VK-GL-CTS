@@ -1606,18 +1606,25 @@ def writeContextDefs(dfDefs, filename):
 	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
 	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
 
+def splitWithQuotation(line):
+	result = []
+	splitted = re.findall(r'[^"\s]\S*|".+?"', line)
+	for s in splitted:
+		result.append(s.replace('"', ''))
+	return result
+
 def writeMandatoryFeatures(filename):
 	stream = []
-	pattern = r'\s*([\w]+)\s+([\w]+)\s+([\w]+)\s+EXTENSIONS\s*\(([\s\w]*)\)'
+	pattern = r'\s*([\w]+)\s+([\w]+)\s+REQUIREMENTS\s+\((.*)\)'
 	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
 	matches = re.findall(pattern, mandatoryFeatures)
 	dictStructs = {}
 	dictData = []
 	for m in matches:
-		allExtensions = m[3].split()
-		dictData.append( [ m[0], m[1], allExtensions ] )
+		allRequirements = splitWithQuotation(m[2])
+		dictData.append( [ m[0], m[1], allRequirements ] )
 		if m[0] != 'VkPhysicalDeviceFeatures' :
-			dictStructs[m[0]] = [ m[0][2:3].lower() + m[0][3:], m[2], allExtensions[0] ]
+			dictStructs[m[0]] = [ m[0][2:3].lower() + m[0][3:], allRequirements[0] ]
 
 	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
 				   '\tif ( !vk::isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2") )',
@@ -1631,15 +1638,19 @@ def writeMandatoryFeatures(filename):
 				   ''])
 	listStruct = sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
 	for k, v in listStruct:
+		if (v[1].startswith("ApiVersion")):
+			cond = '\tif (context.contextSupports(vk::' + v[1] + '))'
+		else:
+			cond = '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[1] + '"))'
 		stream.extend(['\tvk::' + k + ' ' + v[0]+ ';',
-					   '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[2] + '"))',
-					   '\t{',
-					   '\t\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
-					   '\t\t' + v[0] + '.sType = ' + v[1] + ';',
-					   '\t\t*nextPtr = &' + v[0] + ';',
-					   '\t\tnextPtr  = &' + v[0] + '.pNext;',
-					   '\t}',
-					   ''])
+					cond,
+					'\t{',
+					'\t\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
+					'\t\t' + v[0] + '.sType = getStructureType<' + k + '>();',
+					'\t\t*nextPtr = &' + v[0] + ';',
+					'\t\tnextPtr  = &' + v[0] + '.pNext;',
+					'\t}',
+					''])
 	stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
 				   '\tbool result = true;',
 				   ''])
@@ -1651,8 +1662,13 @@ def writeMandatoryFeatures(filename):
 			structName = dictStructs[v[0]][0]
 		if len(v[2]) > 0 :
 			condition = 'if ( '
-			for i, ext in enumerate(v[2]) :
-				condition = condition + 'vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + ext + '")'
+			for i, req in enumerate(v[2]) :
+				if (req.startswith("ApiVersion")):
+					condition = condition + 'context.contextSupports(vk::' + req + ')'
+				elif '.' in req:
+					condition = condition + req
+				else:
+					condition = condition + 'vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + req + '")'
 				if i+1 < len(v[2]) :
 					condition = condition + ' && '
 			condition = condition + ' )'
