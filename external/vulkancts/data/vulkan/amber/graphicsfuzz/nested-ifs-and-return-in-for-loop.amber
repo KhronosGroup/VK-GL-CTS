@@ -1,0 +1,159 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with return in nest of ifs, inside loop
+
+# The test passes because the fragment shader writes a red pixel, and then
+# terminates without further output manipulation (the other write of red
+# is not dynamically reachable)
+
+# Derived from the following GLSL.
+
+# Fragment shader GLSL:
+# #version 310 es
+#
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0 {
+#  vec2 injectionSwitch;
+# };
+#
+# void main()
+# {
+#  _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#  for(
+#      int i = 0;
+#      i < 10;
+#      i ++
+#  )
+#   {
+#    _GLF_color = vec4(1.0);
+#    if(1.0 > injectionSwitch.y)
+#     {
+#      _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#      if(true)
+#       {
+#        return;
+#       }
+#     }
+#   }
+# }
+
+[require]
+fbsize 256 256
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 46
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %9
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "_GLF_color"
+               OpName %15 "i"
+               OpName %28 "buf0"
+               OpMemberName %28 0 "injectionSwitch"
+               OpName %30 ""
+               OpDecorate %9 Location 0
+               OpDecorate %15 RelaxedPrecision
+               OpDecorate %22 RelaxedPrecision
+               OpMemberDecorate %28 0 Offset 0
+               OpDecorate %28 Block
+               OpDecorate %30 DescriptorSet 0
+               OpDecorate %30 Binding 0
+               OpDecorate %43 RelaxedPrecision
+               OpDecorate %45 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypePointer Output %7
+          %9 = OpVariable %8 Output
+         %10 = OpConstant %6 1
+         %11 = OpConstant %6 0
+         %12 = OpConstantComposite %7 %10 %11 %11 %10
+         %13 = OpTypeInt 32 1
+         %14 = OpTypePointer Function %13
+         %16 = OpConstant %13 0
+         %23 = OpConstant %13 10
+         %24 = OpTypeBool
+         %26 = OpConstantComposite %7 %10 %10 %10 %10
+         %27 = OpTypeVector %6 2
+         %28 = OpTypeStruct %27
+         %29 = OpTypePointer Uniform %28
+         %30 = OpVariable %29 Uniform
+         %31 = OpTypeInt 32 0
+         %32 = OpConstant %31 1
+         %33 = OpTypePointer Uniform %6
+         %39 = OpConstantTrue %24
+         %44 = OpConstant %13 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %15 = OpVariable %14 Function
+               OpStore %9 %12
+               OpStore %15 %16
+               OpBranch %17
+         %17 = OpLabel
+               OpLoopMerge %19 %20 None
+               OpBranch %21
+         %21 = OpLabel
+         %22 = OpLoad %13 %15
+         %25 = OpSLessThan %24 %22 %23
+               OpBranchConditional %25 %18 %19
+         %18 = OpLabel
+               OpStore %9 %26
+         %34 = OpAccessChain %33 %30 %16 %32
+         %35 = OpLoad %6 %34
+         %36 = OpFOrdGreaterThan %24 %10 %35
+               OpSelectionMerge %38 None
+               OpBranchConditional %36 %37 %38
+         %37 = OpLabel
+               OpStore %9 %12
+               OpSelectionMerge %41 None
+               OpBranchConditional %39 %40 %41
+         %40 = OpLabel
+               OpReturn
+         %41 = OpLabel
+               OpBranch %38
+         %38 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+         %43 = OpLoad %13 %15
+         %45 = OpIAdd %13 %43 %44
+               OpStore %15 %45
+               OpBranch %17
+         %19 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+
+[test]
+## Uniforms
+# injectionSwitch
+uniform ubo 0:0 vec2 0 0.0 1.0
+
+draw rect -1 -1 2 2
+probe rgba (0, 0) (1, 1, 1, 1)

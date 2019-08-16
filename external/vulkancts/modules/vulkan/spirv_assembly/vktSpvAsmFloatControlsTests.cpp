@@ -1249,6 +1249,7 @@ struct Operation
 	const char*	types;
 	const char*	constants;
 	const char*	variables;
+	const char*	functions;
 	const char*	commands;
 
 	// conversion operations operate on one float type and produce float
@@ -1271,6 +1272,7 @@ struct Operation
 		, types("")
 		, constants("")
 		, variables("")
+		, functions("")
 		, commands(_commands)
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
@@ -1290,6 +1292,7 @@ struct Operation
 		, types("")
 		, constants(_constants)
 		, variables("")
+		, functions("")
 		, commands(_commands)
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
@@ -1303,6 +1306,7 @@ struct Operation
 			  const char* _types,
 			  const char* _constants,
 			  const char* _variables,
+			  const char* _functions,
 			  const char* _commands)
 		: name(_name)
 		, floatUsage(_floatUsage)
@@ -1310,6 +1314,7 @@ struct Operation
 		, types(_types)
 		, constants(_constants)
 		, variables(_variables)
+		, functions(_functions)
 		, commands(_commands)
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
@@ -1330,6 +1335,7 @@ struct Operation
 		, types(_types)
 		, constants(_constants)
 		, variables("")
+		, functions("")
 		, commands(_commands)
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
@@ -1378,6 +1384,7 @@ struct SpecializedOperation
 	string types;
 	string arguments;
 	string variables;
+	string functions;
 	string commands;
 
 	FloatType		inFloatType;
@@ -1456,12 +1463,13 @@ void TestCasesBuilder::init()
 	mo[O_RETURN_VAL]	= Op("ret_val",		FLOAT_ARITHMETIC,
 										    "",
 											"%type_test_fun      = OpTypeFunction %type_float %type_float\n",
+											"",
+											"",
 											"%test_fun = OpFunction %type_float None %type_test_fun\n"
 											"%param = OpFunctionParameter %type_float\n"
 											"%entry = OpLabel\n"
 											"OpReturnValue %param\n"
 											"OpFunctionEnd\n",
-											"",
 											"%result             = OpFunctionCall %type_float %test_fun %arg1\n");
 
 	// conversion operations that are meant to be used only for single output type (defined by the second number in name)
@@ -1682,6 +1690,7 @@ void TestCasesBuilder::init()
 											"",
 											"",
 											"%tmpVarPtr          = OpVariable %type_float_fptr Function\n",
+											"",
 											"%result             = OpExtInst %type_float %std450 Modf %arg1 %tmpVarPtr\n");
 	mo[O_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
 										    "OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
@@ -1690,6 +1699,7 @@ void TestCasesBuilder::init()
 											"%struct_ff_fptr     = OpTypePointer Function %struct_ff\n",
 											"",
 											"%tmpStructPtr       = OpVariable %struct_ff_fptr Function\n",
+											"",
 											"%tmpStruct          = OpExtInst %struct_ff %std450 ModfStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
@@ -1699,6 +1709,7 @@ void TestCasesBuilder::init()
 											"",
 											"",
 											"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n",
+											"",
 											"%result             = OpExtInst %type_float %std450 Frexp %arg1 %tmpVarPtr\n");
 	mo[O_FREXP_ST]		= Op("frexp_st",	FLOAT_ARITHMETIC,
 										    "OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
@@ -1707,6 +1718,7 @@ void TestCasesBuilder::init()
 											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
 											"",
 											"%tmpStructPtr       = OpVariable %struct_fi_fptr Function\n",
+											"",
 											"%tmpStruct          = OpExtInst %struct_fi %std450 FrexpStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
@@ -1747,6 +1759,7 @@ void TestCasesBuilder::init()
 											"%c_fp32_denorm_fp16 = OpConstant %type_f32 6.01e-5\n"		// fp32 representation of fp16 denorm value
 											"%c_ref              = OpConstant %type_u32 66061296\n",
 											"",
+											"",
 											"%srcVec             = OpCompositeConstruct %type_f32_vec2 %c_fp32_denorm_fp16 %c_fp32_denorm_fp16\n"
 											"%packedInt          = OpExtInst %type_u32 %std450 PackHalf2x16 %srcVec\n"
 											"%boolVal            = OpIEqual %type_bool %c_ref %packedInt\n"
@@ -1759,6 +1772,7 @@ void TestCasesBuilder::init()
 											"",
 											"%c_u32_2_16_pack    = OpConstant %type_u32 66061296\n", // == packHalf2x16(vec2(denorm))
 											"",
+											"",
 											"%tmpVec             = OpExtInst %type_f32_vec2 %std450 UnpackHalf2x16 %c_u32_2_16_pack\n"
 											"%result             = OpCompositeExtract %type_f32 %tmpVec 0\n");
 
@@ -1769,6 +1783,7 @@ void TestCasesBuilder::init()
 											"",
 											"%c_p1               = OpConstant %type_u32 0\n"
 											"%c_p2               = OpConstant %type_u32 262144\n",		// == UnpackDouble2x32(denorm)
+											"",
 											"",
 											"%srcVec             = OpCompositeConstruct %type_u32_vec2 %c_p1 %c_p2\n"
 											"%result             = OpExtInst %type_f64 %std450 PackDouble2x32 %srcVec\n");
@@ -1786,11 +1801,13 @@ void TestCasesBuilder::init()
 											"%c_p1               = OpConstant %type_u32 0\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
 											"",
+											"",
 											unpackDouble2x32Source);
 	mo[O_UPD_DENORM_PRESERVE]	= Op("upd_denorm",	FLOAT_STORAGE_ONLY, "",
 											unpackDouble2x32Types,
 											"%c_p1               = OpConstant %type_u32 1008\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
+											"",
 											"",
 											unpackDouble2x32Source);
 
@@ -2351,6 +2368,7 @@ void TestGroupBuilderBase::specializeOperation(const TestCaseInfo&		testCaseInfo
 	specializedOperation.annotations	= replace(operation.annotations, widthToken, outTypeSnippets->bitWidth);
 	specializedOperation.types			= replace(operation.types, typeToken, outTypePrefix);
 	specializedOperation.variables		= replace(operation.variables, typeToken, outTypePrefix);
+	specializedOperation.functions		= replace(operation.functions, typeToken, outTypePrefix);
 	specializedOperation.commands		= replace(operation.commands, typeToken, outTypePrefix);
 
 	specializedOperation.inFloatType		= inFloatType;
@@ -2537,10 +2555,12 @@ void ComputeTestGroupBuilder::init()
 		"%id                   = OpVariable %type_u32_vec3_ptr Input\n"
 
 		// set of default constants per float type is placed here,
-		// operation tests can also define additional constants;
-		// note that O_RETURN_VAL defines function here and becouse
-		// of that this token needs to be directly before main function
+		// operation tests can also define additional constants.
 		"${constants}"
+
+		// O_RETURN_VAL defines function here and becouse
+		// of that this token needs to be directly before main function
+		"${functions}"
 
 		"%main                 = OpFunction %type_void None %type_voidf\n"
 		"%label                = OpLabel\n"
@@ -2660,6 +2680,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 	specializations["types"]			= types + specOpData.types;
 	specializations["io_definitions"]	= ioDefinitions;
 	specializations["variables"]		= specOpData.variables;
+	specializations["functions"]		= specOpData.functions;
 	specializations["save_result"]		= outTypeSnippets->storeResultsSnippet;
 	specializations["arguments"]		= specOpData.arguments;
 	specializations["commands"]			= specOpData.commands;
@@ -2804,10 +2825,12 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 		"%BP_vertex_color      = OpVariable %type_f32_vec4_optr Output\n"
 
 		// set of default constants per float type is placed here,
-		// operation tests can also define additional constants;
-		// note that O_RETURN_VAL defines function here and because
-		// of that this token needs to be directly before main function
+		// operation tests can also define additional constants.
 		"${vert_constants}"
+
+		// O_RETURN_VAL defines function here and because
+		// of that this token needs to be directly before main function.
+		"${vert_functions}"
 
 		"%main                 = OpFunction %type_void None %type_voidf\n"
 		"%label                = OpLabel\n"
@@ -2889,10 +2912,12 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 		"${frag_io_definitions}"
 
 		// set of default constants per float type is placed here,
-		// operation tests can also define additional constants;
-		// note that O_RETURN_VAL defines function here and because
-		// of that this token needs to be directly before main function
+		// operation tests can also define additional constants.
 		"${frag_constants}"
+
+		// O_RETURN_VAL defines function here and because
+		// of that this token needs to be directly before main function.
+		"${frag_functions}"
 
 		"%main                 = OpFunction %type_void None %type_voidf\n"
 		"%label                = OpLabel\n"
@@ -3096,6 +3121,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	string fragTypes;
 	string vertConstants;
 	string fragConstants;
+	string vertFunctions;
+	string fragFunctions;
 	string vertIODefinitions;
 	string fragIODefinitions;
 	string vertArguments;
@@ -3112,6 +3139,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	{
 		vertAnnotations = inTypeSnippets->inputAnnotationsSnippet + inTypeSnippets->typeAnnotationsSnippet;
 		fragAnnotations = outTypeSnippets->outputAnnotationsSnippet + outTypeSnippets->typeAnnotationsSnippet;
+		vertFunctions = specOpData.functions;
 
 		// check if input type is different from tested type (conversion operations)
 		if (testOperation.isInputTypeRestricted)
@@ -3165,6 +3193,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	}
 	else // perform test in fragment stage - vertex stage is empty
 	{
+		fragFunctions = specOpData.functions;
 		// check if input type is different from tested type
 		if (testOperation.isInputTypeRestricted)
 		{
@@ -3229,6 +3258,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	specializations["vert_io_definitions"]	= vertIODefinitions;
 	specializations["vert_arguments"]		= vertArguments;
 	specializations["vert_variables"]		= vertVariables;
+	specializations["vert_functions"]		= vertFunctions;
 	specializations["vert_commands"]		= vertCommands;
 	specializations["vert_process_result"]	= vertProcessResult;
 	specializations["frag_capabilities"]	= fragCapabilities;
@@ -3237,6 +3267,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	specializations["frag_annotations"]		= fragAnnotations;
 	specializations["frag_types"]			= fragTypes;
 	specializations["frag_constants"]		= fragConstants;
+	specializations["frag_functions"]		= fragFunctions;
 	specializations["frag_io_definitions"]	= fragIODefinitions;
 	specializations["frag_arguments"]		= fragArguments;
 	specializations["frag_variables"]		= fragVariables;

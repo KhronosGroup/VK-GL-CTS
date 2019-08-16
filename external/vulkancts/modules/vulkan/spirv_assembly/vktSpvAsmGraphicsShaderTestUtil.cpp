@@ -1008,12 +1008,8 @@ map<string, string> passthruInterface (const IFDataType& data_type)
 	map<string, string>	fragments	= passthruFragments();
 	const string		functype	= string("%") + var_type + "_" + var_type + "_function";
 
-	fragments["interface_op_func"]	=
-		string("%interface_op_func = OpFunction %") + var_type + " None " + functype + "\n"
-		"               %io_param1 = OpFunctionParameter %" + var_type + "\n"
-		"                %IF_label = OpLabel\n"
-		"                            OpReturnValue %io_param1\n"
-		"                            OpFunctionEnd\n";
+	fragments["interface_op_call"]  = "OpCopyObject %" + var_type;
+	fragments["interface_op_func"]	= "";
 	fragments["input_type"]			= var_type;
 	fragments["output_type"]		= var_type;
 	fragments["pre_main"]			= "";
@@ -1087,7 +1083,7 @@ map<string, string> fillInterfacePlaceholderVert (void)
 		"OpDecorate %IF_output Location 2\n";
 	fragments["IF_carryforward"]	=
 		"%IF_input_val = OpLoad %${input_type} %IF_input\n"
-		"   %IF_result = OpFunctionCall %${output_type} %interface_op_func %IF_input_val\n"
+		"   %IF_result = ${interface_op_call} %IF_input_val\n"
 		"                OpStore %IF_output %IF_result\n";
 
 	// Make sure the rest still need to be instantialized.
@@ -1098,6 +1094,7 @@ map<string, string> fillInterfacePlaceholderVert (void)
 	fragments["decoration"]				= "${decoration:opt}";
 	fragments["pre_main"]				= "${pre_main:opt}";
 	fragments["testfun"]				= "${testfun}";
+	fragments["interface_op_call"]    = "${interface_op_call}";
 	fragments["interface_op_func"]		= "${interface_op_func}";
 	fragments["post_interface_op_vert"]	= "${post_interface_op_vert:opt}";
 
@@ -1124,7 +1121,7 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 		"OpDecorate %IF_output Location 1\n";  // Fragment shader should write to location #1.
 	fragments["IF_carryforward"]	=
 		"%IF_input_val = OpLoad %${input_type} %IF_input\n"
-		"   %IF_result = OpFunctionCall %${output_type} %interface_op_func %IF_input_val\n"
+		"   %IF_result = ${interface_op_call} %IF_input_val\n"
 		"                OpStore %IF_output %IF_result\n";
 
 	// Make sure the rest still need to be instantialized.
@@ -1135,6 +1132,7 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 	fragments["decoration"]				= "${decoration:opt}";
 	fragments["pre_main"]				= "${pre_main:opt}";
 	fragments["testfun"]				= "${testfun}";
+	fragments["interface_op_call"]		= "${interface_op_call}";
 	fragments["interface_op_func"]		= "${interface_op_func}";
 	fragments["post_interface_op_frag"]	= "${post_interface_op_frag:opt}";
 
@@ -1169,9 +1167,9 @@ map<string, string> fillInterfacePlaceholderTessCtrl (void)
 		"%IF_input_val0 = OpLoad %${input_type} %IF_input_ptr0\n"
 		"%IF_input_val1 = OpLoad %${input_type} %IF_input_ptr1\n"
 		"%IF_input_val2 = OpLoad %${input_type} %IF_input_ptr2\n"
-		"%IF_input_res0 = OpFunctionCall %${output_type} %interface_op_func %IF_input_val0\n"
-		"%IF_input_res1 = OpFunctionCall %${output_type} %interface_op_func %IF_input_val1\n"
-		"%IF_input_res2 = OpFunctionCall %${output_type} %interface_op_func %IF_input_val2\n"
+		"%IF_input_res0 = ${interface_op_call} %IF_input_val0\n"
+		"%IF_input_res1 = ${interface_op_call} %IF_input_val1\n"
+		"%IF_input_res2 = ${interface_op_call} %IF_input_val2\n"
 		"OpStore %IF_output_ptr0 %IF_input_res0\n"
 		"OpStore %IF_output_ptr1 %IF_input_res1\n"
 		"OpStore %IF_output_ptr2 %IF_input_res2\n";
@@ -1185,6 +1183,7 @@ map<string, string> fillInterfacePlaceholderTessCtrl (void)
 	fragments["decoration_tessc"]			= "${decoration_tessc:opt}";
 	fragments["pre_main"]					= "${pre_main:opt}";
 	fragments["testfun"]					= "${testfun}";
+	fragments["interface_op_call"]			= "${interface_op_call}";
 	fragments["interface_op_func"]			= "${interface_op_func}";
 	fragments["post_interface_op_tessc"]	= "${post_interface_op_tessc:opt}";
 
@@ -1213,7 +1212,7 @@ map<string, string> fillInterfacePlaceholderTessEvalGeom (void)
 		// Only get the first value since all three values are the same anyway.
 		" %IF_input_ptr0 = OpAccessChain %ip_${input_type} %IF_input %c_i32_0\n"
 		" %IF_input_val0 = OpLoad %${input_type} %IF_input_ptr0\n"
-		" %IF_input_res0 = OpFunctionCall %${output_type} %interface_op_func %IF_input_val0\n"
+		" %IF_input_res0 = ${interface_op_call} %IF_input_val0\n"
 		"OpStore %IF_output %IF_input_res0\n";
 
 	// Make sure the rest still need to be instantialized.
@@ -1224,6 +1223,7 @@ map<string, string> fillInterfacePlaceholderTessEvalGeom (void)
 	fragments["decoration"]					= "${decoration:opt}";
 	fragments["pre_main"]					= "${pre_main:opt}";
 	fragments["testfun"]					= "${testfun}";
+	fragments["interface_op_call"]			= "${interface_op_call}";
 	fragments["interface_op_func"]			= "${interface_op_func}";
 	fragments["post_interface_op_tesse"]	= "${post_interface_op_tesse:opt}";
 	fragments["post_interface_op_geom"]		= "${post_interface_op_geom:opt}";

@@ -249,6 +249,39 @@ BoolOp boolOpFromIndex (size_t index)
 	return ops[index % DE_LENGTH_OF_ARRAY(ops)];
 }
 
+static float requiredDepthEpsilon(VkFormat format)
+{
+	// Possible precision loss in the unorm depth pipeline means that we need to check depths
+	// that go in and back out of the depth buffer with an epsilon rather than an exact match
+	deUint32 unormBits = 0;
+
+	switch (format)
+	{
+	case VK_FORMAT_D16_UNORM:
+		unormBits = 16;
+		break;
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+		unormBits = 24;
+		break;
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+	default:
+		unormBits = 0;
+		break;
+	}
+
+	if (unormBits > 0)
+		return 1.0f / (float)((1 << unormBits) - 1);
+
+	return 0.0f; // Require exact match
+}
+
+static bool depthsEqual(float a, float b, float epsilon)
+{
+	return fabs(a - b) <= epsilon;
+}
+
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vk,
 									   VkDevice					device,
 									   VkFramebufferCreateFlags	pCreateInfo_flags,
@@ -3546,7 +3579,8 @@ bool verifyColorAttachment (const vector<PixelValue>&		reference,
 bool verifyDepthAttachment (const vector<PixelValue>&		reference,
 							const ConstPixelBufferAccess&	result,
 							const PixelBufferAccess&		errorImage,
-							const DepthValuesArray&			depthValues)
+							const DepthValuesArray&			depthValues,
+							float							epsilon)
 {
 	const Vec4	red		(1.0f, 0.0f, 0.0f, 1.0f);
 	const Vec4	green	(0.0f, 1.0f, 0.0f, 1.0f);
@@ -3569,8 +3603,8 @@ bool verifyDepthAttachment (const vector<PixelValue>&		reference,
 		{
 			const bool value = *maybeValue;
 
-			if ((value && (resultDepth != float(depthValues[1]) / 255.0f))
-				|| (!value && resultDepth != float(depthValues[0]) / 255.0f))
+			if ((value && !depthsEqual(resultDepth, float(depthValues[1]) / 255.0f, epsilon))
+				|| (!value && !depthsEqual(resultDepth, float(depthValues[0]) / 255.0f, epsilon)))
 				pixelOk = false;
 		}
 
@@ -3679,7 +3713,7 @@ bool logAndVerifyImages (TestLog&											log,
 					log << TestLog::Image("AttachmentReference" + de::toString(attachmentNdx), "Attachment reference " + de::toString(attachmentNdx), referenceAttachments[attachmentNdx].getAccess());
 
 					if (renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE
-						&& !verifyDepthAttachment(referenceValues[attachmentNdx], depthAccess, depthErrorImage.getAccess(), config.depthValues))
+						&& !verifyDepthAttachment(referenceValues[attachmentNdx], depthAccess, depthErrorImage.getAccess(), config.depthValues, requiredDepthEpsilon(attachment.getFormat())))
 					{
 						log << TestLog::Image("DepthAttachmentError" + de::toString(attachmentNdx), "Depth Attachment Error " + de::toString(attachmentNdx), depthErrorImage.getAccess());
 						isOk = false;
@@ -3708,7 +3742,7 @@ bool logAndVerifyImages (TestLog&											log,
 				if (tcu::hasDepthComponent(format.order))
 				{
 					if ((renderPassInfo.getAttachments()[attachmentNdx].getStoreOp() == VK_ATTACHMENT_STORE_OP_STORE || renderPassInfo.getAttachments()[attachmentNdx].getStencilStoreOp() == VK_ATTACHMENT_STORE_OP_STORE)
-						&& !verifyDepthAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess(), config.depthValues))
+						&& !verifyDepthAttachment(referenceValues[attachmentNdx], access, errorImage.getAccess(), config.depthValues, requiredDepthEpsilon(attachment.getFormat())))
 					{
 						log << TestLog::Image("AttachmentError" + de::toString(attachmentNdx), "Attachment Error " + de::toString(attachmentNdx), errorImage.getAccess());
 						isOk = false;
@@ -3819,6 +3853,8 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 			fragmentShader << "#version 310 es\n"
 						   << "precision highp float;\n";
 
+			bool hasAnyDepthFormats = false;
+
 			for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
 			{
 				const deUint32				attachmentIndex	= subpass.getInputAttachments()[attachmentNdx].getAttachment();
@@ -3832,6 +3868,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 				{
 					if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 					{
+						hasAnyDepthFormats = true;
 						fragmentShader << "layout(input_attachment_index = " << attachmentNdx << ", set=0, binding=" << inputAttachmentBinding << ") uniform highp subpassInput i_depth" << attachmentNdx << ";\n";
 						inputAttachmentBinding++;
 					}
@@ -3856,6 +3893,10 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 				const std::string attachmentType = getAttachmentType(config.renderPass.getAttachments()[getAttachmentNdx(subpass.getColorAttachments(), attachmentNdx)].getFormat(), config.useFormatCompCount);
 				fragmentShader << "layout(location = " << attachmentNdx << ") out highp " << attachmentType << " o_color" << attachmentNdx << ";\n";
 			}
+
+			if (hasAnyDepthFormats)
+				fragmentShader << "\nbool depthsEqual(float a, float b, float epsilon) {\n"
+								<< "\treturn abs(a - b) <= epsilon;\n}\n\n";
 
 			fragmentShader << "void main (void) {\n";
 
@@ -3975,7 +4016,9 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 						{
 							if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 							{
-								fragmentShader << "\tinputs[" << inputValueNdx << "] = " << deUint32(config.depthValues[1]) << ".0f/255.0f == float(subpassLoad(i_depth" << attachmentNdx << ").x);\n";
+								fragmentShader << "\tinputs[" << inputValueNdx << "] = depthsEqual(" << deUint32(config.depthValues[1]) <<
+									".0f/255.0f, float(subpassLoad(i_depth" << attachmentNdx << ").x), " <<
+									std::fixed << std::setprecision(12) << requiredDepthEpsilon(attachment.getFormat()) << ");\n";
 								inputValueNdx++;
 							}
 
