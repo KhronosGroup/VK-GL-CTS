@@ -180,7 +180,7 @@ void draw (Context&					context,
 	// Initialize vertex data
 	{
 		deMemcpy(vertexBufferAlloc->getHostPtr(), &perInstanceAttribute[0], (size_t)vertexBufferSize);
-		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+		flushAlloc(vk, device, *vertexBufferAlloc);
 	}
 
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -380,7 +380,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 	// Compare result
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSize);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 		const tcu::ConstPixelBufferAccess result(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferAlloc->getHostPtr());
 
 		tcu::TextureLevel reference(mapVkFormat(colorFormat), renderSize.x(), renderSize.y());
