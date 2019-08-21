@@ -226,7 +226,8 @@ void							getFenceNative						(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
 																	 vk::VkFence								fence,
 																	 vk::VkExternalFenceHandleTypeFlagBits		externalType,
-																	 NativeHandle&								nativeHandle);
+																	 NativeHandle&								nativeHandle,
+                                                                     bool expectFenceUnsignaled = true);
 
 void							importFence							(const vk::DeviceInterface&					vkd,
 																	 const vk::VkDevice							device,
