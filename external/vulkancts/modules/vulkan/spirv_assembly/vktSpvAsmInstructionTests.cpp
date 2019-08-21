@@ -6145,10 +6145,8 @@ tcu::TestCaseGroup* createFloat16OpConstantCompositeGroup (tcu::TestContext& tes
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-		spec.extensions.push_back("VK_KHR_16bit_storage");
 		spec.extensions.push_back("VK_KHR_shader_float16_int8");
 
-		spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 		spec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
