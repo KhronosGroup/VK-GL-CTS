@@ -646,7 +646,8 @@ void submitDummySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
 											deUint32									queueFamilyIndex,
 											vk::VkFence									fence,
 											vk::VkExternalFenceHandleTypeFlagBits		externalType,
-											NativeHandle&								nativeHandle)
+											NativeHandle&								nativeHandle,
+											bool										expectFenceUnsignaled = true)
 {
 	const vk::Unique<vk::VkCommandPool>		cmdPool(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex, DE_NULL));
 	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -698,7 +699,7 @@ void submitDummySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
 
 	VK_CHECK(vk.queueSubmit(queue, 1, &submit, fence));
 
-	getFenceNative(vk, device, fence, externalType, nativeHandle);
+	getFenceNative(vk, device, fence, externalType, nativeHandle, expectFenceUnsignaled);
 
 	VK_CHECK(vk.setEvent(device, *event));
 
@@ -2150,9 +2151,9 @@ tcu::TestStatus testFenceMultipleExports (Context&				context,
 			NativeHandle handle;
 
 			if (transference == TRANSFERENCE_COPY)
-				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fence, config.externalType, handle);
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fence, config.externalType, handle, exportNdx == 0 /* expect fence to be signaled after first pass */);
 			else
-				getFenceNative(vkd, *device, *fence, config.externalType, handle);
+				getFenceNative(vkd, *device, *fence, config.externalType, handle, exportNdx == 0 /* expect fence to be signaled after first pass */);
 		}
 
 		submitDummySignal(vkd, queue, *fence);
