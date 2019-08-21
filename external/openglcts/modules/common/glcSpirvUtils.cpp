@@ -268,12 +268,13 @@ bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType t
 
 #else // DEQP_HAVE_GLSLANG
 
-bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType type, ShaderBinaryDataType* dst)
+bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType type, ShaderBinaryDataType* dst, SpirvVersion version)
 {
 	DE_UNREF(log);
 	DE_UNREF(source);
 	DE_UNREF(type);
 	DE_UNREF(dst);
+	DE_UNREF(version);
 
 	TCU_THROW(InternalError, "Glslang not available.");
 
