@@ -1418,8 +1418,8 @@ public:
 
 			// Insert a barrier so data written by the shader is available to the host
 			{
-				const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_hostBufferSizeBytes);
-				vk.cmdPipelineBarrier(cmdBuffer, m_pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+				const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, m_hostBufferSizeBytes);
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
 			}
 		}
 	}
@@ -2068,6 +2068,12 @@ public:
 		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_resource.getImage().subresourceLayers, m_resource.getImage().extent);
 
 		vk.cmdCopyImageToBuffer(cmdBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_hostBuffer, 1u, &copyRegion);
+
+		// Insert a barrier so data written by the transfer is available to the host
+		{
+			const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **m_hostBuffer, 0u, VK_WHOLE_SIZE);
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+		}
 	}
 
 	SyncInfo getSyncInfo (void) const

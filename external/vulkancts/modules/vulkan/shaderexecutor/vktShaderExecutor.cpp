@@ -1344,6 +1344,28 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 					beginCommandBuffer(vk, *copyCmdBuffer);
 					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+
+					// Insert a barrier so data written by the transfer is available to the host
+					{
+						const VkBufferMemoryBarrier barrier =
+						{
+							VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType    sType;
+							DE_NULL,									// const void*        pNext;
+							VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags      srcAccessMask;
+							VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags      dstAccessMask;
+							VK_QUEUE_FAMILY_IGNORED,					// uint32_t           srcQueueFamilyIndex;
+							VK_QUEUE_FAMILY_IGNORED,					// uint32_t           dstQueueFamilyIndex;
+							*readImageBuffer,							// VkBuffer           buffer;
+							0,											// VkDeviceSize       offset;
+							VK_WHOLE_SIZE,								// VkDeviceSize       size;
+						};
+
+						vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+											0, (const VkMemoryBarrier*)DE_NULL,
+											1, &barrier,
+											0, (const VkImageMemoryBarrier*)DE_NULL);
+					}
+
 					endCommandBuffer(vk, *copyCmdBuffer);
 
 					submitCommandsAndWait(vk, vkDevice, queue, copyCmdBuffer.get());
@@ -2474,6 +2496,27 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 
 		vk.cmdDispatch(*cmdBuffer, numToExec, 1, 1);
 
+		// Insert a barrier so data written by the shader is available to the host
+		{
+			const VkBufferMemoryBarrier bufferBarrier =
+			{
+				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType    sType;
+				DE_NULL,									// const void*        pNext;
+				VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags      srcAccessMask;
+				VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags      dstAccessMask;
+				VK_QUEUE_FAMILY_IGNORED,					// uint32_t           srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,					// uint32_t           dstQueueFamilyIndex;
+				*m_outputBuffer,							// VkBuffer           buffer;
+				0,											// VkDeviceSize       offset;
+				VK_WHOLE_SIZE,								// VkDeviceSize       size;
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+								0, (const VkMemoryBarrier*)DE_NULL,
+								1, &bufferBarrier,
+								0, (const VkImageMemoryBarrier*)DE_NULL);
+		}
+
 		endCommandBuffer(vk, *cmdBuffer);
 
 		curOffset += numToExec;
@@ -2829,6 +2872,28 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 		vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
 
 		endRenderPass(vk, *cmdBuffer);
+
+		// Insert a barrier so data written by the shader is available to the host
+		{
+			const VkBufferMemoryBarrier bufferBarrier =
+			{
+				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType    sType;
+				DE_NULL,									// const void*        pNext;
+				VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags      srcAccessMask;
+				VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags      dstAccessMask;
+				VK_QUEUE_FAMILY_IGNORED,					// uint32_t           srcQueueFamilyIndex;
+				VK_QUEUE_FAMILY_IGNORED,					// uint32_t           dstQueueFamilyIndex;
+				*m_outputBuffer,							// VkBuffer           buffer;
+				0,											// VkDeviceSize       offset;
+				VK_WHOLE_SIZE,								// VkDeviceSize       size;
+			};
+
+			vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
+								  0, (const VkMemoryBarrier*)DE_NULL,
+								  1, &bufferBarrier,
+								  0, (const VkImageMemoryBarrier*)DE_NULL);
+		}
+
 		endCommandBuffer(vk, *cmdBuffer);
 	}
 

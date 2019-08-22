@@ -1842,6 +1842,21 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 
 		vk.cmdDispatch(*m_cmdBuffer, 8, 1, 1);
 
+		const VkBufferMemoryBarrier buf_barrier =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,				//    VkStructureType    sType;
+			DE_NULL,												//    const void*        pNext;
+			VK_ACCESS_SHADER_WRITE_BIT,								//    VkAccessFlags      srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,								//    VkAccessFlags      dstAccessMask;
+			VK_QUEUE_FAMILY_IGNORED,								//    uint32_t           srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,								//    uint32_t           dstQueueFamilyIndex;
+			*m_outBuffer,											//    VkBuffer           buffer;
+			0,														//    VkDeviceSize       offset;
+			VK_WHOLE_SIZE											//    VkDeviceSize       size;
+		};
+
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL, 1, &buf_barrier, 0, DE_NULL);
+
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
