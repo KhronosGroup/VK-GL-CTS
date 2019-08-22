@@ -68,5 +68,28 @@ de::SharedPtr<Buffer> Buffer::create (const vk::DeviceInterface& vk,
 	return de::SharedPtr<Buffer>(new Buffer(vk, device, vk::createBuffer(vk, device, &createInfo)));
 }
 
+void bufferBarrier (const vk::DeviceInterface&	vk,
+					vk::VkCommandBuffer			cmdBuffer,
+					vk::VkBuffer				buffer,
+					vk::VkAccessFlags			srcAccessMask,
+					vk::VkAccessFlags			dstAccessMask,
+					vk::VkPipelineStageFlags	srcStageMask,
+					vk::VkPipelineStageFlags	dstStageMask)
+{
+	vk::VkBufferMemoryBarrier barrier;
+	barrier.sType				= vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	barrier.pNext				= DE_NULL;
+	barrier.srcAccessMask		= srcAccessMask;
+	barrier.dstAccessMask		= dstAccessMask;
+	barrier.srcQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED;
+	barrier.buffer				= buffer;
+	barrier.offset				= 0;
+	barrier.size				= VK_WHOLE_SIZE;
+
+	vk.cmdPipelineBarrier(cmdBuffer, srcStageMask, dstStageMask, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL,
+						  1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
+}
+
 } // Draw
 } // vkt
