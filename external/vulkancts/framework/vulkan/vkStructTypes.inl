@@ -2626,7 +2626,7 @@ struct VkFenceGetFdInfoKHR
 	VkExternalFenceHandleTypeFlagBits	handleType;
 };
 
-struct VkPhysicalDevicePerformanceCounterFeaturesKHR
+struct VkPhysicalDevicePerformanceQueryFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -2634,7 +2634,7 @@ struct VkPhysicalDevicePerformanceCounterFeaturesKHR
 	VkBool32		performanceCounterMultipleQueryPools;
 };
 
-struct VkPhysicalDevicePerformanceCounterPropertiesKHR
+struct VkPhysicalDevicePerformanceQueryPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -2661,7 +2661,7 @@ struct VkPerformanceCounterDescriptionKHR
 	char									description[VK_MAX_DESCRIPTION_SIZE];
 };
 
-struct VkPerformanceQueryCreateInfoKHR
+struct VkQueryPoolPerformanceCreateInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;

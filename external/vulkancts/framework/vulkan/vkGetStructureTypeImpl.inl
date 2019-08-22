@@ -916,14 +916,14 @@ template<> VkStructureType getStructureType<VkFenceGetFdInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCounterFeaturesKHR> (void)
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCounterPropertiesKHR> (void)
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceQueryPropertiesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPerformanceCounterKHR> (void)
@@ -936,9 +936,9 @@ template<> VkStructureType getStructureType<VkPerformanceCounterDescriptionKHR> 
 	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR;
 }
 
-template<> VkStructureType getStructureType<VkPerformanceQueryCreateInfoKHR> (void)
+template<> VkStructureType getStructureType<VkQueryPoolPerformanceCreateInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR;
+	return VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkAcquireProfilingLockInfoKHR> (void)

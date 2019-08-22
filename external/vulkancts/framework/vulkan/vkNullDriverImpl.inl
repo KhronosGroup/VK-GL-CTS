@@ -1544,7 +1544,7 @@ VKAPI_ATTR void VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCou
 	DE_UNREF(pCounterDescriptions);
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkPerformanceQueryCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkQueryPoolPerformanceCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses)
 {
 	DE_UNREF(physicalDevice);
 	DE_UNREF(pPerformanceQueryCreateInfo);
