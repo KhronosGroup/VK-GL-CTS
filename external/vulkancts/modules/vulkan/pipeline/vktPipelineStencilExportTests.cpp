@@ -132,17 +132,6 @@ bool isSupportedDepthStencilFormat (const InstanceInterface& instanceInterface, 
 	return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
 }
 
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo	bufferCreateInfo	= makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
-}
-
-inline vk::Move<vk::VkImage> makeImage (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImageCreateInfo& createInfo)
-{
-	return createImage(vk, device, &createInfo);
-}
-
 VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const UVec2& size, VkImageUsageFlags usage)
 {
 	const VkImageCreateInfo imageParams =

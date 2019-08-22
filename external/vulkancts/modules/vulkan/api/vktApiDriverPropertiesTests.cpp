@@ -63,24 +63,24 @@ static const deUint32 knownDriverIds[] =
 	12,	// <enum value="12"      name="VK_DRIVER_ID_BROADCOM_PROPRIETARY_KHR"      comment="Broadcom Inc."/>
 };
 
-static const VkConformanceVersionKHR knownConformanceVersions[] =
+static const VkConformanceVersion knownConformanceVersions[] =
 {
-	makeConformanceVersionKHR(1, 1, 5, 0),
-	makeConformanceVersionKHR(1, 1, 4, 2),
-	makeConformanceVersionKHR(1, 1, 4, 1),
-	makeConformanceVersionKHR(1, 1, 4, 0),
-	makeConformanceVersionKHR(1, 1, 3, 2),
-	makeConformanceVersionKHR(1, 1, 3, 1),
-	makeConformanceVersionKHR(1, 1, 3, 0),
-	makeConformanceVersionKHR(1, 1, 2, 3),
-	makeConformanceVersionKHR(1, 1, 2, 2),
-	makeConformanceVersionKHR(1, 1, 2, 1),
-	makeConformanceVersionKHR(1, 1, 2, 0),
-	makeConformanceVersionKHR(1, 1, 1, 3),
-	makeConformanceVersionKHR(1, 1, 1, 2),
-	makeConformanceVersionKHR(1, 1, 1, 1),
-	makeConformanceVersionKHR(1, 1, 1, 0),
-	makeConformanceVersionKHR(1, 1, 0, 3),
+	makeConformanceVersion(1, 1, 5, 0),
+	makeConformanceVersion(1, 1, 4, 2),
+	makeConformanceVersion(1, 1, 4, 1),
+	makeConformanceVersion(1, 1, 4, 0),
+	makeConformanceVersion(1, 1, 3, 2),
+	makeConformanceVersion(1, 1, 3, 1),
+	makeConformanceVersion(1, 1, 3, 0),
+	makeConformanceVersion(1, 1, 2, 3),
+	makeConformanceVersion(1, 1, 2, 2),
+	makeConformanceVersion(1, 1, 2, 1),
+	makeConformanceVersion(1, 1, 2, 0),
+	makeConformanceVersion(1, 1, 1, 3),
+	makeConformanceVersion(1, 1, 1, 2),
+	makeConformanceVersion(1, 1, 1, 1),
+	makeConformanceVersion(1, 1, 1, 0),
+	makeConformanceVersion(1, 1, 0, 3),
 };
 
 DE_INLINE bool isNullTerminated(const char* str, const deUint32 maxSize)
@@ -88,7 +88,7 @@ DE_INLINE bool isNullTerminated(const char* str, const deUint32 maxSize)
 	return deStrnlen(str, maxSize) < maxSize;
 }
 
-DE_INLINE bool operator==(const VkConformanceVersionKHR& a, const VkConformanceVersionKHR& b)
+DE_INLINE bool operator==(const VkConformanceVersion& a, const VkConformanceVersion& b)
 {
 	return ((a.major == b.major)		&&
 			(a.minor == b.minor)		&&
@@ -150,7 +150,7 @@ tcu::TestStatus testQueryProperties (Context& context, const TestType testType)
 	const VkPhysicalDevice				physDevice			= context.getPhysicalDevice();
 	const int							memsetPattern		= 0xaa;
 	VkPhysicalDeviceProperties2			deviceProperties2;
-	VkPhysicalDeviceDriverPropertiesKHR	deviceDriverProperties;
+	VkPhysicalDeviceDriverProperties	deviceDriverProperties;
 
 	deMemset(&deviceDriverProperties, memsetPattern, sizeof(deviceDriverProperties));
 	deviceDriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;

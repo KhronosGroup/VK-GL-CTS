@@ -499,12 +499,6 @@ Move<VkImage> makeImage (const DeviceInterface&			vk,
 	return createImage(vk, device, &imageParams);
 }
 
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
-}
-
 Move<VkEvent> makeEvent (const DeviceInterface& vk, const VkDevice device)
 {
 	const VkEventCreateInfo createInfo =

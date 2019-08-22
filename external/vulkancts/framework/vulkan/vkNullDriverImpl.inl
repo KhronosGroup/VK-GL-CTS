@@ -127,6 +127,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createDescriptorUpdateTemplate (VkDevice device, 
 	VK_NULL_RETURN((*pDescriptorUpdateTemplate = allocateNonDispHandle<DescriptorUpdateTemplate, VkDescriptorUpdateTemplate>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createRenderPass2 (VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pRenderPass = allocateNonDispHandle<RenderPass, VkRenderPass>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
 {
 	DE_UNREF(pAllocator);
@@ -137,12 +143,6 @@ VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createRenderPass2KHR (VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pRenderPass = allocateNonDispHandle<RenderPass, VkRenderPass>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
@@ -1231,6 +1231,100 @@ VKAPI_ATTR void VKAPI_CALL getDescriptorSetLayoutSupport (VkDevice device, const
 	DE_UNREF(pSupport);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginRenderPass2 (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pRenderPassBegin);
+	DE_UNREF(pSubpassBeginInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdNextSubpass2 (VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pSubpassBeginInfo);
+	DE_UNREF(pSubpassEndInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndRenderPass2 (VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pSubpassEndInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL resetQueryPool (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
+{
+	DE_UNREF(device);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
+	DE_UNREF(queryCount);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, deUint64* pValue)
+{
+	DE_UNREF(device);
+	DE_UNREF(semaphore);
+	DE_UNREF(pValue);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, deUint64 timeout)
+{
+	DE_UNREF(device);
+	DE_UNREF(pWaitInfo);
+	DE_UNREF(timeout);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL signalSemaphore (VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pSignalInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR uint64_t VKAPI_CALL getBufferOpaqueCaptureAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR uint64_t VKAPI_CALL getDeviceMemoryOpaqueCaptureAddress (VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported)
 {
 	DE_UNREF(physicalDevice);
@@ -1419,26 +1513,6 @@ VKAPI_ATTR void VKAPI_CALL cmdPushDescriptorSetWithTemplateKHR (VkCommandBuffer 
 	DE_UNREF(pData);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBeginRenderPass2KHR (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfoKHR* pSubpassBeginInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pRenderPassBegin);
-	DE_UNREF(pSubpassBeginInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdNextSubpass2KHR (VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR* pSubpassBeginInfo, const VkSubpassEndInfoKHR* pSubpassEndInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pSubpassBeginInfo);
-	DE_UNREF(pSubpassEndInfo);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdEndRenderPass2KHR (VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR* pSubpassEndInfo)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(pSubpassEndInfo);
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain)
 {
 	DE_UNREF(device);
@@ -1537,28 +1611,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilities2KHR (VkPhysicalDevice
 	DE_UNREF(pDisplayPlaneInfo);
 	DE_UNREF(pCapabilities);
 	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(buffer);
-	DE_UNREF(offset);
-	DE_UNREF(countBuffer);
-	DE_UNREF(countBufferOffset);
-	DE_UNREF(maxDrawCount);
-	DE_UNREF(stride);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(buffer);
-	DE_UNREF(offset);
-	DE_UNREF(countBuffer);
-	DE_UNREF(countBufferOffset);
-	DE_UNREF(maxDrawCount);
-	DE_UNREF(stride);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
@@ -2247,7 +2299,7 @@ VKAPI_ATTR void VKAPI_CALL setLocalDimmingAMD (VkDevice device, VkSwapchainKHR s
 	DE_UNREF(localDimmingEnable);
 }
 
-VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo)
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfo* pInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
@@ -2670,6 +2722,19 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplate,					destroyDescriptorUpdateTemplate),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplate,					updateDescriptorSetWithTemplate),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,						getDescriptorSetLayoutSupport),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCount,								cmdDrawIndirectCount),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCount,						cmdDrawIndexedIndirectCount),
+	VK_NULL_FUNC_ENTRY(vkCreateRenderPass2,									createRenderPass2),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass2,								cmdBeginRenderPass2),
+	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass2,									cmdNextSubpass2),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass2,									cmdEndRenderPass2),
+	VK_NULL_FUNC_ENTRY(vkResetQueryPool,									resetQueryPool),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreCounterValue,							getSemaphoreCounterValue),
+	VK_NULL_FUNC_ENTRY(vkWaitSemaphores,									waitSemaphores),
+	VK_NULL_FUNC_ENTRY(vkSignalSemaphore,									signalSemaphore),
+	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddress,							getBufferDeviceAddress),
+	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddress,						getBufferOpaqueCaptureAddress),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddress,				getDeviceMemoryOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkCreateSwapchainKHR,								createSwapchainKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroySwapchainKHR,								destroySwapchainKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,								getSwapchainImagesKHR),
@@ -2692,10 +2757,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateDescriptorUpdateTemplateKHR,					createDescriptorUpdateTemplate),
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplateKHR,				destroyDescriptorUpdateTemplate),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,				updateDescriptorSetWithTemplate),
-	VK_NULL_FUNC_ENTRY(vkCreateRenderPass2KHR,								createRenderPass2KHR),
-	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass2KHR,							cmdBeginRenderPass2KHR),
-	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass2KHR,								cmdNextSubpass2KHR),
-	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass2KHR,								cmdEndRenderPass2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateRenderPass2KHR,								createRenderPass2),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginRenderPass2KHR,							cmdBeginRenderPass2),
+	VK_NULL_FUNC_ENTRY(vkCmdNextSubpass2KHR,								cmdNextSubpass2),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass2KHR,								cmdEndRenderPass2),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,								getSwapchainStatusKHR),
 	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,									importFenceFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,										getFenceFdKHR),
@@ -2709,8 +2774,14 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkBindBufferMemory2KHR,								bindBufferMemory2),
 	VK_NULL_FUNC_ENTRY(vkBindImageMemory2KHR,								bindImageMemory2),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupportKHR,					getDescriptorSetLayoutSupport),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,							cmdDrawIndirectCountKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,					cmdDrawIndexedIndirectCountKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,							cmdDrawIndirectCount),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,					cmdDrawIndexedIndirectCount),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreCounterValueKHR,						getSemaphoreCounterValue),
+	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphores),
+	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphore),
+	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddress),
+	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddress),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,				getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,				getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,	getPipelineExecutableInternalRepresentationsKHR),

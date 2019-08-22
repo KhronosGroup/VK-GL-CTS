@@ -154,19 +154,19 @@ void FSITestCase::checkSupport(Context& context) const
 	context.requireDeviceExtension("VK_EXT_fragment_shader_interlock");
 
 	if ((m_data.interlock == INT_SAMPLE_ORDERED || m_data.interlock == INT_SAMPLE_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeatures().fragmentShaderSampleInterlock)
+		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderSampleInterlock)
 	{
 		TCU_THROW(NotSupportedError, "Fragment shader sample interlock not supported");
 	}
 
 	if ((m_data.interlock == INT_PIXEL_ORDERED || m_data.interlock == INT_PIXEL_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeatures().fragmentShaderPixelInterlock)
+		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderPixelInterlock)
 	{
 		TCU_THROW(NotSupportedError, "Fragment shader pixel interlock not supported");
 	}
 
 	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeatures().fragmentShaderShadingRateInterlock)
+		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderShadingRateInterlock)
 	{
 		TCU_THROW(NotSupportedError, "Fragment shader shading rate interlock not supported");
 	}
@@ -318,40 +318,6 @@ TestInstance* FSITestCase::createInstance (Context& context) const
 	return new FSITestInstance(context, m_data);
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
-										 const VkBufferUsageFlags	usage,
-										 const VkBufferCreateFlags  flags)
-{
-	const VkBufferCreateInfo bufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		flags,									// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
-									   const VkImageSubresourceLayers	subresourceLayers)
-{
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,										//	VkDeviceSize				bufferOffset;
-		0u,											//	deUint32					bufferRowLength;
-		0u,											//	deUint32					bufferImageHeight;
-		subresourceLayers,							//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),						//	VkOffset3D					imageOffset;
-		extent,										//	VkExtent3D					imageExtent;
-	};
-
-	return copyParams;
-}
-
 tcu::TestStatus FSITestInstance::iterate (void)
 {
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();
@@ -417,7 +383,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 
 	de::MovePtr<BufferWithMemory> buffer;
 	buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-		vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 0), MemoryRequirement::Any));
+		vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::Any));
 
 	flushAlloc(vk, device, buffer->getAllocation());
 
@@ -442,7 +408,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 
 	de::MovePtr<BufferWithMemory> copyBuffer;
 	copyBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-		vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, 0), MemoryRequirement::HostVisible | MemoryRequirement::Cached));
+		vk, device, allocator, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible | MemoryRequirement::Cached));
 
 	const VkImageCreateInfo			imageCreateInfo			=
 	{

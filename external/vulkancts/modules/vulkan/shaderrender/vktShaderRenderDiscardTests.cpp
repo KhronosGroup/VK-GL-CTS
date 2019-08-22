@@ -156,7 +156,7 @@ ShaderDiscardCase::ShaderDiscardCase (tcu::TestContext&		testCtx,
 
 void ShaderDiscardCase::checkSupport(Context& context) const
 {
-	if (m_demote && !context.getShaderDemoteToHelperInvocationFeatures().shaderDemoteToHelperInvocation)
+	if (m_demote && !context.getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation)
 		TCU_THROW(NotSupportedError, "VK_EXT_shader_demote_to_helper_invocation not supported");
 }
 

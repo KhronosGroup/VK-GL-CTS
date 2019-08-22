@@ -543,22 +543,6 @@ TestInstance* CooperativeMatrixTestCase::createInstance (Context& context) const
 	return new CooperativeMatrixTestInstance(context, m_data);
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
-										 const VkBufferUsageFlags	usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
 static void setData(void *base, VkComponentTypeNV dt, deUint32 i, float value)
 {
 	if (dt == VK_COMPONENT_TYPE_FLOAT32_NV)
@@ -700,7 +684,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
 	{
-		VkBufferDeviceAddressInfoEXT info =
+		VkBufferDeviceAddressInfo info =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	 sType;
 			DE_NULL,											// const void*		 pNext;

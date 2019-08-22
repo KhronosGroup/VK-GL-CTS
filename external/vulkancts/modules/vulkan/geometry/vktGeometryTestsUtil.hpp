@@ -168,27 +168,13 @@ std::string						outputTypeToGLString		(const vk::VkPrimitiveTopology& outputTyp
 std::size_t						calcOutputVertices			(const vk::VkPrimitiveTopology& inputType);
 
 vk::VkImageCreateInfo			makeImageCreateInfo			(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers = 1u);
-vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
 vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkDeviceSize& bufferOffset, const vk::VkImageSubresourceLayers& imageSubresource, const vk::VkOffset3D& imageOffset, const vk::VkExtent3D& imageExtent);
-de::MovePtr<vk::Allocation>		bindImage					(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkImage image, const vk::MemoryRequirement requirement);
-de::MovePtr<vk::Allocation>		bindBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkBuffer buffer, const vk::MemoryRequirement requirement);
 
 bool							compareWithFileImage		(Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string name);
 
 void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const tcu::Vec4& color);
 void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const float depth);
-void							zeroBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size);
 vk::VkBool32					checkPointSize				(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice);
-
-inline vk::Move<vk::VkBuffer> makeBuffer (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkBufferCreateInfo& createInfo)
-{
-	return createBuffer(vk, device, &createInfo);
-}
-
-inline vk::Move<vk::VkImage> makeImage (const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImageCreateInfo& createInfo)
-{
-	return createImage(vk, device, &createInfo);
-}
 
 } //vkt
 } //geometry

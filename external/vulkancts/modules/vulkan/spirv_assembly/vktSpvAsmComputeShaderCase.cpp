@@ -421,7 +421,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Check all required extensions are supported
 	for (std::vector<std::string>::const_iterator i = m_shaderSpec.extensions.begin(); i != m_shaderSpec.extensions.end(); ++i)
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), *i))
+		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), *i))
 			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
 	}
 
@@ -757,9 +757,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// all the descriptors with just a desciptor to this new buffer.
 	if (m_shaderSpec.usesPhysStorageBuffer)
 	{
-		VkBufferDeviceAddressInfoEXT info =
+		VkBufferDeviceAddressInfo info =
 		{
-			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
 			DE_NULL,											// const void*		pNext;
 			0,													// VkBuffer			buffer
 		};

@@ -42,12 +42,10 @@ INL_HEADER = """\
 """
 
 DEFINITIONS			= [
-	("VK_API_VERSION_1_0",					"deUint32"),
-	("VK_API_VERSION_1_1",					"deUint32"),
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
 	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
-	("VK_MAX_DRIVER_NAME_SIZE_KHR",			"size_t"),
-	("VK_MAX_DRIVER_INFO_SIZE_KHR",			"size_t"),
+	("VK_MAX_DRIVER_NAME_SIZE",				"size_t"),
+	("VK_MAX_DRIVER_INFO_SIZE",				"size_t"),
 	("VK_UUID_SIZE",						"size_t"),
 	("VK_LUID_SIZE",						"size_t"),
 	("VK_MAX_MEMORY_TYPES",					"size_t"),
@@ -124,7 +122,7 @@ TYPE_SUBSTITUTIONS		= [
 	("LPCWSTR",		"char*"),
 ]
 
-EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP"]
+EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD"]
 EXTENSION_POSTFIXES_STANDARD	= ["KHR"]
 
 def prefixName (prefix, name):
@@ -151,6 +149,10 @@ def prefixName (prefix, name):
 	name = name.replace("SMBUILTINS", "SM_BUILTINS")
 	name = name.replace("ASTCHDRFEATURES", "ASTC_HDR_FEATURES")
 	name = name.replace("UINT_8", "UINT8")
+	name = name.replace("VULKAN_11_FEATURES", "VULKAN_1_1_FEATURES")
+	name = name.replace("VULKAN_11_PROPERTIES", "VULKAN_1_1_PROPERTIES")
+	name = name.replace("VULKAN_12_FEATURES", "VULKAN_1_2_FEATURES")
+	name = name.replace("VULKAN_12_PROPERTIES", "VULKAN_1_2_PROPERTIES")
 	name = name.replace("INT_8_", "INT8_")
 
 	return prefix + name
@@ -162,20 +164,14 @@ class Version:
 		self.patch = versionTuple[2]
 
 	def getInHex (self):
-		if self.major == 1 and self.minor == 0 and self.patch == 0:
-			return "VK_API_VERSION_1_0"
-		elif self.major == 1 and self.minor == 1 and self.patch == 0:
-			return "VK_API_VERSION_1_1"
-		else:
-			hex = (self.major << 22) | (self.minor << 12) | self.patch
-			return '0x%Xu' % (hex)
+		if self.patch == 0:
+			return "VK_API_VERSION_%d_%d" % (self.major, self.minor)
+		return '0x%Xu' % (hash(self))
 
 	def isStandardVersion (self):
 		if self.patch != 0:
 			return False
 		if self.major != 1:
-			return False
-		if self.minor != 1 and self.minor != 0:
 			return False
 		return True
 
@@ -395,7 +391,8 @@ class Extension:
 		return 'EXT:\n%s ->\nENUMS:\n%s\nCOMPOS:\n%s\nFUNCS:\n%s\nBITF:\n%s\nHAND:\n%s\nDEFS:\n%s\n' % (self.name, self.enums, self.compositeTypes, self.functions, self.bitfields, self.handles, self.definitions, self.versionInCore)
 
 class API:
-	def __init__ (self, definitions, handles, enums, bitfields, compositeTypes, functions, extensions):
+	def __init__ (self, versions, definitions, handles, enums, bitfields, compositeTypes, functions, extensions):
+		self.versions		= versions
 		self.definitions	= definitions
 		self.handles		= handles
 		self.enums			= enums
@@ -450,7 +447,6 @@ def getBitfieldNameForBitEnum (bitEnumName):
 def parsePreprocDefinedValue (src, name):
 	value = parsePreprocDefinedValueOptional(src, name)
 	if value is None:
-
 		raise Exception("No such definition: %s" % name)
 	return value
 
@@ -492,6 +488,14 @@ def parseCompositeTypes (src):
 	for type, structname, contents, typename in matches:
 		types.append(parseCompositeType(typeMap[type], typename, contents))
 	return types
+
+def parseVersions (src):
+	# returns list of tuples each with four items:
+	# 1. string with version token (without ' 1' at the end)
+	# 2. starting point off version specific definitions in vulkan.h.in
+	# 3. major version number
+	# 4. minor version number
+	return [(m.group()[:-2], m.start(), int(m.group(1)), int(m.group(2))) for m in re.finditer('VK_VERSION_([1-9])_([0-9]) 1', src)]
 
 def parseHandles (src):
 	matches	= re.findall(r'VK_DEFINE(_NON_DISPATCHABLE|)_HANDLE\((' + IDENT_PTRN + r')\)[ \t]*[\n\r]', src)
@@ -569,30 +573,33 @@ def parseFunctions (src):
 		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList)))
 	return functions
 
-def parseFunctionsByVersion (src):
-	ptrnVer10	= 'VK_VERSION_1_0 1'
-	ptrnVer11	= 'VK_VERSION_1_1 1'
-	matchVer10	= re.search(ptrnVer10, src)
-	matchVer11	= re.search(ptrnVer11, src)
+def parseFunctionsByVersion (src, versions):
+	# construct list of locations where version definitions start, and add the end of the file to it
+	sectionLocations = [versionDef[1] for versionDef in versions]
+	sectionLocations.append(len(src))
+
+	# construct function declaration pattern
 	ptrn		= r'VKAPI_ATTR\s+(' + TYPE_PTRN + ')\s+VKAPI_CALL\s+(' + IDENT_PTRN + r')\s*\(([^)]*)\)\s*;'
 	regPtrn		= re.compile(ptrn)
-	matches		= regPtrn.findall(src, matchVer10.start(), matchVer11.start())
 	functions	= []
-	for returnType, name, argList in matches:
-		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList), 'VK_VERSION_1_0'))
-	matches		= regPtrn.findall(src, matchVer11.start())
-	for returnType, name, argList in matches:
-		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList), 'VK_VERSION_1_1'))
+
+	# iterate over all versions and find all function definitions
+	for index, v in enumerate(versions):
+		matches = regPtrn.findall(src, sectionLocations[index], sectionLocations[index+1])
+		for returnType, name, argList in matches:
+			functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList), v[0]))
 	return functions
 
 def splitByExtension (src):
 	ptrn		= r'#define\s+[A-Z0-9_]+_EXTENSION_NAME\s+"([^"]+)"'
+	# Construct long pattern that will be used to split whole source by extensions
 	match		= "#define\s+("
 	for part in re.finditer(ptrn, src):
 		 match += part.group(1)+"|"
 	match = match[:-1] + ")\s+1"
 	parts = re.split(match, src)
-	# First part is core
+
+	# First part is core, following tuples contain extension name and all its definitions
 	byExtension	= [(None, parts[0])]
 	for ndx in range(1, len(parts), 2):
 		byExtension.append((parts[ndx], parts[ndx+1]))
@@ -619,9 +626,12 @@ def parseDefinitions (extensionName, src):
 
 	return [Definition(None, match[0], match[1]) for match in matches if not skipDefinition(extensionName, match)]
 
-def parseExtensions (src, allFunctions, allCompositeTypes, allEnums, allBitfields, allHandles, allDefinitions):
+def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, allBitfields, allHandles, allDefinitions):
 
 	def getCoreVersion (extensionName, extensionsData):
+		# returns None when extension was not added to core for any Vulkan version
+		# returns array containing DEVICE or INSTANCE string followed by the vulkan version in which this extension is core
+		# note that this function is also called for vulkan 1.0 source for which extName is None
 		if not extensionName:
 			return None
 		ptrn		= extensionName + r'\s+(DEVICE|INSTANCE)\s+([0-9_]+)'
@@ -641,7 +651,8 @@ def parseExtensions (src, allFunctions, allCompositeTypes, allEnums, allBitfield
 	definitionsByName		= {definition.name: definition for definition in allDefinitions}
 
 	for extensionName, extensionSrc in splitSrc:
-		definitions			= [Definition(type, name, parsePreprocDefinedValueOptional(extensionSrc, name)) for name, type in DEFINITIONS]
+		definitions			= [Definition("deUint32", v.getInHex(), parsePreprocDefinedValueOptional(extensionSrc, v.getInHex())) for v in versions]
+		definitions.extend([Definition(type, name, parsePreprocDefinedValueOptional(extensionSrc, name)) for name, type in DEFINITIONS])
 		definitions			= [definition for definition in definitions if definition.value != None]
 		additionalDefinitions = parseDefinitions(extensionName, extensionSrc)
 		handles				= parseHandles(extensionSrc)
@@ -670,7 +681,11 @@ def parseBitfieldNames (src):
 	return matches
 
 def parseAPI (src):
-	definitions		= [Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS]
+	versionsData = parseVersions(src)
+	versions     = [Version((v[2], v[3], 0)) for v in versionsData]
+	definitions	 = [Definition("deUint32", v.getInHex(), parsePreprocDefinedValue(src, v.getInHex())) for v in versions]
+	definitions.extend([Definition(type, name, parsePreprocDefinedValue(src, name)) for name, type in DEFINITIONS])
+
 	handles			= parseHandles(src)
 	rawEnums		= parseEnums(src)
 	bitfieldNames	= parseBitfieldNames(src)
@@ -678,7 +693,7 @@ def parseAPI (src):
 	bitfields		= []
 	bitfieldEnums	= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
 	compositeTypes	= parseCompositeTypes(src)
-	allFunctions	= parseFunctionsByVersion(src)
+	allFunctions	= parseFunctionsByVersion(src, versionsData)
 
 	for enum in rawEnums:
 		if enum.name in bitfieldEnums:
@@ -701,13 +716,13 @@ def parseAPI (src):
 	populateAliases(bitfields)
 	populateAliases(compositeTypes)
 
-
 	for enum in enums:
 		removeAliasedValues(enum)
 
-	extensions			= parseExtensions(src, allFunctions, compositeTypes, enums, bitfields, handles, definitions)
+	extensions = parseExtensions(src, versions, allFunctions, compositeTypes, enums, bitfields, handles, definitions)
 
 	return API(
+		versions		= versions,
 		definitions		= definitions,
 		handles			= handles,
 		enums			= enums,
@@ -1477,9 +1492,8 @@ def writeExtensionFunctions (api, filename):
 	writeInlFile(filename, INL_HEADER, lines)
 
 def writeCoreFunctionalities(api, filename):
-	functionOriginValues = ["FUNCTIONORIGIN_PLATFORM", "FUNCTIONORIGIN_INSTANCE", "FUNCTIONORIGIN_DEVICE"]
-
-	lines = addVersionDefines([Version((1, 0, 0)), Version((1, 1, 0))]) + [
+	functionOriginValues    = ["FUNCTIONORIGIN_PLATFORM", "FUNCTIONORIGIN_INSTANCE", "FUNCTIONORIGIN_DEVICE"]
+	lines					= addVersionDefines(api.versions) + [
 	"",
 	'enum FunctionOrigin', '{'] + [line for line in indentLines([
 	'\t' + functionOriginValues[0] + '\t= 0,',
@@ -1493,30 +1507,22 @@ def writeCoreFunctionalities(api, filename):
 	"",
 	"void initApisMap (ApisMap& apis)",
 	"{",
-	"	apis.clear();",
-	"	apis.insert(::std::pair<deUint32, FunctionInfosList>(" + str(Version((1, 0, 0))) + ", FunctionInfosList()));",
-	"	apis.insert(::std::pair<deUint32, FunctionInfosList>(" + str(Version((1, 1, 0))) + ", FunctionInfosList()));",
+	"	apis.clear();"] + [
+	"	apis.insert(::std::pair<deUint32, FunctionInfosList>(" + str(v) + ", FunctionInfosList()));" for v in api.versions] + [
 	""]
 
-	def list10Funcs ():
-		for fun in api.functions:
-			if fun.apiVersion == 'VK_VERSION_1_0':
-				insert = '	apis[' + str(Version((1, 0, 0))) + '].push_back(FunctionInfo("' + fun.name + '",\t' + functionOriginValues[fun.getType()] + '));'
-				yield insert
-
-	def listAllFuncs ():
+	apiVersions = []
+	for index, v in enumerate(api.versions):
+		funcs = []
+		apiVersions.append("VK_VERSION_{0}_{1}".format(v.major, v.minor))
+		# iterate over all functions that are core in latest vulkan version
+		# note that first item in api.extension array are actually all definitions that are in vulkan.h.in before section with extensions
 		for fun in api.extensions[0].functions:
-			insert = '	apis[' + str(Version((1, 1, 0))) + '].push_back(FunctionInfo("' + fun.name + '",\t' + functionOriginValues[fun.getType()] + '));'
-			yield insert
+			if fun.apiVersion in apiVersions:
+				funcs.append('	apis[' + str(v) + '].push_back(FunctionInfo("' + fun.name + '",\t' + functionOriginValues[fun.getType()] + '));')
+		lines = lines + [line for line in indentLines(funcs)] + [""]
 
-	lines = lines + [line for line in indentLines(list10Funcs())]
-	lines.append("")
-	lines = lines + [line for line in indentLines(listAllFuncs())]
-
-	lines.append("}")
-	lines.append("")
-	lines = lines + removeVersionDefines([Version((1, 0, 0)), Version((1, 1, 0))])
-
+	lines = lines + ["}", ""] + removeVersionDefines(api.versions)
 	writeInlFile(filename, INL_HEADER, lines)
 
 def generateDeviceFeaturesDefs(src):
@@ -1584,7 +1590,7 @@ def writeDeviceFeatures(dfDefs, filename):
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, extStruct, _, _, _ in dfDefs:
-		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("EXT", "").replace("NV", "")
+		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 

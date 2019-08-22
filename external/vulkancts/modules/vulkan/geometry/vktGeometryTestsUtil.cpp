@@ -394,21 +394,6 @@ VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFormat fo
 	return imageInfo;
 }
 
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
-									   const VkImageSubresourceLayers	subresourceLayers)
-{
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,										//	VkDeviceSize				bufferOffset;
-		0u,											//	deUint32					bufferRowLength;
-		0u,											//	deUint32					bufferImageHeight;
-		subresourceLayers,							//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),						//	VkOffset3D					imageOffset;
-		extent,										//	VkExtent3D					imageExtent;
-	};
-	return copyParams;
-}
-
 VkBufferImageCopy makeBufferImageCopy (const vk::VkDeviceSize&				bufferOffset,
 									   const vk::VkImageSubresourceLayers&	imageSubresource,
 									   const vk::VkOffset3D&				imageOffset,
@@ -438,26 +423,6 @@ bool compareWithFileImage (Context& context, const tcu::ConstPixelBufferAccess& 
 														referenceImage.getAccess(), resultImage, tcu::UVec4(1u, 1u, 1u, 1u), tcu::IVec3(2,2,2), false, tcu::COMPARE_LOG_RESULT);
 	else
 		return false;
-}
-
-de::MovePtr<Allocation> bindImage (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkImage image, const MemoryRequirement requirement)
-{
-	de::MovePtr<Allocation> alloc = allocator.allocate(getImageMemoryRequirements(vk, device, image), requirement);
-	VK_CHECK(vk.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
-de::MovePtr<Allocation> bindBuffer (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkBuffer buffer, const MemoryRequirement requirement)
-{
-	de::MovePtr<Allocation> alloc(allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), requirement));
-	VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
-void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize size)
-{
-	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(size));
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
 }
 
 void fillBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize offset, const VkDeviceSize size, const VkFormat format, const tcu::Vec4& color)

@@ -182,7 +182,7 @@ de::MovePtr<Allocation> bindBuffer (const InstanceInterface&	vki,
 	{
 		case ALLOCATION_KIND_SUBALLOCATED:
 		{
-			return ::vkt::pipeline::bindBuffer(vkd, device, allocator, buffer, requirement);
+			return vk::bindBuffer(vkd, device, allocator, buffer, requirement);
 		}
 
 		case ALLOCATION_KIND_DEDICATED:
@@ -210,7 +210,7 @@ de::MovePtr<Allocation> bindImage (const InstanceInterface&		vki,
 	{
 		case ALLOCATION_KIND_SUBALLOCATED:
 		{
-			return ::vkt::pipeline::bindImage(vkd, device, allocator, image, requirement);
+			return vk::bindImage(vkd, device, allocator, image, requirement);
 		}
 
 		case ALLOCATION_KIND_DEDICATED:
@@ -551,12 +551,6 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			initialLayout;
 	};
 	return createImage(vk, device, &imageParams);
-}
-
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
-	return createBuffer(vk, device, &bufferCreateInfo);
 }
 
 inline VkImageSubresourceRange makeColorSubresourceRange (const int baseArrayLayer, const int layerCount)

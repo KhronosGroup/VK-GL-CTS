@@ -191,26 +191,26 @@ bool					isDynamicDescriptor		(VkDescriptorType				descriptorType);
 
 class DeviceProperties
 {
-	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		m_descriptorIndexingFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeatures			m_descriptorIndexingFeatures;
 	VkPhysicalDeviceFeatures2							m_features2;
 
-	VkPhysicalDeviceDescriptorIndexingPropertiesEXT		m_descriptorIndexingProperties;
+	VkPhysicalDeviceDescriptorIndexingProperties		m_descriptorIndexingProperties;
 	VkPhysicalDeviceProperties2							m_properties2;
 
 public:
 	DeviceProperties (const DeviceProperties& src);
 	DeviceProperties (const vkt::Context& testContext);
 
-	inline const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&		descriptorIndexingFeatures	(void) const;
+	inline const VkPhysicalDeviceDescriptorIndexingFeatures&		descriptorIndexingFeatures	(void) const;
 	inline const VkPhysicalDeviceProperties&						physicalDeviceProperties	(void) const;
-	inline const VkPhysicalDeviceDescriptorIndexingPropertiesEXT&	descriptorIndexingProperties(void) const;
+	inline const VkPhysicalDeviceDescriptorIndexingProperties&		descriptorIndexingProperties(void) const;
 	inline const VkPhysicalDeviceFeatures&							physicalDeviceFeatures		(void) const;
 
 	deUint32 computeMaxPerStageDescriptorCount	(VkDescriptorType	descriptorType,
 												 bool				enableUpdateAfterBind) const;
 };
 
-inline const VkPhysicalDeviceDescriptorIndexingFeaturesEXT& DeviceProperties::descriptorIndexingFeatures (void) const
+inline const VkPhysicalDeviceDescriptorIndexingFeatures& DeviceProperties::descriptorIndexingFeatures (void) const
 {
 	return m_descriptorIndexingFeatures;
 }
@@ -220,7 +220,7 @@ inline const VkPhysicalDeviceProperties& DeviceProperties::physicalDevicePropert
 	return m_properties2.properties;
 }
 
-inline const VkPhysicalDeviceDescriptorIndexingPropertiesEXT& DeviceProperties::descriptorIndexingProperties (void) const
+inline const VkPhysicalDeviceDescriptorIndexingProperties& DeviceProperties::descriptorIndexingProperties (void) const
 {
 	return m_descriptorIndexingProperties;
 }

@@ -609,7 +609,7 @@ tcu::TestStatus testPrimitivesDepthClamp (Context& context, const VkPrimitiveTop
 //! Primitives partially outside the clip volume, but depth clipped with explicit depth clip control
 tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopology topology)
 {
-	if (!context.getDepthClipEnableFeatures().depthClipEnable)
+	if (!context.getDepthClipEnableFeaturesEXT().depthClipEnable)
 		throw tcu::NotSupportedError("VK_EXT_depth_clip_enable not supported");
 
 	std::vector<VulkanShader> shaders;

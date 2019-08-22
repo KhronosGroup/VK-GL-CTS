@@ -2336,9 +2336,9 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	// Query the buffer device addresses and push them via push constants
 	if (m_usePhysStorageBuffer)
 	{
-		vk::VkBufferDeviceAddressInfoEXT info =
+		vk::VkBufferDeviceAddressInfo info =
 		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
+			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
 			DE_NULL,												// const void*		pNext;
 			0,														// VkBuffer			buffer
 		};

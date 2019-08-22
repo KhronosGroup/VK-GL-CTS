@@ -94,18 +94,6 @@ inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 	return vec.size() * sizeof(vec[0]);
 }
 
-MovePtr<Allocation> bindImage (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkImage image, const MemoryRequirement requirement)
-{
-	MovePtr<Allocation> alloc = allocator.allocate(getImageMemoryRequirements(vk, device, image), requirement);
-	VK_CHECK(vk.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
-inline Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const VkImageCreateInfo& createInfo)
-{
-	return createImage(vk, device, &createInfo);
-}
-
 VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const UVec2& size, VkImageUsageFlags usage)
 {
 	const VkImageCreateInfo imageParams =

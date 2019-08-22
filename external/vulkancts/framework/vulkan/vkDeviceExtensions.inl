@@ -47,7 +47,14 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_vulkan_memory_model",
 	"VK_KHR_uniform_buffer_standard_layout",
 	"VK_KHR_imageless_framebuffer",
-	"VK_KHR_pipeline_executable_properties",
+	"VK_KHR_shader_subgroup_extended_types",
+	"VK_EXT_sampler_filter_minmax",
+	"VK_EXT_shader_viewport_index_layer",
+	"VK_EXT_descriptor_indexing",
+	"VK_EXT_scalar_block_layout",
+	"VK_KHR_buffer_device_address",
+	"VK_EXT_host_query_reset",
 	"VK_KHR_separate_depth_stencil_layouts",
+	"VK_KHR_pipeline_executable_properties",
 };
 

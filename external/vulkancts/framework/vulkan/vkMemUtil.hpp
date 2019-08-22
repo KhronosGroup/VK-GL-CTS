@@ -163,6 +163,23 @@ void					bindImagePlanesMemory		(const vk::DeviceInterface&					vkd,
 													 vk::Allocator&								allocator,
 													 const vk::MemoryRequirement				requirement);
 
+de::MovePtr<Allocation>	bindImage					(const DeviceInterface&		vk,
+													 const VkDevice				device,
+													 Allocator&					allocator,
+													 const VkImage				image,
+													 const MemoryRequirement	requirement);
+
+de::MovePtr<Allocation>	bindBuffer					(const DeviceInterface&		vk,
+													 const VkDevice				device,
+													 Allocator&					allocator,
+													 const VkBuffer				buffer,
+													 const MemoryRequirement	requirement);
+
+void					zeroBuffer					(const DeviceInterface&	vk,
+													 const VkDevice			device,
+													 const Allocation&		alloc,
+													 const VkDeviceSize		size);
+
 } // vk
 
 #endif // _VKMEMUTIL_HPP

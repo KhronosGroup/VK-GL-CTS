@@ -330,45 +330,6 @@ VkMemoryBarrier makeMemoryBarrier (const VkAccessFlags	srcAccessMask,
 	return barrier;
 }
 
-VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
-									   const VkImageSubresourceLayers	subresourceLayers)
-{
-	const VkBufferImageCopy copyParams =
-	{
-		0ull,										//	VkDeviceSize				bufferOffset;
-		0u,											//	deUint32					bufferRowLength;
-		0u,											//	deUint32					bufferImageHeight;
-		subresourceLayers,							//	VkImageSubresourceLayers	imageSubresource;
-		makeOffset3D(0, 0, 0),						//	VkOffset3D					imageOffset;
-		extent,										//	VkExtent3D					imageExtent;
-	};
-	return copyParams;
-}
-
-inline Move<VkBuffer> makeBuffer (const DeviceInterface& vk, const VkDevice device, const VkBufferCreateInfo& createInfo)
-{
-	return createBuffer(vk, device, &createInfo);
-}
-
-inline Move<VkImage> makeImage (const DeviceInterface& vk, const VkDevice device, const VkImageCreateInfo& createInfo)
-{
-	return createImage(vk, device, &createInfo);
-}
-
-de::MovePtr<Allocation> bindImage (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkImage image, const MemoryRequirement requirement)
-{
-	de::MovePtr<Allocation> alloc = allocator.allocate(getImageMemoryRequirements(vk, device, image), requirement);
-	VK_CHECK(vk.bindImageMemory(device, image, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
-de::MovePtr<Allocation> bindBuffer (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkBuffer buffer, const MemoryRequirement requirement)
-{
-	de::MovePtr<Allocation> alloc(allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), requirement));
-	VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
-	return alloc;
-}
-
 VkQueryPoolCreateInfo makeQueryPoolCreateInfo (const deUint32 queryCountersNumber)
 {
 	const VkQueryPoolCreateInfo			queryPoolCreateInfo		=
@@ -429,7 +390,7 @@ TransformFeedbackTestInstance::TransformFeedbackTestInstance (Context& context, 
 	, m_parameters		(parameters)
 	, m_rnd				(0)
 {
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	VkPhysicalDeviceProperties2								deviceProperties2;
 
 	if (transformFeedbackFeatures.transformFeedback == DE_FALSE)
@@ -930,7 +891,7 @@ TransformFeedbackMultistreamTestInstance::TransformFeedbackMultistreamTestInstan
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
 	const deUint32											tfBuffersSupported			= m_transformFeedbackProperties.maxTransformFeedbackBuffers;
@@ -1061,7 +1022,7 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance (Cont
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
 	const bool												geomPointSizeRequired		= m_parameters.testType == TEST_TYPE_STREAMS_POINTSIZE;
@@ -1166,7 +1127,7 @@ tcu::TestStatus TransformFeedbackStreamsTestInstance::iterate (void)
 	const Unique<VkImage>				colorImage			(makeImage								(vk, device, makeImageCreateInfo(0u, VK_IMAGE_TYPE_2D, colorFormat, m_imageExtent2D, 1u, imageUsageFlags)));
 	const UniquePtr<Allocation>			colorImageAlloc		(bindImage								(vk, device, allocator, *colorImage, MemoryRequirement::Any));
 	const Unique<VkImageView>			colorAttachment		(makeImageView							(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange));
-	const Unique<VkBuffer>				colorBuffer			(makeBuffer								(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>				colorBuffer			(makeBuffer								(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer								(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer						(vk, device, *renderPass, *colorAttachment, m_imageExtent2D.width, m_imageExtent2D.height));
@@ -1284,13 +1245,13 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	const Unique<VkImage>				colorImage			(makeImage				(vk, device, makeImageCreateInfo(0u, VK_IMAGE_TYPE_2D, colorFormat, m_imageExtent2D, 1u, imageUsageFlags)));
 	const UniquePtr<Allocation>			colorImageAlloc		(bindImage				(vk, device, allocator, *colorImage, MemoryRequirement::Any));
 	const Unique<VkImageView>			colorAttachment		(makeImageView			(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange));
-	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const deUint32						vertexCount			= 6u;
 	const VkDeviceSize					vertexBufferSize	= vertexCount * m_parameters.vertexStride;
 	const VkBufferUsageFlags			vertexBufferUsage	= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	const Unique<VkBuffer>				vertexBuffer		(makeBuffer				(vk, device, makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage)));
+	const Unique<VkBuffer>				vertexBuffer		(makeBuffer				(vk, device, vertexBufferSize, vertexBufferUsage));
 	const UniquePtr<Allocation>			vertexBufferAlloc	(bindBuffer				(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
 	const VkDeviceSize					vertexBufferOffset	(0u);
 	const float							vertexBufferVals[]	=
@@ -1306,7 +1267,7 @@ tcu::TestStatus TransformFeedbackIndirectDrawTestInstance::iterate (void)
 	const deUint32						counterBufferValue	= m_parameters.vertexStride * vertexCount;
 	const VkDeviceSize					counterBufferSize	= sizeof(counterBufferValue);
 	const VkBufferUsageFlags			counterBufferUsage	= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	const Unique<VkBuffer>				counterBuffer		(makeBuffer								(vk, device, makeBufferCreateInfo(counterBufferSize, counterBufferUsage)));
+	const Unique<VkBuffer>				counterBuffer		(makeBuffer								(vk, device, counterBufferSize, counterBufferUsage));
 	const UniquePtr<Allocation>			counterBufferAlloc	(bindBuffer								(vk, device, allocator, *counterBuffer, MemoryRequirement::HostVisible));
 
 	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer						(vk, device, *renderPass, *colorAttachment, m_imageExtent2D.width, m_imageExtent2D.height));
@@ -1478,7 +1439,7 @@ TransformFeedbackQueryTestInstance::TransformFeedbackQueryTestInstance (Context&
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
 

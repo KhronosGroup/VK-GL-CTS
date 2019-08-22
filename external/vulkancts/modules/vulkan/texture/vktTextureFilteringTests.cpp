@@ -121,7 +121,7 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 
 	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
 		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_mirror_clamp_to_edge"))
 		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	// Create 2 textures.
@@ -320,7 +320,7 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance (Context& con
 
 	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
 		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_mirror_clamp_to_edge"))
 		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	m_textures.reserve(2);
@@ -542,7 +542,7 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance (Contex
 
 	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
 		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_mirror_clamp_to_edge"))
 		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	// Create textures.
@@ -746,7 +746,7 @@ Texture3DFilteringTestInstance::Texture3DFilteringTestInstance (Context& context
 	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
 		testParameters.wrapT == Sampler::MIRRORED_ONCE ||
 		testParameters.wrapR == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
+		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_mirror_clamp_to_edge"))
 		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
 
 	// Create textures.

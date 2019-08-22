@@ -691,21 +691,25 @@ struct OpAtomicCase
 						, numOutputElements	(_numOutputElements) {}
 };
 
-tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer, int numElements = 65535, bool verifyReturnValues = false)
+tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer, int numElements = 65535, bool verifyReturnValues = false, bool volatileAtomic = false)
 {
 	std::string						groupName			("opatomic");
 	if (useStorageBuffer)
 		groupName += "_storage_buffer";
 	if (verifyReturnValues)
 		groupName += "_return_values";
+	if (volatileAtomic)
+		groupName += "_volatile";
 	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpAtomic* opcodes"));
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
 
 		string("OpCapability Shader\n") +
+		(volatileAtomic ? "OpCapability VulkanMemoryModelKHR\n" : "") +
 		(useStorageBuffer ? "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n" : "") +
-		"OpMemoryModel Logical GLSL450\n"
+		(volatileAtomic ? "OpExtension \"SPV_KHR_vulkan_memory_model\"\n" : "") +
+		(volatileAtomic ? "OpMemoryModel Logical VulkanKHR\n" : "OpMemoryModel Logical GLSL450\n") +
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n" +
 
@@ -724,7 +728,6 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"OpDecorate %sumbuf ${BLOCK_DECORATION}\n"
 		"OpDecorate %sum DescriptorSet 0\n"
 		"OpDecorate %sum Binding 1\n"
-		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
 		"${RETVAL_BUF_DECORATE}"
@@ -746,6 +749,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"%zero      = OpConstant %i32 0\n"
 		"%one       = OpConstant %u32 1\n"
 		"%two       = OpConstant %i32 2\n"
+		"%five      = OpConstant %i32 5\n"
+		"%volbit    = OpConstant %i32 32768\n"
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
@@ -770,24 +775,24 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, 1)
 	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, numElements)
 
-	ADD_OPATOMIC_CASE_1(iadd,	"%retv      = OpAtomicIAdd %i32 %outloc %one %zero %inval\n",
+	ADD_OPATOMIC_CASE_1(iadd,	"%retv      = OpAtomicIAdd %i32 %outloc ${SCOPE} ${SEMANTICS} %inval\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_IADD );
-	ADD_OPATOMIC_CASE_1(isub,	"%retv      = OpAtomicISub %i32 %outloc %one %zero %inval\n",
+	ADD_OPATOMIC_CASE_1(isub,	"%retv      = OpAtomicISub %i32 %outloc ${SCOPE} ${SEMANTICS} %inval\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_ISUB );
-	ADD_OPATOMIC_CASE_1(iinc,	"%retv      = OpAtomicIIncrement %i32 %outloc %one %zero\n",
+	ADD_OPATOMIC_CASE_1(iinc,	"%retv      = OpAtomicIIncrement %i32 %outloc ${SCOPE} ${SEMANTICS}\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_IINC );
-	ADD_OPATOMIC_CASE_1(idec,	"%retv      = OpAtomicIDecrement %i32 %outloc %one %zero\n",
+	ADD_OPATOMIC_CASE_1(idec,	"%retv      = OpAtomicIDecrement %i32 %outloc ${SCOPE} ${SEMANTICS}\n",
 								"             OpStore %retloc %retv\n", OPATOMIC_IDEC );
 	if (!verifyReturnValues)
 	{
-		ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
+		ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc ${SCOPE} ${SEMANTICS}\n"
 									"             OpStore %outloc %inval2\n", "", OPATOMIC_LOAD );
-		ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n", "", OPATOMIC_STORE );
+		ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc ${SCOPE} ${SEMANTICS} %inval\n", "", OPATOMIC_STORE );
 	}
 
 	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
 								"             OpStore %outloc %even\n"
-								"%retv      = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",
+								"%retv      = OpAtomicCompareExchange %i32 %outloc ${SCOPE} ${SEMANTICS} ${SEMANTICS} %minusone %zero\n",
 								"			  OpStore %retloc %retv\n", OPATOMIC_COMPEX );
 
 
@@ -802,6 +807,19 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		vector<deInt32>				inputInts		(numElements, 0);
 		vector<deInt32>				expected		(cases[caseNdx].numOutputElements, -1);
 
+		if (volatileAtomic)
+		{
+			spec.extensions.push_back("VK_KHR_vulkan_memory_model");
+			// volatile, queuefamily scope
+			specializations["SEMANTICS"] = "%volbit";
+			specializations["SCOPE"] = "%five";
+		}
+		else
+		{
+			// non-volatile, device scope
+			specializations["SEMANTICS"] = "%zero";
+			specializations["SCOPE"] = "%one";
+		}
 		specializations["INDEX"]				= (cases[caseNdx].numOutputElements == 1) ? "%zero" : "%x";
 		specializations["INSTRUCTION"]			= cases[caseNdx].assembly;
 		specializations["BLOCK_DECORATION"]		= useStorageBuffer ? "Block" : "BufferBlock";
@@ -837,6 +855,10 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		}
 
 		spec.assembly							= shaderTemplate.specialize(specializations);
+
+		// Specialize one more time, to catch things that were in a template parameter
+		const StringTemplate					assemblyTemplate(spec.assembly);
+		spec.assembly							= assemblyTemplate.specialize(specializations);
 
 		if (useStorageBuffer)
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -3110,6 +3132,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 	specFloat16.assembly =
 		"OpCapability Shader\n"
 		"OpCapability StorageUniformBufferBlock16\n"
+		"OpCapability Float16\n"
 		"OpExtension \"SPV_KHR_16bit_storage\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
@@ -7569,7 +7592,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	fragments4["pre_main"]		= typesAndConstants4;
 	fragments4["testfun"]		= function4;
-	fragments4["capability"]	= "OpCapability StorageUniformBufferBlock16\n";
+	fragments4["capability"]	= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 	fragments4["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
 
 	extensions4.push_back("VK_KHR_16bit_storage");
@@ -10130,7 +10153,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Float 16 logical tests"));
 
 	de::Random							rnd					(deStringHash(testGroup->getName()));
-	const string						spvCapabilities		= string("OpCapability StorageUniformBufferBlock16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
+	const string						spvCapabilities		= string("OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
 	const string						spvExtensions		= string("OpExtension \"SPV_KHR_16bit_storage\"\n") + (nanSupported ? "OpExtension \"SPV_KHR_float_controls\"\n" : "");
 	const string						spvExecutionMode	= nanSupported ? "OpExecutionMode %BP_main SignedZeroInfNanPreserve 16\n" : "";
 	const deUint32						numDataPoints		= 16;
@@ -10451,7 +10474,7 @@ tcu::TestCaseGroup* createFloat16FuncSet (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "function", "Float 16 function call related tests"));
 
 	de::Random							rnd					(deStringHash(testGroup->getName()));
-	const StringTemplate				capabilities		("OpCapability ${cap}\n");
+	const StringTemplate				capabilities		("OpCapability ${cap}\nOpCapability Float16\n");
 	const deUint32						numDataPoints		= 256;
 	const vector<deFloat16>				float16InputData	= getFloat16s(rnd, numDataPoints);
 	const vector<deFloat16>				float16OutputDummy	(float16InputData.size(), 0);
@@ -11195,7 +11218,7 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 		specs["type_decl"]			= testType.typeDecls;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -11433,7 +11456,7 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 		specs["replacement"]		= de::toString(replacement);
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -11804,7 +11827,7 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 				specs["case_count"]			= de::toString(caseCount);
 
 				fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-				fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+				fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 				fragments["decoration"]		= decoration.specialize(specs);
 				fragments["pre_main"]		= preMain.specialize(specs);
 				fragments["testfun"]		= testFun.specialize(specs);
@@ -12064,7 +12087,7 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 		specs["consts"]				= consts;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -12457,7 +12480,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		specs["op_case_default_value"]	= opParts.caseDefaultValue;
 
 		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\n";
+		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -16876,7 +16899,7 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 	specs["arg_func_call"]		= funcCall;
 
 	fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"\n%ext_import = OpExtInstImport \"GLSL.std.450\"";
-	fragments["capability"]		= "OpCapability Matrix\nOpCapability StorageUniformBufferBlock16";
+	fragments["capability"]		= "OpCapability Matrix\nOpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
 	fragments["decoration"]		= decoration.specialize(specs);
 	fragments["pre_main"]		= preMain.specialize(specs);
 	fragments["testfun"]		= testFun.specialize(specs);
@@ -18593,6 +18616,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
 	computeTests->addChild(createOpAtomicGroup(testCtx, true));					// Using new StorageBuffer decoration
 	computeTests->addChild(createOpAtomicGroup(testCtx, false, 1024, true));	// Return value validation
+	computeTests->addChild(createOpAtomicGroup(testCtx, true, 65536, false, true));	// volatile atomics
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpModuleProcessedGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));

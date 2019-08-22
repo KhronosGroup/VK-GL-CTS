@@ -166,7 +166,7 @@ bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVaria
 
 bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int8Features toCheck)
 {
-	const VkPhysicalDeviceFloat16Int8FeaturesKHR& extensionFeatures = context.getShaderFloat16Int8Features();
+	const VkPhysicalDeviceShaderFloat16Int8Features& extensionFeatures = context.getShaderFloat16Int8Features();
 
 	if ((toCheck & EXTFLOAT16INT8FEATURES_FLOAT16) != 0 && extensionFeatures.shaderFloat16 == VK_FALSE)
 		return false;
@@ -240,6 +240,8 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 	case SPIRV_VERSION_1_3:
 	case SPIRV_VERSION_1_4:
 		return VK_API_VERSION_1_1;
+	case SPIRV_VERSION_1_5:
+		return VK_API_VERSION_1_2;
 	default:
 		DE_ASSERT(0);
 	}

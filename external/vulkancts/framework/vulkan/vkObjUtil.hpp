@@ -25,6 +25,7 @@
 
 #include <vector>
 #include "vkRef.hpp"
+#include "vkRefUtil.hpp"
 
 namespace vk
 {
@@ -134,6 +135,32 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 Move<VkCommandPool> makeCommandPool (const DeviceInterface&	vk,
 									 const VkDevice			device,
 									 const deUint32			queueFamilyIndex);
+
+inline Move<VkBuffer> makeBuffer (const DeviceInterface&	vk,
+								  const VkDevice			device,
+								  const VkDeviceSize		bufferSize,
+								  const VkBufferUsageFlags	usage)
+{
+	const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, usage);
+	return createBuffer(vk, device, &bufferCreateInfo);
+}
+
+inline Move<VkBuffer> makeBuffer (const vk::DeviceInterface&	vk,
+								  const vk::VkDevice			device,
+								  const vk::VkBufferCreateInfo&	createInfo)
+{
+	return createBuffer(vk, device, &createInfo);
+}
+
+inline Move<VkImage> makeImage (const DeviceInterface&		vk,
+								const VkDevice				device,
+								const VkImageCreateInfo&	createInfo)
+{
+	return createImage(vk, device, &createInfo);
+}
+
+VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
+									   const VkImageSubresourceLayers	subresourceLayers);
 
 } // vk
 

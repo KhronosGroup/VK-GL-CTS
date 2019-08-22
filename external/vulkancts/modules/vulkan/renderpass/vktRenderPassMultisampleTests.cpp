@@ -176,9 +176,9 @@ Move<VkImage> createImage (const DeviceInterface&	vk,
 	VkImageUsageFlags depthUsage	= (separateStencilUsage == TEST_DEPTH)	 ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	VkImageUsageFlags stencilUsage	= (separateStencilUsage == TEST_STENCIL) ? usage : (VkImageUsageFlags)VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-	const VkImageStencilUsageCreateInfoEXT stencilUsageInfo =
+	const VkImageStencilUsageCreateInfo stencilUsageInfo =
 	{
-		VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,
+		VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,
 		DE_NULL,
 		stencilUsage
 	};
@@ -272,9 +272,9 @@ Move<VkImage> createImage (const InstanceInterface&	vki,
 
 		if (separateStencilUsage)
 		{
-			const VkImageStencilUsageCreateInfoEXT	stencilUsageInfo =
+			const VkImageStencilUsageCreateInfo	stencilUsageInfo =
 			{
-				VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,			//	VkStructureType			sType
+				VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,				//	VkStructureType			sType
 				DE_NULL,														//	const void*				pNext
 				stencilUsage													//	VkImageUsageFlags		stencilUsage
 			};

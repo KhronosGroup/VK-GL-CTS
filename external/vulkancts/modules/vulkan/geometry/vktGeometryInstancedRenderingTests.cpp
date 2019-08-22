@@ -162,7 +162,7 @@ void draw (Context&					context,
 	const Unique<VkImageView>		colorAttachment			(makeImageView	(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresourceRange));
 
 	const VkDeviceSize				vertexBufferSize		= sizeInBytes(perInstanceAttribute);
-	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)));
+	const Unique<VkBuffer>			vertexBuffer			(makeBuffer(vk, device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 	const UniquePtr<Allocation>		vertexBufferAlloc		(bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
 
 	const Unique<VkShaderModule>	vertexModule			(createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u));
@@ -364,7 +364,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	const Vec4						clearColor			= Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	const VkDeviceSize				colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const Unique<VkBuffer>			colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>		colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
 	const std::vector<Vec4>			perInstancePosition	= generatePerInstancePosition(params.numDrawInstances);

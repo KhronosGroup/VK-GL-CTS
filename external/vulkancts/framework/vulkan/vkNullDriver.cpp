@@ -250,7 +250,7 @@ class RenderPass
 {
 public:
 	RenderPass (VkDevice, const VkRenderPassCreateInfo*)		{}
-	RenderPass (VkDevice, const VkRenderPassCreateInfo2KHR*)	{}
+	RenderPass (VkDevice, const VkRenderPassCreateInfo2*)		{}
 };
 
 class SwapchainKHR

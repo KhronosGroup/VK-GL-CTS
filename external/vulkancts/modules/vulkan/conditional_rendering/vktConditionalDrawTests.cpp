@@ -306,18 +306,18 @@ void ConditionalDraw::recordDraw(vk::VkCommandBuffer cmdBuffer)
 			}
 			case DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT:
 			{
-				m_vk.cmdDrawIndirectCountKHR(	cmdBuffer,
-												m_indirectBuffer->object(), indirectOffset,
-												m_indirectCountBuffer->object(), 0, 3,
-												sizeof(vk::VkDrawIndirectCommand));
+				m_vk.cmdDrawIndirectCount(	cmdBuffer,
+											m_indirectBuffer->object(), indirectOffset,
+											m_indirectCountBuffer->object(), 0, 3,
+											sizeof(vk::VkDrawIndirectCommand));
 				break;
 			}
 			case DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT:
 			{
-				m_vk.cmdDrawIndexedIndirectCountKHR(cmdBuffer,
-													m_indirectBuffer->object(), indexedIndirectOffset,
-													m_indirectCountBuffer->object(), 0, 3,
-													sizeof(vk::VkDrawIndexedIndirectCommand));
+				m_vk.cmdDrawIndexedIndirectCount(cmdBuffer,
+												 m_indirectBuffer->object(), indexedIndirectOffset,
+												 m_indirectCountBuffer->object(), 0, 3,
+												 sizeof(vk::VkDrawIndexedIndirectCommand));
 				break;
 			}
 			default: DE_ASSERT(false);

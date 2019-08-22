@@ -23,10 +23,10 @@ Move<VkRenderPass>					createRenderPass					(const DeviceInterface& vk, VkDevice
 Move<VkCommandPool>					createCommandPool					(const DeviceInterface& vk, VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSamplerYcbcrConversion>		createSamplerYcbcrConversion		(const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDescriptorUpdateTemplate>	createDescriptorUpdateTemplate		(const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkRenderPass>					createRenderPass2					(const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSwapchainKHR>				createSwapchainKHR					(const DeviceInterface& vk, VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createDisplayPlaneSurfaceKHR		(const InstanceInterface& vk, VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSwapchainKHR>				createSharedSwapchainsKHR			(const DeviceInterface& vk, VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkRenderPass>					createRenderPass2KHR				(const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugReportCallbackEXT>		createDebugReportCallbackEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkIndirectCommandsLayoutNVX>	createIndirectCommandsLayoutNVX		(const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkObjectTableNVX>				createObjectTableNVX				(const DeviceInterface& vk, VkDevice device, const VkObjectTableCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
