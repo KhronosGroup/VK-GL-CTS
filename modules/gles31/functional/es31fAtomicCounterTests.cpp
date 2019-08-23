@@ -196,7 +196,7 @@ string AtomicCounterTest::generateShaderSource (const TestSpec& spec)
 		{
 			case OFFSETTYPE_DEFAULT_AUTO:
 				if (!wroteLayout)
-					src << "layout(binding=1, ";
+					src << "layout(binding=0, ";
 				else
 					src << ", ";
 
@@ -208,7 +208,7 @@ string AtomicCounterTest::generateShaderSource (const TestSpec& spec)
 				DE_ASSERT(spec.atomicCounterCount > 2);
 
 				if (!wroteLayout)
-					src << "layout(binding=1, ";
+					src << "layout(binding=0, ";
 				else
 					src << ", ";
 
@@ -218,7 +218,7 @@ string AtomicCounterTest::generateShaderSource (const TestSpec& spec)
 
 			case OFFSETTYPE_INVALID_DEFAULT:
 				if (!wroteLayout)
-					src << "layout(binding=1, ";
+					src << "layout(binding=0, ";
 				else
 					src << ", ";
 
@@ -260,13 +260,13 @@ string AtomicCounterTest::generateShaderSource (const TestSpec& spec)
 		bool layoutStarted = false;
 
 		if (spec.offsetType == OFFSETTYPE_RESET_DEFAULT && counterNdx == spec.atomicCounterCount/2)
-			src << "layout(binding=1, offset=0) uniform atomic_uint;\n";
+			src << "layout(binding=0, offset=0) uniform atomic_uint;\n";
 
 		switch (spec.bindingType)
 		{
 			case BINDINGTYPE_BASIC:
 				layoutStarted = true;
-				src << "layout(binding=1";
+				src << "layout(binding=0";
 				break;
 
 			case BINDINGTYPE_INVALID:
@@ -968,7 +968,7 @@ TestCase::IterateResult AtomicCounterTest::iterate (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup output buffer");
 
 	// Bind atomic counter buffer
-	gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 1, *counterBuffer);
+	gl.bindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, *counterBuffer);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to setup atomic counter buffer");
 
 	// Dispath compute
