@@ -65,6 +65,13 @@ private:
 	vk::VkDevice					m_device;
 };
 
+void bufferBarrier (const vk::DeviceInterface&	vk,
+					vk::VkCommandBuffer			cmdBuffer,
+					vk::VkBuffer				buffer,
+					vk::VkAccessFlags			srcAccessMask,
+					vk::VkAccessFlags			dstAccessMask,
+					vk::VkPipelineStageFlags	srcStageMask,
+					vk::VkPipelineStageFlags	dstStageMask);
 } // Draw
 } // vkt
 
