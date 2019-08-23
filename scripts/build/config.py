@@ -133,11 +133,14 @@ class VSProjectGenerator(CMakeGenerator):
 
 		platform = None
 
-		if arch == self.ARCH_64BIT:
-			if version >= 16:
-				# From VS2019 onwards, the architecture is given by -A <platform-name> switch
+		if version >= 16:
+			# From VS2019 onwards, the architecture is given by -A <platform-name> switch
+			if arch == self.ARCH_64BIT:
 				platform = "x64"
-			else:
+			elif arch == self.ARCH_32BIT:
+				platform = "Win32"
+		else:
+			if arch == self.ARCH_64BIT:
 				name += " Win64"
 
 		CMakeGenerator.__init__(self, name, isMultiConfig = True, extraBuildArgs = ['/m'], platform = platform)
