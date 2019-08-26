@@ -12337,7 +12337,45 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 
 		"${consts}"
 
+		"     %c_f16_n1 = OpConstant %f16 -1.0\n"
+		"   %c_v2f16_n1 = OpConstantComposite %v2f16 %c_f16_n1 %c_f16_n1\n"
 		"      %c_u32_5 = OpConstant %u32 5\n"
+		"      %c_u32_6 = OpConstant %u32 6\n"
+		"      %c_u32_7 = OpConstant %u32 7\n"
+		"      %c_u32_8 = OpConstant %u32 8\n"
+		"      %c_u32_9 = OpConstant %u32 9\n"
+		"     %c_u32_10 = OpConstant %u32 10\n"
+		"     %c_u32_11 = OpConstant %u32 11\n"
+		"     %c_u32_12 = OpConstant %u32 12\n"
+		"     %c_u32_13 = OpConstant %u32 13\n"
+		"     %c_u32_14 = OpConstant %u32 14\n"
+		"     %c_u32_15 = OpConstant %u32 15\n"
+		"     %c_u32_16 = OpConstant %u32 16\n"
+		"     %c_u32_17 = OpConstant %u32 17\n"
+		"     %c_u32_18 = OpConstant %u32 18\n"
+		"     %c_u32_19 = OpConstant %u32 19\n"
+		"     %c_u32_20 = OpConstant %u32 20\n"
+		"     %c_u32_21 = OpConstant %u32 21\n"
+		"     %c_u32_22 = OpConstant %u32 22\n"
+		"     %c_u32_23 = OpConstant %u32 23\n"
+		"     %c_u32_24 = OpConstant %u32 24\n"
+		"     %c_u32_25 = OpConstant %u32 25\n"
+		"     %c_u32_26 = OpConstant %u32 26\n"
+		"     %c_u32_27 = OpConstant %u32 27\n"
+		"     %c_u32_28 = OpConstant %u32 28\n"
+		"     %c_u32_29 = OpConstant %u32 29\n"
+		"     %c_u32_30 = OpConstant %u32 30\n"
+		"     %c_u32_31 = OpConstant %u32 31\n"
+		"     %c_u32_33 = OpConstant %u32 33\n"
+		"     %c_u32_34 = OpConstant %u32 34\n"
+		"     %c_u32_35 = OpConstant %u32 35\n"
+		"     %c_u32_36 = OpConstant %u32 36\n"
+		"     %c_u32_37 = OpConstant %u32 37\n"
+		"     %c_u32_38 = OpConstant %u32 38\n"
+		"     %c_u32_39 = OpConstant %u32 39\n"
+		"     %c_u32_40 = OpConstant %u32 40\n"
+		"     %c_u32_41 = OpConstant %u32 41\n"
+		"     %c_u32_44 = OpConstant %u32 44\n"
 
 		" %f16arr3      = OpTypeArray %f16 %c_u32_3\n"
 		" %v2f16arr3    = OpTypeArray %v2f16 %c_u32_3\n"
@@ -12348,9 +12386,10 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 		" %struct16arr3 = OpTypeArray %struct16 %c_u32_3\n"
 		" %st_test      = OpTypeStruct %f16 %v2f16 %v3f16 %v4f16 %f16arr3 %struct16arr3 %v2f16arr5 %f16 %v3f16arr5 %v4f16arr3\n"
 
-		"        %up_st = OpTypePointer Uniform %st_test\n"
-		"        %ra_st = OpTypeArray %st_test %c_i32_ndp\n"
-		"      %SSBO_st = OpTypeStruct %ra_st\n"
+		"       %up_u32 = OpTypePointer Uniform %u32\n"
+		"    %ra_u32_44 = OpTypeArray %u32 %c_u32_44\n"
+		"    %ra_ra_u32 = OpTypeArray %ra_u32_44 %c_i32_ndp\n"
+		"      %SSBO_st = OpTypeStruct %ra_ra_u32\n"
 		"   %up_SSBO_st = OpTypePointer Uniform %SSBO_st\n"
 
 		"     %ssbo_dst = OpVariable %up_SSBO_st Uniform\n"
@@ -12359,7 +12398,8 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 	const StringTemplate decoration
 	(
 		"OpDecorate %SSBO_st BufferBlock\n"
-		"OpDecorate %ra_st ArrayStride ${struct_item_size}\n"
+		"OpDecorate %ra_u32_44 ArrayStride 4\n"
+		"OpDecorate %ra_ra_u32 ArrayStride ${struct_item_size}\n"
 		"OpDecorate %ssbo_dst DescriptorSet 0\n"
 		"OpDecorate %ssbo_dst Binding 1\n"
 
@@ -12463,8 +12503,218 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 		"      %fld9 = OpCompositeConstruct %v4f16arr3 %fld9_0 %fld9_1 %fld9_2\n"
 
 		"    %st_val = OpCompositeConstruct %st_test %c_f16_0 %fld1 %fld2 %fld3 %fld4 %fld5 %fld6 %c_f16_50 %fld8 %fld9\n"
-		"       %dst = OpAccessChain %up_st %ssbo_dst %c_i32_0 %ndx\n"
-		"              OpStore %dst %st_val\n"
+
+		// Storage section: all elements that are not directly accessed should
+		// have the value of -1.0. This means for f16 and v3f16 stores the v2f16
+		// is constructed with one element from a constant -1.0.
+		// half offset 0
+		"      %ex_0 = OpCompositeExtract %f16 %st_val 0\n"
+		"     %vec_0 = OpCompositeConstruct %v2f16 %ex_0 %c_f16_n1\n"
+		"      %bc_0 = OpBitcast %u32 %vec_0\n"
+		"     %gep_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_0\n"
+		"              OpStore %gep_0 %bc_0\n"
+
+		// <2 x half> offset 4
+		"      %ex_1 = OpCompositeExtract %v2f16 %st_val 1\n"
+		"      %bc_1 = OpBitcast %u32 %ex_1\n"
+		"     %gep_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_1\n"
+		"              OpStore %gep_1 %bc_1\n"
+
+		// <3 x half> offset 8
+		"      %ex_2 = OpCompositeExtract %v3f16 %st_val 2\n"
+		"    %ex_2_0 = OpVectorShuffle %v2f16 %ex_2 %c_v2f16_n1 0 1\n"
+		"    %ex_2_1 = OpVectorShuffle %v2f16 %ex_2 %c_v2f16_n1 2 3\n"
+		"    %bc_2_0 = OpBitcast %u32 %ex_2_0\n"
+		"    %bc_2_1 = OpBitcast %u32 %ex_2_1\n"
+		"   %gep_2_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_2\n"
+		"   %gep_2_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_3\n"
+		"              OpStore %gep_2_0 %bc_2_0\n"
+		"              OpStore %gep_2_1 %bc_2_1\n"
+
+		// <4 x half> offset 16
+		"      %ex_3 = OpCompositeExtract %v4f16 %st_val 3\n"
+		"    %ex_3_0 = OpVectorShuffle %v2f16 %ex_3 %ex_3 0 1\n"
+		"    %ex_3_1 = OpVectorShuffle %v2f16 %ex_3 %ex_3 2 3\n"
+		"    %bc_3_0 = OpBitcast %u32 %ex_3_0\n"
+		"    %bc_3_1 = OpBitcast %u32 %ex_3_1\n"
+		"   %gep_3_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_4\n"
+		"   %gep_3_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_5\n"
+		"              OpStore %gep_3_0 %bc_3_0\n"
+		"              OpStore %gep_3_1 %bc_3_1\n"
+
+		// [3 x half] offset 24
+		"    %ex_4_0 = OpCompositeExtract %f16 %st_val 4 0\n"
+		"    %ex_4_1 = OpCompositeExtract %f16 %st_val 4 1\n"
+		"    %ex_4_2 = OpCompositeExtract %f16 %st_val 4 2\n"
+		"   %vec_4_0 = OpCompositeConstruct %v2f16 %ex_4_0 %ex_4_1\n"
+		"   %vec_4_1 = OpCompositeConstruct %v2f16 %ex_4_2 %c_f16_n1\n"
+		"    %bc_4_0 = OpBitcast %u32 %vec_4_0\n"
+		"    %bc_4_1 = OpBitcast %u32 %vec_4_1\n"
+		"   %gep_4_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_6\n"
+		"   %gep_4_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_7\n"
+		"              OpStore %gep_4_0 %bc_4_0\n"
+		"              OpStore %gep_4_1 %bc_4_1\n"
+
+		// [3 x {half, [3 x <2 x half>]}] offset 32
+		"    %ex_5_0 = OpCompositeExtract %struct16 %st_val 5 0\n"
+		"    %ex_5_1 = OpCompositeExtract %struct16 %st_val 5 1\n"
+		"    %ex_5_2 = OpCompositeExtract %struct16 %st_val 5 2\n"
+		"  %ex_5_0_0 = OpCompositeExtract %f16 %ex_5_0 0\n"
+		"  %ex_5_1_0 = OpCompositeExtract %f16 %ex_5_1 0\n"
+		"  %ex_5_2_0 = OpCompositeExtract %f16 %ex_5_2 0\n"
+		"%ex_5_0_1_0 = OpCompositeExtract %v2f16 %ex_5_0 1 0\n"
+		"%ex_5_0_1_1 = OpCompositeExtract %v2f16 %ex_5_0 1 1\n"
+		"%ex_5_0_1_2 = OpCompositeExtract %v2f16 %ex_5_0 1 2\n"
+		"%ex_5_1_1_0 = OpCompositeExtract %v2f16 %ex_5_1 1 0\n"
+		"%ex_5_1_1_1 = OpCompositeExtract %v2f16 %ex_5_1 1 1\n"
+		"%ex_5_1_1_2 = OpCompositeExtract %v2f16 %ex_5_1 1 2\n"
+		"%ex_5_2_1_0 = OpCompositeExtract %v2f16 %ex_5_2 1 0\n"
+		"%ex_5_2_1_1 = OpCompositeExtract %v2f16 %ex_5_2 1 1\n"
+		"%ex_5_2_1_2 = OpCompositeExtract %v2f16 %ex_5_2 1 2\n"
+		" %vec_5_0_0 = OpCompositeConstruct %v2f16 %ex_5_0_0 %c_f16_n1\n"
+		" %vec_5_1_0 = OpCompositeConstruct %v2f16 %ex_5_1_0 %c_f16_n1\n"
+		" %vec_5_2_0 = OpCompositeConstruct %v2f16 %ex_5_2_0 %c_f16_n1\n"
+		"  %bc_5_0_0 = OpBitcast %u32 %vec_5_0_0\n"
+		"  %bc_5_1_0 = OpBitcast %u32 %vec_5_1_0\n"
+		"  %bc_5_2_0 = OpBitcast %u32 %vec_5_2_0\n"
+		"%bc_5_0_1_0 = OpBitcast %u32 %ex_5_0_1_0\n"
+		"%bc_5_0_1_1 = OpBitcast %u32 %ex_5_0_1_1\n"
+		"%bc_5_0_1_2 = OpBitcast %u32 %ex_5_0_1_2\n"
+		"%bc_5_1_1_0 = OpBitcast %u32 %ex_5_1_1_0\n"
+		"%bc_5_1_1_1 = OpBitcast %u32 %ex_5_1_1_1\n"
+		"%bc_5_1_1_2 = OpBitcast %u32 %ex_5_1_1_2\n"
+		"%bc_5_2_1_0 = OpBitcast %u32 %ex_5_2_1_0\n"
+		"%bc_5_2_1_1 = OpBitcast %u32 %ex_5_2_1_1\n"
+		"%bc_5_2_1_2 = OpBitcast %u32 %ex_5_2_1_2\n"
+		"  %gep_5_0_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_8\n"
+		"%gep_5_0_1_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_9\n"
+		"%gep_5_0_1_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_10\n"
+		"%gep_5_0_1_2 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_11\n"
+		"  %gep_5_1_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_12\n"
+		"%gep_5_1_1_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_13\n"
+		"%gep_5_1_1_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_14\n"
+		"%gep_5_1_1_2 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_15\n"
+		"  %gep_5_2_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_16\n"
+		"%gep_5_2_1_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_17\n"
+		"%gep_5_2_1_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_18\n"
+		"%gep_5_2_1_2 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_19\n"
+		"              OpStore %gep_5_0_0 %bc_5_0_0\n"
+		"              OpStore %gep_5_0_1_0 %bc_5_0_1_0\n"
+		"              OpStore %gep_5_0_1_1 %bc_5_0_1_1\n"
+		"              OpStore %gep_5_0_1_2 %bc_5_0_1_2\n"
+		"              OpStore %gep_5_1_0 %bc_5_1_0\n"
+		"              OpStore %gep_5_1_1_0 %bc_5_1_1_0\n"
+		"              OpStore %gep_5_1_1_1 %bc_5_1_1_1\n"
+		"              OpStore %gep_5_1_1_2 %bc_5_1_1_2\n"
+		"              OpStore %gep_5_2_0 %bc_5_2_0\n"
+		"              OpStore %gep_5_2_1_0 %bc_5_2_1_0\n"
+		"              OpStore %gep_5_2_1_1 %bc_5_2_1_1\n"
+		"              OpStore %gep_5_2_1_2 %bc_5_2_1_2\n"
+
+		// [5 x <2 x half>] offset 80
+		"    %ex_6_0 = OpCompositeExtract %v2f16 %st_val 6 0\n"
+		"    %ex_6_1 = OpCompositeExtract %v2f16 %st_val 6 1\n"
+		"    %ex_6_2 = OpCompositeExtract %v2f16 %st_val 6 2\n"
+		"    %ex_6_3 = OpCompositeExtract %v2f16 %st_val 6 3\n"
+		"    %ex_6_4 = OpCompositeExtract %v2f16 %st_val 6 4\n"
+		"    %bc_6_0 = OpBitcast %u32 %ex_6_0\n"
+		"    %bc_6_1 = OpBitcast %u32 %ex_6_1\n"
+		"    %bc_6_2 = OpBitcast %u32 %ex_6_2\n"
+		"    %bc_6_3 = OpBitcast %u32 %ex_6_3\n"
+		"    %bc_6_4 = OpBitcast %u32 %ex_6_4\n"
+		"   %gep_6_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_20\n"
+		"   %gep_6_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_21\n"
+		"   %gep_6_2 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_22\n"
+		"   %gep_6_3 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_23\n"
+		"   %gep_6_4 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_24\n"
+		"              OpStore %gep_6_0 %bc_6_0\n"
+		"              OpStore %gep_6_1 %bc_6_1\n"
+		"              OpStore %gep_6_2 %bc_6_2\n"
+		"              OpStore %gep_6_3 %bc_6_3\n"
+		"              OpStore %gep_6_4 %bc_6_4\n"
+
+		// half offset 100
+		"      %ex_7 = OpCompositeExtract %f16 %st_val 7\n"
+		"     %vec_7 = OpCompositeConstruct %v2f16 %ex_7 %c_f16_n1\n"
+		"      %bc_7 = OpBitcast %u32 %vec_7\n"
+		"     %gep_7 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_25\n"
+		"              OpStore %gep_7 %bc_7\n"
+
+		// [5 x <3 x half>] offset 104
+		"    %ex_8_0 = OpCompositeExtract %v3f16 %st_val 8 0\n"
+		"    %ex_8_1 = OpCompositeExtract %v3f16 %st_val 8 1\n"
+		"    %ex_8_2 = OpCompositeExtract %v3f16 %st_val 8 2\n"
+		"    %ex_8_3 = OpCompositeExtract %v3f16 %st_val 8 3\n"
+		"    %ex_8_4 = OpCompositeExtract %v3f16 %st_val 8 4\n"
+		" %vec_8_0_0 = OpVectorShuffle %v2f16 %ex_8_0 %c_v2f16_n1 0 1\n"
+		" %vec_8_0_1 = OpVectorShuffle %v2f16 %ex_8_0 %c_v2f16_n1 2 3\n"
+		" %vec_8_1_0 = OpVectorShuffle %v2f16 %ex_8_1 %c_v2f16_n1 0 1\n"
+		" %vec_8_1_1 = OpVectorShuffle %v2f16 %ex_8_1 %c_v2f16_n1 2 3\n"
+		" %vec_8_2_0 = OpVectorShuffle %v2f16 %ex_8_2 %c_v2f16_n1 0 1\n"
+		" %vec_8_2_1 = OpVectorShuffle %v2f16 %ex_8_2 %c_v2f16_n1 2 3\n"
+		" %vec_8_3_0 = OpVectorShuffle %v2f16 %ex_8_3 %c_v2f16_n1 0 1\n"
+		" %vec_8_3_1 = OpVectorShuffle %v2f16 %ex_8_3 %c_v2f16_n1 2 3\n"
+		" %vec_8_4_0 = OpVectorShuffle %v2f16 %ex_8_4 %c_v2f16_n1 0 1\n"
+		" %vec_8_4_1 = OpVectorShuffle %v2f16 %ex_8_4 %c_v2f16_n1 2 3\n"
+		"  %bc_8_0_0 = OpBitcast %u32 %vec_8_0_0\n"
+		"  %bc_8_0_1 = OpBitcast %u32 %vec_8_0_1\n"
+		"  %bc_8_1_0 = OpBitcast %u32 %vec_8_1_0\n"
+		"  %bc_8_1_1 = OpBitcast %u32 %vec_8_1_1\n"
+		"  %bc_8_2_0 = OpBitcast %u32 %vec_8_2_0\n"
+		"  %bc_8_2_1 = OpBitcast %u32 %vec_8_2_1\n"
+		"  %bc_8_3_0 = OpBitcast %u32 %vec_8_3_0\n"
+		"  %bc_8_3_1 = OpBitcast %u32 %vec_8_3_1\n"
+		"  %bc_8_4_0 = OpBitcast %u32 %vec_8_4_0\n"
+		"  %bc_8_4_1 = OpBitcast %u32 %vec_8_4_1\n"
+		" %gep_8_0_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_26\n"
+		" %gep_8_0_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_27\n"
+		" %gep_8_1_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_28\n"
+		" %gep_8_1_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_29\n"
+		" %gep_8_2_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_30\n"
+		" %gep_8_2_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_31\n"
+		" %gep_8_3_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_32\n"
+		" %gep_8_3_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_33\n"
+		" %gep_8_4_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_34\n"
+		" %gep_8_4_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_35\n"
+		"              OpStore %gep_8_0_0 %bc_8_0_0\n"
+		"              OpStore %gep_8_0_1 %bc_8_0_1\n"
+		"              OpStore %gep_8_1_0 %bc_8_1_0\n"
+		"              OpStore %gep_8_1_1 %bc_8_1_1\n"
+		"              OpStore %gep_8_2_0 %bc_8_2_0\n"
+		"              OpStore %gep_8_2_1 %bc_8_2_1\n"
+		"              OpStore %gep_8_3_0 %bc_8_3_0\n"
+		"              OpStore %gep_8_3_1 %bc_8_3_1\n"
+		"              OpStore %gep_8_4_0 %bc_8_4_0\n"
+		"              OpStore %gep_8_4_1 %bc_8_4_1\n"
+
+		// [3 x <4 x half>] offset 144
+		"    %ex_9_0 = OpCompositeExtract %v4f16 %st_val 9 0\n"
+		"    %ex_9_1 = OpCompositeExtract %v4f16 %st_val 9 1\n"
+		"    %ex_9_2 = OpCompositeExtract %v4f16 %st_val 9 2\n"
+		" %vec_9_0_0 = OpVectorShuffle %v2f16 %ex_9_0 %ex_9_0 0 1\n"
+		" %vec_9_0_1 = OpVectorShuffle %v2f16 %ex_9_0 %ex_9_0 2 3\n"
+		" %vec_9_1_0 = OpVectorShuffle %v2f16 %ex_9_1 %ex_9_1 0 1\n"
+		" %vec_9_1_1 = OpVectorShuffle %v2f16 %ex_9_1 %ex_9_1 2 3\n"
+		" %vec_9_2_0 = OpVectorShuffle %v2f16 %ex_9_2 %ex_9_2 0 1\n"
+		" %vec_9_2_1 = OpVectorShuffle %v2f16 %ex_9_2 %ex_9_2 2 3\n"
+		"  %bc_9_0_0 = OpBitcast %u32 %vec_9_0_0\n"
+		"  %bc_9_0_1 = OpBitcast %u32 %vec_9_0_1\n"
+		"  %bc_9_1_0 = OpBitcast %u32 %vec_9_1_0\n"
+		"  %bc_9_1_1 = OpBitcast %u32 %vec_9_1_1\n"
+		"  %bc_9_2_0 = OpBitcast %u32 %vec_9_2_0\n"
+		"  %bc_9_2_1 = OpBitcast %u32 %vec_9_2_1\n"
+		" %gep_9_0_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_36\n"
+		" %gep_9_0_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_37\n"
+		" %gep_9_1_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_38\n"
+		" %gep_9_1_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_39\n"
+		" %gep_9_2_0 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_40\n"
+		" %gep_9_2_1 = OpAccessChain %up_u32 %ssbo_dst %c_u32_0 %ndx %c_u32_41\n"
+		"              OpStore %gep_9_0_0 %bc_9_0_0\n"
+		"              OpStore %gep_9_0_1 %bc_9_0_1\n"
+		"              OpStore %gep_9_1_0 %bc_9_1_0\n"
+		"              OpStore %gep_9_1_1 %bc_9_1_1\n"
+		"              OpStore %gep_9_2_0 %bc_9_2_0\n"
+		"              OpStore %gep_9_2_1 %bc_9_2_1\n"
 
 		"              OpBranch %next\n"
 
@@ -12514,8 +12764,7 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 		specs["field_modifier"]		= de::toString(fieldModifier);
 		specs["consts"]				= consts;
 
-		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
+		fragments["capability"]		= "OpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
@@ -12524,11 +12773,9 @@ tcu::TestCaseGroup* createFloat16CompositeConstructSet (tcu::TestContext& testCt
 		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(expectedOutput)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = compareFP16CompositeFunc;
 
-		extensions.push_back("VK_KHR_16bit_storage");
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
 		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
-		features.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -12549,12 +12796,24 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 	const StringTemplate preMain
 	(
 		"   %c_i32_ndp = OpConstant %i32 ${num_elements}\n"
+		"  %c_i32_hndp = OpSpecConstantOp %i32 SDiv %c_i32_ndp %c_i32_2\n"
+		"  %c_i32_size = OpConstant %i32 ${struct_u32s}\n"
+		"%c_u32_high_ones = OpConstant %u32 0xffff0000\n"
+		" %c_u32_low_ones = OpConstant %u32 0x0000ffff\n"
 		"         %f16 = OpTypeFloat 16\n"
 		"       %v2f16 = OpTypeVector %f16 2\n"
 		"       %v3f16 = OpTypeVector %f16 3\n"
 		"       %v4f16 = OpTypeVector %f16 4\n"
 		"    %c_f16_na = OpConstant %f16 -1.0\n"
+		"  %c_v2f16_n1 = OpConstantComposite %v2f16 %c_f16_na %c_f16_na\n"
 		"     %c_u32_5 = OpConstant %u32 5\n"
+		"     %c_i32_5 = OpConstant %i32 5\n"
+		"     %c_i32_6 = OpConstant %i32 6\n"
+		"     %c_i32_7 = OpConstant %i32 7\n"
+		"     %c_i32_8 = OpConstant %i32 8\n"
+		"     %c_i32_9 = OpConstant %i32 9\n"
+		"    %c_i32_10 = OpConstant %i32 10\n"
+		"    %c_i32_11 = OpConstant %i32 11\n"
 
 		"%f16arr3      = OpTypeArray %f16 %c_u32_3\n"
 		"%v2f16arr3    = OpTypeArray %v2f16 %c_u32_3\n"
@@ -12565,10 +12824,15 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		"%struct16arr3 = OpTypeArray %struct16 %c_u32_3\n"
 		"%st_test      = OpTypeStruct %${field_type}\n"
 
-		"      %up_f16 = OpTypePointer Uniform %f16\n"
-		"       %up_st = OpTypePointer Uniform %st_test\n"
-		"      %ra_f16 = OpTypeArray %f16 %c_i32_ndp\n"
-		"       %ra_st = OpTypeArray %st_test %c_i32_1\n"
+		"      %ra_f16 = OpTypeArray %u32 %c_i32_hndp\n"
+		"       %ra_st = OpTypeArray %u32 %c_i32_size\n"
+		"      %up_u32 = OpTypePointer Uniform %u32\n"
+		"     %st_test_i32_fn = OpTypeFunction %st_test %i32\n"
+		"%void_st_test_i32_fn = OpTypeFunction %void %st_test %i32\n"
+		"         %f16_i32_fn = OpTypeFunction %f16 %i32\n"
+		"    %void_f16_i32_fn = OpTypeFunction %void %f16 %i32\n"
+		"       %v2f16_i32_fn = OpTypeFunction %v2f16 %i32\n"
+		"  %void_v2f16_i32_fn = OpTypeFunction %void %v2f16 %i32\n"
 
 		"${op_premain_decls}"
 
@@ -12583,8 +12847,8 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 	(
 		"OpDecorate %SSBO_src BufferBlock\n"
 		"OpDecorate %SSBO_dst BufferBlock\n"
-		"OpDecorate %ra_f16 ArrayStride 2\n"
-		"OpDecorate %ra_st ArrayStride ${struct_item_size}\n"
+		"OpDecorate %ra_f16 ArrayStride 4\n"
+		"OpDecorate %ra_st ArrayStride 4\n"
 		"OpDecorate %ssbo_src DescriptorSet 0\n"
 		"OpDecorate %ssbo_src Binding 0\n"
 		"OpDecorate %ssbo_dst DescriptorSet 0\n"
@@ -12632,7 +12896,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 
 		"${op_sw_fun_call}"
 
-		"              OpStore %dst %val_dst\n"
+		"    %dst_st = OpFunctionCall %void %${st_call} %val_dst %${st_ndx}\n"
 		"              OpBranch %next\n"
 
 		"      %next = OpLabel\n"
@@ -12670,6 +12934,515 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		"             OpReturnValue %val_ret_${case_ndx}\n"
 	);
 
+	const string loadF16
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"   %ld_${var}_call = OpFunctionCall %f16 %ld_arg_${var} %ld_${var}_param\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_call\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n" +
+		loadScalarF16FromUint
+	);
+
+	const string loadV2F16
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"   %ld_${var}_call = OpFunctionCall %v2f16 %ld_arg_${var} %ld_${var}_param\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_call\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n" +
+		loadV2F16FromUint
+	);
+
+	const string loadV3F16
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"  %ld_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"  %ld_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"   %ld_${var}_ld_0 = OpLoad %u32 %ld_${var}_gep_0\n"
+		"   %ld_${var}_ld_1 = OpLoad %u32 %ld_${var}_gep_1\n"
+		"   %ld_${var}_bc_0 = OpBitcast %v2f16 %ld_${var}_ld_0\n"
+		"   %ld_${var}_bc_1 = OpBitcast %v2f16 %ld_${var}_ld_1\n"
+		"    %ld_${var}_vec = OpVectorShuffle %v3f16 %ld_${var}_bc_0 %ld_${var}_bc_1 0 1 2\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_vec\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string loadV4F16
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"  %ld_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"  %ld_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"   %ld_${var}_ld_0 = OpLoad %u32 %ld_${var}_gep_0\n"
+		"   %ld_${var}_ld_1 = OpLoad %u32 %ld_${var}_gep_1\n"
+		"   %ld_${var}_bc_0 = OpBitcast %v2f16 %ld_${var}_ld_0\n"
+		"   %ld_${var}_bc_1 = OpBitcast %v2f16 %ld_${var}_ld_1\n"
+		"    %ld_${var}_vec = OpVectorShuffle %v4f16 %ld_${var}_bc_0 %ld_${var}_bc_1 0 1 2 3\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_vec\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string loadF16Arr3
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"  %ld_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_u32_0 %c_u32_0\n"
+		"  %ld_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_u32_0 %c_u32_1\n"
+		"   %ld_${var}_ld_0 = OpLoad %u32 %ld_${var}_gep_0\n"
+		"   %ld_${var}_ld_1 = OpLoad %u32 %ld_${var}_gep_1\n"
+		"   %ld_${var}_bc_0 = OpBitcast %v2f16 %ld_${var}_ld_0\n"
+		"   %ld_${var}_bc_1 = OpBitcast %v2f16 %ld_${var}_ld_1\n"
+		"   %ld_${var}_ex_0 = OpCompositeExtract %f16 %ld_${var}_bc_0 0\n"
+		"   %ld_${var}_ex_1 = OpCompositeExtract %f16 %ld_${var}_bc_0 1\n"
+		"   %ld_${var}_ex_2 = OpCompositeExtract %f16 %ld_${var}_bc_1 0\n"
+		"   %ld_${var}_cons = OpCompositeConstruct %f16arr3 %ld_${var}_ex_0 %ld_${var}_ex_1 %ld_${var}_ex_2\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_cons\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string loadV2F16Arr5
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_label = OpLabel\n"
+		"  %ld_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"  %ld_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"  %ld_${var}_gep_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		"  %ld_${var}_gep_3 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		"  %ld_${var}_gep_4 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"   %ld_${var}_ld_0 = OpLoad %u32 %ld_${var}_gep_0\n"
+		"   %ld_${var}_ld_1 = OpLoad %u32 %ld_${var}_gep_1\n"
+		"   %ld_${var}_ld_2 = OpLoad %u32 %ld_${var}_gep_2\n"
+		"   %ld_${var}_ld_3 = OpLoad %u32 %ld_${var}_gep_3\n"
+		"   %ld_${var}_ld_4 = OpLoad %u32 %ld_${var}_gep_4\n"
+		"   %ld_${var}_bc_0 = OpBitcast %v2f16 %ld_${var}_ld_0\n"
+		"   %ld_${var}_bc_1 = OpBitcast %v2f16 %ld_${var}_ld_1\n"
+		"   %ld_${var}_bc_2 = OpBitcast %v2f16 %ld_${var}_ld_2\n"
+		"   %ld_${var}_bc_3 = OpBitcast %v2f16 %ld_${var}_ld_3\n"
+		"   %ld_${var}_bc_4 = OpBitcast %v2f16 %ld_${var}_ld_4\n"
+		"   %ld_${var}_cons = OpCompositeConstruct %v2f16arr5 %ld_${var}_bc_0 %ld_${var}_bc_1 %ld_${var}_bc_2 %ld_${var}_bc_3 %ld_${var}_bc_4\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_cons\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string loadV3F16Arr5
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"%ld_${var}_gep_0_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"%ld_${var}_gep_0_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"%ld_${var}_gep_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		"%ld_${var}_gep_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		"%ld_${var}_gep_2_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"%ld_${var}_gep_2_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_5\n"
+		"%ld_${var}_gep_3_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_6\n"
+		"%ld_${var}_gep_3_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_7\n"
+		"%ld_${var}_gep_4_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_8\n"
+		"%ld_${var}_gep_4_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_9\n"
+		" %ld_${var}_ld_0_0 = OpLoad %u32 %ld_${var}_gep_0_0\n"
+		" %ld_${var}_ld_0_1 = OpLoad %u32 %ld_${var}_gep_0_1\n"
+		" %ld_${var}_ld_1_0 = OpLoad %u32 %ld_${var}_gep_1_0\n"
+		" %ld_${var}_ld_1_1 = OpLoad %u32 %ld_${var}_gep_1_1\n"
+		" %ld_${var}_ld_2_0 = OpLoad %u32 %ld_${var}_gep_2_0\n"
+		" %ld_${var}_ld_2_1 = OpLoad %u32 %ld_${var}_gep_2_1\n"
+		" %ld_${var}_ld_3_0 = OpLoad %u32 %ld_${var}_gep_3_0\n"
+		" %ld_${var}_ld_3_1 = OpLoad %u32 %ld_${var}_gep_3_1\n"
+		" %ld_${var}_ld_4_0 = OpLoad %u32 %ld_${var}_gep_4_0\n"
+		" %ld_${var}_ld_4_1 = OpLoad %u32 %ld_${var}_gep_4_1\n"
+		" %ld_${var}_bc_0_0 = OpBitcast %v2f16 %ld_${var}_ld_0_0\n"
+		" %ld_${var}_bc_0_1 = OpBitcast %v2f16 %ld_${var}_ld_0_1\n"
+		" %ld_${var}_bc_1_0 = OpBitcast %v2f16 %ld_${var}_ld_1_0\n"
+		" %ld_${var}_bc_1_1 = OpBitcast %v2f16 %ld_${var}_ld_1_1\n"
+		" %ld_${var}_bc_2_0 = OpBitcast %v2f16 %ld_${var}_ld_2_0\n"
+		" %ld_${var}_bc_2_1 = OpBitcast %v2f16 %ld_${var}_ld_2_1\n"
+		" %ld_${var}_bc_3_0 = OpBitcast %v2f16 %ld_${var}_ld_3_0\n"
+		" %ld_${var}_bc_3_1 = OpBitcast %v2f16 %ld_${var}_ld_3_1\n"
+		" %ld_${var}_bc_4_0 = OpBitcast %v2f16 %ld_${var}_ld_4_0\n"
+		" %ld_${var}_bc_4_1 = OpBitcast %v2f16 %ld_${var}_ld_4_1\n"
+		"  %ld_${var}_vec_0 = OpVectorShuffle %v3f16 %ld_${var}_bc_0_0 %ld_${var}_bc_0_1 0 1 2\n"
+		"  %ld_${var}_vec_1 = OpVectorShuffle %v3f16 %ld_${var}_bc_1_0 %ld_${var}_bc_1_1 0 1 2\n"
+		"  %ld_${var}_vec_2 = OpVectorShuffle %v3f16 %ld_${var}_bc_2_0 %ld_${var}_bc_2_1 0 1 2\n"
+		"  %ld_${var}_vec_3 = OpVectorShuffle %v3f16 %ld_${var}_bc_3_0 %ld_${var}_bc_3_1 0 1 2\n"
+		"  %ld_${var}_vec_4 = OpVectorShuffle %v3f16 %ld_${var}_bc_4_0 %ld_${var}_bc_4_1 0 1 2\n"
+		"   %ld_${var}_cons = OpCompositeConstruct %v3f16arr5 %ld_${var}_vec_0 %ld_${var}_vec_1 %ld_${var}_vec_2 %ld_${var}_vec_3 %ld_${var}_vec_4\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_cons\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string loadV4F16Arr3
+	(
+		"        %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"  %ld_${var}_param = OpFunctionParameter %i32\n"
+		"  %ld_${var}_entry = OpLabel\n"
+		"%ld_${var}_gep_0_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"%ld_${var}_gep_0_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"%ld_${var}_gep_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		"%ld_${var}_gep_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		"%ld_${var}_gep_2_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"%ld_${var}_gep_2_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_5\n"
+		" %ld_${var}_ld_0_0 = OpLoad %u32 %ld_${var}_gep_0_0\n"
+		" %ld_${var}_ld_0_1 = OpLoad %u32 %ld_${var}_gep_0_1\n"
+		" %ld_${var}_ld_1_0 = OpLoad %u32 %ld_${var}_gep_1_0\n"
+		" %ld_${var}_ld_1_1 = OpLoad %u32 %ld_${var}_gep_1_1\n"
+		" %ld_${var}_ld_2_0 = OpLoad %u32 %ld_${var}_gep_2_0\n"
+		" %ld_${var}_ld_2_1 = OpLoad %u32 %ld_${var}_gep_2_1\n"
+		" %ld_${var}_bc_0_0 = OpBitcast %v2f16 %ld_${var}_ld_0_0\n"
+		" %ld_${var}_bc_0_1 = OpBitcast %v2f16 %ld_${var}_ld_0_1\n"
+		" %ld_${var}_bc_1_0 = OpBitcast %v2f16 %ld_${var}_ld_1_0\n"
+		" %ld_${var}_bc_1_1 = OpBitcast %v2f16 %ld_${var}_ld_1_1\n"
+		" %ld_${var}_bc_2_0 = OpBitcast %v2f16 %ld_${var}_ld_2_0\n"
+		" %ld_${var}_bc_2_1 = OpBitcast %v2f16 %ld_${var}_ld_2_1\n"
+		"  %ld_${var}_vec_0 = OpVectorShuffle %v4f16 %ld_${var}_bc_0_0 %ld_${var}_bc_0_1 0 1 2 3\n"
+		"  %ld_${var}_vec_1 = OpVectorShuffle %v4f16 %ld_${var}_bc_1_0 %ld_${var}_bc_1_1 0 1 2 3\n"
+		"  %ld_${var}_vec_2 = OpVectorShuffle %v4f16 %ld_${var}_bc_2_0 %ld_${var}_bc_2_1 0 1 2 3\n"
+		"   %ld_${var}_cons = OpCompositeConstruct %v4f16arr3 %ld_${var}_vec_0 %ld_${var}_vec_1 %ld_${var}_vec_2\n"
+		"%ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_cons\n"
+		"                     OpReturnValue %ld_${var}_st_test\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string loadStruct16Arr3
+	(
+		"          %ld_${var} = OpFunction %st_test None %st_test_i32_fn\n"
+		"    %ld_${var}_param = OpFunctionParameter %i32\n"
+		"    %ld_${var}_entry = OpLabel\n"
+		"%ld_${var}_gep_0_0   = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"%ld_${var}_gep_0_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"%ld_${var}_gep_0_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		"%ld_${var}_gep_0_1_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		"%ld_${var}_gep_1_0   = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"%ld_${var}_gep_1_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_5\n"
+		"%ld_${var}_gep_1_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_6\n"
+		"%ld_${var}_gep_1_1_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_7\n"
+		"%ld_${var}_gep_2_0   = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_8\n"
+		"%ld_${var}_gep_2_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_9\n"
+		"%ld_${var}_gep_2_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_10\n"
+		"%ld_${var}_gep_2_1_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_11\n"
+		" %ld_${var}_ld_0_0   = OpLoad %u32 %ld_${var}_gep_0_0\n"
+		" %ld_${var}_ld_0_1_0 = OpLoad %u32 %ld_${var}_gep_0_1_0\n"
+		" %ld_${var}_ld_0_1_1 = OpLoad %u32 %ld_${var}_gep_0_1_1\n"
+		" %ld_${var}_ld_0_1_2 = OpLoad %u32 %ld_${var}_gep_0_1_2\n"
+		" %ld_${var}_ld_1_0   = OpLoad %u32 %ld_${var}_gep_1_0\n"
+		" %ld_${var}_ld_1_1_0 = OpLoad %u32 %ld_${var}_gep_1_1_0\n"
+		" %ld_${var}_ld_1_1_1 = OpLoad %u32 %ld_${var}_gep_1_1_1\n"
+		" %ld_${var}_ld_1_1_2 = OpLoad %u32 %ld_${var}_gep_1_1_2\n"
+		" %ld_${var}_ld_2_0   = OpLoad %u32 %ld_${var}_gep_2_0\n"
+		" %ld_${var}_ld_2_1_0 = OpLoad %u32 %ld_${var}_gep_2_1_0\n"
+		" %ld_${var}_ld_2_1_1 = OpLoad %u32 %ld_${var}_gep_2_1_1\n"
+		" %ld_${var}_ld_2_1_2 = OpLoad %u32 %ld_${var}_gep_2_1_2\n"
+		" %ld_${var}_bc_0_0   = OpBitcast %v2f16 %ld_${var}_ld_0_0\n"
+		" %ld_${var}_bc_0_1_0 = OpBitcast %v2f16 %ld_${var}_ld_0_1_0\n"
+		" %ld_${var}_bc_0_1_1 = OpBitcast %v2f16 %ld_${var}_ld_0_1_1\n"
+		" %ld_${var}_bc_0_1_2 = OpBitcast %v2f16 %ld_${var}_ld_0_1_2\n"
+		" %ld_${var}_bc_1_0   = OpBitcast %v2f16 %ld_${var}_ld_1_0\n"
+		" %ld_${var}_bc_1_1_0 = OpBitcast %v2f16 %ld_${var}_ld_1_1_0\n"
+		" %ld_${var}_bc_1_1_1 = OpBitcast %v2f16 %ld_${var}_ld_1_1_1\n"
+		" %ld_${var}_bc_1_1_2 = OpBitcast %v2f16 %ld_${var}_ld_1_1_2\n"
+		" %ld_${var}_bc_2_0   = OpBitcast %v2f16 %ld_${var}_ld_2_0\n"
+		" %ld_${var}_bc_2_1_0 = OpBitcast %v2f16 %ld_${var}_ld_2_1_0\n"
+		" %ld_${var}_bc_2_1_1 = OpBitcast %v2f16 %ld_${var}_ld_2_1_1\n"
+		" %ld_${var}_bc_2_1_2 = OpBitcast %v2f16 %ld_${var}_ld_2_1_2\n"
+		"    %ld_${var}_arr_0 = OpCompositeConstruct %v2f16arr3 %ld_${var}_bc_0_1_0 %ld_${var}_bc_0_1_1 %ld_${var}_bc_0_1_2\n"
+		"    %ld_${var}_arr_1 = OpCompositeConstruct %v2f16arr3 %ld_${var}_bc_1_1_0 %ld_${var}_bc_1_1_1 %ld_${var}_bc_1_1_2\n"
+		"    %ld_${var}_arr_2 = OpCompositeConstruct %v2f16arr3 %ld_${var}_bc_2_1_0 %ld_${var}_bc_2_1_1 %ld_${var}_bc_2_1_2\n"
+		"     %ld_${var}_ex_0 = OpCompositeExtract %f16 %ld_${var}_bc_0_0 0\n"
+		"     %ld_${var}_ex_1 = OpCompositeExtract %f16 %ld_${var}_bc_1_0 0\n"
+		"     %ld_${var}_ex_2 = OpCompositeExtract %f16 %ld_${var}_bc_2_0 0\n"
+		"     %ld_${var}_st_0 = OpCompositeConstruct %struct16 %ld_${var}_ex_0 %ld_${var}_arr_0\n"
+		"     %ld_${var}_st_1 = OpCompositeConstruct %struct16 %ld_${var}_ex_1 %ld_${var}_arr_1\n"
+		"     %ld_${var}_st_2 = OpCompositeConstruct %struct16 %ld_${var}_ex_2 %ld_${var}_arr_2\n"
+		"     %ld_${var}_cons = OpCompositeConstruct %struct16arr3 %ld_${var}_st_0 %ld_${var}_st_1 %ld_${var}_st_2\n"
+		"  %ld_${var}_st_test = OpCompositeConstruct %st_test %ld_${var}_cons\n"
+		"                       OpReturnValue %ld_${var}_st_test\n"
+		"                      OpFunctionEnd\n"
+	);
+
+	const string storeF16
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"    %st_${var}_ex = OpCompositeExtract %f16 %st_${var}_param1 0\n"
+		"  %st_${var}_call = OpFunctionCall %void %st_fn_${var} %st_${var}_ex %st_${var}_param2\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n" +
+		storeScalarF16AsUint
+	);
+
+	const string storeV2F16
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"    %st_${var}_ex = OpCompositeExtract %v2f16 %st_${var}_param1 0\n"
+		"  %st_${var}_call = OpFunctionCall %void %st_fn_${var} %st_${var}_ex %st_${var}_param2\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n" +
+		storeV2F16AsUint
+	);
+
+	const string storeV3F16
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"    %st_${var}_ex = OpCompositeExtract %v3f16 %st_${var}_param1 0\n"
+		" %st_${var}_vec_0 = OpVectorShuffle %v2f16 %st_${var}_ex %c_v2f16_n1 0 1\n"
+		" %st_${var}_vec_1 = OpVectorShuffle %v2f16 %st_${var}_ex %c_v2f16_n1 2 3\n"
+		"  %st_${var}_bc_0 = OpBitcast %u32 %st_${var}_vec_0\n"
+		"  %st_${var}_bc_1 = OpBitcast %u32 %st_${var}_vec_1\n"
+		" %st_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		" %st_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"                    OpStore %st_${var}_gep_0 %st_${var}_bc_0\n"
+		"                    OpStore %st_${var}_gep_1 %st_${var}_bc_1\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n"
+	);
+
+	const string storeV4F16
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"    %st_${var}_ex = OpCompositeExtract %v4f16 %st_${var}_param1 0\n"
+		" %st_${var}_vec_0 = OpVectorShuffle %v2f16 %st_${var}_ex %c_v2f16_n1 0 1\n"
+		" %st_${var}_vec_1 = OpVectorShuffle %v2f16 %st_${var}_ex %c_v2f16_n1 2 3\n"
+		"  %st_${var}_bc_0 = OpBitcast %u32 %st_${var}_vec_0\n"
+		"  %st_${var}_bc_1 = OpBitcast %u32 %st_${var}_vec_1\n"
+		" %st_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		" %st_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"                    OpStore %st_${var}_gep_0 %st_${var}_bc_0\n"
+		"                    OpStore %st_${var}_gep_1 %st_${var}_bc_1\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n"
+	);
+
+	const string storeF16Arr3
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"  %st_${var}_ex_0 = OpCompositeExtract %f16 %st_${var}_param1 0 0\n"
+		"  %st_${var}_ex_1 = OpCompositeExtract %f16 %st_${var}_param1 0 1\n"
+		"  %st_${var}_ex_2 = OpCompositeExtract %f16 %st_${var}_param1 0 2\n"
+		" %st_${var}_vec_0 = OpCompositeConstruct %v2f16 %st_${var}_ex_0 %st_${var}_ex_1\n"
+		" %st_${var}_vec_1 = OpCompositeConstruct %v2f16 %st_${var}_ex_2 %c_f16_na\n"
+		"  %st_${var}_bc_0 = OpBitcast %u32 %st_${var}_vec_0\n"
+		"  %st_${var}_bc_1 = OpBitcast %u32 %st_${var}_vec_1\n"
+		" %st_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		" %st_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"                    OpStore %st_${var}_gep_0 %st_${var}_bc_0\n"
+		"                    OpStore %st_${var}_gep_1 %st_${var}_bc_1\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n"
+	);
+
+	const string storeV2F16Arr5
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"  %st_${var}_ex_0 = OpCompositeExtract %v2f16 %st_${var}_param1 0 0\n"
+		"  %st_${var}_ex_1 = OpCompositeExtract %v2f16 %st_${var}_param1 0 1\n"
+		"  %st_${var}_ex_2 = OpCompositeExtract %v2f16 %st_${var}_param1 0 2\n"
+		"  %st_${var}_ex_3 = OpCompositeExtract %v2f16 %st_${var}_param1 0 3\n"
+		"  %st_${var}_ex_4 = OpCompositeExtract %v2f16 %st_${var}_param1 0 4\n"
+		"  %st_${var}_bc_0 = OpBitcast %u32 %st_${var}_ex_0\n"
+		"  %st_${var}_bc_1 = OpBitcast %u32 %st_${var}_ex_1\n"
+		"  %st_${var}_bc_2 = OpBitcast %u32 %st_${var}_ex_2\n"
+		"  %st_${var}_bc_3 = OpBitcast %u32 %st_${var}_ex_3\n"
+		"  %st_${var}_bc_4 = OpBitcast %u32 %st_${var}_ex_4\n"
+		" %st_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		" %st_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		" %st_${var}_gep_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		" %st_${var}_gep_3 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		" %st_${var}_gep_4 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"                    OpStore %st_${var}_gep_0 %st_${var}_bc_0\n"
+		"                    OpStore %st_${var}_gep_1 %st_${var}_bc_1\n"
+		"                    OpStore %st_${var}_gep_2 %st_${var}_bc_2\n"
+		"                    OpStore %st_${var}_gep_3 %st_${var}_bc_3\n"
+		"                    OpStore %st_${var}_gep_4 %st_${var}_bc_4\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n"
+	);
+
+	const string storeV3F16Arr5
+	(
+		"       %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"%st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"%st_${var}_param2 = OpFunctionParameter %i32\n"
+		" %st_${var}_entry = OpLabel\n"
+		"  %st_${var}_ex_0 = OpCompositeExtract %v3f16 %st_${var}_param1 0 0\n"
+		"  %st_${var}_ex_1 = OpCompositeExtract %v3f16 %st_${var}_param1 0 1\n"
+		"  %st_${var}_ex_2 = OpCompositeExtract %v3f16 %st_${var}_param1 0 2\n"
+		"  %st_${var}_ex_3 = OpCompositeExtract %v3f16 %st_${var}_param1 0 3\n"
+		"  %st_${var}_ex_4 = OpCompositeExtract %v3f16 %st_${var}_param1 0 4\n"
+		"%st_${var}_v2_0_0 = OpVectorShuffle %v2f16 %st_${var}_ex_0 %c_v2f16_n1 0 1\n"
+		"%st_${var}_v2_0_1 = OpVectorShuffle %v2f16 %st_${var}_ex_0 %c_v2f16_n1 2 3\n"
+		"%st_${var}_v2_1_0 = OpVectorShuffle %v2f16 %st_${var}_ex_1 %c_v2f16_n1 0 1\n"
+		"%st_${var}_v2_1_1 = OpVectorShuffle %v2f16 %st_${var}_ex_1 %c_v2f16_n1 2 3\n"
+		"%st_${var}_v2_2_0 = OpVectorShuffle %v2f16 %st_${var}_ex_2 %c_v2f16_n1 0 1\n"
+		"%st_${var}_v2_2_1 = OpVectorShuffle %v2f16 %st_${var}_ex_2 %c_v2f16_n1 2 3\n"
+		"%st_${var}_v2_3_0 = OpVectorShuffle %v2f16 %st_${var}_ex_3 %c_v2f16_n1 0 1\n"
+		"%st_${var}_v2_3_1 = OpVectorShuffle %v2f16 %st_${var}_ex_3 %c_v2f16_n1 2 3\n"
+		"%st_${var}_v2_4_0 = OpVectorShuffle %v2f16 %st_${var}_ex_4 %c_v2f16_n1 0 1\n"
+		"%st_${var}_v2_4_1 = OpVectorShuffle %v2f16 %st_${var}_ex_4 %c_v2f16_n1 2 3\n"
+		"%st_${var}_bc_0_0 = OpBitcast %u32 %st_${var}_v2_0_0\n"
+		"%st_${var}_bc_0_1 = OpBitcast %u32 %st_${var}_v2_0_1\n"
+		"%st_${var}_bc_1_0 = OpBitcast %u32 %st_${var}_v2_1_0\n"
+		"%st_${var}_bc_1_1 = OpBitcast %u32 %st_${var}_v2_1_1\n"
+		"%st_${var}_bc_2_0 = OpBitcast %u32 %st_${var}_v2_2_0\n"
+		"%st_${var}_bc_2_1 = OpBitcast %u32 %st_${var}_v2_2_1\n"
+		"%st_${var}_bc_3_0 = OpBitcast %u32 %st_${var}_v2_3_0\n"
+		"%st_${var}_bc_3_1 = OpBitcast %u32 %st_${var}_v2_3_1\n"
+		"%st_${var}_bc_4_0 = OpBitcast %u32 %st_${var}_v2_4_0\n"
+		"%st_${var}_bc_4_1 = OpBitcast %u32 %st_${var}_v2_4_1\n"
+		" %st_${var}_gep_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		" %st_${var}_gep_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		" %st_${var}_gep_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		" %st_${var}_gep_3 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		" %st_${var}_gep_4 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		" %st_${var}_gep_5 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_5\n"
+		" %st_${var}_gep_6 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_6\n"
+		" %st_${var}_gep_7 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_7\n"
+		" %st_${var}_gep_8 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_8\n"
+		" %st_${var}_gep_9 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_9\n"
+		"                    OpStore %st_${var}_gep_0 %st_${var}_bc_0_0\n"
+		"                    OpStore %st_${var}_gep_1 %st_${var}_bc_0_1\n"
+		"                    OpStore %st_${var}_gep_2 %st_${var}_bc_1_0\n"
+		"                    OpStore %st_${var}_gep_3 %st_${var}_bc_1_1\n"
+		"                    OpStore %st_${var}_gep_4 %st_${var}_bc_2_0\n"
+		"                    OpStore %st_${var}_gep_5 %st_${var}_bc_2_1\n"
+		"                    OpStore %st_${var}_gep_6 %st_${var}_bc_3_0\n"
+		"                    OpStore %st_${var}_gep_7 %st_${var}_bc_3_1\n"
+		"                    OpStore %st_${var}_gep_8 %st_${var}_bc_4_0\n"
+		"                    OpStore %st_${var}_gep_9 %st_${var}_bc_4_1\n"
+		"                    OpReturn\n"
+		"                    OpFunctionEnd\n"
+	);
+
+	const string storeV4F16Arr3
+	(
+		"        %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		" %st_${var}_param1 = OpFunctionParameter %st_test\n"
+		" %st_${var}_param2 = OpFunctionParameter %i32\n"
+		"  %st_${var}_entry = OpLabel\n"
+		"   %st_${var}_ex_0 = OpCompositeExtract %v4f16 %st_${var}_param1 0 0\n"
+		"   %st_${var}_ex_1 = OpCompositeExtract %v4f16 %st_${var}_param1 0 1\n"
+		"   %st_${var}_ex_2 = OpCompositeExtract %v4f16 %st_${var}_param1 0 2\n"
+		"%st_${var}_vec_0_0 = OpVectorShuffle %v2f16 %st_${var}_ex_0 %st_${var}_ex_0 0 1\n"
+		"%st_${var}_vec_0_1 = OpVectorShuffle %v2f16 %st_${var}_ex_0 %st_${var}_ex_0 2 3\n"
+		"%st_${var}_vec_1_0 = OpVectorShuffle %v2f16 %st_${var}_ex_1 %st_${var}_ex_1 0 1\n"
+		"%st_${var}_vec_1_1 = OpVectorShuffle %v2f16 %st_${var}_ex_1 %st_${var}_ex_1 2 3\n"
+		"%st_${var}_vec_2_0 = OpVectorShuffle %v2f16 %st_${var}_ex_2 %st_${var}_ex_2 0 1\n"
+		"%st_${var}_vec_2_1 = OpVectorShuffle %v2f16 %st_${var}_ex_2 %st_${var}_ex_2 2 3\n"
+		" %st_${var}_bc_0_0 = OpBitcast %u32 %st_${var}_vec_0_0\n"
+		" %st_${var}_bc_0_1 = OpBitcast %u32 %st_${var}_vec_0_1\n"
+		" %st_${var}_bc_1_0 = OpBitcast %u32 %st_${var}_vec_1_0\n"
+		" %st_${var}_bc_1_1 = OpBitcast %u32 %st_${var}_vec_1_1\n"
+		" %st_${var}_bc_2_0 = OpBitcast %u32 %st_${var}_vec_2_0\n"
+		" %st_${var}_bc_2_1 = OpBitcast %u32 %st_${var}_vec_2_1\n"
+		"%st_${var}_gep_0_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"%st_${var}_gep_0_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"%st_${var}_gep_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		"%st_${var}_gep_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		"%st_${var}_gep_2_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"%st_${var}_gep_2_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_5\n"
+		"                     OpStore %st_${var}_gep_0_0 %st_${var}_bc_0_0\n"
+		"                     OpStore %st_${var}_gep_0_1 %st_${var}_bc_0_1\n"
+		"                     OpStore %st_${var}_gep_1_0 %st_${var}_bc_1_0\n"
+		"                     OpStore %st_${var}_gep_1_1 %st_${var}_bc_1_1\n"
+		"                     OpStore %st_${var}_gep_2_0 %st_${var}_bc_2_0\n"
+		"                     OpStore %st_${var}_gep_2_1 %st_${var}_bc_2_1\n"
+		"                     OpReturn\n"
+		"                     OpFunctionEnd\n"
+	);
+
+	const string storeStruct16Arr3
+	(
+		"          %st_${var} = OpFunction %void None %void_st_test_i32_fn\n"
+		"   %st_${var}_param1 = OpFunctionParameter %st_test\n"
+		"   %st_${var}_param2 = OpFunctionParameter %i32\n"
+		"    %st_${var}_entry = OpLabel\n"
+		"     %st_${var}_st_0 = OpCompositeExtract %struct16 %st_${var}_param1 0 0\n"
+		"     %st_${var}_st_1 = OpCompositeExtract %struct16 %st_${var}_param1 0 1\n"
+		"     %st_${var}_st_2 = OpCompositeExtract %struct16 %st_${var}_param1 0 2\n"
+		"   %st_${var}_el_0   = OpCompositeExtract   %f16 %st_${var}_st_0 0\n"
+		"   %st_${var}_v2_0_0 = OpCompositeExtract %v2f16 %st_${var}_st_0 1 0\n"
+		"   %st_${var}_v2_0_1 = OpCompositeExtract %v2f16 %st_${var}_st_0 1 1\n"
+		"   %st_${var}_v2_0_2 = OpCompositeExtract %v2f16 %st_${var}_st_0 1 2\n"
+		"   %st_${var}_el_1   = OpCompositeExtract   %f16 %st_${var}_st_1 0\n"
+		"   %st_${var}_v2_1_0 = OpCompositeExtract %v2f16 %st_${var}_st_1 1 0\n"
+		"   %st_${var}_v2_1_1 = OpCompositeExtract %v2f16 %st_${var}_st_1 1 1\n"
+		"   %st_${var}_v2_1_2 = OpCompositeExtract %v2f16 %st_${var}_st_1 1 2\n"
+		"   %st_${var}_el_2   = OpCompositeExtract   %f16 %st_${var}_st_2 0\n"
+		"   %st_${var}_v2_2_0 = OpCompositeExtract %v2f16 %st_${var}_st_2 1 0\n"
+		"   %st_${var}_v2_2_1 = OpCompositeExtract %v2f16 %st_${var}_st_2 1 1\n"
+		"   %st_${var}_v2_2_2 = OpCompositeExtract %v2f16 %st_${var}_st_2 1 2\n"
+		"     %st_${var}_v2_0 = OpCompositeConstruct %v2f16 %st_${var}_el_0 %c_f16_na\n"
+		"     %st_${var}_v2_1 = OpCompositeConstruct %v2f16 %st_${var}_el_1 %c_f16_na\n"
+		"     %st_${var}_v2_2 = OpCompositeConstruct %v2f16 %st_${var}_el_2 %c_f16_na\n"
+		"   %st_${var}_bc_0   = OpBitcast %u32 %st_${var}_v2_0\n"
+		"   %st_${var}_bc_0_0 = OpBitcast %u32 %st_${var}_v2_0_0\n"
+		"   %st_${var}_bc_0_1 = OpBitcast %u32 %st_${var}_v2_0_1\n"
+		"   %st_${var}_bc_0_2 = OpBitcast %u32 %st_${var}_v2_0_2\n"
+		"   %st_${var}_bc_1   = OpBitcast %u32 %st_${var}_v2_1\n"
+		"   %st_${var}_bc_1_0 = OpBitcast %u32 %st_${var}_v2_1_0\n"
+		"   %st_${var}_bc_1_1 = OpBitcast %u32 %st_${var}_v2_1_1\n"
+		"   %st_${var}_bc_1_2 = OpBitcast %u32 %st_${var}_v2_1_2\n"
+		"   %st_${var}_bc_2   = OpBitcast %u32 %st_${var}_v2_2\n"
+		"   %st_${var}_bc_2_0 = OpBitcast %u32 %st_${var}_v2_2_0\n"
+		"   %st_${var}_bc_2_1 = OpBitcast %u32 %st_${var}_v2_2_1\n"
+		"   %st_${var}_bc_2_2 = OpBitcast %u32 %st_${var}_v2_2_2\n"
+		"%st_${var}_gep_0_0_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_0\n"
+		"%st_${var}_gep_0_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_1\n"
+		"%st_${var}_gep_0_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_2\n"
+		"%st_${var}_gep_0_1_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_3\n"
+		"%st_${var}_gep_1_0_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_4\n"
+		"%st_${var}_gep_1_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_5\n"
+		"%st_${var}_gep_1_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_6\n"
+		"%st_${var}_gep_1_1_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_7\n"
+		"%st_${var}_gep_2_0_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_8\n"
+		"%st_${var}_gep_2_1_0 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_9\n"
+		"%st_${var}_gep_2_1_1 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_10\n"
+		"%st_${var}_gep_2_1_2 = OpAccessChain %up_u32 %${var} %c_i32_0 %c_i32_11\n"
+		"                       OpStore %st_${var}_gep_0_0_0 %st_${var}_bc_0\n"
+		"                       OpStore %st_${var}_gep_0_1_0 %st_${var}_bc_0_0\n"
+		"                       OpStore %st_${var}_gep_0_1_1 %st_${var}_bc_0_1\n"
+		"                       OpStore %st_${var}_gep_0_1_2 %st_${var}_bc_0_2\n"
+		"                       OpStore %st_${var}_gep_1_0_0 %st_${var}_bc_1\n"
+		"                       OpStore %st_${var}_gep_1_1_0 %st_${var}_bc_1_0\n"
+		"                       OpStore %st_${var}_gep_1_1_1 %st_${var}_bc_1_1\n"
+		"                       OpStore %st_${var}_gep_1_1_2 %st_${var}_bc_1_2\n"
+		"                       OpStore %st_${var}_gep_2_0_0 %st_${var}_bc_2\n"
+		"                       OpStore %st_${var}_gep_2_1_0 %st_${var}_bc_2_0\n"
+		"                       OpStore %st_${var}_gep_2_1_1 %st_${var}_bc_2_1\n"
+		"                       OpStore %st_${var}_gep_2_1_2 %st_${var}_bc_2_2\n"
+		"                       OpReturn\n"
+		"                       OpFunctionEnd\n"
+	);
+
 	struct OpParts
 	{
 		const char*	premainDecls;
@@ -12687,10 +13460,8 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 			"    %SSBO_src = OpTypeStruct %ra_f16\n"
 			"    %SSBO_dst = OpTypeStruct %ra_st\n",
 
-			"       %src = OpAccessChain %up_f16 %ssbo_src %c_i32_0 %ndx\n"
-			"       %dst = OpAccessChain %up_st %ssbo_dst %c_i32_0 %c_i32_0\n"
-			"   %val_new = OpLoad %f16 %src\n"
-			"   %val_old = OpLoad %st_test %dst\n"
+			"   %val_new = OpFunctionCall %f16 %ld_arg_ssbo_src %ndx\n"
+			"   %val_old = OpFunctionCall %st_test %ld_ssbo_dst %c_i32_0\n"
 			"   %val_dst = OpFunctionCall %st_test %sw_fun %val_new %val_old %ndx\n",
 
 			"   %sw_fun = OpFunction %st_test None %fun_t\n"
@@ -12706,9 +13477,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 			"    %SSBO_src = OpTypeStruct %ra_st\n"
 			"    %SSBO_dst = OpTypeStruct %ra_f16\n",
 
-			"       %src = OpAccessChain %up_st %ssbo_src %c_i32_0 %c_i32_0\n"
-			"       %dst = OpAccessChain %up_f16 %ssbo_dst %c_i32_0 %ndx\n"
-			"   %val_src = OpLoad %st_test %src\n"
+			"   %val_src = OpFunctionCall %st_test %ld_ssbo_src %c_i32_0\n"
 			"   %val_dst = OpFunctionCall %f16 %sw_fun %val_src %ndx\n",
 
 			"   %sw_fun = OpFunction %f16 None %fun_t\n",
@@ -12840,19 +13609,21 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		const char*		name;
 		size_t			accessPathLength;
 		const char**	accessPath;
+		const string	loadFunction;
+		const string	storeFunction;
 	};
 
 	const TypeTestParameters typeTestParameters[] =
 	{
-		{	"f16",			DE_LENGTH_OF_ARRAY(accessPathF16),			accessPathF16			},
-		{	"v2f16",		DE_LENGTH_OF_ARRAY(accessPathV2F16),		accessPathV2F16			},
-		{	"v3f16",		DE_LENGTH_OF_ARRAY(accessPathV3F16),		accessPathV3F16			},
-		{	"v4f16",		DE_LENGTH_OF_ARRAY(accessPathV4F16),		accessPathV4F16			},
-		{	"f16arr3",		DE_LENGTH_OF_ARRAY(accessPathF16Arr3),		accessPathF16Arr3		},
-		{	"v2f16arr5",	DE_LENGTH_OF_ARRAY(accessPathV2F16Arr5),	accessPathV2F16Arr5		},
-		{	"v3f16arr5",	DE_LENGTH_OF_ARRAY(accessPathV3F16Arr5),	accessPathV3F16Arr5		},
-		{	"v4f16arr3",	DE_LENGTH_OF_ARRAY(accessPathV4F16Arr3),	accessPathV4F16Arr3		},
-		{	"struct16arr3",	DE_LENGTH_OF_ARRAY(accessPathStruct16Arr3),	accessPathStruct16Arr3	},
+		{	"f16",			DE_LENGTH_OF_ARRAY(accessPathF16),			accessPathF16,			loadF16,			storeF16		 },
+		{	"v2f16",		DE_LENGTH_OF_ARRAY(accessPathV2F16),		accessPathV2F16,		loadV2F16,			storeV2F16		 },
+		{	"v3f16",		DE_LENGTH_OF_ARRAY(accessPathV3F16),		accessPathV3F16,		loadV3F16,			storeV3F16		 },
+		{	"v4f16",		DE_LENGTH_OF_ARRAY(accessPathV4F16),		accessPathV4F16,		loadV4F16,			storeV4F16		  },
+		{	"f16arr3",		DE_LENGTH_OF_ARRAY(accessPathF16Arr3),		accessPathF16Arr3,		loadF16Arr3,		storeF16Arr3	  },
+		{	"v2f16arr5",	DE_LENGTH_OF_ARRAY(accessPathV2F16Arr5),	accessPathV2F16Arr5,	loadV2F16Arr5,		storeV2F16Arr5	  },
+		{	"v3f16arr5",	DE_LENGTH_OF_ARRAY(accessPathV3F16Arr5),	accessPathV3F16Arr5,	loadV3F16Arr5,		storeV3F16Arr5	  },
+		{	"v4f16arr3",	DE_LENGTH_OF_ARRAY(accessPathV4F16Arr3),	accessPathV4F16Arr3,	loadV4F16Arr3,		storeV4F16Arr3	  },
+		{	"struct16arr3",	DE_LENGTH_OF_ARRAY(accessPathStruct16Arr3),	accessPathStruct16Arr3,	loadStruct16Arr3,	storeStruct16Arr3},
 	};
 
 	for (size_t typeTestNdx = 0; typeTestNdx < DE_LENGTH_OF_ARRAY(typeTestParameters); ++typeTestNdx)
@@ -12902,26 +13673,39 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		specs["num_elements"]			= de::toString(structItemsCount);
 		specs["field_type"]				= typeTestParameters[typeTestNdx].name;
 		specs["struct_item_size"]		= de::toString(structItemsCount * sizeof(deFloat16));
+		specs["struct_u32s"]			= de::toString(structItemsCount / 2);
 		specs["op_premain_decls"]		= opParts.premainDecls;
 		specs["op_sw_fun_call"]			= opParts.swFunCall;
 		specs["op_sw_fun_header"]		= opParts.swFunHeader;
 		specs["op_case_default_value"]	= opParts.caseDefaultValue;
+		if (opIndex == 0) {
+			specs["st_call"]			= "st_ssbo_dst";
+			specs["st_ndx"]				= "c_i32_0";
+		} else {
+			specs["st_call"]			= "st_fn_ssbo_dst";
+			specs["st_ndx"]				= "ndx";
+		}
 
-		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
+		fragments["capability"]		= "OpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
+		if (opIndex == 0) {
+			fragments["testfun"]		+= StringTemplate(loadScalarF16FromUint).specialize({{"var", "ssbo_src"}});
+			fragments["testfun"]		+= StringTemplate(typeTestParameters[typeTestNdx].loadFunction).specialize({{"var", "ssbo_dst"}});
+			fragments["testfun"]		+= StringTemplate(typeTestParameters[typeTestNdx].storeFunction).specialize({{"var", "ssbo_dst"}});
+		} else {
+			fragments["testfun"]		+= StringTemplate(typeTestParameters[typeTestNdx].loadFunction).specialize({{"var", "ssbo_src"}});
+			fragments["testfun"]		+= StringTemplate(storeScalarF16AsUint).specialize({{"var", "ssbo_dst"}});
+		}
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputFP16)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(dummyFP16Output)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = compareFP16CompositeFunc;
 
-		extensions.push_back("VK_KHR_16bit_storage");
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
 		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
-		features.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
