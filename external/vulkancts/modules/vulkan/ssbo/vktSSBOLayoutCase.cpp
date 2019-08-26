@@ -2237,8 +2237,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	bool memoryDeviceAddress = false;
 	if (m_usePhysStorageBuffer)
 	{
-		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
-		if (m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
+		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+		if (m_context.isBufferDeviceAddressKHRSupported())
 			memoryDeviceAddress = true;
 	}
 
@@ -2341,6 +2341,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	// Query the buffer device addresses and push them via push constants
 	if (m_usePhysStorageBuffer)
 	{
+		const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+
 		vk::VkBufferDeviceAddressInfo info =
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
@@ -2351,7 +2353,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		for (deUint32 i = 0; i < descriptors.size(); ++i)
 		{
 			info.buffer = descriptors[i].buffer;
-			vk::VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &info);
+			vk::VkDeviceAddress addr;
+			if (useKHR)
+				addr = vk.getBufferDeviceAddress(device, &info);
+			else
+				addr = vk.getBufferDeviceAddressEXT(device, &info);
 			addr += descriptors[i].offset;
 			gpuAddrs.push_back(addr);
 		}
@@ -2550,7 +2556,7 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
 	if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesScalarLayout(m_interface))
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
-	if (!(context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress || context.getBufferDeviceAddressFeatures().bufferDeviceAddress) && m_usePhysStorageBuffer)
+	if (m_usePhysStorageBuffer && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
 }

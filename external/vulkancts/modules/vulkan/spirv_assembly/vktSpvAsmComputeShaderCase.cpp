@@ -73,7 +73,7 @@ Move<VkBuffer> createBufferAndBindMemory (vkt::Context&				context,
 	VkBufferUsageFlags			usageFlags			= (VkBufferUsageFlags)0u;
 
 	if (physStorageBuffer)
-		usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
+		usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
 	switch (dtype)
 	{
@@ -101,7 +101,7 @@ Move<VkBuffer> createBufferAndBindMemory (vkt::Context&				context,
 	const VkMemoryRequirements	requirements	= getBufferMemoryRequirements(vkdi, device, *buffer);
 	AllocationMp				bufferMemory	= allocator.allocate(requirements,
 													(coherent ? MemoryRequirement::Coherent : MemoryRequirement::Any) |
-													(context.getBufferDeviceAddressFeatures().bufferDeviceAddress && physStorageBuffer ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
+													(context.isBufferDeviceAddressKHRSupported() && physStorageBuffer ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
 													MemoryRequirement::HostVisible);
 
 	VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
@@ -495,8 +495,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		if (!isFloatControlsFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
 			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
 
-		if (m_shaderSpec.usesPhysStorageBuffer &&
-			!(m_context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress || m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress))
+		if (m_shaderSpec.usesPhysStorageBuffer && !m_context.isBufferDeviceAddressSupported())
 			TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
 	}
 
@@ -762,6 +761,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// all the descriptors with just a desciptor to this new buffer.
 	if (m_shaderSpec.usesPhysStorageBuffer)
 	{
+		const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+
 		VkBufferDeviceAddressInfo info =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
@@ -772,13 +773,21 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		for (deUint32 inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
 		{
 			info.buffer = **inputBuffers[inputNdx];
-			VkDeviceAddress addr = vkdi.getBufferDeviceAddressEXT(device, &info);
+			VkDeviceAddress addr;
+			if (useKHR)
+				addr = vkdi.getBufferDeviceAddress(device, &info);
+			else
+				addr = vkdi.getBufferDeviceAddressEXT(device, &info);
 			gpuAddrs.push_back(addr);
 		}
 		for (deUint32 outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 		{
 			info.buffer = **outputBuffers[outputNdx];
-			VkDeviceAddress addr = vkdi.getBufferDeviceAddressEXT(device, &info);
+			VkDeviceAddress addr;
+			if (useKHR)
+				addr = vkdi.getBufferDeviceAddress(device, &info);
+			else
+				addr = vkdi.getBufferDeviceAddressEXT(device, &info);
 			gpuAddrs.push_back(addr);
 		}
 

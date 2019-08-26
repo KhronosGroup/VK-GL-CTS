@@ -97,6 +97,11 @@ public:
 
 	void*										getInstanceProcAddr				();
 
+	bool										isBufferDeviceAddressSupported						(void) const;
+	bool										isBufferDeviceAddressKHRSupported					(void) const;
+	bool										isBufferDeviceAddressEXTSupported					(void) const;
+	bool										isBufferDeviceAddressWithCaptureReplaySupported		(void) const;
+
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;

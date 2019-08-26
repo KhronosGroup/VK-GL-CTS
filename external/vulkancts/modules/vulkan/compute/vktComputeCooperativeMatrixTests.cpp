@@ -179,8 +179,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "variable pointers not supported");
 	}
 
-	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-		!(context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress || context.getBufferDeviceAddressFeatures().bufferDeviceAddress))
+	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER && !context.isBufferDeviceAddressSupported())
 	{
 		TCU_THROW(NotSupportedError, "buffer device address not supported");
 	}
@@ -575,7 +574,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	MemoryRequirement		memoryDeviceAddress		= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-														m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
+														m_context.isBufferDeviceAddressKHRSupported() ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
 
 	deRandom rnd;
 	deRandom_init(&rnd, 1234);
@@ -686,17 +685,23 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
 	{
+		const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+
 		VkBufferDeviceAddressInfo info =
 		{
-			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	 sType;
-			DE_NULL,											// const void*		 pNext;
-			0,													// VkBuffer			buffer
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,	// VkStructureType	 sType;
+			DE_NULL,										// const void*		 pNext;
+			0,												// VkBuffer			buffer
 		};
 		VkDeviceAddress *addrsInMemory = (VkDeviceAddress *)ptrs[4];
 		for (deUint32 i = 0; i < 4; ++i)
 		{
 			info.buffer = **buffers[i];
-			VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &info);
+			VkDeviceAddress addr;
+			if (useKHR)
+				addr = vk.getBufferDeviceAddress(device, &info);
+			else
+				addr = vk.getBufferDeviceAddressEXT(device, &info);
 			addrsInMemory[i] = addr;
 		}
 		setUpdateBuilder.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(4),

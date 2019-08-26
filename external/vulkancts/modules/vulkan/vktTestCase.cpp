@@ -570,6 +570,30 @@ void* Context::getInstanceProcAddr	()
 	return (void*)m_platformInterface.getGetInstanceProcAddr();
 }
 
+bool Context::isBufferDeviceAddressSupported(void) const
+{
+	return isBufferDeviceAddressKHRSupported() || isBufferDeviceAddressEXTSupported();
+}
+
+bool Context::isBufferDeviceAddressKHRSupported(void) const
+{
+	if (isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_KHR_buffer_device_address"))
+		return !!getBufferDeviceAddressFeatures().bufferDeviceAddress;
+	return false;
+}
+
+bool Context::isBufferDeviceAddressEXTSupported(void) const
+{
+	if (isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_EXT_buffer_device_address"))
+		return !!getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress;
+	return false;
+}
+
+bool Context::isBufferDeviceAddressWithCaptureReplaySupported(void) const
+{
+	return (isBufferDeviceAddressKHRSupported() && getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) || (isBufferDeviceAddressEXTSupported() && getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const
