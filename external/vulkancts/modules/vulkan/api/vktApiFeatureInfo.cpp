@@ -1216,7 +1216,7 @@ tcu::TestStatus deviceProperties (Context& context)
 
 	{
 		const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
-		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_1);
+		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_2);
 
 		if (deviceVersion.majorNum != deqpVersion.majorNum)
 		{
