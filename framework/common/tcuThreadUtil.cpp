@@ -194,7 +194,7 @@ void Thread::addOperation (Operation* operation)
 
 void Thread::run (void)
 {
-	m_status = THREADSTATUS_RUNNING;
+	setStatus(THREADSTATUS_RUNNING);
 	bool initOk = false;
 
 	// Reserve at least two messages for each operation
@@ -207,31 +207,31 @@ void Thread::run (void)
 			m_operations[operationNdx]->execute(*this);
 
 		deinit();
-		m_status =  THREADSTATUS_READY;
+		setStatus(THREADSTATUS_READY);
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
 		newMessage() << "tcu::NotSupportedError '" << e.what() << "'" << Message::End;
 		deinit();
-		m_status = (initOk ? THREADSTATUS_NOT_SUPPORTED : THREADSTATUS_INIT_FAILED);
+		setStatus(initOk ? THREADSTATUS_NOT_SUPPORTED : THREADSTATUS_INIT_FAILED);
 	}
 	catch (const tcu::Exception& e)
 	{
 		newMessage() << "tcu::Exception '" << e.what() << "'" << Message::End;
 		deinit();
-		m_status = (initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
+		setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
 	}
 	catch (const std::exception& error)
 	{
 		newMessage() << "std::exception '" << error.what() << "'" << Message::End;
 		deinit();
-		m_status = (initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
+		setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
 	}
 	catch (...)
 	{
 		newMessage() << "Unkown exception" << Message::End;
 		deinit();
-		m_status = (initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
+		setStatus(initOk ? THREADSTATUS_FAILED : THREADSTATUS_INIT_FAILED);
 	}
 }
 

@@ -176,7 +176,8 @@ public:
 
 	deUint8*				getDummyData		(size_t size);	//!< Return data pointer that contains at least size bytes. Valid until next call
 
-	ThreadStatus			getStatus			(void) const { return m_status; }
+	ThreadStatus			getStatus			(void) const { de::ScopedLock lock(m_statusLock); return m_status; }
+	void				setStatus			(ThreadStatus status) { de::ScopedLock lock(m_statusLock); m_status = status; }
 
 	MessageBuilder			newMessage			(void) { return MessageBuilder(*this); }
 	de::Random&				getRandom			(void) { return m_random; }
@@ -196,6 +197,7 @@ private:
 
 	mutable de::Mutex		m_messageLock;
 	std::vector<Message>	m_messages;
+	mutable de::Mutex		m_statusLock;
 	ThreadStatus			m_status;
 	std::vector<deUint8>	m_dummyData;
 
