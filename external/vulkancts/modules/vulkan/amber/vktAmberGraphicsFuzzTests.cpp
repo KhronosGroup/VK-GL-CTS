@@ -53,6 +53,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
 		{	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
 		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
+		{	"discard-continue-return.amber",				"discard-continue-return",				"A fragment shader with a discard, continue, and return"								},
 		{	"do-while-loop-in-conditionals.amber",			"do-while-loop-in-conditionals",		"A fragment shader with do-while loop in conditional nest"								},
 		{	"early-return-and-barrier.amber",				"early-return-and-barrier",				"A compute shader with an early return and a barrier"									},
 		{	"for-condition-always-false.amber",				"for-condition-always-false",			"A fragment shader that uses a for loop with condition always false"					},
