@@ -327,7 +327,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		None,
-		"29c11140baaf9f7fdaa39a583672c556bf1795a1",
+		"123dc278f204f8e833e1a88d31c46d0edf81d4b2",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/google/amber.git",
