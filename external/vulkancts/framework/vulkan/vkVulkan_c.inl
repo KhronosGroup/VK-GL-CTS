@@ -10504,7 +10504,6 @@ typedef struct VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT {
 } VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT;
 
 
-
 #define VK_EXT_ycbcr_image_arrays 1
 #define VK_EXT_YCBCR_IMAGE_ARRAYS_SPEC_VERSION 1
 #define VK_EXT_YCBCR_IMAGE_ARRAYS_EXTENSION_NAME "VK_EXT_ycbcr_image_arrays"
@@ -10602,7 +10601,6 @@ VKAPI_ATTR void VKAPI_CALL vkResetQueryPoolEXT(
     deUint32                                    queryCount);
 #endif
 
-
 #define VK_EXT_index_type_uint8 1
 #define VK_EXT_INDEX_TYPE_UINT8_SPEC_VERSION 1
 #define VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME "VK_EXT_index_type_uint8"
@@ -10611,7 +10609,6 @@ typedef struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT {
     void*              pNext;
     VkBool32           indexTypeUint8;
 } VkPhysicalDeviceIndexTypeUint8FeaturesEXT;
-
 
 
 #define VK_EXT_shader_demote_to_helper_invocation 1

@@ -2679,16 +2679,17 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	const bool ext_conditional_rendering		= checkExtension(properties, "VK_EXT_conditional_rendering");
 	const bool ext_scalar_block_layout			= checkExtension(properties, "VK_EXT_scalar_block_layout");
 	const bool khr_performance_counter			= checkExtension(properties, "VK_KHR_performance_query");
-	const bool khr_16bit_storage				= checkExtension(properties, "VK_KHR_16bit_storage")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_multiview					= checkExtension(properties, "VK_KHR_multiview")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_device_protected_memory		=																	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_sampler_ycbcr_conversion		= checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion")	||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_variable_pointers			= checkExtension(properties, "VK_KHR_variable_pointers")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_8bit_storage					= checkExtension(properties, "VK_KHR_8bit_storage")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool khr_shader_atomic_int64			= checkExtension(properties, "VK_KHR_shader_atomic_int64")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool khr_shader_float16_int8			= checkExtension(properties, "VK_KHR_shader_float16_int8")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool ext_buffer_device_address		= checkExtension(properties, "VK_EXT_buffer_device_address")	||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool ext_descriptor_indexing			= checkExtension(properties, "VK_EXT_descriptor_indexing")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_16bit_storage				= checkExtension(properties, "VK_KHR_16bit_storage")			||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_multiview					= checkExtension(properties, "VK_KHR_multiview")				||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_device_protected_memory		=																	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_sampler_ycbcr_conversion		= checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion")	||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_variable_pointers			= checkExtension(properties, "VK_KHR_variable_pointers")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_8bit_storage					= checkExtension(properties, "VK_KHR_8bit_storage")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_shader_atomic_int64			= checkExtension(properties, "VK_KHR_shader_atomic_int64")		||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_shader_float16_int8			= checkExtension(properties, "VK_KHR_shader_float16_int8")		||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_buffer_device_address		= checkExtension(properties, "VK_KHR_buffer_device_address")	||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool ext_descriptor_indexing			= checkExtension(properties, "VK_EXT_descriptor_indexing")		||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool ext_buffer_device_address		= checkExtension(properties, "VK_EXT_buffer_device_address");
 
 	const int count = 2u;
 	VkPhysicalDeviceConditionalRenderingFeaturesEXT	deviceConditionalRenderingFeatures[count];
@@ -2702,6 +2703,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDevice8BitStorageFeatures				device8BitStorageFeatures[count];
 	VkPhysicalDeviceShaderAtomicInt64Features		deviceShaderAtomicInt64Features[count];
 	VkPhysicalDeviceShaderFloat16Int8Features		deviceShaderFloat16Int8Features[count];
+	VkPhysicalDeviceBufferDeviceAddressFeaturesEXT	deviceBufferDeviceAddressFeaturesEXT[count];
 	VkPhysicalDeviceBufferDeviceAddressFeatures		deviceBufferDeviceAddressFeatures[count];
 	VkPhysicalDeviceDescriptorIndexingFeatures		deviceDescriptorIndexingFeatures[count];
 
@@ -2719,6 +2721,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&deviceShaderAtomicInt64Features[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceShaderAtomicInt64Features));
 		deMemset(&deviceShaderFloat16Int8Features[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceShaderFloat16Int8Features));
 		deMemset(&deviceBufferDeviceAddressFeatures[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
+		deMemset(&deviceBufferDeviceAddressFeaturesEXT[ndx],0xFF * ndx, sizeof(VkPhysicalDeviceBufferDeviceAddressFeaturesEXT));
 		deMemset(&deviceDescriptorIndexingFeatures[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
 
 		deviceConditionalRenderingFeatures[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
@@ -2755,7 +2758,10 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deviceShaderFloat16Int8Features[ndx].pNext		= &deviceBufferDeviceAddressFeatures[ndx];
 
 		deviceBufferDeviceAddressFeatures[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-		deviceBufferDeviceAddressFeatures[ndx].pNext	= &deviceDescriptorIndexingFeatures[ndx];
+		deviceBufferDeviceAddressFeatures[ndx].pNext	= &deviceBufferDeviceAddressFeaturesEXT[ndx];
+
+		deviceBufferDeviceAddressFeaturesEXT[ndx].sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
+		deviceBufferDeviceAddressFeaturesEXT[ndx].pNext	= &deviceDescriptorIndexingFeatures[ndx];
 
 		deviceDescriptorIndexingFeatures[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 		deviceDescriptorIndexingFeatures[ndx].pNext		= DE_NULL;
@@ -2789,8 +2795,10 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		log << TestLog::Message << deviceShaderAtomicInt64Features[0] << TestLog::EndMessage;
 	if (khr_shader_float16_int8)
 		log << TestLog::Message << deviceShaderFloat16Int8Features[0] << TestLog::EndMessage;
-	if (ext_buffer_device_address)
+	if (khr_buffer_device_address)
 		log << TestLog::Message << deviceBufferDeviceAddressFeatures[0] << TestLog::EndMessage;
+	if (ext_buffer_device_address)
+		log << TestLog::Message << deviceBufferDeviceAddressFeaturesEXT[0] << TestLog::EndMessage;
 	if (ext_descriptor_indexing)
 		log << TestLog::Message << deviceDescriptorIndexingFeatures[0] << TestLog::EndMessage;
 
@@ -2870,12 +2878,20 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features");
 	}
 
-	if ( ext_buffer_device_address &&
+	if ( khr_buffer_device_address &&
 		(	deviceBufferDeviceAddressFeatures[0].bufferDeviceAddress				!= deviceBufferDeviceAddressFeatures[1].bufferDeviceAddress ||
 			deviceBufferDeviceAddressFeatures[0].bufferDeviceAddressCaptureReplay	!= deviceBufferDeviceAddressFeatures[1].bufferDeviceAddressCaptureReplay ||
 			deviceBufferDeviceAddressFeatures[0].bufferDeviceAddressMultiDevice		!= deviceBufferDeviceAddressFeatures[1].bufferDeviceAddressMultiDevice ))
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceBufferDeviceAddressFeatures");
+	}
+
+	if ( ext_buffer_device_address &&
+		(	deviceBufferDeviceAddressFeaturesEXT[0].bufferDeviceAddress					!= deviceBufferDeviceAddressFeaturesEXT[1].bufferDeviceAddress ||
+			deviceBufferDeviceAddressFeaturesEXT[0].bufferDeviceAddressCaptureReplay	!= deviceBufferDeviceAddressFeaturesEXT[1].bufferDeviceAddressCaptureReplay ||
+			deviceBufferDeviceAddressFeaturesEXT[0].bufferDeviceAddressMultiDevice		!= deviceBufferDeviceAddressFeaturesEXT[1].bufferDeviceAddressMultiDevice ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceBufferDeviceAddressFeaturesEXT");
 	}
 
 	if ( ext_descriptor_indexing &&

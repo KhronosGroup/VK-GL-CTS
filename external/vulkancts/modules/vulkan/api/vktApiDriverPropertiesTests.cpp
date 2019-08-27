@@ -63,12 +63,14 @@ static const deUint32 knownDriverIds[] =
 	12,	// <enum value="12"      name="VK_DRIVER_ID_BROADCOM_PROPRIETARY_KHR"      comment="Broadcom Inc."/>
 };
 
-static const VkConformanceVersion knownConformanceVersions[] =
+static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
 	makeConformanceVersion(1, 1, 5, 0),
+	makeConformanceVersion(1, 1, 4, 3),
 	makeConformanceVersion(1, 1, 4, 2),
 	makeConformanceVersion(1, 1, 4, 1),
 	makeConformanceVersion(1, 1, 4, 0),
+	makeConformanceVersion(1, 1, 3, 3),
 	makeConformanceVersion(1, 1, 3, 2),
 	makeConformanceVersion(1, 1, 3, 1),
 	makeConformanceVersion(1, 1, 3, 0),
