@@ -1170,6 +1170,13 @@ static const struct
 
 	{ s_unormShort10In,				DE_LENGTH_OF_ARRAY(s_unormShort10In),				s_unormShort10FloatRef,				s_unormShort10IntRef,			s_unormShort10UintRef			},
 	{ s_unormShort12In,				DE_LENGTH_OF_ARRAY(s_unormShort12In),				s_unormShort12FloatRef,				s_unormShort12IntRef,			s_unormShort12UintRef			},
+
+	{ s_unsignedInt8In,				DE_LENGTH_OF_ARRAY(s_unsignedInt8In),				s_unsignedInt8FloatRef,				s_unsignedInt8IntRef,			s_unsignedInt8UintRef			},
+	{ s_unsignedInt16In,			DE_LENGTH_OF_ARRAY(s_unsignedInt16In),				s_unsignedInt16FloatRef,			s_unsignedInt16IntRef,			s_unsignedInt16UintRef			},
+	{ s_signedInt8In,				DE_LENGTH_OF_ARRAY(s_signedInt8In),					s_signedInt8FloatRef,				s_signedInt8IntRef,				s_signedInt8UintRef				},
+	{ s_signedInt16In,				DE_LENGTH_OF_ARRAY(s_signedInt16In),				s_signedInt16FloatRef,				s_signedInt16IntRef,			s_signedInt16UintRef			},
+	{ s_unsignedInt1010102RevIn,	DE_LENGTH_OF_ARRAY(s_unsignedInt1010102RevIn),		s_unsignedInt1010102RevFloatRef,	s_unsignedInt1010102RevIntRef,	s_unsignedInt1010102RevIntRef	},
+	{ s_unsignedInt1010102RevIn,	DE_LENGTH_OF_ARRAY(s_unsignedInt1010102RevIn),		s_signedInt1010102RevFloatRef,		s_signedInt1010102RevIntRef,	s_signedInt1010102RevIntRef		}
 };
 DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_formatData) == TextureFormat::CHANNELTYPE_LAST);
 
