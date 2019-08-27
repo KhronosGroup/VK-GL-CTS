@@ -163,6 +163,9 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
 
+	if (m_data.convertUToPtr == VK_TRUE && !context.getDeviceFeatures().shaderInt64)
+		TCU_THROW(NotSupportedError, "64-bit integers in shader not supported");
+
 	if (m_data.bufType == BT_REPLAY &&
 		!context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay)
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
