@@ -884,6 +884,19 @@ void VertexShaderTestInstance::createPipeline (void)
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 	const VkDevice			device	= m_context.getDevice();
 
+	switch (m_parametersGraphic.primitiveTopology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			if (!m_context.getDeviceFeatures().geometryShader)
+				throw tcu::NotSupportedError("Geometry shader are not supported");
+			break;
+		default:
+			break;
+	}
+
 	// Pipeline
 	Unique<VkShaderModule> vs(createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), 0));
 	Unique<VkShaderModule> fs(createShaderModule(vk, device, m_context.getBinaryCollection().get("fragment"), 0));
