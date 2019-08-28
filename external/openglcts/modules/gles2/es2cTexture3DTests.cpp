@@ -1574,7 +1574,7 @@ NegativeFramebufferTexture3DCase::IterateResult NegativeFramebufferTexture3DCase
 	gl.bindTexture(GL_TEXTURE_3D, tex3D);
 
 	GLint maxTexSize = 0x1234;
-	gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, &maxTexSize);
 	gl.getError(); // reset error
 
 	callFramebufferTexture3D(-1, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, tex3D, 0, 0);
@@ -1695,11 +1695,11 @@ NegativeCompressedTexImage3DCase::IterateResult NegativeCompressedTexImage3DCase
 	// maximal dimensions
 	{
 		int maxTextureSize;
-		gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+		gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, &maxTextureSize);
 		++maxTextureSize;
 
 		const char* message =
-			"GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_TEXTURE_SIZE.";
+			"GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_3D_TEXTURE_SIZE_OES.";
 		callCompressedTexImage3D(GL_TEXTURE_3D, 0, supportedCompressedFormat, maxTextureSize, 0, 0, 0, 0, 0);
 		verifyError(GL_INVALID_VALUE, message);
 		callCompressedTexImage3D(GL_TEXTURE_3D, 0, supportedCompressedFormat, 0, maxTextureSize, 0, 0, 0, 0);
