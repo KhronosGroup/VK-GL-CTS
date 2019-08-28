@@ -1188,48 +1188,64 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 			DE_ASSERT(expected.size == actual.size);
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
+			if (!isIndirectBuffer(m_config.resource.type))
 			{
-				const size_t		maxBytesLogged	= 256;
-				std::ostringstream	expectedData;
-				std::ostringstream	actualData;
-				size_t				byteNdx			= 0;
-
-				// Find first byte difference
-				for (; actual.data[byteNdx] == expected.data[byteNdx]; byteNdx++)
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
 				{
-					// Nothing
+					const size_t		maxBytesLogged = 256;
+					std::ostringstream	expectedData;
+					std::ostringstream	actualData;
+					size_t				byteNdx = 0;
+
+					// Find first byte difference
+					for (; actual.data[byteNdx] == expected.data[byteNdx]; byteNdx++)
+					{
+						// Nothing
+					}
+
+					log << TestLog::Message << "First different byte at offset: " << byteNdx << TestLog::EndMessage;
+
+					// Log 8 previous bytes before the first incorrect byte
+					if (byteNdx > 8)
+					{
+						expectedData << "... ";
+						actualData << "... ";
+
+						byteNdx -= 8;
+					}
+					else
+						byteNdx = 0;
+
+					for (size_t i = 0; i < maxBytesLogged && byteNdx < expected.size; i++, byteNdx++)
+					{
+						expectedData << (i > 0 ? ", " : "") << (deUint32)expected.data[byteNdx];
+						actualData << (i > 0 ? ", " : "") << (deUint32)actual.data[byteNdx];
+					}
+
+					if (expected.size > byteNdx)
+					{
+						expectedData << "...";
+						actualData << "...";
+					}
+
+					log << TestLog::Message << "Expected data: (" << expectedData.str() << ")" << TestLog::EndMessage;
+					log << TestLog::Message << "Actual data: (" << actualData.str() << ")" << TestLog::EndMessage;
+
+					m_resultCollector.fail("Memory contents don't match");
 				}
+			}
+			else
+			{
+				const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+				const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
 
-				log << TestLog::Message << "First different byte at offset: " << byteNdx << TestLog::EndMessage;
-
-				// Log 8 previous bytes before the first incorrect byte
-				if (byteNdx > 8)
+				if (actualValue < expectedValue)
 				{
-					expectedData << "... ";
-					actualData << "... ";
+					log << TestLog::Message << "Expected counter value: (" << expectedValue << ")" << TestLog::EndMessage;
+					log << TestLog::Message << "Actual counter value: (" << actualValue << ")" << TestLog::EndMessage;
 
-					byteNdx -= 8;
+					m_resultCollector.fail("Counter value is smaller than expected");
 				}
-				else
-					byteNdx = 0;
-
-				for (size_t i = 0; i < maxBytesLogged && byteNdx < expected.size; i++, byteNdx++)
-				{
-					expectedData << (i > 0 ? ", " : "") << (deUint32)expected.data[byteNdx];
-					actualData << (i > 0 ? ", " : "") << (deUint32)actual.data[byteNdx];
-				}
-
-				if (expected.size > byteNdx)
-				{
-					expectedData << "...";
-					actualData << "...";
-				}
-
-				log << TestLog::Message << "Expected data: (" << expectedData.str() << ")" << TestLog::EndMessage;
-				log << TestLog::Message << "Actual data: (" << actualData.str() << ")" << TestLog::EndMessage;
-
-				m_resultCollector.fail("Memory contents don't match");
 			}
 		}
 	}

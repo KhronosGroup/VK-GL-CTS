@@ -115,8 +115,19 @@ public:
 			const Data	expected = m_writeOp->getData();
 			const Data	actual	 = m_readOp->getData();
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
-				return tcu::TestStatus::fail("Memory contents don't match");
+			if (isIndirectBuffer(m_resource->getType()))
+			{
+				const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+				const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+
+				if (actualValue < expectedValue)
+					return tcu::TestStatus::fail("Counter value is smaller than expected");
+			}
+			else
+			{
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
+					return tcu::TestStatus::fail("Memory contents don't match");
+			}
 		}
 
 		return tcu::TestStatus::pass("OK");
@@ -169,8 +180,19 @@ public:
 			const Data	expected = m_writeOp->getData();
 			const Data	actual	 = m_readOp->getData();
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
-				return tcu::TestStatus::fail("Memory contents don't match");
+			if (isIndirectBuffer(m_resource->getType()))
+			{
+				const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+				const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+
+				if (actualValue < expectedValue)
+					return tcu::TestStatus::fail("Counter value is smaller than expected");
+			}
+			else
+			{
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
+					return tcu::TestStatus::fail("Memory contents don't match");
+			}
 		}
 
 		return tcu::TestStatus::pass("OK");
@@ -257,8 +279,19 @@ public:
 			const Data	expected = m_writeOp->getData();
 			const Data	actual	 = m_readOp->getData();
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
-				return tcu::TestStatus::fail("Memory contents don't match");
+			if (isIndirectBuffer(m_resource->getType()))
+			{
+				const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+				const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+
+				if (actualValue < expectedValue)
+					return tcu::TestStatus::fail("Counter value is smaller than expected");
+			}
+			else
+			{
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
+					return tcu::TestStatus::fail("Memory contents don't match");
+			}
 		}
 
 		return tcu::TestStatus::pass("OK");
@@ -313,8 +346,19 @@ public:
 			const Data	expected = m_writeOp->getData();
 			const Data	actual	 = m_readOp->getData();
 
-			if (0 != deMemCmp(expected.data, actual.data, expected.size))
-				return tcu::TestStatus::fail("Memory contents don't match");
+			if (isIndirectBuffer(m_resource->getType()))
+			{
+				const deUint32 expectedValue = reinterpret_cast<const deUint32*>(expected.data)[0];
+				const deUint32 actualValue   = reinterpret_cast<const deUint32*>(actual.data)[0];
+
+				if (actualValue < expectedValue)
+					return tcu::TestStatus::fail("Counter value is smaller than expected");
+			}
+			else
+			{
+				if (0 != deMemCmp(expected.data, actual.data, expected.size))
+					return tcu::TestStatus::fail("Memory contents don't match");
+			}
 		}
 
 		return tcu::TestStatus::pass("OK");
