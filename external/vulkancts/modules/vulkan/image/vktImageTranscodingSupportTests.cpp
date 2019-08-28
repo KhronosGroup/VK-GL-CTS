@@ -793,8 +793,8 @@ void ImageTranscodingCase::initPrograms (vk::SourceCollections&	programCollectio
 					<< "void main (void)\n"
 					<< "{\n"
 					<< "    const ivec2 out_pos = ivec2(gl_FragCoord.xy);\n"
-					<< "    const ivec2 pixels_resolution = ivec2(textureSize(u_imageIn, 0)) - ivec2(1,1);\n"
-					<< "    const vec2 in_pos = vec2(out_pos) / vec2(pixels_resolution);\n"
+					<< "    const vec2 pixels_resolution = vec2(textureSize(u_imageIn, 0));\n"
+					<< "    const vec2 in_pos = vec2(gl_FragCoord.xy) / vec2(pixels_resolution);\n"
 					<< "    imageStore(u_imageOut, out_pos, texture(u_imageIn, in_pos));\n"
 					<< "}\n";
 
