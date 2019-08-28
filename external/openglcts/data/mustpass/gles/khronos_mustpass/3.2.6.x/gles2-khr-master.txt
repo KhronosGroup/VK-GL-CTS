@@ -375,9 +375,9 @@ KHR-GLES2.texture_3d.filtering.combinations.linear_mipmap_linear_linear_mirror_m
 KHR-GLES2.texture_3d.filtering.combinations.negative
 KHR-GLES2.texture_3d.sub_image.rgba8
 KHR-GLES2.texture_3d.sub_image.negative
-KHR-GLES2.texture_3d.copy_sub_image.rgba8
+KHR-GLES2.texture_3d.copy_sub_image.rgba
 KHR-GLES2.texture_3d.copy_sub_image.negative
-KHR-GLES2.texture_3d.framebuffer_texture.rgba8
+KHR-GLES2.texture_3d.framebuffer_texture.rgba
 KHR-GLES2.texture_3d.framebuffer_texture.negative
 KHR-GLES2.texture_3d.compressed_texture.rgba_astc_4x4_khr
 KHR-GLES2.texture_3d.compressed_texture.rgba_astc_5x4_khr
