@@ -52,6 +52,7 @@ void createTests (tcu::TestCaseGroup* tests, const char* data_dir)
 	{
 		std::string					file		= std::string(cases[i].basename) + ".amber";
 		cts_amber::AmberTestCase	*testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].basename, cases[i].description, data_dir, file);
+		testCase->addRequirement("VariablePointerFeatures.variablePointers");
 
 		tests->addChild(testCase);
 	}
