@@ -79,7 +79,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR physicalDeviceUniformBufferStandardLayoutFeaturesKHR;
 	deMemset(&physicalDeviceUniformBufferStandardLayoutFeaturesKHR, 0, sizeof(physicalDeviceUniformBufferStandardLayoutFeaturesKHR));
 
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_uniform_buffer_standard_layout")) )
 	{
 		physicalDeviceUniformBufferStandardLayoutFeaturesKHR.sType = getStructureType<VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR>();
 		*nextPtr = &physicalDeviceUniformBufferStandardLayoutFeaturesKHR;
@@ -305,7 +305,7 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_uniform_buffer_standard_layout")) )
 	{
 		if ( physicalDeviceUniformBufferStandardLayoutFeaturesKHR.uniformBufferStandardLayout == VK_FALSE )
 		{
