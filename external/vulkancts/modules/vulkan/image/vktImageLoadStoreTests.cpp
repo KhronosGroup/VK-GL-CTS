@@ -939,6 +939,9 @@ void LoadStoreTest::checkSupport (Context& context) const
 	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
 																							   context.getPhysicalDevice(),
 																							   m_format));
+	const vk::VkFormatProperties imageFormatProperties  (vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_imageFormat));
 
 	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
 		TCU_THROW(NotSupportedError, "shaderStorageImageReadWithoutFormat feature not supported");
@@ -951,6 +954,12 @@ void LoadStoreTest::checkSupport (Context& context) const
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for images");
+
+	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 }
 
 void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
