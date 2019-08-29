@@ -24,7 +24,8 @@
 
 #include <string>
 
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktPipelineVertexOnlyTests.hpp"
 
 namespace vkt

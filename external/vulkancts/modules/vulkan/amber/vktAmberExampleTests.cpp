@@ -22,8 +22,9 @@
  * \brief Functional tests using amber
  *//*--------------------------------------------------------------------*/
 
+#include "vktTestGroupUtil.hpp"
 #include "vktAmberExampleTests.hpp"
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 namespace vkt
 {

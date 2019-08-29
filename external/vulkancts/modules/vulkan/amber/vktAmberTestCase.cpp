@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include <amber/amber.h>
+#include "amber/recipe.h"
 
 #include <iostream>
 
