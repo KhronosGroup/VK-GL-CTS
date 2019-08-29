@@ -990,9 +990,9 @@ ES_MUSTPASS_LISTS		= [
 	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.5.x", isCurrent=False,
 			packages = [GLCTS_3_2_3_EGL_PKG]),
 
-	# master
+	# 3.2.6.x
 
-	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,   version = "3.2.6.x", isCurrent=True,
 			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
 						GLCTS_GLES2_KHR_PKG_N1CFG,
 						GLCTS_GLES3_KHR_PKG_1CFG,
@@ -1003,16 +1003,41 @@ ES_MUSTPASS_LISTS		= [
 						GLCTS_GLES32_KHR_PKG_N1CFG,
 						]),
 
-	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "3.2.6.x", isCurrent=True,
 			packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "3.2.6.x", isCurrent=True,
 			packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.6.x", isCurrent=True,
+			packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
+
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "3.2.6.x", isCurrent=True,
+			packages = [GLCTS_3_2_3_EGL_PKG]),
+
+	# master
+
+	Mustpass(project = CTS_KHR_MP_ES_PROJECT,	version = "master", isCurrent=False,
+			packages = [GLCTS_GLES2_KHR_PKG_1CFG,
+						GLCTS_GLES2_KHR_PKG_N1CFG,
+						GLCTS_GLES3_KHR_PKG_1CFG,
+						GLCTS_GLES3_KHR_PKG_N1CFG,
+						GLCTS_GLES31_KHR_PKG_1CFG,
+						GLCTS_GLES31_KHR_PKG_N1CFG,
+						GLCTS_GLES32_KHR_PKG_1CFG,
+						GLCTS_GLES32_KHR_PKG_N1CFG,
+						]),
+
+	Mustpass(project = CTS_KHR_MP_NOCTX_ES_PROJECT, version = "master", isCurrent=False,
+			packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
+
+	Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "master", isCurrent=False,
+			packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
+
+	Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "master", isCurrent=False,
 			packages = [MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG]),
 
-	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "master", isCurrent=True,
+	Mustpass(project = CTS_AOSP_MP_EGL_PROJECT, version = "master", isCurrent=False,
 			packages = [MASTER_EGL_PKG])
 
 	]
@@ -1169,5 +1194,5 @@ if __name__ == "__main__":
 		raise Exception("GTF sources not found. GTF module is required to build the mustpass files. 'cd external && python fetch_kc_cts.py'")
 	genMustpassLists(ES_MUSTPASS_LISTS, ANY_GENERATOR, ES_BUILD_CONFIG)
 	gl_mustpass_lists = generateGLMustpass()
-	genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)
+#	genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)
 
