@@ -21,7 +21,8 @@
 
 #include <string>
 
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktSpvAsmPtrAccessChainTests.hpp"
 
 namespace vkt

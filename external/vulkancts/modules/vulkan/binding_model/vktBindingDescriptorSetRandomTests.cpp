@@ -208,13 +208,19 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	deMemset(&features, 0, sizeof(features));
 	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") &&
+	bool vulkan12DescriptorIndexing = false;
+	if (context.contextSupports(vk::ApiVersion(1 ,2, 0)))
+		vulkan12DescriptorIndexing = context.getVulkan12Features().descriptorIndexing;
+
+	bool descriptorIndexing	 = isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") || vulkan12DescriptorIndexing;
+
+	if (descriptorIndexing &&
 		isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
 	{
 		indexingFeatures.pNext = &inlineUniformFeatures;
 		features.pNext = &indexingFeatures;
 	}
-	else if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing"))
+	else if (descriptorIndexing)
 	{
 		features.pNext = &indexingFeatures;
 	}
@@ -832,13 +838,19 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	deMemset(&features, 0, sizeof(features));
 	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-	if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") &&
+	bool vulkan12DescriptorIndexing = false;
+	if (m_context.contextSupports(vk::ApiVersion(1 ,2, 0)))
+		vulkan12DescriptorIndexing = m_context.getVulkan12Features().descriptorIndexing;
+
+	bool descriptorIndexing	 = isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") || vulkan12DescriptorIndexing;
+
+	if (descriptorIndexing &&
 		isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
 	{
 		indexingFeatures.pNext = &inlineUniformFeatures;
 		features.pNext = &indexingFeatures;
 	}
-	else if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_descriptor_indexing"))
+	else if (descriptorIndexing)
 	{
 		features.pNext = &indexingFeatures;
 	}

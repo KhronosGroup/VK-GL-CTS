@@ -373,9 +373,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR:									return "VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR:										return "VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR:											return "VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR";
-		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR:									return "VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:											return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
@@ -3000,6 +3000,15 @@ tcu::Format::Bitfield<32> getPerformanceCounterDescriptionFlagsKHRStr (VkPerform
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfilingLockFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ACQUIRE_PROFILING_LOCK_FLAG_BITS_MAX_ENUM_KHR,	"VK_ACQUIRE_PROFILING_LOCK_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getDebugReportFlagsEXTStr (VkDebugReportFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3287,11 +3296,6 @@ tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFl
 }
 
 tcu::Format::Bitfield<32> getDisplaySurfaceCreateFlagsKHRStr (VkDisplaySurfaceCreateFlagsKHR value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfilingLockFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -5768,7 +5772,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan12Feature
 	s << "\tdescriptorBindingPartiallyBound = " << value.descriptorBindingPartiallyBound << '\n';
 	s << "\tdescriptorBindingVariableDescriptorCount = " << value.descriptorBindingVariableDescriptorCount << '\n';
 	s << "\truntimeDescriptorArray = " << value.runtimeDescriptorArray << '\n';
-	s << "\tshaderNonUniform = " << value.shaderNonUniform << '\n';
 	s << "\tsamplerFilterMinmax = " << value.samplerFilterMinmax << '\n';
 	s << "\tscalarBlockLayout = " << value.scalarBlockLayout << '\n';
 	s << "\timagelessFramebuffer = " << value.imagelessFramebuffer << '\n';
@@ -5783,8 +5786,8 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan12Feature
 	s << "\tvulkanMemoryModel = " << value.vulkanMemoryModel << '\n';
 	s << "\tvulkanMemoryModelDeviceScope = " << value.vulkanMemoryModelDeviceScope << '\n';
 	s << "\tvulkanMemoryModelAvailabilityVisibilityChains = " << value.vulkanMemoryModelAvailabilityVisibilityChains << '\n';
-	s << "\tshaderViewportIndex = " << value.shaderViewportIndex << '\n';
-	s << "\tshaderLayer = " << value.shaderLayer << '\n';
+	s << "\tshaderOutputViewportIndex = " << value.shaderOutputViewportIndex << '\n';
+	s << "\tshaderOutputLayer = " << value.shaderOutputLayer << '\n';
 	s << "\tsubgroupBroadcastDynamicId = " << value.subgroupBroadcastDynamicId << '\n';
 	s << '}';
 	return s;
@@ -6811,9 +6814,9 @@ std::ostream& operator<< (std::ostream& s, const VkFenceGetFdInfoKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCounterFeaturesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceQueryFeaturesKHR& value)
 {
-	s << "VkPhysicalDevicePerformanceCounterFeaturesKHR = {\n";
+	s << "VkPhysicalDevicePerformanceQueryFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tperformanceCounterQueryPools = " << value.performanceCounterQueryPools << '\n';
@@ -6822,9 +6825,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCoun
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCounterPropertiesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceQueryPropertiesKHR& value)
 {
-	s << "VkPhysicalDevicePerformanceCounterPropertiesKHR = {\n";
+	s << "VkPhysicalDevicePerformanceQueryPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tallowCommandBufferQueryCopies = " << value.allowCommandBufferQueryCopies << '\n';
@@ -6858,9 +6861,9 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterDescription
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPerformanceQueryCreateInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkQueryPoolPerformanceCreateInfoKHR& value)
 {
-	s << "VkPerformanceQueryCreateInfoKHR = {\n";
+	s << "VkQueryPoolPerformanceCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tqueueFamilyIndex = " << value.queueFamilyIndex << '\n';

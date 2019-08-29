@@ -104,12 +104,19 @@ public:
 	//! Check if test case is in supplied test case list.
 	bool							checkTestCaseName			(const char* caseName) const;
 
+	//! Check if test group passes the case fraction filter.
+	bool							checkCaseFraction			(int i) const {
+		return m_caseFraction.size() != 2 ||
+			   ((i % m_caseFraction[1]) == m_caseFraction[0]);
+	}
+
 private:
 	CaseListFilter												(const CaseListFilter&);	// not allowed!
 	CaseListFilter&					operator=					(const CaseListFilter&);	// not allowed!
 
 	CaseTreeNode*					m_caseTree;
 	de::MovePtr<const CasePaths>	m_casePaths;
+	std::vector<int>				m_caseFraction;
 };
 
 /*--------------------------------------------------------------------*//*!
@@ -228,6 +235,9 @@ public:
 
 	//! Enable RenderDoc frame markers (--deqp-renderdoc)
 	bool							isRenderDocEnabled			(void) const;
+
+	//! Get case list fraction
+	const std::vector<int>&			getCaseFraction				(void) const;
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter

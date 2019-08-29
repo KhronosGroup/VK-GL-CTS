@@ -572,7 +572,8 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 					 vk::VkDevice								device,
 					 vk::VkFence								fence,
 					 vk::VkExternalFenceHandleTypeFlagBits		externalType,
-					 NativeHandle&								nativeHandle)
+					 NativeHandle&								nativeHandle,
+					 bool										expectFenceUnsignaled)
 {
 	if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
@@ -588,7 +589,16 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 		int								fd	= -1;
 
 		VK_CHECK(vkd.getFenceFdKHR(device, &info, &fd));
-		TCU_CHECK(fd >= 0);
+
+		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT)
+		{
+			TCU_CHECK(!expectFenceUnsignaled || (fd >= 0));
+		}
+		else
+		{
+			TCU_CHECK(fd >= 0);
+		}
+
 		nativeHandle = fd;
 	}
 	else if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT

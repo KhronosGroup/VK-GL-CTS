@@ -1820,7 +1820,6 @@ struct VkPhysicalDeviceVulkan12Features
 	VkBool32		descriptorBindingPartiallyBound;
 	VkBool32		descriptorBindingVariableDescriptorCount;
 	VkBool32		runtimeDescriptorArray;
-	VkBool32		shaderNonUniform;
 	VkBool32		samplerFilterMinmax;
 	VkBool32		scalarBlockLayout;
 	VkBool32		imagelessFramebuffer;
@@ -1835,8 +1834,8 @@ struct VkPhysicalDeviceVulkan12Features
 	VkBool32		vulkanMemoryModel;
 	VkBool32		vulkanMemoryModelDeviceScope;
 	VkBool32		vulkanMemoryModelAvailabilityVisibilityChains;
-	VkBool32		shaderViewportIndex;
-	VkBool32		shaderLayer;
+	VkBool32		shaderOutputViewportIndex;
+	VkBool32		shaderOutputLayer;
 	VkBool32		subgroupBroadcastDynamicId;
 };
 
@@ -2627,7 +2626,7 @@ struct VkFenceGetFdInfoKHR
 	VkExternalFenceHandleTypeFlagBits	handleType;
 };
 
-struct VkPhysicalDevicePerformanceCounterFeaturesKHR
+struct VkPhysicalDevicePerformanceQueryFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -2635,7 +2634,7 @@ struct VkPhysicalDevicePerformanceCounterFeaturesKHR
 	VkBool32		performanceCounterMultipleQueryPools;
 };
 
-struct VkPhysicalDevicePerformanceCounterPropertiesKHR
+struct VkPhysicalDevicePerformanceQueryPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -2662,7 +2661,7 @@ struct VkPerformanceCounterDescriptionKHR
 	char									description[VK_MAX_DESCRIPTION_SIZE];
 };
 
-struct VkPerformanceQueryCreateInfoKHR
+struct VkQueryPoolPerformanceCreateInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;

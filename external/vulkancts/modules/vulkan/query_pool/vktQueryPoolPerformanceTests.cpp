@@ -219,7 +219,7 @@ void QueryTestBase::setupCounters()
 	deUint32					queueFamilyIndex	= cmdPoolCreateInfo.queueFamilyIndex;
 	deUint32					counterCount;
 
-	if (!m_context.getPerformanceCounterFeatures().performanceCounterQueryPools)
+	if (!m_context.getPerformanceQueryFeatures().performanceCounterQueryPools)
 		TCU_THROW(NotSupportedError, "Performance counter query pools feature not supported");
 
 	// get the number of supported counters
@@ -284,9 +284,9 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, 
 		TCU_THROW(NotSupportedError, "QualityWarning: no performance counters");
 
 	// define performance query
-	VkPerformanceQueryCreateInfoKHR performanceQueryCreateInfo =
+	VkQueryPoolPerformanceCreateInfoKHR performanceQueryCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_CREATE_INFO_KHR,
 		NULL,
 		cmdPoolCreateInfo.queueFamilyIndex,			// queue family that this performance query is performed on
 		enabledCountersCount,						// number of counters to enable
@@ -674,7 +674,7 @@ GraphicMultiplePoolsTest::GraphicMultiplePoolsTest(vkt::Context& context)
 
 tcu::TestStatus GraphicMultiplePoolsTest::iterate(void)
 {
-	if (!m_context.getPerformanceCounterFeatures().performanceCounterMultipleQueryPools)
+	if (!m_context.getPerformanceQueryFeatures().performanceCounterMultipleQueryPools)
 		throw tcu::NotSupportedError("MultipleQueryPools not supported");
 
 	const DeviceInterface&		vkd					= m_context.getDeviceInterface();
@@ -1010,7 +1010,7 @@ ComputeMultiplePoolsTest::ComputeMultiplePoolsTest(vkt::Context& context)
 
 tcu::TestStatus ComputeMultiplePoolsTest::iterate(void)
 {
-	if (!m_context.getPerformanceCounterFeatures().performanceCounterMultipleQueryPools)
+	if (!m_context.getPerformanceQueryFeatures().performanceCounterMultipleQueryPools)
 		throw tcu::NotSupportedError("MultipleQueryPools not supported");
 
 	const DeviceInterface&			vkd = m_context.getDeviceInterface();

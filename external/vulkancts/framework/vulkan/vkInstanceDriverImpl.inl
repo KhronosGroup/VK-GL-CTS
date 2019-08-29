@@ -237,7 +237,7 @@ void InstanceDriver::enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersK
 	m_vk.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, pCounterCount, pCounters, pCounterDescriptions);
 }
 
-void InstanceDriver::getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkPerformanceQueryCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses) const
+void InstanceDriver::getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkQueryPoolPerformanceCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses) const
 {
 	m_vk.getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(physicalDevice, pPerformanceQueryCreateInfo, pNumPasses);
 }

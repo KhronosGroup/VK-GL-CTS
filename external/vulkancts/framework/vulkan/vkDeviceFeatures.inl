@@ -30,7 +30,7 @@ namespace vk
 #define VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME "VK_EXT_memory_priority"
 #define VK_NV_MESH_SHADER_EXTENSION_NAME  "VK_NV_mesh_shader"
 #define VK_KHR_MULTIVIEW_EXTENSION_NAME   "VK_KHR_multiview"
-#define DECL_KHR_PERFORMANCE_COUNTER_EXTENSION_NAME "not_existent_feature"
+#define VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME "VK_KHR_performance_query"
 #define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME "VK_KHR_pipeline_executable_properties"
 #define DECL_PROTECTED_MEMORY_EXTENSION_NAME "not_existent_feature"
 #define VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME "VK_NV_representative_fragment_test"
@@ -84,7 +84,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceLineRasterizationFeatures
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMemoryPriorityFeaturesEXT>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT, VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, VK_EXT_MEMORY_PRIORITY_SPEC_VERSION, 30); }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMeshShaderFeaturesNV>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV, VK_NV_MESH_SHADER_EXTENSION_NAME, VK_NV_MESH_SHADER_SPEC_VERSION, 29); }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMultiviewFeatures>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES, VK_KHR_MULTIVIEW_EXTENSION_NAME, VK_KHR_MULTIVIEW_SPEC_VERSION, 28); }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceCounterFeaturesKHR>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR, DECL_KHR_PERFORMANCE_COUNTER_EXTENSION_NAME, 0, 27); }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePerformanceQueryFeaturesKHR>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION, 27); }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_SPEC_VERSION, 26); }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceProtectedMemoryFeatures>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0, 25); }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>(void) { return FeatureDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_REPRESENTATIVE_FRAGMENT_TEST_FEATURES_NV, VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME, VK_NV_REPRESENTATIVE_FRAGMENT_TEST_SPEC_VERSION, 24); }
@@ -140,7 +140,7 @@ static const FeatureStructMapItem featureStructCreatorMap[] =
 	{ createFeatureStructWrapper<VkPhysicalDeviceMemoryPriorityFeaturesEXT>, VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, VK_EXT_MEMORY_PRIORITY_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMeshShaderFeaturesNV>, VK_NV_MESH_SHADER_EXTENSION_NAME, VK_NV_MESH_SHADER_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMultiviewFeatures>, VK_KHR_MULTIVIEW_EXTENSION_NAME, VK_KHR_MULTIVIEW_SPEC_VERSION },
-	{ createFeatureStructWrapper<VkPhysicalDevicePerformanceCounterFeaturesKHR>, DECL_KHR_PERFORMANCE_COUNTER_EXTENSION_NAME, 0 },
+	{ createFeatureStructWrapper<VkPhysicalDevicePerformanceQueryFeaturesKHR>, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME, VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME, VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceProtectedMemoryFeatures>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>, VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME, VK_NV_REPRESENTATIVE_FRAGMENT_TEST_SPEC_VERSION },

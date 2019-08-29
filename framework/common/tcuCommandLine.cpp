@@ -95,6 +95,7 @@ DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
 DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -189,7 +190,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"enable")
 		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin")
 		<< Option<ShaderCacheTruncate>	(DE_NULL,	"deqp-shadercache-truncate",	"Truncate shader cache before running tests",		s_enableNames,		"enable")
-		<< Option<RenderDoc>			(DE_NULL,	"deqp-renderdoc",				"Enable RenderDoc frame markers",					s_enableNames,		"disable");
+		<< Option<RenderDoc>			(DE_NULL,	"deqp-renderdoc",				"Enable RenderDoc frame markers",					s_enableNames,		"disable")
+		<< Option<CaseFraction>			(DE_NULL,	"deqp-case-fraction",			"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -809,6 +811,7 @@ bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLi
 int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();					}
 bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();					}
 bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();						}
+const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -950,6 +953,15 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 	}
 	else if (cmdLine.hasOption<opt::CasePath>())
 		m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
+
+	m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
+
+	if (m_caseFraction.size() == 2 &&
+		(m_caseFraction[0] < 0 || m_caseFraction[1] <= 0 || m_caseFraction[0] >= m_caseFraction[1]))
+		throw Exception("Invalid case fraction. First element must be less than second element. Second element must be positive. First element must be non-negative.");
+
+	if (m_caseFraction.size() != 0 && m_caseFraction.size() != 2)
+		throw Exception("Invalid case fraction. Must have two components.");
 }
 
 CaseListFilter::~CaseListFilter (void)
