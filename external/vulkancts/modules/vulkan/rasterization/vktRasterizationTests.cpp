@@ -23,7 +23,8 @@
  * \brief Functional rasterization tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 #include "vktRasterizationTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
@@ -37,7 +38,6 @@
 #include "deRandom.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -3744,27 +3744,33 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 	{
 		tcu::TestCaseGroup* const	provokingVertex		= new tcu::TestCaseGroup(testCtx, "provoking_vertex", "Test provoking vertex");
 
-		const char*					primitiveTypes[]	=
+		struct Params { const char *type; bool requireGeometryShader; };
+		Params	primitiveTypes[]	=
 		{
-			"triangle_list",
-			"triangle_list_with_adjacency",
-			"triangle_strip",
-			"triangle_strip_with_adjacency",
-			"triangle_fan",
-			"line_list",
-			"line_list_with_adjacency",
-			"line_strip",
-			"line_strip_with_adjacency"
+			{ "triangle_list", false },
+			{ "triangle_list_with_adjacency", true },
+			{ "triangle_strip", false },
+			{ "triangle_strip_with_adjacency", true },
+			{ "triangle_fan", false },
+			{ "line_list", false },
+			{ "line_list_with_adjacency", true },
+			{ "line_strip", false },
+			{ "line_strip_with_adjacency", true },
 		};
 
 		rasterizationTests->addChild(provokingVertex);
 
 		for (deUint32 primitiveTypeIdx = 0; primitiveTypeIdx < DE_LENGTH_OF_ARRAY(primitiveTypes); primitiveTypeIdx++)
 		{
-			const char*			type	= primitiveTypes[primitiveTypeIdx];
-			const std::string	file	= std::string(type) + ".amber";
+			Params &					params		= primitiveTypes[primitiveTypeIdx];
+			const std::string			file		= std::string(params.type) + ".amber";
 
-			provokingVertex->addChild(cts_amber::createAmberTestCase(testCtx, type, "", "provoking_vertex", file));
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, params.type, "", "provoking_vertex", file);
+			if (params.requireGeometryShader)
+			{
+				testCase->addRequirement("Features.geometryShader");
+			}
+			provokingVertex->addChild(testCase);
 		}
 	}
 }

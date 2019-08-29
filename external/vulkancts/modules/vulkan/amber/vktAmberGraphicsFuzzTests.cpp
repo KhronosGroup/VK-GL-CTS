@@ -23,8 +23,9 @@
  * \brief GraphicsFuzz tests
  *//*--------------------------------------------------------------------*/
 
+#include "vktTestGroupUtil.hpp"
 #include "vktAmberGraphicsFuzzTests.hpp"
-#include "vktAmberTestCaseUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 namespace vkt
 {
