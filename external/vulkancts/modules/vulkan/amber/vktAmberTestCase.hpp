@@ -26,10 +26,11 @@
 
 #include <string>
 #include <set>
-#include "amber/recipe.h"
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 #include "vktTestCase.hpp"
+
+namespace amber { class Recipe; }
 
 namespace vkt
 {
@@ -98,6 +99,13 @@ private:
 	// Use a set for consistent ordering.
 	std::set<std::string> m_required_features;
 };
+
+AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
+									const char*						name,
+									const char*						description,
+									const char*						category,
+									const std::string&				filename,
+									const std::vector<std::string>	requirements = std::vector<std::string>());
 
 } // cts_amber
 } // vkt

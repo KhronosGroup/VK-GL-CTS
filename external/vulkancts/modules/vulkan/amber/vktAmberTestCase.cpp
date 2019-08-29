@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include <amber/amber.h>
+#include "amber/recipe.h"
 
 #include <iostream>
 
@@ -81,7 +82,7 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 	if (feature == "Features.tessellationShader")
 		return ctx.getDeviceFeatures().tessellationShader;
 	if (feature == "Features.geometryShader")
-		return ctx.getDeviceFeatures().tessellationShader;
+		return ctx.getDeviceFeatures().geometryShader;
 	if (feature == "Features.vertexPipelineStoresAndAtomics")
 		return ctx.getDeviceFeatures().vertexPipelineStoresAndAtomics;
 	if (feature == "VariablePointerFeatures.variablePointersStorageBuffer")
