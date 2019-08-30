@@ -1624,11 +1624,19 @@ def writeMandatoryFeatures(filename):
 		allRequirements = splitWithQuotation(m[2])
 		dictData.append( [ m[0], m[1], allRequirements ] )
 		if m[0] != 'VkPhysicalDeviceFeatures' :
-			dictStructs[m[0]] = [ m[0][2:3].lower() + m[0][3:], allRequirements[0] ]
+			if (m[0] not in dictStructs):
+				dictStructs[m[0]] = [m[0][2:3].lower() + m[0][3:]]
+			if (allRequirements[0]):
+				if (allRequirements[0] not in dictStructs[m[0]][1:]):
+					dictStructs[m[0]].append(allRequirements[0])
 
 	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
 				   '\tif ( !vk::isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2") )',
 				   '\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");',
+				   '',
+				   '\tVkPhysicalDevice\t\t\t\t\tphysicalDevice\t\t= context.getPhysicalDevice();',
+				   '\tconst InstanceInterface&\t\t\tvki\t\t\t\t\t= context.getInstanceInterface();',
+				   '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);',
 				   '',
 				   '\ttcu::TestLog& log = context.getTestContext().getLog();',
 				   '\tvk::VkPhysicalDeviceFeatures2 coreFeatures;',
@@ -1636,6 +1644,7 @@ def writeMandatoryFeatures(filename):
 				   '\tcoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;',
 				   '\tvoid** nextPtr = &coreFeatures.pNext;',
 				   ''])
+
 	listStruct = sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
 	for k, v in listStruct:
 		if (v[1].startswith("ApiVersion")):
@@ -1643,14 +1652,26 @@ def writeMandatoryFeatures(filename):
 		else:
 			cond = '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[1] + '"))'
 		stream.extend(['\tvk::' + k + ' ' + v[0]+ ';',
-					cond,
-					'\t{',
-					'\t\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
-					'\t\t' + v[0] + '.sType = getStructureType<' + k + '>();',
-					'\t\t*nextPtr = &' + v[0] + ';',
-					'\t\tnextPtr  = &' + v[0] + '.pNext;',
-					'\t}',
+					'\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
 					''])
+		reqs = v[1:]
+		if len(reqs) > 0 :
+			cond = 'if ( '
+			for i, req in enumerate(reqs) :
+				if (req.startswith("ApiVersion")):
+					cond = cond + 'context.contextSupports(vk::' + req + ')'
+				else:
+					cond = cond + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+				if i+1 < len(reqs) :
+					cond = cond + ' || '
+			cond = cond + ' )'
+			stream.append('\t' + cond)
+		stream.extend(['\t{',
+					   '\t\t' + v[0] + '.sType = getStructureType<' + k + '>();',
+					   '\t\t*nextPtr = &' + v[0] + ';',
+					   '\t\tnextPtr  = &' + v[0] + '.pNext;',
+					   '\t}',
+					   ''])
 	stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
 				   '\tbool result = true;',
 				   ''])
@@ -1668,7 +1689,7 @@ def writeMandatoryFeatures(filename):
 				elif '.' in req:
 					condition = condition + req
 				else:
-					condition = condition + 'vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + req + '")'
+					condition = condition + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
 				if i+1 < len(v[2]) :
 					condition = condition + ' && '
 			condition = condition + ' )'
