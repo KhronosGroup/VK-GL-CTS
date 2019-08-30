@@ -1600,22 +1600,37 @@ def writeContextDefs(dfDefs, filename):
 	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
 	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
 
+def splitWithQuotation(line):
+	result = []
+	splitted = re.findall(r'[^"\s]\S*|".+?"', line)
+	for s in splitted:
+		result.append(s.replace('"', ''))
+	return result
+
 def writeMandatoryFeatures(filename):
 	stream = []
-	pattern = r'\s*([\w]+)\s+([\w]+)\s+([\w]+)\s+EXTENSIONS\s*\(([\s\w]*)\)'
+	pattern = r'\s*([\w]+)\s+([\w]+)\s+REQUIREMENTS\s+\((.*)\)'
 	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
 	matches = re.findall(pattern, mandatoryFeatures)
 	dictStructs = {}
 	dictData = []
 	for m in matches:
-		allExtensions = m[3].split()
-		dictData.append( [ m[0], m[1], allExtensions ] )
+		allRequirements = splitWithQuotation(m[2])
+		dictData.append( [ m[0], m[1], allRequirements ] )
 		if m[0] != 'VkPhysicalDeviceFeatures' :
-			dictStructs[m[0]] = [ m[0][2:3].lower() + m[0][3:], m[2], allExtensions[0] ]
+			if (m[0] not in dictStructs):
+				dictStructs[m[0]] = [m[0][2:3].lower() + m[0][3:]]
+			if (allRequirements[0]):
+				if (allRequirements[0] not in dictStructs[m[0]][1:]):
+					dictStructs[m[0]].append(allRequirements[0])
 
 	stream.extend(['bool checkMandatoryFeatures(const vkt::Context& context)\n{',
 				   '\tif ( !vk::isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2") )',
 				   '\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");',
+				   '',
+				   '\tVkPhysicalDevice\t\t\t\t\tphysicalDevice\t\t= context.getPhysicalDevice();',
+				   '\tconst InstanceInterface&\t\t\tvki\t\t\t\t\t= context.getInstanceInterface();',
+				   '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);',
 				   '',
 				   '\ttcu::TestLog& log = context.getTestContext().getLog();',
 				   '\tvk::VkPhysicalDeviceFeatures2 coreFeatures;',
@@ -1623,13 +1638,26 @@ def writeMandatoryFeatures(filename):
 				   '\tcoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;',
 				   '\tvoid** nextPtr = &coreFeatures.pNext;',
 				   ''])
+
 	listStruct = sorted(dictStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
 	for k, v in listStruct:
 		stream.extend(['\tvk::' + k + ' ' + v[0]+ ';',
-					   '\tif (vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + v[2] + '"))',
-					   '\t{',
-					   '\t\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
-					   '\t\t' + v[0] + '.sType = ' + v[1] + ';',
+					'\tdeMemset(&' + v[0] + ', 0, sizeof(' + v[0] + '));',
+					''])
+		reqs = v[1:]
+		if len(reqs) > 0 :
+			cond = 'if ( '
+			for i, req in enumerate(reqs) :
+				if (req.startswith("ApiVersion")):
+					cond = cond + 'context.contextSupports(vk::' + req + ')'
+				else:
+					cond = cond + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
+				if i+1 < len(reqs) :
+					cond = cond + ' || '
+			cond = cond + ' )'
+			stream.append('\t' + cond)
+		stream.extend(['\t{',
+					   '\t\t' + v[0] + '.sType = getStructureType<' + k + '>();',
 					   '\t\t*nextPtr = &' + v[0] + ';',
 					   '\t\tnextPtr  = &' + v[0] + '.pNext;',
 					   '\t}',
@@ -1645,8 +1673,13 @@ def writeMandatoryFeatures(filename):
 			structName = dictStructs[v[0]][0]
 		if len(v[2]) > 0 :
 			condition = 'if ( '
-			for i, ext in enumerate(v[2]) :
-				condition = condition + 'vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "' + ext + '")'
+			for i, req in enumerate(v[2]) :
+				if (req.startswith("ApiVersion")):
+					condition = condition + 'context.contextSupports(vk::' + req + ')'
+				elif '.' in req:
+					condition = condition + req
+				else:
+					condition = condition + 'isExtensionSupported(deviceExtensions, RequiredExtension("' + req + '"))'
 				if i+1 < len(v[2]) :
 					condition = condition + ' && '
 			condition = condition + ' )'
