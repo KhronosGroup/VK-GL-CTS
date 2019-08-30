@@ -10130,12 +10130,14 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 	const string						spvCapabilities		= string("OpCapability StorageUniformBufferBlock16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
 	const string						spvExtensions		= string("OpExtension \"SPV_KHR_16bit_storage\"\n") + (nanSupported ? "OpExtension \"SPV_KHR_float_controls\"\n" : "");
 	const string						spvExecutionMode	= nanSupported ? "OpExecutionMode %BP_main SignedZeroInfNanPreserve 16\n" : "";
-	const deUint32						numDataPoints		= 16;
-	const vector<deFloat16>				float16Data			= getFloat16s(rnd, numDataPoints);
-	const vector<deFloat16>				float16Data1		= squarize(float16Data, 0);
-	const vector<deFloat16>				float16Data2		= squarize(float16Data, 1);
-	const vector<deFloat16>				float16DataVec1		= squarizeVector(float16Data, 0);
-	const vector<deFloat16>				float16DataVec2		= squarizeVector(float16Data, 1);
+	const deUint32						numDataPointsScalar	= 16;
+	const deUint32						numDataPointsVector	= 14;
+	const vector<deFloat16>				float16DataScalar	= getFloat16s(rnd, numDataPointsScalar);
+	const vector<deFloat16>				float16DataVector	= getFloat16s(rnd, numDataPointsVector);
+	const vector<deFloat16>				float16Data1		= squarize(float16DataScalar, 0);			// Total Size: square(sizeof(float16DataScalar))
+	const vector<deFloat16>				float16Data2		= squarize(float16DataScalar, 1);
+	const vector<deFloat16>				float16DataVec1		= squarizeVector(float16DataVector, 0);		// Total Size: 2 * (square(square(sizeof(float16DataVector))))
+	const vector<deFloat16>				float16DataVec2		= squarizeVector(float16DataVector, 1);
 	const vector<deFloat16>				float16OutDummy		(float16Data1.size(), 0);
 	const vector<deFloat16>				float16OutVecDummy	(float16DataVec1.size(), 0);
 
