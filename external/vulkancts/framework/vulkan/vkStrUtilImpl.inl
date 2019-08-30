@@ -413,6 +413,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD:						return "VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD";
 		case VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT:									return "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD:					return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD";
@@ -453,6 +454,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT:	return "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT";
@@ -481,15 +485,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR:												return "VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR:									return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_STATISTIC_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR:					return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -1739,6 +1743,17 @@ const char* getCoarseSampleOrderTypeNVName (VkCoarseSampleOrderTypeNV value)
 	}
 }
 
+const char* getAccelerationStructureTypeNVName (VkAccelerationStructureTypeNV value)
+{
+	switch (value)
+	{
+		case VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV:		return "VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV";
+		case VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV:	return "VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV";
+		case VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_NV:		return "VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_NV";
+		default:												return DE_NULL;
+	}
+}
+
 const char* getRayTracingShaderGroupTypeNVName (VkRayTracingShaderGroupTypeNV value)
 {
 	switch (value)
@@ -1759,17 +1774,6 @@ const char* getGeometryTypeNVName (VkGeometryTypeNV value)
 		case VK_GEOMETRY_TYPE_AABBS_NV:		return "VK_GEOMETRY_TYPE_AABBS_NV";
 		case VK_GEOMETRY_TYPE_MAX_ENUM_NV:	return "VK_GEOMETRY_TYPE_MAX_ENUM_NV";
 		default:							return DE_NULL;
-	}
-}
-
-const char* getAccelerationStructureTypeNVName (VkAccelerationStructureTypeNV value)
-{
-	switch (value)
-	{
-		case VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV:		return "VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV";
-		case VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV:	return "VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV";
-		case VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_NV:		return "VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_NV";
-		default:												return DE_NULL;
 	}
 }
 
@@ -1896,6 +1900,7 @@ const char* getValidationFeatureEnableEXTName (VkValidationFeatureEnableEXT valu
 	{
 		case VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT:							return "VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT";
 		case VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT:	return "VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT";
+		case VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT:						return "VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT";
 		case VK_VALIDATION_FEATURE_ENABLE_MAX_ENUM_EXT:								return "VK_VALIDATION_FEATURE_ENABLE_MAX_ENUM_EXT";
 		default:																	return DE_NULL;
 	}
@@ -2114,13 +2119,15 @@ tcu::Format::Bitfield<32> getMemoryPropertyFlagsStr (VkMemoryPropertyFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,		"VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,		"VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,		"VK_MEMORY_PROPERTY_HOST_COHERENT_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_CACHED_BIT,		"VK_MEMORY_PROPERTY_HOST_CACHED_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,	"VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PROTECTED_BIT,			"VK_MEMORY_PROPERTY_PROTECTED_BIT"),
-		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM,		"VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,			"VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,			"VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,			"VK_MEMORY_PROPERTY_HOST_COHERENT_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_HOST_CACHED_BIT,			"VK_MEMORY_PROPERTY_HOST_CACHED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,		"VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_PROTECTED_BIT,				"VK_MEMORY_PROPERTY_PROTECTED_BIT"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,	"VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,	"VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD"),
+		tcu::Format::BitDesc(VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM,			"VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3012,6 +3019,15 @@ tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsNVStr (VkBuildAccele
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getPipelineCompilerControlFlagsAMDStr (VkPipelineCompilerControlFlagsAMD value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PIPELINE_COMPILER_CONTROL_FLAG_BITS_MAX_ENUM_AMD,	"VK_PIPELINE_COMPILER_CONTROL_FLAG_BITS_MAX_ENUM_AMD"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsEXTStr (VkPipelineCreationFeedbackFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -3020,6 +3036,15 @@ tcu::Format::Bitfield<32> getPipelineCreationFeedbackFlagsEXTStr (VkPipelineCrea
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT,	"VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT,		"VK_PIPELINE_CREATION_FEEDBACK_BASE_PIPELINE_ACCELERATION_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM_EXT,					"VK_PIPELINE_CREATION_FEEDBACK_FLAG_BITS_MAX_ENUM_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getShaderCorePropertiesFlagsAMDStr (VkShaderCorePropertiesFlagsAMD value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SHADER_CORE_PROPERTIES_FLAG_BITS_MAX_ENUM_AMD,	"VK_SHADER_CORE_PROPERTIES_FLAG_BITS_MAX_ENUM_AMD"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7890,6 +7915,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceExternalMemoryH
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPipelineCompilerControlCreateInfoAMD& value)
+{
+	s << "VkPipelineCompilerControlCreateInfoAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcompilerControlFlags = " << getPipelineCompilerControlFlagsAMDStr(value.compilerControlFlags) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkCalibratedTimestampInfoEXT& value)
 {
 	s << "VkCalibratedTimestampInfoEXT = {\n";
@@ -8280,6 +8315,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceScalarBlockLayo
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubgroupSizeControlFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceSubgroupSizeControlFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubgroupSizeControl = " << value.subgroupSizeControl << '\n';
+	s << "\tcomputeFullSubgroups = " << value.computeFullSubgroups << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT& value)
 {
 	s << "VkPhysicalDeviceSubgroupSizeControlPropertiesEXT = {\n";
@@ -8299,6 +8345,27 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineShaderStageRequiredSu
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trequiredSubgroupSize = " << value.requiredSubgroupSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderCoreProperties2AMD& value)
+{
+	s << "VkPhysicalDeviceShaderCoreProperties2AMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderCoreFeatures = " << getShaderCorePropertiesFlagsAMDStr(value.shaderCoreFeatures) << '\n';
+	s << "\tactiveComputeUnitCount = " << value.activeComputeUnitCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCoherentMemoryFeaturesAMD& value)
+{
+	s << "VkPhysicalDeviceCoherentMemoryFeaturesAMD = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceCoherentMemory = " << value.deviceCoherentMemory << '\n';
 	s << '}';
 	return s;
 }

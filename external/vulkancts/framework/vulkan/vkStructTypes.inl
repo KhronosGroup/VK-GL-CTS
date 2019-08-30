@@ -3518,6 +3518,13 @@ struct VkPhysicalDeviceExternalMemoryHostPropertiesEXT
 	VkDeviceSize	minImportedHostPointerAlignment;
 };
 
+struct VkPipelineCompilerControlCreateInfoAMD
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkPipelineCompilerControlFlagsAMD	compilerControlFlags;
+};
+
 struct VkCalibratedTimestampInfoEXT
 {
 	VkStructureType	sType;
@@ -3803,6 +3810,14 @@ struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT
 	VkBool32		scalarBlockLayout;
 };
 
+struct VkPhysicalDeviceSubgroupSizeControlFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		subgroupSizeControl;
+	VkBool32		computeFullSubgroups;
+};
+
 struct VkPhysicalDeviceSubgroupSizeControlPropertiesEXT
 {
 	VkStructureType		sType;
@@ -3818,6 +3833,21 @@ struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT
 	VkStructureType	sType;
 	void*			pNext;
 	deUint32		requiredSubgroupSize;
+};
+
+struct VkPhysicalDeviceShaderCoreProperties2AMD
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkShaderCorePropertiesFlagsAMD	shaderCoreFeatures;
+	deUint32						activeComputeUnitCount;
+};
+
+struct VkPhysicalDeviceCoherentMemoryFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceCoherentMemory;
 };
 
 struct VkPhysicalDeviceMemoryBudgetPropertiesEXT

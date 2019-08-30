@@ -5,6 +5,7 @@ const vk::VkPhysicalDevice16BitStorageFeatures&							Context::get16BitStorageFe
 const vk::VkPhysicalDevice8BitStorageFeaturesKHR&						Context::get8BitStorageFeatures							(void) const { return m_device->get8BitStorageFeatures();						}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlendOperationAdvancedFeatures				(void) const { return m_device->getBlendOperationAdvancedFeatures();			}
 const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}
+const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&					Context::getCoherentMemoryFeaturesAMD					(void) const { return m_device->getCoherentMemoryFeaturesAMD();					}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&			Context::getComputeShaderDerivativesFeatures			(void) const { return m_device->getComputeShaderDerivativesFeatures();			}
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				Context::getConditionalRenderingFeatures				(void) const { return m_device->getConditionalRenderingFeatures();				}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&					Context::getCooperativeMatrixFeatures					(void) const { return m_device->getCooperativeMatrixFeatures();					}
@@ -37,6 +38,7 @@ const vk::VkPhysicalDeviceShaderFloat16Int8FeaturesKHR&					Context::getShaderFl
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();				}
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			Context::getShaderIntegerFunctions2FeaturesINTEL		(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();		}
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					Context::getShadingRateImageFeatures					(void) const { return m_device->getShadingRateImageFeatures();					}
+const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				Context::getSubgroupSizeControlFeatures					(void) const { return m_device->getSubgroupSizeControlFeatures();				}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				Context::getTexelBufferAlignmentFeatures				(void) const { return m_device->getTexelBufferAlignmentFeatures();				}
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					Context::getTransformFeedbackFeatures					(void) const { return m_device->getTransformFeedbackFeatures();					}
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		Context::getUniformBufferStandardLayoutFeatures			(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}

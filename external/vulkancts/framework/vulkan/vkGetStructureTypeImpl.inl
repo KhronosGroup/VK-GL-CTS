@@ -1361,6 +1361,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryHostPr
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPipelineCompilerControlCreateInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD;
+}
+
 template<> VkStructureType getStructureType<VkCalibratedTimestampInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
@@ -1511,6 +1516,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceScalarBlockLayoutFea
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
@@ -1519,6 +1529,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSubgroupSizeControlP
 template<> VkStructureType getStructureType<VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderCoreProperties2AMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCoherentMemoryFeaturesAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryBudgetPropertiesEXT> (void)
