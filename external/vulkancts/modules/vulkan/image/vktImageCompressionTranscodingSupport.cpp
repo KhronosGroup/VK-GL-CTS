@@ -2615,7 +2615,7 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 						<< "layout (binding = 1, "<<formatQualifierStr<<") writeonly uniform "<<imageTypeStr<<" u_image1;\n\n"
 						<< "void main (void)\n"
 						<< "{\n"
-						<< "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.x - 1, gl_NumWorkGroups.y - 1);\n"
+						<< "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.x, gl_NumWorkGroups.y);\n"
 						<< coordDefinitions[imageTypeIndex]
 						<< "    imageStore(u_image1, pos, texture(u_image0, coord));\n"
 						<< "}\n";
@@ -2742,16 +2742,16 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 						{
 							// IMAGE_TYPE_1D
 							"    const highp int out_pos = int(gl_FragCoord.x);\n"
-							"    const highp int pixels_resolution = textureSize(u_imageIn, 0) - 1;\n"
-							"    const highp float in_pos = float(out_pos) / pixels_resolution;\n",
+							"    const highp float pixels_resolution = textureSize(u_imageIn, 0);\n"
+							"    const highp float in_pos = gl_FragCoord.x / pixels_resolution;\n",
 							// IMAGE_TYPE_2D
 							"    const ivec2 out_pos = ivec2(gl_FragCoord.xy);\n"
-							"    const ivec2 pixels_resolution = ivec2(textureSize(u_imageIn, 0)) - ivec2(1,1);\n"
-							"    const vec2 in_pos = vec2(out_pos) / vec2(pixels_resolution);\n",
+							"    const vec2 pixels_resolution = vec2(textureSize(u_imageIn, 0));\n"
+							"    const vec2 in_pos = vec2(gl_FragCoord.xy) / vec2(pixels_resolution);\n",
 							// IMAGE_TYPE_3D
 							"    const ivec3 out_pos = ivec3(gl_FragCoord.xy, 0);\n"
-							"    const ivec3 pixels_resolution = ivec3(textureSize(u_imageIn, 0)) - ivec3(1,1,1);\n"
-							"    const vec3 in_pos = vec3(out_pos) / vec3(pixels_resolution.xy, 1.0);\n",
+							"    const vec3 pixels_resolution = vec3(textureSize(u_imageIn, 0));\n"
+							"    const vec3 in_pos = vec3(gl_FragCoord.xy, 0) / vec3(pixels_resolution.xy, 1.0);\n",
 						};
 
 						src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n\n"
@@ -2786,28 +2786,28 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 				{
 					// IMAGE_TYPE_1D
 					"    const highp int out_pos = int(gl_FragCoord.x);\n"
-					"    const highp int pixels_resolution0 = textureSize(u_imageIn0, 0) - 1;\n"
-					"    const highp float in_pos0 = float(out_pos) / pixels_resolution0;\n",
+					"    const highp float pixels_resolution0 = textureSize(u_imageIn0, 0);\n"
+					"    const highp float in_pos0 = gl_FragCoord.x / pixels_resolution0;\n",
 					// IMAGE_TYPE_2D
 					"    const ivec2 out_pos = ivec2(gl_FragCoord.xy);\n"
-					"    const ivec2 pixels_resolution0 = ivec2(textureSize(u_imageIn0, 0)) - ivec2(1,1);\n"
-					"    const vec2 in_pos0 = vec2(out_pos) / vec2(pixels_resolution0);\n",
+					"    const vec2 pixels_resolution0 = vec2(textureSize(u_imageIn0, 0));\n"
+					"    const vec2 in_pos0 = vec2(gl_FragCoord.xy) / vec2(pixels_resolution0);\n",
 					// IMAGE_TYPE_3D
 					"    const ivec3 out_pos = ivec3(ivec2(gl_FragCoord.xy), 0);\n"
-					"    const ivec3 pixels_resolution0 = ivec3(textureSize(u_imageIn0, 0)) - ivec3(1,1,1);\n"
-					"    const vec3 in_pos0 = vec3(out_pos) / vec3(pixels_resolution0);\n",
+					"    const vec3 pixels_resolution0 = vec3(textureSize(u_imageIn0, 0));\n"
+					"    const vec3 in_pos0 = vec3(gl_FragCoord.xy, 0) / vec3(pixels_resolution0.xy, 1.0);\n",
 				};
 				const char* pos1Definitions[3] =
 				{
 					// IMAGE_TYPE_1D
-					"    const highp int pixels_resolution1 = textureSize(u_imageIn1, 0) - 1;\n"
-					"    const highp float in_pos1 = float(out_pos) / pixels_resolution1;\n",
+					"    const highp float pixels_resolution1 = textureSize(u_imageIn1, 0);\n"
+					"    const highp float in_pos1 = gl_FragCoord.x / pixels_resolution1;\n",
 					// IMAGE_TYPE_2D
-					"    const ivec2 pixels_resolution1 = ivec2(textureSize(u_imageIn1, 0)) - ivec2(1,1);\n"
-					"    const vec2 in_pos1 = vec2(out_pos) / vec2(pixels_resolution1);\n",
+					"    const vec2 pixels_resolution1 = vec2(textureSize(u_imageIn1, 0));\n"
+					"    const vec2 in_pos1 = vec2(gl_FragCoord.xy) / vec2(pixels_resolution1);\n",
 					// IMAGE_TYPE_3D
-					"    const ivec3 pixels_resolution1 = ivec3(textureSize(u_imageIn1, 0)) - ivec3(1,1,1);\n"
-					"    const vec3 in_pos1 = vec3(out_pos) / vec3(pixels_resolution1);\n",
+					"    const vec3 pixels_resolution1 = vec3(textureSize(u_imageIn1, 0));\n"
+					"    const vec3 in_pos1 = vec3(gl_FragCoord.xy, 0) / vec3(pixels_resolution1.xy, 1.0);\n",
 				};
 
 				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n\n"
