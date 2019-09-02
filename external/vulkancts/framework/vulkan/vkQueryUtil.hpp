@@ -139,6 +139,58 @@ StructType*									findStructure							(void* first)
 	return reinterpret_cast<StructType*>(findStructureInChain(first, getStructureType<StructType>()));
 }
 
+struct initVulkanStructure
+{
+	initVulkanStructure	(void*	pNext = DE_NULL)	: m_next(pNext)	{};
+
+	template<class StructType>
+	operator StructType()
+	{
+		StructType result;
+
+		deMemset(&result, 0x00, sizeof(StructType));
+
+		result.sType	= getStructureType<StructType>();
+		result.pNext	= m_next;
+
+		return result;
+	}
+
+private:
+	void*	m_next;
+};
+
+template<class StructType>
+void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
+{
+	DE_ASSERT(chainPNextPtr != DE_NULL);
+
+	(**chainPNextPtr) = &structType;
+
+	(*chainPNextPtr) = &structType.pNext;
+}
+
+struct initVulkanStructureConst
+{
+	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{};
+
+	template<class StructType>
+	operator const StructType()
+	{
+		StructType result;
+
+		deMemset(&result, 0x00, sizeof(StructType));
+
+		result.sType	= getStructureType<StructType>();
+		result.pNext	= const_cast<void*>(m_next);
+
+		return result;
+	}
+
+private:
+	const void*	m_next;
+};
+
 namespace ValidateQueryBits
 {
 
