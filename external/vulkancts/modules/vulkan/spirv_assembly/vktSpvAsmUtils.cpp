@@ -179,11 +179,22 @@ bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int
 
 bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFloatControlsFeatures& toCheck)
 {
-	ExtensionFloatControlsFeatures refControls;
-	deMemset(&refControls, 0, sizeof(ExtensionFloatControlsFeatures));
-
-	// compare with all flags set to false to verify if any float control features are actualy requested by the test
-	if (deMemCmp(&toCheck, &refControls, sizeof(ExtensionFloatControlsFeatures)) == 0)
+	// if all flags are set to false then no float control features are actualy requested by the test
+	if ((toCheck.shaderSignedZeroInfNanPreserveFloat16 ||
+		 toCheck.shaderSignedZeroInfNanPreserveFloat32 ||
+		 toCheck.shaderSignedZeroInfNanPreserveFloat64 ||
+		 toCheck.shaderDenormPreserveFloat16 ||
+		 toCheck.shaderDenormPreserveFloat32 ||
+		 toCheck.shaderDenormPreserveFloat64 ||
+		 toCheck.shaderDenormFlushToZeroFloat16 ||
+		 toCheck.shaderDenormFlushToZeroFloat32 ||
+		 toCheck.shaderDenormFlushToZeroFloat64 ||
+		 toCheck.shaderRoundingModeRTEFloat16 ||
+		 toCheck.shaderRoundingModeRTEFloat32 ||
+		 toCheck.shaderRoundingModeRTEFloat64 ||
+		 toCheck.shaderRoundingModeRTZFloat16 ||
+		 toCheck.shaderRoundingModeRTZFloat32 ||
+		 toCheck.shaderRoundingModeRTZFloat64) == false)
 		return true;
 
 	// return false when float control features are requested and proper extension is not supported
@@ -192,6 +203,7 @@ bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFl
 		return false;
 
 	// perform query to get supported float control properties
+	ExtensionFloatControlsFeatures refControls;
 	{
 		refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
 		refControls.pNext = DE_NULL;
@@ -206,8 +218,23 @@ bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFl
 		instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
 	}
 
+	using FCIndependence = VkShaderFloatControlsIndependence;
+	FCIndependence fcInd32		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
+	FCIndependence fcIndAll		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
+	FCIndependence fcIndNone	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+
+	bool requiredDenormBehaviorNotSupported =
+		((toCheck.denormBehaviorIndependence == fcIndAll) && (refControls.denormBehaviorIndependence != fcIndAll)) ||
+		((toCheck.denormBehaviorIndependence == fcInd32)  && (refControls.denormBehaviorIndependence == fcIndNone));
+
+	bool requiredRoundingModeNotSupported =
+		((toCheck.roundingModeIndependence == fcIndAll) && (refControls.roundingModeIndependence != fcIndAll)) ||
+		((toCheck.roundingModeIndependence == fcInd32)  && (refControls.roundingModeIndependence == fcIndNone));
+
 	// check if flags needed by the test are not supported by the device
 	bool requiredFeaturesNotSupported =
+		requiredDenormBehaviorNotSupported ||
+		requiredRoundingModeNotSupported ||
 		(toCheck.shaderDenormFlushToZeroFloat16			&& !refControls.shaderDenormFlushToZeroFloat16) ||
 		(toCheck.shaderDenormPreserveFloat16			&& !refControls.shaderDenormPreserveFloat16) ||
 		(toCheck.shaderRoundingModeRTEFloat16			&& !refControls.shaderRoundingModeRTEFloat16) ||

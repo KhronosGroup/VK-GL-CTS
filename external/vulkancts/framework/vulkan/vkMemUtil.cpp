@@ -124,6 +124,7 @@ const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(Memory
 const MemoryRequirement MemoryRequirement::Local			= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
 const MemoryRequirement MemoryRequirement::Cached			= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
 const MemoryRequirement MemoryRequirement::NonLocal			= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
+const MemoryRequirement MemoryRequirement::DeviceAddress	= MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
@@ -218,13 +219,27 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryAllocateInfo& alloc
 MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memReqs, MemoryRequirement requirement)
 {
 	const deUint32				memoryTypeNdx	= selectMatchingMemoryType(m_memProps, memReqs.memoryTypeBits, requirement);
-	const VkMemoryAllocateInfo	allocInfo		=
+	VkMemoryAllocateInfo		allocInfo		=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
 		DE_NULL,								//	const void*				pNext;
 		memReqs.size,							//	VkDeviceSize			allocationSize;
 		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
 	};
+
+	VkMemoryAllocateFlagsInfo	allocFlagsInfo =
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,	//	VkStructureType	sType
+		DE_NULL,										//	const void*		pNext
+		0,												//	VkMemoryAllocateFlags    flags
+		0,												//	uint32_t                 deviceMask
+	};
+
+	if (requirement & MemoryRequirement::DeviceAddress)
+	{
+		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+		allocInfo.pNext = &allocFlagsInfo;
+	}
 
 	Move<VkDeviceMemory>		mem				= allocateMemory(m_vk, m_device, &allocInfo);
 	MovePtr<HostPtr>			hostPtr;
@@ -238,13 +253,13 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
 }
 
-static MovePtr<Allocation> allocateDedicated (const InstanceInterface&		vki,
-											  const DeviceInterface&		vkd,
-											  const VkPhysicalDevice&		physDevice,
-											  const VkDevice				device,
-											  const VkMemoryRequirements&	memReqs,
-											  const MemoryRequirement		requirement,
-											  const void*					pNext)
+MovePtr<Allocation> allocateExtended (const InstanceInterface&		vki,
+									  const DeviceInterface&		vkd,
+									  const VkPhysicalDevice&		physDevice,
+									  const VkDevice				device,
+									  const VkMemoryRequirements&	memReqs,
+									  const MemoryRequirement		requirement,
+									  const void*					pNext)
 {
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
 	const deUint32							memoryTypeNdx		= selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, requirement);
@@ -283,7 +298,7 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 		buffer																// VkBuffer				buffer
 	};
 
-	return allocateDedicated(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
+	return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 }
 
 de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
@@ -302,7 +317,7 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 		DE_NULL															// VkBuffer				buffer
 	};
 
-	return allocateDedicated(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
+	return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 }
 
 void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)

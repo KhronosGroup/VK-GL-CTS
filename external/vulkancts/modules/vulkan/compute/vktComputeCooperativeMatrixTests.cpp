@@ -180,7 +180,7 @@ void CooperativeMatrixTestCase::checkSupport(Context& context) const
 	}
 
 	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-		!context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
+		!(context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress || context.getBufferDeviceAddressFeatures().bufferDeviceAddress))
 	{
 		TCU_THROW(NotSupportedError, "buffer device address not supported");
 	}
@@ -574,6 +574,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	const DeviceInterface&	vk						= m_context.getDeviceInterface();
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
+	MemoryRequirement		memoryDeviceAddress		= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
+														m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
 
 	deRandom rnd;
 	deRandom_init(&rnd, 1234);
@@ -648,13 +650,13 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		{
 			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 				vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT),
-				MemoryRequirement::HostVisible | MemoryRequirement::Cached | MemoryRequirement::Coherent));
+				MemoryRequirement::HostVisible | MemoryRequirement::Cached | MemoryRequirement::Coherent | memoryDeviceAddress));
 		}
 		catch (const tcu::NotSupportedError&)
 		{
 			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 				vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT),
-				MemoryRequirement::HostVisible));
+				MemoryRequirement::HostVisible | memoryDeviceAddress));
 		}
 
 		bufferDescriptors[i] = makeDescriptorBufferInfo(**buffers[i], 0, bufferSizes[i]);
