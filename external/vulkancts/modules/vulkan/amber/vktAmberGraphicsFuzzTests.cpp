@@ -66,6 +66,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
 		{	"matrices-and-return-in-loop.amber",			"matrices-and-return-in-loop",			"A fragment shader with matrices and a return in a loop"								},
 		{	"max-mix-conditional-discard.amber",			"max-mix-conditional-discard",			"A fragment shader with an expression used in two discard guards"						},
+		{	"mix-floor-add.amber",							"mix-floor-add",						"A fragment shader with mix, uintBitsToFloat, and floor"								},
 		{	"nested-ifs-and-return-in-for-loop.amber",		"nested-ifs-and-return-in-for-loop",	"A fragment shader with return in nest of ifs, inside loop"								},
 		{	"nested-loops-switch.amber",					"nested-loops-switch",					"A fragment shader with nested loops and a switch"										},
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},

@@ -1,0 +1,109 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with mix, uintBitsToFloat, and floor
+
+# The test passes because the fragment shader computes a value and then writes the color red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# vec3 GLF_live6mand()
+# {
+#     return mix(uintBitsToFloat(uvec3(38730u, 63193u, 63173u)), floor(vec3(463.499, 4.7, 0.7)), vec3(1.0) + vec3(1.0));
+# }
+# void main()
+# {
+#     GLF_live6mand();
+#     _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 33
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %30
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "GLF_live6mand("
+               OpName %30 "_GLF_color"
+               OpDecorate %30 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 3
+          %8 = OpTypeFunction %7
+         %11 = OpTypeInt 32 0
+         %12 = OpTypeVector %11 3
+         %13 = OpConstant %11 38730
+         %14 = OpConstant %11 63193
+         %15 = OpConstant %11 63173
+         %16 = OpConstantComposite %12 %13 %14 %15
+         %18 = OpConstant %6 463
+         %19 = OpConstant %6 4
+         %20 = OpConstant %6 0
+         %21 = OpConstantComposite %7 %18 %19 %20
+         %22 = OpConstant %6 2
+         %23 = OpConstantComposite %7 %22 %22 %22
+         %28 = OpTypeVector %6 4
+         %29 = OpTypePointer Output %28
+         %30 = OpVariable %29 Output
+         %31 = OpConstant %6 1
+         %32 = OpConstantComposite %28 %31 %20 %20 %31
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %27 = OpFunctionCall %7 %9
+               OpStore %30 %32
+               OpReturn
+               OpFunctionEnd
+          %9 = OpFunction %7 None %8
+         %10 = OpLabel
+         %17 = OpBitcast %7 %16
+         %24 = OpExtInst %7 %1 FMix %17 %21 %23
+               OpReturnValue %24
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
