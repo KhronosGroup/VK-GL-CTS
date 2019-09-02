@@ -4200,6 +4200,13 @@ struct VkPhysicalDeviceShaderCoreProperties2AMD
 	deUint32						activeComputeUnitCount;
 };
 
+struct VkPhysicalDeviceCoherentMemoryFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceCoherentMemory;
+};
+
 struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 {
 	VkStructureType	sType;
