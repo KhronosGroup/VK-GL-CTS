@@ -68,7 +68,7 @@ static spv_target_env mapTargetSpvEnvironment(SpirvVersion spirvVersion)
 		case SPIRV_VERSION_1_2: result = SPV_ENV_UNIVERSAL_1_2; break;	//!< SPIR-V 1.2
 		case SPIRV_VERSION_1_3: result = SPV_ENV_UNIVERSAL_1_3; break;	//!< SPIR-V 1.3
 		case SPIRV_VERSION_1_4: result = SPV_ENV_UNIVERSAL_1_4; break;	//!< SPIR-V 1.4
-		//case SPIRV_VERSION_1_5: result = SPV_ENV_UNIVERSAL_1_5; break;	//!< SPIR-V 1.5
+		case SPIRV_VERSION_1_5: result = SPV_ENV_UNIVERSAL_1_5; break;	//!< SPIR-V 1.5
 		default:				TCU_THROW(InternalError, "Unknown SPIR-V version");
 	}
 
