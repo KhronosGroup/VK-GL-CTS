@@ -2329,14 +2329,6 @@ VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, 
 	DE_UNREF(lineStipplePattern);
 }
 
-VKAPI_ATTR void VKAPI_CALL resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount)
-{
-	DE_UNREF(device);
-	DE_UNREF(queryPool);
-	DE_UNREF(firstQuery);
-	DE_UNREF(queryCount);
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
 	DE_UNREF(device);
@@ -2869,7 +2861,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetLocalDimmingAMD,								setLocalDimmingAMD),
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressEXT,							getBufferDeviceAddressEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleEXT,								cmdSetLineStippleEXT),
-	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,									resetQueryPoolEXT),
+	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,									resetQueryPool),
 	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,			getAndroidHardwareBufferPropertiesANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,				getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,							getMemoryWin32HandleKHR),

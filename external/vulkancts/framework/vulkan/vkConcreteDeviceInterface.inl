@@ -258,7 +258,6 @@ virtual VkResult			getPerformanceParameterINTEL					(VkDevice device, VkPerforma
 virtual void				setLocalDimmingAMD								(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const;
 virtual VkDeviceAddress		getBufferDeviceAddressEXT						(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
 virtual void				cmdSetLineStippleEXT							(VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern) const;
-virtual void				resetQueryPoolEXT								(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const;
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID		(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID			(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const;
 virtual VkResult			getMemoryWin32HandleKHR							(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const;

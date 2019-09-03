@@ -123,7 +123,7 @@ TYPE_SUBSTITUTIONS		= [
 ]
 
 EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD"]
-EXTENSION_POSTFIXES_STANDARD	= ["KHR"]
+EXTENSION_POSTFIXES_STANDARD	= ["KHR", "EXT"]
 
 def prefixName (prefix, name):
 	name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])
@@ -520,16 +520,15 @@ def removeTypeExtPostfix (name):
 			return name[0:-len(extPostfix)]
 	return None
 
-def populateAliases (objects):
-	objectsByName = {}
-	for object in objects:
-		objectsByName[object.name] = object
-	for object in objects:
+def populateExtensionAliases(allObjects, extensionObjects):
+	for object in extensionObjects:
 		withoutPostfix = removeTypeExtPostfix(object.name)
-		if withoutPostfix != None and withoutPostfix in objectsByName:
-			objectsByName[withoutPostfix].alias = object
+		if withoutPostfix != None and withoutPostfix in allObjects:
+			# max 1 alias is assumed by functions in this file
+			assert allObjects[withoutPostfix].alias == None
+			allObjects[withoutPostfix].alias = object
 			object.isAlias = True
-	for object in objects:
+	for object in extensionObjects:
 		object.checkAliasValidity()
 
 def populateAliasesWithTypedefs (objects, src):
@@ -671,6 +670,14 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 		extHandles			= [handlesByName[handle.name] for handle in handles]
 		extDefinitions		= [definitionsByName[definition.name] for definition in definitions]
 
+		if extCoreVersion != None:
+			populateExtensionAliases(functionsByName, extFunctions)
+			populateExtensionAliases(handlesByName, extHandles)
+			populateExtensionAliases(enumsByName, extEnums)
+			populateExtensionAliases(bitfieldsByName, extBitfields)
+			populateExtensionAliases(compositeTypesByName, extCompositeTypes)
+
+
 		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, extCoreVersion))
 	return extensions
 
@@ -706,20 +713,15 @@ def parseAPI (src):
 			# Add empty bitfield
 			bitfields.append(Bitfield(bitfieldName, []))
 
+	extensions = parseExtensions(src, versions, allFunctions, compositeTypes, enums, bitfields, handles, definitions)
+
 	# Populate alias fields
 	populateAliasesWithTypedefs(compositeTypes, src)
 	populateAliasesWithTypedefs(enums, src)
 	populateAliasesWithTypedefs(bitfields, src)
-	populateAliases(allFunctions)
-	populateAliases(handles)
-	populateAliases(enums)
-	populateAliases(bitfields)
-	populateAliases(compositeTypes)
 
 	for enum in enums:
 		removeAliasedValues(enum)
-
-	extensions = parseExtensions(src, versions, allFunctions, compositeTypes, enums, bitfields, handles, definitions)
 
 	return API(
 		versions		= versions,
