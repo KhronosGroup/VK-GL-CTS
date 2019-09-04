@@ -594,6 +594,13 @@ bool Context::isBufferDeviceAddressWithCaptureReplaySupported(void) const
 	return (isBufferDeviceAddressKHRSupported() && getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) || (isBufferDeviceAddressEXTSupported() && getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
 }
 
+bool Context::isDescriptorIndexingSupported(void) const
+{
+	if (contextSupports(vk::ApiVersion(1, 2, 0)))
+		return getVulkan12Features().descriptorIndexing;
+	else
+		return isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_EXT_descriptor_indexing");
+}
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

@@ -2914,13 +2914,7 @@ public:
 
 	virtual void checkSupport (vkt::Context& context) const
 	{
-		bool vulkan12DescriptorIndexing = false;
-		if (context.contextSupports(vk::ApiVersion(1 ,2, 0)))
-			vulkan12DescriptorIndexing = context.getVulkan12Features().descriptorIndexing;
-
-		bool descriptorIndexing	 = isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") || vulkan12DescriptorIndexing;
-
-		if (!descriptorIndexing)
+		if (!context.isDescriptorIndexingSupported())
 			TCU_THROW(NotSupportedError, "Descriptor indexing is not supported");
 
 		const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT& feats = context.getDescriptorIndexingFeatures();

@@ -25,6 +25,7 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_uniform_buffer_standard_layout");
 		dst.push_back("VK_KHR_buffer_device_address");
 		dst.push_back("VK_EXT_sampler_filter_minmax");
+		dst.push_back("VK_EXT_descriptor_indexing");
 		dst.push_back("VK_EXT_shader_viewport_index_layer");
 		dst.push_back("VK_EXT_scalar_block_layout");
 		dst.push_back("VK_EXT_separate_stencil_usage");

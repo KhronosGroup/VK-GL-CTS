@@ -101,6 +101,7 @@ public:
 	bool										isBufferDeviceAddressKHRSupported					(void) const;
 	bool										isBufferDeviceAddressEXTSupported					(void) const;
 	bool										isBufferDeviceAddressWithCaptureReplaySupported		(void) const;
+	bool										isDescriptorIndexingSupported						(void) const;
 
 protected:
 	tcu::TestContext&							m_testCtx;
