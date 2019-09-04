@@ -180,6 +180,7 @@ bool AmberTestCase::parse(const char* category, const std::string& filename)
 		return false;
 
 	m_recipe = new amber::Recipe();
+	m_recipe->SetFenceTimeout(1000 * 60 * 10); // 10 minutes
 
 	amber::Amber am;
 	amber::Result r = am.Parse(script, m_recipe);
