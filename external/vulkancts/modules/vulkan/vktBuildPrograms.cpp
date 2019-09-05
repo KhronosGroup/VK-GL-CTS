@@ -583,6 +583,7 @@ void registerOptions (de::cmdline::Parser& parser)
 	{
 		{ "1.0",	VK_MAKE_VERSION(1, 0, 0)	},
 		{ "1.1",	VK_MAKE_VERSION(1, 1, 0)	},
+		{ "1.2",	VK_MAKE_VERSION(1, 2, 0)	},
 	};
 
 	DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_5 + 1 == vk::SPIRV_VERSION_LAST);
@@ -590,7 +591,7 @@ void registerOptions (de::cmdline::Parser& parser)
 	parser << Option<opt::DstPath>("d", "dst-path", "Destination path", "out")
 		<< Option<opt::Cases>("n", "deqp-case", "Case path filter (works as in test binaries)")
 		<< Option<opt::Validate>("v", "validate-spv", "Validate generated SPIR-V binaries")
-		<< Option<opt::VulkanVersion>("t", "target-vulkan-version", "Target Vulkan version", s_vulkanVersion, "1.1")
+		<< Option<opt::VulkanVersion>("t", "target-vulkan-version", "Target Vulkan version", s_vulkanVersion, "1.2")
 		<< Option<opt::ShaderCache>("s", "shadercache", "Enable or disable shader cache", s_enableNames, "enable")
 		<< Option<opt::ShaderCacheFilename>("r", "shadercache-filename", "Write shader cache to given file", "shadercache.bin")
 		<< Option<opt::ShaderCacheTruncate>("x", "shadercache-truncate", "Truncate shader cache before running", s_enableNames, "enable")

@@ -99,6 +99,9 @@ static InstanceContext initGraphicsInstanceContext (const TestParameters& testPa
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
 
+	if (testParameters.spirvVersion > SPIRV_VERSION_1_3)
+		opSimpleTest["GL_entrypoint"] = "%BP_vertexIdInCurrentPatch";
+
 	switch (testParameters.operation)
 	{
 		case OPERATION_GRAPHICS_VERTEX:					return createInstanceContext(vertFragPipelineStages, opSimpleTest);
@@ -110,20 +113,24 @@ static InstanceContext initGraphicsInstanceContext (const TestParameters& testPa
 	}
 }
 
-static void getComputeSourceCode (std::string& computeSourceCode)
+static void getComputeSourceCode (std::string& computeSourceCode, SpirvVersion spirvVersion)
 {
-	computeSourceCode =
-		string(getComputeAsmShaderPreamble()) +
+	computeSourceCode = "";
+	if (spirvVersion > SPIRV_VERSION_1_3)
+		computeSourceCode += string(getComputeAsmShaderPreamble("", "", "", "", "%indata %outdata"));
+	else
+		computeSourceCode += string(getComputeAsmShaderPreamble());
 
+	computeSourceCode +=
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n" +
 
-		string(getComputeAsmInputOutputBufferTraits()) +
-		string(getComputeAsmCommonTypes()) +
-		string(getComputeAsmInputOutputBuffer()) +
+		string(getComputeAsmInputOutputBufferTraits((spirvVersion > SPIRV_VERSION_1_3) ? "Block" : "BufferBlock")) +
+		string(getComputeAsmCommonTypes((spirvVersion > SPIRV_VERSION_1_3) ? "StorageBuffer" : "Uniform")) +
+		string(getComputeAsmInputOutputBuffer((spirvVersion > SPIRV_VERSION_1_3) ? "StorageBuffer" : "Uniform")) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -278,7 +285,7 @@ void SpvAsmSpirvVersionsCase::initPrograms (SourceCollections& programCollection
 		{
 			std::string comp;
 
-			getComputeSourceCode(comp);
+			getComputeSourceCode(comp, m_testParameters.spirvVersion);
 
 			programCollection.spirvAsmSources.add("compute", &spirVAsmBuildOptions) << comp;
 
