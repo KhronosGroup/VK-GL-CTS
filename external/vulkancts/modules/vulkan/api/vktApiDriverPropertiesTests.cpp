@@ -82,7 +82,6 @@ static const VkConformanceVersionKHR knownConformanceVersions[] =
 	makeConformanceVersionKHR(1, 1, 1, 2),
 	makeConformanceVersionKHR(1, 1, 1, 1),
 	makeConformanceVersionKHR(1, 1, 1, 0),
-	makeConformanceVersionKHR(1, 1, 0, 3),
 };
 
 DE_INLINE bool isNullTerminated(const char* str, const deUint32 maxSize)
