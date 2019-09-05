@@ -22,6 +22,7 @@
 #define VK_WHOLE_SIZE						(static_cast<vk::VkDeviceSize>	((~0ULL)))
 #define VK_TRUE								(static_cast<vk::VkBool32>		(1))
 #define VK_FALSE							(static_cast<vk::VkBool32>		(0))
+#define VK_API_MAX_FRAMEWORK_VERSION		VK_API_VERSION_1_1
 
 VK_DEFINE_HANDLE					(VkInstance,					HANDLE_TYPE_INSTANCE);
 VK_DEFINE_HANDLE					(VkPhysicalDevice,				HANDLE_TYPE_PHYSICAL_DEVICE);

@@ -846,12 +846,27 @@ def genDefinitionsAliasSrc (definitions):
 			raise Exception("Value of %s (%s) is different than core definition value %s (%s)." % (definition.name, definition.value, definitions[definition].name, definitions[definition].value))
 		yield line
 
+def genMaxFrameworkVersion (definitions):
+	maxApiVersionMajor = 1
+	maxApiVersionMinor = 0
+	for definition in definitions:
+		match = re.match("VK_API_VERSION_(\d+)_(\d+)", definition.name)
+		if match:
+			apiVersionMajor = int(match.group(1))
+			apiVersionMinor = int(match.group(2))
+			if apiVersionMajor > maxApiVersionMajor:
+				maxApiVersionMajor = apiVersionMajor
+				maxApiVersionMinor = apiVersionMinor
+			elif apiVersionMajor == maxApiVersionMajor and apiVersionMinor > maxApiVersionMinor:
+				maxApiVersionMinor = apiVersionMinor
+	yield "#define VK_API_MAX_FRAMEWORK_VERSION\tVK_API_VERSION_%d_%d" % (maxApiVersionMajor, maxApiVersionMinor)
+
 def writeBasicTypes (api, filename):
 
 	def gen ():
 		definitionsCore, definitionDuplicates = splitUniqueAndDuplicatedEntries(api.definitions)
 
-		for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
+		for line in indentLines(chain(genDefinitionsSrc(definitionsCore), genMaxFrameworkVersion(definitionsCore), genDefinitionsAliasSrc(definitionDuplicates))):
 			yield line
 		yield ""
 
