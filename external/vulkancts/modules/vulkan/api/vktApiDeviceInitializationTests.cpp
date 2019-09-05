@@ -1446,6 +1446,12 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 				return tcu::TestStatus::fail("Out of retries, could not create instance and device");
 		}
 
+		// if the number of allocations the driver makes is large, we may end up
+		// taking more than the watchdog timeout. touch here to avoid spurious
+		// failures.
+		if (failIndex % 128 == 0)
+			context.getTestContext().touchWatchdog();
+
 		result = vkp.createInstance(&instanceCreateInfo, &allocationCallbacks, &instance);
 
 		if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
