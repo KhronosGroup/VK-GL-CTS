@@ -78,16 +78,16 @@ FeatureStruct* createFeatureStructWrapper (void)
 class DeviceFeatures
 {
 public:
-										DeviceFeatures		(const InstanceInterface&			vki,
-															 const deUint32						apiVersion,
-															 const VkPhysicalDevice				physicalDevice,
-															 const std::vector<std::string>&	instanceExtensions,
-															 const std::vector<std::string>&	deviceExtensions);
+										DeviceFeatures				(const InstanceInterface&			vki,
+																	 const deUint32						apiVersion,
+																	 const VkPhysicalDevice				physicalDevice,
+																	 const std::vector<std::string>&	instanceExtensions,
+																	 const std::vector<std::string>&	deviceExtensions);
 
-										~DeviceFeatures		(void);
+										~DeviceFeatures				(void);
 
 	template<class FeatureType>
-	bool								getFeatureType		(FeatureType&						featureType) const
+	bool								getFeatureType				(FeatureType&						featureType) const
 	{
 		typedef FeatureStructWrapper<FeatureType>	*FeatureWrapperPtr;
 
@@ -106,7 +106,7 @@ public:
 	}
 
 	template<class FeatureType>
-	const FeatureType&					getFeatureType		(void) const
+	const FeatureType&					getFeatureType				(void) const
 	{
 		typedef FeatureStructWrapper<FeatureType>	*FeatureWrapperPtr;
 
@@ -134,12 +134,13 @@ public:
 		return static_cast<FeatureWrapperPtr>(p)->getFeatureTypeRef();
 	}
 
-	const VkPhysicalDeviceFeatures2&	getCoreFeatures2	(void) const { return m_coreFeatures2; }
+	const VkPhysicalDeviceFeatures2&	getCoreFeatures2			(void) const { return m_coreFeatures2; }
 
-	bool								contains			(const std::string& feature, bool throwIfNotExists = false) const;
+	bool								contains					(const std::string& feature, bool throwIfNotExists = false) const;
+
+	bool								isDeviceFeatureInitialized	(VkStructureType sType) const;
 
 private:
-
 	static FeatureStruct*				createFeatureStructWrapper	(const std::string& s);
 
 	static bool							verifyFeatureAddCriteria	(const FeatureStructMapItem& item, const std::vector<VkExtensionProperties>& properties);

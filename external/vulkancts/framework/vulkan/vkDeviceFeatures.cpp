@@ -115,6 +115,11 @@ bool DeviceFeatures::contains (const std::string& feature, bool throwIfNotExists
 	return false;
 }
 
+bool DeviceFeatures::isDeviceFeatureInitialized (VkStructureType sType) const
+{
+	return findStructureInChain(&m_coreFeatures2, sType) != DE_NULL;
+}
+
 DeviceFeatures::~DeviceFeatures (void)
 {
 	for (size_t i = 0; i < m_features.size(); ++i)

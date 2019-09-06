@@ -31,6 +31,7 @@
 #include "vkPlatform.hpp"
 #include "vkDebugReportUtil.hpp"
 #include "vkDeviceFeatures.hpp"
+#include "vkDeviceProperties.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -318,25 +319,29 @@ public:
 
 	VkPhysicalDevice												getPhysicalDevice						(void) const { return m_physicalDevice;									}
 	deUint32														getDeviceVersion						(void) const { return m_deviceVersion;									}
+
+	bool															isDeviceFeatureInitialized				(VkStructureType sType) const { return m_deviceFeatures.isDeviceFeatureInitialized(sType);		}
 	const VkPhysicalDeviceFeatures&									getDeviceFeatures						(void) const { return m_deviceFeatures.getCoreFeatures2().features;		}
 	const VkPhysicalDeviceFeatures2&								getDeviceFeatures2						(void) const { return m_deviceFeatures.getCoreFeatures2();				}
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
 
-	VkDevice														getDevice								(void) const { return *m_device;					}
-	const DeviceInterface&											getDeviceInterface						(void) const { return m_deviceInterface;			}
-	const VkPhysicalDeviceProperties&								getDeviceProperties						(void) const { return m_deviceProperties;			}
-	const vector<string>&											getDeviceExtensions						(void) const { return m_deviceExtensions;			}
+	bool															isDevicePropertyInitialized				(VkStructureType sType) const { return m_devicePropertiesFull.isDevicePropertyInitialized(sType);	}
+	const VkPhysicalDeviceProperties&								getDeviceProperties						(void) const { return m_deviceProperties;									}
+	const VkPhysicalDeviceProperties2&								getDeviceProperties2					(void) const { return m_devicePropertiesFull.getCoreProperties2();			}
 
-	deUint32														getUsedApiVersion						(void) const { return m_usedApiVersion;				}
+#include "vkDevicePropertiesForDefaultDeviceDefs.inl"
 
-	deUint32														getUniversalQueueFamilyIndex			(void) const { return m_universalQueueFamilyIndex;	}
+	VkDevice														getDevice								(void) const { return *m_device;											}
+	const DeviceInterface&											getDeviceInterface						(void) const { return m_deviceInterface;									}
+	const vector<string>&											getDeviceExtensions						(void) const { return m_deviceExtensions;									}
+	deUint32														getUsedApiVersion						(void) const { return m_usedApiVersion;										}
+	deUint32														getUniversalQueueFamilyIndex			(void) const { return m_universalQueueFamilyIndex;							}
 	VkQueue															getUniversalQueue						(void) const;
-	deUint32														getSparseQueueFamilyIndex				(void) const { return m_sparseQueueFamilyIndex;		}
+	deUint32														getSparseQueueFamilyIndex				(void) const { return m_sparseQueueFamilyIndex;								}
 	VkQueue															getSparseQueue							(void) const;
 
 private:
-
 	const deUint32						m_availableInstanceVersion;
 
 	const std::pair<deUint32, deUint32> m_deviceVersions;
@@ -355,10 +360,10 @@ private:
 	const deUint32						m_universalQueueFamilyIndex;
 	const deUint32						m_sparseQueueFamilyIndex;
 	const VkPhysicalDeviceProperties	m_deviceProperties;
+	const DeviceProperties				m_devicePropertiesFull;
 
 	const Unique<VkDevice>				m_device;
 	const DeviceDriver					m_deviceInterface;
-
 };
 
 static deUint32 sanitizeApiVersion(deUint32 v)
@@ -383,6 +388,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_sparseQueueFamilyIndex		(m_deviceFeatures.getCoreFeatures2().features.sparseBinding ? findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) : 0)
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
+	, m_devicePropertiesFull		(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
 	, m_device						(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(vkPlatform, *m_instance, *m_device)
 {
@@ -449,6 +455,10 @@ const vk::VkPhysicalDeviceFeatures2&	Context::getDeviceFeatures2				(void) const
 #include "vkDeviceFeaturesForContextDefs.inl"
 
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
+const vk::VkPhysicalDeviceProperties2&	Context::getDeviceProperties2			(void) const { return m_device->getDeviceProperties2();			}
+
+#include "vkDevicePropertiesForContextDefs.inl"
+
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}
 const vk::DeviceInterface&				Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
@@ -464,6 +474,10 @@ bool									Context::contextSupports				(const ApiVersion version) const
 																							{ return m_device->getUsedApiVersion() >= pack(version); }
 bool									Context::contextSupports				(const deUint32 requiredApiVersionBits) const
 																							{ return m_device->getUsedApiVersion() >= requiredApiVersionBits; }
+bool									Context::isDeviceFeatureInitialized		(vk::VkStructureType sType) const
+																							{ return m_device->isDeviceFeatureInitialized(sType);	}
+bool									Context::isDevicePropertyInitialized	(vk::VkStructureType sType) const
+																							{ return m_device->isDevicePropertyInitialized(sType);	}
 
 bool Context::requireDeviceExtension (const std::string& required)
 {
