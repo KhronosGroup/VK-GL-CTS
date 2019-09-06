@@ -98,36 +98,30 @@ set(VKUTIL_LIBS
 	vkutilnoshader
 	)
 
-if (DEQP_HAVE_GLSLANG)
-	include_directories(${GLSLANG_INCLUDE_PATH})
-	add_definitions(-DDEQP_HAVE_GLSLANG=1)
+include_directories(${GLSLANG_INCLUDE_PATH})
 
-	# \note Code interfacing with glslang needs to include third-party headers
-	#       that cause all sorts of warnings to appear.
-	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
-		set_source_files_properties(
-			FILES vkShaderToSpirV.cpp
-			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
-	endif ()
-
-	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARIES})
+# \note Code interfacing with glslang needs to include third-party headers
+#       that cause all sorts of warnings to appear.
+if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+	set_source_files_properties(
+		FILES vkShaderToSpirV.cpp
+		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
 endif ()
 
-if(DEQP_HAVE_SPIRV_TOOLS)
-	include_directories(${spirv-tools_SOURCE_DIR}/include)
-	include_directories(${spirv-tools_SOURCE_DIR}/external/include)
+set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARIES})
 
-	# \note Code interfacing with spirv-opt needs to include third-party headers
-	#       that cause all sorts of warnings to appear.
-	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
-		set_source_files_properties(
-			FILES vkPrograms.cpp
-			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
-	endif ()
+include_directories(${spirv-tools_SOURCE_DIR}/include)
+include_directories(${spirv-tools_SOURCE_DIR}/external/include)
 
-	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
-	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools SPIRV-Tools-opt)
-endif()
+# \note Code interfacing with spirv-opt needs to include third-party headers
+#       that cause all sorts of warnings to appear.
+if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+	set_source_files_properties(
+		FILES vkPrograms.cpp
+		PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS}")
+endif ()
+
+set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools SPIRV-Tools-opt)
 
 PCH(VKUTILNOSHADER_SRCS ../../modules/vulkan/pch.cpp)
 PCH(VKUTIL_SRCS ../../modules/vulkan/pch.cpp)

@@ -19,7 +19,7 @@ else ()
 endif ()
 
 if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
-	message(STATUS "glslang found; building with DEQP_HAVE_GLSLANG")
+	message(STATUS "glslang found")
 
 	# Disable glslang install as part of cmake install.
 	set(SKIP_GLSLANG_INSTALL OFF CACHE BOOL "" FORCE)
@@ -37,11 +37,6 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 
 	set(GLSLANG_INCLUDE_PATH	${GLSLANG_ABS_PATH}			PARENT_SCOPE)
 	set(GLSLANG_LIBRARIES		glslang SPIRV SPVRemapper	PARENT_SCOPE)
-	set(DEQP_HAVE_GLSLANG		ON							PARENT_SCOPE)
-
 else ()
-	message(STATUS "glslang not found; GLSL to SPIR-V compilation not available")
-
-	set(DEQP_HAVE_GLSLANG		OFF					PARENT_SCOPE)
-
+	message(FATAL_ERROR "glslang not found")
 endif ()

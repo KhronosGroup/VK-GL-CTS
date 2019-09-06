@@ -29,18 +29,14 @@
 #include "gluContextInfo.hpp"
 #include "tcuTestLog.hpp"
 
-#if defined DEQP_HAVE_GLSLANG
 #include "SPIRV/GlslangToSpv.h"
 #include "SPIRV/disassemble.h"
 #include "SPIRV/doc.h"
 #include "glslang/MachineIndependent/localintermediate.h"
 #include "glslang/Public/ShaderLang.h"
-#endif // DEQP_HAVE_GLSLANG
 
-#if defined DEQP_HAVE_SPIRV_TOOLS
 #include "spirv-tools/libspirv.hpp"
 #include "spirv-tools/optimizer.hpp"
-#endif // DEQP_HAVE_SPIRV_TOOLS
 
 using namespace glu;
 
@@ -58,8 +54,6 @@ void checkGlSpirvSupported(deqp::Context& m_context)
 	if ((!is_at_least_gl_46) && (!is_arb_gl_spirv))
 		TCU_THROW(NotSupportedError, "GL 4.6 or GL_ARB_gl_spirv is not supported");
 }
-
-#if defined DEQP_HAVE_GLSLANG
 
 EShLanguage getGlslangStage(glu::ShaderType type)
 {
@@ -266,25 +260,6 @@ bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType t
 	return false;
 }
 
-#else // DEQP_HAVE_GLSLANG
-
-bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType type, ShaderBinaryDataType* dst, SpirvVersion version)
-{
-	DE_UNREF(log);
-	DE_UNREF(source);
-	DE_UNREF(type);
-	DE_UNREF(dst);
-	DE_UNREF(version);
-
-	TCU_THROW(InternalError, "Glslang not available.");
-
-	return false;
-}
-
-#endif // DEQP_HAVE_GLSLANG
-
-#if defined DEQP_HAVE_SPIRV_TOOLS
-
 void consumer(spv_message_level_t, const char*, const spv_position_t&, const char* m)
 {
 	std::cerr << "error: " << m << std::endl;
@@ -326,34 +301,6 @@ bool spirvValidate(ShaderBinaryDataType& dst, bool throwOnError)
 
 	return true;
 }
-
-#else //DEQP_HAVE_SPIRV_TOOLS
-
-void spirvAssemble(ShaderBinaryDataType& dst, const std::string& src)
-{
-	DE_UNREF(dst);
-	DE_UNREF(src);
-
-	TCU_THROW(InternalError, "Spirv-tools not available.");
-}
-
-void spirvDisassemble(std::string& dst, ShaderBinaryDataType& src)
-{
-	DE_UNREF(dst);
-	DE_UNREF(src);
-
-	TCU_THROW(InternalError, "Spirv-tools not available.");
-}
-
-bool spirvValidate(ShaderBinaryDataType& dst, bool throwOnError)
-{
-	DE_UNREF(dst);
-	DE_UNREF(throwOnError);
-
-	TCU_THROW(InternalError, "Spirv-tools not available.");
-}
-
-#endif // DEQP_HAVE_SPIRV_TOOLS
 
 ShaderBinary makeSpirV(tcu::TestLog& log, ShaderSource source, SpirvVersion version)
 {

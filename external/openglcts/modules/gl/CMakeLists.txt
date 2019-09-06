@@ -130,14 +130,6 @@ set(GLCTS_GL_LIBS
 	tcutil
 	)
 
-if (DEQP_HAVE_GLSLANG)
-	add_definitions(-DDEQP_HAVE_GLSLANG=1)
-endif ()
-
-if(DEQP_HAVE_SPIRV_TOOLS)
-	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
-endif()
-
 if (DEQP_GTF_AVAILABLE)
 	list(APPEND GLCTS_GL_LIBS glcts-gtf)
 endif ()
