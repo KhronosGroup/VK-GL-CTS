@@ -5813,41 +5813,6 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	infoTests	(new tcu::TestCaseGroup(testCtx, "info", "Platform Information Tests"));
 
-	{
-		de::MovePtr<tcu::TestCaseGroup> instanceInfoTests	(new tcu::TestCaseGroup(testCtx, "instance", "Instance Information Tests"));
-
-		addFunctionCase(instanceInfoTests.get(), "physical_devices",		"Physical devices",			enumeratePhysicalDevices);
-		addFunctionCase(instanceInfoTests.get(), "physical_device_groups",	"Physical devices Groups",	enumeratePhysicalDeviceGroups);
-		addFunctionCase(instanceInfoTests.get(), "layers",					"Layers",					enumerateInstanceLayers);
-		addFunctionCase(instanceInfoTests.get(), "extensions",				"Extensions",				enumerateInstanceExtensions);
-
-		infoTests->addChild(instanceInfoTests.release());
-	}
-
-	{
-		de::MovePtr<tcu::TestCaseGroup> deviceInfoTests	(new tcu::TestCaseGroup(testCtx, "device", "Device Information Tests"));
-
-		addFunctionCase(deviceInfoTests.get(), "features",					"Device Features",			deviceFeatures);
-		addFunctionCase(deviceInfoTests.get(), "properties",				"Device Properties",		deviceProperties);
-		addFunctionCase(deviceInfoTests.get(), "queue_family_properties",	"Queue family properties",	deviceQueueFamilyProperties);
-		addFunctionCase(deviceInfoTests.get(), "memory_properties",			"Memory properties",		deviceMemoryProperties);
-		addFunctionCase(deviceInfoTests.get(), "layers",					"Layers",					enumerateDeviceLayers);
-		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
-		addFunctionCase(deviceInfoTests.get(), "no_khx_extensions",			"KHX extensions",			testNoKhxExtensions);
-		addFunctionCase(deviceInfoTests.get(), "memory_budget",				"Memory budget",			deviceMemoryBudgetProperties);
-		addFunctionCase(deviceInfoTests.get(), "mandatory_features",		"Mandatory features",		deviceMandatoryFeatures);
-
-		infoTests->addChild(deviceInfoTests.release());
-	}
-
-	{
-		de::MovePtr<tcu::TestCaseGroup> deviceGroupInfoTests(new tcu::TestCaseGroup(testCtx, "device_group", "Device Group Information Tests"));
-
-		addFunctionCase(deviceGroupInfoTests.get(), "peer_memory_features",	"Device Group peer memory features",				deviceGroupPeerMemoryFeatures);
-
-		infoTests->addChild(deviceGroupInfoTests.release());
-	}
-
 	infoTests->addChild(createTestGroup(testCtx, "format_properties",		"VkGetPhysicalDeviceFormatProperties() Tests",		createFormatTests));
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties",	"VkGetPhysicalDeviceImageFormatProperties() Tests",	createImageFormatTests,	imageFormatProperties));
 
@@ -5914,6 +5879,32 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	}
 
 	return infoTests.release();
+}
+
+void createFeatureInfoInstanceTests(tcu::TestCaseGroup* testGroup)
+{
+	addFunctionCase(testGroup, "physical_devices",					"Physical devices",						enumeratePhysicalDevices);
+	addFunctionCase(testGroup, "physical_device_groups",			"Physical devices Groups",				enumeratePhysicalDeviceGroups);
+	addFunctionCase(testGroup, "instance_layers",					"Layers",								enumerateInstanceLayers);
+	addFunctionCase(testGroup, "instance_extensions",				"Extensions",							enumerateInstanceExtensions);
+}
+
+void createFeatureInfoDeviceTests(tcu::TestCaseGroup* testGroup)
+{
+	addFunctionCase(testGroup, "device_features",					"Device Features",						deviceFeatures);
+	addFunctionCase(testGroup, "device_properties",					"Device Properties",					deviceProperties);
+	addFunctionCase(testGroup, "device_queue_family_properties",	"Queue family properties",				deviceQueueFamilyProperties);
+	addFunctionCase(testGroup, "device_memory_properties",			"Memory properties",					deviceMemoryProperties);
+	addFunctionCase(testGroup, "device_layers",						"Layers",								enumerateDeviceLayers);
+	addFunctionCase(testGroup, "device_extensions",					"Extensions",							enumerateDeviceExtensions);
+	addFunctionCase(testGroup, "device_no_khx_extensions",			"KHX extensions",						testNoKhxExtensions);
+	addFunctionCase(testGroup, "device_memory_budget",				"Memory budget",						deviceMemoryBudgetProperties);
+	addFunctionCase(testGroup, "device_mandatory_features",			"Mandatory features",					deviceMandatoryFeatures);
+}
+
+void createFeatureInfoDeviceGroupTests(tcu::TestCaseGroup* testGroup)
+{
+	addFunctionCase(testGroup, "device_group_peer_memory_features",	"Device Group peer memory features",	deviceGroupPeerMemoryFeatures);
 }
 
 } // api

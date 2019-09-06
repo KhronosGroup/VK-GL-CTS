@@ -31,7 +31,10 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createFeatureInfoTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createFeatureInfoTests				(tcu::TestContext& testCtx);
+void					createFeatureInfoInstanceTests		(tcu::TestCaseGroup* testGroup);
+void					createFeatureInfoDeviceTests		(tcu::TestCaseGroup* testGroup);
+void					createFeatureInfoDeviceGroupTests	(tcu::TestCaseGroup* testGroup);
 
 } // api
 } // vkt
