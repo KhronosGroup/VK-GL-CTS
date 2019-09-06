@@ -153,6 +153,23 @@ std::string getTestSrc(const CaseDefinition &caseDef)
 				<< "  " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], i);\n"
 				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + i;\n"
 				<< validate
+				<< "  }\n"
+				<< "  uint quadID = gl_SubgroupInvocationID >> 2;\n"
+				<< "  uint quadInvocation = gl_SubgroupInvocationID & 0x3;\n"
+				<< "  // Test lane ID that is only uniform in active lanes\n"
+				<< "  if (quadInvocation >= 2)\n"
+				<< "  {\n"
+				<< "    uint id = quadInvocation & ~1;\n"
+				<< "    " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], id);\n"
+				<< "    uint otherID = 4*quadID + id;\n"
+				<< validate
+				<< "  }\n"
+				<< "  // Test lane ID that is only quad uniform, not subgroup uniform\n"
+				<< "  {\n"
+				<< "    uint id = quadID & 0x3;\n"
+				<< "    " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], id);\n"
+				<< "    uint otherID = 4*quadID + id;\n"
+				<< validate
 				<< "  }\n";
 	}
 	else
