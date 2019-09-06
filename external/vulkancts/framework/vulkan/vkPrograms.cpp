@@ -21,9 +21,7 @@
  * \brief Program utilities.
  *//*--------------------------------------------------------------------*/
 
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
 #include "spirv-tools/optimizer.hpp"
-#endif
 
 #include "qpInfo.h"
 
@@ -49,7 +47,7 @@ using std::string;
 using std::vector;
 using std::map;
 
-#if defined(DE_DEBUG) && defined(DEQP_HAVE_SPIRV_TOOLS)
+#if defined(DE_DEBUG)
 #	define VALIDATE_BINARIES	true
 #else
 #	define VALIDATE_BINARIES	false
@@ -100,8 +98,6 @@ bool isSaneSpirVBinary (const ProgramBinary& binary)
 	return true;
 }
 
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
-
 void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, const SpirvVersion spirvVersion)
 {
 	spv_target_env targetEnv = SPV_ENV_VULKAN_1_0;
@@ -149,11 +145,7 @@ ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 		TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 }
 
-#endif // defined(DEQP_HAVE_SPIRV_TOOLS)
-
 } // anonymous
-
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
 
 void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo, const SpirvValidatorOptions& options)
 {
@@ -654,24 +646,6 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 	}
 	return res;
 }
-
-#else // !DEQP_HAVE_SPIRV_TOOLS
-
-ProgramBinary* buildProgram (const GlslSource&, glu::ShaderProgramInfo*, const tcu::CommandLine&)
-{
-	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
-}
-
-ProgramBinary* buildProgram (const HlslSource&, glu::ShaderProgramInfo*, const tcu::CommandLine&)
-{
-	TCU_THROW(NotSupportedError, "HLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
-}
-
-ProgramBinary* assembleProgram (const SpirVAsmSource&, SpirVProgramInfo*, const tcu::CommandLine&)
-{
-	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
-}
-#endif
 
 void disassembleProgram (const ProgramBinary& program, std::ostream* dst)
 {

@@ -27,17 +27,13 @@
 
 #include <algorithm>
 
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
-#	include "spirv-tools/libspirv.h"
-#endif
+#include "spirv-tools/libspirv.h"
 
 namespace vk
 {
 
 using std::string;
 using std::vector;
-
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
 
 // Convert a Vulkan version number to a SPIRV-Tools target environment enum.
 static spv_target_env mapVulkanVersionToSpirvToolsEnv(deUint32 vulkanVersion)
@@ -222,24 +218,5 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 		throw;
 	}
 }
-
-#else // defined(DEQP_HAVE_SPIRV_TOOLS)
-
-bool assembleSpirV (const SpirVAsmSource*, std::vector<deUint32>*, SpirVProgramInfo*, SpirvVersion)
-{
-	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
-}
-
-void disassembleSpirV (size_t, const deUint32*, std::ostream*, SpirvVersion)
-{
-	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
-}
-
-bool validateSpirV (size_t, const deUint32*, std::ostream*, const SpirvValidatorOptions&)
-{
-	TCU_THROW(NotSupportedError, "SPIR-V validation not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
-}
-
-#endif
 
 } // vk
