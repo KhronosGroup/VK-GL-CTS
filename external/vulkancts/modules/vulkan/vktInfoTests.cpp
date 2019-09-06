@@ -30,6 +30,7 @@
 #include "tcuCommandLine.hpp"
 #include "tcuPlatform.hpp"
 #include "deStringUtil.hpp"
+#include "vktApiFeatureInfo.hpp"
 
 #include <iomanip>
 
@@ -243,6 +244,10 @@ void createInfoTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "device",		"Device Info",				logDeviceInfo);
 	addFunctionCase(testGroup, "platform",		"Platform Info",			logPlatformInfo);
 	addFunctionCase(testGroup, "memory_limits",	"Platform Memory Limits",	logPlatformMemoryLimits);
+
+	api::createFeatureInfoInstanceTests		(testGroup);
+	api::createFeatureInfoDeviceTests		(testGroup);
+	api::createFeatureInfoDeviceGroupTests	(testGroup);
 }
 
 } // vkt
