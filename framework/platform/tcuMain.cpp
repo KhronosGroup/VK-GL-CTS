@@ -27,6 +27,7 @@
 #include "tcuApp.hpp"
 #include "tcuResource.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuTestSessionExecutor.hpp"
 #include "deUniquePtr.hpp"
 
 #include <cstdio>
@@ -36,6 +37,8 @@ tcu::Platform* createPlatform (void);
 
 int main (int argc, char** argv)
 {
+    int exitStatus = EXIT_SUCCESS;
+
 #if (DE_OS != DE_OS_WIN32)
 	// Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).
 	setvbuf(stdout, DE_NULL, _IOLBF, 4*1024);
@@ -53,7 +56,15 @@ int main (int argc, char** argv)
 		for (;;)
 		{
 			if (!app->iterate())
+			{
+				if (cmdLine.getRunMode() == tcu::RUNMODE_EXECUTE &&
+					(!app->getResult().isComplete || app->getResult().numFailed))
+				{
+					exitStatus = EXIT_FAILURE;
+				}
+
 				break;
+			}
 		}
 	}
 	catch (const std::exception& e)
@@ -61,5 +72,5 @@ int main (int argc, char** argv)
 		tcu::die("%s", e.what());
 	}
 
-	return 0;
+	return exitStatus;
 }
