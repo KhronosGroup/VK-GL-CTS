@@ -597,7 +597,7 @@ bool Context::isBufferDeviceAddressWithCaptureReplaySupported(void) const
 bool Context::isDescriptorIndexingSupported(void) const
 {
 	if (contextSupports(vk::ApiVersion(1, 2, 0)))
-		return getVulkan12Features().descriptorIndexing;
+		return getPhysicalDeviceVulkan12Features(getInstanceInterface(), getPhysicalDevice()).descriptorIndexing;
 	else
 		return isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_EXT_descriptor_indexing");
 }

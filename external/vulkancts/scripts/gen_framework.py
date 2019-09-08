@@ -1542,6 +1542,8 @@ def generateDeviceFeaturesDefs(src):
 			# handle special cases
 			if sType == "EXCLUSIVE_SCISSOR":
 				sType = "SCISSOR_EXCLUSIVE"
+			if sType == 'VULKAN_1_1' or sType == 'VULKAN_1_2':
+				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
@@ -1592,11 +1594,7 @@ def writeDeviceFeatures(dfDefs, filename):
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for sType, sSuffix, extStruct, _, _, _ in dfDefs:
-		# Special case to treat BufferDeviceAddressFeaturesEXT differently than BufferDeviceAddressFeaturesKHR
-		if sType == "BUFFER_DEVICE_ADDRESS" and sSuffix == "_EXT":
-			nameSubStr = extStruct.replace("VkPhysicalDevice", "")
-		else:
-			nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
+		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 

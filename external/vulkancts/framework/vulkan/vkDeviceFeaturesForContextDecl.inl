@@ -48,7 +48,5 @@ const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					getTransformFeedback
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			getUniformBufferStandardLayoutFeatures			(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures						(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeaturesEXT			(void) const;
-const vk::VkPhysicalDeviceVulkan11Features&								getVulkan11Features								(void) const;
-const vk::VkPhysicalDeviceVulkan12Features&								getVulkan12Features								(void) const;
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&					getVulkanMemoryModelFeatures					(void) const;
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					getYcbcrImageArraysFeaturesEXT					(void) const;
