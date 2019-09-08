@@ -1615,11 +1615,15 @@ MovePtr<tcu::TextureLevel> ColorResolveImagelessTestInstance::generateReferenceI
 	const tcu::RGBA				colorDrawRGBA	(tcu::RGBA(componentValue, componentValue, componentValue, 0xFF));
 	const tcu::Vec4				colorDraw		(colorDrawRGBA.toVec());
 	const tcu::Vec4				colorFill		(tcu::RGBA::black().toVec());
-	const tcu::Vec4				colorEdge0		(colorFill);
-	const tcu::Vec4				colorEdge1		(colorDraw);
+	const tcu::Vec4				colorEdge0		(colorDraw);
+	const tcu::Vec4				colorEdge1		(colorFill);
+	const tcu::Vec4				colorEdge2		(colorDraw);
+	const tcu::Vec4				colorEdge3		(colorFill);
 	const tcu::Vec4				colorEdgeR		((colorDraw.x() + colorFill.x()) / 2, (colorDraw.y() + colorFill.y()) / 2, (colorDraw.z() + colorFill.z()) / 2, colorDraw.w());
 	const tcu::Vec4&			colorEdge		= sample == 0 ? colorEdge0
 												: sample == 1 ? colorEdge1
+												: sample == 2 ? colorEdge2
+												: sample == 3 ? colorEdge3
 												: colorEdgeR;
 
 	DE_UNREF(aspectFlags);
@@ -1663,7 +1667,7 @@ tcu::TestStatus ColorResolveImagelessTestInstance::iterate (void)
 	const VkQueue					queue					= m_context.getUniversalQueue();
 	Allocator&						allocator				= m_context.getDefaultAllocator();
 
-	const VkSampleCountFlagBits		sampleCount				= VK_SAMPLE_COUNT_2_BIT;
+	const VkSampleCountFlagBits		sampleCount				= VK_SAMPLE_COUNT_4_BIT;
 	const tcu::Vec4					clearColor				= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	const VkFormat					colorFormat				= m_parameters.colorFormat;
 	const VkDeviceSize				colorBufferSize			= m_imageExtent2D.width * m_imageExtent2D.height * tcu::getPixelSize(mapVkFormat(colorFormat));
@@ -1836,11 +1840,15 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 	{
 		const tcu::Vec4		colorDraw	(tcu::RGBA::blue().toVec());
 		const tcu::Vec4		colorFill	(tcu::RGBA::black().toVec());
-		const tcu::Vec4		colorEdge0	(colorFill);
-		const tcu::Vec4		colorEdge1	(colorDraw);
+		const tcu::Vec4		colorEdge0	(colorDraw);
+		const tcu::Vec4		colorEdge1	(colorFill);
+		const tcu::Vec4		colorEdge2	(colorDraw);
+		const tcu::Vec4		colorEdge3	(colorFill);
 		const tcu::Vec4		colorEdgeR	((colorDraw.x() + colorFill.x()) / 2, (colorDraw.y() + colorFill.y()) / 2, (colorDraw.z() + colorFill.z()) / 2, colorDraw.w());
 		const tcu::Vec4&	colorEdge	= sample == 0 ? colorEdge0
 										: sample == 1 ? colorEdge1
+										: sample == 2 ? colorEdge2
+										: sample == 3 ? colorEdge3
 										: colorEdgeR;
 
 		for (int y = 0; y < height; ++y)
@@ -1862,11 +1870,15 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 		const int			colorEdgeValue	(static_cast<int>(0.50f * 0x100));
 		const tcu::IVec4	colorFill		(colorFillValue, colorFillValue, colorFillValue, 0xFF);
 		const tcu::IVec4	colorDraw		(colorDrawValue, colorDrawValue, colorDrawValue, 0xFF);
-		const tcu::IVec4	colorEdge0		(colorFill);
-		const tcu::IVec4	colorEdge1		(colorDraw);
+		const tcu::IVec4	colorEdge0		(colorDraw);
+		const tcu::IVec4	colorEdge1		(colorFill);
+		const tcu::IVec4	colorEdge2		(colorDraw);
+		const tcu::IVec4	colorEdge3		(colorFill);
 		const tcu::IVec4	colorEdgeR		(colorEdgeValue, colorEdgeValue, colorEdgeValue, 0xFF);
 		const tcu::IVec4&	colorEdge		= sample == 0 ? colorEdge0
 											: sample == 1 ? colorEdge1
+											: sample == 2 ? colorEdge2
+											: sample == 3 ? colorEdge3
 											: colorEdgeR;
 
 		for (int y = 0; y < height; ++y)
@@ -1888,11 +1900,15 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 		const int			colorEdgeValue	((1 * 0x100) / 4);
 		const tcu::IVec4	colorFill		(colorFillValue, colorFillValue, colorFillValue, 0xFF);
 		const tcu::IVec4	colorDraw		(colorDrawValue, colorDrawValue, colorDrawValue, 0xFF);
-		const tcu::IVec4	colorEdge0		(colorFill);
-		const tcu::IVec4	colorEdge1		(colorDraw);
+		const tcu::IVec4	colorEdge0		(colorDraw);
+		const tcu::IVec4	colorEdge1		(colorFill);
+		const tcu::IVec4	colorEdge2		(colorDraw);
+		const tcu::IVec4	colorEdge3		(colorFill);
 		const tcu::IVec4	colorEdgeR		(colorEdgeValue, colorEdgeValue, colorEdgeValue, 0xFF);
 		const tcu::IVec4&	colorEdge		= sample == 0 ? colorEdge0
 											: sample == 1 ? colorEdge1
+											: sample == 2 ? colorEdge2
+											: sample == 3 ? colorEdge3
 											: colorEdgeR;
 
 		for (int y = 0; y < height; ++y)
@@ -1934,7 +1950,7 @@ tcu::TestStatus DepthResolveImagelessTestInstance::iterate (void)
 	const VkQueue					queue						= m_context.getUniversalQueue();
 	Allocator&						allocator					= m_context.getDefaultAllocator();
 
-	const deUint32					sampleCount					= 2u;
+	const deUint32					sampleCount					= 4u;
 	const VkSampleCountFlagBits		sampleCountFlag				= sampleCountBitFromSampleCount(sampleCount);
 	const tcu::Vec4					clearColor					= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	const VkFormat					colorFormat					= m_parameters.colorFormat;
