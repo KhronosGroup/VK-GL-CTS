@@ -65,6 +65,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"nested-ifs-and-return-in-for-loop.amber",		"nested-ifs-and-return-in-for-loop",	"A fragment shader with return in nest of ifs, inside loop"								},
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
 		{	"return-in-loop-in-function.amber",				"return-in-loop-in-function",			"A fragment shader with early return from loop in function"								},
+		{	"similar-nested-ifs.amber",						"similar-nested-ifs",					"A fragment shader with similar nested ifs and loops"									},
 		{	"struct-used-as-temporary.amber",				"struct-used-as-temporary",				"A fragment shader that uses a temporary struct variable"								},
 		{	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
 		{	"two-loops-set-struct.amber",					"two-loops-set-struct",					"A fragment shader with two loops that write to a struct"								},
