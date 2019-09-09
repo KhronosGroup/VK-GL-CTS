@@ -706,7 +706,13 @@ private:
 void checkRequirements (Context& context, const int)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
-	context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
+	if (context.contextSupports(1, 2, 0))
+	{
+		if (!getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).shaderOutputLayer)
+			TCU_THROW(NotSupportedError, "Required Vulkan 1.2 feature is not supported: shaderOutputLayer");
+	}
+	else
+		context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
 
 	const VkPhysicalDeviceLimits	limits	= context.getDeviceProperties().limits;
 
