@@ -342,8 +342,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 		{
 			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR,	//  VkStructureType						sType;
 			DE_NULL,															//  const void*							pNext;
-			VK_RESOLVE_MODE_AVERAGE_BIT_KHR,									//  VkResolveModeFlagBitsKHR			depthResolveMode;
-			VK_RESOLVE_MODE_MAX_BIT_KHR,										//  VkResolveModeFlagBitsKHR			stencilResolveMode;
+			VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,								//  VkResolveModeFlagBitsKHR			depthResolveMode;
+			VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,								//  VkResolveModeFlagBitsKHR			stencilResolveMode;
 			&depthStencilResolveAttachmentRef2									//  const VkAttachmentReference2KHR*	pDepthStencilResolveAttachment;
 		};
 		const VkSubpassDescription2KHR						subpassDescription2						=
@@ -1580,7 +1580,7 @@ MovePtr<tcu::TextureLevel> ColorResolveImagelessTestInstance::generateReferenceI
 	const tcu::Vec4				colorEdge1		(colorFill);
 	const tcu::Vec4				colorEdge2		(colorDraw);
 	const tcu::Vec4				colorEdge3		(colorFill);
-	const tcu::Vec4				colorEdgeR		((colorDraw.x() + colorFill.x()) / 2, (colorDraw.y() + colorFill.y()) / 2, (colorDraw.z() + colorFill.z()) / 2, colorDraw.w());
+	const tcu::Vec4				colorEdgeR		((colorDraw.x() + colorFill.x()) / 2, (colorDraw.y() + colorFill.y()) / 2, (colorDraw.z() + colorFill.z()) / 2, colorDraw.w()); // AVERAGE
 	const tcu::Vec4&			colorEdge		= sample == 0 ? colorEdge0
 												: sample == 1 ? colorEdge1
 												: sample == 2 ? colorEdge2
@@ -1766,12 +1766,6 @@ DepthResolveImagelessTestInstance::DepthResolveImagelessTestInstance (Context& c
 
 	vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties);
 
-	if ((dsResolveProperties.supportedDepthResolveModes & VK_RESOLVE_MODE_AVERAGE_BIT_KHR) == 0)
-		TCU_THROW(NotSupportedError, "Depth resolve does not support required VK_RESOLVE_MODE_AVERAGE_BIT_KHR");
-
-	if ((dsResolveProperties.supportedStencilResolveModes & VK_RESOLVE_MODE_MAX_BIT_KHR) == 0)
-		TCU_THROW(NotSupportedError, "Stencil resolve does not support required VK_RESOLVE_MODE_MAX_BIT_KHR");
-
 	m_colorImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	checkImageFormatProperties(vki, physDevice, m_parameters.colorFormat, m_colorImageUsage, m_imageExtent2D);
@@ -1805,7 +1799,7 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 		const tcu::Vec4		colorEdge1	(colorFill);
 		const tcu::Vec4		colorEdge2	(colorDraw);
 		const tcu::Vec4		colorEdge3	(colorFill);
-		const tcu::Vec4		colorEdgeR	((colorDraw.x() + colorFill.x()) / 2, (colorDraw.y() + colorFill.y()) / 2, (colorDraw.z() + colorFill.z()) / 2, colorDraw.w());
+		const tcu::Vec4		colorEdgeR	((colorDraw.x() + colorFill.x()) / 2, (colorDraw.y() + colorFill.y()) / 2, (colorDraw.z() + colorFill.z()) / 2, colorDraw.w()); // AVERAGE
 		const tcu::Vec4&	colorEdge	= sample == 0 ? colorEdge0
 										: sample == 1 ? colorEdge1
 										: sample == 2 ? colorEdge2
@@ -1828,14 +1822,13 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 	{
 		const int			colorFillValue	(static_cast<int>(1.00f * 0x100));
 		const int			colorDrawValue	(static_cast<int>(0.00f * 0x100));
-		const int			colorEdgeValue	(static_cast<int>(0.50f * 0x100));
 		const tcu::IVec4	colorFill		(colorFillValue, colorFillValue, colorFillValue, 0xFF);
 		const tcu::IVec4	colorDraw		(colorDrawValue, colorDrawValue, colorDrawValue, 0xFF);
 		const tcu::IVec4	colorEdge0		(colorDraw);
 		const tcu::IVec4	colorEdge1		(colorFill);
 		const tcu::IVec4	colorEdge2		(colorDraw);
 		const tcu::IVec4	colorEdge3		(colorFill);
-		const tcu::IVec4	colorEdgeR		(colorEdgeValue, colorEdgeValue, colorEdgeValue, 0xFF);
+		const tcu::IVec4	colorEdgeR		(colorEdge0); // SAMPLE_ZERO
 		const tcu::IVec4&	colorEdge		= sample == 0 ? colorEdge0
 											: sample == 1 ? colorEdge1
 											: sample == 2 ? colorEdge2
@@ -1858,14 +1851,13 @@ MovePtr<tcu::TextureLevel> DepthResolveImagelessTestInstance::generateReferenceI
 	{
 		const int			colorFillValue	((0 * 0x100) / 4);
 		const int			colorDrawValue	((1 * 0x100) / 4);
-		const int			colorEdgeValue	((1 * 0x100) / 4);
 		const tcu::IVec4	colorFill		(colorFillValue, colorFillValue, colorFillValue, 0xFF);
 		const tcu::IVec4	colorDraw		(colorDrawValue, colorDrawValue, colorDrawValue, 0xFF);
 		const tcu::IVec4	colorEdge0		(colorDraw);
 		const tcu::IVec4	colorEdge1		(colorFill);
 		const tcu::IVec4	colorEdge2		(colorDraw);
 		const tcu::IVec4	colorEdge3		(colorFill);
-		const tcu::IVec4	colorEdgeR		(colorEdgeValue, colorEdgeValue, colorEdgeValue, 0xFF);
+		const tcu::IVec4	colorEdgeR		(colorEdge0); // SAMPLE_ZERO
 		const tcu::IVec4&	colorEdge		= sample == 0 ? colorEdge0
 											: sample == 1 ? colorEdge1
 											: sample == 2 ? colorEdge2
