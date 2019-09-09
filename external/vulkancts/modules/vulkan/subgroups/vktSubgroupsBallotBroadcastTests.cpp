@@ -39,6 +39,7 @@ namespace
 enum OpType
 {
 	OPTYPE_BROADCAST = 0,
+	OPTYPE_BROADCAST_NONCONST,
 	OPTYPE_BROADCAST_FIRST,
 	OPTYPE_LAST
 };
@@ -56,7 +57,7 @@ static bool checkCompute(std::vector<const void*> datas,
 	return vkt::subgroups::checkCompute(datas, numWorkgroups, localSize, 3);
 }
 
-std::string getOpTypeName(int opType)
+std::string getOpTypeCaseName(int opType)
 {
 	switch (opType)
 	{
@@ -64,11 +65,14 @@ std::string getOpTypeName(int opType)
 			DE_FATAL("Unsupported op type");
 			return "";
 		case OPTYPE_BROADCAST:
-			return "subgroupBroadcast";
+			return "subgroupbroadcast";
+		case OPTYPE_BROADCAST_NONCONST:
+			return "subgroupbroadcast_nonconst";
 		case OPTYPE_BROADCAST_FIRST:
-			return "subgroupBroadcastFirst";
+			return "subgroupbroadcastfirst";
 	}
 }
+
 
 struct CaseDefinition
 {
@@ -126,6 +130,22 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "  }\n";
 		}
 	}
+	else if (OPTYPE_BROADCAST_NONCONST == caseDef.opType)
+	{
+		bdy	<< "  uint tempResult = 0x3;\n"
+			<< "  for (uint id = 0; id < sgSize; id++)\n"
+			<< "  {\n"
+			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
+				<< broadcast << "(data1[sgInvocation], id);\n"
+			<< "    if (subgroupBallotBitExtract(mask, id))\n"
+			<< "    {\n"
+			<< "      if (op != data1[id])\n"
+			<< "      {\n"
+			<< "        tempResult = 0;\n"
+			<< "      }\n"
+			<< "    }\n"
+			<< "  }\n";
+	}
 	else
 	{
 		bdy << "  uint tempResult = 0;\n"
@@ -182,7 +202,8 @@ std::string getHelperFunctionARB(CaseDefinition caseDef)
 
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const vk::SpirvVersion			spirvVersion = (caseDef.opType == OPTYPE_BROADCAST_NONCONST) ? vk::SPIRV_VERSION_1_5 : vk::SPIRV_VERSION_1_3;
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ?	"#extension GL_ARB_shader_ballot: enable\n"
 																			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 																			"#extension GL_ARB_gpu_shader_int64: enable\n"
@@ -313,6 +334,9 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
+	const vk::SpirvVersion			spirvVersion = (caseDef.opType == OPTYPE_BROADCAST_NONCONST) ? vk::SPIRV_VERSION_1_5 : vk::SPIRV_VERSION_1_3;
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
+
 	std::string bdyStr = getBodySource(caseDef);
 	std::string helperStrARB = getHelperFunctionARB(caseDef);
 
@@ -350,8 +374,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  result[offset] = tempResult;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 	}
 	else
 	{
@@ -472,16 +495,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		subgroups::addNoSubgroupShader(programCollection);
 
-		programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		programCollection.glslSources.add("tesc")
-				<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		programCollection.glslSources.add("tese")
-				<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-												  programCollection.glslSources);
-		programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << buildOptions;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc) << buildOptions;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese) << buildOptions;
+		subgroups::addGeometryShadersFromTemplate(geometry, buildOptions, programCollection.glslSources);
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment)<< buildOptions;
 	}
 }
 
@@ -507,6 +525,9 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	{
 		TCU_THROW(NotSupportedError, "Device does not support int64 data types");
 	}
+
+	if ((caseDef.opType == OPTYPE_BROADCAST_NONCONST) && !subgroups::isSubgroupBroadcastDynamicIdSupported(context))
+		TCU_THROW(NotSupportedError, "Device does not support SubgroupBroadcastDynamicId");
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
@@ -651,8 +672,7 @@ tcu::TestCaseGroup* createSubgroupsBallotBroadcastTests(tcu::TestContext& testCt
 
 		for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 		{
-			const std::string op = de::toLower(getOpTypeName(opTypeIndex));
-			const std::string name = op + "_" + subgroups::getFormatNameForGLSL(format);
+			const std::string name = getOpTypeCaseName(opTypeIndex) + "_" + subgroups::getFormatNameForGLSL(format);
 
 			{
 				CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, de::SharedPtr<bool>(new bool), DE_FALSE};

@@ -1112,6 +1112,12 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 	}
 }
 
+bool vkt::subgroups::isSubgroupBroadcastDynamicIdSupported (Context& context)
+{
+	return context.contextSupports(vk::ApiVersion(1, 2, 0)) &&
+		vk::getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).subgroupBroadcastDynamicId;
+}
+
 std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 {
 	switch (format)
