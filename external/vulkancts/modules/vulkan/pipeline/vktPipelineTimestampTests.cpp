@@ -3024,6 +3024,8 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
 	deUint32					tsGet32Bits;
 	deUint64					tsGet64Bits;
 
+	constexpr deUint32			maxDeUint32Value = std::numeric_limits<deUint32>::max();
+
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Get results from buffers.
@@ -3043,7 +3045,8 @@ tcu::TestStatus ConsistentQueryResultsTestInstance::iterate(void)
 	// Check results are consistent.
 	if (tsBuffer32Bits == tsGet32Bits &&
 		tsBuffer64Bits == tsGet64Bits &&
-		(tsGet64Bits & std::numeric_limits<deUint32>::max()) == tsGet32Bits)
+		(((tsGet64Bits & maxDeUint32Value) == tsGet32Bits) ||
+		((tsGet64Bits > maxDeUint32Value) && (maxDeUint32Value == tsGet32Bits))))
 	{
 		return tcu::TestStatus::pass("Pass");
 	}
