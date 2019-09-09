@@ -49,6 +49,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"always-false-if-with-discard-return.amber",	"always-false-if-with-discard-return",	"A fragment shader with discard keyword and a return"									},
 		{	"barrier-in-loop-with-break.amber",				"barrier-in-loop-with-break",			"A compute shader with a barrier in a loop with a break"								},
 		{	"color-write-in-loop.amber",					"color-write-in-loop",					"A fragment shader that writes to color in a loop"										},
+		{	"complex-nested-loops-and-call.amber",			"complex-nested-loops-and-call",		"A fragment shader with complex nested loops, breaks, etc."								},
 		{	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
 		{	"control-flow-in-function.amber",				"control-flow-in-function",				"A fragment shader with a lot of control flow"											},
 		{	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
