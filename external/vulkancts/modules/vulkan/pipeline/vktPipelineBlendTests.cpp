@@ -660,6 +660,10 @@ tcu::Vec4 BlendTestInstance::getFormatThreshold (const tcu::TextureFormat& forma
 			threshold = Vec4(0.05f, 0.05f, 0.05f, 1.0f);
 			break;
 
+		case TextureFormat::UNORM_SHORT_1555:
+			threshold = Vec4(0.1f, getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5));
+			break;
+
 		default:
 			DE_ASSERT(false);
 	}
@@ -966,6 +970,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
 		VK_FORMAT_R5G6B5_UNORM_PACK16,
 		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_A1R5G5B5_UNORM_PACK16,
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R8_SNORM,
 		VK_FORMAT_R8_SRGB,
@@ -979,6 +984,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		VK_FORMAT_R8G8B8A8_SNORM,
 		VK_FORMAT_R8G8B8A8_SRGB,
 		VK_FORMAT_A2R10G10B10_UNORM_PACK32,
+		VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 		VK_FORMAT_R16_UNORM,
 		VK_FORMAT_R16_SNORM,
 		VK_FORMAT_R16_SFLOAT,
