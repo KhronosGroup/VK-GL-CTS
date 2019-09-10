@@ -953,7 +953,7 @@ protected:
 	static constexpr deUint64		kBatchTimeLimitNanos		= 1000000000u;	// 1 sec.
 	static constexpr deUint64		kDeviationErrorLimitNanos	=  100000000u;	// 100 ms.
 	static constexpr deUint64		kDeviationWarningLimitNanos =   50000000u;	// 50 ms.
-	static constexpr deUint64		kDefaultToleranceNanos		=   10000000u;	// 10 ms.
+	static constexpr deUint64		kDefaultToleranceNanos		=  100000000u;	// 100 ms.
 
 #if (DE_OS == DE_OS_WIN32)
     // Preprocessor used to avoid warning about unused variable.
