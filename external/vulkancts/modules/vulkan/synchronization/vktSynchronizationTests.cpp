@@ -31,6 +31,7 @@
 #include "vktSynchronizationOperationMultiQueueTests.hpp"
 #include "vktSynchronizationInternallySynchronizedObjectsTests.hpp"
 #include "vktSynchronizationCrossInstanceSharingTests.hpp"
+#include "vktSynchronizationSignalOrderTests.hpp"
 #include "vktSynchronizationTimelineSemaphoreTests.hpp"
 #include "vktSynchronizationWin32KeyedMutexTests.hpp"
 #include "vktSynchronizationUtil.hpp"
@@ -84,6 +85,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createInternallySynchronizedObjects(testCtx));
 	group->addChild(synchronization::createCrossInstanceSharingTest(testCtx));
 	group->addChild(synchronization::createWin32KeyedMutexTest(testCtx));
+	group->addChild(synchronization::createSignalOrderTests(testCtx));
 }
 
 } // anonymous
