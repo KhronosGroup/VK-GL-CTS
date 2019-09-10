@@ -350,6 +350,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperation.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperationMultiQueueTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperationSingleQueueTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationSignalOrderTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationTimelineSemaphoreTests.cpp \
