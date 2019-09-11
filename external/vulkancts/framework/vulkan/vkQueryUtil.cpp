@@ -172,6 +172,26 @@ VkPhysicalDeviceVulkan12Features getPhysicalDeviceVulkan12Features (const Instan
 	return vulkan_12_features;
 }
 
+VkPhysicalDeviceVulkan11Properties getPhysicalDeviceVulkan11Properties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceVulkan11Properties	vulkan11properties	= initVulkanStructure();
+	VkPhysicalDeviceProperties2			properties			= initVulkanStructure(&vulkan11properties);
+
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties);
+
+	return vulkan11properties;
+}
+
+VkPhysicalDeviceVulkan12Properties getPhysicalDeviceVulkan12Properties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceVulkan12Properties	vulkan12properties	= initVulkanStructure();
+	VkPhysicalDeviceProperties2			properties			= initVulkanStructure(&vulkan12properties);
+
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties);
+
+	return vulkan12properties;
+}
+
 VkPhysicalDeviceProperties getPhysicalDeviceProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceProperties	properties;
