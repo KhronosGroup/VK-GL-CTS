@@ -85,26 +85,30 @@ std::string getBodySource(CaseDefinition caseDef)
 
 	std::string broadcast;
 	std::string broadcastFirst;
+	std::string mask;
 	int max;
 	if (caseDef.extShaderSubGroupBallotTests)
 	{
 		broadcast		= "readInvocationARB";
 		broadcastFirst	= "readFirstInvocationARB";
+		mask			= "mask = ballotARB(true);\n";
 		max = 64;
 
-		bdy << "  uint64_t mask = ballotARB(true);\n";
-		bdy << "  uint sgSize = gl_SubGroupSizeARB;\n";
-		bdy << "  uint sgInvocation = gl_SubGroupInvocationARB;\n";
+		bdy << "  uint64_t mask;\n"
+			<< mask
+			<< "  uint sgSize = gl_SubGroupSizeARB;\n"
+			<< "  uint sgInvocation = gl_SubGroupInvocationARB;\n";
 	}
 	else
 	{
 		broadcast		= "subgroupBroadcast";
 		broadcastFirst	= "subgroupBroadcastFirst";
+		mask			= "mask = subgroupBallot(true);\n";
 		max = (int)subgroups::maxSupportedSubgroupSize();
 
-		bdy << "  uvec4 mask = subgroupBallot(true);\n";
-		bdy << "  uint sgSize = gl_SubgroupSize;\n";
-		bdy << "  uint sgInvocation = gl_SubgroupInvocationID;\n";
+		bdy << "  uvec4 mask = subgroupBallot(true);\n"
+			<< "  uint sgSize = gl_SubgroupSize;\n"
+			<< "  uint sgInvocation = gl_SubgroupInvocationID;\n";
 	}
 
 	if (OPTYPE_BROADCAST == caseDef.opType)
@@ -140,8 +144,9 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "  }\n"
 			<< "  tempResult |= (" << broadcastFirst << "(data1[sgInvocation]) == data1[firstActive]) ? 0x1 : 0;\n"
 			<< "  // make the firstActive invocation inactive now\n"
-			<< "  if (firstActive == sgInvocation)\n"
+			<< "  if (firstActive != sgInvocation)\n"
 			<< "  {\n"
+			<< mask
 			<< "    for (uint i = 0; i < sgSize; i++)\n"
 			<< "    {\n"
 			<< "      if (subgroupBallotBitExtract(mask, i))\n"
