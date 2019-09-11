@@ -832,7 +832,7 @@ string makeGeometryShaderAssembly (const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} \n"
+		"OpEntryPoint Geometry %BP_main \"main\" %BP_out_gl_position %BP_gl_PrimitiveID %BP_gl_in %BP_out_color %BP_in_color ${IF_entrypoint:opt} ${GL_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main Invocations 1\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"

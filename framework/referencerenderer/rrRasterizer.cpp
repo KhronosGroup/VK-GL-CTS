@@ -860,6 +860,7 @@ SingleSampleLineRasterizer::SingleSampleLineRasterizer (const tcu::IVec4& viewpo
 	, m_subpixelBits	(subpixelBits)
 	, m_curRowFragment	(0)
 	, m_lineWidth		(0.0f)
+	, m_stippleCounter  (0)
 {
 }
 
@@ -867,7 +868,7 @@ SingleSampleLineRasterizer::~SingleSampleLineRasterizer (void)
 {
 }
 
-void SingleSampleLineRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth)
+void SingleSampleLineRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth, deUint32 stippleFactor, deUint16 stipplePattern)
 {
 	const bool						isXMajor		= de::abs((v1 - v0).x()) >= de::abs((v1 - v0).y());
 
@@ -915,8 +916,17 @@ void SingleSampleLineRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1,
 	m_v0 = v0;
 	m_v1 = v1;
 
-	m_curPos = m_bboxMin;
+	// Choose direction of traversal and whether to start at bbox min or max. Direction matters
+    // for the stipple counter.
+	int											xDelta				= (m_v1 - m_v0).x() > 0 ? 1 : -1;
+	int											yDelta				= (m_v1 - m_v0).y() > 0 ? 1 : -1;
+
+	m_curPos.x() = xDelta > 0 ? m_bboxMin.x() : m_bboxMax.x();
+	m_curPos.y() = yDelta > 0 ? m_bboxMin.y() : m_bboxMax.y();
+
 	m_curRowFragment = 0;
+	m_stippleFactor = stippleFactor;
+	m_stipplePattern = stipplePattern;
 }
 
 void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized)
@@ -935,8 +945,10 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 	const LineRasterUtil::SubpixelLineSegment	line				= LineRasterUtil::SubpixelLineSegment(pa, pb);
 
 	int											packetNdx			= 0;
+	int											xDelta				= (m_v1 - m_v0).x() > 0 ? 1 : -1;
+	int											yDelta				= (m_v1 - m_v0).y() > 0 ? 1 : -1;
 
-	while (m_curPos.y() <= m_bboxMax.y() && packetNdx < maxFragmentPackets)
+	while (m_curPos.y() <= m_bboxMax.y() && m_curPos.y() >= m_bboxMin.y() && packetNdx < maxFragmentPackets)
 	{
 		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos, m_subpixelBits) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
 
@@ -951,61 +963,69 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 			const int						rowFragBegin		= de::max(0, minViewportLimit - fragmentLocation);
 			const int						rowFragEnd			= de::min(maxViewportLimit - fragmentLocation, lineWidth);
 
-			// Wide lines require multiple fragments.
-			for (; rowFragBegin + m_curRowFragment < rowFragEnd; m_curRowFragment++)
+			int stippleBit = (m_stippleCounter / m_stippleFactor) % 16;
+			bool stipplePass = (m_stipplePattern & (1 << stippleBit)) != 0;
+			m_stippleCounter++;
+
+			if (stipplePass)
 			{
-				const int			replicationId	= rowFragBegin + m_curRowFragment;
-				const tcu::IVec2	fragmentPos		= m_curPos + minorDirection * replicationId;
-
-				// We only rasterize visible area
-				DE_ASSERT(LineRasterUtil::inViewport(fragmentPos, m_viewport));
-
-				// Compute depth values.
-				if (depthValues)
+				// Wide lines require multiple fragments.
+				for (; rowFragBegin + m_curRowFragment < rowFragEnd; m_curRowFragment++)
 				{
-					const float za = m_v0.z();
-					const float zb = m_v1.z();
+					const int			replicationId	= rowFragBegin + m_curRowFragment;
+					const tcu::IVec2	fragmentPos		= m_curPos + minorDirection * replicationId;
 
-					depthValues[packetNdx*4+0] = (1 - t) * za + t * zb;
-					depthValues[packetNdx*4+1] = 0;
-					depthValues[packetNdx*4+2] = 0;
-					depthValues[packetNdx*4+3] = 0;
+					// We only rasterize visible area
+					DE_ASSERT(LineRasterUtil::inViewport(fragmentPos, m_viewport));
+
+					// Compute depth values.
+					if (depthValues)
+					{
+						const float za = m_v0.z();
+						const float zb = m_v1.z();
+
+						depthValues[packetNdx*4+0] = (1 - t) * za + t * zb;
+						depthValues[packetNdx*4+1] = 0;
+						depthValues[packetNdx*4+2] = 0;
+						depthValues[packetNdx*4+3] = 0;
+					}
+
+					{
+						// output this fragment
+						// \note In order to make consistent output with multisampled line rasterization, output "barycentric" coordinates
+						FragmentPacket& packet = fragmentPackets[packetNdx];
+
+						const tcu::Vec4		b0		= tcu::Vec4(1 - t);
+						const tcu::Vec4		b1		= tcu::Vec4(t);
+						const tcu::Vec4		ooSum	= 1.0f / (b0 + b1);
+
+						packet.position			= fragmentPos;
+						packet.coverage			= getCoverageBit(1, 0, 0, 0);
+						packet.barycentric[0]	= b0 * ooSum;
+						packet.barycentric[1]	= b1 * ooSum;
+						packet.barycentric[2]	= tcu::Vec4(0.0f);
+
+						packetNdx += 1;
+					}
+
+					if (packetNdx == maxFragmentPackets)
+					{
+						m_curRowFragment++; // don't redraw this fragment again next time
+						m_stippleCounter--; // reuse same stipple counter next time
+						numPacketsRasterized = packetNdx;
+						return;
+					}
 				}
 
-				{
-					// output this fragment
-					// \note In order to make consistent output with multisampled line rasterization, output "barycentric" coordinates
-					FragmentPacket& packet = fragmentPackets[packetNdx];
-
-					const tcu::Vec4		b0		= tcu::Vec4(1 - t);
-					const tcu::Vec4		b1		= tcu::Vec4(t);
-					const tcu::Vec4		ooSum	= 1.0f / (b0 + b1);
-
-					packet.position			= fragmentPos;
-					packet.coverage			= getCoverageBit(1, 0, 0, 0);
-					packet.barycentric[0]	= b0 * ooSum;
-					packet.barycentric[1]	= b1 * ooSum;
-					packet.barycentric[2]	= tcu::Vec4(0.0f);
-
-					packetNdx += 1;
-				}
-
-				if (packetNdx == maxFragmentPackets)
-				{
-					m_curRowFragment++; // don't redraw this fragment again next time
-					numPacketsRasterized = packetNdx;
-					return;
-				}
+				m_curRowFragment = 0;
 			}
-
-			m_curRowFragment = 0;
 		}
 
-		++m_curPos.x();
-		if (m_curPos.x() > m_bboxMax.x())
+		m_curPos.x() += xDelta;
+		if (m_curPos.x() > m_bboxMax.x() || m_curPos.x() < m_bboxMin.x())
 		{
-			++m_curPos.y();
-			m_curPos.x() = m_bboxMin.x();
+			m_curPos.y() += yDelta;
+			m_curPos.x() = xDelta > 0 ? m_bboxMin.x() : m_bboxMax.x();
 		}
 	}
 

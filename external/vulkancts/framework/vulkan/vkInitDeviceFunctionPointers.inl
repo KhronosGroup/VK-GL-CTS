@@ -187,6 +187,8 @@ m_vk.cmdEndRenderPass2									= (CmdEndRenderPass2Func)								GET_PROC_ADDR("v
 if (!m_vk.cmdEndRenderPass2)
 	m_vk.cmdEndRenderPass2								= (CmdEndRenderPass2Func)								GET_PROC_ADDR("vkCmdEndRenderPass2KHR");
 m_vk.resetQueryPool										= (ResetQueryPoolFunc)									GET_PROC_ADDR("vkResetQueryPool");
+if (!m_vk.resetQueryPool)
+	m_vk.resetQueryPool									= (ResetQueryPoolFunc)									GET_PROC_ADDR("vkResetQueryPoolEXT");
 m_vk.getSemaphoreCounterValue							= (GetSemaphoreCounterValueFunc)						GET_PROC_ADDR("vkGetSemaphoreCounterValue");
 if (!m_vk.getSemaphoreCounterValue)
 	m_vk.getSemaphoreCounterValue						= (GetSemaphoreCounterValueFunc)						GET_PROC_ADDR("vkGetSemaphoreCounterValueKHR");
@@ -312,7 +314,6 @@ m_vk.getPerformanceParameterINTEL						= (GetPerformanceParameterINTELFunc)					
 m_vk.setLocalDimmingAMD									= (SetLocalDimmingAMDFunc)								GET_PROC_ADDR("vkSetLocalDimmingAMD");
 m_vk.getBufferDeviceAddressEXT							= (GetBufferDeviceAddressEXTFunc)						GET_PROC_ADDR("vkGetBufferDeviceAddressEXT");
 m_vk.cmdSetLineStippleEXT								= (CmdSetLineStippleEXTFunc)							GET_PROC_ADDR("vkCmdSetLineStippleEXT");
-m_vk.resetQueryPoolEXT									= (ResetQueryPoolEXTFunc)								GET_PROC_ADDR("vkResetQueryPoolEXT");
 m_vk.getAndroidHardwareBufferPropertiesANDROID			= (GetAndroidHardwareBufferPropertiesANDROIDFunc)		GET_PROC_ADDR("vkGetAndroidHardwareBufferPropertiesANDROID");
 m_vk.getMemoryAndroidHardwareBufferANDROID				= (GetMemoryAndroidHardwareBufferANDROIDFunc)			GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");
 m_vk.getMemoryWin32HandleKHR							= (GetMemoryWin32HandleKHRFunc)							GET_PROC_ADDR("vkGetMemoryWin32HandleKHR");

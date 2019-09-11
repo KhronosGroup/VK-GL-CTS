@@ -258,7 +258,6 @@ GetPerformanceParameterINTELFunc					getPerformanceParameterINTEL;
 SetLocalDimmingAMDFunc								setLocalDimmingAMD;
 GetBufferDeviceAddressEXTFunc						getBufferDeviceAddressEXT;
 CmdSetLineStippleEXTFunc							cmdSetLineStippleEXT;
-ResetQueryPoolEXTFunc								resetQueryPoolEXT;
 GetAndroidHardwareBufferPropertiesANDROIDFunc		getAndroidHardwareBufferPropertiesANDROID;
 GetMemoryAndroidHardwareBufferANDROIDFunc			getMemoryAndroidHardwareBufferANDROID;
 GetMemoryWin32HandleKHRFunc							getMemoryWin32HandleKHR;

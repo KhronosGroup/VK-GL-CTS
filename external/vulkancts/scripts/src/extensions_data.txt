@@ -69,10 +69,12 @@ VK_KHR_imageless_framebuffer				DEVICE 1_2_0
 VK_KHR_shader_subgroup_extended_types		DEVICE 1_2_0
 VK_EXT_sampler_filter_minmax				DEVICE 1_2_0
 VK_EXT_shader_viewport_index_layer			DEVICE 1_2_0
-// VK_EXT_descriptor_indexing is an exception to promoted extension since its functionality is guarded by an addional option in Vulkan 1.2
-VK_EXT_descriptor_indexing					DEVICE
+VK_EXT_descriptor_indexing					DEVICE 1_2_0
 VK_EXT_scalar_block_layout					DEVICE 1_2_0
 VK_KHR_buffer_device_address				DEVICE 1_2_0
 VK_EXT_host_query_reset						DEVICE 1_2_0
 VK_KHR_separate_depth_stencil_layouts		DEVICE 1_2_0
+VK_KHR_timeline_semaphore 		 		 	DEVICE 1_2_0
+VK_KHR_spirv_1_4 		 		 	 		DEVICE 1_2_0
+VK_EXT_separate_stencil_usage 		 		DEVICE 1_2_0
 VK_KHR_pipeline_executable_properties 		DEVICE

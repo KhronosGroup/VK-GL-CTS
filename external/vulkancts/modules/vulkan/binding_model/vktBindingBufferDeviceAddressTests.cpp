@@ -157,7 +157,7 @@ BufferAddressTestCase::~BufferAddressTestCase	(void)
 
 void BufferAddressTestCase::checkSupport (Context& context) const
 {
-	if (!(context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress || context.getBufferDeviceAddressFeatures().bufferDeviceAddress))
+	if (!context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 
 	if (m_data.stage == STAGE_VERTEX && !context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
@@ -166,11 +166,7 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
 
-	if (m_data.convertUToPtr == VK_TRUE && !context.getDeviceFeatures().shaderInt64)
-		TCU_THROW(NotSupportedError, "64-bit integers in shader not supported");
-
-	if (m_data.bufType == BT_REPLAY &&
-		!(context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay || context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay))
+	if (m_data.bufType == BT_REPLAY && !context.isBufferDeviceAddressWithCaptureReplaySupported())
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
 
 	if (m_data.layout == LAYOUT_SCALAR && !context.getScalarBlockLayoutFeatures().scalarBlockLayout)
@@ -183,6 +179,9 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 		TCU_THROW(NotSupportedError, "Ray tracing not supported");
 	}
 #endif
+
+	if (m_data.convertUToPtr && !context.getDeviceFeatures().shaderInt64)
+		TCU_THROW(NotSupportedError, "Int64 not supported");
 }
 
 void BufferAddressTestCase::checkBuffer (std::stringstream& checks, deUint32 bufNum, deUint32 curDepth, const std::string &prefix) const
@@ -449,7 +448,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	const VkPhysicalDevice&	physDevice				= m_context.getPhysicalDevice();
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
-	const bool				useKHR					= !!m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress;
+	const bool				useKHR					= m_context.isBufferDeviceAddressKHRSupported();
 
 
 	VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -552,11 +551,11 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		0x000000000ULL,												// VkDeviceSize		 deviceAddress
 	};
 
-	VkBufferOpaqueCaptureAddressCreateInfoKHR bufferOpaqueCaptureAddressCreateInfo =
+	VkBufferOpaqueCaptureAddressCreateInfo bufferOpaqueCaptureAddressCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO_KHR,	// VkStructureType	 sType;
-		DE_NULL,															// const void*		 pNext;
-		0x000000000ULL,														// VkDeviceSize		 opaqueCaptureAddress
+		VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO,	// VkStructureType	 sType;
+		DE_NULL,														// const void*		 pNext;
+		0x000000000ULL,													// VkDeviceSize		 opaqueCaptureAddress
 	};
 
 	std::vector<deUint8 *> cpuAddrs(numBindings);
@@ -564,18 +563,18 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	std::vector<deUint64> opaqueBufferAddrs(numBindings);
 	std::vector<deUint64> opaqueMemoryAddrs(numBindings);
 
-	VkBufferDeviceAddressInfoEXT bufferDeviceAddressInfo =
+	VkBufferDeviceAddressInfo bufferDeviceAddressInfo =
 	{
-		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	 sType;
-		DE_NULL,											// const void*		 pNext;
-		0,													// VkBuffer			 buffer
+		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,	// VkStructureType	 sType;
+		DE_NULL,										// const void*		 pNext;
+		0,												// VkBuffer			 buffer
 	};
 
-	VkDeviceMemoryOpaqueCaptureAddressInfoKHR deviceMemoryOpaqueCaptureAddressInfo =
+	VkDeviceMemoryOpaqueCaptureAddressInfo deviceMemoryOpaqueCaptureAddressInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
-		DE_NULL,															// const void*		 pNext;
-		0,																	// VkDeviceMemory	 memory;
+		VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO,	// VkStructureType	 sType;
+		DE_NULL,														// const void*		 pNext;
+		0,																// VkDeviceMemory	 memory;
 	};
 
 	bool multiBuffer = m_data.bufType != BT_SINGLE;
@@ -588,8 +587,8 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	VkBufferCreateInfo			bufferCreateInfo = makeBufferCreateInfo(DE_NULL, bufferSize,
 														VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
 														VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-														VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT,
-														m_data.bufType == BT_REPLAY ? VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT : 0);
+														VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+														m_data.bufType == BT_REPLAY ? VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT : 0);
 
 	// VkMemoryAllocateFlags to be filled out later
 	VkMemoryAllocateFlagsInfo	allocFlagsInfo =
@@ -600,19 +599,19 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		0,												//	uint32_t                 deviceMask
 	};
 
-	VkMemoryOpaqueCaptureAddressAllocateInfoKHR memoryOpaqueCaptureAddressAllocateInfo =
+	VkMemoryOpaqueCaptureAddressAllocateInfo memoryOpaqueCaptureAddressAllocateInfo =
 	{
-		VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO_KHR,	// VkStructureType    sType;
-		DE_NULL,															// const void*        pNext;
-		0,																	// uint64_t           opaqueCaptureAddress;
+		VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO,	// VkStructureType    sType;
+		DE_NULL,														// const void*        pNext;
+		0,																// uint64_t           opaqueCaptureAddress;
 	};
 
 	if (useKHR)
-		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
 	if (useKHR && m_data.bufType == BT_REPLAY)
 	{
-		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
+		allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
 		allocFlagsInfo.pNext = &memoryOpaqueCaptureAddressAllocateInfo;
 	}
 
@@ -641,7 +640,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		for (deUint32 i = 0; i < numBuffers; ++i)
 		{
 			bufferDeviceAddressInfo.buffer = **buffers[i];
-			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+			if (useKHR)
+				gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+			else
+				gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
 		}
 		buffers.clear();
 		buffers.resize(numBuffers);
@@ -661,7 +663,11 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 			VK_CHECK(vk.bindBufferMemory(device, **buffers[i], allocations[i]->getMemory(), 0));
 
 			bufferDeviceAddressInfo.buffer = **buffers[i];
-			VkDeviceSize newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+			VkDeviceSize newAddr;
+			if (useKHR)
+				newAddr = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+			else
+				newAddr = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
 			if (newAddr != gpuAddrs[i])
 				return tcu::TestStatus(QP_TEST_RESULT_FAIL, "address mismatch");
 		}
@@ -672,7 +678,10 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	{
 		bufferDeviceAddressInfo.buffer = **buffers[multiBuffer ? i : 0];
 
-		gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
+		if (useKHR)
+			gpuAddrs[i] = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+		else
+			gpuAddrs[i] = vk.getBufferDeviceAddressEXT(device, &bufferDeviceAddressInfo);
 		cpuAddrs[i] = (deUint8 *)allocations[multiBuffer ? i : 0]->getHostPtr();
 		if (!multiBuffer)
 		{

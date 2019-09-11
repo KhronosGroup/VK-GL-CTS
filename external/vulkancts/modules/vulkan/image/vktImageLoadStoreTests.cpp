@@ -1351,7 +1351,6 @@ public:
 
 protected:
 
-	void							checkRequirements(void);
 	VkDescriptorSetLayout			prepareDescriptors						(void);
 	void							commandBeforeCompute					(const VkCommandBuffer	cmdBuffer);
 	void							commandBetweenShaderInvocations			(const VkCommandBuffer	cmdBuffer);
@@ -1433,22 +1432,6 @@ ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context
 	const Allocation& alloc = m_buffer->getAllocation();
 	deMemcpy(alloc.getHostPtr(), m_inputImageData.getAccess().getDataPtr(), static_cast<size_t>(m_bufferSizeBytes));
 	flushAlloc(vk, device, alloc);
-}
-
-void ImageExtendOperandTestInstance::checkRequirements (void)
-{
-	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
-																							   m_context.getPhysicalDevice(),
-																							   m_format));
-
-	if (m_context.requireDeviceExtension("VK_KHR_spirv_1_4"))
-		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
-
-	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage images");
-
-	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
-		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
 
 VkDescriptorSetLayout ImageExtendOperandTestInstance::prepareDescriptors (void)
@@ -1580,6 +1563,7 @@ public:
 													 const VkFormat						format,
 													 const bool							readSigned);
 
+	void					checkSupport			(Context&				context) const;
 	void					initPrograms			(SourceCollections&		programCollection) const;
 	TestInstance*			createInstance			(Context&				context) const;
 
@@ -1599,6 +1583,22 @@ ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 	, m_format						(format)
 	, m_signExtend					(signExtend)
 {
+}
+
+void ImageExtendOperandTest::checkSupport (Context& context) const
+{
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_format));
+
+	if (!context.requireDeviceExtension("VK_KHR_spirv_1_4"))
+		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage images");
+
+	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
+		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
 }
 
 void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection) const

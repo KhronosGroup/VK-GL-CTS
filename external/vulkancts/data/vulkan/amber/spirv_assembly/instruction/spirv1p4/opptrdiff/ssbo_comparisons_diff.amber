@@ -21,7 +21,7 @@ VK_KHR_get_physical_device_properties2
 OpCapability Shader
 OpCapability VariablePointersStorageBuffer
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %main "main" %in_var %diff_var %n_var %input_var
+OpEntryPoint GLCompute %main "main" %in_var %diff_var %n_var %lid_var %gid_var
 OpExecutionMode %main LocalSize 4 1 1
 
 OpDecorate %struct_4 Block
@@ -42,9 +42,8 @@ OpDecorate %diff_var Binding 1
 OpDecorate %n_var DescriptorSet 0
 OpDecorate %n_var Binding 2
 
-OpDecorate %input_struct Block
-OpMemberDecorate %input_struct 0 BuiltIn LocalInvocationId
-OpMemberDecorate %input_struct 1 BuiltIn WorkgroupId
+OpDecorate %lid_var BuiltIn LocalInvocationId
+OpDecorate %gid_var BuiltIn WorkgroupId
 
 %void = OpTypeVoid
 %bool = OpTypeBool
@@ -56,8 +55,6 @@ OpMemberDecorate %input_struct 1 BuiltIn WorkgroupId
 %int_17 = OpConstant %int 17
 %int3 = OpTypeVector %int 3
 
-%input_struct = OpTypeStruct %int3 %int3
-%ptr_input_struct = OpTypePointer Input %input_struct
 %ptr_input_int3 = OpTypePointer Input %int3
 
 %array_4 = OpTypeArray %int %int_4
@@ -80,18 +77,17 @@ OpMemberDecorate %input_struct 1 BuiltIn WorkgroupId
 %in_var = OpVariable %ptr_struct_4 StorageBuffer
 %diff_var = OpVariable %ptr_struct_17 StorageBuffer
 %n_var = OpVariable %ptr_n_struct Uniform
-%input_var = OpVariable %ptr_input_struct Input
+%lid_var = OpVariable %ptr_input_int3 Input
+%gid_var = OpVariable %ptr_input_int3 Input
 
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
 %n_gep = OpAccessChain %ptr_n %n_var %int_0
 %n = OpLoad %int %n_gep
-%gid_gep = OpAccessChain %ptr_input_int3 %input_var %int_1
-%gid = OpLoad %int3 %gid_gep
+%gid = OpLoad %int3 %gid_var
 %gid_x = OpCompositeExtract %int %gid 0
-%lid_gep = OpAccessChain %ptr_input_int3 %input_var %int_0
-%lid = OpLoad %int3 %lid_gep
+%lid = OpLoad %int3 %lid_var
 %lid_x = OpCompositeExtract %int %lid 0
 %array_gep_0 = OpAccessChain %ptr_array_4 %in_var %int_0 %int_0
 %array_gep = OpAccessChain %ptr_array_4 %in_var %int_0 %gid_x

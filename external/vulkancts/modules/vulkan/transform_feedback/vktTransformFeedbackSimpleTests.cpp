@@ -1589,7 +1589,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
-		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
+		vk.resetQueryPool(device, *queryPool, queryIndex, queryCountersNumber);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	{
@@ -1648,7 +1648,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 			queryResults->elements32[2] = 1u;	// Availability bit
 		}
 
-		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
+		vk.resetQueryPool(device, *queryPool, queryIndex, queryCountersNumber);
 
 		vk::VkResult	res						= vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataAvailSize, queryData.data(), queryDataAvailSize, (vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | queryExtraFlags));
 		const deUint64	numPrimitivesWritten	= (m_parameters.query64bits ? queryResults->elements64[0] : queryResults->elements32[0]);

@@ -1287,11 +1287,6 @@ void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, deUint32
 	m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
 }
 
-void DeviceDriver::resetQueryPoolEXT (VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount) const
-{
-	m_vk.resetQueryPoolEXT(device, queryPool, firstQuery, queryCount);
-}
-
 VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
 {
 	return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
