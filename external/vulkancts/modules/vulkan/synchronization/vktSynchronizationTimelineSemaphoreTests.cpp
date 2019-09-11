@@ -467,16 +467,16 @@ tcu::TestStatus maxDifferenceValueCase (Context& context)
 	deUint64										timelineBackValue;
 	deUint64										timelineFrontValue;
 
+	if (maxTimelineValueDifference < requiredMinValueDifference)
+		return tcu::TestStatus::fail("Timeline semaphore max value difference test failed");
+
+	iterations = std::min<deUint64>(std::numeric_limits<deUint64>::max() / maxTimelineValueDifference, 100ull);
+
 	log << TestLog::Message
 		<< " maxTimelineSemaphoreValueDifference=" << maxTimelineValueDifference
 		<< " maxExpected=" << requiredMinValueDifference
 		<< " iterations=" << iterations
 		<< TestLog::EndMessage;
-
-	if (maxTimelineValueDifference < requiredMinValueDifference)
-		return tcu::TestStatus::fail("Timeline semaphore max value difference test failed");
-
-	iterations = std::min<deUint64>(std::numeric_limits<deUint64>::max() / maxTimelineValueDifference, 100ull);
 
 	checkerThread.start();
 
