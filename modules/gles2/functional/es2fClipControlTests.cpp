@@ -1023,7 +1023,7 @@ public:
 	{
 		const glw::Functions&	gl			  = m_context.getRenderContext().getFunctions();
 
-		gl.deleteRenderbuffers(1, &m_texDepthResolve);
+		gl.deleteTextures(1, &m_texDepthResolve);
 		gl.deleteFramebuffers(1, &m_fboD);
 
 		ClipControlRenderBaseTest::deinit();
