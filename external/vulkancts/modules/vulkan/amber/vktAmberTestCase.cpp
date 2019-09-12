@@ -180,6 +180,7 @@ bool AmberTestCase::parse(const char* category, const std::string& filename)
 		return false;
 
 	m_recipe = new amber::Recipe();
+	m_recipe->SetFenceTimeout(1000 * 60 * 10); // 10 minutes
 
 	amber::Amber am;
 	amber::Result r = am.Parse(script, m_recipe);
@@ -289,7 +290,7 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	amber_options.engine				= amber::kEngineTypeVulkan;
 	amber_options.config				= createEngineConfig(m_context);
 	amber_options.delegate				= DE_NULL;
-	amber_options.pipeline_create_only	= false;
+	amber_options.execution_type		= amber::ExecutionType::kExecute;
 
 	amber::Result r = am.ExecuteWithShaderData(m_recipe, &amber_options, shaderMap);
 	if (!r.IsSuccess()) {

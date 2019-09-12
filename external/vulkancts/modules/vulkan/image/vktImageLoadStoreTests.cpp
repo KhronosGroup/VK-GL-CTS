@@ -932,7 +932,12 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const VkFormatProperties formatProperties (getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_format));
+	const vk::VkFormatProperties imageFormatProperties  (vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_imageFormat));
 
 	if (!m_declareImageFormatInShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
@@ -945,6 +950,12 @@ void LoadStoreTest::checkSupport (Context& context) const
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for images");
+
+	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 }
 
 void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
