@@ -934,7 +934,12 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 
 void LoadStoreTest::checkSupport (Context& context) const
 {
-	const VkFormatProperties formatProperties (getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format));
+	const vk::VkFormatProperties	formatProperties	(vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_format));
+	const vk::VkFormatProperties imageFormatProperties  (vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																							   context.getPhysicalDevice(),
+																							   m_imageFormat));
 
 	if (!m_declareImageFormatInShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
@@ -947,6 +952,12 @@ void LoadStoreTest::checkSupport (Context& context) const
 
 	if (m_texture.type() == IMAGE_TYPE_BUFFER && !(formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT))
 		TCU_THROW(NotSupportedError, "Format not supported for storage texel buffers");
+
+	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(imageFormatProperties.optimalTilingFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for images");
+
+	if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
+		TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 }
 
 void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
@@ -1370,13 +1381,14 @@ protected:
 
 	de::MovePtr<Image>				m_imageSrc;				// source image
 	SharedVkImageView				m_imageSrcView;
+	VkDeviceSize					m_imageSrcSize;
 
 	de::MovePtr<Image>				m_imageDst;				// dest image
 	SharedVkImageView				m_imageDstView;
 	VkFormat						m_imageDstFormat;
+	VkDeviceSize					m_imageDstSize;
 
 	de::MovePtr<Buffer>				m_buffer;				// result buffer
-	VkDeviceSize					m_bufferSizeBytes;
 
 	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
 	Move<VkDescriptorPool>			m_descriptorPool;
@@ -1416,21 +1428,25 @@ ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context
 		MemoryRequirement::Any));
 
 	// Create destination image
-	m_bufferSizeBytes	= width * height * tcu::getPixelSize(textureFormat);
 	m_imageDstFormat	= m_isSigned ? VK_FORMAT_R32G32B32A32_SINT : VK_FORMAT_R32G32B32A32_UINT;
 	m_imageDst = de::MovePtr<Image>(new Image(
 		vk, device, allocator,
 		makeImageCreateInfo(m_texture, m_imageDstFormat, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u),
 		MemoryRequirement::Any));
 
+	// Compute image and buffer sizes
+	m_imageSrcSize					= width * height * tcu::getPixelSize(textureFormat);
+	m_imageDstSize					= width * height * tcu::getPixelSize(mapVkFormat(m_imageDstFormat));
+	VkDeviceSize bufferSizeBytes	= de::max(m_imageSrcSize, m_imageDstSize);
+
 	// Create helper buffer able to store input data and image write result
 	m_buffer = de::MovePtr<Buffer>(new Buffer(
 		vk, device, allocator,
-		makeBufferCreateInfo(m_bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+		makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
 		MemoryRequirement::HostVisible));
 
 	const Allocation& alloc = m_buffer->getAllocation();
-	deMemcpy(alloc.getHostPtr(), m_inputImageData.getAccess().getDataPtr(), static_cast<size_t>(m_bufferSizeBytes));
+	deMemcpy(alloc.getHostPtr(), m_inputImageData.getAccess().getDataPtr(), static_cast<size_t>(m_imageSrcSize));
 	flushAlloc(vk, device, alloc);
 }
 
@@ -1498,7 +1514,7 @@ void ImageExtendOperandTestInstance::commandBeforeCompute (const VkCommandBuffer
 
 		const VkBufferMemoryBarrier barrierFlushHostWriteBeforeCopy = makeBufferMemoryBarrier(
 			VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			m_buffer->get(), 0ull, m_bufferSizeBytes);
+			m_buffer->get(), 0ull, m_imageSrcSize);
 
 		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
 			(VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
@@ -1523,7 +1539,7 @@ void ImageExtendOperandTestInstance::commandBetweenShaderInvocations (const VkCo
 
 void ImageExtendOperandTestInstance::commandAfterCompute (const VkCommandBuffer cmdBuffer)
 {
-	commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_buffer->get(), m_bufferSizeBytes, m_texture);
+	commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_buffer->get(), m_imageDstSize, m_texture);
 }
 
 tcu::TestStatus ImageExtendOperandTestInstance::verifyResult (void)

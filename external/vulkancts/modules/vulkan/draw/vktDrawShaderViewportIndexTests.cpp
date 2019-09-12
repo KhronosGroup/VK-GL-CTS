@@ -796,7 +796,13 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 void checkSupportVertex (Context& context, const int)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
-	context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
+	if (context.contextSupports(1, 2, 0))
+	{
+		if (!getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).shaderOutputViewportIndex)
+			TCU_THROW(NotSupportedError, "Required Vulkan 1.2 feature is not supported: shaderOutputViewportIndex");
+	}
+	else
+		context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
 
 	if (context.getDeviceProperties().limits.maxViewports < MIN_MAX_VIEWPORTS)
 		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");

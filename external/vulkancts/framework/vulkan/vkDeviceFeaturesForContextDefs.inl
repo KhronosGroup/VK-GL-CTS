@@ -50,7 +50,5 @@ const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					Context::getTransfor
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			Context::getUniformBufferStandardLayoutFeatures			(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}
 const vk::VkPhysicalDeviceVariablePointersFeatures&						Context::getVariablePointersFeatures					(void) const { return m_device->getVariablePointersFeatures();					}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			Context::getVertexAttributeDivisorFeaturesEXT			(void) const { return m_device->getVertexAttributeDivisorFeaturesEXT();			}
-const vk::VkPhysicalDeviceVulkan11Features&								Context::getVulkan11Features							(void) const { return m_device->getVulkan11Features();							}
-const vk::VkPhysicalDeviceVulkan12Features&								Context::getVulkan12Features							(void) const { return m_device->getVulkan12Features();							}
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&					Context::getVulkanMemoryModelFeatures					(void) const { return m_device->getVulkanMemoryModelFeatures();					}
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&					Context::getYcbcrImageArraysFeaturesEXT					(void) const { return m_device->getYcbcrImageArraysFeaturesEXT();				}

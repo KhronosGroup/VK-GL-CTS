@@ -53,7 +53,7 @@ bool is8BitStorageFeaturesSupported (const Context& context, Extension8BitStorag
 	VkPhysicalDevice8BitStorageFeaturesKHR extensionFeatures = context.get8BitStorageFeatures();
 
 	if ((toCheck & EXT8BITSTORAGEFEATURES_STORAGE_BUFFER) != 0 && extensionFeatures.storageBuffer8BitAccess == VK_FALSE)
-		TCU_FAIL("storageBuffer8BitAccess has to be supported");
+		return false;
 
 	if ((toCheck & EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER) != 0 && extensionFeatures.uniformAndStorageBuffer8BitAccess == VK_FALSE)
 		return false;

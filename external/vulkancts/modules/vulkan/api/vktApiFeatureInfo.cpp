@@ -509,6 +509,560 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 	return limitsOk;
 }
 
+void validateLimitsCheckSupport (Context& context)
+{
+	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
+}
+
+template<typename T>
+bool validateNumericLimit (const T limitToCheck, const T reportedValue, const LimitType limitType, const char* limitName, TestLog& log)
+{
+	if (limitType == LIMIT_TYPE_MIN)
+	{
+		if (reportedValue < limitToCheck)
+		{
+			log << TestLog::Message << "Limit validation failed " << limitName
+				<< " reported value is " << reportedValue
+				<< " expected MIN " << limitToCheck
+				<< TestLog::EndMessage;
+
+			return false;
+		}
+	}
+	else if (limitType == LIMIT_TYPE_MAX)
+	{
+		if (reportedValue > limitToCheck)
+		{
+			log << TestLog::Message << "Limit validation failed " << limitName
+				<< " reported value is " << reportedValue
+				<< " expected MAX " << limitToCheck
+				<< TestLog::EndMessage;
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template<typename T>
+bool validateBitmaskLimit (const T limitToCheck, const T reportedValue, const LimitType limitType, const char* limitName, TestLog& log)
+{
+	if (limitType == LIMIT_TYPE_MIN)
+	{
+		if ((reportedValue & limitToCheck) != limitToCheck)
+		{
+			log << TestLog::Message << "Limit validation failed " << limitName
+				<< " reported value is " << reportedValue
+				<< " expected MIN " << limitToCheck
+				<< TestLog::EndMessage;
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
+tcu::TestStatus validateLimits12 (Context& context)
+{
+#ifdef PN
+#error PN defined
+#else
+#define PN(_X_)	&(_X_), (const char*)(#_X_)
+#endif
+
+#define LIM_MIN_UINT32(X)	deUint32(X),          0,               0,     0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN
+#define LIM_MAX_UINT32(X)	deUint32(X),          0,               0,     0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MAX
+#define LIM_NONE_UINT32		          0,          0,               0,     0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE
+#define LIM_MIN_INT32(X)	          0, deInt32(X),               0,     0.0f, LIMIT_FORMAT_SIGNED_INT,   LIMIT_TYPE_MIN
+#define LIM_MAX_INT32(X)	          0, deInt32(X),               0,     0.0f, LIMIT_FORMAT_SIGNED_INT,   LIMIT_TYPE_MAX
+#define LIM_NONE_INT32		          0,          0,               0,     0.0f, LIMIT_FORMAT_SIGNED_INT,   LIMIT_TYPE_NONE
+#define LIM_MIN_DEVSIZE(X)	          0,          0, VkDeviceSize(X),     0.0f, LIMIT_FORMAT_DEVICE_SIZE,  LIMIT_TYPE_MIN
+#define LIM_MAX_DEVSIZE(X)	          0,          0, VkDeviceSize(X),     0.0f, LIMIT_FORMAT_DEVICE_SIZE,  LIMIT_TYPE_MAX
+#define LIM_NONE_DEVSIZE	          0,          0,               0,     0.0f, LIMIT_FORMAT_DEVICE_SIZE,  LIMIT_TYPE_NONE
+#define LIM_MIN_FLOAT(X)	          0,          0,               0, float(X), LIMIT_FORMAT_FLOAT,        LIMIT_TYPE_MIN
+#define LIM_MAX_FLOAT(X)	          0,          0,               0, float(X), LIMIT_FORMAT_FLOAT,        LIMIT_TYPE_MAX
+#define LIM_NONE_FLOAT		          0,          0,               0,     0.0f, LIMIT_FORMAT_FLOAT,        LIMIT_TYPE_NONE
+#define LIM_MIN_BITI32(X)	deUint32(X),          0,               0,     0.0f, LIMIT_FORMAT_BITMASK,      LIMIT_TYPE_MIN
+#define LIM_MAX_BITI32(X)	deUint32(X),          0,               0,     0.0f, LIMIT_FORMAT_BITMASK,      LIMIT_TYPE_MAX
+#define LIM_NONE_BITI32		          0,          0,               0,     0.0f, LIMIT_FORMAT_BITMASK,      LIMIT_TYPE_NONE
+
+	const VkPhysicalDevice											physicalDevice							= context.getPhysicalDevice();
+	const InstanceInterface&										vki										= context.getInstanceInterface();
+	TestLog&														log										= context.getTestContext().getLog();
+	bool															limitsOk								= true;
+
+	const VkPhysicalDeviceFeatures2&								features2								= context.getDeviceFeatures2();
+	const VkPhysicalDeviceFeatures&									features								= features2.features;
+
+	const VkPhysicalDeviceProperties2&								properties2								= context.getDeviceProperties2();
+	const VkPhysicalDevicePushDescriptorPropertiesKHR&				pushDescriptorPropertiesKHR				= context.getPushDescriptorProperties();
+	const VkPhysicalDeviceMultiviewProperties&						multiviewProperties						= context.getMultiviewProperties();
+	const VkPhysicalDeviceDiscardRectanglePropertiesEXT&			discardRectanglePropertiesEXT			= context.getDiscardRectanglePropertiesEXT();
+	const VkPhysicalDeviceSampleLocationsPropertiesEXT&				sampleLocationsPropertiesEXT			= context.getSampleLocationsPropertiesEXT();
+	const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			externalMemoryHostPropertiesEXT			= context.getExternalMemoryHostPropertiesEXT();
+	const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		blendOperationAdvancedPropertiesEXT		= context.getBlendOperationAdvancedPropertiesEXT();
+	const VkPhysicalDeviceMaintenance3Properties&					maintenance3Properties					= context.getMaintenance3Properties();
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	conservativeRasterizationPropertiesEXT	= context.getConservativeRasterizationPropertiesEXT();
+	const VkPhysicalDeviceDescriptorIndexingPropertiesEXT&			descriptorIndexingPropertiesEXT			= context.getDescriptorIndexingProperties();
+	const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			inlineUniformBlockPropertiesEXT			= context.getInlineUniformBlockPropertiesEXT();
+	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		vertexAttributeDivisorPropertiesEXT		= context.getVertexAttributeDivisorPropertiesEXT();
+	const VkPhysicalDeviceMeshShaderPropertiesNV&					meshShaderPropertiesNV					= context.getMeshShaderProperties();
+	const VkPhysicalDeviceTransformFeedbackPropertiesEXT&			transformFeedbackPropertiesEXT			= context.getTransformFeedbackPropertiesEXT();
+	const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			fragmentDensityMapPropertiesEXT			= context.getFragmentDensityMapPropertiesEXT();
+	const VkPhysicalDeviceRayTracingPropertiesNV&					rayTracingPropertiesNV					= context.getRayTracingProperties();
+	const VkPhysicalDeviceTimelineSemaphorePropertiesKHR&			timelineSemaphorePropertiesKHR			= context.getTimelineSemaphoreProperties();
+	const VkPhysicalDeviceLineRasterizationPropertiesEXT&			lineRasterizationPropertiesEXT			= context.getLineRasterizationPropertiesEXT();
+	const VkPhysicalDeviceVulkan12Properties						vulkan12Properties						= getPhysicalDeviceVulkan12Properties(vki, physicalDevice);
+	const VkPhysicalDeviceVulkan11Properties						vulkan11Properties						= getPhysicalDeviceVulkan11Properties(vki, physicalDevice);
+	const VkPhysicalDeviceLimits&									limits									= properties2.properties.limits;
+
+	const VkBool32													checkAlways								= VK_TRUE;
+	const VkBool32													checkVulkan12Limit						= VK_TRUE;
+	const VkBool32													pushDescriptorKHR						= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_push_descriptor");
+	const VkBool32													multiviewKHR							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview");
+	const VkBool32													discardRectangleEXT						= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_discard_rectangles");
+	const VkBool32													sampleLocationsEXT						= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_sample_locations");
+	const VkBool32													externalMemoryHostEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_external_memory_host");
+	const VkBool32													blendOperationAdvancedEXT				= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_blend_operation_advanced");
+	const VkBool32													maintenance3KHR							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance3");
+	const VkBool32													conservativeRasterizationEXT			= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_conservative_rasterization");
+	const VkBool32													descriptorIndexingEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing");
+	const VkBool32													inlineUniformBlockEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block");
+	const VkBool32													vertexAttributeDivisorEXT				= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_vertex_attribute_divisor");
+	const VkBool32													meshShaderNV							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_mesh_shader");
+	const VkBool32													transformFeedbackEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_transform_feedback");
+	const VkBool32													fragmentDensityMapEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_fragment_density_map");
+	const VkBool32													rayTracingNV							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing");
+	const VkBool32													timelineSemaphoreKHR					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_timeline_semaphore");
+	const VkBool32													lineRasterizationEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_line_rasterization");
+
+	deUint32														shaderStages							= 3;
+	deUint32														maxPerStageResourcesMin					= deMin32(128,	limits.maxPerStageDescriptorUniformBuffers		+
+																															limits.maxPerStageDescriptorStorageBuffers		+
+																															limits.maxPerStageDescriptorSampledImages		+
+																															limits.maxPerStageDescriptorStorageImages		+
+																															limits.maxPerStageDescriptorInputAttachments	+
+																															limits.maxColorAttachments);
+
+	if (features2.features.tessellationShader)
+	{
+		shaderStages += 2;
+	}
+
+	if (features2.features.geometryShader)
+	{
+		shaderStages++;
+	}
+
+	struct FeatureLimitTable
+	{
+		const void*		cond;
+		const char*		condName;
+		const void*		ptr;
+		const char*		name;
+		deUint32		uintVal;			//!< Format is UNSIGNED_INT
+		deInt32			intVal;				//!< Format is SIGNED_INT
+		deUint64		deviceSizeVal;		//!< Format is DEVICE_SIZE
+		float			floatVal;			//!< Format is FLOAT
+		LimitFormat		format;
+		LimitType		type;
+	}
+	featureLimitTable[] =
+	{
+		{ PN(checkAlways),								PN(limits.maxImageDimension1D),																	LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxImageDimension2D),																	LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxImageDimension3D),																	LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),								PN(limits.maxImageDimensionCube),																LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxImageArrayLayers),																	LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),								PN(limits.maxTexelBufferElements),																LIM_MIN_UINT32(65536) },
+		{ PN(checkAlways),								PN(limits.maxUniformBufferRange),																LIM_MIN_UINT32(16384) },
+		{ PN(checkAlways),								PN(limits.maxStorageBufferRange),																LIM_MIN_UINT32((1<<27)) },
+		{ PN(checkAlways),								PN(limits.maxPushConstantsSize),																LIM_MIN_UINT32(128) },
+		{ PN(checkAlways),								PN(limits.maxMemoryAllocationCount),															LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxSamplerAllocationCount),															LIM_MIN_UINT32(4000) },
+		{ PN(checkAlways),								PN(limits.bufferImageGranularity),																LIM_MIN_DEVSIZE(1) },
+		{ PN(checkAlways),								PN(limits.bufferImageGranularity),																LIM_MAX_DEVSIZE(131072) },
+		{ PN(features.sparseBinding),					PN(limits.sparseAddressSpaceSize),																LIM_MIN_DEVSIZE((1ull<<31)) },
+		{ PN(checkAlways),								PN(limits.maxBoundDescriptorSets),																LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxPerStageDescriptorSamplers),														LIM_MIN_UINT32(16) },
+		{ PN(checkAlways),								PN(limits.maxPerStageDescriptorUniformBuffers),													LIM_MIN_UINT32(12) },
+		{ PN(checkAlways),								PN(limits.maxPerStageDescriptorStorageBuffers),													LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxPerStageDescriptorSampledImages),													LIM_MIN_UINT32(16) },
+		{ PN(checkAlways),								PN(limits.maxPerStageDescriptorStorageImages),													LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxPerStageDescriptorInputAttachments),												LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxPerStageResources),																LIM_MIN_UINT32(maxPerStageResourcesMin) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetSamplers),															LIM_MIN_UINT32(shaderStages * 16) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetUniformBuffers),														LIM_MIN_UINT32(shaderStages * 12) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetUniformBuffersDynamic),												LIM_MIN_UINT32(8) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetStorageBuffers),														LIM_MIN_UINT32(shaderStages * 4) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetStorageBuffersDynamic),												LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetSampledImages),														LIM_MIN_UINT32(shaderStages * 16) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetStorageImages),														LIM_MIN_UINT32(shaderStages * 4) },
+		{ PN(checkAlways),								PN(limits.maxDescriptorSetInputAttachments),													LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxVertexInputAttributes),															LIM_MIN_UINT32(16) },
+		{ PN(checkAlways),								PN(limits.maxVertexInputBindings),																LIM_MIN_UINT32(16) },
+		{ PN(checkAlways),								PN(limits.maxVertexInputAttributeOffset),														LIM_MIN_UINT32(2047) },
+		{ PN(checkAlways),								PN(limits.maxVertexInputBindingStride),															LIM_MIN_UINT32(2048) },
+		{ PN(checkAlways),								PN(limits.maxVertexOutputComponents),															LIM_MIN_UINT32(64) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationGenerationLevel),														LIM_MIN_UINT32(64) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationPatchSize),															LIM_MIN_UINT32(32) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationControlPerVertexInputComponents),										LIM_MIN_UINT32(64) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationControlPerVertexOutputComponents),										LIM_MIN_UINT32(64) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationControlPerPatchOutputComponents),										LIM_MIN_UINT32(120) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationControlTotalOutputComponents),											LIM_MIN_UINT32(2048) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationEvaluationInputComponents),											LIM_MIN_UINT32(64) },
+		{ PN(features.tessellationShader),				PN(limits.maxTessellationEvaluationOutputComponents),											LIM_MIN_UINT32(64) },
+		{ PN(features.geometryShader),					PN(limits.maxGeometryShaderInvocations),														LIM_MIN_UINT32(32) },
+		{ PN(features.geometryShader),					PN(limits.maxGeometryInputComponents),															LIM_MIN_UINT32(64) },
+		{ PN(features.geometryShader),					PN(limits.maxGeometryOutputComponents),															LIM_MIN_UINT32(64) },
+		{ PN(features.geometryShader),					PN(limits.maxGeometryOutputVertices),															LIM_MIN_UINT32(256) },
+		{ PN(features.geometryShader),					PN(limits.maxGeometryTotalOutputComponents),													LIM_MIN_UINT32(1024) },
+		{ PN(checkAlways),								PN(limits.maxFragmentInputComponents),															LIM_MIN_UINT32(64) },
+		{ PN(checkAlways),								PN(limits.maxFragmentOutputAttachments),														LIM_MIN_UINT32(4) },
+		{ PN(features.dualSrcBlend),					PN(limits.maxFragmentDualSrcAttachments),														LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),								PN(limits.maxFragmentCombinedOutputResources),													LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxComputeSharedMemorySize),															LIM_MIN_UINT32(16384) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupCount[0]),															LIM_MIN_UINT32(65535) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupCount[1]),															LIM_MIN_UINT32(65535) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupCount[2]),															LIM_MIN_UINT32(65535) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupInvocations),														LIM_MIN_UINT32(128) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupSize[0]),															LIM_MIN_UINT32(128) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupSize[1]),															LIM_MIN_UINT32(128) },
+		{ PN(checkAlways),								PN(limits.maxComputeWorkGroupSize[2]),															LIM_MIN_UINT32(64) },
+		{ PN(checkAlways),								PN(limits.subPixelPrecisionBits),																LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.subTexelPrecisionBits),																LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.mipmapPrecisionBits),																	LIM_MIN_UINT32(4) },
+		{ PN(features.fullDrawIndexUint32),				PN(limits.maxDrawIndexedIndexValue),															LIM_MIN_UINT32((deUint32)~0) },
+		{ PN(features.multiDrawIndirect),				PN(limits.maxDrawIndirectCount),																LIM_MIN_UINT32(65535) },
+		{ PN(checkAlways),								PN(limits.maxSamplerLodBias),																	LIM_MIN_FLOAT(2.0f) },
+		{ PN(features.samplerAnisotropy),				PN(limits.maxSamplerAnisotropy),																LIM_MIN_FLOAT(16.0f) },
+		{ PN(features.multiViewport),					PN(limits.maxViewports),																		LIM_MIN_UINT32(16) },
+		{ PN(checkAlways),								PN(limits.maxViewportDimensions[0]),															LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxViewportDimensions[1]),															LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.viewportBoundsRange[0]),																LIM_MAX_FLOAT(-8192.0f) },
+		{ PN(checkAlways),								PN(limits.viewportBoundsRange[1]),																LIM_MIN_FLOAT(8191.0f) },
+		{ PN(checkAlways),								PN(limits.viewportSubPixelBits),																LIM_MIN_UINT32(0) },
+		{ PN(checkAlways),								PN(limits.minMemoryMapAlignment),																LIM_MIN_UINT32(64) },
+		{ PN(checkAlways),								PN(limits.minTexelBufferOffsetAlignment),														LIM_MIN_DEVSIZE(1) },
+		{ PN(checkAlways),								PN(limits.minTexelBufferOffsetAlignment),														LIM_MAX_DEVSIZE(256) },
+		{ PN(checkAlways),								PN(limits.minUniformBufferOffsetAlignment),														LIM_MIN_DEVSIZE(1) },
+		{ PN(checkAlways),								PN(limits.minUniformBufferOffsetAlignment),														LIM_MAX_DEVSIZE(256) },
+		{ PN(checkAlways),								PN(limits.minStorageBufferOffsetAlignment),														LIM_MIN_DEVSIZE(1) },
+		{ PN(checkAlways),								PN(limits.minStorageBufferOffsetAlignment),														LIM_MAX_DEVSIZE(256) },
+		{ PN(checkAlways),								PN(limits.minTexelOffset),																		LIM_MAX_INT32(-8) },
+		{ PN(checkAlways),								PN(limits.maxTexelOffset),																		LIM_MIN_INT32(7) },
+		{ PN(features.shaderImageGatherExtended),		PN(limits.minTexelGatherOffset),																LIM_MAX_INT32(-8) },
+		{ PN(features.shaderImageGatherExtended),		PN(limits.maxTexelGatherOffset),																LIM_MIN_INT32(7) },
+		{ PN(features.sampleRateShading),				PN(limits.minInterpolationOffset),																LIM_MAX_FLOAT(-0.5f) },
+		{ PN(features.sampleRateShading),				PN(limits.maxInterpolationOffset),																LIM_MIN_FLOAT(0.5f - (1.0f/deFloatPow(2.0f, (float)limits.subPixelInterpolationOffsetBits))) },
+		{ PN(features.sampleRateShading),				PN(limits.subPixelInterpolationOffsetBits),														LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.maxFramebufferWidth),																	LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxFramebufferHeight),																LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways),								PN(limits.maxFramebufferLayers),																LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),								PN(limits.framebufferColorSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.framebufferIntegerColorSampleCounts),										LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT) },
+		{ PN(checkAlways),								PN(limits.framebufferDepthSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),								PN(limits.framebufferStencilSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),								PN(limits.framebufferNoAttachmentsSampleCounts),												LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),								PN(limits.maxColorAttachments),																	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),								PN(limits.sampledImageColorSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),								PN(limits.sampledImageIntegerSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT) },
+		{ PN(checkAlways),								PN(limits.sampledImageDepthSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),								PN(limits.sampledImageStencilSampleCounts),														LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(features.shaderStorageImageMultisample),	PN(limits.storageImageSampleCounts),															LIM_MIN_BITI32(VK_SAMPLE_COUNT_1_BIT|VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),								PN(limits.maxSampleMaskWords),																	LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),								PN(limits.timestampComputeAndGraphics),															LIM_NONE_UINT32 },
+		{ PN(checkAlways),								PN(limits.timestampPeriod),																		LIM_NONE_UINT32 },
+		{ PN(features.shaderClipDistance),				PN(limits.maxClipDistances),																	LIM_MIN_UINT32(8) },
+		{ PN(features.shaderClipDistance),				PN(limits.maxCullDistances),																	LIM_MIN_UINT32(8) },
+		{ PN(features.shaderClipDistance),				PN(limits.maxCombinedClipAndCullDistances),														LIM_MIN_UINT32(8) },
+		{ PN(checkAlways),								PN(limits.discreteQueuePriorities),																LIM_MIN_UINT32(2) },
+		{ PN(features.largePoints),						PN(limits.pointSizeRange[0]),																	LIM_MIN_FLOAT(0.0f) },
+		{ PN(features.largePoints),						PN(limits.pointSizeRange[0]),																	LIM_MAX_FLOAT(1.0f) },
+		{ PN(features.largePoints),						PN(limits.pointSizeRange[1]),																	LIM_MIN_FLOAT(64.0f - limits.pointSizeGranularity) },
+		{ PN(features.wideLines),						PN(limits.lineWidthRange[0]),																	LIM_MIN_FLOAT(0.0f) },
+		{ PN(features.wideLines),						PN(limits.lineWidthRange[0]),																	LIM_MAX_FLOAT(1.0f) },
+		{ PN(features.wideLines),						PN(limits.lineWidthRange[1]),																	LIM_MIN_FLOAT(8.0f - limits.lineWidthGranularity) },
+		{ PN(features.largePoints),						PN(limits.pointSizeGranularity),																LIM_MIN_FLOAT(0.0f) },
+		{ PN(features.largePoints),						PN(limits.pointSizeGranularity),																LIM_MAX_FLOAT(1.0f) },
+		{ PN(features.wideLines),						PN(limits.lineWidthGranularity),																LIM_MIN_FLOAT(0.0f) },
+		{ PN(features.wideLines),						PN(limits.lineWidthGranularity),																LIM_MAX_FLOAT(1.0f) },
+		{ PN(checkAlways),								PN(limits.strictLines),																			LIM_NONE_UINT32 },
+		{ PN(checkAlways),								PN(limits.standardSampleLocations),																LIM_NONE_UINT32 },
+		{ PN(checkAlways),								PN(limits.optimalBufferCopyOffsetAlignment),													LIM_NONE_DEVSIZE },
+		{ PN(checkAlways),								PN(limits.optimalBufferCopyRowPitchAlignment),													LIM_NONE_DEVSIZE },
+		{ PN(checkAlways),								PN(limits.nonCoherentAtomSize),																	LIM_MIN_DEVSIZE(1) },
+		{ PN(checkAlways),								PN(limits.nonCoherentAtomSize),																	LIM_MAX_DEVSIZE(256) },
+
+		// VK_KHR_push_descriptor
+		{ PN(pushDescriptorKHR),						PN(pushDescriptorPropertiesKHR.maxPushDescriptors),												LIM_MIN_UINT32(32) },
+
+		// VK_KHR_multiview
+		{ PN(multiviewKHR),								PN(multiviewProperties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
+		{ PN(multiviewKHR),								PN(multiviewProperties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1<<27) - 1) },
+		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
+		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1<<27) - 1) },
+
+		// VK_EXT_discard_rectangles
+		{ PN(discardRectangleEXT),						PN(discardRectanglePropertiesEXT.maxDiscardRectangles),											LIM_MIN_UINT32(4) },
+
+		// VK_EXT_sample_locations
+		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationSampleCounts),									LIM_MIN_BITI32(VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.maxSampleLocationGridSize.width),								LIM_MIN_FLOAT(0.0f) },
+		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.maxSampleLocationGridSize.height),								LIM_MIN_FLOAT(0.0f) },
+		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationCoordinateRange[0]),								LIM_MAX_FLOAT(0.0f) },
+		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationCoordinateRange[1]),								LIM_MIN_FLOAT(0.9375f) },
+		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationSubPixelBits),									LIM_MIN_UINT32(4) },
+
+		// VK_EXT_external_memory_host
+		{ PN(externalMemoryHostEXT),					PN(externalMemoryHostPropertiesEXT.minImportedHostPointerAlignment),							LIM_MAX_DEVSIZE(65536) },
+
+		// VK_EXT_blend_operation_advanced
+		{ PN(blendOperationAdvancedEXT),				PN(blendOperationAdvancedPropertiesEXT.advancedBlendMaxColorAttachments),						LIM_MIN_UINT32(4) },
+
+		// VK_KHR_maintenance3
+		{ PN(maintenance3KHR),							PN(maintenance3Properties.maxPerSetDescriptors),												LIM_MIN_UINT32(1024) },
+		{ PN(maintenance3KHR),							PN(maintenance3Properties.maxMemoryAllocationSize),												LIM_MIN_DEVSIZE(1<<30) },
+		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxPerSetDescriptors),													LIM_MIN_UINT32(1024) },
+		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMemoryAllocationSize),													LIM_MIN_DEVSIZE(1<<30) },
+
+		// VK_EXT_conservative_rasterization
+		{ PN(conservativeRasterizationEXT),				PN(conservativeRasterizationPropertiesEXT.primitiveOverestimationSize),							LIM_MIN_FLOAT(0.0f) },
+		{ PN(conservativeRasterizationEXT),				PN(conservativeRasterizationPropertiesEXT.maxExtraPrimitiveOverestimationSize),					LIM_MIN_FLOAT(0.0f) },
+		{ PN(conservativeRasterizationEXT),				PN(conservativeRasterizationPropertiesEXT.extraPrimitiveOverestimationSizeGranularity),			LIM_MIN_FLOAT(0.0f) },
+
+		// VK_EXT_descriptor_indexing
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxUpdateAfterBindDescriptorsInAllPools),					LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),				LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(12) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),			LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),			LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),						LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),					LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),				LIM_MIN_UINT32(shaderStages * 12) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),		LIM_MIN_UINT32(8) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),				LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),		LIM_MIN_UINT32(4) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),				LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),				LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),			LIM_MIN_UINT32(500000) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),				LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),			LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),			LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),						LIM_MIN_UINT32(limits.maxPerStageResources) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),					LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),				LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),		LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),				LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),		LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),				LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),				LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
+		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),			LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
+
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxUpdateAfterBindDescriptorsInAllPools),									LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers),							LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),						LIM_MIN_UINT32(12) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),						LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages),						LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages),						LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments),					LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageUpdateAfterBindResources),										LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers),									LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers),							LIM_MIN_UINT32(shaderStages * 12) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),					LIM_MIN_UINT32(8) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers),							LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),					LIM_MIN_UINT32(4) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages),							LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages),							LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(500000) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers),							LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),						LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),						LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages),						LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages),						LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments),					LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageUpdateAfterBindResources),										LIM_MIN_UINT32(limits.maxPerStageResources) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers),									LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers),							LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),					LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers),							LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),					LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages),							LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages),							LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
+
+		// VK_EXT_inline_uniform_block
+		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxInlineUniformBlockSize),									LIM_MIN_UINT32(256) },
+		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxPerStageDescriptorInlineUniformBlocks),					LIM_MIN_UINT32(4) },
+		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks),	LIM_MIN_UINT32(4) },
+		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxDescriptorSetInlineUniformBlocks),						LIM_MIN_UINT32(4) },
+		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxDescriptorSetUpdateAfterBindInlineUniformBlocks),			LIM_MIN_UINT32(4) },
+
+		// VK_EXT_vertex_attribute_divisor
+		{ PN(vertexAttributeDivisorEXT),				PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),									LIM_MIN_UINT32((1<<16) - 1) },
+
+		// VK_NV_mesh_shader
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxDrawMeshTasksCount),												LIM_MIN_UINT32(deUint32((1ull<<16) - 1)) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupInvocations),											LIM_MIN_UINT32(32) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[0]),												LIM_MIN_UINT32(32) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[1]),												LIM_MIN_UINT32(1) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[2]),												LIM_MIN_UINT32(1) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskTotalMemorySize),												LIM_MIN_UINT32(16384) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskOutputCount),													LIM_MIN_UINT32((1<<16) - 1) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupInvocations),											LIM_MIN_UINT32(32) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[0]),												LIM_MIN_UINT32(32) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[1]),												LIM_MIN_UINT32(1) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[2]),												LIM_MIN_UINT32(1) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshTotalMemorySize),												LIM_MIN_UINT32(16384) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshOutputVertices),												LIM_MIN_UINT32(256) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshOutputPrimitives),												LIM_MIN_UINT32(256) },
+		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshMultiviewViewCount),											LIM_MIN_UINT32(1) },
+
+		// VK_EXT_transform_feedback
+		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackStreams),									LIM_MIN_UINT32(1) },
+		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBuffers),									LIM_MIN_UINT32(1) },
+		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferSize),								LIM_MIN_DEVSIZE(1ull<<27) },
+		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackStreamDataSize),							LIM_MIN_UINT32(512) },
+		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferDataSize),							LIM_MIN_UINT32(512) },
+		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferDataStride),						LIM_MIN_UINT32(512) },
+
+		// fragmentDensityMap
+		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.minFragmentDensityTexelSize.width),							LIM_MIN_UINT32(1) },
+		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.minFragmentDensityTexelSize.height),							LIM_MIN_UINT32(1) },
+		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.maxFragmentDensityTexelSize.width),							LIM_MIN_UINT32(1) },
+		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.maxFragmentDensityTexelSize.height),							LIM_MIN_UINT32(1) },
+
+		// VK_NV_ray_tracing
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.shaderGroupHandleSize),												LIM_MIN_UINT32(16) },
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxRecursionDepth),													LIM_MIN_UINT32(31) },
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.shaderGroupBaseAlignment),											LIM_MIN_UINT32(64) },
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxGeometryCount),													LIM_MIN_UINT32((1<<24)-1) },
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxInstanceCount),													LIM_MIN_UINT32((1<<24)-1) },
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxTriangleCount),													LIM_MIN_UINT32((1<<29)-1) },
+		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxDescriptorSetAccelerationStructures),								LIM_MIN_UINT32(16) },
+
+		// timelineSemaphore
+		{ PN(timelineSemaphoreKHR),						PN(timelineSemaphorePropertiesKHR.maxTimelineSemaphoreValueDifference),							LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+
+		// VK_EXT_line_rasterization
+		{ PN(lineRasterizationEXT),						PN(lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits),									LIM_MIN_UINT32(4) },
+	};
+
+	log << TestLog::Message << limits << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+	{
+		bool	limitOk		= true;
+
+		if (*((VkBool32*)featureLimitTable[ndx].cond) == DE_FALSE)
+		{
+			log << TestLog::Message
+				<< "Limit validation skipped '" << featureLimitTable[ndx].name << "' due to "
+				<< featureLimitTable[ndx].condName << " == false'"
+				<< TestLog::EndMessage;
+
+			continue;
+		}
+
+		switch (featureLimitTable[ndx].format)
+		{
+			case LIMIT_FORMAT_UNSIGNED_INT:
+			{
+				const deUint32	limitToCheck	= featureLimitTable[ndx].uintVal;
+				const deUint32	reportedValue	= *(deUint32*)featureLimitTable[ndx].ptr;
+
+				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
+
+				break;
+			}
+
+			case LIMIT_FORMAT_FLOAT:
+			{
+				const float		limitToCheck	= featureLimitTable[ndx].floatVal;
+				const float		reportedValue	= *(float*)featureLimitTable[ndx].ptr;
+
+				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
+
+				break;
+			}
+
+			case LIMIT_FORMAT_SIGNED_INT:
+			{
+				const deInt32	limitToCheck	= featureLimitTable[ndx].intVal;
+				const deInt32	reportedValue	= *(deInt32*)featureLimitTable[ndx].ptr;
+
+				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
+
+				break;
+			}
+
+			case LIMIT_FORMAT_DEVICE_SIZE:
+			{
+				const deUint64	limitToCheck	= featureLimitTable[ndx].deviceSizeVal;
+				const deUint64	reportedValue	= *(deUint64*)featureLimitTable[ndx].ptr;
+
+				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
+
+				break;
+			}
+
+			case LIMIT_FORMAT_BITMASK:
+			{
+				const deUint32	limitToCheck	= featureLimitTable[ndx].uintVal;
+				const deUint32	reportedValue	= *(deUint32*)featureLimitTable[ndx].ptr;
+
+				limitOk = validateBitmaskLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
+
+				break;
+			}
+
+			default:
+				TCU_THROW(InternalError, "Unknown LimitFormat specified");
+		}
+
+		limitsOk = limitsOk && limitOk;
+	}
+
+	if (limits.maxFramebufferWidth > limits.maxViewportDimensions[0] ||
+		limits.maxFramebufferHeight > limits.maxViewportDimensions[1])
+	{
+		log << TestLog::Message << "limit validation failed, maxFramebufferDimension of "
+			<< "[" << limits.maxFramebufferWidth << ", " << limits.maxFramebufferHeight << "] "
+			<< "is larger than maxViewportDimension of "
+			<< "[" << limits.maxViewportDimensions[0] << ", " << limits.maxViewportDimensions[1] << "]" << TestLog::EndMessage;
+		limitsOk = false;
+	}
+
+	if (limits.viewportBoundsRange[0] > float(-2 * limits.maxViewportDimensions[0]))
+	{
+		log << TestLog::Message << "limit validation failed, viewPortBoundsRange[0] of " << limits.viewportBoundsRange[0]
+			<< "is larger than -2*maxViewportDimension[0] of " << -2*limits.maxViewportDimensions[0] << TestLog::EndMessage;
+		limitsOk = false;
+	}
+
+	if (limits.viewportBoundsRange[1] < float(2 * limits.maxViewportDimensions[1] - 1))
+	{
+		log << TestLog::Message << "limit validation failed, viewportBoundsRange[1] of " << limits.viewportBoundsRange[1]
+			<< "is less than 2*maxViewportDimension[1] of " << 2*limits.maxViewportDimensions[1] << TestLog::EndMessage;
+		limitsOk = false;
+	}
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+#	undef PN
+}
+
 template<typename T>
 class CheckIncompleteResult
 {
@@ -2966,19 +3520,19 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const int count = 2u;
 
 	vector<VkExtensionProperties> properties		= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_device_protected_memory			=																			context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_device_subgroup					=																			context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.getUsedApiVersion() >= VK_API_VERSION_1_1;
-	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
-	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.getUsedApiVersion() >= VK_API_VERSION_1_2;
+	const bool khr_external_fence_capabilities		= checkExtension(properties, "VK_KHR_external_fence_capabilities")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_external_memory_capabilities		= checkExtension(properties, "VK_KHR_external_memory_capabilities")		||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_external_semaphore_capabilities	= checkExtension(properties, "VK_KHR_external_semaphore_capabilities")	||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_multiview						= checkExtension(properties, "VK_KHR_multiview")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_device_protected_memory			=																			context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_device_subgroup					=																			context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_maintenance2						= checkExtension(properties, "VK_KHR_maintenance2")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_maintenance3						= checkExtension(properties, "VK_KHR_maintenance3")						||	context.contextSupports(vk::ApiVersion(1, 1, 0));
+	const bool khr_depth_stencil_resolve			= checkExtension(properties, "VK_KHR_depth_stencil_resolve")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_driver_properties				= checkExtension(properties, "VK_KHR_driver_properties")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_shader_float_controls			= checkExtension(properties, "VK_KHR_shader_float_controls")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_descriptor_indexing				= checkExtension(properties, "VK_EXT_descriptor_indexing")				||	context.contextSupports(vk::ApiVersion(1, 2, 0));
+	const bool khr_sampler_filter_minmax			= checkExtension(properties, "VK_EXT_sampler_filter_minmax")			||	context.contextSupports(vk::ApiVersion(1, 2, 0));
 
 	VkPhysicalDeviceIDProperties					idProperties[count];
 	VkPhysicalDeviceMultiviewProperties				multiviewProperties[count];
@@ -3555,33 +4109,14 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 	const int											count									= 2u;
 	VkPhysicalDeviceVulkan11Features*					vulkan11Features[count]					= { (VkPhysicalDeviceVulkan11Features*)(buffer11a), (VkPhysicalDeviceVulkan11Features*)(buffer11b)};
 	VkPhysicalDeviceVulkan12Features*					vulkan12Features[count]					= { (VkPhysicalDeviceVulkan12Features*)(buffer12a), (VkPhysicalDeviceVulkan12Features*)(buffer12b)};
-	VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures;
-	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures;
-	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures;
-	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures;
-	VkPhysicalDeviceShaderDrawParametersFeatures		shaderDrawParametersFeatures;
-	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures;
-	VkPhysicalDevice8BitStorageFeatures					device8BitStorageFeatures;
-	VkPhysicalDeviceShaderAtomicInt64Features			shaderAtomicInt64Features;
-	VkPhysicalDeviceShaderFloat16Int8Features			shaderFloat16Int8Features;
-	VkPhysicalDeviceDescriptorIndexingFeatures			descriptorIndexingFeatures;
-	VkPhysicalDeviceScalarBlockLayoutFeatures			scalarBlockLayoutFeatures;
-	VkPhysicalDeviceImagelessFramebufferFeatures		imagelessFramebufferFeatures;
-	VkPhysicalDeviceUniformBufferStandardLayoutFeatures	uniformBufferStandardLayoutFeatures;
-	VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures	shaderSubgroupExtendedTypesFeatures;
-	VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures	separateDepthStencilLayoutsFeatures;
-	VkPhysicalDeviceHostQueryResetFeatures				hostQueryResetFeatures;
-	VkPhysicalDeviceTimelineSemaphoreFeatures			timelineSemaphoreFeatures;
-	VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures;
-	VkPhysicalDeviceVulkanMemoryModelFeatures			vulkanMemoryModelFeatures;
 
 	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
-	deMemset(buffer11a, GUARD_VALUE, sizeof buffer11a);
-	deMemset(buffer11b, GUARD_VALUE, sizeof buffer11b);
-	deMemset(buffer12a, GUARD_VALUE, sizeof buffer12a);
-	deMemset(buffer12b, GUARD_VALUE, sizeof buffer12b);
+	deMemset(buffer11b, GUARD_VALUE, sizeof(buffer11b));
+	deMemset(buffer12a, GUARD_VALUE, sizeof(buffer12a));
+	deMemset(buffer12b, GUARD_VALUE, sizeof(buffer12b));
+	deMemset(buffer11a, GUARD_VALUE, sizeof(buffer11a));
 
 	// Validate all fields initialized
 	for (int ndx = 0; ndx < count; ++ndx)
@@ -3616,242 +4151,6 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 		log << TestLog::Message << "deviceFeatures - VkPhysicalDeviceVulkan12Features initialization failure" << TestLog::EndMessage;
 
 		return tcu::TestStatus::fail("VkPhysicalDeviceVulkan12Features initialization failure");
-	}
-
-	// Validate all fields initialized matching to extension structures
-	{
-		deMemset(&extFeatures.features,					0x00, sizeof(extFeatures.features));
-		deMemset(&device16BitStorageFeatures,			0x00, sizeof(VkPhysicalDevice16BitStorageFeatures));
-		deMemset(&deviceMultiviewFeatures,				0x00, sizeof(VkPhysicalDeviceMultiviewFeatures));
-		deMemset(&protectedMemoryFeatures,				0x00, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
-		deMemset(&samplerYcbcrConversionFeatures,		0x00, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
-		deMemset(&shaderDrawParametersFeatures,			0x00, sizeof(VkPhysicalDeviceShaderDrawParametersFeatures));
-		deMemset(&variablePointerFeatures,				0x00, sizeof(VkPhysicalDeviceVariablePointersFeatures));
-		deMemset(&device8BitStorageFeatures,			0x00, sizeof(VkPhysicalDevice8BitStorageFeatures));
-		deMemset(&shaderAtomicInt64Features,			0x00, sizeof(VkPhysicalDeviceShaderAtomicInt64Features));
-		deMemset(&shaderFloat16Int8Features,			0x00, sizeof(VkPhysicalDeviceShaderFloat16Int8Features));
-		deMemset(&descriptorIndexingFeatures,			0x00, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
-		deMemset(&scalarBlockLayoutFeatures,			0x00, sizeof(VkPhysicalDeviceScalarBlockLayoutFeatures));
-		deMemset(&imagelessFramebufferFeatures,			0x00, sizeof(VkPhysicalDeviceImagelessFramebufferFeatures));
-		deMemset(&uniformBufferStandardLayoutFeatures,	0x00, sizeof(VkPhysicalDeviceUniformBufferStandardLayoutFeatures));
-		deMemset(&shaderSubgroupExtendedTypesFeatures,	0x00, sizeof(VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures));
-		deMemset(&separateDepthStencilLayoutsFeatures,	0x00, sizeof(VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures));
-		deMemset(&hostQueryResetFeatures,				0x00, sizeof(VkPhysicalDeviceHostQueryResetFeatures));
-		deMemset(&timelineSemaphoreFeatures,			0x00, sizeof(VkPhysicalDeviceTimelineSemaphoreFeatures));
-		deMemset(&bufferDeviceAddressFeatures,			0x00, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
-		deMemset(&vulkanMemoryModelFeatures,			0x00, sizeof(VkPhysicalDeviceVulkanMemoryModelFeatures));
-
-		extFeatures.sType							= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		extFeatures.pNext							= &device16BitStorageFeatures;
-
-		device16BitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
-		device16BitStorageFeatures.pNext			= &deviceMultiviewFeatures;
-
-		deviceMultiviewFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
-		deviceMultiviewFeatures.pNext				= &protectedMemoryFeatures;
-
-		protectedMemoryFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
-		protectedMemoryFeatures.pNext				= &samplerYcbcrConversionFeatures;
-
-		samplerYcbcrConversionFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
-		samplerYcbcrConversionFeatures.pNext		= &shaderDrawParametersFeatures;
-
-		shaderDrawParametersFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
-		shaderDrawParametersFeatures.pNext			= &variablePointerFeatures;
-
-		variablePointerFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
-		variablePointerFeatures.pNext				= &device8BitStorageFeatures;
-
-		device8BitStorageFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
-		device8BitStorageFeatures.pNext				= &shaderAtomicInt64Features;
-
-		shaderAtomicInt64Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
-		shaderAtomicInt64Features.pNext				= &shaderFloat16Int8Features;
-
-		shaderFloat16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
-		shaderFloat16Int8Features.pNext				= &descriptorIndexingFeatures;
-
-		descriptorIndexingFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-		descriptorIndexingFeatures.pNext			= &scalarBlockLayoutFeatures;
-
-		scalarBlockLayoutFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		scalarBlockLayoutFeatures.pNext				= &imagelessFramebufferFeatures;
-
-		imagelessFramebufferFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES;
-		imagelessFramebufferFeatures.pNext			= &uniformBufferStandardLayoutFeatures;
-
-		uniformBufferStandardLayoutFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES;
-		uniformBufferStandardLayoutFeatures.pNext	= &shaderSubgroupExtendedTypesFeatures;
-
-		shaderSubgroupExtendedTypesFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES;
-		shaderSubgroupExtendedTypesFeatures.pNext	= &separateDepthStencilLayoutsFeatures;
-
-		separateDepthStencilLayoutsFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
-		separateDepthStencilLayoutsFeatures.pNext	= &hostQueryResetFeatures;
-
-		hostQueryResetFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES;
-		hostQueryResetFeatures.pNext				= &timelineSemaphoreFeatures;
-
-		timelineSemaphoreFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-		timelineSemaphoreFeatures.pNext				= &bufferDeviceAddressFeatures;
-
-		bufferDeviceAddressFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-		bufferDeviceAddressFeatures.pNext			= &vulkanMemoryModelFeatures;
-
-		vulkanMemoryModelFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES;
-		vulkanMemoryModelFeatures.pNext				= DE_NULL;
-
-		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
-
-		log << TestLog::Message << extFeatures << TestLog::EndMessage;
-		log << TestLog::Message << device16BitStorageFeatures << TestLog::EndMessage;
-		log << TestLog::Message << deviceMultiviewFeatures << TestLog::EndMessage;
-		log << TestLog::Message << protectedMemoryFeatures << TestLog::EndMessage;
-		log << TestLog::Message << samplerYcbcrConversionFeatures << TestLog::EndMessage;
-		log << TestLog::Message << shaderDrawParametersFeatures << TestLog::EndMessage;
-		log << TestLog::Message << variablePointerFeatures << TestLog::EndMessage;
-		log << TestLog::Message << device8BitStorageFeatures << TestLog::EndMessage;
-		log << TestLog::Message << shaderAtomicInt64Features << TestLog::EndMessage;
-		log << TestLog::Message << shaderFloat16Int8Features << TestLog::EndMessage;
-		log << TestLog::Message << descriptorIndexingFeatures << TestLog::EndMessage;
-		log << TestLog::Message << scalarBlockLayoutFeatures << TestLog::EndMessage;
-		log << TestLog::Message << imagelessFramebufferFeatures << TestLog::EndMessage;
-		log << TestLog::Message << uniformBufferStandardLayoutFeatures << TestLog::EndMessage;
-		log << TestLog::Message << shaderSubgroupExtendedTypesFeatures << TestLog::EndMessage;
-		log << TestLog::Message << separateDepthStencilLayoutsFeatures << TestLog::EndMessage;
-		log << TestLog::Message << hostQueryResetFeatures << TestLog::EndMessage;
-		log << TestLog::Message << timelineSemaphoreFeatures << TestLog::EndMessage;
-		log << TestLog::Message << bufferDeviceAddressFeatures << TestLog::EndMessage;
-		log << TestLog::Message << vulkanMemoryModelFeatures << TestLog::EndMessage;
-
-		if ((	device16BitStorageFeatures.storageBuffer16BitAccess				!= vulkan11Features[0]->storageBuffer16BitAccess ||
-				device16BitStorageFeatures.uniformAndStorageBuffer16BitAccess	!= vulkan11Features[0]->uniformAndStorageBuffer16BitAccess ||
-				device16BitStorageFeatures.storagePushConstant16				!= vulkan11Features[0]->storagePushConstant16 ||
-				device16BitStorageFeatures.storageInputOutput16					!= vulkan11Features[0]->storageInputOutput16 ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDevice16BitStorageFeatures and VkPhysicalDeviceVulkan11Features");
-		}
-
-		if ((	deviceMultiviewFeatures.multiview					!= vulkan11Features[0]->multiview ||
-				deviceMultiviewFeatures.multiviewGeometryShader		!= vulkan11Features[0]->multiviewGeometryShader ||
-				deviceMultiviewFeatures.multiviewTessellationShader	!= vulkan11Features[0]->multiviewTessellationShader ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewFeatures and VkPhysicalDeviceVulkan11Features");
-		}
-
-		if (	(protectedMemoryFeatures.protectedMemory	!= vulkan11Features[0]->protectedMemory ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryFeatures and VkPhysicalDeviceVulkan11Features");
-		}
-
-		if (	(samplerYcbcrConversionFeatures.samplerYcbcrConversion	!= vulkan11Features[0]->samplerYcbcrConversion ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerYcbcrConversionFeatures and VkPhysicalDeviceVulkan11Features");
-		}
-
-		if (	(shaderDrawParametersFeatures.shaderDrawParameters	!= vulkan11Features[0]->shaderDrawParameters ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderDrawParametersFeatures and VkPhysicalDeviceVulkan11Features");
-		}
-
-		if ((	variablePointerFeatures.variablePointersStorageBuffer	!= vulkan11Features[0]->variablePointersStorageBuffer ||
-				variablePointerFeatures.variablePointers				!= vulkan11Features[0]->variablePointers))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures and VkPhysicalDeviceVulkan11Features");
-		}
-
-		if ((	device8BitStorageFeatures.storageBuffer8BitAccess			!= vulkan12Features[0]->storageBuffer8BitAccess ||
-				device8BitStorageFeatures.uniformAndStorageBuffer8BitAccess	!= vulkan12Features[0]->uniformAndStorageBuffer8BitAccess ||
-				device8BitStorageFeatures.storagePushConstant8				!= vulkan12Features[0]->storagePushConstant8 ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	shaderAtomicInt64Features.shaderBufferInt64Atomics != vulkan12Features[0]->shaderBufferInt64Atomics ||
-				shaderAtomicInt64Features.shaderSharedInt64Atomics != vulkan12Features[0]->shaderSharedInt64Atomics ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderAtomicInt64Features and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	shaderFloat16Int8Features.shaderFloat16	!= vulkan12Features[0]->shaderFloat16 ||
-				shaderFloat16Int8Features.shaderInt8		!= vulkan12Features[0]->shaderInt8 ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((vulkan12Features[0]->descriptorIndexing) &&
-			(	descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing			!= vulkan12Features[0]->shaderInputAttachmentArrayDynamicIndexing ||
-				descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing			!= vulkan12Features[0]->shaderUniformTexelBufferArrayDynamicIndexing ||
-				descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing			!= vulkan12Features[0]->shaderStorageTexelBufferArrayDynamicIndexing ||
-				descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing			!= vulkan12Features[0]->shaderUniformBufferArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing			!= vulkan12Features[0]->shaderSampledImageArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing			!= vulkan12Features[0]->shaderStorageBufferArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing			!= vulkan12Features[0]->shaderStorageImageArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing			!= vulkan12Features[0]->shaderInputAttachmentArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing		!= vulkan12Features[0]->shaderUniformTexelBufferArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing		!= vulkan12Features[0]->shaderStorageTexelBufferArrayNonUniformIndexing ||
-				descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind		!= vulkan12Features[0]->descriptorBindingUniformBufferUpdateAfterBind ||
-				descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind			!= vulkan12Features[0]->descriptorBindingSampledImageUpdateAfterBind ||
-				descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind			!= vulkan12Features[0]->descriptorBindingStorageImageUpdateAfterBind ||
-				descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind		!= vulkan12Features[0]->descriptorBindingStorageBufferUpdateAfterBind ||
-				descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind	!= vulkan12Features[0]->descriptorBindingUniformTexelBufferUpdateAfterBind ||
-				descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind	!= vulkan12Features[0]->descriptorBindingStorageTexelBufferUpdateAfterBind ||
-				descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending			!= vulkan12Features[0]->descriptorBindingUpdateUnusedWhilePending ||
-				descriptorIndexingFeatures.descriptorBindingPartiallyBound						!= vulkan12Features[0]->descriptorBindingPartiallyBound ||
-				descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount				!= vulkan12Features[0]->descriptorBindingVariableDescriptorCount ||
-				descriptorIndexingFeatures.runtimeDescriptorArray								!= vulkan12Features[0]->runtimeDescriptorArray ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	scalarBlockLayoutFeatures.scalarBlockLayout != vulkan12Features[0]->scalarBlockLayout ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	imagelessFramebufferFeatures.imagelessFramebuffer != vulkan12Features[0]->imagelessFramebuffer ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceImagelessFramebufferFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	uniformBufferStandardLayoutFeatures.uniformBufferStandardLayout != vulkan12Features[0]->uniformBufferStandardLayout ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceUniformBufferStandardLayoutFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	shaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes != vulkan12Features[0]->shaderSubgroupExtendedTypes ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	separateDepthStencilLayoutsFeatures.separateDepthStencilLayouts != vulkan12Features[0]->separateDepthStencilLayouts ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	hostQueryResetFeatures.hostQueryReset != vulkan12Features[0]->hostQueryReset ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceHostQueryResetFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	timelineSemaphoreFeatures.timelineSemaphore != vulkan12Features[0]->timelineSemaphore ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceTimelineSemaphoreFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	bufferDeviceAddressFeatures.bufferDeviceAddress					!= vulkan12Features[0]->bufferDeviceAddress ||
-				bufferDeviceAddressFeatures.bufferDeviceAddressCaptureReplay	!= vulkan12Features[0]->bufferDeviceAddressCaptureReplay ||
-				bufferDeviceAddressFeatures.bufferDeviceAddressMultiDevice		!= vulkan12Features[0]->bufferDeviceAddressMultiDevice ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceBufferDeviceAddressFeatures and VkPhysicalDeviceVulkan12Features");
-		}
-
-		if ((	vulkanMemoryModelFeatures.vulkanMemoryModel								!= vulkan12Features[0]->vulkanMemoryModel ||
-				vulkanMemoryModelFeatures.vulkanMemoryModelDeviceScope					!= vulkan12Features[0]->vulkanMemoryModelDeviceScope ||
-				vulkanMemoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains	!= vulkan12Features[0]->vulkanMemoryModelAvailabilityVisibilityChains ))
-		{
-			TCU_FAIL("Mismatch between VkPhysicalDeviceVulkanMemoryModelFeatures and VkPhysicalDeviceVulkan12Features");
-		}
 	}
 
 	return tcu::TestStatus::pass("Querying Vulkan 1.2 device features succeeded");
@@ -3975,26 +4274,14 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	const int										count										= 2u;
 	VkPhysicalDeviceVulkan11Properties*				vulkan11Properties[count]					= { (VkPhysicalDeviceVulkan11Properties*)(buffer11a), (VkPhysicalDeviceVulkan11Properties*)(buffer11b)};
 	VkPhysicalDeviceVulkan12Properties*				vulkan12Properties[count]					= { (VkPhysicalDeviceVulkan12Properties*)(buffer12a), (VkPhysicalDeviceVulkan12Properties*)(buffer12b)};
-	VkPhysicalDeviceIDProperties					idProperties;
-	VkPhysicalDeviceSubgroupProperties				subgroupProperties;
-	VkPhysicalDevicePointClippingProperties			pointClippingProperties;
-	VkPhysicalDeviceMultiviewProperties				multiviewProperties;
-	VkPhysicalDeviceProtectedMemoryProperties		protectedMemoryPropertiesKHR;
-	VkPhysicalDeviceMaintenance3Properties			maintenance3Properties;
-	VkPhysicalDeviceDriverProperties				driverProperties;
-	VkPhysicalDeviceFloatControlsProperties			floatControlsProperties;
-	VkPhysicalDeviceDescriptorIndexingProperties	descriptorIndexingProperties;
-	VkPhysicalDeviceDepthStencilResolveProperties	depthStencilResolveProperties;
-	VkPhysicalDeviceSamplerFilterMinmaxProperties	samplerFilterMinmaxProperties;
-	VkPhysicalDeviceTimelineSemaphoreProperties		timelineSemaphoreProperties;
 
 	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 
-	deMemset(buffer11a, GUARD_VALUE, sizeof buffer11a);
-	deMemset(buffer11b, GUARD_VALUE, sizeof buffer11b);
-	deMemset(buffer12a, GUARD_VALUE, sizeof buffer12a);
-	deMemset(buffer12b, GUARD_VALUE, sizeof buffer12b);
+	deMemset(buffer11a, GUARD_VALUE, sizeof(buffer11a));
+	deMemset(buffer11b, GUARD_VALUE, sizeof(buffer11b));
+	deMemset(buffer12a, GUARD_VALUE, sizeof(buffer12a));
+	deMemset(buffer12b, GUARD_VALUE, sizeof(buffer12b));
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -4030,66 +4317,264 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 		return tcu::TestStatus::fail("VkPhysicalDeviceVulkan12Properties initialization failure");
 	}
 
+	return tcu::TestStatus::pass("Querying Vulkan 1.2 device properties succeeded");
+}
+
+tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context& context)
+{
+	TestLog&											log										= context.getTestContext().getLog();
+	const PlatformInterface&							vkp										= context.getPlatformInterface();
+	const VkPhysicalDevice								physicalDevice							= context.getPhysicalDevice();
+	const Unique<VkInstance>							instance								(createInstanceWithExtension(vkp, context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver								vki										(vkp, *instance);
+
+	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
+
+	VkPhysicalDeviceVulkan12Features					vulkan12Features						= initVulkanStructure();
+	VkPhysicalDeviceVulkan11Features					vulkan11Features						= initVulkanStructure(&vulkan12Features);
+	VkPhysicalDeviceFeatures2							extFeatures								= initVulkanStructure(&vulkan11Features);
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+	log << TestLog::Message << vulkan11Features << TestLog::EndMessage;
+	log << TestLog::Message << vulkan12Features << TestLog::EndMessage;
+
+	// Validate if proper VkPhysicalDeviceVulkanXXFeatures fields are set when corresponding extensions are present
+	std::pair<std::pair<const char*,const char*>, VkBool32> extensions2validate[] =
+	{
+		{ { "VK_KHR_sampler_mirror_clamp_to_edge",	"VkPhysicalDeviceVulkan12Features.samplerMirrorClampToEdge" },	vulkan12Features.samplerMirrorClampToEdge },
+		{ { "VK_KHR_draw_indirect_count",			"VkPhysicalDeviceVulkan12Features.drawIndirectCount" },			vulkan12Features.drawIndirectCount },
+		{ { "VK_EXT_descriptor_indexing",			"VkPhysicalDeviceVulkan12Features.descriptorIndexing" },		vulkan12Features.descriptorIndexing },
+		{ { "VK_EXT_sampler_filter_minmax",			"VkPhysicalDeviceVulkan12Features.samplerFilterMinmax" },		vulkan12Features.samplerFilterMinmax },
+		{ { "VK_EXT_shader_viewport_index_layer",	"VkPhysicalDeviceVulkan12Features.shaderOutputViewportIndex" },	vulkan12Features.shaderOutputViewportIndex },
+		{ { "VK_EXT_shader_viewport_index_layer",	"VkPhysicalDeviceVulkan12Features.shaderOutputLayer" },			vulkan12Features.shaderOutputLayer }
+	};
+	vector<VkExtensionProperties> extensionProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	for (const auto& ext : extensions2validate)
+		if (checkExtension(extensionProperties, ext.first.first) && !ext.second)
+			TCU_FAIL(string("Mismatch between extension ") + ext.first.first + " and " + ext.first.second);
+
+	// collect all extension features
+	{
+		VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures				= initVulkanStructure();
+		VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures					= initVulkanStructure(&device16BitStorageFeatures);
+		VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures					= initVulkanStructure(&deviceMultiviewFeatures);
+		VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures			= initVulkanStructure(&protectedMemoryFeatures);
+		VkPhysicalDeviceShaderDrawParametersFeatures		shaderDrawParametersFeatures			= initVulkanStructure(&samplerYcbcrConversionFeatures);
+		VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures					= initVulkanStructure(&shaderDrawParametersFeatures);
+		VkPhysicalDevice8BitStorageFeatures					device8BitStorageFeatures				= initVulkanStructure(&variablePointerFeatures);
+		VkPhysicalDeviceShaderAtomicInt64Features			shaderAtomicInt64Features				= initVulkanStructure(&device8BitStorageFeatures);
+		VkPhysicalDeviceShaderFloat16Int8Features			shaderFloat16Int8Features				= initVulkanStructure(&shaderAtomicInt64Features);
+		VkPhysicalDeviceDescriptorIndexingFeatures			descriptorIndexingFeatures				= initVulkanStructure(&shaderFloat16Int8Features);
+		VkPhysicalDeviceScalarBlockLayoutFeatures			scalarBlockLayoutFeatures				= initVulkanStructure(&descriptorIndexingFeatures);
+		VkPhysicalDeviceImagelessFramebufferFeatures		imagelessFramebufferFeatures			= initVulkanStructure(&scalarBlockLayoutFeatures);
+		VkPhysicalDeviceUniformBufferStandardLayoutFeatures	uniformBufferStandardLayoutFeatures		= initVulkanStructure(&imagelessFramebufferFeatures);
+		VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures	shaderSubgroupExtendedTypesFeatures		= initVulkanStructure(&uniformBufferStandardLayoutFeatures);
+		VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures	separateDepthStencilLayoutsFeatures		= initVulkanStructure(&shaderSubgroupExtendedTypesFeatures);
+		VkPhysicalDeviceHostQueryResetFeatures				hostQueryResetFeatures					= initVulkanStructure(&separateDepthStencilLayoutsFeatures);
+		VkPhysicalDeviceTimelineSemaphoreFeatures			timelineSemaphoreFeatures				= initVulkanStructure(&hostQueryResetFeatures);
+		VkPhysicalDeviceBufferDeviceAddressFeatures			bufferDeviceAddressFeatures				= initVulkanStructure(&timelineSemaphoreFeatures);
+		VkPhysicalDeviceVulkanMemoryModelFeatures			vulkanMemoryModelFeatures				= initVulkanStructure(&bufferDeviceAddressFeatures);
+		extFeatures = initVulkanStructure(&vulkanMemoryModelFeatures);
+
+		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+
+		log << TestLog::Message << extFeatures << TestLog::EndMessage;
+		log << TestLog::Message << device16BitStorageFeatures << TestLog::EndMessage;
+		log << TestLog::Message << deviceMultiviewFeatures << TestLog::EndMessage;
+		log << TestLog::Message << protectedMemoryFeatures << TestLog::EndMessage;
+		log << TestLog::Message << samplerYcbcrConversionFeatures << TestLog::EndMessage;
+		log << TestLog::Message << shaderDrawParametersFeatures << TestLog::EndMessage;
+		log << TestLog::Message << variablePointerFeatures << TestLog::EndMessage;
+		log << TestLog::Message << device8BitStorageFeatures << TestLog::EndMessage;
+		log << TestLog::Message << shaderAtomicInt64Features << TestLog::EndMessage;
+		log << TestLog::Message << shaderFloat16Int8Features << TestLog::EndMessage;
+		log << TestLog::Message << descriptorIndexingFeatures << TestLog::EndMessage;
+		log << TestLog::Message << scalarBlockLayoutFeatures << TestLog::EndMessage;
+		log << TestLog::Message << imagelessFramebufferFeatures << TestLog::EndMessage;
+		log << TestLog::Message << uniformBufferStandardLayoutFeatures << TestLog::EndMessage;
+		log << TestLog::Message << shaderSubgroupExtendedTypesFeatures << TestLog::EndMessage;
+		log << TestLog::Message << separateDepthStencilLayoutsFeatures << TestLog::EndMessage;
+		log << TestLog::Message << hostQueryResetFeatures << TestLog::EndMessage;
+		log << TestLog::Message << timelineSemaphoreFeatures << TestLog::EndMessage;
+		log << TestLog::Message << bufferDeviceAddressFeatures << TestLog::EndMessage;
+		log << TestLog::Message << vulkanMemoryModelFeatures << TestLog::EndMessage;
+
+		if ((	device16BitStorageFeatures.storageBuffer16BitAccess				!= vulkan11Features.storageBuffer16BitAccess ||
+				device16BitStorageFeatures.uniformAndStorageBuffer16BitAccess	!= vulkan11Features.uniformAndStorageBuffer16BitAccess ||
+				device16BitStorageFeatures.storagePushConstant16				!= vulkan11Features.storagePushConstant16 ||
+				device16BitStorageFeatures.storageInputOutput16					!= vulkan11Features.storageInputOutput16 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevice16BitStorageFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ((	deviceMultiviewFeatures.multiview					!= vulkan11Features.multiview ||
+				deviceMultiviewFeatures.multiviewGeometryShader		!= vulkan11Features.multiviewGeometryShader ||
+				deviceMultiviewFeatures.multiviewTessellationShader	!= vulkan11Features.multiviewTessellationShader ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if (	(protectedMemoryFeatures.protectedMemory	!= vulkan11Features.protectedMemory ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if (	(samplerYcbcrConversionFeatures.samplerYcbcrConversion	!= vulkan11Features.samplerYcbcrConversion ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerYcbcrConversionFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if (	(shaderDrawParametersFeatures.shaderDrawParameters	!= vulkan11Features.shaderDrawParameters ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderDrawParametersFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ((	variablePointerFeatures.variablePointersStorageBuffer	!= vulkan11Features.variablePointersStorageBuffer ||
+				variablePointerFeatures.variablePointers				!= vulkan11Features.variablePointers))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures and VkPhysicalDeviceVulkan11Features");
+		}
+
+		if ((	device8BitStorageFeatures.storageBuffer8BitAccess			!= vulkan12Features.storageBuffer8BitAccess ||
+				device8BitStorageFeatures.uniformAndStorageBuffer8BitAccess	!= vulkan12Features.uniformAndStorageBuffer8BitAccess ||
+				device8BitStorageFeatures.storagePushConstant8				!= vulkan12Features.storagePushConstant8 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	shaderAtomicInt64Features.shaderBufferInt64Atomics != vulkan12Features.shaderBufferInt64Atomics ||
+				shaderAtomicInt64Features.shaderSharedInt64Atomics != vulkan12Features.shaderSharedInt64Atomics ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderAtomicInt64Features and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	shaderFloat16Int8Features.shaderFloat16	!= vulkan12Features.shaderFloat16 ||
+				shaderFloat16Int8Features.shaderInt8		!= vulkan12Features.shaderInt8 ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat16Int8Features and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((vulkan12Features.descriptorIndexing) &&
+			(	descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing			!= vulkan12Features.shaderInputAttachmentArrayDynamicIndexing ||
+				descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing			!= vulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing ||
+				descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing			!= vulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing ||
+				descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing			!= vulkan12Features.shaderUniformBufferArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing			!= vulkan12Features.shaderSampledImageArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing			!= vulkan12Features.shaderStorageBufferArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing			!= vulkan12Features.shaderStorageImageArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing			!= vulkan12Features.shaderInputAttachmentArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing		!= vulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing		!= vulkan12Features.shaderStorageTexelBufferArrayNonUniformIndexing ||
+				descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind		!= vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind ||
+				descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind			!= vulkan12Features.descriptorBindingSampledImageUpdateAfterBind ||
+				descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind			!= vulkan12Features.descriptorBindingStorageImageUpdateAfterBind ||
+				descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind		!= vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind ||
+				descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind	!= vulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind ||
+				descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind	!= vulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind ||
+				descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending			!= vulkan12Features.descriptorBindingUpdateUnusedWhilePending ||
+				descriptorIndexingFeatures.descriptorBindingPartiallyBound						!= vulkan12Features.descriptorBindingPartiallyBound ||
+				descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount				!= vulkan12Features.descriptorBindingVariableDescriptorCount ||
+				descriptorIndexingFeatures.runtimeDescriptorArray								!= vulkan12Features.runtimeDescriptorArray ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	scalarBlockLayoutFeatures.scalarBlockLayout != vulkan12Features.scalarBlockLayout ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	imagelessFramebufferFeatures.imagelessFramebuffer != vulkan12Features.imagelessFramebuffer ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceImagelessFramebufferFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	uniformBufferStandardLayoutFeatures.uniformBufferStandardLayout != vulkan12Features.uniformBufferStandardLayout ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceUniformBufferStandardLayoutFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	shaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes != vulkan12Features.shaderSubgroupExtendedTypes ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	separateDepthStencilLayoutsFeatures.separateDepthStencilLayouts != vulkan12Features.separateDepthStencilLayouts ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	hostQueryResetFeatures.hostQueryReset != vulkan12Features.hostQueryReset ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceHostQueryResetFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	timelineSemaphoreFeatures.timelineSemaphore != vulkan12Features.timelineSemaphore ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceTimelineSemaphoreFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	bufferDeviceAddressFeatures.bufferDeviceAddress					!= vulkan12Features.bufferDeviceAddress ||
+				bufferDeviceAddressFeatures.bufferDeviceAddressCaptureReplay	!= vulkan12Features.bufferDeviceAddressCaptureReplay ||
+				bufferDeviceAddressFeatures.bufferDeviceAddressMultiDevice		!= vulkan12Features.bufferDeviceAddressMultiDevice ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceBufferDeviceAddressFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+
+		if ((	vulkanMemoryModelFeatures.vulkanMemoryModel								!= vulkan12Features.vulkanMemoryModel ||
+				vulkanMemoryModelFeatures.vulkanMemoryModelDeviceScope					!= vulkan12Features.vulkanMemoryModelDeviceScope ||
+				vulkanMemoryModelFeatures.vulkanMemoryModelAvailabilityVisibilityChains	!= vulkan12Features.vulkanMemoryModelAvailabilityVisibilityChains ))
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVulkanMemoryModelFeatures and VkPhysicalDeviceVulkan12Features");
+		}
+	}
+
+	return tcu::TestStatus::pass("Vulkan 1.2 device features are consistent with extensions");
+}
+
+tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
+{
+	TestLog&										log											= context.getTestContext().getLog();
+	const PlatformInterface&						vkp											= context.getPlatformInterface();
+	const VkPhysicalDevice							physicalDevice								= context.getPhysicalDevice();
+	const Unique<VkInstance>						instance									(createInstanceWithExtension(vkp, context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver							vki											(vkp, *instance);
+
+	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
+		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
+
+	VkPhysicalDeviceVulkan12Properties				vulkan12Properties							= initVulkanStructure();
+	VkPhysicalDeviceVulkan11Properties				vulkan11Properties							= initVulkanStructure(&vulkan12Properties);
+	VkPhysicalDeviceProperties2						extProperties								= initVulkanStructure(&vulkan11Properties);
+
+	vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+	log << TestLog::Message << vulkan11Properties << TestLog::EndMessage;
+	log << TestLog::Message << vulkan12Properties << TestLog::EndMessage;
+
 	// Validate all fields initialized matching to extension structures
 	{
-		deMemset(&idProperties,						0x00, sizeof(VkPhysicalDeviceIDProperties					));
-		deMemset(&subgroupProperties,				0x00, sizeof(VkPhysicalDeviceSubgroupProperties				));
-		deMemset(&pointClippingProperties,			0x00, sizeof(VkPhysicalDevicePointClippingProperties		));
-		deMemset(&multiviewProperties,				0x00, sizeof(VkPhysicalDeviceMultiviewProperties			));
-		deMemset(&protectedMemoryPropertiesKHR,		0x00, sizeof(VkPhysicalDeviceProtectedMemoryProperties		));
-		deMemset(&maintenance3Properties,			0x00, sizeof(VkPhysicalDeviceMaintenance3Properties			));
-		deMemset(&driverProperties,					0x00, sizeof(VkPhysicalDeviceDriverProperties				));
-		deMemset(&floatControlsProperties,			0x00, sizeof(VkPhysicalDeviceFloatControlsProperties		));
-		deMemset(&descriptorIndexingProperties,		0x00, sizeof(VkPhysicalDeviceDescriptorIndexingProperties	));
-		deMemset(&depthStencilResolveProperties,	0x00, sizeof(VkPhysicalDeviceDepthStencilResolveProperties	));
-		deMemset(&samplerFilterMinmaxProperties,	0x00, sizeof(VkPhysicalDeviceSamplerFilterMinmaxProperties	));
-		deMemset(&timelineSemaphoreProperties,		0x00, sizeof(VkPhysicalDeviceTimelineSemaphoreProperties	));
-
-		deMemset(&extProperties.properties, 0x00, sizeof(extProperties.properties));
-		extProperties.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		extProperties.pNext						= &idProperties;
-
-		idProperties.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
-		idProperties.pNext						= &subgroupProperties;
-
-		subgroupProperties.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-		subgroupProperties.pNext				= &pointClippingProperties;
-
-		pointClippingProperties.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
-		pointClippingProperties.pNext			= &multiviewProperties;
-
-		multiviewProperties.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
-		multiviewProperties.pNext				= &protectedMemoryPropertiesKHR;
-
-		protectedMemoryPropertiesKHR.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
-		protectedMemoryPropertiesKHR.pNext		= &maintenance3Properties;
-
-		maintenance3Properties.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
-		maintenance3Properties.pNext			= &driverProperties;
-
-		driverProperties.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-		driverProperties.pNext					= &floatControlsProperties;
-
-		floatControlsProperties.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
-		floatControlsProperties.pNext			= &descriptorIndexingProperties;
-
-		descriptorIndexingProperties.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
-		descriptorIndexingProperties.pNext		= &depthStencilResolveProperties;
-
-		depthStencilResolveProperties.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-		depthStencilResolveProperties.pNext		= &samplerFilterMinmaxProperties;
-
-		samplerFilterMinmaxProperties.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES;
-		samplerFilterMinmaxProperties.pNext		= &timelineSemaphoreProperties;
-
-		timelineSemaphoreProperties.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES;
-		timelineSemaphoreProperties.pNext		= DE_NULL;
+		VkPhysicalDeviceIDProperties					idProperties								= initVulkanStructure();
+		VkPhysicalDeviceSubgroupProperties				subgroupProperties							= initVulkanStructure(&idProperties);
+		VkPhysicalDevicePointClippingProperties			pointClippingProperties						= initVulkanStructure(&subgroupProperties);
+		VkPhysicalDeviceMultiviewProperties				multiviewProperties							= initVulkanStructure(&pointClippingProperties);
+		VkPhysicalDeviceProtectedMemoryProperties		protectedMemoryPropertiesKHR				= initVulkanStructure(&multiviewProperties);
+		VkPhysicalDeviceMaintenance3Properties			maintenance3Properties						= initVulkanStructure(&protectedMemoryPropertiesKHR);
+		VkPhysicalDeviceDriverProperties				driverProperties							= initVulkanStructure(&maintenance3Properties);
+		VkPhysicalDeviceFloatControlsProperties			floatControlsProperties						= initVulkanStructure(&driverProperties);
+		VkPhysicalDeviceDescriptorIndexingProperties	descriptorIndexingProperties				= initVulkanStructure(&floatControlsProperties);
+		VkPhysicalDeviceDepthStencilResolveProperties	depthStencilResolveProperties				= initVulkanStructure(&descriptorIndexingProperties);
+		VkPhysicalDeviceSamplerFilterMinmaxProperties	samplerFilterMinmaxProperties				= initVulkanStructure(&depthStencilResolveProperties);
+		VkPhysicalDeviceTimelineSemaphoreProperties		timelineSemaphoreProperties					= initVulkanStructure(&samplerFilterMinmaxProperties);
+		extProperties = initVulkanStructure(&timelineSemaphoreProperties);
 
 		vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 
-		if ((deMemCmp(idProperties.deviceUUID, vulkan11Properties[0]->deviceUUID, VK_UUID_SIZE) != 0) ||
-			(deMemCmp(idProperties.driverUUID, vulkan11Properties[0]->driverUUID, VK_UUID_SIZE) != 0) ||
-			(idProperties.deviceLUIDValid != vulkan11Properties[0]->deviceLUIDValid))
+		if ((deMemCmp(idProperties.deviceUUID, vulkan11Properties.deviceUUID, VK_UUID_SIZE) != 0) ||
+			(deMemCmp(idProperties.driverUUID, vulkan11Properties.driverUUID, VK_UUID_SIZE) != 0) ||
+			(idProperties.deviceLUIDValid != vulkan11Properties.deviceLUIDValid))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties and VkPhysicalDeviceVulkan11Properties");
 		}
@@ -4097,125 +4582,124 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 		{
 			// If deviceLUIDValid is VK_FALSE, the contents of deviceLUID and deviceNodeMask are undefined
 			// so thay can only be compared when deviceLUIDValid is VK_TRUE.
-			if ((deMemCmp(idProperties.deviceLUID, vulkan11Properties[0]->deviceLUID, VK_UUID_SIZE) != 0) ||
-				(idProperties.deviceNodeMask != vulkan11Properties[0]->deviceNodeMask))
+			if ((deMemCmp(idProperties.deviceLUID, vulkan11Properties.deviceLUID, VK_UUID_SIZE) != 0) ||
+				(idProperties.deviceNodeMask != vulkan11Properties.deviceNodeMask))
 			{
 				TCU_FAIL("Mismatch between VkPhysicalDeviceIDProperties and VkPhysicalDeviceVulkan11Properties");
 			}
 		}
 
-		if ((subgroupProperties.subgroupSize				!= vulkan11Properties[0]->subgroupSize ||
-			 subgroupProperties.supportedStages				!= vulkan11Properties[0]->supportedStages ||
-			 subgroupProperties.supportedOperations			!= vulkan11Properties[0]->supportedOperations ||
-			 subgroupProperties.quadOperationsInAllStages	!= vulkan11Properties[0]->quadOperationsInAllStages))
+		if ((subgroupProperties.subgroupSize				!= vulkan11Properties.subgroupSize ||
+			 subgroupProperties.supportedStages				!= vulkan11Properties.supportedStages ||
+			 subgroupProperties.supportedOperations			!= vulkan11Properties.supportedOperations ||
+			 subgroupProperties.quadOperationsInAllStages	!= vulkan11Properties.quadOperationsInAllStages))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupProperties and VkPhysicalDeviceVulkan11Properties");
 		}
 
-		if ((pointClippingProperties.pointClippingBehavior	!= vulkan11Properties[0]->pointClippingBehavior))
+		if ((pointClippingProperties.pointClippingBehavior	!= vulkan11Properties.pointClippingBehavior))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDevicePointClippingProperties and VkPhysicalDeviceVulkan11Properties");
 		}
 
-		if ((multiviewProperties.maxMultiviewViewCount		!= vulkan11Properties[0]->maxMultiviewViewCount ||
-			 multiviewProperties.maxMultiviewInstanceIndex	!= vulkan11Properties[0]->maxMultiviewInstanceIndex))
+		if ((multiviewProperties.maxMultiviewViewCount		!= vulkan11Properties.maxMultiviewViewCount ||
+			 multiviewProperties.maxMultiviewInstanceIndex	!= vulkan11Properties.maxMultiviewInstanceIndex))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewProperties and VkPhysicalDeviceVulkan11Properties");
 		}
 
-		if ((protectedMemoryPropertiesKHR.protectedNoFault	!= vulkan11Properties[0]->protectedNoFault))
+		if ((protectedMemoryPropertiesKHR.protectedNoFault	!= vulkan11Properties.protectedNoFault))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryProperties and VkPhysicalDeviceVulkan11Properties");
 		}
 
-		if ((maintenance3Properties.maxPerSetDescriptors	!= vulkan11Properties[0]->maxPerSetDescriptors ||
-			 maintenance3Properties.maxMemoryAllocationSize	!= vulkan11Properties[0]->maxMemoryAllocationSize))
+		if ((maintenance3Properties.maxPerSetDescriptors	!= vulkan11Properties.maxPerSetDescriptors ||
+			 maintenance3Properties.maxMemoryAllocationSize	!= vulkan11Properties.maxMemoryAllocationSize))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceMaintenance3Properties and VkPhysicalDeviceVulkan11Properties");
 		}
 
-		if ((driverProperties.driverID												!= vulkan12Properties[0]->driverID ||
-			 strncmp(driverProperties.driverName, vulkan12Properties[0]->driverName, VK_MAX_DRIVER_NAME_SIZE)	!= 0 ||
-			 strncmp(driverProperties.driverInfo, vulkan12Properties[0]->driverInfo, VK_MAX_DRIVER_INFO_SIZE)	!= 0 ||
-			 driverProperties.conformanceVersion.major								!= vulkan12Properties[0]->conformanceVersion.major ||
-			 driverProperties.conformanceVersion.minor								!= vulkan12Properties[0]->conformanceVersion.minor ||
-			 driverProperties.conformanceVersion.subminor							!= vulkan12Properties[0]->conformanceVersion.subminor ||
-			 driverProperties.conformanceVersion.patch								!= vulkan12Properties[0]->conformanceVersion.patch))
+		if ((driverProperties.driverID												!= vulkan12Properties.driverID ||
+			 strncmp(driverProperties.driverName, vulkan12Properties.driverName, VK_MAX_DRIVER_NAME_SIZE)	!= 0 ||
+			 strncmp(driverProperties.driverInfo, vulkan12Properties.driverInfo, VK_MAX_DRIVER_INFO_SIZE)	!= 0 ||
+			 driverProperties.conformanceVersion.major								!= vulkan12Properties.conformanceVersion.major ||
+			 driverProperties.conformanceVersion.minor								!= vulkan12Properties.conformanceVersion.minor ||
+			 driverProperties.conformanceVersion.subminor							!= vulkan12Properties.conformanceVersion.subminor ||
+			 driverProperties.conformanceVersion.patch								!= vulkan12Properties.conformanceVersion.patch))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceDriverProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 
-		if ((floatControlsProperties.denormBehaviorIndependence				!= vulkan12Properties[0]->denormBehaviorIndependence ||
-			 floatControlsProperties.roundingModeIndependence				!= vulkan12Properties[0]->roundingModeIndependence ||
-			 floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16	!= vulkan12Properties[0]->shaderSignedZeroInfNanPreserveFloat16 ||
-			 floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32	!= vulkan12Properties[0]->shaderSignedZeroInfNanPreserveFloat32 ||
-			 floatControlsProperties.shaderSignedZeroInfNanPreserveFloat64	!= vulkan12Properties[0]->shaderSignedZeroInfNanPreserveFloat64 ||
-			 floatControlsProperties.shaderDenormPreserveFloat16			!= vulkan12Properties[0]->shaderDenormPreserveFloat16 ||
-			 floatControlsProperties.shaderDenormPreserveFloat32			!= vulkan12Properties[0]->shaderDenormPreserveFloat32 ||
-			 floatControlsProperties.shaderDenormPreserveFloat64			!= vulkan12Properties[0]->shaderDenormPreserveFloat64 ||
-			 floatControlsProperties.shaderDenormFlushToZeroFloat16			!= vulkan12Properties[0]->shaderDenormFlushToZeroFloat16 ||
-			 floatControlsProperties.shaderDenormFlushToZeroFloat32			!= vulkan12Properties[0]->shaderDenormFlushToZeroFloat32 ||
-			 floatControlsProperties.shaderDenormFlushToZeroFloat64			!= vulkan12Properties[0]->shaderDenormFlushToZeroFloat64 ||
-			 floatControlsProperties.shaderRoundingModeRTEFloat16			!= vulkan12Properties[0]->shaderRoundingModeRTEFloat16 ||
-			 floatControlsProperties.shaderRoundingModeRTEFloat32			!= vulkan12Properties[0]->shaderRoundingModeRTEFloat32 ||
-			 floatControlsProperties.shaderRoundingModeRTEFloat64			!= vulkan12Properties[0]->shaderRoundingModeRTEFloat64 ||
-			 floatControlsProperties.shaderRoundingModeRTZFloat16			!= vulkan12Properties[0]->shaderRoundingModeRTZFloat16 ||
-			 floatControlsProperties.shaderRoundingModeRTZFloat32			!= vulkan12Properties[0]->shaderRoundingModeRTZFloat32 ||
-			 floatControlsProperties.shaderRoundingModeRTZFloat64			!= vulkan12Properties[0]->shaderRoundingModeRTZFloat64 ))
+		if ((floatControlsProperties.denormBehaviorIndependence				!= vulkan12Properties.denormBehaviorIndependence ||
+			 floatControlsProperties.roundingModeIndependence				!= vulkan12Properties.roundingModeIndependence ||
+			 floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16	!= vulkan12Properties.shaderSignedZeroInfNanPreserveFloat16 ||
+			 floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32	!= vulkan12Properties.shaderSignedZeroInfNanPreserveFloat32 ||
+			 floatControlsProperties.shaderSignedZeroInfNanPreserveFloat64	!= vulkan12Properties.shaderSignedZeroInfNanPreserveFloat64 ||
+			 floatControlsProperties.shaderDenormPreserveFloat16			!= vulkan12Properties.shaderDenormPreserveFloat16 ||
+			 floatControlsProperties.shaderDenormPreserveFloat32			!= vulkan12Properties.shaderDenormPreserveFloat32 ||
+			 floatControlsProperties.shaderDenormPreserveFloat64			!= vulkan12Properties.shaderDenormPreserveFloat64 ||
+			 floatControlsProperties.shaderDenormFlushToZeroFloat16			!= vulkan12Properties.shaderDenormFlushToZeroFloat16 ||
+			 floatControlsProperties.shaderDenormFlushToZeroFloat32			!= vulkan12Properties.shaderDenormFlushToZeroFloat32 ||
+			 floatControlsProperties.shaderDenormFlushToZeroFloat64			!= vulkan12Properties.shaderDenormFlushToZeroFloat64 ||
+			 floatControlsProperties.shaderRoundingModeRTEFloat16			!= vulkan12Properties.shaderRoundingModeRTEFloat16 ||
+			 floatControlsProperties.shaderRoundingModeRTEFloat32			!= vulkan12Properties.shaderRoundingModeRTEFloat32 ||
+			 floatControlsProperties.shaderRoundingModeRTEFloat64			!= vulkan12Properties.shaderRoundingModeRTEFloat64 ||
+			 floatControlsProperties.shaderRoundingModeRTZFloat16			!= vulkan12Properties.shaderRoundingModeRTZFloat16 ||
+			 floatControlsProperties.shaderRoundingModeRTZFloat32			!= vulkan12Properties.shaderRoundingModeRTZFloat32 ||
+			 floatControlsProperties.shaderRoundingModeRTZFloat64			!= vulkan12Properties.shaderRoundingModeRTZFloat64 ))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceFloatControlsProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 
-		if ((descriptorIndexingProperties.maxUpdateAfterBindDescriptorsInAllPools				!= vulkan12Properties[0]->maxUpdateAfterBindDescriptorsInAllPools ||
-			 descriptorIndexingProperties.shaderUniformBufferArrayNonUniformIndexingNative		!= vulkan12Properties[0]->shaderUniformBufferArrayNonUniformIndexingNative ||
-			 descriptorIndexingProperties.shaderSampledImageArrayNonUniformIndexingNative		!= vulkan12Properties[0]->shaderSampledImageArrayNonUniformIndexingNative ||
-			 descriptorIndexingProperties.shaderStorageBufferArrayNonUniformIndexingNative		!= vulkan12Properties[0]->shaderStorageBufferArrayNonUniformIndexingNative ||
-			 descriptorIndexingProperties.shaderStorageImageArrayNonUniformIndexingNative		!= vulkan12Properties[0]->shaderStorageImageArrayNonUniformIndexingNative ||
-			 descriptorIndexingProperties.shaderInputAttachmentArrayNonUniformIndexingNative	!= vulkan12Properties[0]->shaderInputAttachmentArrayNonUniformIndexingNative ||
-			 descriptorIndexingProperties.robustBufferAccessUpdateAfterBind						!= vulkan12Properties[0]->robustBufferAccessUpdateAfterBind ||
-			 descriptorIndexingProperties.quadDivergentImplicitLod								!= vulkan12Properties[0]->quadDivergentImplicitLod ||
-			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSamplers			!= vulkan12Properties[0]->maxPerStageDescriptorUpdateAfterBindSamplers ||
-			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindUniformBuffers	!= vulkan12Properties[0]->maxPerStageDescriptorUpdateAfterBindUniformBuffers ||
-			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageBuffers	!= vulkan12Properties[0]->maxPerStageDescriptorUpdateAfterBindStorageBuffers ||
-			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSampledImages		!= vulkan12Properties[0]->maxPerStageDescriptorUpdateAfterBindSampledImages ||
-			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageImages		!= vulkan12Properties[0]->maxPerStageDescriptorUpdateAfterBindStorageImages ||
-			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindInputAttachments	!= vulkan12Properties[0]->maxPerStageDescriptorUpdateAfterBindInputAttachments ||
-			 descriptorIndexingProperties.maxPerStageUpdateAfterBindResources					!= vulkan12Properties[0]->maxPerStageUpdateAfterBindResources ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSamplers				!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindSamplers ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffers			!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindUniformBuffers ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic	!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindUniformBuffersDynamic ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffers			!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindStorageBuffers ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic	!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindStorageBuffersDynamic ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSampledImages			!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindSampledImages ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageImages			!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindStorageImages ||
-			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindInputAttachments		!= vulkan12Properties[0]->maxDescriptorSetUpdateAfterBindInputAttachments ))
+		if ((descriptorIndexingProperties.maxUpdateAfterBindDescriptorsInAllPools				!= vulkan12Properties.maxUpdateAfterBindDescriptorsInAllPools ||
+			 descriptorIndexingProperties.shaderUniformBufferArrayNonUniformIndexingNative		!= vulkan12Properties.shaderUniformBufferArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties.shaderSampledImageArrayNonUniformIndexingNative		!= vulkan12Properties.shaderSampledImageArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties.shaderStorageBufferArrayNonUniformIndexingNative		!= vulkan12Properties.shaderStorageBufferArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties.shaderStorageImageArrayNonUniformIndexingNative		!= vulkan12Properties.shaderStorageImageArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties.shaderInputAttachmentArrayNonUniformIndexingNative	!= vulkan12Properties.shaderInputAttachmentArrayNonUniformIndexingNative ||
+			 descriptorIndexingProperties.robustBufferAccessUpdateAfterBind						!= vulkan12Properties.robustBufferAccessUpdateAfterBind ||
+			 descriptorIndexingProperties.quadDivergentImplicitLod								!= vulkan12Properties.quadDivergentImplicitLod ||
+			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSamplers			!= vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers ||
+			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindUniformBuffers	!= vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers ||
+			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageBuffers	!= vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers ||
+			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindSampledImages		!= vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages ||
+			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindStorageImages		!= vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages ||
+			 descriptorIndexingProperties.maxPerStageDescriptorUpdateAfterBindInputAttachments	!= vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments ||
+			 descriptorIndexingProperties.maxPerStageUpdateAfterBindResources					!= vulkan12Properties.maxPerStageUpdateAfterBindResources ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSamplers				!= vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffers			!= vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic	!= vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffers			!= vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic	!= vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindSampledImages			!= vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindStorageImages			!= vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages ||
+			 descriptorIndexingProperties.maxDescriptorSetUpdateAfterBindInputAttachments		!= vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments ))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceDescriptorIndexingProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 
-		if ((depthStencilResolveProperties.supportedDepthResolveModes	!= vulkan12Properties[0]->supportedDepthResolveModes ||
-			 depthStencilResolveProperties.supportedStencilResolveModes	!= vulkan12Properties[0]->supportedStencilResolveModes ||
-			 depthStencilResolveProperties.independentResolveNone		!= vulkan12Properties[0]->independentResolveNone ||
-			 depthStencilResolveProperties.independentResolve			!= vulkan12Properties[0]->independentResolve))
+		if ((depthStencilResolveProperties.supportedDepthResolveModes	!= vulkan12Properties.supportedDepthResolveModes ||
+			 depthStencilResolveProperties.supportedStencilResolveModes	!= vulkan12Properties.supportedStencilResolveModes ||
+			 depthStencilResolveProperties.independentResolveNone		!= vulkan12Properties.independentResolveNone ||
+			 depthStencilResolveProperties.independentResolve			!= vulkan12Properties.independentResolve))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceDepthStencilResolveProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 
-		if ((samplerFilterMinmaxProperties.filterMinmaxSingleComponentFormats	!= vulkan12Properties[0]->filterMinmaxSingleComponentFormats ||
-			 samplerFilterMinmaxProperties.filterMinmaxImageComponentMapping	!= vulkan12Properties[0]->filterMinmaxImageComponentMapping))
+		if ((samplerFilterMinmaxProperties.filterMinmaxSingleComponentFormats	!= vulkan12Properties.filterMinmaxSingleComponentFormats ||
+			 samplerFilterMinmaxProperties.filterMinmaxImageComponentMapping	!= vulkan12Properties.filterMinmaxImageComponentMapping))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerFilterMinmaxProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 
-		if ((timelineSemaphoreProperties.maxTimelineSemaphoreValueDifference	!= vulkan12Properties[0]->maxTimelineSemaphoreValueDifference))
+		if ((timelineSemaphoreProperties.maxTimelineSemaphoreValueDifference	!= vulkan12Properties.maxTimelineSemaphoreValueDifference))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceTimelineSemaphoreProperties and VkPhysicalDeviceVulkan12Properties");
 		}
 	}
 
-	return tcu::TestStatus::pass("Querying Vulkan 1.2 device properties succeeded");
+	return tcu::TestStatus::pass("Vulkan 1.2 device properties are consistent with extension properties");
 }
-
 
 tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
@@ -4648,8 +5132,11 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2", "Vulkan 1.2 related tests"));
 
-		addFunctionCase(extendedPropertiesTests.get(), "features",		"Extended Vulkan 1.2 Device Features",		deviceFeaturesVulkan12);
-		addFunctionCase(extendedPropertiesTests.get(), "properties",	"Extended Vulkan 1.2 Device Properties",	devicePropertiesVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "features",							"Extended Vulkan 1.2 Device Features",						deviceFeaturesVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "properties",						"Extended Vulkan 1.2 Device Properties",					devicePropertiesVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",	"Vulkan 1.2 consistency between Features and Extensions",	deviceFeatureExtensionsConsistencyVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",	"Vulkan 1.2 consistency between Properties and Extensions", devicePropertyExtensionsConsistencyVulkan12);
+		addFunctionCase(extendedPropertiesTests.get(), "limits_validation",					"Vulkan 1.2 Limit validation",								validateLimitsCheckSupport, validateLimits12);
 
 		infoTests->addChild(extendedPropertiesTests.release());
 	}

@@ -1542,10 +1542,42 @@ def generateDeviceFeaturesDefs(src):
 			# handle special cases
 			if sType == "EXCLUSIVE_SCISSOR":
 				sType = "SCISSOR_EXCLUSIVE"
+			if sType == 'VULKAN_1_1' or sType == 'VULKAN_1_2':
+				continue
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
 			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_SPEC_VERSION).+$'
+			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
+			defs.append( (sType, sSuffix, matchStructName.group(1), \
+							matchExtensionName.group(0)	if matchExtensionName	else None,
+							matchExtensionName.group(1)	if matchExtensionName	else None,
+							matchSpecVersion.group	(1)	if matchSpecVersion		else '0') )
+	return defs
+
+def generateDevicePropertiesDefs(src):
+	# look for definitions
+	ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_PROPERTIES(\w*)\s*='
+	matches		= re.findall(ptrnSType, src, re.M)
+	matches		= sorted(matches, key=lambda m: m[0])
+	# construct final list
+	defs = []
+	for sType, sSuffix in matches:
+		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
+		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Properties' + sSuffix[1:] + ')'
+		matchStructName		= re.search(ptrnStructName, src, re.M)
+		if matchStructName:
+			if sType == 'VULKAN_1_1' or sType == 'VULKAN_1_2':
+				continue
+			extType = sType
+			if extType == "MAINTENANCE_3":
+				extType = "MAINTENANCE3"
+			elif extType == "DISCARD_RECTANGLE":
+				extType = "DISCARD_RECTANGLES"
+			# end handling special cases
+			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + extType + '_EXTENSION_NAME).+$'
+			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
+			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sSuffix + '_' + extType + '_SPEC_VERSION).+$'
 			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
 			defs.append( (sType, sSuffix, matchStructName.group(1), \
 							matchExtensionName.group(0)	if matchExtensionName	else None,
@@ -1589,28 +1621,75 @@ def writeDeviceFeatures(dfDefs, filename):
 	stream.append('};\n} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
+def writeDeviceProperties(dfDefs, filename):
+	extensionDefines = []
+	makePropertyDescDefinitions = []
+	propertyStructWrappers = []
+	for idx, (sType, sSuffix, extStruct, extLine, extName, specVer) in enumerate(dfDefs):
+		extensionNameDefinition = extName
+		if not extensionNameDefinition:
+			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sSuffix if sSuffix else ''), sType)
+		# construct defines with names
+		if extLine:
+			extensionDefines.append(extLine)
+		else:
+			extensionDefines.append('#define {0} "not_existent_property"'.format(extensionNameDefinition))
+		# construct makePropertyDesc template function definitions
+		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sSuffix)
+		makePropertyDescDefinitions.append("template<> PropertyDesc makePropertyDesc<{0}>(void) " \
+			"{{ return PropertyDesc({1}, {2}, {3}, {4}); }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dfDefs)-idx))
+		# construct CreateProperty struct wrapper block
+		propertyStructWrappers.append("\t{{ createPropertyStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
+	# combine all definition lists
+	stream = [
+	'#include "vkDeviceProperties.hpp"\n',
+	'namespace vk\n{']
+	stream.extend(extensionDefines)
+	stream.append('\n')
+	stream.extend(makePropertyDescDefinitions)
+	stream.append('\n')
+	stream.append('static const PropertyStructMapItem propertyStructCreatorMap[] =\n{')
+	stream.extend(propertyStructWrappers)
+	stream.append('};\n} // vk\n')
+	writeInlFile(filename, INL_HEADER, stream)
+
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
 	stream = []
 	for sType, sSuffix, extStruct, _, _, _ in dfDefs:
-		# Special case to treat BufferDeviceAddressFeaturesEXT differently than BufferDeviceAddressFeaturesKHR
-		if sType == "BUFFER_DEVICE_ADDRESS" and sSuffix == "_EXT":
-			nameSubStr = extStruct.replace("VkPhysicalDevice", "")
-		else:
-			nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
+		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
-def writeDefaultDeviceDefs(dfDefs, filename):
+def writeDeviceFeaturesDefaultDeviceDefs(dfDefs, filename):
 	pattern = "const {0}&\tget{1}\t(void) const {{ return m_deviceFeatures.getFeatureType<{0}>();\t}}"
 	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
 
-def writeContextDecl(dfDefs, filename):
+def writeDeviceFeaturesContextDecl(dfDefs, filename):
 	pattern = "const vk::{0}&\tget{1}\t(void) const;"
 	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
 
-def writeContextDefs(dfDefs, filename):
+def writeDeviceFeaturesContextDefs(dfDefs, filename):
 	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
 	genericDeviceFeaturesWriter(dfDefs, pattern, filename)
+
+def genericDevicePropertiesWriter(dfDefs, pattern, filename):
+	stream = []
+	for _, _, extStruct, _, _, _ in dfDefs:
+		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
+		stream.append(pattern.format(extStruct, nameSubStr))
+	writeInlFile(filename, INL_HEADER, indentLines(stream))
+
+def writeDevicePropertiesDefaultDeviceDefs(dfDefs, filename):
+	pattern = "const {0}&\tget{1}\t(void) const {{ return m_devicePropertiesFull.getPropertyType<{0}>();\t}}"
+	genericDevicePropertiesWriter(dfDefs, pattern, filename)
+
+def writeDevicePropertiesContextDecl(dfDefs, filename):
+	pattern = "const vk::{0}&\tget{1}\t(void) const;"
+	genericDevicePropertiesWriter(dfDefs, pattern, filename)
+
+def writeDevicePropertiesContextDefs(dfDefs, filename):
+	pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
+	genericDevicePropertiesWriter(dfDefs, pattern, filename)
 
 def splitWithQuotation(line):
 	result = []
@@ -1739,41 +1818,47 @@ if __name__ == "__main__":
 	instanceFuncs	= [Function.TYPE_INSTANCE]
 	deviceFuncs		= [Function.TYPE_DEVICE]
 
-	dfd							= generateDeviceFeaturesDefs(src)
-	writeDeviceFeatures			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
-	writeDefaultDeviceDefs		(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
-	writeContextDecl			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
-	writeContextDefs			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
+	dfd										= generateDeviceFeaturesDefs(src)
+	writeDeviceFeatures						(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
+	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
+	writeDeviceFeaturesContextDecl			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDecl.inl"))
+	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
 
-	writeHandleType				(api, os.path.join(VULKAN_DIR, "vkHandleType.inl"))
-	writeBasicTypes				(api, os.path.join(VULKAN_DIR, "vkBasicTypes.inl"))
-	writeCompositeTypes			(api, os.path.join(VULKAN_DIR, "vkStructTypes.inl"))
-	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
-	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
-	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
-	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
-	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
-	writeInterfaceDecl			(api, os.path.join(VULKAN_DIR, "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
-	writeFunctionPtrTypes		(api, os.path.join(VULKAN_DIR, "vkFunctionPointerTypes.inl"))
-	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkPlatformFunctionPointers.inl"),		platformFuncs)
-	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkInstanceFunctionPointers.inl"),		instanceFuncs)
-	writeFunctionPointers		(api, os.path.join(VULKAN_DIR, "vkDeviceFunctionPointers.inl"),			deviceFuncs)
-	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
-	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
-	writeInitFunctionPointers	(api, os.path.join(VULKAN_DIR, "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
-	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
-	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
-	writeFuncPtrInterfaceImpl	(api, os.path.join(VULKAN_DIR, "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
-	writeStrUtilProto			(api, os.path.join(VULKAN_DIR, "vkStrUtil.inl"))
-	writeStrUtilImpl			(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
-	writeRefUtilProto			(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
-	writeRefUtilImpl			(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
-	writeStructTraitsImpl		(api, os.path.join(VULKAN_DIR, "vkGetStructureTypeImpl.inl"))
-	writeNullDriverImpl			(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
-	writeTypeUtil				(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))
-	writeSupportedExtenions		(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
-	writeCoreFunctionalities	(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
-	writeExtensionFunctions		(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
-	writeMandatoryFeatures		(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
-	writeExtensionList			(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
-	writeExtensionList			(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
+	dpd										= generateDevicePropertiesDefs(src)
+	writeDeviceProperties					(dpd, os.path.join(VULKAN_DIR, "vkDeviceProperties.inl"))
+	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForDefaultDeviceDefs.inl"))
+	writeDevicePropertiesContextDecl		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDecl.inl"))
+	writeDevicePropertiesContextDefs		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDefs.inl"))
+
+	writeHandleType							(api, os.path.join(VULKAN_DIR, "vkHandleType.inl"))
+	writeBasicTypes							(api, os.path.join(VULKAN_DIR, "vkBasicTypes.inl"))
+	writeCompositeTypes						(api, os.path.join(VULKAN_DIR, "vkStructTypes.inl"))
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualPlatformInterface.inl"),		platformFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualInstanceInterface.inl"),		instanceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkVirtualDeviceInterface.inl"),			deviceFuncs,	False)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcretePlatformInterface.inl"),		platformFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcreteInstanceInterface.inl"),		instanceFuncs,	True)
+	writeInterfaceDecl						(api, os.path.join(VULKAN_DIR, "vkConcreteDeviceInterface.inl"),		deviceFuncs,	True)
+	writeFunctionPtrTypes					(api, os.path.join(VULKAN_DIR, "vkFunctionPointerTypes.inl"))
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkPlatformFunctionPointers.inl"),		platformFuncs)
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkInstanceFunctionPointers.inl"),		instanceFuncs)
+	writeFunctionPointers					(api, os.path.join(VULKAN_DIR, "vkDeviceFunctionPointers.inl"),			deviceFuncs)
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitPlatformFunctionPointers.inl"),	platformFuncs,	lambda f: f.name != "vkGetInstanceProcAddr")
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitInstanceFunctionPointers.inl"),	instanceFuncs)
+	writeInitFunctionPointers				(api, os.path.join(VULKAN_DIR, "vkInitDeviceFunctionPointers.inl"),		deviceFuncs)
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkPlatformDriverImpl.inl"),				platformFuncs,	"PlatformDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkInstanceDriverImpl.inl"),				instanceFuncs,	"InstanceDriver")
+	writeFuncPtrInterfaceImpl				(api, os.path.join(VULKAN_DIR, "vkDeviceDriverImpl.inl"),				deviceFuncs,	"DeviceDriver")
+	writeStrUtilProto						(api, os.path.join(VULKAN_DIR, "vkStrUtil.inl"))
+	writeStrUtilImpl						(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
+	writeRefUtilProto						(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
+	writeRefUtilImpl						(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
+	writeStructTraitsImpl					(api, os.path.join(VULKAN_DIR, "vkGetStructureTypeImpl.inl"))
+	writeNullDriverImpl						(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
+	writeTypeUtil							(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))
+	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
+	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
+	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
+	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
+	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
+	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')

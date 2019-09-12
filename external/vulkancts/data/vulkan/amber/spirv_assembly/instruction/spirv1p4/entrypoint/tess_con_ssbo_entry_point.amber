@@ -177,17 +177,17 @@ void main() {
 
 [vertex data]
 #        position     vert_color
-     0/R8G8_SNORM 1/R8G8B8_UNORM
+     0/R8G8_SNORM 1/R8G8B8A8_UNORM
 
 #           Red for entire frame
-#         R8   G8     R8  G8  B8
-        -128 -128    255   0   0
-         127  127    255   0   0
-        -128  127    255   0   0
+#         R8   G8     R8  G8  B8    A8
+        -128 -128    255   0   0   255
+         127  127    255   0   0   255
+        -128  127    255   0   0   255
 
-        -128 -128    255   0   0
-         127  127    255   0   0
-         127 -128    255   0   0
+        -128 -128    255   0   0   255
+         127  127    255   0   0   255
+         127 -128    255   0   0   255
 
 [test]
 ssbo 0:0 subdata float 0 0.0 0.0 0.3 0.0

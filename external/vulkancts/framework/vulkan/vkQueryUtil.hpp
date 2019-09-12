@@ -47,6 +47,9 @@ std::vector<VkPhysicalDeviceGroupProperties>	enumeratePhysicalDeviceGroups					(
 std::vector<VkQueueFamilyProperties>			getPhysicalDeviceQueueFamilyProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures						getPhysicalDeviceFeatures						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures2						getPhysicalDeviceFeatures2						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkan12Features				getPhysicalDeviceVulkan12Features				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkan11Properties				getPhysicalDeviceVulkan11Properties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkan12Properties				getPhysicalDeviceVulkan12Properties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkFormatProperties								getPhysicalDeviceFormatProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
