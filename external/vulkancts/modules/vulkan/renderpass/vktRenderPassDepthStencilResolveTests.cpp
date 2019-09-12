@@ -255,15 +255,11 @@ bool DepthStencilResolveTest::isFeaturesSupported()
 			(stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR))
 			TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 	}
-	else if (depthResolveMode != stencilResolveMode)
+	else if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
 	{
-		// when independentResolveNone is VK_FALSE then both modes must be the same
+		// when independentResolveNone and independentResolve are VK_FALSE then both modes must be the same
 		TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 	}
-
-	// check if the implementation supports all combinations of the supported depth and stencil resolve modes
-	if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
-		TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 
 	return true;
 }
