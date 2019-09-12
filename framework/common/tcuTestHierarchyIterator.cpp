@@ -219,9 +219,11 @@ void TestHierarchyIterator::next (void)
 
 					// Check whether this is a bottom-level group (child is executable)
 					// and whether that group should be filtered out.
-					if (isTestNodeTypeExecutable(childNode->getNodeType()) &&
-						!m_caseListFilter.checkCaseFraction(m_groupNumber)) {
-						break;
+					if ( isTestNodeTypeExecutable(childNode->getNodeType()) )
+					{
+						const std::string testName = m_nodePath + "." + childNode->getName();
+						if(!m_caseListFilter.checkCaseFraction(m_groupNumber, testName))
+							break;
 					}
 					m_sessionStack.push_back(NodeIter(childNode));
 				}
