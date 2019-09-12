@@ -38,6 +38,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 using std::string;
 using std::vector;
@@ -96,6 +97,7 @@ DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
+DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -150,48 +152,49 @@ void registerOptions (de::cmdline::Parser& parser)
 	};
 
 	parser
-		<< Option<CasePath>				("n",		"deqp-case",					"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
-		<< Option<CaseList>				(DE_NULL,	"deqp-caselist",				"Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
-		<< Option<CaseListFile>			(DE_NULL,	"deqp-caselist-file",			"Read case list (in trie format) from given file")
-		<< Option<CaseListResource>		(DE_NULL,	"deqp-caselist-resource",		"Read case list (in trie format) from given file located application's assets")
-		<< Option<StdinCaseList>		(DE_NULL,	"deqp-stdin-caselist",			"Read case list (in trie format) from stdin")
-		<< Option<LogFilename>			(DE_NULL,	"deqp-log-filename",			"Write test results to given file",					"TestResults.qpa")
-		<< Option<RunMode>				(DE_NULL,	"deqp-runmode",					"Execute tests, or write list of test cases into a file",
-																																		s_runModes,			"execute")
-		<< Option<ExportFilenamePattern>(DE_NULL,	"deqp-caselist-export-file",	"Set the target file name pattern for caselist export",					"${packageName}-cases.${typeExtension}")
-		<< Option<WatchDog>				(DE_NULL,	"deqp-watchdog",				"Enable test watchdog",								s_enableNames,		"disable")
-		<< Option<CrashHandler>			(DE_NULL,	"deqp-crashhandler",			"Enable crash handling",							s_enableNames,		"disable")
-		<< Option<BaseSeed>				(DE_NULL,	"deqp-base-seed",				"Base seed for test cases that use randomization",						"0")
-		<< Option<TestIterationCount>	(DE_NULL,	"deqp-test-iteration-count",	"Iteration count for cases that support variable number of iterations",	"0")
-		<< Option<Visibility>			(DE_NULL,	"deqp-visibility",				"Default test window visibility",					s_visibilites,		"windowed")
-		<< Option<SurfaceWidth>			(DE_NULL,	"deqp-surface-width",			"Use given surface width if possible",									"-1")
-		<< Option<SurfaceHeight>		(DE_NULL,	"deqp-surface-height",			"Use given surface height if possible",									"-1")
-		<< Option<SurfaceType>			(DE_NULL,	"deqp-surface-type",			"Use given surface type",							s_surfaceTypes,		"window")
-		<< Option<ScreenRotation>		(DE_NULL,	"deqp-screen-rotation",			"Screen rotation for platforms that support it",	s_screenRotations,	"0")
-		<< Option<GLContextType>		(DE_NULL,	"deqp-gl-context-type",			"OpenGL context type for platforms that support multiple")
-		<< Option<GLConfigID>			(DE_NULL,	"deqp-gl-config-id",			"OpenGL (ES) render config ID (EGL config id on EGL platforms)",		"-1")
-		<< Option<GLConfigName>			(DE_NULL,	"deqp-gl-config-name",			"Symbolic OpenGL (ES) render config name")
-		<< Option<GLContextFlags>		(DE_NULL,	"deqp-gl-context-flags",		"OpenGL context flags (comma-separated, supports debug and robust)")
-		<< Option<CLPlatformID>			(DE_NULL,	"deqp-cl-platform-id",			"Execute tests on given OpenCL platform (IDs start from 1)",			"1")
-		<< Option<CLDeviceIDs>			(DE_NULL,	"deqp-cl-device-ids",			"Execute tests on given CL devices (comma-separated, IDs start from 1)",	parseIntList,	"")
-		<< Option<CLBuildOptions>		(DE_NULL,	"deqp-cl-build-options",		"Extra build options for OpenCL compiler")
-		<< Option<EGLDisplayType>		(DE_NULL,	"deqp-egl-display-type",		"EGL native display type")
-		<< Option<EGLWindowType>		(DE_NULL,	"deqp-egl-window-type",			"EGL native window type")
-		<< Option<EGLPixmapType>		(DE_NULL,	"deqp-egl-pixmap-type",			"EGL native pixmap type")
-		<< Option<VKDeviceID>			(DE_NULL,	"deqp-vk-device-id",			"Vulkan device ID (IDs start from 1)",									"1")
-		<< Option<VKDeviceGroupID>		(DE_NULL,	"deqp-vk-device-group-id",		"Vulkan device Group ID (IDs start from 1)",							"1")
-		<< Option<LogImages>			(DE_NULL,	"deqp-log-images",				"Enable or disable logging of result images",		s_enableNames,		"enable")
-		<< Option<LogShaderSources>		(DE_NULL,	"deqp-log-shader-sources",		"Enable or disable logging of shader sources",		s_enableNames,		"enable")
-		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
-		<< Option<LogFlush>				(DE_NULL,	"deqp-log-flush",				"Enable or disable log file fflush",				s_enableNames,		"enable")
-		<< Option<Validation>			(DE_NULL,	"deqp-validation",				"Enable or disable test case validation",			s_enableNames,		"disable")
-		<< Option<Optimization>			(DE_NULL,	"deqp-optimization-recipe",		"Shader optimization recipe (0=disabled, 1=performance, 2=size)",		"0")
-		<< Option<OptimizeSpirv>		(DE_NULL,	"deqp-optimize-spirv",			"Apply optimization to spir-v shaders as well",		s_enableNames,		"disable")
-		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"enable")
-		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin")
-		<< Option<ShaderCacheTruncate>	(DE_NULL,	"deqp-shadercache-truncate",	"Truncate shader cache before running tests",		s_enableNames,		"enable")
-		<< Option<RenderDoc>			(DE_NULL,	"deqp-renderdoc",				"Enable RenderDoc frame markers",					s_enableNames,		"disable")
-		<< Option<CaseFraction>			(DE_NULL,	"deqp-case-fraction",			"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"");
+		<< Option<CasePath>						("n",		"deqp-case",								"Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)")
+		<< Option<CaseList>						(DE_NULL,	"deqp-caselist",							"Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
+		<< Option<CaseListFile>					(DE_NULL,	"deqp-caselist-file",						"Read case list (in trie format) from given file")
+		<< Option<CaseListResource>				(DE_NULL,	"deqp-caselist-resource",					"Read case list (in trie format) from given file located application's assets")
+		<< Option<StdinCaseList>				(DE_NULL,	"deqp-stdin-caselist",						"Read case list (in trie format) from stdin")
+		<< Option<LogFilename>					(DE_NULL,	"deqp-log-filename",						"Write test results to given file",					"TestResults.qpa")
+		<< Option<RunMode>						(DE_NULL,	"deqp-runmode",								"Execute tests, or write list of test cases into a file",
+																																							s_runModes,			"execute")
+		<< Option<ExportFilenamePattern>		(DE_NULL,	"deqp-caselist-export-file",				"Set the target file name pattern for caselist export",					"${packageName}-cases.${typeExtension}")
+		<< Option<WatchDog>						(DE_NULL,	"deqp-watchdog",							"Enable test watchdog",								s_enableNames,		"disable")
+		<< Option<CrashHandler>					(DE_NULL,	"deqp-crashhandler",						"Enable crash handling",							s_enableNames,		"disable")
+		<< Option<BaseSeed>						(DE_NULL,	"deqp-base-seed",							"Base seed for test cases that use randomization",						"0")
+		<< Option<TestIterationCount>			(DE_NULL,	"deqp-test-iteration-count",				"Iteration count for cases that support variable number of iterations",	"0")
+		<< Option<Visibility>					(DE_NULL,	"deqp-visibility",							"Default test window visibility",					s_visibilites,		"windowed")
+		<< Option<SurfaceWidth>					(DE_NULL,	"deqp-surface-width",						"Use given surface width if possible",									"-1")
+		<< Option<SurfaceHeight>				(DE_NULL,	"deqp-surface-height",						"Use given surface height if possible",									"-1")
+		<< Option<SurfaceType>					(DE_NULL,	"deqp-surface-type",						"Use given surface type",							s_surfaceTypes,		"window")
+		<< Option<ScreenRotation>				(DE_NULL,	"deqp-screen-rotation",						"Screen rotation for platforms that support it",	s_screenRotations,	"0")
+		<< Option<GLContextType>				(DE_NULL,	"deqp-gl-context-type",						"OpenGL context type for platforms that support multiple")
+		<< Option<GLConfigID>					(DE_NULL,	"deqp-gl-config-id",						"OpenGL (ES) render config ID (EGL config id on EGL platforms)",		"-1")
+		<< Option<GLConfigName>					(DE_NULL,	"deqp-gl-config-name",						"Symbolic OpenGL (ES) render config name")
+		<< Option<GLContextFlags>				(DE_NULL,	"deqp-gl-context-flags",					"OpenGL context flags (comma-separated, supports debug and robust)")
+		<< Option<CLPlatformID>					(DE_NULL,	"deqp-cl-platform-id",						"Execute tests on given OpenCL platform (IDs start from 1)",			"1")
+		<< Option<CLDeviceIDs>					(DE_NULL,	"deqp-cl-device-ids",						"Execute tests on given CL devices (comma-separated, IDs start from 1)",	parseIntList,	"")
+		<< Option<CLBuildOptions>				(DE_NULL,	"deqp-cl-build-options",					"Extra build options for OpenCL compiler")
+		<< Option<EGLDisplayType>				(DE_NULL,	"deqp-egl-display-type",					"EGL native display type")
+		<< Option<EGLWindowType>				(DE_NULL,	"deqp-egl-window-type",						"EGL native window type")
+		<< Option<EGLPixmapType>				(DE_NULL,	"deqp-egl-pixmap-type",						"EGL native pixmap type")
+		<< Option<VKDeviceID>					(DE_NULL,	"deqp-vk-device-id",						"Vulkan device ID (IDs start from 1)",									"1")
+		<< Option<VKDeviceGroupID>				(DE_NULL,	"deqp-vk-device-group-id",					"Vulkan device Group ID (IDs start from 1)",							"1")
+		<< Option<LogImages>					(DE_NULL,	"deqp-log-images",							"Enable or disable logging of result images",		s_enableNames,		"enable")
+		<< Option<LogShaderSources>				(DE_NULL,	"deqp-log-shader-sources",					"Enable or disable logging of shader sources",		s_enableNames,		"enable")
+		<< Option<TestOOM>						(DE_NULL,	"deqp-test-oom",							"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
+		<< Option<LogFlush>						(DE_NULL,	"deqp-log-flush",							"Enable or disable log file fflush",				s_enableNames,		"enable")
+		<< Option<Validation>					(DE_NULL,	"deqp-validation",							"Enable or disable test case validation",			s_enableNames,		"disable")
+		<< Option<Optimization>					(DE_NULL,	"deqp-optimization-recipe",					"Shader optimization recipe (0=disabled, 1=performance, 2=size)",		"0")
+		<< Option<OptimizeSpirv>				(DE_NULL,	"deqp-optimize-spirv",						"Apply optimization to spir-v shaders as well",		s_enableNames,		"disable")
+		<< Option<ShaderCache>					(DE_NULL,	"deqp-shadercache",							"Enable or disable shader cache",					s_enableNames,		"enable")
+		<< Option<ShaderCacheFilename>			(DE_NULL,	"deqp-shadercache-filename",				"Write shader cache to given file",										"shadercache.bin")
+		<< Option<ShaderCacheTruncate>			(DE_NULL,	"deqp-shadercache-truncate",				"Truncate shader cache before running tests",		s_enableNames,		"enable")
+		<< Option<RenderDoc>					(DE_NULL,	"deqp-renderdoc",							"Enable RenderDoc frame markers",					s_enableNames,		"disable")
+		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
+		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -548,6 +551,7 @@ class CasePaths
 {
 public:
 							CasePaths	(const string& pathList);
+							CasePaths	(const vector<string>& pathList);
 	bool					matches		(const string& caseName, bool allowPrefix=false) const;
 
 private:
@@ -556,6 +560,11 @@ private:
 
 CasePaths::CasePaths (const string& pathList)
 	: m_casePatterns(de::splitString(pathList, ','))
+{
+}
+
+CasePaths::CasePaths(const vector<string>& pathList)
+	: m_casePatterns(pathList)
 {
 }
 
@@ -785,33 +794,34 @@ bool CommandLine::parse (const std::string& cmdLine)
 	return isOk;
 }
 
-const char*				CommandLine::getLogFileName					(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();			}
-deUint32				CommandLine::getLogFlags					(void) const	{ return m_logFlags;												}
-RunMode					CommandLine::getRunMode						(void) const	{ return m_cmdLine.getOption<opt::RunMode>();						}
-const char*				CommandLine::getCaseListExportFile			(void) const	{ return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();	}
-WindowVisibility		CommandLine::getVisibility					(void) const	{ return m_cmdLine.getOption<opt::Visibility>();					}
-bool					CommandLine::isWatchDogEnabled				(void) const	{ return m_cmdLine.getOption<opt::WatchDog>();						}
-bool					CommandLine::isCrashHandlingEnabled			(void) const	{ return m_cmdLine.getOption<opt::CrashHandler>();					}
-int						CommandLine::getBaseSeed					(void) const	{ return m_cmdLine.getOption<opt::BaseSeed>();						}
-int						CommandLine::getTestIterationCount			(void) const	{ return m_cmdLine.getOption<opt::TestIterationCount>();			}
-int						CommandLine::getSurfaceWidth				(void) const	{ return m_cmdLine.getOption<opt::SurfaceWidth>();					}
-int						CommandLine::getSurfaceHeight				(void) const	{ return m_cmdLine.getOption<opt::SurfaceHeight>();					}
-SurfaceType				CommandLine::getSurfaceType					(void) const	{ return m_cmdLine.getOption<opt::SurfaceType>();					}
-ScreenRotation			CommandLine::getScreenRotation				(void) const	{ return m_cmdLine.getOption<opt::ScreenRotation>();				}
-int						CommandLine::getGLConfigId					(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();					}
-int						CommandLine::getCLPlatformId				(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();					}
-const std::vector<int>&	CommandLine::getCLDeviceIds					(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();					}
-int						CommandLine::getVKDeviceId					(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();					}
-int						CommandLine::getVKDeviceGroupId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();				}
-bool					CommandLine::isValidationEnabled			(void) const	{ return m_cmdLine.getOption<opt::Validation>();					}
-bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();						}
-bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();					}
-const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();	}
-bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheTruncate>();			}
-int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();					}
-bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();					}
-bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();						}
-const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();					}
+const char*				CommandLine::getLogFileName					(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();					}
+deUint32				CommandLine::getLogFlags					(void) const	{ return m_logFlags;														}
+RunMode					CommandLine::getRunMode						(void) const	{ return m_cmdLine.getOption<opt::RunMode>();								}
+const char*				CommandLine::getCaseListExportFile			(void) const	{ return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();			}
+WindowVisibility		CommandLine::getVisibility					(void) const	{ return m_cmdLine.getOption<opt::Visibility>();							}
+bool					CommandLine::isWatchDogEnabled				(void) const	{ return m_cmdLine.getOption<opt::WatchDog>();								}
+bool					CommandLine::isCrashHandlingEnabled			(void) const	{ return m_cmdLine.getOption<opt::CrashHandler>();							}
+int						CommandLine::getBaseSeed					(void) const	{ return m_cmdLine.getOption<opt::BaseSeed>();								}
+int						CommandLine::getTestIterationCount			(void) const	{ return m_cmdLine.getOption<opt::TestIterationCount>();					}
+int						CommandLine::getSurfaceWidth				(void) const	{ return m_cmdLine.getOption<opt::SurfaceWidth>();							}
+int						CommandLine::getSurfaceHeight				(void) const	{ return m_cmdLine.getOption<opt::SurfaceHeight>();							}
+SurfaceType				CommandLine::getSurfaceType					(void) const	{ return m_cmdLine.getOption<opt::SurfaceType>();							}
+ScreenRotation			CommandLine::getScreenRotation				(void) const	{ return m_cmdLine.getOption<opt::ScreenRotation>();						}
+int						CommandLine::getGLConfigId					(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();							}
+int						CommandLine::getCLPlatformId				(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();							}
+const std::vector<int>&	CommandLine::getCLDeviceIds					(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();							}
+int						CommandLine::getVKDeviceId					(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();							}
+int						CommandLine::getVKDeviceGroupId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();						}
+bool					CommandLine::isValidationEnabled			(void) const	{ return m_cmdLine.getOption<opt::Validation>();							}
+bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();								}
+bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();							}
+const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();			}
+bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheTruncate>();					}
+int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();							}
+bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();							}
+bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();								}
+const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();							}
+const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return m_cmdLine.getOption<opt::CaseFractionMandatoryTests>().c_str();	}
 
 const char* CommandLine::getGLContextType (void) const
 {
@@ -887,22 +897,37 @@ de::MovePtr<CaseListFilter> CommandLine::createCaseListFilter (const tcu::Archiv
 
 bool CaseListFilter::checkTestGroupName (const char* groupName) const
 {
+	bool result = false;
 	if (m_casePaths)
-		return m_casePaths->matches(groupName, true);
+		result = m_casePaths->matches(groupName, true);
 	else if (m_caseTree)
-		return groupName[0] == 0 || tcu::checkTestGroupName(m_caseTree, groupName);
+		result = ( groupName[0] == 0 || tcu::checkTestGroupName(m_caseTree, groupName) );
 	else
 		return true;
+	if (!result && m_caseFractionMandatoryTests.get() != DE_NULL)
+		result = m_caseFractionMandatoryTests->matches(groupName, true);
+	return result;
 }
 
 bool CaseListFilter::checkTestCaseName (const char* caseName) const
 {
+	bool result = false;
 	if (m_casePaths)
-		return m_casePaths->matches(caseName, false);
+		result = m_casePaths->matches(caseName, false);
 	else if (m_caseTree)
-		return tcu::checkTestCaseName(m_caseTree, caseName);
+		result = tcu::checkTestCaseName(m_caseTree, caseName);
 	else
 		return true;
+	if (!result && m_caseFractionMandatoryTests.get() != DE_NULL)
+		result = m_caseFractionMandatoryTests->matches(caseName, false);
+	return result;
+}
+
+bool CaseListFilter::checkCaseFraction (int i, const std::string& testCaseName) const
+{
+	return	m_caseFraction.size() != 2 ||
+		((i % m_caseFraction[1]) == m_caseFraction[0]) ||
+		(m_caseFractionMandatoryTests.get()!=DE_NULL && m_caseFractionMandatoryTests->matches(testCaseName));
 }
 
 CaseListFilter::CaseListFilter (void)
@@ -957,11 +982,42 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 	m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
 
 	if (m_caseFraction.size() == 2 &&
-		(m_caseFraction[0] < 0 || m_caseFraction[1] <= 0 || m_caseFraction[0] >= m_caseFraction[1]))
-		throw Exception("Invalid case fraction. First element must be less than second element. Second element must be positive. First element must be non-negative.");
+		(m_caseFraction[0] < 0 || m_caseFraction[1] <= 0 || m_caseFraction[0] >= m_caseFraction[1] ))
+		throw Exception("Invalid case fraction. First element must be non-negative and less than second element. Second element must be greater than 0.");
 
 	if (m_caseFraction.size() != 0 && m_caseFraction.size() != 2)
 		throw Exception("Invalid case fraction. Must have two components.");
+
+	if (m_caseFraction.size() == 2)
+	{
+		std::string					caseFractionMandatoryTestsFilename = cmdLine.getOption<opt::CaseFractionMandatoryTests>();
+
+		if (!caseFractionMandatoryTestsFilename.empty())
+		{
+			std::ifstream fileStream(caseFractionMandatoryTestsFilename.c_str(), std::ios_base::binary);
+			if (!fileStream.is_open() || !fileStream.good())
+				throw Exception("Failed to open case fraction mandatory test list: '" + caseFractionMandatoryTestsFilename + "'");
+
+			std::vector<std::string>	cfPaths;
+			std::string					line;
+
+			while (std::getline(fileStream, line))
+			{
+				line.erase(std::remove(std::begin(line), std::end(line), '\r'), std::end(line));
+				cfPaths.push_back(line);
+			}
+			if (!cfPaths.empty())
+			{
+				m_caseFractionMandatoryTests = de::MovePtr<const CasePaths>(new CasePaths(cfPaths));
+				if (m_caseTree != DE_NULL)
+				{
+					fileStream.clear();
+					fileStream.seekg(0, fileStream.beg);
+					parseCaseList(m_caseTree, fileStream);
+				}
+			}
+		}
+	}
 }
 
 CaseListFilter::~CaseListFilter (void)

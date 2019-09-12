@@ -64,6 +64,8 @@ VULKAN_MASTER_PKG	= Package(module = VULKAN_MODULE, configurations = [
 									   exclude("test-issues.txt"),
 									   exclude("excluded-tests.txt"),
 									   exclude("android-tests.txt")]),
+		  Configuration(name		= "fraction-mandatory-tests",
+						filters		= [include("fraction-mandatory-tests.txt")]),
 	 ])
 
 MUSTPASS_LISTS		= [
