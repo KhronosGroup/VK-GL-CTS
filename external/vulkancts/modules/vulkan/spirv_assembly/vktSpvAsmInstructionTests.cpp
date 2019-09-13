@@ -10185,6 +10185,22 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_32,		701256243));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_16,		4741));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_8,		65));
+
+		// Zero extension for int->uint
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_UNSIGNED_16,		56));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_UNSIGNED_32,		-47,								true,	209));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_UNSIGNED_64,		-5,									true,	251));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_32,		14669));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_64,		-3341,								true,	62195));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_64,		973610259));
+
+		// Truncate for int->uint
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_8,		-25711,								true,	145));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_8,		103));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_8,		-1067742499291926803ll,				true,	237));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_16,		12382));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_32,		-972812359,							true,	3322154937u));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_16,		-1067742499291926803ll,				true,	61165));
 	}
 	else if (instruction == "OpSConvert")
 	{
@@ -10215,7 +10231,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		// Truncate for int->uint
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_8,		-25711,								true,	145));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_8,		103));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_8,		-1067742499291926803ll,				true,	61165));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_8,		-1067742499291926803ll,				true,	237));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_16,		12382));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_32,		-972812359,							true,	3322154937u));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_16,		-1067742499291926803ll,				true,	61165));
