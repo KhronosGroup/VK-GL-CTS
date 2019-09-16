@@ -149,6 +149,17 @@ If the shader cache is not desired, it can be disabled with:
 
 	--deqp-shadercache=disable
 
+CTS execution may be split into N fractions ( for the purpose of running it in parallel ) using
+
+	--deqp-fraction=I,N
+
+where I denotes index of current CTS execution ( I=[0..N-1], N=[1..8] )
+
+When collecting results for a Conformance Submission Package the number of fractions must not exceed 8,
+and a list of mandatory information tests for each fraction must be supplied:
+
+	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/master/vk-fraction-mandatory-tests.txt
+
 No other command line options are allowed.
 
 ### Win32
@@ -184,15 +195,20 @@ Conformance Submission Package Requirements
 
 The conformance submission package must contain the following:
 
-1. Full test logs (`TestResults.qpa`) from CTS runs against all driver builds
+1. Full test logs (`TestResults.qpa`) from CTS runs against all driver builds and all fractions
 2. Result of `git status` and `git log` from CTS source directory
 3. Any patches used on top of release tag
 4. Conformance statement
 
-Test logs (1) should be named `<submission pkg dir>/TestResults-<driver build type>.qpa`,
-for example `TestResults-armeabi-v7a.qpa`. On platforms where multiple different driver
+Test logs (1) should be named `<submission pkg dir>/TestResults-<driver build type>-<fraction id>-of-<total fractions>.qpa`,
+for example `TestResults-armeabi-v7a-1-of-8.qpa`. On platforms where multiple different driver
 builds (for example 64-bit and 32-bit) are present, CTS logs must be provided
-for each driver build as part of the submission package.
+for each driver build as part of the submission package. If CTS run was split into multiple
+fractions then result files for all fractions must be provided, each file must
+contain results of the mandatory information tests.
+
+Fractions may be run on different physical devices but each device must represent
+the same Conformant Product.
 
 Test logs generated on a system which exposes more than one physical device
 in a device group can be used for products that expose one or more physical
