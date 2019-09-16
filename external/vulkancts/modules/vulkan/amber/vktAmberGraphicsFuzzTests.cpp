@@ -110,6 +110,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"unreachable-loops.amber",						"unreachable-loops",					"Fragment shader that writes red despite unreachable loops"								},
 		{	"unreachable-loops-in-switch.amber",			"unreachable-loops-in-switch",			"A fragment shader with unreachable loops in a switch"									},
 		{	"unreachable-return-in-loop.amber",				"unreachable-return-in-loop",			"A fragment shader with an unreachable return in a loop"								},
+		{	"while-function-always-false.amber",			"while-function-always-false",			"A fragment shader with an always false while function"									},
 		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
 		{	"write-before-break.amber",						"write-before-break",					"Fragment shader that writes red before loop break"										},
 		{	"write-red-in-loop-nest.amber",					"write-red-in-loop-nest",				"A fragment shader that writes red in a nest of loops"									},
