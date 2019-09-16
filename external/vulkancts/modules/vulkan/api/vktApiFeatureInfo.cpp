@@ -565,8 +565,6 @@ bool validateBitmaskLimit (const T limitToCheck, const T reportedValue, const Li
 	return true;
 }
 
-tcu::TestStatus validateLimits12 (Context& context)
-{
 #ifdef PN
 #error PN defined
 #else
@@ -589,6 +587,8 @@ tcu::TestStatus validateLimits12 (Context& context)
 #define LIM_MAX_BITI32(X)	deUint32(X),          0,               0,     0.0f, LIMIT_FORMAT_BITMASK,      LIMIT_TYPE_MAX
 #define LIM_NONE_BITI32		          0,          0,               0,     0.0f, LIMIT_FORMAT_BITMASK,      LIMIT_TYPE_NONE
 
+tcu::TestStatus validateLimits12 (Context& context)
+{
 	const VkPhysicalDevice											physicalDevice							= context.getPhysicalDevice();
 	const InstanceInterface&										vki										= context.getInstanceInterface();
 	TestLog&														log										= context.getTestContext().getLog();
@@ -596,48 +596,15 @@ tcu::TestStatus validateLimits12 (Context& context)
 
 	const VkPhysicalDeviceFeatures2&								features2								= context.getDeviceFeatures2();
 	const VkPhysicalDeviceFeatures&									features								= features2.features;
+	const VkPhysicalDeviceVulkan12Features							features12								= getPhysicalDeviceVulkan12Features(vki, physicalDevice);
 
 	const VkPhysicalDeviceProperties2&								properties2								= context.getDeviceProperties2();
-	const VkPhysicalDevicePushDescriptorPropertiesKHR&				pushDescriptorPropertiesKHR				= context.getPushDescriptorProperties();
-	const VkPhysicalDeviceMultiviewProperties&						multiviewProperties						= context.getMultiviewProperties();
-	const VkPhysicalDeviceDiscardRectanglePropertiesEXT&			discardRectanglePropertiesEXT			= context.getDiscardRectanglePropertiesEXT();
-	const VkPhysicalDeviceSampleLocationsPropertiesEXT&				sampleLocationsPropertiesEXT			= context.getSampleLocationsPropertiesEXT();
-	const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			externalMemoryHostPropertiesEXT			= context.getExternalMemoryHostPropertiesEXT();
-	const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		blendOperationAdvancedPropertiesEXT		= context.getBlendOperationAdvancedPropertiesEXT();
-	const VkPhysicalDeviceMaintenance3Properties&					maintenance3Properties					= context.getMaintenance3Properties();
-	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	conservativeRasterizationPropertiesEXT	= context.getConservativeRasterizationPropertiesEXT();
-	const VkPhysicalDeviceDescriptorIndexingPropertiesEXT&			descriptorIndexingPropertiesEXT			= context.getDescriptorIndexingProperties();
-	const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			inlineUniformBlockPropertiesEXT			= context.getInlineUniformBlockPropertiesEXT();
-	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		vertexAttributeDivisorPropertiesEXT		= context.getVertexAttributeDivisorPropertiesEXT();
-	const VkPhysicalDeviceMeshShaderPropertiesNV&					meshShaderPropertiesNV					= context.getMeshShaderProperties();
-	const VkPhysicalDeviceTransformFeedbackPropertiesEXT&			transformFeedbackPropertiesEXT			= context.getTransformFeedbackPropertiesEXT();
-	const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			fragmentDensityMapPropertiesEXT			= context.getFragmentDensityMapPropertiesEXT();
-	const VkPhysicalDeviceRayTracingPropertiesNV&					rayTracingPropertiesNV					= context.getRayTracingProperties();
-	const VkPhysicalDeviceTimelineSemaphorePropertiesKHR&			timelineSemaphorePropertiesKHR			= context.getTimelineSemaphoreProperties();
-	const VkPhysicalDeviceLineRasterizationPropertiesEXT&			lineRasterizationPropertiesEXT			= context.getLineRasterizationPropertiesEXT();
 	const VkPhysicalDeviceVulkan12Properties						vulkan12Properties						= getPhysicalDeviceVulkan12Properties(vki, physicalDevice);
 	const VkPhysicalDeviceVulkan11Properties						vulkan11Properties						= getPhysicalDeviceVulkan11Properties(vki, physicalDevice);
 	const VkPhysicalDeviceLimits&									limits									= properties2.properties.limits;
 
 	const VkBool32													checkAlways								= VK_TRUE;
 	const VkBool32													checkVulkan12Limit						= VK_TRUE;
-	const VkBool32													pushDescriptorKHR						= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_push_descriptor");
-	const VkBool32													multiviewKHR							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview");
-	const VkBool32													discardRectangleEXT						= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_discard_rectangles");
-	const VkBool32													sampleLocationsEXT						= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_sample_locations");
-	const VkBool32													externalMemoryHostEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_external_memory_host");
-	const VkBool32													blendOperationAdvancedEXT				= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_blend_operation_advanced");
-	const VkBool32													maintenance3KHR							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance3");
-	const VkBool32													conservativeRasterizationEXT			= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_conservative_rasterization");
-	const VkBool32													descriptorIndexingEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing");
-	const VkBool32													inlineUniformBlockEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block");
-	const VkBool32													vertexAttributeDivisorEXT				= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_vertex_attribute_divisor");
-	const VkBool32													meshShaderNV							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_mesh_shader");
-	const VkBool32													transformFeedbackEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_transform_feedback");
-	const VkBool32													fragmentDensityMapEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_fragment_density_map");
-	const VkBool32													rayTracingNV							= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing");
-	const VkBool32													timelineSemaphoreKHR					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_timeline_semaphore");
-	const VkBool32													lineRasterizationEXT					= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_line_rasterization");
 
 	deUint32														shaderStages							= 3;
 	deUint32														maxPerStageResourcesMin					= deMin32(128,	limits.maxPerStageDescriptorUniformBuffers		+
@@ -647,12 +614,12 @@ tcu::TestStatus validateLimits12 (Context& context)
 																															limits.maxPerStageDescriptorInputAttachments	+
 																															limits.maxColorAttachments);
 
-	if (features2.features.tessellationShader)
+	if (features.tessellationShader)
 	{
 		shaderStages += 2;
 	}
 
-	if (features2.features.geometryShader)
+	if (features.geometryShader)
 	{
 		shaderStages++;
 	}
@@ -797,164 +764,49 @@ tcu::TestStatus validateLimits12 (Context& context)
 		{ PN(checkAlways),								PN(limits.nonCoherentAtomSize),																	LIM_MIN_DEVSIZE(1) },
 		{ PN(checkAlways),								PN(limits.nonCoherentAtomSize),																	LIM_MAX_DEVSIZE(256) },
 
-		// VK_KHR_push_descriptor
-		{ PN(pushDescriptorKHR),						PN(pushDescriptorPropertiesKHR.maxPushDescriptors),												LIM_MIN_UINT32(32) },
-
 		// VK_KHR_multiview
-		{ PN(multiviewKHR),								PN(multiviewProperties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
-		{ PN(multiviewKHR),								PN(multiviewProperties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1<<27) - 1) },
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewViewCount),													LIM_MIN_UINT32(6) },
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMultiviewInstanceIndex),												LIM_MIN_UINT32((1<<27) - 1) },
 
-		// VK_EXT_discard_rectangles
-		{ PN(discardRectangleEXT),						PN(discardRectanglePropertiesEXT.maxDiscardRectangles),											LIM_MIN_UINT32(4) },
-
-		// VK_EXT_sample_locations
-		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationSampleCounts),									LIM_MIN_BITI32(VK_SAMPLE_COUNT_4_BIT) },
-		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.maxSampleLocationGridSize.width),								LIM_MIN_FLOAT(0.0f) },
-		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.maxSampleLocationGridSize.height),								LIM_MIN_FLOAT(0.0f) },
-		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationCoordinateRange[0]),								LIM_MAX_FLOAT(0.0f) },
-		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationCoordinateRange[1]),								LIM_MIN_FLOAT(0.9375f) },
-		{ PN(sampleLocationsEXT),						PN(sampleLocationsPropertiesEXT.sampleLocationSubPixelBits),									LIM_MIN_UINT32(4) },
-
-		// VK_EXT_external_memory_host
-		{ PN(externalMemoryHostEXT),					PN(externalMemoryHostPropertiesEXT.minImportedHostPointerAlignment),							LIM_MAX_DEVSIZE(65536) },
-
-		// VK_EXT_blend_operation_advanced
-		{ PN(blendOperationAdvancedEXT),				PN(blendOperationAdvancedPropertiesEXT.advancedBlendMaxColorAttachments),						LIM_MIN_UINT32(4) },
-
 		// VK_KHR_maintenance3
-		{ PN(maintenance3KHR),							PN(maintenance3Properties.maxPerSetDescriptors),												LIM_MIN_UINT32(1024) },
-		{ PN(maintenance3KHR),							PN(maintenance3Properties.maxMemoryAllocationSize),												LIM_MIN_DEVSIZE(1<<30) },
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxPerSetDescriptors),													LIM_MIN_UINT32(1024) },
 		{ PN(checkVulkan12Limit),						PN(vulkan11Properties.maxMemoryAllocationSize),													LIM_MIN_DEVSIZE(1<<30) },
 
-		// VK_EXT_conservative_rasterization
-		{ PN(conservativeRasterizationEXT),				PN(conservativeRasterizationPropertiesEXT.primitiveOverestimationSize),							LIM_MIN_FLOAT(0.0f) },
-		{ PN(conservativeRasterizationEXT),				PN(conservativeRasterizationPropertiesEXT.maxExtraPrimitiveOverestimationSize),					LIM_MIN_FLOAT(0.0f) },
-		{ PN(conservativeRasterizationEXT),				PN(conservativeRasterizationPropertiesEXT.extraPrimitiveOverestimationSizeGranularity),			LIM_MIN_FLOAT(0.0f) },
-
 		// VK_EXT_descriptor_indexing
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxUpdateAfterBindDescriptorsInAllPools),					LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),				LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(12) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),			LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),			LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),						LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),					LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),				LIM_MIN_UINT32(shaderStages * 12) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),		LIM_MIN_UINT32(8) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),				LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),		LIM_MIN_UINT32(4) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),				LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),				LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),			LIM_MIN_UINT32(500000) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),				LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),			LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),			LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),						LIM_MIN_UINT32(limits.maxPerStageResources) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),					LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),				LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),		LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),				LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),		LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),				LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),				LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
-		{ PN(descriptorIndexingEXT),					PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),			LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
-
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxUpdateAfterBindDescriptorsInAllPools),									LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers),							LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),						LIM_MIN_UINT32(12) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),						LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages),						LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages),						LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments),					LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageUpdateAfterBindResources),										LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers),									LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers),							LIM_MIN_UINT32(shaderStages * 12) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),					LIM_MIN_UINT32(8) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers),							LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),					LIM_MIN_UINT32(4) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages),							LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages),							LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(500000) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers),							LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),						LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),						LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages),						LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages),						LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments),					LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxPerStageUpdateAfterBindResources),										LIM_MIN_UINT32(limits.maxPerStageResources) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers),									LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers),							LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),					LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers),							LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),					LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages),							LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages),							LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
-		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
-
-		// VK_EXT_inline_uniform_block
-		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxInlineUniformBlockSize),									LIM_MIN_UINT32(256) },
-		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxPerStageDescriptorInlineUniformBlocks),					LIM_MIN_UINT32(4) },
-		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks),	LIM_MIN_UINT32(4) },
-		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxDescriptorSetInlineUniformBlocks),						LIM_MIN_UINT32(4) },
-		{ PN(inlineUniformBlockEXT),					PN(inlineUniformBlockPropertiesEXT.maxDescriptorSetUpdateAfterBindInlineUniformBlocks),			LIM_MIN_UINT32(4) },
-
-		// VK_EXT_vertex_attribute_divisor
-		{ PN(vertexAttributeDivisorEXT),				PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),									LIM_MIN_UINT32((1<<16) - 1) },
-
-		// VK_NV_mesh_shader
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxDrawMeshTasksCount),												LIM_MIN_UINT32(deUint32((1ull<<16) - 1)) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupInvocations),											LIM_MIN_UINT32(32) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[0]),												LIM_MIN_UINT32(32) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[1]),												LIM_MIN_UINT32(1) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[2]),												LIM_MIN_UINT32(1) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskTotalMemorySize),												LIM_MIN_UINT32(16384) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxTaskOutputCount),													LIM_MIN_UINT32((1<<16) - 1) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupInvocations),											LIM_MIN_UINT32(32) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[0]),												LIM_MIN_UINT32(32) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[1]),												LIM_MIN_UINT32(1) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[2]),												LIM_MIN_UINT32(1) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshTotalMemorySize),												LIM_MIN_UINT32(16384) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshOutputVertices),												LIM_MIN_UINT32(256) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshOutputPrimitives),												LIM_MIN_UINT32(256) },
-		{ PN(meshShaderNV),								PN(meshShaderPropertiesNV.maxMeshMultiviewViewCount),											LIM_MIN_UINT32(1) },
-
-		// VK_EXT_transform_feedback
-		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackStreams),									LIM_MIN_UINT32(1) },
-		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBuffers),									LIM_MIN_UINT32(1) },
-		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferSize),								LIM_MIN_DEVSIZE(1ull<<27) },
-		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackStreamDataSize),							LIM_MIN_UINT32(512) },
-		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferDataSize),							LIM_MIN_UINT32(512) },
-		{ PN(transformFeedbackEXT),						PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferDataStride),						LIM_MIN_UINT32(512) },
-
-		// fragmentDensityMap
-		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.minFragmentDensityTexelSize.width),							LIM_MIN_UINT32(1) },
-		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.minFragmentDensityTexelSize.height),							LIM_MIN_UINT32(1) },
-		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.maxFragmentDensityTexelSize.width),							LIM_MIN_UINT32(1) },
-		{ PN(fragmentDensityMapEXT),					PN(fragmentDensityMapPropertiesEXT.maxFragmentDensityTexelSize.height),							LIM_MIN_UINT32(1) },
-
-		// VK_NV_ray_tracing
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.shaderGroupHandleSize),												LIM_MIN_UINT32(16) },
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxRecursionDepth),													LIM_MIN_UINT32(31) },
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.shaderGroupBaseAlignment),											LIM_MIN_UINT32(64) },
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxGeometryCount),													LIM_MIN_UINT32((1<<24)-1) },
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxInstanceCount),													LIM_MIN_UINT32((1<<24)-1) },
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxTriangleCount),													LIM_MIN_UINT32((1<<29)-1) },
-		{ PN(rayTracingNV),								PN(rayTracingPropertiesNV.maxDescriptorSetAccelerationStructures),								LIM_MIN_UINT32(16) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxUpdateAfterBindDescriptorsInAllPools),									LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers),							LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),						LIM_MIN_UINT32(12) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),						LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages),						LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages),						LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments),					LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageUpdateAfterBindResources),										LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers),									LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers),							LIM_MIN_UINT32(shaderStages * 12) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),					LIM_MIN_UINT32(8) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers),							LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),					LIM_MIN_UINT32(4) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages),							LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages),							LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(500000) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSamplers),							LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindUniformBuffers),						LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageBuffers),						LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindSampledImages),						LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindStorageImages),						LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageDescriptorUpdateAfterBindInputAttachments),					LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxPerStageUpdateAfterBindResources),										LIM_MIN_UINT32(limits.maxPerStageResources) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSamplers),									LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffers),							LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),					LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffers),							LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),					LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindSampledImages),							LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindStorageImages),							LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
+		{ PN(features12.descriptorIndexing),			PN(vulkan12Properties.maxDescriptorSetUpdateAfterBindInputAttachments),							LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
 
 		// timelineSemaphore
-		{ PN(timelineSemaphoreKHR),						PN(timelineSemaphorePropertiesKHR.maxTimelineSemaphoreValueDifference),							LIM_MIN_DEVSIZE((1ull<<31) - 1) },
 		{ PN(checkVulkan12Limit),						PN(vulkan12Properties.maxTimelineSemaphoreValueDifference),										LIM_MIN_DEVSIZE((1ull<<31) - 1) },
-
-		// VK_EXT_line_rasterization
-		{ PN(lineRasterizationEXT),						PN(lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits),									LIM_MIN_UINT32(4) },
 	};
 
 	log << TestLog::Message << limits << TestLog::EndMessage;
@@ -1060,7 +912,6 @@ tcu::TestStatus validateLimits12 (Context& context)
 		return tcu::TestStatus::pass("pass");
 	else
 		return tcu::TestStatus::fail("fail");
-#	undef PN
 }
 
 template<typename T>
