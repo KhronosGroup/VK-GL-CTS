@@ -4192,6 +4192,13 @@ struct VkPhysicalDeviceShaderCoreProperties2AMD
 	deUint32						activeComputeUnitCount;
 };
 
+struct VkPhysicalDeviceCoherentMemoryFeaturesAMD
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceCoherentMemory;
+};
+
 struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 {
 	VkStructureType	sType;
@@ -4903,8 +4910,6 @@ typedef VkSemaphoreSignalInfo VkSemaphoreSignalInfoKHR;
 
 typedef VkPhysicalDeviceBufferDeviceAddressFeatures VkPhysicalDeviceBufferDeviceAddressFeaturesKHR;
 
-typedef VkBufferDeviceAddressInfo VkBufferDeviceAddressInfoKHR;
-
 typedef VkBufferOpaqueCaptureAddressCreateInfo VkBufferOpaqueCaptureAddressCreateInfoKHR;
 
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
@@ -4912,6 +4917,4 @@ typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAll
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
 
 typedef VkPhysicalDeviceBufferDeviceAddressFeaturesEXT VkPhysicalDeviceBufferAddressFeaturesEXT;
-
-typedef VkBufferDeviceAddressInfoKHR VkBufferDeviceAddressInfoEXT;
 
