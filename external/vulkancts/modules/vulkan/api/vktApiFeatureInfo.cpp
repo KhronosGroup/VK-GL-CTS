@@ -706,34 +706,50 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 	checkDuplicateExtensions(results, extensions);
 }
 
-void checkInstanceExtensionDependencies(tcu::ResultCollector& results,
-										int dependencyLength,
-										const std::pair<const char*, const char*>* dependencies,
-										const vector<VkExtensionProperties>& extensionProperties)
+void checkInstanceExtensionDependencies(tcu::ResultCollector&											results,
+										int																dependencyLength,
+										const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
+										deUint32														versionMajor,
+										deUint32														versionMinor,
+										const vector<VkExtensionProperties>&							extensionProperties)
 {
 	for (int ndx = 0; ndx < dependencyLength; ndx++)
 	{
-		if (isExtensionSupported(extensionProperties, RequiredExtension(dependencies[ndx].first)) &&
-			!isExtensionSupported(extensionProperties, RequiredExtension(dependencies[ndx].second)))
+		deUint32 currentVersionMajor, currentVersionMinor;
+		const char* extensionFirst;
+		const char* extensionSecond;
+		std::tie(currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
+		if (currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
+			continue;
+		if (isExtensionSupported(extensionProperties, RequiredExtension(extensionFirst)) &&
+			!isExtensionSupported(extensionProperties, RequiredExtension(extensionSecond)))
 		{
-			results.fail("Extension " + string(dependencies[ndx].first) + " is missing dependency: " + string(dependencies[ndx].second));
+			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
 		}
 	}
 }
 
-void checkDeviceExtensionDependencies(tcu::ResultCollector& results,
-									  int dependencyLength,
-									  const std::pair<const char*, const char*>* dependencies,
-									  const vector<VkExtensionProperties>& instanceExtensionProperties,
-									  const vector<VkExtensionProperties>& deviceExtensionProperties)
+void checkDeviceExtensionDependencies(tcu::ResultCollector&												results,
+									  int																dependencyLength,
+									  const std::tuple<deUint32, deUint32, const char*, const char*>*	dependencies,
+									  deUint32															versionMajor,
+									  deUint32															versionMinor,
+									  const vector<VkExtensionProperties>&								instanceExtensionProperties,
+									  const vector<VkExtensionProperties>&								deviceExtensionProperties)
 {
 	for (int ndx = 0; ndx < dependencyLength; ndx++)
 	{
-		if (isExtensionSupported(deviceExtensionProperties, RequiredExtension(dependencies[ndx].first)) &&
-			!isExtensionSupported(deviceExtensionProperties, RequiredExtension(dependencies[ndx].second)) &&
-			!isExtensionSupported(instanceExtensionProperties, RequiredExtension(dependencies[ndx].second)))
+		deUint32 currentVersionMajor, currentVersionMinor;
+		const char* extensionFirst;
+		const char* extensionSecond;
+		std::tie(currentVersionMajor, currentVersionMinor, extensionFirst, extensionSecond) = dependencies[ndx];
+		if (currentVersionMajor != versionMajor || currentVersionMinor != versionMinor)
+			continue;
+		if (isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionFirst)) &&
+			!isExtensionSupported(deviceExtensionProperties, RequiredExtension(extensionSecond)) &&
+			!isExtensionSupported(instanceExtensionProperties, RequiredExtension(extensionSecond)))
 		{
-			results.fail("Extension " + string(dependencies[ndx].first) + " is missing dependency: " + string(dependencies[ndx].second));
+			results.fail("Extension " + string(extensionFirst) + " is missing dependency: " + string(extensionSecond));
 		}
 	}
 }
@@ -778,17 +794,20 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 		checkInstanceExtensions(results, extensionNames);
 		CheckEnumerateInstanceExtensionPropertiesIncompleteResult()(context, results, properties.size());
 
-		if (context.contextSupports(vk::ApiVersion(1, 1, 0)))
+		for (const auto& version : releasedApiVersions)
 		{
-			checkInstanceExtensionDependencies(results,
-											   DE_LENGTH_OF_ARRAY(instanceExtensionDependencies_1_1),
-											   instanceExtensionDependencies_1_1, properties);
-		}
-		else if (context.contextSupports(vk::ApiVersion(1, 0, 0)))
-		{
-			checkInstanceExtensionDependencies(results,
-											   DE_LENGTH_OF_ARRAY(instanceExtensionDependencies_1_0),
-											   instanceExtensionDependencies_1_0, properties);
+			deUint32 versionMajor, versionMinor;
+			std::tie(std::ignore, versionMajor, versionMinor) = version;
+			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
+			{
+				checkInstanceExtensionDependencies(results,
+					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
+					instanceExtensionDependencies,
+					versionMajor,
+					versionMinor,
+					properties);
+				break;
+			}
 		}
 	}
 
@@ -899,21 +918,21 @@ tcu::TestStatus enumerateDeviceExtensions (Context& context)
 		checkDeviceExtensions(results, deviceExtensionNames);
 		CheckEnumerateDeviceExtensionPropertiesIncompleteResult()(context, results, deviceExtensionProperties.size());
 
-		if (context.contextSupports(vk::ApiVersion(1, 1, 0)))
+		for (const auto& version : releasedApiVersions)
 		{
-			checkDeviceExtensionDependencies(results,
-											 DE_LENGTH_OF_ARRAY(deviceExtensionDependencies_1_1),
-											 deviceExtensionDependencies_1_1,
-											 instanceExtensionProperties,
-											 deviceExtensionProperties);
-		}
-		else if (context.contextSupports(vk::ApiVersion(1, 0, 0)))
-		{
-			checkDeviceExtensionDependencies(results,
-											 DE_LENGTH_OF_ARRAY(deviceExtensionDependencies_1_0),
-											 deviceExtensionDependencies_1_0,
-											 instanceExtensionProperties,
-											 deviceExtensionProperties);
+			deUint32 versionMajor, versionMinor;
+			std::tie(std::ignore, versionMajor, versionMinor) = version;
+			if (context.contextSupports(vk::ApiVersion(versionMajor, versionMinor, 0)))
+			{
+				checkDeviceExtensionDependencies(results,
+					DE_LENGTH_OF_ARRAY(instanceExtensionDependencies),
+					instanceExtensionDependencies,
+					versionMajor,
+					versionMinor,
+					instanceExtensionProperties,
+					deviceExtensionProperties);
+				break;
+			}
 		}
 	}
 
