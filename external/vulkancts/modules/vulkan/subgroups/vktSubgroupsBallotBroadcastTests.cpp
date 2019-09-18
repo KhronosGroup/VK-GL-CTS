@@ -83,19 +83,40 @@ std::string getBodySource(CaseDefinition caseDef)
 {
 	std::ostringstream bdy;
 
-	bdy << "  uvec4 mask = subgroupBallot(true);\n";
-	bdy << "  uint tempResult = 0;\n";
+	std::string broadcast;
+	std::string broadcastFirst;
+	int max;
+	if (caseDef.extShaderSubGroupBallotTests)
+	{
+		broadcast		= "readInvocationARB";
+		broadcastFirst	= "readFirstInvocationARB";
+		max = 64;
+
+		bdy << "  uint64_t mask = ballotARB(true);\n";
+		bdy << "  uint sgSize = gl_SubGroupSizeARB;\n";
+		bdy << "  uint sgInvocation = gl_SubGroupInvocationARB;\n";
+	}
+	else
+	{
+		broadcast		= "subgroupBroadcast";
+		broadcastFirst	= "subgroupBroadcastFirst";
+		max = (int)subgroups::maxSupportedSubgroupSize();
+
+		bdy << "  uvec4 mask = subgroupBallot(true);\n";
+		bdy << "  uint sgSize = gl_SubgroupSize;\n";
+		bdy << "  uint sgInvocation = gl_SubgroupInvocationID;\n";
+	}
 
 	if (OPTYPE_BROADCAST == caseDef.opType)
 	{
-		bdy	<< "  tempResult = 0x3;\n";
-		for (int i = 0; i < (int)subgroups::maxSupportedSubgroupSize(); i++)
+		bdy	<< "  uint tempResult = 0x3;\n";
+		for (int i = 0; i < max; i++)
 		{
 			bdy << "  {\n"
 			<< "    const uint id = "<< i << ";\n"
-			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format)
-			<< " op = subgroupBroadcast(data1[gl_SubgroupInvocationID], id);\n"
-			<< "    if ((id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
+			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
+				<< broadcast << "(data1[sgInvocation], id);\n"
+			<< "    if ((id < sgSize) && subgroupBallotBitExtract(mask, id))\n"
 			<< "    {\n"
 			<< "      if (op != data1[id])\n"
 			<< "      {\n"
@@ -107,8 +128,9 @@ std::string getBodySource(CaseDefinition caseDef)
 	}
 	else
 	{
-		bdy	<< "  uint firstActive = 0;\n"
-			<< "  for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+		bdy << "  uint tempResult = 0;\n"
+			<< "  uint firstActive = 0;\n"
+			<< "  for (uint i = 0; i < sgSize; i++)\n"
 			<< "  {\n"
 			<< "    if (subgroupBallotBitExtract(mask, i))\n"
 			<< "    {\n"
@@ -116,11 +138,11 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "      break;\n"
 			<< "    }\n"
 			<< "  }\n"
-			<< "  tempResult |= (subgroupBroadcastFirst(data1[gl_SubgroupInvocationID]) == data1[firstActive]) ? 0x1 : 0;\n"
+			<< "  tempResult |= (" << broadcastFirst << "(data1[sgInvocation]) == data1[firstActive]) ? 0x1 : 0;\n"
 			<< "  // make the firstActive invocation inactive now\n"
-			<< "  if (firstActive == gl_SubgroupInvocationID)\n"
+			<< "  if (firstActive == sgInvocation)\n"
 			<< "  {\n"
-			<< "    for (uint i = 0; i < gl_SubgroupSize; i++)\n"
+			<< "    for (uint i = 0; i < sgSize; i++)\n"
 			<< "    {\n"
 			<< "      if (subgroupBallotBitExtract(mask, i))\n"
 			<< "      {\n"
@@ -128,67 +150,7 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "        break;\n"
 			<< "      }\n"
 			<< "    }\n"
-			<< "    tempResult |= (subgroupBroadcastFirst(data1[gl_SubgroupInvocationID]) == data1[firstActive]) ? 0x2 : 0;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    // the firstActive invocation didn't partake in the second result so set it to true\n"
-			<< "    tempResult |= 0x2;\n"
-			<< "  }\n";
-	}
-   return bdy.str();
-}
-
-std::string getBodySourceARB(CaseDefinition caseDef)
-{
-	std::ostringstream bdy;
-
-	bdy << "  uint64_t mask = ballotARB(true);\n";
-	bdy << "  uint tempResult = 0;\n";
-
-	if (OPTYPE_BROADCAST == caseDef.opType)
-	{
-		bdy	<< "  tempResult = 0x3;\n";
-		for (int i = 0; i < 64; i++)
-		{
-			bdy << "  {\n"
-			<< "    const uint id = "<< i << ";\n"
-			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format)
-			<< " op = readInvocationARB(data1[gl_SubGroupInvocationARB], id);\n"
-			<< "    if ((id < gl_SubGroupSizeARB) && subgroupBallotBitExtract(mask, id))\n"
-			<< "    {\n"
-			<< "      if (op != data1[id])\n"
-			<< "      {\n"
-			<< "        tempResult = 0;\n"
-			<< "      }\n"
-			<< "    }\n"
-			<< "  }\n";
-		}
-	}
-	else
-	{
-		bdy	<< "  uint firstActive = 0;\n"
-			<< "  for (uint i = 0; i < gl_SubGroupSizeARB; i++)\n"
-			<< "  {\n"
-			<< "    if (subgroupBallotBitExtract(mask, i))\n"
-			<< "    {\n"
-			<< "      firstActive = i;\n"
-			<< "      break;\n"
-			<< "    }\n"
-			<< "  }\n"
-			<< "  tempResult |= (readFirstInvocationARB(data1[gl_SubGroupInvocationARB]) == data1[firstActive]) ? 0x1 : 0;\n"
-			<< "  // make the firstActive invocation inactive now\n"
-			<< "  if (firstActive == gl_SubGroupInvocationARB)\n"
-			<< "  {\n"
-			<< "    for (uint i = 0; i < gl_SubGroupSizeARB; i++)\n"
-			<< "    {\n"
-			<< "      if (subgroupBallotBitExtract(mask, i))\n"
-			<< "      {\n"
-			<< "        firstActive = i;\n"
-			<< "        break;\n"
-			<< "      }\n"
-			<< "    }\n"
-			<< "    tempResult |= (readFirstInvocationARB(data1[gl_SubGroupInvocationARB]) == data1[firstActive]) ? 0x2 : 0;\n"
+			<< "    tempResult |= (" << broadcastFirst << "(data1[sgInvocation]) == data1[firstActive]) ? 0x2 : 0;\n"
 			<< "  }\n"
 			<< "  else\n"
 			<< "  {\n"
@@ -221,14 +183,17 @@ std::string getHelperFunctionARB(CaseDefinition caseDef)
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ? "#extension GL_ARB_shader_ballot: enable\n#extension GL_KHR_shader_subgroup_basic: enable\n#extension GL_ARB_gpu_shader_int64: enable\n" : "#extension GL_KHR_shader_subgroup_ballot: enable\n");
+	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ?	"#extension GL_ARB_shader_ballot: enable\n"
+																			"#extension GL_KHR_shader_subgroup_basic: enable\n"
+																			"#extension GL_ARB_gpu_shader_int64: enable\n"
+																		:	"#extension GL_KHR_shader_subgroup_ballot: enable\n");
 
 	subgroups::setFragmentShaderFrameBuffer(programCollection);
 
 	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
 		subgroups::setVertexShaderFrameBuffer(programCollection);
 
-	std::string bdyStr = (caseDef.extShaderSubGroupBallotTests ? getBodySourceARB(caseDef) : getBodySource(caseDef));
+	std::string bdyStr = getBodySource(caseDef);
 	std::string helperStrARB = getHelperFunctionARB(caseDef);
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
@@ -348,10 +313,13 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	std::string bdyStr = caseDef.extShaderSubGroupBallotTests ? getBodySourceARB(caseDef) : getBodySource(caseDef);
+	std::string bdyStr = getBodySource(caseDef);
 	std::string helperStrARB = getHelperFunctionARB(caseDef);
 
-	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ? "#extension GL_ARB_shader_ballot: enable\n#extension GL_KHR_shader_subgroup_basic: enable\n#extension GL_ARB_gpu_shader_int64: enable\n" : "#extension GL_KHR_shader_subgroup_ballot: enable\n");
+	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ?	"#extension GL_ARB_shader_ballot: enable\n"
+																			"#extension GL_KHR_shader_subgroup_basic: enable\n"
+																			"#extension GL_ARB_gpu_shader_int64: enable\n"
+																		:	"#extension GL_KHR_shader_subgroup_ballot: enable\n");
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{

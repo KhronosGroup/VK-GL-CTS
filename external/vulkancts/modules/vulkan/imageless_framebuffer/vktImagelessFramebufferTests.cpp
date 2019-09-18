@@ -2323,6 +2323,7 @@ public:
 	virtual					~BaseTestCase	(void);
 
 protected:
+	virtual void			checkSupport	(Context& context) const;
 	virtual void			initPrograms	(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance	(Context& context) const;
 
@@ -2337,6 +2338,15 @@ BaseTestCase::BaseTestCase (tcu::TestContext& context, const std::string& name, 
 
 BaseTestCase::~BaseTestCase ()
 {
+}
+
+void BaseTestCase::checkSupport (Context& context) const
+{
+	if (m_parameters.testType == TEST_TYPE_COLOR_RESOLVE || m_parameters.testType == TEST_TYPE_DEPTH_STENCIL_RESOLVE)
+	{
+		if (!context.getDeviceProperties().limits.standardSampleLocations)
+			TCU_THROW(NotSupportedError, "Non-standard sample locations are not supported");
+	}
 }
 
 void BaseTestCase::initPrograms (SourceCollections& programCollection) const
