@@ -46,6 +46,7 @@
 
 #include <sstream>
 #include <vector>
+#include <set>
 #include <cctype>
 #include <locale>
 #include <limits>
@@ -1150,8 +1151,11 @@ CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& conte
 
 std::vector<VkTimeDomainEXT> CalibratedTimestampTestInstance::getDomainSubset (const std::vector<VkTimeDomainEXT>& available, const std::vector<VkTimeDomainEXT>& interesting) const
 {
+	const std::set<VkTimeDomainEXT> availableSet	(begin(available),		end(available));
+	const std::set<VkTimeDomainEXT> interestingSet	(begin(interesting),	end(interesting));
+
 	std::vector<VkTimeDomainEXT> subset;
-	std::set_intersection(begin(available), end(available), begin(interesting), end(interesting), std::back_inserter(subset));
+	std::set_intersection(begin(availableSet), end(availableSet), begin(interestingSet), end(interestingSet), std::back_inserter(subset));
 	return subset;
 }
 
