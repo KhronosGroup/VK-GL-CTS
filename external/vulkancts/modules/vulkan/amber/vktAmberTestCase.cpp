@@ -43,11 +43,13 @@ namespace vkt
 namespace cts_amber
 {
 
-AmberTestCase::AmberTestCase (tcu::TestContext& testCtx,
-							  const char*		name,
-							  const char*		description)
+AmberTestCase::AmberTestCase (tcu::TestContext&		testCtx,
+							  const char*			name,
+							  const char*			description,
+							  const std::string&	readFilename)
 	: TestCase(testCtx, name, description),
-	  m_recipe(DE_NULL)
+	  m_recipe(DE_NULL),
+	  m_readFilename(readFilename)
 {
 }
 
@@ -93,6 +95,16 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 
 	std::string message = std::string("Unexpected feature name: ") + feature;
 	TCU_THROW(InternalError, message.c_str());
+}
+
+void AmberTestCase::delayedInit(void)
+{
+	// Make sure the input can be parsed before we use it.
+	if (!parse(m_readFilename))
+	{
+		std::string message = "Failed to parse Amber file: " + m_readFilename;
+		TCU_THROW(InternalError, message.c_str());
+	}
 }
 
 void AmberTestCase::checkSupport(Context& ctx) const
@@ -146,36 +158,10 @@ void AmberTestCase::checkSupport(Context& ctx) const
 			TCU_THROW(NotSupportedError, message.c_str());
 		}
 	}
-
-	// Check for extensions as declared by the Amber script itself.  Throw an internal
-	// error if that's more demanding.
-	amber::Amber			am;
-	amber::Options			amber_options;
-	amber_options.engine	= amber::kEngineTypeVulkan;
-	amber_options.config	= createEngineConfig(ctx);
-	amber_options.delegate	= DE_NULL;
-
-	amber::Result r = am.AreAllRequirementsSupported(m_recipe, &amber_options);
-	if (!r.IsSuccess())
-	{
-		// dEQP does not to rely on external code to determine whether
-		// a test is supported.  So throw an internal error here instead
-		// of a NotSupportedError.  If an Amber test is not supported, then
-		// you must override this method and throw a NotSupported exception
-		// before reach here.
-		TCU_THROW(InternalError, r.Error().c_str());
-	}
-
-	delete amber_options.config;
 }
 
-bool AmberTestCase::parse(const char* category, const std::string& filename)
+bool AmberTestCase::parse(const std::string& readFilename)
 {
-	std::string readFilename("vulkan/amber/");
-	readFilename.append(category);
-	readFilename.append("/");
-	readFilename.append(filename);
-
 	std::string script = ShaderSourceProvider::getSource(m_testCtx.getArchive(), readFilename.c_str());
 	if (script.empty())
 		return false;
@@ -265,7 +251,28 @@ void AmberTestCase::initPrograms(vk::SourceCollections& programCollection) const
 
 tcu::TestStatus AmberTestInstance::iterate (void)
 {
-	amber::ShaderMap shaderMap;
+	amber::Amber		am;
+	amber::Options		amber_options;
+	amber::ShaderMap	shaderMap;
+	amber::Result		r;
+
+	amber_options.engine			= amber::kEngineTypeVulkan;
+	amber_options.config			= createEngineConfig(m_context);
+	amber_options.delegate			= DE_NULL;
+	amber_options.execution_type	= amber::ExecutionType::kExecute;
+
+	// Check for extensions as declared by the Amber script itself.  Throw an internal
+	// error if that's more demanding.
+	r = am.AreAllRequirementsSupported(m_recipe, &amber_options);
+	if (!r.IsSuccess())
+	{
+		// dEQP does not to rely on external code to determine whether
+		// a test is supported.  So throw an internal error here instead
+		// of a NotSupportedError.  If an Amber test is not supported, then
+		// you must override this method and throw a NotSupported exception
+		// before reach here.
+		TCU_THROW(InternalError, r.Error().c_str());
+	}
 
 	std::vector<amber::ShaderInfo> shaders = m_recipe->GetShaderInfo();
 	for (size_t i = 0; i < shaders.size(); ++i)
@@ -286,14 +293,7 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 		shaderMap[shader.shader_name] = data;
 	}
 
-	amber::Amber						am;
-	amber::Options						amber_options;
-	amber_options.engine				= amber::kEngineTypeVulkan;
-	amber_options.config				= createEngineConfig(m_context);
-	amber_options.delegate				= DE_NULL;
-	amber_options.execution_type		= amber::ExecutionType::kExecute;
-
-	amber::Result r = am.ExecuteWithShaderData(m_recipe, &amber_options, shaderMap);
+	r = am.ExecuteWithShaderData(m_recipe, &amber_options, shaderMap);
 	if (!r.IsSuccess()) {
 		m_context.getTestContext().getLog()
 			<< tcu::TestLog::Message
