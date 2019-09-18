@@ -37,6 +37,7 @@ const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					Context::getShaderDr
 const vk::VkPhysicalDeviceShaderFloat16Int8FeaturesKHR&					Context::getShaderFloat16Int8Features					(void) const { return m_device->getShaderFloat16Int8Features();					}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();				}
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			Context::getShaderIntegerFunctions2FeaturesINTEL		(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();		}
+const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR&		Context::getShaderSubgroupExtendedTypesFeatures			(void) const { return m_device->getShaderSubgroupExtendedTypesFeatures();		}
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					Context::getShadingRateImageFeatures					(void) const { return m_device->getShadingRateImageFeatures();					}
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				Context::getSubgroupSizeControlFeatures					(void) const { return m_device->getSubgroupSizeControlFeatures();				}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				Context::getTexelBufferAlignmentFeatures				(void) const { return m_device->getTexelBufferAlignmentFeatures();				}

@@ -2210,6 +2210,13 @@ struct VkImageFormatListCreateInfoKHR
 	const VkFormat*	pViewFormats;
 };
 
+struct VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupExtendedTypes;
+};
+
 struct VkPhysicalDevice8BitStorageFeaturesKHR
 {
 	VkStructureType	sType;

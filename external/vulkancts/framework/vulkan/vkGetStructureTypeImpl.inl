@@ -771,6 +771,11 @@ template<> VkStructureType getStructureType<VkImageFormatListCreateInfoKHR> (voi
 	return VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevice8BitStorageFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;

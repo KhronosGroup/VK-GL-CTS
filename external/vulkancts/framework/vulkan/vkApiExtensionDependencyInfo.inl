@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos Vulkan API description (vk.xml) revision 59750fe4c72a9295a94e22474060d3a1635e92c8.
+ * Generated from Khronos Vulkan API description (vk.xml) revision c5261decf68cb2ef8cd934b8a3e4824bfde81cda.
  */
 static const std::pair<const char*, const char*>	instanceExtensionDependencies_1_0[]	=
 {
