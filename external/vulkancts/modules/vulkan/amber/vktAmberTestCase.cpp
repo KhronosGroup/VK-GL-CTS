@@ -36,6 +36,7 @@
 #include "vktAmberHelper.hpp"
 #include "tcuResource.hpp"
 #include "tcuTestLog.hpp"
+#include "vkSpirVProgram.hpp"
 
 namespace vkt
 {
@@ -214,7 +215,7 @@ void AmberTestCase::initPrograms(vk::SourceCollections& programCollection) const
 
 		if (shader.format == amber::kShaderFormatSpirvAsm)
 		{
-			programCollection.spirvAsmSources.add(shader.shader_name) << shader.shader_source;
+			programCollection.spirvAsmSources.add(shader.shader_name) << shader.shader_source << m_asm_options;
 		}
 		else if (shader.format == amber::kShaderFormatGlsl)
 		{
@@ -304,6 +305,11 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	delete amber_options.config;
 
 	return r.IsSuccess() ? tcu::TestStatus::pass("Pass") :tcu::TestStatus::fail("Fail");
+}
+
+void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options)
+{
+		m_asm_options = asm_options;
 }
 
 void AmberTestCase::addRequirement(const std::string& requirement)
