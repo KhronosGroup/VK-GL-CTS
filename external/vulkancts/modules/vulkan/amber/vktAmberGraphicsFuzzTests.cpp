@@ -56,6 +56,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
 		{	"disc-and-add-in-func-in-loop.amber",			"disc-and-add-in-func-in-loop",			"A fragment shader with discard and add in function in loop"							},
 		{	"discard-continue-return.amber",				"discard-continue-return",				"A fragment shader with a discard, continue, and return"								},
+		{	"discard-in-array-manipulating-loop.amber",		"discard-in-array-manipulating-loop",	"An array-manipulating fragment shader with a discard"									},
 		{	"do-while-loop-in-conditionals.amber",			"do-while-loop-in-conditionals",		"A fragment shader with do-while loop in conditional nest"								},
 		{	"do-while-with-always-true-if.amber",			"do-while-with-always-true-if",			"A fragment shader with a do while that always returns"									},
 		{	"early-return-and-barrier.amber",				"early-return-and-barrier",				"A compute shader with an early return and a barrier"									},
