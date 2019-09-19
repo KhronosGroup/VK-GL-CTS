@@ -99,6 +99,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"uninitialized-var-decrement-and-add.amber",	"uninitialized-var-decrement-and-add",	"A fragment shader that uses an uninitialized variable"									},
 		{	"unreachable-barrier-in-loops.amber",			"unreachable-barrier-in-loops",			"A compute shader with an unreachable barrier in a loop nest"							},
 		{	"unreachable-continue-statement.amber",			"unreachable-continue-statement",		"A fragment shader with unreachable continue statement"									},
+		{	"unreachable-discard-statement-in-if.amber",	"unreachable-discard-statement-in-if",	"A fragment shader with discard keyword and a return"									},
 		{	"unreachable-discard-statement.amber",			"unreachable-discard-statement",		"A fragment shader with unreachable discard statement"									},
 		{	"unreachable-loops.amber",						"unreachable-loops",					"Fragment shader that writes red despite unreachable loops"								},
 		{	"unreachable-loops-in-switch.amber",			"unreachable-loops-in-switch",			"A fragment shader with unreachable loops in a switch"									},
