@@ -47,6 +47,14 @@ struct Symbol
 	Symbol (const std::string& name_, const glu::VarType& varType_) : name(name_), varType(varType_) {}
 };
 
+enum SpirVCaseT
+{
+	SPIRV_CASETYPE_NONE = 0,
+	SPIRV_CASETYPE_COMPARE,
+	SPIRV_CASETYPE_FREM,
+	SPIRV_CASETYPE_MAX_ENUM,
+};
+
 //! Complete shader specification.
 struct ShaderSpec
 {
@@ -57,12 +65,12 @@ struct ShaderSpec
 	std::string				source;				//!< Source snippet to be executed.
 	vk::ShaderBuildOptions	buildOptions;
 	bool					packFloat16Bit;
-	bool					spirVShader;
+	SpirVCaseT				spirvCase;
 
 	ShaderSpec (void)
 		: glslVersion		(glu::GLSL_VERSION_450)
 		, packFloat16Bit	(false)
-		, spirVShader		(false)
+		, spirvCase			(SPIRV_CASETYPE_NONE)
 	{}
 };
 
@@ -83,7 +91,8 @@ public:
 	bool					areInputs16Bit		(void) const;
 	bool					areOutputs16Bit		(void) const;
 	bool					isOutput16Bit		(const size_t ndx) const;
-	bool					isSpirVShader		(void) {return m_shaderSpec.spirVShader;}
+	bool					isSpirVShader		(void) { return (m_shaderSpec.spirvCase != SPIRV_CASETYPE_NONE); }
+	SpirVCaseT				spirvCase			(void) { return m_shaderSpec.spirvCase; }
 
 protected:
 							ShaderExecutor		(Context& context, const ShaderSpec& shaderSpec)

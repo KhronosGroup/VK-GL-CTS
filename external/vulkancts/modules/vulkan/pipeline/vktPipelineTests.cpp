@@ -50,6 +50,7 @@
 #include "vktPipelineDepthRangeUnrestrictedTests.hpp"
 #include "vktPipelineExecutablePropertiesTests.hpp"
 #include "vktPipelineVertexOnlyTests.hpp"
+#include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -91,6 +92,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createDepthRangeUnrestrictedTests	(testCtx));
 	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
 	pipelineTests->addChild(createVertexOnlyTests				(testCtx));
+	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
 }
 
 } // anonymous

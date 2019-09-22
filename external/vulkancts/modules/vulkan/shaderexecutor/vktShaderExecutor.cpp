@@ -1766,12 +1766,12 @@ void BufferIoExecutor::copyToBuffer (const glu::VarType& varType, const VarLayou
 		const int				scalarSize		= glu::getDataTypeScalarSize(basicType);
 		const int				numVecs			= isMatrix ? glu::getDataTypeMatrixNumColumns(basicType) : 1;
 		const int				numComps		= scalarSize / numVecs;
+		const int				size			= (glu::isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
 
 		for (int elemNdx = 0; elemNdx < numValues; elemNdx++)
 		{
 			for (int vecNdx = 0; vecNdx < numVecs; vecNdx++)
 			{
-				const int		size			= (glu::isDataTypeFloat16OrVec(basicType) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
 				const int		srcOffset		= size * (elemNdx * scalarSize + vecNdx * numComps);
 				const int		dstOffset		= layout.offset + layout.stride * elemNdx + (isMatrix ? layout.matrixStride * vecNdx : 0);
 				const deUint8*	srcPtr			= (const deUint8*)srcBasePtr + srcOffset;
@@ -1991,7 +1991,7 @@ std::string moveBitOperation (std::string variableName, const int operationNdx)
 	return src.str();
 }
 
-std::string sclarComparison(const std::string opeartion, const int operationNdx, const glu::DataType type, const std::string& outputType, const int scalarSize)
+std::string scalarComparison(const std::string operation, const int operationNdx, const glu::DataType type, const std::string& outputType, const int scalarSize)
 {
 	std::ostringstream	src;
 	std::string			boolType;
@@ -2001,7 +2001,7 @@ std::string sclarComparison(const std::string opeartion, const int operationNdx,
 	case glu::TYPE_FLOAT16:
 	case glu::TYPE_FLOAT:
 		src << "\n"
-			<< "%operation_result_" << operationNdx << " = " << opeartion << " %bool %in0_val %in1_val\n"
+			<< "%operation_result_" << operationNdx << " = " << operation << " %bool %in0_val %in1_val\n"
 			<< "OpSelectionMerge %IF_" << operationNdx << " None\n"
 			<< "OpBranchConditional %operation_result_" << operationNdx << " %label_IF_" << operationNdx << " %IF_" << operationNdx << "\n"
 			<< "%label_IF_" << operationNdx << " = OpLabel\n"
@@ -2031,7 +2031,7 @@ std::string sclarComparison(const std::string opeartion, const int operationNdx,
 	}
 
 	src << "\n"
-		<< "%operation_result_" << operationNdx << " = " << opeartion << " " << boolType << " %in0_val %in1_val\n"
+		<< "%operation_result_" << operationNdx << " = " << operation << " " << boolType << " %in0_val %in1_val\n"
 		<< "%ivec_result_" << operationNdx << " = OpSelect " << outputType << " %operation_result_" << operationNdx << " %c_" << &outputType[1] << "_1 %c_" << &outputType[1] << "_0\n"
 		<< "%operation_val_" << operationNdx << " = OpLoad %i32 %operation\n";
 
@@ -2051,14 +2051,7 @@ std::string sclarComparison(const std::string opeartion, const int operationNdx,
 
 std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const bool isMediump)
 {
-	const int			operationAmount	= 10;
-	int					moveBitNdx		= 0;
-	const std::string	inputType1		= getTypeSpirv(spec.inputs[0].varType.getBasicType(), spec.packFloat16Bit);
-	const std::string	inputType2		= getTypeSpirv(spec.inputs[1].varType.getBasicType(), spec.packFloat16Bit);
-	const std::string	outputType		= getTypeSpirv(spec.outputs[0].varType.getBasicType());
-	const std::string	packType		= spec.packFloat16Bit ? getTypeSpirv(getDataTypeFloat16Scalars(spec.inputs[0].varType.getBasicType())) : "";
-
-	std::string	opeartions[operationAmount]	=
+	static const std::string COMPARE_OPERATIONS[] =
 	{
 		"OpFOrdEqual",
 		"OpFOrdGreaterThan",
@@ -2072,6 +2065,20 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"OpFUnordLessThanEqual"
 	};
 
+	int					moveBitNdx		= 0;
+	const std::string	inputType1		= getTypeSpirv(spec.inputs[0].varType.getBasicType(), spec.packFloat16Bit);
+	const std::string	inputType2		= getTypeSpirv(spec.inputs[1].varType.getBasicType(), spec.packFloat16Bit);
+	const std::string	outputType		= getTypeSpirv(spec.outputs[0].varType.getBasicType(), spec.packFloat16Bit);
+	const std::string	packType		= spec.packFloat16Bit ? getTypeSpirv(getDataTypeFloat16Scalars(spec.inputs[0].varType.getBasicType())) : "";
+
+	const bool			floatResult		= glu::isDataTypeFloatType(spec.outputs[0].varType.getBasicType());
+	const bool			packFloatRes	= (floatResult && spec.packFloat16Bit);
+	const bool			useF32Types		= (!are16Bit);
+	const bool			useF16Types		= (spec.packFloat16Bit || are16Bit);
+
+	if (floatResult)
+		DE_ASSERT(spec.spirvCase == SPIRV_CASETYPE_FREM);
+
 	std::ostringstream	src;
 	src << "; SPIR-V\n"
 		"; Version: 1.0\n"
@@ -2080,7 +2087,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"; Schema: 0\n"
 		"OpCapability Shader\n";
 
-	if (spec.packFloat16Bit || are16Bit)
+	if (useF16Types)
 		src << "OpCapability Float16\n";
 
 	if (are16Bit)
@@ -2105,7 +2112,8 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		{
 			src << "OpMemberDecorate %SSB0_IN "<< ndx <<" Offset " << offset << "\n";
 			++ndx;
-			offset += (symIter->varType.getScalarSize() == 3 ? 4 : symIter->varType.getScalarSize()) * (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+			const int scalarSize = symIter->varType.getScalarSize();
+			offset += (scalarSize + ((scalarSize == 3) ? 1 : 0)) * (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
 		}
 		src << "OpDecorate %up_SSB0_IN ArrayStride "<< offset << "\n";
 	}
@@ -2131,6 +2139,14 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			"OpDecorate %in0_val RelaxedPrecision\n"
 			"OpDecorate %in1_val RelaxedPrecision\n"
 			"OpMemberDecorate %SSB0_OUT 0 RelaxedPrecision\n";
+
+			if (floatResult)
+			{
+				src <<
+					"OpDecorate %out RelaxedPrecision\n"
+					"OpDecorate %frem_result RelaxedPrecision\n"
+					"OpDecorate %out_val_final RelaxedPrecision\n";
+			}
 	}
 
 	//output offset
@@ -2141,7 +2157,8 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		{
 			src << "OpMemberDecorate %SSB0_OUT " << ndx << " Offset " << offset << "\n";
 			++ndx;
-			offset += (symIter->varType.getScalarSize() == 3 ? 4 : symIter->varType.getScalarSize()) * (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
+			const int scalarSize = symIter->varType.getScalarSize();
+			offset += (scalarSize + ((scalarSize == 3) ? 1 : 0)) * (isDataTypeFloat16OrVec(symIter->varType.getBasicType()) ? (int)sizeof(deUint16) : (int)sizeof(deUint32));
 		}
 		src << "OpDecorate %up_SSB0_OUT ArrayStride " << offset << "\n";
 	}
@@ -2158,13 +2175,13 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%v4bool = OpTypeVector %bool 4\n"
 		"%u32   = OpTypeInt 32 0\n";
 
-	if (!are16Bit) //f32 is not needed when shader operates only on f16
+	if (useF32Types)
 		src << "%f32   = OpTypeFloat 32\n"
 			"%v2f32 = OpTypeVector %f32 2\n"
 			"%v3f32 = OpTypeVector %f32 3\n"
 			"%v4f32 = OpTypeVector %f32 4\n";
 
-	if (spec.packFloat16Bit || are16Bit)
+	if (useF16Types)
 		src << "%f16   = OpTypeFloat 16\n"
 			"%v2f16 = OpTypeVector %f16 2\n"
 			"%v3f16 = OpTypeVector %f16 3\n"
@@ -2184,8 +2201,8 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"\n"
 		"%voidf   = OpTypeFunction %void\n"
 		"%fp_u32  = OpTypePointer Function %u32\n"
-		"%fp_i32  = OpTypePointer Function " << outputType << "\n"
-		"%fp_f32  = OpTypePointer Function " << inputType1 << "\n"
+		"%fp_out  = OpTypePointer Function " << outputType << "\n"
+		"%fp_it1  = OpTypePointer Function " << inputType1 << "\n"
 		"%fp_operation =  OpTypePointer Function %i32\n";
 
 	if (spec.packFloat16Bit)
@@ -2193,20 +2210,58 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 
 	src << "%BP_id3uID = OpVariable %ip_v3u32 Input\n"
 		"%BP_id3uNum = OpVariable %ip_v3u32 Input\n"
-		"%up_i32 = OpTypePointer Uniform " << outputType << "\n"
+		"%up_out = OpTypePointer Uniform " << outputType << "\n"
 		"\n"
 		"%c_u32_0 = OpConstant %u32 0\n"
 		"%c_u32_1 = OpConstant %u32 1\n"
 		"%c_u32_2 = OpConstant %u32 2\n"
 		"%c_i32_0 = OpConstant %i32 0\n"
 		"%c_i32_1 = OpConstant %i32 1\n"
+		"\n";
+
+	if (useF32Types)
+		src <<
+			"%c_f32_0 = OpConstant %f32 0\n"
+			"%c_f32_1 = OpConstant %f32 1\n"
+			;
+
+	if (useF16Types)
+		src <<
+			"%c_f16_0 = OpConstant %f16 0\n"
+			"%c_f16_1 = OpConstant %f16 1\n"
+			"%c_f16_minus1 = OpConstant %f16 -0x1p+0"
+			;
+
+	src << "\n"
 		"%c_v2i32_0 = OpConstantComposite %v2i32 %c_i32_0 %c_i32_0\n"
 		"%c_v2i32_1 = OpConstantComposite %v2i32 %c_i32_1 %c_i32_1\n"
 		"%c_v3i32_0 = OpConstantComposite %v3i32 %c_i32_0 %c_i32_0 %c_i32_0\n"
 		"%c_v3i32_1 = OpConstantComposite %v3i32 %c_i32_1 %c_i32_1 %c_i32_1\n"
 		"%c_v4i32_0 = OpConstantComposite %v4i32 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0\n"
 		"%c_v4i32_1 = OpConstantComposite %v4i32 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1\n"
-		"\n"
+		"\n";
+
+	if (useF32Types)
+		src <<
+			"%c_v2f32_0 = OpConstantComposite %v2f32 %c_f32_0 %c_f32_0\n"
+			"%c_v2f32_1 = OpConstantComposite %v2f32 %c_f32_1 %c_f32_1\n"
+			"%c_v3f32_0 = OpConstantComposite %v3f32 %c_f32_0 %c_f32_0 %c_f32_0\n"
+			"%c_v3f32_1 = OpConstantComposite %v3f32 %c_f32_1 %c_f32_1 %c_f32_1\n"
+			"%c_v4f32_0 = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_0\n"
+			"%c_v4f32_1 = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
+			;
+
+	if (useF16Types)
+		src <<
+			"%c_v2f16_0 = OpConstantComposite %v2f16 %c_f16_0 %c_f16_0\n"
+			"%c_v2f16_1 = OpConstantComposite %v2f16 %c_f16_1 %c_f16_1\n"
+			"%c_v3f16_0 = OpConstantComposite %v3f16 %c_f16_0 %c_f16_0 %c_f16_0\n"
+			"%c_v3f16_1 = OpConstantComposite %v3f16 %c_f16_1 %c_f16_1 %c_f16_1\n"
+			"%c_v4f16_0 = OpConstantComposite %v4f16 %c_f16_0 %c_f16_0 %c_f16_0 %c_f16_0\n"
+			"%c_v4f16_1 = OpConstantComposite %v4f16 %c_f16_1 %c_f16_1 %c_f16_1 %c_f16_1\n"
+			;
+
+	src << "\n"
 		"%SSB0_IN    = OpTypeStruct " << inputType1 << " " << inputType2 << "\n"
 		"%up_SSB0_IN = OpTypeRuntimeArray %SSB0_IN\n"
 		"%ssboIN     = OpTypeStruct %up_SSB0_IN\n"
@@ -2221,17 +2276,18 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"\n"
 		"%BP_main = OpFunction %void None %voidf\n"
 		"%BP_label = OpLabel\n"
-		"%invocationNdx = OpVariable  %fp_u32 Function\n";
+		"%invocationNdx = OpVariable %fp_u32 Function\n";
 
 	if (spec.packFloat16Bit)
 		src << "%in0 = OpVariable %fp_f16 Function\n"
 			"%in1 = OpVariable %fp_f16 Function\n";
 	else
-		src << "%in0 = OpVariable %fp_f32 Function\n"
-			"%in1 = OpVariable %fp_f32 Function\n";
+		src << "%in0 = OpVariable %fp_it1 Function\n"
+			"%in1 = OpVariable %fp_it1 Function\n";
+
+	src << "%out = OpVariable " << (packFloatRes ? "%fp_f16" : "%fp_out") << " Function\n";
 
 	src << "%operation = OpVariable %fp_operation Function\n"
-		"%out = OpVariable %fp_i32 Function\n"
 		"%BP_id_0_ptr  = OpAccessChain %ip_u32 %BP_id3uID %c_u32_0\n"
 		"%BP_id_1_ptr  = OpAccessChain %ip_u32 %BP_id3uID %c_u32_1\n"
 		"%BP_id_2_ptr  = OpAccessChain %ip_u32 %BP_id3uID %c_u32_2\n"
@@ -2254,7 +2310,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		"%src_ptr_0_0 = OpAccessChain %up_float %ssbo_src %c_i32_0 %invocationNdx_val %c_i32_0\n"
 		"%src_val_0_0 = OpLoad " << inputType1 << " %src_ptr_0_0\n";
 
-	if(spec.packFloat16Bit)
+	if (spec.packFloat16Bit)
 	{
 		if (spec.inputs[0].varType.getScalarSize() > 1)
 		{
@@ -2332,7 +2388,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 
 	src << "\n"
 		"OpStore %operation %c_i32_1\n"
-		"OpStore %out %c_" << &outputType[1] << "_0\n"
+		"OpStore %out %c_" << (packFloatRes ? &packType[1] : &outputType[1]) << "_0\n"
 		"\n";
 
 	if (spec.packFloat16Bit)
@@ -2343,21 +2399,64 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 			"%in1_val = OpLoad " << inputType2 << " %in1\n";
 
 	src << "\n";
-	for(int operationNdx = 0; operationNdx < operationAmount; ++operationNdx)
+
+	switch (spec.spirvCase)
 	{
-		src << sclarComparison	(opeartions[operationNdx], operationNdx,
-								spec.inputs[0].varType.getBasicType(),
-								outputType,
-								spec.outputs[0].varType.getScalarSize());
-		src << moveBitOperation("%operation", moveBitNdx);
-		++moveBitNdx;
+	case SPIRV_CASETYPE_COMPARE:
+		for (int operationNdx = 0; operationNdx < DE_LENGTH_OF_ARRAY(COMPARE_OPERATIONS); ++operationNdx)
+		{
+			src << scalarComparison	(COMPARE_OPERATIONS[operationNdx], operationNdx,
+									spec.inputs[0].varType.getBasicType(),
+									outputType,
+									spec.outputs[0].varType.getScalarSize());
+			src << moveBitOperation("%operation", moveBitNdx);
+			++moveBitNdx;
+		}
+		break;
+	case SPIRV_CASETYPE_FREM:
+		src << "%frem_result = OpFRem " << (packFloatRes ? packType : outputType) << " %in0_val %in1_val\n"
+			<< "OpStore %out %frem_result\n";
+		break;
+	default:
+		DE_ASSERT(false);
+		break;
 	}
 
 	src << "\n"
-		"%out_val_final = OpLoad " << outputType << " %out\n"
-		"%ssbo_dst_ptr = OpAccessChain %up_i32 %ssbo_dst %c_i32_0 %invocationNdx_val %c_i32_0\n"
-		"OpStore %ssbo_dst_ptr %out_val_final\n"
-		"\n"
+		"%out_val_final = OpLoad " << (packFloatRes ? packType : outputType) << " %out\n"
+		"%ssbo_dst_ptr = OpAccessChain %up_out %ssbo_dst %c_i32_0 %invocationNdx_val %c_i32_0\n";
+
+	if (packFloatRes)
+	{
+		if (spec.inputs[0].varType.getScalarSize() > 1)
+		{
+			for (int i = 0; i < spec.inputs[0].varType.getScalarSize(); ++i)
+			{
+				src << "%out_val_final_" << i << " = OpCompositeExtract %f16 %out_val_final " << i << "\n";
+				src << "%out_composite_" << i << " = OpCompositeConstruct %v2f16 %out_val_final_" << i << " %c_f16_minus1\n";
+				src << "%u32_val_" << i << " = OpBitcast %u32 %out_composite_" << i << "\n";
+			}
+
+			src << "%u32_final_val = OpCompositeConstruct " << outputType;
+			for (int i = 0; i < spec.inputs[0].varType.getScalarSize(); ++i)
+				src << " %u32_val_" << i;
+			src << "\n";
+			src << "OpStore %ssbo_dst_ptr %u32_final_val\n";
+		}
+		else
+		{
+			src <<
+				"%out_composite = OpCompositeConstruct %v2f16 %out_val_final %c_f16_minus1\n"
+				"%out_result = OpBitcast " << outputType << " %out_composite\n"
+				"OpStore %ssbo_dst_ptr %out_result\n";
+		}
+	}
+	else
+	{
+		src << "OpStore %ssbo_dst_ptr %out_val_final\n";
+	}
+
+	src << "\n"
 		"OpReturn\n"
 		"OpFunctionEnd\n";
 
@@ -2367,7 +2466,7 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 
 std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec)
 {
-	if(spec.spirVShader)
+	if (spec.spirvCase != SPIRV_CASETYPE_NONE)
 	{
 		bool	are16Bit	= false;
 		bool	isMediump	= false;
@@ -2379,7 +2478,7 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 			if (symIter->varType.getPrecision() == glu::PRECISION_MEDIUMP)
 				isMediump = true;
 
-			if(isMediump && are16Bit)
+			if (isMediump && are16Bit)
 				break;
 		}
 
@@ -2413,7 +2512,7 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 
 void ComputeShaderExecutor::generateSources (const ShaderSpec& shaderSpec, SourceCollections& programCollection)
 {
-	if(shaderSpec.spirVShader)
+	if (shaderSpec.spirvCase != SPIRV_CASETYPE_NONE)
 		programCollection.spirvAsmSources.add("compute") << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3) << generateComputeShader(shaderSpec);
 	else
 		programCollection.glslSources.add("compute") << glu::ComputeSource(generateComputeShader(shaderSpec)) << shaderSpec.buildOptions;
@@ -2446,7 +2545,7 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	// For spirv shaders using packed 16 bit float values as input, the floats are converted to 16 bit before
 	// storing in the lower 16 bits of 32 bit integers in the uniform buffer and cast back to 16 bit floats in
 	// the shader.
-	uploadInputBuffer(inputs, numValues, m_shaderSpec.packFloat16Bit && m_shaderSpec.spirVShader);
+	uploadInputBuffer(inputs, numValues, m_shaderSpec.packFloat16Bit && (m_shaderSpec.spirvCase != SPIRV_CASETYPE_NONE));
 
 	// Create command pool
 	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);

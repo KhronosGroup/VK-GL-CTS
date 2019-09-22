@@ -200,6 +200,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineInputAssemblyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMakeUtil.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMatchedAttachmentsTests.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineMaxVaryingsTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleBase.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleBaseResolve.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineMultisampleBaseResolveAndPerSampleFetch.cpp \
