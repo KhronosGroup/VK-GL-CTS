@@ -1473,10 +1473,10 @@ const char* getSemaphoreTypeName (VkSemaphoreType value)
 {
 	switch (value)
 	{
-		case VK_SEMAPHORE_TYPE_BINARY_KHR:		return "VK_SEMAPHORE_TYPE_BINARY_KHR";
-		case VK_SEMAPHORE_TYPE_TIMELINE_KHR:	return "VK_SEMAPHORE_TYPE_TIMELINE_KHR";
-		case VK_SEMAPHORE_TYPE_MAX_ENUM:		return "VK_SEMAPHORE_TYPE_MAX_ENUM";
-		default:								return DE_NULL;
+		case VK_SEMAPHORE_TYPE_BINARY:		return "VK_SEMAPHORE_TYPE_BINARY";
+		case VK_SEMAPHORE_TYPE_TIMELINE:	return "VK_SEMAPHORE_TYPE_TIMELINE";
+		case VK_SEMAPHORE_TYPE_MAX_ENUM:	return "VK_SEMAPHORE_TYPE_MAX_ENUM";
+		default:							return DE_NULL;
 	}
 }
 
@@ -2918,6 +2918,7 @@ tcu::Format::Bitfield<32> getSemaphoreWaitFlagsStr (VkSemaphoreWaitFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
+		tcu::Format::BitDesc(VK_SEMAPHORE_WAIT_ANY_BIT,				"VK_SEMAPHORE_WAIT_ANY_BIT"),
 		tcu::Format::BitDesc(VK_SEMAPHORE_WAIT_ANY_BIT_KHR,			"VK_SEMAPHORE_WAIT_ANY_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM,	"VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM"),
 	};

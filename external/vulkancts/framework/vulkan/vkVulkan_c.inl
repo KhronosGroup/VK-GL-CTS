@@ -47,7 +47,7 @@ extern "C" {
 #define VK_VERSION_MINOR(version) (((deUint32)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((deUint32)(version) & 0xfff)
 // Version of this file
-#define VK_HEADER_VERSION 121
+#define VK_HEADER_VERSION 123
 
 
 #define VK_NULL_HANDLE 0
@@ -4967,15 +4967,15 @@ typedef enum VkSamplerReductionMode {
     VK_SAMPLER_REDUCTION_MODE_RANGE_SIZE = (VK_SAMPLER_REDUCTION_MODE_MAX - VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE + 1),
     VK_SAMPLER_REDUCTION_MODE_MAX_ENUM = 0x7FFFFFFF
 } VkSamplerReductionMode;
-typedef VkSamplerReductionMode VkSamplerReductionModeEXT;
-
 
 typedef enum VkSemaphoreType {
-    VK_SEMAPHORE_TYPE_BINARY_KHR = 0,
-    VK_SEMAPHORE_TYPE_TIMELINE_KHR = 1,
-    VK_SEMAPHORE_TYPE_BEGIN_RANGE = VK_SEMAPHORE_TYPE_BINARY_KHR,
-    VK_SEMAPHORE_TYPE_END_RANGE = VK_SEMAPHORE_TYPE_TIMELINE_KHR,
-    VK_SEMAPHORE_TYPE_RANGE_SIZE = (VK_SEMAPHORE_TYPE_TIMELINE_KHR - VK_SEMAPHORE_TYPE_BINARY_KHR + 1),
+    VK_SEMAPHORE_TYPE_BINARY = 0,
+    VK_SEMAPHORE_TYPE_TIMELINE = 1,
+    VK_SEMAPHORE_TYPE_BINARY_KHR = VK_SEMAPHORE_TYPE_BINARY,
+    VK_SEMAPHORE_TYPE_TIMELINE_KHR = VK_SEMAPHORE_TYPE_TIMELINE,
+    VK_SEMAPHORE_TYPE_BEGIN_RANGE = VK_SEMAPHORE_TYPE_BINARY,
+    VK_SEMAPHORE_TYPE_END_RANGE = VK_SEMAPHORE_TYPE_TIMELINE,
+    VK_SEMAPHORE_TYPE_RANGE_SIZE = (VK_SEMAPHORE_TYPE_TIMELINE - VK_SEMAPHORE_TYPE_BINARY + 1),
     VK_SEMAPHORE_TYPE_MAX_ENUM = 0x7FFFFFFF
 } VkSemaphoreType;
 
@@ -5008,7 +5008,8 @@ typedef enum VkDescriptorBindingFlagBits {
 typedef VkFlags VkDescriptorBindingFlags;
 
 typedef enum VkSemaphoreWaitFlagBits {
-    VK_SEMAPHORE_WAIT_ANY_BIT_KHR = 0x00000001,
+    VK_SEMAPHORE_WAIT_ANY_BIT = 0x00000001,
+    VK_SEMAPHORE_WAIT_ANY_BIT_KHR = VK_SEMAPHORE_WAIT_ANY_BIT,
     VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkSemaphoreWaitFlagBits;
 typedef VkFlags VkSemaphoreWaitFlags;
@@ -5404,9 +5405,9 @@ typedef struct VkImageStencilUsageCreateInfo {
 } VkImageStencilUsageCreateInfo;
 
 typedef struct VkSamplerReductionModeCreateInfo {
-    VkStructureType              sType;
-    const void*                  pNext;
-    VkSamplerReductionMode       reductionMode;
+    VkStructureType           sType;
+    const void*               pNext;
+    VkSamplerReductionMode    reductionMode;
 } VkSamplerReductionModeCreateInfo;
 
 typedef struct VkPhysicalDeviceSamplerFilterMinmaxProperties {
@@ -7892,7 +7893,7 @@ typedef struct VkExportMemoryAllocateInfoNV {
 
 
 #define VK_EXT_validation_flags 1
-#define VK_EXT_VALIDATION_FLAGS_SPEC_VERSION 1
+#define VK_EXT_VALIDATION_FLAGS_SPEC_VERSION 2
 #define VK_EXT_VALIDATION_FLAGS_EXTENSION_NAME "VK_EXT_validation_flags"
 
 typedef enum VkValidationCheckEXT {
@@ -8769,6 +8770,8 @@ VKAPI_ATTR void VKAPI_CALL vkSubmitDebugUtilsMessageEXT(
 #define VK_EXT_sampler_filter_minmax 1
 #define VK_EXT_SAMPLER_FILTER_MINMAX_SPEC_VERSION 2
 #define VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME "VK_EXT_sampler_filter_minmax"
+typedef VkSamplerReductionMode VkSamplerReductionModeEXT;
+
 typedef VkSamplerReductionModeCreateInfo VkSamplerReductionModeCreateInfoEXT;
 
 typedef VkPhysicalDeviceSamplerFilterMinmaxProperties VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT;
@@ -10333,7 +10336,7 @@ typedef struct VkPhysicalDeviceBufferDeviceAddressFeaturesEXT {
 
 typedef VkPhysicalDeviceBufferDeviceAddressFeaturesEXT VkPhysicalDeviceBufferAddressFeaturesEXT;
 
-typedef VkBufferDeviceAddressInfoKHR VkBufferDeviceAddressInfoEXT;
+typedef VkBufferDeviceAddressInfo VkBufferDeviceAddressInfoEXT;
 
 typedef struct VkBufferDeviceAddressCreateInfoEXT {
     VkStructureType    sType;
@@ -10533,7 +10536,7 @@ typedef struct VkPhysicalDeviceYcbcrImageArraysFeaturesEXT {
 
 
 #define VK_EXT_headless_surface 1
-#define VK_EXT_HEADLESS_SURFACE_SPEC_VERSION 0
+#define VK_EXT_HEADLESS_SURFACE_SPEC_VERSION 1
 #define VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME "VK_EXT_headless_surface"
 typedef VkFlags VkHeadlessSurfaceCreateFlagsEXT;
 typedef struct VkHeadlessSurfaceCreateInfoEXT {
@@ -10659,6 +10662,11 @@ typedef struct VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT {
     VkBool32           uniformTexelBufferOffsetSingleTexelAlignment;
 } VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT;
 
+
+
+#define VK_GOOGLE_user_type 1
+#define VK_GOOGLE_USER_TYPE_SPEC_VERSION  1
+#define VK_GOOGLE_USER_TYPE_EXTENSION_NAME "VK_GOOGLE_user_type"
 
 #ifdef __cplusplus
 }
