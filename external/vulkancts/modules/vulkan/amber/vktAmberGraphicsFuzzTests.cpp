@@ -95,6 +95,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"two-loops-set-struct.amber",					"two-loops-set-struct",					"A fragment shader with two loops that write to a struct"								},
 		{	"two-loops-with-break.amber",					"two-loops-with-break",					"A fragment shader with two loops with breaks"											},
 		{	"two-nested-do-whiles.amber",					"two-nested-do-whiles",					"A fragment shader with nested do while"												},
+		{	"two-nested-for-loops-with-returns.amber",		"two-nested-for-loops-with-returns",	"A compute shader with two nested for loops"											},
 		{	"two-nested-infinite-loops-discard.amber",		"two-nested-infinite-loops-discard",	"A fragment shader with an always false if function"									},
 		{	"uninitialized-var-decrement-and-add.amber",	"uninitialized-var-decrement-and-add",	"A fragment shader that uses an uninitialized variable"									},
 		{	"unreachable-barrier-in-loops.amber",			"unreachable-barrier-in-loops",			"A compute shader with an unreachable barrier in a loop nest"							},
