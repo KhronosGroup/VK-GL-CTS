@@ -90,13 +90,20 @@ typedef enum
 	LAYOUT_SCALAR,
 } Layout;
 
+typedef enum
+{
+	CONVERT_NONE = 0,
+	CONVERT_UTOPTR,
+	CONVERT_UVEC2,
+} Convert;
+
 struct CaseDef
 {
 	deUint32 set;
 	deUint32 depth;
 	Base base;
 	Stage stage;
-	bool convertUToPtr;
+	Convert convertUToPtr;
 	bool storeInLocal;
 	BufType bufType;
 	Layout layout;
@@ -186,15 +193,22 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 	}
 #endif
 
-	if (m_data.convertUToPtr && !context.getDeviceFeatures().shaderInt64)
+	if (m_data.convertUToPtr == CONVERT_UTOPTR && !context.getDeviceFeatures().shaderInt64)
 		TCU_THROW(NotSupportedError, "Int64 not supported");
+	if (m_data.convertUToPtr == CONVERT_UVEC2 && !context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+		TCU_THROW(NotSupportedError, "VK_KHR_buffer_device_address not supported");
 }
 
 void BufferAddressTestCase::checkBuffer (std::stringstream& checks, deUint32 bufNum, deUint32 curDepth, const std::string &prefix) const
 {
 	string newPrefix = prefix;
-	if (curDepth > 0 && m_data.convertUToPtr)
-		newPrefix = "T1(uint64_t(T1(" + newPrefix + ")))";
+	if (curDepth > 0)
+	{
+		if (m_data.convertUToPtr == CONVERT_UTOPTR)
+			newPrefix = "T1(uint64_t(T1(" + newPrefix + ")))";
+		else if (m_data.convertUToPtr == CONVERT_UVEC2)
+			newPrefix = "T1(uvec2(T1(" + newPrefix + ")))";
+	}
 
 	if (m_data.storeInLocal && curDepth != 0)
 	{
@@ -279,7 +293,7 @@ void BufferAddressTestCase::initPrograms (SourceCollections& programCollection) 
 
 	decls << "layout(r32ui, set = " << m_data.set << ", binding = 0) uniform uimage2D image0_0;\n";
 	decls << "layout(buffer_reference) " << memberStorage << " T1;\n";
-	std::string refType = m_data.convertUToPtr ? "uint64_t" : "T1";
+	std::string refType = m_data.convertUToPtr == CONVERT_UTOPTR ? "uint64_t" : m_data.convertUToPtr == CONVERT_UVEC2 ? "uvec2" : "T1";
 	std::string layout = m_data.layout == LAYOUT_SCALAR ? "scalar" : "std140";
 	decls <<
 			"layout(set = " << m_data.set << ", binding = 1, " << layout << ") " << baseStorage << " T2 {\n"
@@ -320,6 +334,7 @@ void BufferAddressTestCase::initPrograms (SourceCollections& programCollection) 
 				"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 				"#extension GL_EXT_buffer_reference : enable\n"
 				"#extension GL_EXT_scalar_block_layout : enable\n"
+				"#extension GL_EXT_buffer_reference_uvec2 : enable\n"
 				<< pushdecl.str()
 				<< decls.str() <<
 				"layout(local_size_x = 1, local_size_y = 1) in;\n"
@@ -345,6 +360,7 @@ void BufferAddressTestCase::initPrograms (SourceCollections& programCollection) 
 				"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 				"#extension GL_EXT_buffer_reference : enable\n"
 				"#extension GL_EXT_scalar_block_layout : enable\n"
+				"#extension GL_EXT_buffer_reference_uvec2 : enable\n"
 				"#extension GL_NV_ray_tracing : require\n"
 				<< pushdecl.str()
 				<< decls.str() <<
@@ -370,6 +386,7 @@ void BufferAddressTestCase::initPrograms (SourceCollections& programCollection) 
 				"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 				"#extension GL_EXT_buffer_reference : enable\n"
 				"#extension GL_EXT_scalar_block_layout : enable\n"
+				"#extension GL_EXT_buffer_reference_uvec2 : enable\n"
 				<< pushdecl.str()
 				<< decls.str()  <<
 				"void main()\n"
@@ -405,6 +422,7 @@ void BufferAddressTestCase::initPrograms (SourceCollections& programCollection) 
 				"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
 				"#extension GL_EXT_buffer_reference : enable\n"
 				"#extension GL_EXT_scalar_block_layout : enable\n"
+				"#extension GL_EXT_buffer_reference_uvec2 : enable\n"
 				<< pushdecl.str()
 				<< decls.str() <<
 				"void main()\n"
@@ -1238,8 +1256,9 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 
 	TestGroupCase cvtCases[] =
 	{
-		{ 0,	"load",		"load reference"				},
-		{ 1,	"convert",	"load and convert reference"	},
+		{ CONVERT_NONE,		"load",			"load reference"						},
+		{ CONVERT_UTOPTR,	"convert",		"load and convert reference"			},
+		{ CONVERT_UVEC2,	"convertuvec2",	"load and convert reference to uvec2"	},
 	};
 
 	TestGroupCase storeCases[] =
@@ -1300,7 +1319,7 @@ tcu::TestCaseGroup*	createBufferDeviceAddressTests (tcu::TestContext& testCtx)
 										depthCases[depthNdx].count,					// deUint32 depth;
 										(Base)baseCases[baseNdx].count,				// Base base;
 										(Stage)stageCases[stageNdx].count,			// Stage stage;
-										!!cvtCases[cvtNdx].count,					// bool convertUToPtr;
+										(Convert)cvtCases[cvtNdx].count,			// Convert convertUToPtr;
 										!!storeCases[storeNdx].count,				// bool storeInLocal;
 										(BufType)btCases[btNdx].count,				// BufType bufType;
 										(Layout)layoutCases[layoutNdx].count,		// Layout layout;
