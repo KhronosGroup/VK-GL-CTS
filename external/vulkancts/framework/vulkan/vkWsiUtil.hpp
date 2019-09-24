@@ -86,6 +86,13 @@ VkSurfaceCapabilitiesKHR		getPhysicalDeviceSurfaceCapabilities	(const InstanceIn
 																		 VkPhysicalDevice				physicalDevice,
 																		 VkSurfaceKHR					surface);
 
+VkSurfaceCapabilities2EXT		getPhysicalDeviceSurfaceCapabilities2EXT(const InstanceInterface&		vki,
+																		 VkPhysicalDevice				physicalDevice,
+																		 VkSurfaceKHR					surface);
+
+bool							sameSurfaceCapabilities					(const VkSurfaceCapabilitiesKHR&	khr,
+																		 const VkSurfaceCapabilities2EXT&	ext);
+
 std::vector<VkSurfaceFormatKHR>	getPhysicalDeviceSurfaceFormats			(const InstanceInterface&		vki,
 																		 VkPhysicalDevice				physicalDevice,
 																		 VkSurfaceKHR					surface);
