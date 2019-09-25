@@ -4175,10 +4175,28 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
 		const int kSize = 64;
 		if (!IsVSFSAvailable(1, 1) || !IsImageAtomicSupported())
 			return NOT_SUPPORTED;
+                /* Note that we use imageAtomicCompSwap on the vertex
+                 * shader on purpose, for two reasons:
+                 *
+                 * * Test can't assume that the vertex shader will be
+                 *   executed exactly once per vertex. So the test
+                 *   can't use imageAtomicAdd as it is not possible to
+                 *   known in advance the final value (see khronos
+                 *   issue #1910)
+                 *
+                 * * Test can't assume that all the vertex shader
+                 *   executions will be executed before rasterization
+                 *   (so fragment shader) starts, specially on tile
+                 *   based GPUs. So the test can't use
+                 *   imageAtomicExchange, as it could happen that a
+                 *   vertex shader execution overrides the values
+                 *   being updated by the frament shader (see khronos
+                 *   issue #1997)
+                 */
 		const char* const glsl_vs =
 			NL "layout(location = 0) in vec4 i_position;" NL
 			   "layout(r32ui, binding = 3) coherent uniform uimage2D g_image;" NL "void main() {" NL
-			   "  gl_Position = i_position;" NL "  imageAtomicExchange(g_image, ivec2(0, gl_VertexID), 100u);" NL "}";
+			   "  gl_Position = i_position;" NL "  imageAtomicCompSwap(g_image, ivec2(0, gl_VertexID), 0u, 100u);" NL "}";
 		const char* const glsl_fs =
 			NL "#define KSIZE 64" NL "layout(r32ui, binding = 3) coherent uniform uimage2D g_image;" NL
 			   "void main() {" NL "  imageAtomicAdd(g_image, ivec2(0, int(gl_FragCoord.x) & 0x03), 0x1u);" NL "}";
