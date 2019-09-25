@@ -66,6 +66,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
 		{	"loop-call-discard.amber",						"loop-call-discard",					"A fragment shader with nested loops and a function call"								},
 		{	"loop-nested-ifs.amber",						"loop-nested-ifs",						"A fragment shader with a for loop containing nested ifs"								},
+		{	"loops-breaks-returns.amber",					"loops-breaks-returns",					"A compute shader with loops, breaks, returns"											},
 		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
 		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
 		{	"matrices-and-return-in-loop.amber",			"matrices-and-return-in-loop",			"A fragment shader with matrices and a return in a loop"								},
