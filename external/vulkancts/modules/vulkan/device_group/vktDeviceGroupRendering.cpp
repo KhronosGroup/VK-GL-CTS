@@ -54,6 +54,8 @@
 
 #include "rrRenderer.hpp"
 
+#include <sstream>
+
 namespace vkt
 {
 namespace DeviceGroup
@@ -70,11 +72,11 @@ using de::UniquePtr;
 //Device group test modes
 enum TestModeType
 {
-	TEST_MODE_SFR			= 1 << 0,			//!< Split frame remdering
+	TEST_MODE_SFR			= 1 << 0,			//!< Split frame rendering
 	TEST_MODE_AFR			= 1 << 1,			//!< Alternate frame rendering
 	TEST_MODE_HOSTMEMORY	= 1 << 2,			//!< Use host memory for rendertarget
 	TEST_MODE_DEDICATED		= 1 << 3,			//!< Use dedicated allocations
-	TEST_MODE_PEER_FETCH	= 1 << 4,			//!< Peer vertex attributes from peer memroy
+	TEST_MODE_PEER_FETCH	= 1 << 4,			//!< Peer vertex attributes from peer memory
 	TEST_MODE_TESSELLATION	= 1 << 5,			//!< Generate a tessellated sphere instead of triangle
 	TEST_MODE_LINEFILL		= 1 << 6,			//!< Draw polygon edges as line segments
 };
@@ -240,15 +242,24 @@ void DeviceGroupTestInstance::init (void)
 	}
 
 	{
-		const tcu::CommandLine&								cmdLine = m_context.getTestContext().getCommandLine();
-		const vector<VkPhysicalDeviceGroupProperties>		properties = enumeratePhysicalDeviceGroups(instanceInterface, m_context.getInstance());
-		if ((size_t)cmdLine.getVKDeviceGroupId() > properties.size())
-			TCU_THROW(TestError, "Invalid device group index.");
+		const tcu::CommandLine&								cmdLine		= m_context.getTestContext().getCommandLine();
+		const vector<vk::VkPhysicalDeviceGroupProperties>	properties	= enumeratePhysicalDeviceGroups(instanceInterface, m_context.getInstance());
+		const int											kGroupId	= cmdLine.getVKDeviceGroupId();
+		const int											kGroupIndex	= kGroupId - 1;
+		const int											kDevId		= cmdLine.getVKDeviceId();
+		const int											kDevIndex	= kDevId - 1;
 
-		m_physicalDeviceCount = properties[cmdLine.getVKDeviceGroupId() - 1].physicalDeviceCount;
+		if (kGroupId < 1 || static_cast<size_t>(kGroupId) > properties.size())
+		{
+			std::ostringstream msg;
+			msg << "Invalid device group id " << kGroupId << " (only " << properties.size() << " device groups found)";
+			TCU_THROW(NotSupportedError, msg.str());
+		}
+
+		m_physicalDeviceCount = properties[kGroupIndex].physicalDeviceCount;
 		for (deUint32 idx = 0; idx < m_physicalDeviceCount; idx++)
 		{
-			m_physicalDevices.push_back(properties[cmdLine.getVKDeviceGroupId() - 1].physicalDevices[idx]);
+			m_physicalDevices.push_back(properties[kGroupIndex].physicalDevices[idx]);
 		}
 
 		if (m_usePeerFetch && m_physicalDeviceCount < 2)
@@ -274,13 +285,20 @@ void DeviceGroupTestInstance::init (void)
 		{
 			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,					//stype
 			DE_NULL,															//pNext
-			properties[cmdLine.getVKDeviceGroupId() - 1].physicalDeviceCount,	//physicalDeviceCount
-			properties[cmdLine.getVKDeviceGroupId() - 1].physicalDevices		//physicalDevices
+			properties[kGroupIndex].physicalDeviceCount,	//physicalDeviceCount
+			properties[kGroupIndex].physicalDevices		//physicalDevices
 		};
 
-		VkPhysicalDevice			physicalDevice			= properties[cmdLine.getVKDeviceGroupId() - 1].physicalDevices[(size_t)(cmdLine.getVKDeviceId() - 1)];
+		if (kDevId < 1 || static_cast<deUint32>(kDevId) > m_physicalDeviceCount)
+		{
+			std::ostringstream msg;
+			msg << "Device id " << kDevId << " invalid for group " << kGroupId << " (group " << kGroupId << " has " << m_physicalDeviceCount << " devices)";
+			TCU_THROW(NotSupportedError, msg.str());
+		}
+
+		VkPhysicalDevice			physicalDevice			= properties[kGroupIndex].physicalDevices[kDevIndex];
 		VkPhysicalDeviceFeatures	enabledDeviceFeatures	= getPhysicalDeviceFeatures(instanceInterface, physicalDevice);
-		m_subsetAllocation									= properties[cmdLine.getVKDeviceGroupId() - 1].subsetAllocation;
+		m_subsetAllocation									= properties[kGroupIndex].subsetAllocation;
 
 		if (m_drawTessellatedSphere & static_cast<bool>(!enabledDeviceFeatures.tessellationShader))
 			TCU_THROW(NotSupportedError, "Tessellation is not supported.");
