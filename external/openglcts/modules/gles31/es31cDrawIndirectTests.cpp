@@ -7168,7 +7168,7 @@ public:
 		indirectArrays.count					 = static_cast<GLuint>(coords.size());
 		indirectArrays.primCount				 = 1;
 		indirectArrays.first					 = 0;
-		indirectArrays.reservedMustBeZero		 = 2312;
+		indirectArrays.reservedMustBeZero		 = 0;
 
 		glGenBuffers(1, &_bufferIndirect);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _bufferIndirect);
