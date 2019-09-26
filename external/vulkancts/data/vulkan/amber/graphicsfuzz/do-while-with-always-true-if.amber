@@ -1,0 +1,193 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with a do while that always returns
+
+# The test passes because the shader always writes the color red. The do while returns on first iteration.
+
+# Optimized using spirv-opt with the following arguments:
+# '--redundancy-elimination'
+# '--reduce-load-size'
+# '--combine-access-chains'
+# '--eliminate-dead-code-aggressive'
+# '--eliminate-dead-branches'
+# spirv-opt commit hash: 06407250a169c6a03b3765e86619075af1a8c187
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# struct _GLF_struct_12
+# {
+#   int count;
+# };
+#
+# bool puzzlelize(vec2 pos)
+# {
+#   return true;
+# }
+#
+# void main()
+# {
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#
+#   vec2 grid;
+#   _GLF_struct_12 _GLF_struct_replacement_12;
+#
+#   do
+#   {
+#     if (gl_FragCoord.y > -1.0) // Always true
+#     {
+#       return;
+#     }
+#   } while (_GLF_struct_replacement_12.count != 1);
+#
+#   grid += vec2(1, _GLF_struct_replacement_12.count);
+#   vec2 position;
+#   position = grid;
+#   vec4(puzzlelize(position));
+#
+#   _GLF_color = vec4(1.0, 1.0, 1.0, 1.0); // This should not be reached
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 64
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %19 %28
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %12 "puzzlelize(vf2;"
+               OpName %11 "pos"
+               OpName %19 "_GLF_color"
+               OpName %28 "gl_FragCoord"
+               OpName %40 "_GLF_struct_12"
+               OpMemberName %40 0 "count"
+               OpName %42 "_GLF_struct_replacement_12"
+               OpName %49 "grid"
+               OpName %56 "position"
+               OpName %58 "param"
+               OpDecorate %19 Location 0
+               OpDecorate %28 BuiltIn FragCoord
+               OpMemberDecorate %40 0 RelaxedPrecision
+               OpDecorate %46 RelaxedPrecision
+               OpDecorate %51 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+          %9 = OpTypeBool
+         %10 = OpTypeFunction %9 %8
+         %14 = OpConstantTrue %9
+         %17 = OpTypeVector %6 4
+         %18 = OpTypePointer Output %17
+         %19 = OpVariable %18 Output
+         %20 = OpConstant %6 1
+         %21 = OpConstant %6 0
+         %22 = OpConstantComposite %17 %20 %21 %21 %20
+         %27 = OpTypePointer Input %17
+         %28 = OpVariable %27 Input
+         %29 = OpTypeInt 32 0
+         %30 = OpConstant %29 1
+         %31 = OpTypePointer Input %6
+         %34 = OpConstant %6 -1
+         %39 = OpTypeInt 32 1
+         %40 = OpTypeStruct %39
+         %41 = OpTypePointer Function %40
+         %43 = OpConstant %39 0
+         %44 = OpTypePointer Function %39
+         %47 = OpConstant %39 1
+         %63 = OpConstantComposite %17 %20 %20 %20 %20
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %42 = OpVariable %41 Function
+         %49 = OpVariable %8 Function
+         %56 = OpVariable %8 Function
+         %58 = OpVariable %8 Function
+               OpStore %19 %22
+               OpBranch %23
+         %23 = OpLabel
+               OpLoopMerge %25 %26 None
+               OpBranch %24
+         %24 = OpLabel
+         %32 = OpAccessChain %31 %28 %30
+         %33 = OpLoad %6 %32
+         %35 = OpFOrdGreaterThan %9 %33 %34
+               OpSelectionMerge %37 None
+               OpBranchConditional %35 %36 %37
+         %36 = OpLabel
+               OpReturn
+         %37 = OpLabel
+               OpBranch %26
+         %26 = OpLabel
+         %45 = OpAccessChain %44 %42 %43
+         %46 = OpLoad %39 %45
+         %48 = OpINotEqual %9 %46 %47
+               OpBranchConditional %48 %23 %25
+         %25 = OpLabel
+         %51 = OpLoad %39 %45
+         %52 = OpConvertSToF %6 %51
+         %53 = OpCompositeConstruct %7 %20 %52
+         %54 = OpLoad %7 %49
+         %55 = OpFAdd %7 %54 %53
+               OpStore %49 %55
+         %57 = OpLoad %7 %49
+               OpStore %56 %57
+         %59 = OpLoad %7 %56
+               OpStore %58 %59
+         %60 = OpFunctionCall %9 %12 %58
+               OpStore %19 %63
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %9 None %10
+         %11 = OpFunctionParameter %8
+         %13 = OpLabel
+               OpReturnValue %14
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

@@ -57,6 +57,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"disc-and-add-in-func-in-loop.amber",			"disc-and-add-in-func-in-loop",			"A fragment shader with discard and add in function in loop"							},
 		{	"discard-continue-return.amber",				"discard-continue-return",				"A fragment shader with a discard, continue, and return"								},
 		{	"do-while-loop-in-conditionals.amber",			"do-while-loop-in-conditionals",		"A fragment shader with do-while loop in conditional nest"								},
+		{	"do-while-with-always-true-if.amber",			"do-while-with-always-true-if",			"A fragment shader with a do while that always returns"									},
 		{	"early-return-and-barrier.amber",				"early-return-and-barrier",				"A compute shader with an early return and a barrier"									},
 		{	"for-condition-always-false.amber",				"for-condition-always-false",			"A fragment shader that uses a for loop with condition always false"					},
 		{	"for-with-ifs-and-return.amber",				"for-with-ifs-and-return",				"A fragment shader with two ifs and return/continue inside a for loop"					},
