@@ -8153,10 +8153,15 @@ void DrawIndirectTestsGL40::init()
 	addChild(new TestSubcase(m_context, "advanced-primitiveRestart-elements",
 							 TestSubcase::Create<CPrimitiveRestartElements<test_api::GL> >));
 
-	addChild(new TestSubcase(m_context, "misc-reservedMustBeZero-arrays",
-							 TestSubcase::Create<CNonZeroReservedMustBeZeroArray<test_api::GL> >));
-	addChild(new TestSubcase(m_context, "misc-reservedMustBeZero-elements",
-							 TestSubcase::Create<CNonZeroReservedMustBeZeroElements<test_api::GL> >));
+	// reservedMustBeZero field got defined after GL 4.2, so those tests only make sense before 4.2
+	const glu::ContextType& type = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(type, glu::ApiType::core(4, 2)))
+	{
+		addChild(new TestSubcase(m_context, "misc-reservedMustBeZero-arrays",
+								 TestSubcase::Create<CNonZeroReservedMustBeZeroArray<test_api::GL> >));
+		addChild(new TestSubcase(m_context, "misc-reservedMustBeZero-elements",
+								 TestSubcase::Create<CNonZeroReservedMustBeZeroElements<test_api::GL> >));
+	}
 
 	addChild(new TestSubcase(m_context, "negative-noindirect-arrays",
 							 TestSubcase::Create<CNegativeZeroBufferArray<test_api::GL> >));
