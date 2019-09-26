@@ -62,6 +62,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"do-while-with-always-true-if.amber",			"do-while-with-always-true-if",			"A fragment shader with a do while that always returns"									},
 		{	"early-return-and-barrier.amber",				"early-return-and-barrier",				"A compute shader with an early return and a barrier"									},
 		{	"for-condition-always-false.amber",				"for-condition-always-false",			"A fragment shader that uses a for loop with condition always false"					},
+		{	"for-loop-with-return.amber",					"for-loop-with-return",					"A fragment shader with a for loop that loops only once"								},
 		{	"for-with-ifs-and-return.amber",				"for-with-ifs-and-return",				"A fragment shader with two ifs and return/continue inside a for loop"					},
 		{	"fragcoord-control-flow.amber",					"fragcoord-control-flow",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
 		{	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
