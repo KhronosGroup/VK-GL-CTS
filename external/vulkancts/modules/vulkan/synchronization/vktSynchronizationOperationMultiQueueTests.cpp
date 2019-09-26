@@ -155,7 +155,7 @@ class MultiQueues
 				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
-			if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			if (timelineSemaphore && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
 				TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 			m_logicalDevice	= createDevice(context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
