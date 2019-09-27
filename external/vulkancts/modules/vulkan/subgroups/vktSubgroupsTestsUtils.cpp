@@ -582,7 +582,7 @@ std::string vkt::subgroups::getSharedMemoryBallotHelper()
 std::string vkt::subgroups::getSharedMemoryBallotHelperARB()
 {
 	return	"shared uvec4 superSecretComputeShaderHelper[gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z];\n"
-			"uint sharedMemoryBallot(bool vote)\n"
+			"uint64_t sharedMemoryBallot(bool vote)\n"
 			"{\n"
 			"  uint groupOffset = gl_SubgroupID;\n"
 			"  // One invocation in the group 0's the whole group's data\n"
@@ -604,7 +604,7 @@ std::string vkt::subgroups::getSharedMemoryBallotHelperARB()
 			"    }\n"
 			"  }\n"
 			"  subgroupMemoryBarrierShared();\n"
-			"  return superSecretComputeShaderHelper[groupOffset].x;\n"
+			"  return packUint2x32(superSecretComputeShaderHelper[groupOffset].xy);\n"
 			"}\n";
 }
 

@@ -172,7 +172,7 @@ std::string getHelperFunctionARB(CaseDefinition caseDef)
 	bdy << "{\n";
 	bdy << "    if (index > 63)\n";
 	bdy << "        return false;\n";
-	bdy << "    uint64_t mask = uint64_t(1 << index);\n";
+	bdy << "    uint64_t mask = 1ul << index;\n";
 	bdy << "    if (bool((value & mask)) == true)\n";
 	bdy << "        return true;\n";
 	bdy << "    return false;\n";
