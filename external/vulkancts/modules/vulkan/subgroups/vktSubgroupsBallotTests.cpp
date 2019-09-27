@@ -721,7 +721,12 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ? "#extension GL_ARB_shader_ballot: enable\n#extension GL_KHR_shader_subgroup_basic: enable\n" : "#extension GL_KHR_shader_subgroup_ballot: enable\n");
+	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ?
+		"#extension GL_ARB_shader_ballot: enable\n"
+		"#extension GL_ARB_gpu_shader_int64: enable\n"
+		"#extension GL_KHR_shader_subgroup_basic: enable\n"
+		:
+		"#extension GL_KHR_shader_subgroup_ballot: enable\n");
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
@@ -751,7 +756,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  tempResult |= sharedMemoryBallot(true) == " << (caseDef.extShaderSubGroupBallotTests ? "ballotARB" : "subgroupBallot") << "(true) ? 0x1 : 0;\n"
 			<< "  bool bData = data[gl_SubgroupInvocationID] != 0;\n"
 			<< "  tempResult |= sharedMemoryBallot(bData) == " << (caseDef.extShaderSubGroupBallotTests ? "ballotARB" : "subgroupBallot") << "(bData) ? 0x2 : 0;\n"
-			<< "  tempResult |= " << (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot") << "(false) ? 0x4 : 0;\n"
+			<< "  tempResult |= " << (caseDef.extShaderSubGroupBallotTests ? "uint64_t(0) == ballotARB" : "uvec4(0) == subgroupBallot") << "(false) ? 0x4 : 0;\n"
 			<< "  result[offset] = tempResult;\n"
 			<< "}\n";
 
@@ -760,7 +765,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 	else
 	{
-		const string cmpStr = (caseDef.extShaderSubGroupBallotTests ? "uint(0) == ballotARB" : "uvec4(0) == subgroupBallot");
+		const string cmpStr = (caseDef.extShaderSubGroupBallotTests ? "uint64_t(0) == ballotARB" : "uvec4(0) == subgroupBallot");
 		const string testSrc =
 			"  uint tempResult = 0;\n"
 			"  tempResult |= !bool(" + cmpStr + "(true)) ? 0x1 : 0;\n"
