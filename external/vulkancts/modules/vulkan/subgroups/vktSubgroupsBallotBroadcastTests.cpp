@@ -315,6 +315,8 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+
 	std::string bdyStr = getBodySource(caseDef);
 	std::string helperStrARB = getHelperFunctionARB(caseDef);
 
@@ -352,8 +354,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  result[offset] = tempResult;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 	}
 	else
 	{
@@ -469,16 +470,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		subgroups::addNoSubgroupShader(programCollection);
 
-		programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		programCollection.glslSources.add("tesc")
-				<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		programCollection.glslSources.add("tese")
-				<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-												  programCollection.glslSources);
-		programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << buildOptions;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc) << buildOptions;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese) << buildOptions;
+		subgroups::addGeometryShadersFromTemplate(geometry, buildOptions, programCollection.glslSources);
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment)<< buildOptions;
 	}
 }
 
