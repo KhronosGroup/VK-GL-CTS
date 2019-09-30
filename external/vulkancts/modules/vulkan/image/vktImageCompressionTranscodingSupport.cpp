@@ -969,6 +969,9 @@ void BasicComputeTestInstance::createImageInfos (ImageData& imageData, const vec
 	else
 	{
 		UVec3 size = m_parameters.size;
+		if (m_parameters.imageType == IMAGE_TYPE_1D) {
+			size.y() = 1;
+		}
 		size.z() = 1;
 		const VkExtent3D originalResolutionInBlocks = makeExtent3D(getCompressedImageResolutionInBlocks(m_parameters.formatCompressed, size));
 
@@ -1022,7 +1025,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 	{
 		const bool						layoutShaderReadOnly	= (layerNdx % 2u) == 1;
 		const deUint32					imageNdx				= layerNdx + mipNdx * getLayerCount();
-		const VkExtent3D				extentCompressed		= makeExtent3D(mipMapSizes[mipNdx]);
+		const VkExtent3D				extentCompressed		= imageType == VK_IMAGE_TYPE_1D ? makeExtent3D(mipMapSizes[mipNdx].x(), 1, mipMapSizes[mipNdx].z()) : makeExtent3D(mipMapSizes[mipNdx]);
 		const VkImage&					uncompressed			= imageData[m_parameters.imagesCount -1].getImage(imageNdx);
 		const VkExtent3D				extentUncompressed		= imageData[m_parameters.imagesCount -1].getImageInfo(imageNdx).extent;
 		const VkDeviceSize				bufferSizeComp			= getCompressedImageSizeInBytes(m_parameters.formatCompressed, mipMapSizes[mipNdx]);
@@ -2862,7 +2865,7 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 
 		if (VK_ERROR_FORMAT_NOT_SUPPORTED == vk.getPhysicalDeviceImageFormatProperties(physicalDevice, m_parameters.formatCompressed,
 												mapImageType(m_parameters.imageType), VK_IMAGE_TILING_OPTIMAL,
-												VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+												m_parameters.compressedImageUsage,
 												VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR,
 												&imageFormatProperties))
 			TCU_THROW(NotSupportedError, "Operation not supported with this image format");
