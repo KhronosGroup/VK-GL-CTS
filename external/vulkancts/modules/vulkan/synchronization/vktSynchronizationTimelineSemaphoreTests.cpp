@@ -169,8 +169,6 @@ public:
 		, m_waitAll				(waitAll)
 		, m_signalFromDevice	(signalFromDevice)
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	tcu::TestStatus iterate (void)
@@ -263,6 +261,12 @@ public:
 	{
 	}
 
+	virtual void checkSupport(Context& context) const
+	{
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+	}
+
 	TestInstance* createInstance (Context& context) const
 	{
 		return new WaitTestInstance(context, m_waitAll, m_signalFromDevice);
@@ -281,8 +285,6 @@ public:
 	HostWaitBeforeSignalTestInstance (Context& context)
 		: TestInstance			(context)
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	tcu::TestStatus iterate (void)
@@ -390,6 +392,12 @@ public:
 	HostWaitBeforeSignalTestCase (tcu::TestContext& testCtx, const std::string& name)
 		: TestCase				(testCtx, name.c_str(), "")
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	TestInstance* createInstance (Context& context) const
@@ -745,9 +753,6 @@ public:
 	{
 		de::Random	rng		(1234);
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
 		// Create a dozen couple of operations and their associated
 		// resource.
 		for (deUint32 i = 0; i < 12; i++)
@@ -930,6 +935,12 @@ public:
 	{
 	}
 
+	virtual void checkSupport(Context& context) const
+	{
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+	}
+
 	void initPrograms (SourceCollections& programCollection) const
 	{
 		m_writeOp->initPrograms(programCollection);
@@ -1095,7 +1106,7 @@ std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfo(const std::vector<VkQueu
 	return infos;
 }
 
-Move<VkDevice> createDevice(Context& context)
+Move<VkDevice> createDevice(const Context& context)
 {
 	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 	std::vector<VkDeviceQueueCreateInfo>			queueCreateInfos		= getQueueCreateInfo(queueFamilyProperties);
@@ -1129,11 +1140,46 @@ Move<VkDevice> createDevice(Context& context)
 		queueCreateInfo.pQueuePriorities = &(*queuePriorities.back().get())[0];
 	}
 
-	if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
 	return createDevice(context.getPlatformInterface(), context.getInstance(),
 						context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
+}
+
+
+// Class to wrap a singleton instance and device
+class SingletonDevice
+{
+	SingletonDevice	(const Context& context)
+		: m_logicalDevice	(createDevice(context))
+	{
+	}
+
+public:
+
+	static const Unique<vk::VkDevice>& getDevice(const Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+
+		DE_ASSERT(m_singletonDevice);
+		return m_singletonDevice->m_logicalDevice;
+	}
+
+	static void destroy()
+	{
+		m_singletonDevice.clear();
+	}
+
+private:
+	const Unique<vk::VkDevice>					m_logicalDevice;
+
+	static SharedPtr<SingletonDevice>	m_singletonDevice;
+};
+SharedPtr<SingletonDevice>		SingletonDevice::m_singletonDevice;
+
+static void cleanupGroup ()
+{
+	// Destroy singleton object
+	SingletonDevice::destroy();
 }
 
 // Create a chain of operations with data copied across queues & host
@@ -1149,7 +1195,7 @@ public:
 								  PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
 		, m_resourceDesc	(resourceDesc)
-		, m_device			(createDevice(context))
+		, m_device			(SingletonDevice::getDevice(context))
 		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
@@ -1375,7 +1421,7 @@ public:
 
 protected:
 	const ResourceDescription						m_resourceDesc;
-	Move<VkDevice>									m_device;
+	const Unique<VkDevice>&							m_device;
 	MovePtr<DeviceDriver>							m_deviceDriver;
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
@@ -1400,6 +1446,12 @@ public:
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1518,6 +1570,11 @@ public:
 		}
 	}
 
+	void deinit (void)
+	{
+		cleanupGroup();
+	}
+
 private:
 	// synchronization.op tests share pipeline cache data to speed up test
 	// execution.
@@ -1541,7 +1598,7 @@ public:
 						PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
 		, m_resourceDesc	(resourceDesc)
-		, m_device			(createDevice(context))
+		, m_device			(SingletonDevice::getDevice(context))
 		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
@@ -1818,7 +1875,7 @@ public:
 
 protected:
 	ResourceDescription								m_resourceDesc;
-	Move<VkDevice>									m_device;
+	const Unique<VkDevice>&							m_device;
 	MovePtr<DeviceDriver>							m_deviceDriver;
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
@@ -1846,6 +1903,12 @@ public:
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1962,6 +2025,11 @@ public:
 			if (!empty)
 				addChild(opGroup.release());
 		}
+	}
+
+	void deinit (void)
+	{
+		cleanupGroup();
 	}
 
 private:

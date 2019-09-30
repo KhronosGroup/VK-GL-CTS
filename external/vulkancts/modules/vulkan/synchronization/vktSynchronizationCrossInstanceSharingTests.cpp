@@ -422,8 +422,7 @@ vk::Move<vk::VkDevice> createDevice (const Context&					context,
 									 const vk::PlatformInterface&	vkp,
 									 vk::VkInstance					instance,
 									 const vk::InstanceInterface&	vki,
-									 const vk::VkPhysicalDevice		physicalDevice,
-									 bool							timelineSemaphores)
+									 const vk::VkPhysicalDevice		physicalDevice)
 {
 	const float										priority				= 0.0f;
 	const std::vector<vk::VkQueueFamilyProperties>	queueFamilyProperties	= vk::getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
@@ -451,7 +450,7 @@ vk::Move<vk::VkDevice> createDevice (const Context&					context,
 	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory_win32"))
 		extensions.push_back("VK_KHR_external_memory_win32");
 
-	if (timelineSemaphores)
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_timeline_semaphore"))
 		extensions.push_back("VK_KHR_timeline_semaphore");
 
 	try
@@ -511,26 +510,45 @@ vk::Move<vk::VkDevice> createDevice (const Context&					context,
 // Class to wrap a singleton instance and device
 class InstanceAndDevice
 {
-public:
-
-	InstanceAndDevice	(const Context&		context,
-						 const TestConfig&	config)
+	InstanceAndDevice	(const Context& context)
 		: m_instance		(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
 		, m_vki				(context.getPlatformInterface(), *m_instance)
 		, m_physicalDevice	(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
-		, m_logicalDevice	(createDevice(context, context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice, config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR))
+		, m_logicalDevice	(createDevice(context, context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
 	{
 	}
 
-	const vk::Unique<vk::VkInstance>& getInstance()
+public:
+
+	static const vk::Unique<vk::VkInstance>& getInstanceA(const Context& context)
 	{
-		return m_instance;
+		if (!m_instanceA)
+			m_instanceA = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
+
+		return m_instanceA->m_instance;
+	}
+	static const Unique<vk::VkInstance>& getInstanceB(const Context& context)
+	{
+		if (!m_instanceB)
+			m_instanceB = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
+
+		return m_instanceB->m_instance;
+	}
+	static const Unique<vk::VkDevice>& getDeviceA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_logicalDevice;
+	}
+	static const Unique<vk::VkDevice>& getDeviceB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_logicalDevice;
 	}
 
-	const Unique<vk::VkDevice>& getDevice()
+	static void destroy()
 	{
-		DE_ASSERT(m_instance);
-		return m_logicalDevice;
+		m_instanceA.clear();
+		m_instanceB.clear();
 	}
 
 private:
@@ -538,7 +556,12 @@ private:
 	const vk::InstanceDriver		m_vki;
 	const vk::VkPhysicalDevice		m_physicalDevice;
 	const Unique<vk::VkDevice>		m_logicalDevice;
+
+	static SharedPtr<InstanceAndDevice>	m_instanceA;
+	static SharedPtr<InstanceAndDevice>	m_instanceB;
 };
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceA;
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceB;
 
 
 vk::VkQueue getQueue (const vk::DeviceInterface&	vkd,
@@ -1055,7 +1078,6 @@ private:
 	const de::UniquePtr<OperationSupport>				m_supportReadOp;
 	const NotSupportedChecker							m_notSupportedChecker; // Must declare before VkInstance to effectively reduce runtimes!
 
-	InstanceAndDevice									m_instanceAndDeviceA;
 	const vk::Unique<vk::VkInstance>&					m_instanceA;
 
 	const vk::InstanceDriver							m_vkiA;
@@ -1068,7 +1090,6 @@ private:
 	const vk::Unique<vk::VkDevice>&						m_deviceA;
 	const vk::DeviceDriver								m_vkdA;
 
-	InstanceAndDevice									m_instanceAndDeviceB;
 	const vk::Unique<vk::VkInstance>&					m_instanceB;
 	const vk::InstanceDriver							m_vkiB;
 	const vk::VkPhysicalDevice							m_physicalDeviceB;
@@ -1095,25 +1116,23 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 	, m_notSupportedChecker		(context, m_config, *m_supportWriteOp, *m_supportReadOp)
 
-	, m_instanceAndDeviceA		(context, config)
-	, m_instanceA				(m_instanceAndDeviceA.getInstance())
+	, m_instanceA				(InstanceAndDevice::getInstanceA(context))
 
 	, m_vkiA					(context.getPlatformInterface(), *m_instanceA) // \todo [2017-06-13 pyry] Provide correct extension list
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
 	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
-	, m_deviceA					(m_instanceAndDeviceA.getDevice())
+	, m_deviceA					(InstanceAndDevice::getDeviceA())
 	, m_vkdA					(context.getPlatformInterface(), *m_instanceA, *m_deviceA)
 
-	, m_instanceAndDeviceB		(context, config)
-	, m_instanceB				(m_instanceAndDeviceB.getInstance())
+	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
 
 	, m_vkiB					(context.getPlatformInterface(), *m_instanceB) // \todo [2017-06-13 pyry] Provide correct extension list
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(m_instanceAndDeviceB.getDevice())
+	, m_deviceB					(InstanceAndDevice::getDeviceB())
 	, m_vkdB					(context.getPlatformInterface(), *m_instanceB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
@@ -1468,7 +1487,7 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
 	// Destroy singleton object
-
+	InstanceAndDevice::destroy();
 }
 
 tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
