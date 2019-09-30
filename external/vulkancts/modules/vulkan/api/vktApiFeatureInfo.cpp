@@ -4328,9 +4328,9 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 
 		// VkPhysicalDeviceSubgroupProperties
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, subgroupSize),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, supportedStages),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, supportedOperations),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, quadOperationsInAllStages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, subgroupSupportedStages),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, subgroupSupportedOperations),
+		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, subgroupQuadOperationsInAllStages),
 
 		// VkPhysicalDevicePointClippingProperties
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan11Properties, pointClippingBehavior),
@@ -4747,9 +4747,9 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 		}
 
 		if ((subgroupProperties.subgroupSize				!= vulkan11Properties.subgroupSize ||
-			 subgroupProperties.supportedStages				!= vulkan11Properties.supportedStages ||
-			 subgroupProperties.supportedOperations			!= vulkan11Properties.supportedOperations ||
-			 subgroupProperties.quadOperationsInAllStages	!= vulkan11Properties.quadOperationsInAllStages))
+			 subgroupProperties.supportedStages				!= vulkan11Properties.subgroupSupportedStages ||
+			 subgroupProperties.supportedOperations			!= vulkan11Properties.subgroupSupportedOperations ||
+			 subgroupProperties.quadOperationsInAllStages	!= vulkan11Properties.subgroupQuadOperationsInAllStages))
 		{
 			TCU_FAIL("Mismatch between VkPhysicalDeviceSubgroupProperties and VkPhysicalDeviceVulkan11Properties");
 		}

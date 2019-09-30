@@ -5728,9 +5728,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkan11Propert
 	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
 	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
 	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
-	s << "\tsupportedStages = " << getShaderStageFlagsStr(value.supportedStages) << '\n';
-	s << "\tsupportedOperations = " << getSubgroupFeatureFlagsStr(value.supportedOperations) << '\n';
-	s << "\tquadOperationsInAllStages = " << value.quadOperationsInAllStages << '\n';
+	s << "\tsubgroupSupportedStages = " << getShaderStageFlagsStr(value.subgroupSupportedStages) << '\n';
+	s << "\tsubgroupSupportedOperations = " << getSubgroupFeatureFlagsStr(value.subgroupSupportedOperations) << '\n';
+	s << "\tsubgroupQuadOperationsInAllStages = " << value.subgroupQuadOperationsInAllStages << '\n';
 	s << "\tpointClippingBehavior = " << value.pointClippingBehavior << '\n';
 	s << "\tmaxMultiviewViewCount = " << value.maxMultiviewViewCount << '\n';
 	s << "\tmaxMultiviewInstanceIndex = " << value.maxMultiviewInstanceIndex << '\n';
