@@ -1493,7 +1493,7 @@ void vkt::subgroups::setTesCtrlShaderFrameBuffer (vk::SourceCollections& program
 		"void main (void)\n"
 		"{\n"
 		"  if (gl_InvocationID == 0)\n"
-		  {\n"
+		"  {\n"
 		"    gl_TessLevelOuter[0] = 1.0f;\n"
 		"    gl_TessLevelOuter[1] = 1.0f;\n"
 		"  }\n"
