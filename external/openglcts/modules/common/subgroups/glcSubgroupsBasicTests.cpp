@@ -361,7 +361,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				"{\n"
 				"  if (subgroupElect())\n"
 				"  {\n"
-				"    out_color.r = 71.f;\n" // << 2 * ELECTED_VALUE - UNELECTED_VALUE << ";\n"
+				"    out_color.r = 2.0f * " + electedValue.str() + ".0f - " + unelectedValue.str() + ".0f;\n"
 				"    out_color.g = 2.0f;\n"
 				"  }\n"
 				"  else\n"
@@ -1519,27 +1519,16 @@ deqp::TestCaseGroup* createSubgroupsBasicTests(deqp::Context& testCtx)
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
-		if (OPTYPE_ELECT == opTypeIndex)
+		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
-			for (int stageIndex = 1; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-			{
-				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
-				SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(framebufferGroup.get(),
-							op + "_" + getShaderStageName(caseDef.shaderStage), "",
-							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-			}
-		}
-		else
-		{
-			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-			{
-				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex]};
-				SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(framebufferGroup.get(),
-							op + "_" + getShaderStageName(caseDefFrag.shaderStage), "",
-							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDefFrag);
-			}
-		}
+			if (opTypeIndex == OPTYPE_ELECT && stageIndex == 0)
+				continue;		// This is not tested. I don't know why.
 
+			const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
+			SubgroupFactory<CaseDefinition>::addFunctionCaseWithPrograms(framebufferGroup.get(),
+						op + "_" + getShaderStageName(caseDef.shaderStage), "",
+						supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+		}
 	}
 
 	de::MovePtr<deqp::TestCaseGroup> group(new deqp::TestCaseGroup(

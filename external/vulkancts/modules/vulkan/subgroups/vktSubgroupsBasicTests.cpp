@@ -2167,27 +2167,16 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
-		if (OPTYPE_ELECT == opTypeIndex)
+		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
-			for (int stageIndex = 1; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-			{
-				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], de::SharedPtr<bool>(new bool)};
-				addFunctionCaseWithPrograms(framebufferGroup.get(),
-							op + "_" + getShaderStageName(caseDef.shaderStage), "",
-							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-			}
-		}
-		else
-		{
-			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-			{
-				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex], de::SharedPtr<bool>(new bool)};
-				addFunctionCaseWithPrograms(framebufferGroup.get(),
-							op + "_" + getShaderStageName(caseDefFrag.shaderStage), "",
-							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDefFrag);
-			}
-		}
+			if (OPTYPE_ELECT == opTypeIndex && stageIndex == 0)
+				continue;		// This is not tested. I don't know why.
 
+			const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], de::SharedPtr<bool>(new bool)};
+			addFunctionCaseWithPrograms(framebufferGroup.get(),
+						op + "_" + getShaderStageName(caseDef.shaderStage), "",
+						supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+		}
 	}
 
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
