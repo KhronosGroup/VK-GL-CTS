@@ -1775,9 +1775,9 @@ struct VkPhysicalDeviceVulkan11Properties
 	deUint32				deviceNodeMask;
 	VkBool32				deviceLUIDValid;
 	deUint32				subgroupSize;
-	VkShaderStageFlags		supportedStages;
-	VkSubgroupFeatureFlags	supportedOperations;
-	VkBool32				quadOperationsInAllStages;
+	VkShaderStageFlags		subgroupSupportedStages;
+	VkSubgroupFeatureFlags	subgroupSupportedOperations;
+	VkBool32				subgroupQuadOperationsInAllStages;
 	VkPointClippingBehavior	pointClippingBehavior;
 	deUint32				maxMultiviewViewCount;
 	deUint32				maxMultiviewInstanceIndex;

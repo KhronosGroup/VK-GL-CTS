@@ -27,6 +27,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scrip
 
 import khr_util.format
 import khr_util.registry_cache
+from collections import defaultdict
 
 VK_SOURCE						= khr_util.registry_cache.RegistrySource(
 									"https://github.com/KhronosGroup/Vulkan-Docs.git",
@@ -39,23 +40,19 @@ VK_INL_HEADER					= khr_util.format.genInlHeader("Khronos Vulkan API description
 def VK_MAKE_VERSION(major, minor, patch):
 	return (((major) << 22) | ((minor) << 12) | (patch))
 
-VK_API_VERSION_1_0				= VK_MAKE_VERSION(1, 0, 0)
-VK_API_VERSION_1_1				= VK_MAKE_VERSION(1, 1, 0)
 VK_EXT_NOT_PROMOTED				= 0xFFFFFFFF
-VK_EXT_TYPE_INST				= 0
-VK_EXT_TYPE_DEV					= 1
-VK_INST_EXT_DEP_1_0				= 'instanceExtensionDependencies_1_0'
-VK_INST_EXT_DEP_1_1				= 'instanceExtensionDependencies_1_1'
-VK_DEV_EXT_DEP_1_0				= 'deviceExtensionDependencies_1_0'
-VK_DEV_EXT_DEP_1_1				= 'deviceExtensionDependencies_1_1'
+VK_EXT_TYPE_INSTANCE			= 0
+VK_EXT_TYPE_DEVICE				= 1
+VK_EXT_DEP_INSTANCE				= 'instanceExtensionDependencies'
+VK_EXT_DEP_DEVICE				= 'deviceExtensionDependencies'
+VK_EXT_API_VERSIONS				= 'releasedApiVersions'
 VK_XML_EXT_DEPS					= 'requires'
 VK_XML_EXT_NAME					= 'name'
 VK_XML_EXT_PROMO				= 'promotedto'
-VK_XML_EXT_PROMO_1_1			= 'VK_VERSION_1_1'
 VK_XML_EXT_REQUIRES_CORE		= 'requiresCore'
-VK_XML_EXT_REQUIRES_CORE_1_1	= '1.1'
 VK_XML_EXT_SUPPORTED			= 'supported'
 VK_XML_EXT_SUPPORTED_VULKAN		= 'vulkan'
+VK_XML_EXT_API					= 'api'
 VK_XML_EXT_TYPE					= 'type'
 VK_XML_EXT_TYPE_DEVICE			= 'device'
 VK_XML_EXT_TYPE_INSTANCE		= 'instance'
@@ -64,31 +61,35 @@ def writeInlFile(filename, lines):
 	khr_util.format.writeInlFile(filename, VK_INL_HEADER, lines)
 
 def genExtDepArray(extDepsName, extDepsDict):
-	yield 'static const std::pair<const char*, const char*>\t%s[]\t=' % extDepsName
+	yield 'static const std::tuple<deUint32, deUint32, const char*, const char*>\t{}[]\t='.format(extDepsName)
 	yield '{'
-	for ext in sorted(extDepsDict.keys()):
-		for dep in extDepsDict[ext]:
-			yield '\tstd::make_pair("%s", "%s"),' % (ext, dep)
+	for ( major, minor, ext, extDeps ) in extDepsDict:
+		for dep in extDeps:
+			yield '\tstd::make_tuple({}, {}, "{}", "{}"),'.format(major, minor, ext, dep)
 	yield '};'
 
-def genExtDepInl(allExtDepsDict):
+def genApiVersions(name, apiVersions):
+	yield 'static const std::tuple<deUint32, deUint32, deUint32>\t{}[]\t='.format(name)
+	yield '{'
+	for ( version, major, minor ) in apiVersions:
+		yield '\tstd::make_tuple({}, {}, {}),'.format(version, major, minor)
+	yield '};'
+
+def genExtDepInl(dependenciesAndVersions):
+	allExtDepsDict, apiVersions = dependenciesAndVersions
+	apiVersions.reverse()
 	lines = []
 
-	if VK_INST_EXT_DEP_1_0 in allExtDepsDict:
-		lines = lines + [line for line in genExtDepArray(VK_INST_EXT_DEP_1_0, allExtDepsDict[VK_INST_EXT_DEP_1_0])]
-	if VK_INST_EXT_DEP_1_1 in allExtDepsDict:
-		lines = lines + [line for line in genExtDepArray(VK_INST_EXT_DEP_1_1, allExtDepsDict[VK_INST_EXT_DEP_1_1])]
-	if VK_DEV_EXT_DEP_1_0 in allExtDepsDict:
-		lines = lines + [line for line in genExtDepArray(VK_DEV_EXT_DEP_1_0, allExtDepsDict[VK_DEV_EXT_DEP_1_0])]
-	if VK_DEV_EXT_DEP_1_1 in allExtDepsDict:
-		lines = lines + [line for line in genExtDepArray(VK_DEV_EXT_DEP_1_1, allExtDepsDict[VK_DEV_EXT_DEP_1_1])]
+	lines = lines + [line for line in genExtDepArray(VK_EXT_DEP_INSTANCE, allExtDepsDict[VK_EXT_TYPE_INSTANCE])]
+	lines = lines + [line for line in genExtDepArray(VK_EXT_DEP_DEVICE, allExtDepsDict[VK_EXT_TYPE_DEVICE])]
+	lines = lines + [line for line in genApiVersions(VK_EXT_API_VERSIONS, apiVersions)]
 
 	writeInlFile(VK_INL_FILE, lines)
 
 class extInfo:
 	def __init__(self):
-		self.type	= VK_EXT_TYPE_INST
-		self.core	= VK_API_VERSION_1_0
+		self.type	= VK_EXT_TYPE_INSTANCE
+		self.core	= VK_MAKE_VERSION(1, 0, 0)
 		self.promo	= VK_EXT_NOT_PROMOTED
 		self.deps	= []
 
@@ -103,51 +104,65 @@ def genExtDepsOnApiVersion(ext, extInfoDict, apiVersion):
 
 	return deps
 
-def genExtDeps(extInfoDict):
-	allExtDepsDict						= {}
-	allExtDepsDict[VK_INST_EXT_DEP_1_0]	= {}
-	allExtDepsDict[VK_INST_EXT_DEP_1_1]	= {}
-	allExtDepsDict[VK_DEV_EXT_DEP_1_0]	= {}
-	allExtDepsDict[VK_DEV_EXT_DEP_1_1]	= {}
+def genExtDeps(extensionsAndVersions):
+	extInfoDict, apiVersionID = extensionsAndVersions
+
+	allExtDepsDict	= defaultdict(list)
+	apiVersions		= []
+
+	for (major,minor) in apiVersionID:
+		apiVersions.append((VK_MAKE_VERSION(major, minor, 0),major,minor))
+	apiVersions.sort(key=lambda x: x[0])
 
 	for ext, info in extInfoDict.items():
 		if info.deps == None:
 			continue
 
-		if info.type == VK_EXT_TYPE_INST:
-			allExtDepsDict[VK_INST_EXT_DEP_1_1][ext]	= genExtDepsOnApiVersion(ext, extInfoDict, VK_API_VERSION_1_1);
-			if info.core >= VK_API_VERSION_1_1:
-				continue
-			allExtDepsDict[VK_INST_EXT_DEP_1_0][ext]	= genExtDepsOnApiVersion(ext, extInfoDict, VK_API_VERSION_1_0);
-		else:
-			allExtDepsDict[VK_DEV_EXT_DEP_1_1][ext]		= genExtDepsOnApiVersion(ext, extInfoDict, VK_API_VERSION_1_1);
-			if info.core >= VK_API_VERSION_1_1:
-				continue
-			allExtDepsDict[VK_DEV_EXT_DEP_1_0][ext]		= genExtDepsOnApiVersion(ext, extInfoDict, VK_API_VERSION_1_0);
+		for (version,major,minor) in apiVersions:
+			if info.core <= version:
+				extDeps = genExtDepsOnApiVersion(ext, extInfoDict, version)
+				if extDeps == None:
+					continue
+				allExtDepsDict[info.type].append( ( major, minor, ext, extDeps ) )
 
-	return allExtDepsDict
+	for key, value in allExtDepsDict.items():
+		value.sort(key=lambda x: x[2])
+	return allExtDepsDict, apiVersions
 
 def getExtInfoDict(vkRegistry):
 	extInfoDict = {}
+	apiVersionID = []
+
+	for feature in vkRegistry.features:
+		if feature.attrib[VK_XML_EXT_API] != VK_XML_EXT_SUPPORTED_VULKAN:
+			continue
+		featureName = feature.attrib[VK_XML_EXT_NAME].split('_')
+		if len(featureName)!=4 or featureName[0] != 'VK' or featureName[1] != 'VERSION' :
+			continue
+		apiVersionID.append( (int(featureName[2]), int(featureName[3])) )
+
+	apiVersionsByName	= {}
+	apiVersionsByNumber	= {}
+	for (major,minor) in apiVersionID:
+		apiVersionsByName['VK_VERSION_{}_{}'.format(major,minor)]	= VK_MAKE_VERSION(major, minor, 0);
+		apiVersionsByNumber['{}.{}'.format(major,minor)]			= VK_MAKE_VERSION(major, minor, 0);
 
 	for ext in vkRegistry.extensions:
-		if (ext.attrib[VK_XML_EXT_SUPPORTED] != VK_XML_EXT_SUPPORTED_VULKAN):
+		if ext.attrib[VK_XML_EXT_SUPPORTED] != VK_XML_EXT_SUPPORTED_VULKAN:
 			continue
 
 		name				= ext.attrib[VK_XML_EXT_NAME]
 		extInfoDict[name]	= extInfo()
 		if ext.attrib[VK_XML_EXT_TYPE] == VK_XML_EXT_TYPE_DEVICE:
-			extInfoDict[name].type = VK_EXT_TYPE_DEV
-		if VK_XML_EXT_REQUIRES_CORE in ext.attrib:
-			if ext.attrib[VK_XML_EXT_REQUIRES_CORE] == VK_XML_EXT_REQUIRES_CORE_1_1:
-				extInfoDict[name].core = VK_API_VERSION_1_1
-		if VK_XML_EXT_PROMO in ext.attrib:
-			if ext.attrib[VK_XML_EXT_PROMO] == VK_XML_EXT_PROMO_1_1:
-				extInfoDict[name].promo = VK_API_VERSION_1_1
+			extInfoDict[name].type = VK_EXT_TYPE_DEVICE
+		if VK_XML_EXT_REQUIRES_CORE in ext.attrib and ext.attrib[VK_XML_EXT_REQUIRES_CORE] in apiVersionsByNumber:
+			extInfoDict[name].core = apiVersionsByNumber[ext.attrib[VK_XML_EXT_REQUIRES_CORE]]
+		if VK_XML_EXT_PROMO in ext.attrib and ext.attrib[VK_XML_EXT_PROMO] in apiVersionsByName :
+			extInfoDict[name].promo = apiVersionsByName[ext.attrib[VK_XML_EXT_PROMO]]
 		if VK_XML_EXT_DEPS in ext.attrib:
 			extInfoDict[name].deps = ext.attrib[VK_XML_EXT_DEPS].split(',')
 
-	return extInfoDict
+	return extInfoDict, apiVersionID
 
 def getVKRegistry():
 	return khr_util.registry_cache.getRegistry(VK_SOURCE)

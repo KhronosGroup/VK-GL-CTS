@@ -5036,9 +5036,9 @@ typedef struct VkPhysicalDeviceVulkan11Properties {
     uint32_t                   deviceNodeMask;
     VkBool32                   deviceLUIDValid;
     uint32_t                   subgroupSize;
-    VkShaderStageFlags         supportedStages;
-    VkSubgroupFeatureFlags     supportedOperations;
-    VkBool32                   quadOperationsInAllStages;
+    VkShaderStageFlags         subgroupSupportedStages;
+    VkSubgroupFeatureFlags     subgroupSupportedOperations;
+    VkBool32                   subgroupQuadOperationsInAllStages;
     VkPointClippingBehavior    pointClippingBehavior;
     uint32_t                   maxMultiviewViewCount;
     uint32_t                   maxMultiviewInstanceIndex;
@@ -6658,6 +6658,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceFdKHR(
     const VkFenceGetFdInfoKHR*                  pGetFdInfo,
     int*                                        pFd);
 #endif
+
 
 #define VK_KHR_performance_query 1
 #define VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION 1

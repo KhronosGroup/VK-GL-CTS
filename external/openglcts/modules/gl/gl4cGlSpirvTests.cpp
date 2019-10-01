@@ -335,7 +335,6 @@ tcu::TestNode::IterateResult SpirvModulesPositiveTest::iterate()
 		}
 		else if (it == ITERATE_SPIRV)
 		{
-#if defined					DEQP_HAVE_GLSLANG
 			ProgramBinaries binaries;
 			binaries << spirvUtils::makeSpirV(m_context.getTestContext().getLog(), VertexSource(m_vertex));
 			binaries << spirvUtils::makeSpirV(m_context.getTestContext().getLog(),
@@ -345,16 +344,6 @@ tcu::TestNode::IterateResult SpirvModulesPositiveTest::iterate()
 			binaries << spirvUtils::makeSpirV(m_context.getTestContext().getLog(), GeometrySource(m_geometry));
 			binaries << spirvUtils::makeSpirV(m_context.getTestContext().getLog(), FragmentSource(m_fragment));
 			program = new ShaderProgram(gl, binaries);
-#else  // DEQP_HAVE_GLSLANG
-			tcu::Archive&   archive = m_testCtx.getArchive();
-			ProgramBinaries binaries;
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/vertex.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/tess_control.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/tess_evaluation.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/geometry.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/fragment.nspv"));
-			program		  = new ShaderProgram(gl, binaries);
-#endif // DEQP_HAVE_GLSLANG
 		}
 
 		if (!program->isOk())
@@ -565,18 +554,12 @@ tcu::TestNode::IterateResult SpirvShaderBinaryMultipleShaderObjectsTest::iterate
 	gl.bufferData(GL_ARRAY_BUFFER, 9 * sizeof(GLfloat), (GLvoid*)vertices, GL_DYNAMIC_DRAW);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData");
 
-#if defined DEQP_HAVE_SPIRV_TOOLS
 	ShaderBinary binary;
 	binary << SHADERTYPE_VERTEX << "mainv";
 	binary << SHADERTYPE_FRAGMENT << "mainf";
 
 	spirvUtils::spirvAssemble(binary.binary, m_spirv);
 	spirvUtils::spirvValidate(binary.binary, true);
-#else  // DEQP_HAVE_SPIRV_TOOLS
-	tcu::Archive& archive = m_testCtx.getArchive();
-	ShaderBinary  binary  = commonUtils::readSpirV(
-		archive.getResource("spirv/spirv_modules_shader_binary_multiple_shader_objects/binary.nspv"));
-#endif // DEQP_HAVE_SPIRV_TOOLS
 
 	ProgramBinaries binaries;
 	binaries << binary;
@@ -715,7 +698,6 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 	ProgramBinaries binaries;
 	ShaderBinary	vertexBinary;
 
-#if defined DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 	{
 		vertexBinary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), VertexSource(m_vertex));
 
@@ -742,10 +724,6 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 		spirvUtils::spirvAssemble(vertexBinary.binary, input);
 		spirvUtils::spirvValidate(vertexBinary.binary, true);
 	}
-#else  // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
-	tcu::Archive& archive = m_testCtx.getArchive();
-	vertexBinary		  = commonUtils::readSpirV(archive.getResource("spirv/modules_state_queries/vertex.nspv"));
-#endif // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 
 	binaries << vertexBinary;
 	ShaderProgram program(gl, binaries);
@@ -907,12 +885,7 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 
 	ShaderBinary vertexBinary;
 
-#if defined DEQP_HAVE_GLSLANG
 	vertexBinary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), VertexSource(m_vertex));
-#else  // DEQP_HAVE_GLSLANG
-	tcu::Archive& archive = m_testCtx.getArchive();
-	vertexBinary		  = commonUtils::readSpirV(archive.getResource("spirv/modules_error_verification/vertex.nspv"));
-#endif // DEQP_HAVE_GLSLANG
 
 	gl.shaderSource(m_glslShaderId, 1, &shaderSrc, &shaderLen);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "shaderSource");
@@ -1130,7 +1103,6 @@ void SpirvGlslToSpirVEnableTest::deinit()
 tcu::TestNode::IterateResult SpirvGlslToSpirVEnableTest::iterate()
 {
 
-#if defined DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 	{
 		const Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -1164,11 +1136,6 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVEnableTest::iterate()
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
-#else // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
-
-	TCU_THROW(InternalError, "Either glslang or spirv-tools not available.");
-
-#endif // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 
 	return STOP;
 }
@@ -1703,13 +1670,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 
 			sources << vertexSource;
 			ShaderBinary vertexBinary;
-#if defined				 DEQP_HAVE_GLSLANG
 			vertexBinary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), vertexSource);
-#else  // DEQP_HAVE_GLSLANG
-			tcu::Archive& archive = m_testCtx.getArchive();
-			vertexBinary =
-				commonUtils::readSpirV(archive.getResource("spirv/glsl_to_spirv_builtin_functions/common_vertex.nspv"));
-#endif //DEQP_HAVE_GLSLANG
 			binaries << vertexBinary;
 		}
 
@@ -1717,19 +1678,8 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 		ShaderBinary shaderBinary;
 		std::string  spirvSource;
 
-#if defined DEQP_HAVE_GLSLANG
 		shaderBinary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), shaderSource);
-#else  // DEQP_HAVE_GLSLANG
-		{
-			std::stringstream ss;
-			ss << "spirv/glsl_to_spirv_builtin_functions/binary_" << i << ".nspv";
 
-			tcu::Archive& archive = m_testCtx.getArchive();
-			shaderBinary		  = commonUtils::readSpirV(archive.getResource(ss.str().c_str()));
-		}
-#endif // DEQP_HAVE_GLSLANG
-
-#if defined DEQP_HAVE_SPIRV_TOOLS
 		{
 			spirvUtils::spirvDisassemble(spirvSource, shaderBinary.binary);
 
@@ -1744,9 +1694,6 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 				TCU_THROW(InternalError, "Mappings for shader failed.");
 			}
 		}
-#else  // DEQP_HAVE_SPIRV_TOOLS
-		spirvSource				  = "Could not disassemble Spir-V module. SPIRV-TOOLS not available.";
-#endif // DEQP_HAVE_SPIRV_TOOLS
 
 		binaries << shaderBinary;
 
@@ -1756,13 +1703,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 
 			sources << tessEvalSource;
 			ShaderBinary tessEvalBinary;
-#if defined				 DEQP_HAVE_GLSLANG
 			tessEvalBinary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), tessEvalSource);
-#else  // DEQP_HAVE_GLSLANG
-			tcu::Archive& archive = m_testCtx.getArchive();
-			tessEvalBinary		  = commonUtils::readSpirV(
-				archive.getResource("spirv/glsl_to_spirv_builtin_functions/common_tesseval.nspv"));
-#endif // DEQP_HAVE_GLSLANG
 			binaries << tessEvalBinary;
 		}
 
@@ -2068,20 +2009,10 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVSpecializationConstantsTest::iterat
 
 	ShaderBinary vertexBinary;
 	ShaderBinary fragmentBinary;
-#if defined		 DEQP_HAVE_GLSLANG
 	{
 		vertexBinary   = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), VertexSource(m_vertex));
 		fragmentBinary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), FragmentSource(m_fragment));
 	}
-#else  // DEQP_HAVE_GLSLANG
-	{
-		tcu::Archive& archive = m_testCtx.getArchive();
-		vertexBinary =
-			commonUtils::readSpirV(archive.getResource("spirv/glsl_to_spirv_specialization_constants/vertex.nspv"));
-		fragmentBinary =
-			commonUtils::readSpirV(archive.getResource("spirv/glsl_to_spirv_specialization_constants/fragment.nspv"));
-	}
-#endif // DEQP_HAVE_GLSLANG
 	fragmentBinary << SpecializationData(10, 128);
 
 	ProgramBinaries binaries;
@@ -2450,7 +2381,6 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 			{
 				std::vector<ShaderBinary> binariesVec;
 
-#if defined						DEQP_HAVE_GLSLANG
 				ProgramBinaries binaries;
 				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
 				{
@@ -2459,22 +2389,8 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 					binariesVec.push_back(shaderBinary);
 					binaries << shaderBinary;
 				}
-#else  // DEQP_HAVE_GLSLANG
-				tcu::Archive&   archive = m_testCtx.getArchive();
-				ProgramBinaries binaries;
-				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
-				{
-					std::stringstream ss;
-					ss << "spirv/spirv_validation_builtin_variable_decorations/shader_" << v << "_" << s << ".nspv";
-
-					ShaderBinary shaderBinary = commonUtils::readSpirV(archive.getResource(ss.str().c_str()));
-					binariesVec.push_back(shaderBinary);
-					binaries << shaderBinary;
-				}
-#endif // DEQP_HAVE_GLSLANG
 				program = new ShaderProgram(gl, binaries);
 
-#if defined					DEQP_HAVE_SPIRV_TOOLS
 				std::string spirvSource;
 
 				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
@@ -2494,7 +2410,6 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 						TCU_THROW(InternalError, "Mappings for shader failed.");
 					}
 				}
-#endif // DEQP_HAVE_SPIRV_TOOLS
 			}
 
 			if (!program->isOk())
@@ -3458,7 +3373,6 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 		for (int s = 0; s < (signed)pipeline.size(); ++s)
 		{
 			ShaderStage& stage = pipeline[s];
-#if defined				 DEQP_HAVE_GLSLANG
 			stage.binary = spirvUtils::makeSpirV(m_context.getTestContext().getLog(), stage.source);
 			std::stringstream ssw;
 			if (stage.name.empty())
@@ -3466,15 +3380,6 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 			else
 				ssw << "gl_cts/data/spirv/spirv_validation_capabilities/" << stage.name << ".nspv";
 			commonUtils::writeSpirV(ssw.str().c_str(), stage.binary);
-#else  // DEQP_HAVE_GLSLANG
-			tcu::Archive&	 archive = m_testCtx.getArchive();
-			std::stringstream ss;
-			if (stage.name.empty())
-				ss << "spirv/spirv_validation_capabilities/binary_p" << p << "s" << s << ".nspv";
-			else
-				ss << "spirv/spirv_validation_capabilities/" << stage.name << ".nspv";
-			stage.binary = commonUtils::readSpirV(archive.getResource(ss.str().c_str()));
-#endif // DEQP_HAVE_GLSLANG
 			programBinaries << stage.binary;
 		}
 
@@ -3505,7 +3410,6 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 			return STOP;
 		}
 
-#if defined DEQP_HAVE_SPIRV_TOOLS
 		for (int s = 0; s < (signed)pipeline.size(); ++s)
 		{
 			ShaderStage  stage  = pipeline[s];
@@ -3541,7 +3445,6 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 				}
 			}
 		}
-#endif // DEQP_HAVE_SPIRV_TOOLS
 	}
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
