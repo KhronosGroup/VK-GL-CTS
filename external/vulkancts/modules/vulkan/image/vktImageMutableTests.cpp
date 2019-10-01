@@ -2095,6 +2095,25 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 	const VkImageUsageFlags				imageUsage = getImageUsageForTestCase(caseDef);
 
+	{
+		VkImageFormatProperties properties;
+		VkResult				result;
+
+		result = vki.getPhysicalDeviceImageFormatProperties(physDevice, caseDef.imageFormat, getImageType(caseDef.imageType), VK_IMAGE_TILING_OPTIMAL, imageUsage, 0, &properties);
+
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		{
+			TCU_THROW(NotSupportedError, "Image format is not supported for required usage");
+		}
+
+		result = vki.getPhysicalDeviceImageFormatProperties(physDevice, caseDef.viewFormat, getImageType(caseDef.imageType), VK_IMAGE_TILING_OPTIMAL, imageUsage, 0, &properties);
+
+		if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+		{
+			TCU_THROW(NotSupportedError, "Image view format is not supported for required usage");
+		}
+	}
+
 	const VkSurfaceCapabilitiesKHR		capabilities = getPhysicalDeviceSurfaceCapabilities(vki,
 																							physDevice,
 																							*surface);
@@ -2104,8 +2123,8 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 	// Check support for requested formats by swapchain surface
 	const vector<VkSurfaceFormatKHR>	surfaceFormats = getPhysicalDeviceSurfaceFormats(vki,
-																						 physDevice,
-																						 *surface);
+																					 physDevice,
+																					 *surface);
 
 	const VkSurfaceFormatKHR*			surfaceFormat = DE_NULL;
 	const VkFormat*						viewFormat = DE_NULL;
