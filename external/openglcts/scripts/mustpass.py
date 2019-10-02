@@ -322,8 +322,8 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 	gtf_wrapper_close = "#endif // defined(DEQP_GTF_AVAILABLE)\n"
 	android_wrapper_open = "#if DE_OS == DE_OS_ANDROID\n"
 	android_wrapper_close = "#endif // DE_OS == DE_OS_ANDROID\n"
-	skip_x11_wrapper_open = "#ifndef DDEQP_SUPPORT_X11\n"
-	skip_x11_wrapper_close = "#endif // DDEQP_SUPPORT_X11\n"
+	skip_x11_wrapper_open = "#ifndef DEQP_SUPPORT_X11\n"
+	skip_x11_wrapper_close = "#endif // DEQP_SUPPORT_X11\n"
 	TABLE_ELEM_PATTERN	= "{apiType} {configName} {glConfigName} {screenRotation} {baseSeed} {fboConfig} {surfaceWidth} {surfaceHeight}"
 
 	emitOtherCfgTbl = False
