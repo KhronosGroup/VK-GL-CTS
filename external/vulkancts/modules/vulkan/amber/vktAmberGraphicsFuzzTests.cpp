@@ -101,6 +101,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"two-nested-do-whiles.amber",					"two-nested-do-whiles",					"A fragment shader with nested do while"												},
 		{	"two-nested-for-loops-with-returns.amber",		"two-nested-for-loops-with-returns",	"A compute shader with two nested for loops"											},
 		{	"two-nested-infinite-loops-discard.amber",		"two-nested-infinite-loops-discard",	"A fragment shader with an always false if function"									},
+		{	"undefined-integer-in-function.amber",			"undefined-integer-in-function",		"A fragment shader with nested do while and undefined int"								},
 		{	"uninitialized-var-decrement-and-add.amber",	"uninitialized-var-decrement-and-add",	"A fragment shader that uses an uninitialized variable"									},
 		{	"undefined-assign-in-infinite-loop.amber",		"undefined-assign-in-infinite-loop",	"A fragment shader with uninitialized read in infinite loop"							},
 		{	"unreachable-barrier-in-loops.amber",			"unreachable-barrier-in-loops",			"A compute shader with an unreachable barrier in a loop nest"							},
