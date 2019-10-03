@@ -77,6 +77,7 @@
 #include "vktSpvAsmSignedIntCompareTests.hpp"
 #include "vktSpvAsmPtrAccessChainTests.hpp"
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
+#include "vktSpvAsm64bitCompareTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -19317,6 +19318,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
 	computeTests->addChild(createHlslComputeGroup(testCtx));
+	computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
@@ -19379,6 +19381,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createVaryingNameGraphicsGroup(testCtx));
 	graphicsTests->addChild(createFloat16Tests(testCtx));
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
+	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
