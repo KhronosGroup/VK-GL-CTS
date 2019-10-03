@@ -781,13 +781,14 @@ TexSubImage3DCase::IterateResult TexSubImage3DCase::iterate(void)
 class CopyTexSubImage3DCase : public Texture3DBase
 {
 public:
-	CopyTexSubImage3DCase(deqp::Context& context, const char* name, const char* desc, deUint32 internalFormat,
-						  int width, int height, int depth);
+	CopyTexSubImage3DCase(deqp::Context& context, const char* name, const char* desc, deUint32 format,
+						  deUint32 type, int width, int height, int depth);
 
 	IterateResult iterate(void);
 
 private:
-	deUint32 m_internalFormat;
+	deUint32 m_format;
+	deUint32 m_type;
 	int		 m_width;
 	int		 m_height;
 	int		 m_depth;
@@ -795,9 +796,10 @@ private:
 };
 
 CopyTexSubImage3DCase::CopyTexSubImage3DCase(deqp::Context& context, const char* name, const char* desc,
-											 deUint32 internalFormat, int width, int height, int depth)
+											 deUint32 format, deUint32 type, int width, int height, int depth)
 	: Texture3DBase(context, name, desc)
-	, m_internalFormat(internalFormat)
+	, m_format(format)
+	, m_type(type)
 	, m_width(width)
 	, m_height(height)
 	, m_depth(depth)
@@ -817,13 +819,10 @@ CopyTexSubImage3DCase::IterateResult CopyTexSubImage3DCase::iterate(void)
 	tcu::Surface				 rendered(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 	tcu::Vec4					 firstColor(0.0f, 1.0f, 0.0f, 1.0f);
 	tcu::Vec4					 secondColor(1.0f, 0.0f, 1.0f, 1.0f);
-	glu::Texture3D				 texture(m_context.getRenderContext(), m_internalFormat, m_width, m_height, m_depth);
+	glu::Texture3D				 texture(m_context.getRenderContext(), m_format, m_type, m_width, m_height, m_depth);
 	const tcu::TextureFormat	 textureFormat = texture.getRefTexture().getFormat();
 	const tcu::TextureFormatInfo formatInfo	= tcu::getTextureFormatInfo(textureFormat);
 
-	/* According to the spec, the component sizes of internalformat should exactly match the corresponding component sizes
-	   of the source buffer's effective internal format when call the glCopyTexSubImage3D function. Because the test format
-	   is GL_RGBA8, so we should create a new texture with the same format and attach it to a new fbo. */
 	glw::GLuint fbo = 0;
 	gl.genFramebuffers(1, &fbo);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -832,7 +831,7 @@ CopyTexSubImage3DCase::IterateResult CopyTexSubImage3DCase::iterate(void)
 	gl.bindTexture(GL_TEXTURE_2D, new_dst_to);
 
 	/* The longest edge of texture(32*64*8) is 64, so we create a texture with 64*64 dimension. */
-	gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	gl.texImage2D(GL_TEXTURE_2D, 0, m_format, 64, 64, 0, m_format, m_type, NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(),
 						"Could not setup texture object for draw framebuffer color attachment.");
 
@@ -909,13 +908,14 @@ CopyTexSubImage3DCase::IterateResult CopyTexSubImage3DCase::iterate(void)
 class FramebufferTexture3DCase : public Texture3DBase
 {
 public:
-	FramebufferTexture3DCase(deqp::Context& context, const char* name, const char* desc, deUint32 internalFormat,
-							 int width, int height, int depth);
+	FramebufferTexture3DCase(deqp::Context& context, const char* name, const char* desc, deUint32 format,
+	                         deUint32 type, int width, int height, int depth);
 
 	IterateResult iterate(void);
 
 private:
-	deUint32 m_internalFormat;
+	deUint32 m_format;
+	deUint32 m_type;
 	int		 m_width;
 	int		 m_height;
 	int		 m_depth;
@@ -923,9 +923,10 @@ private:
 };
 
 FramebufferTexture3DCase::FramebufferTexture3DCase(deqp::Context& context, const char* name, const char* desc,
-												   deUint32 internalFormat, int width, int height, int depth)
+												   deUint32 format, deUint32 type, int width, int height, int depth)
 	: Texture3DBase(context, name, desc)
-	, m_internalFormat(internalFormat)
+	, m_format(format)
+	, m_type(type)
 	, m_width(width)
 	, m_height(height)
 	, m_depth(depth)
@@ -943,8 +944,8 @@ FramebufferTexture3DCase::IterateResult FramebufferTexture3DCase::iterate(void)
 
 	tcu::Vec4	  firstColor(0.0f, 1.0f, 0.0f, 1.0f);
 	tcu::Vec4	  secondColor(1.0f, 0.0f, 1.0f, 1.0f);
-	glu::Texture3D texture3D(m_context.getRenderContext(), m_internalFormat, m_width, m_height, m_depth);
-	glu::Texture2D texture2D(m_context.getRenderContext(), m_internalFormat, m_width, m_height);
+	glu::Texture3D texture3D(m_context.getRenderContext(), m_format, m_type, m_width, m_height, m_depth);
+	glu::Texture2D texture2D(m_context.getRenderContext(), m_format, m_type, m_width, m_height);
 
 	// Fill textures.
 	texture3D.getRefTexture().allocLevel(0);
@@ -1574,7 +1575,7 @@ NegativeFramebufferTexture3DCase::IterateResult NegativeFramebufferTexture3DCase
 	gl.bindTexture(GL_TEXTURE_3D, tex3D);
 
 	GLint maxTexSize = 0x1234;
-	gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, &maxTexSize);
 	gl.getError(); // reset error
 
 	callFramebufferTexture3D(-1, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, tex3D, 0, 0);
@@ -1647,7 +1648,7 @@ NegativeCompressedTexImage3DCase::IterateResult NegativeCompressedTexImage3DCase
 			"GL_INVALID_ENUM is generated if internalformat is not one of the specific compressed internal formats.";
 		callCompressedTexImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 0, 0, 0, 0);
 		verifyError(GL_INVALID_ENUM, message2);
-		callCompressedTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 0, 0, 0, 0, 0, 0);
+		callCompressedTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 0, 0, 0, 0, 0, 0);
 		verifyError(GL_INVALID_ENUM, message2);
 
 		const char* message3 = "INVALID_OPERATION is generated if internalformat is an ETC2/EAC format.";
@@ -1695,11 +1696,11 @@ NegativeCompressedTexImage3DCase::IterateResult NegativeCompressedTexImage3DCase
 	// maximal dimensions
 	{
 		int maxTextureSize;
-		gl.getIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+		gl.getIntegerv(GL_MAX_3D_TEXTURE_SIZE_OES, &maxTextureSize);
 		++maxTextureSize;
 
 		const char* message =
-			"GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_TEXTURE_SIZE.";
+			"GL_INVALID_VALUE is generated if width, height or depth is greater than GL_MAX_3D_TEXTURE_SIZE_OES.";
 		callCompressedTexImage3D(GL_TEXTURE_3D, 0, supportedCompressedFormat, maxTextureSize, 0, 0, 0, 0, 0);
 		verifyError(GL_INVALID_VALUE, message);
 		callCompressedTexImage3D(GL_TEXTURE_3D, 0, supportedCompressedFormat, 0, maxTextureSize, 0, 0, 0, 0);
@@ -1894,11 +1895,20 @@ void Texture3DTests::init()
 		int depth;
 	} sizes[] = { { 4, 8, 8 }, { 32, 64, 16 }, { 128, 32, 64 }, { 3, 7, 5 }, { 63, 63, 63 } };
 
+    static const struct
+	{
+		const char* name;
+		deUint32	format;
+		deUint32	type;
+	} filterableFormatsByType[] = {
+		{ "rgba", GL_RGBA, GL_UNSIGNED_BYTE },
+	};
+
 	static const struct
 	{
 		const char* name;
 		deUint32	format;
-	} filterableFormatsByType[] = {
+	} sizedFilterableFormatsByType[] = {
 		{ "rgba8", GL_RGBA8 },
 	};
 
@@ -1957,14 +1967,14 @@ void Texture3DTests::init()
 		FilteringData		 data;
 		deqp::TestCaseGroup* formatsGroup = new deqp::TestCaseGroup(m_context, "formats", "3D Texture Formats");
 		texFilteringGroup->addChild(formatsGroup);
-		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
+		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(sizedFilterableFormatsByType); fmtNdx++)
 		{
 			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(minFilterModes); filterNdx++)
 			{
 				data.minFilter		= minFilterModes[filterNdx].mode;
 				bool isMipmap		= data.minFilter != GL_NEAREST && data.minFilter != GL_LINEAR;
 				data.magFilter		= isMipmap ? GL_LINEAR : data.minFilter;
-				data.internalFormat = filterableFormatsByType[fmtNdx].format;
+				data.internalFormat = sizedFilterableFormatsByType[fmtNdx].format;
 				data.wrapS			= GL_REPEAT;
 				data.wrapT			= GL_REPEAT;
 				data.wrapR			= GL_REPEAT;
@@ -1972,7 +1982,7 @@ void Texture3DTests::init()
 				data.height			= 64;
 				data.depth			= 64;
 
-				const char* formatName = filterableFormatsByType[fmtNdx].name;
+				const char* formatName = sizedFilterableFormatsByType[fmtNdx].name;
 				const char* filterName = minFilterModes[filterNdx].name;
 				std::string name	   = std::string(formatName) + "_" + filterName;
 
@@ -2049,10 +2059,10 @@ void Texture3DTests::init()
 		tcu::TestCaseGroup* texSubImageGroup =
 			new tcu::TestCaseGroup(m_testCtx, "sub_image", "Basic glTexSubImage3D() usage");
 		addChild(texSubImageGroup);
-		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); formatNdx++)
+		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(sizedFilterableFormatsByType); formatNdx++)
 		{
-			const char* fmtName = filterableFormatsByType[formatNdx].name;
-			deUint32	format  = filterableFormatsByType[formatNdx].format;
+			const char* fmtName = sizedFilterableFormatsByType[formatNdx].name;
+			deUint32	format  = sizedFilterableFormatsByType[formatNdx].format;
 			texSubImageGroup->addChild(new TexSubImage3DCase(m_context, fmtName, "", format, 32, 64, 8));
 		}
 		texSubImageGroup->addChild(new NegativeTexSubImage3DCase(m_context, "negative"));
@@ -2067,7 +2077,8 @@ void Texture3DTests::init()
 		{
 			const char* fmtName = filterableFormatsByType[formatNdx].name;
 			deUint32	format  = filterableFormatsByType[formatNdx].format;
-			copyTexSubImageGroup->addChild(new CopyTexSubImage3DCase(m_context, fmtName, "", format, 32, 64, 8));
+			deUint32	type    = filterableFormatsByType[formatNdx].type;
+			copyTexSubImageGroup->addChild(new CopyTexSubImage3DCase(m_context, fmtName, "", format, type, 32, 64, 8));
 		}
 		copyTexSubImageGroup->addChild(new NegativeCopyTexSubImage3DCase(m_context, "negative"));
 	}
@@ -2081,7 +2092,8 @@ void Texture3DTests::init()
 		{
 			const char* fmtName = filterableFormatsByType[formatNdx].name;
 			deUint32	format  = filterableFormatsByType[formatNdx].format;
-			framebufferTextureGroup->addChild(new FramebufferTexture3DCase(m_context, fmtName, "", format, 64, 64, 3));
+			deUint32	type    = filterableFormatsByType[formatNdx].type;
+			framebufferTextureGroup->addChild(new FramebufferTexture3DCase(m_context, fmtName, "", format, type, 64, 64, 3));
 		}
 		framebufferTextureGroup->addChild(new NegativeFramebufferTexture3DCase(m_context, "negative"));
 	}

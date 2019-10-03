@@ -557,10 +557,15 @@ std::string getImageTypeName (const ImageType imageType)
 	}
 }
 
+std::string getFormatPrefix (const tcu::TextureFormat& format)
+{
+	return tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" :
+		   tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" : "";
+}
+
 std::string getShaderImageType (const tcu::TextureFormat& format, const ImageType imageType, const bool multisample)
 {
-	std::string formatPart = tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" :
-							 tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" : "";
+	std::string formatPart = getFormatPrefix(format);
 
 	std::string imageTypePart;
 	if (multisample)

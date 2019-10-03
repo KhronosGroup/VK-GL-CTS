@@ -7520,7 +7520,8 @@ vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) c
 class TexelBufferInstanceBuffers
 {
 public:
-											TexelBufferInstanceBuffers	(const vk::DeviceInterface&						vki,
+											TexelBufferInstanceBuffers	(vkt::Context&									context,
+																		 const vk::DeviceInterface&						vki,
 																		 vk::VkDevice									device,
 																		 vk::Allocator&									allocator,
 																		 vk::VkDescriptorType							descriptorType,
@@ -7582,6 +7583,10 @@ private:
 																			 const vk::Allocation&							memory,
 																			 const de::ArrayBuffer<deUint8>&				data);
 
+	deUint32										getViewOffset			(vkt::Context&									context,
+																			 bool											hasViewOffset,
+																			 vk::VkDescriptorType							descriptorType);
+
 public:
 	static int								getFetchPos					(int fetchPosNdx);
 	tcu::Vec4								fetchTexelValue				(int fetchPosNdx, int setNdx) const;
@@ -7596,7 +7601,6 @@ private:
 	enum
 	{
 		BUFFER_SIZE			= 512,
-		VIEW_OFFSET_VALUE	= 256,
 		VIEW_DATA_SIZE		= 256,	//!< size in bytes
 		VIEW_WIDTH			= 64,	//!< size in pixels
 	};
@@ -7623,7 +7627,41 @@ private:
 	const std::vector<vk::VkBufferMemoryBarrier>	m_bufferBarrier;
 };
 
-TexelBufferInstanceBuffers::TexelBufferInstanceBuffers (const vk::DeviceInterface&		vki,
+deUint32 TexelBufferInstanceBuffers::getViewOffset(vkt::Context&		context,
+												   bool					hasViewOffset,
+												   vk::VkDescriptorType	descriptorType)
+{
+	if (!hasViewOffset)
+		return 0u;
+
+	if (!context.getTexelBufferAlignmentFeaturesEXT().texelBufferAlignment)
+		return (deUint32)context.getDeviceProperties().limits.minTexelBufferOffsetAlignment;
+
+	vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT alignmentProperties;
+	deMemset(&alignmentProperties, 0, sizeof(alignmentProperties));
+	alignmentProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT;
+
+	vk::VkPhysicalDeviceProperties2 properties2;
+	deMemset(&properties2, 0, sizeof(properties2));
+	properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	properties2.pNext = &alignmentProperties;
+
+	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
+
+	vk::VkBool32 singleTexelAlignment = isUniformDescriptorType(descriptorType) ? alignmentProperties.uniformTexelBufferOffsetSingleTexelAlignment :
+																				  alignmentProperties.storageTexelBufferOffsetSingleTexelAlignment;
+	vk::VkDeviceSize align = isUniformDescriptorType(descriptorType) ? alignmentProperties.uniformTexelBufferOffsetAlignmentBytes :
+																	   alignmentProperties.storageTexelBufferOffsetAlignmentBytes;
+
+	// format is rgba8
+	if (singleTexelAlignment)
+        return de::min(4u, (deUint32)align);
+	else
+		return (deUint32)align;
+}
+
+TexelBufferInstanceBuffers::TexelBufferInstanceBuffers (vkt::Context&					context,
+														const vk::DeviceInterface&		vki,
 														vk::VkDevice					device,
 														vk::Allocator&					allocator,
 														vk::VkDescriptorType			descriptorType,
@@ -7633,7 +7671,7 @@ TexelBufferInstanceBuffers::TexelBufferInstanceBuffers (const vk::DeviceInterfac
 	: m_numTexelBuffers	(getInterfaceNumResources(shaderInterface) * getDescriptorSetCount(descriptorSetCount))
 	, m_imageFormat		(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8)
 	, m_shaderInterface (shaderInterface)
-	, m_viewOffset		((hasViewOffset) ? ((deUint32)VIEW_OFFSET_VALUE) : (0u))
+	, m_viewOffset		(getViewOffset(context, hasViewOffset, descriptorType))
 	, m_sourceBuffer	(createSourceBuffers(m_imageFormat, m_numTexelBuffers))
 	, m_sourceView		(createSourceViews(m_sourceBuffer, m_imageFormat, m_numTexelBuffers, m_viewOffset))
 	, m_bufferMemory	()
@@ -7963,7 +8001,7 @@ TexelBufferRenderInstance::TexelBufferRenderInstance (vkt::Context&					context,
 	, m_updateBuilder			()
 	, m_descriptorSetLayouts	(createDescriptorSetLayouts(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_stageFlags, m_updateMethod))
 	, m_pipelineLayout			(createPipelineLayout(m_vki, m_device, m_descriptorSetLayouts))
-	, m_texelBuffers			(m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset)
+	, m_texelBuffers			(context, m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset)
 	, m_descriptorPool			(createDescriptorPool(m_vki, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface))
 	, m_descriptorsPerSet		()
 	, m_descriptorSets			(createDescriptorSets(m_vki, m_updateMethod, m_device, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_descriptorSetLayouts, *m_descriptorPool, m_texelBuffers, m_updateBuilder, m_updateTemplates, m_updateRegistry, m_descriptorsPerSet, *m_pipelineLayout))
@@ -8500,7 +8538,7 @@ TexelBufferComputeInstance::TexelBufferComputeInstance (Context&					context,
 	, m_allocator			(context.getDefaultAllocator())
 	, m_updateTemplates		()
 	, m_result				(m_vki, m_device, m_allocator)
-	, m_texelBuffers		(m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset)
+	, m_texelBuffers		(context, m_vki, m_device, m_allocator, m_descriptorType, m_descriptorSetCount, m_shaderInterface, m_nonzeroViewOffset)
 	, m_updateRegistry		()
 	, m_updateBuilder		()
 	, m_descriptorsPerSet	()
