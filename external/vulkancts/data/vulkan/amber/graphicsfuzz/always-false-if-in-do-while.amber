@@ -1,0 +1,204 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with an always false if.
+
+# The test passes because the shader always writes color red.
+# Function brick() writes red in the beginning and returns in the end.
+
+# Optimized using spirv-opt with the following arguments:
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--inline-entry-points-exhaustive'
+# '--scalar-replacement=100'
+# '--eliminate-local-single-block'
+# '--eliminate-local-single-block'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--eliminate-dead-code-aggressive'
+# '--eliminate-dead-branches'
+# '--convert-local-access-chains'
+# '--scalar-replacement=100'
+# '--reduce-load-size'
+# '--scalar-replacement=100'
+# '--redundancy-elimination'
+# '--convert-local-access-chains'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--eliminate-dead-branches'
+# '--vector-dce'
+# '--eliminate-local-single-block'
+# '--private-to-local'
+# '--copy-propagate-arrays'
+# '--eliminate-dead-branches'
+# '--redundancy-elimination'
+# '--vector-dce'
+# '--scalar-replacement=100'
+# '--eliminate-local-multi-store'
+# '--scalar-replacement=100'
+# '--redundancy-elimination'
+# '--redundancy-elimination'
+# '--copy-propagate-arrays'
+# spirv-opt commit hash: 6b072126595dd8c2448eb1fda616251c5e6d7079
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     vec2 injectionSwitch;
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# vec2 brick(vec2 uv)
+# {
+#     _GLF_color = vec4(1.0, 0.0, 0.0, 1.0); // Write color red
+#
+#     int a;
+#     do
+#     {
+#         if (injectionSwitch.y < 0.0) // Always false
+#         {
+#             return vec2(1.0);
+#         }
+#         uv.y -= 1.0;
+#     } while (false);
+#
+#     uv.y -= 1.0;
+#     return vec2(1.0);
+# }
+#
+# void main()
+# {
+#     brick(vec2(1.0));
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 53
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %15
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %11 "brick(vf2;"
+               OpName %10 "uv"
+               OpName %15 "_GLF_color"
+               OpName %23 "buf0"
+               OpMemberName %23 0 "injectionSwitch"
+               OpName %25 ""
+               OpName %51 "param"
+               OpDecorate %15 Location 0
+               OpMemberDecorate %23 0 Offset 0
+               OpDecorate %23 Block
+               OpDecorate %25 DescriptorSet 0
+               OpDecorate %25 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+          %9 = OpTypeFunction %7 %8
+         %13 = OpTypeVector %6 4
+         %14 = OpTypePointer Output %13
+         %15 = OpVariable %14 Output
+         %16 = OpConstant %6 1
+         %17 = OpConstant %6 0
+         %18 = OpConstantComposite %13 %16 %17 %17 %16
+         %23 = OpTypeStruct %7
+         %24 = OpTypePointer Uniform %23
+         %25 = OpVariable %24 Uniform
+         %26 = OpTypeInt 32 1
+         %27 = OpConstant %26 0
+         %28 = OpTypeInt 32 0
+         %29 = OpConstant %28 1
+         %30 = OpTypePointer Uniform %6
+         %33 = OpTypeBool
+         %37 = OpConstantComposite %7 %16 %16
+         %39 = OpTypePointer Function %6
+         %44 = OpConstantFalse %33
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %51 = OpVariable %8 Function
+               OpStore %51 %37
+         %52 = OpFunctionCall %7 %11 %51
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %7 None %9
+         %10 = OpFunctionParameter %8
+         %12 = OpLabel
+               OpStore %15 %18
+               OpBranch %19
+         %19 = OpLabel
+               OpLoopMerge %21 %36 None
+               OpBranch %20
+         %20 = OpLabel
+         %31 = OpAccessChain %30 %25 %27 %29
+         %32 = OpLoad %6 %31
+         %34 = OpFOrdLessThan %33 %32 %17
+               OpSelectionMerge %36 None
+               OpBranchConditional %34 %35 %36
+         %35 = OpLabel
+               OpReturnValue %37
+         %36 = OpLabel
+         %40 = OpAccessChain %39 %10 %29
+         %41 = OpLoad %6 %40
+         %42 = OpFSub %6 %41 %16
+               OpStore %40 %42
+               OpBranchConditional %44 %19 %21
+         %21 = OpLabel
+         %46 = OpLoad %6 %40
+         %47 = OpFSub %6 %46 %16
+               OpStore %40 %47
+               OpReturnValue %37
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
