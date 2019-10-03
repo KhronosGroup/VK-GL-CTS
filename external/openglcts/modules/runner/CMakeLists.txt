@@ -3,6 +3,10 @@ set(GLCTS_RUNNER_SRCS
 	glcTestRunner.hpp
 	)
 
+if (DEQP_USE_X11)
+	add_definitions(-DDEQP_SUPPORT_X11=1)
+endif ()
+
 if (DE_OS_IS_ANDROID)
 	include_directories(${PROJECT_SOURCE_DIR}/framework/platform/android)
 
