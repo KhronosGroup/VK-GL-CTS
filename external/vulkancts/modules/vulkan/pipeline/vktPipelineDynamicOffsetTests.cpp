@@ -97,7 +97,7 @@ vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
 	return vertices;
 }
 
-static const tcu::Vec4 testColors[] =
+static const tcu::Vec4			testColors[]	=
 {
 	tcu::Vec4(0.3f, 0.0f, 0.0f, 1.0f),
 	tcu::Vec4(0.0f, 0.3f, 0.0f, 1.0f),
@@ -106,8 +106,24 @@ static const tcu::Vec4 testColors[] =
 	tcu::Vec4(0.0f, 0.3f, 0.3f, 1.0f),
 	tcu::Vec4(0.3f, 0.0f, 0.3f, 1.0f)
 };
+static constexpr VkDeviceSize	kColorSize		= static_cast<VkDeviceSize>(sizeof(testColors[0]));
+static constexpr deUint32		kNumTestColors	= static_cast<deUint32>(DE_LENGTH_OF_ARRAY(testColors));
 
-class DynamicOffsetGraphicsTestInstance : public vkt::TestInstance
+class DynamicOffsetTestInstance : public vkt::TestInstance
+{
+public:
+	DynamicOffsetTestInstance (Context& context, const TestParams& params)
+		: vkt::TestInstance	(context)
+		, m_params			(params)
+		, m_memAlloc		(context.getDeviceInterface(), context.getDevice(), getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+		{}
+
+protected:
+	const TestParams	m_params;
+	SimpleAllocator		m_memAlloc;
+};
+
+class DynamicOffsetGraphicsTestInstance : public DynamicOffsetTestInstance
 {
 public:
 								DynamicOffsetGraphicsTestInstance	(Context& context, const TestParams& params);
@@ -117,7 +133,6 @@ public:
 	tcu::TestStatus				verifyImage							(void);
 
 private:
-	const TestParams			m_params;
 	const tcu::UVec2			m_renderSize;
 	const VkFormat				m_colorFormat;
 	VkImageCreateInfo			m_colorImageCreateInfo;
@@ -143,11 +158,10 @@ private:
 };
 
 DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance	(context)
-	, m_params			(params)
-	, m_renderSize		(32, 32)
-	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_vertices		(createQuads(m_params.numDescriptorSetBindings * m_params.numCmdBuffers, 0.25f))
+	: DynamicOffsetTestInstance	(context, params)
+	, m_renderSize				(32, 32)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_vertices				(createQuads(m_params.numDescriptorSetBindings * m_params.numCmdBuffers, 0.25f))
 {
 }
 
@@ -158,13 +172,11 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	const VkDevice					vkDevice					= m_context.getDevice();
 	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 	const deUint32					numBindings					= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const deUint32					numColors					= DE_LENGTH_OF_ARRAY(testColors);
-	SimpleAllocator					memAlloc					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	deUint32						offset						= 0;
 	deUint32						quadNdx						= 0;
 	const VkPhysicalDeviceLimits	deviceLimits				= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
-	const VkDeviceSize				offsetAlignment				= de::max((VkDeviceSize)16, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
-	const VkDeviceSize				bufferSize					= offsetAlignment * numColors;
+	const VkDeviceSize				colorBlockInputSize			= de::max(kColorSize, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
+	const VkDeviceSize				bufferSize					= colorBlockInputSize * kNumTestColors;
 	const VkDeviceSize				bindingOffset				= bufferSize / numBindings;
 	const VkDescriptorType			nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
@@ -194,7 +206,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		m_colorImage			= createImage(vk, vkDevice, &m_colorImageCreateInfo);
 
 		// Allocate and bind color image memory
-		m_colorImageAlloc		= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
+		m_colorImageAlloc		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
 		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
 	}
 
@@ -353,8 +365,8 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	// Create buffer
 	{
 		vector<deUint8> hostBuffer((size_t)bufferSize, 0);
-		for (deUint32 colorIdx = 0; colorIdx < numColors; colorIdx++)
-			deMemcpy(&hostBuffer[(deUint32)offsetAlignment * colorIdx], &testColors[colorIdx], 16);
+		for (deUint32 colorIdx = 0; colorIdx < kNumTestColors; colorIdx++)
+			deMemcpy(&hostBuffer[(deUint32)colorBlockInputSize * colorIdx], &testColors[colorIdx], kColorSize);
 
 		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
@@ -371,7 +383,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		};
 
 		m_buffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
-		m_bufferAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
+		m_bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
 
 		deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
@@ -407,7 +419,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		{
 			*m_buffer,					// VkBuffer			buffer;
 			bindingOffset * binding,	// VkDeviceSize		offset;
-			16u							// VkDeviceSize		range;
+			kColorSize					// VkDeviceSize		range;
 		};
 
 		const VkWriteDescriptorSet		writeDescriptorSet		=
@@ -507,7 +519,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		};
 
 		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
-		m_vertexBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer), MemoryRequirement::HostVisible);
+		m_vertexBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer), MemoryRequirement::HostVisible);
 
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
 
@@ -538,10 +550,10 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		{
 			vector<deUint32>	offsets;
 			for (deUint32 dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
-				offsets.push_back(offset + (deUint32)offsetAlignment * dynamicBindingIdx);
+				offsets.push_back(offset + (deUint32)colorBlockInputSize * dynamicBindingIdx);
 
 			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), m_params.numDynamicBindings, offsets.data());
-			offset += (deUint32)offsetAlignment;
+			offset += (deUint32)colorBlockInputSize;
 
 			// Draw quad
 			vk.cmdDraw(**m_cmdBuffers[idx], 6, 1, 6 * quadNdx, 0);
@@ -559,25 +571,16 @@ DynamicOffsetGraphicsTestInstance::~DynamicOffsetGraphicsTestInstance (void)
 
 tcu::TestStatus DynamicOffsetGraphicsTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-	const VkQueue			queue		= m_context.getUniversalQueue();
-
 	init();
 
 	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-		submitCommandsAndWait(vk, vkDevice, queue, **m_cmdBuffers[cmdBufferIdx]);
+		submitCommandsAndWait(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), **m_cmdBuffers[cmdBufferIdx]);
 
 	return verifyImage();
 }
 
 tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				memAlloc			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const tcu::TextureFormat	tcuColorFormat		= mapVkFormat(m_colorFormat);
 	const tcu::TextureFormat	tcuDepthFormat		= tcu::TextureFormat();
 	const ColorVertexShader		vertexShader;
@@ -589,8 +592,7 @@ tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
 	// Render reference image
 	{
 		const deUint32	numBindings		= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-		const deUint32	numTestColors	= DE_LENGTH_OF_ARRAY(testColors);
-		const deUint32	bindingOffset	= numTestColors / numBindings;
+		const deUint32	bindingOffset	= kNumTestColors / numBindings;
 
 		for (deUint32 quadIdx = 0; quadIdx < m_vertices.size() / 6; quadIdx++)
 			for (deUint32 vertexIdx = 0; vertexIdx < 6; vertexIdx++)
@@ -612,7 +614,9 @@ tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
 
 	// Compare result with reference image
 	{
-		de::MovePtr<tcu::TextureLevel> result = readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_colorImage, m_colorFormat, m_renderSize);
+		de::MovePtr<tcu::TextureLevel> result = readColorAttachment(
+			m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
+			m_context.getUniversalQueueFamilyIndex(), m_memAlloc, *m_colorImage, m_colorFormat, m_renderSize);
 
 		compareOk = tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
 															  "IntImageCompare",
@@ -710,7 +714,7 @@ void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollectio
 	sourceCollections.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
 }
 
-class DynamicOffsetComputeTestInstance : public vkt::TestInstance
+class DynamicOffsetComputeTestInstance : public DynamicOffsetTestInstance
 {
 public:
 								DynamicOffsetComputeTestInstance	(Context& context, const TestParams& params);
@@ -720,50 +724,51 @@ public:
 	tcu::TestStatus				verifyOutput						(void);
 
 private:
-	const TestParams			m_params;
-	Move<VkShaderModule>		m_computeShaderModule;
-	Move<VkBuffer>				m_buffer;
-	de::MovePtr<Allocation>		m_bufferAlloc;
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
-	Move<VkDescriptorPool>		m_descriptorPool;
-	Move<VkDescriptorSet>		m_descriptorSet;
-	Move<VkPipelineLayout>		m_pipelineLayout;
-	Move<VkPipeline>			m_computePipeline;
-	Move<VkBuffer>				m_outputBuffer;
-	de::MovePtr<Allocation>		m_outputBufferAlloc;
-	Move<VkCommandPool>			m_cmdPool;
-	vector<VkCommandBufferSp>	m_cmdBuffers;
+	const deUint32					m_numBindings;
+	const deUint32					m_numOutputColors;
+	const VkPhysicalDeviceLimits	m_deviceLimits;
+	Move<VkShaderModule>			m_computeShaderModule;
+	Move<VkBuffer>					m_buffer;
+	de::MovePtr<Allocation>			m_bufferAlloc;
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
+	Move<VkDescriptorPool>			m_descriptorPool;
+	Move<VkDescriptorSet>			m_descriptorSet;
+	Move<VkPipelineLayout>			m_pipelineLayout;
+	Move<VkPipeline>				m_computePipeline;
+	Move<VkBuffer>					m_outputBuffer;
+	de::MovePtr<Allocation>			m_outputBufferAlloc;
+	Move<VkCommandPool>				m_cmdPool;
+	vector<VkCommandBufferSp>		m_cmdBuffers;
 };
 
 DynamicOffsetComputeTestInstance::DynamicOffsetComputeTestInstance (Context& context, const TestParams& params)
-	: vkt::TestInstance		(context)
-	, m_params				(params)
+	: DynamicOffsetTestInstance	(context, params)
+	, m_numBindings				(params.numDynamicBindings + params.numNonDynamicBindings)
+	, m_numOutputColors			(params.numCmdBuffers * params.numDescriptorSetBindings)
+	, m_deviceLimits			(getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits)
 {
 }
 
 void DynamicOffsetComputeTestInstance::init (void)
 {
-	const DeviceInterface&			vk							= m_context.getDeviceInterface();
-	const VkDevice					vkDevice					= m_context.getDevice();
-	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
-	const deUint32					numBindings					= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const deUint32					numColors					= DE_LENGTH_OF_ARRAY(testColors);
-	SimpleAllocator					memAlloc					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-	deUint32						offset						= 0;
-	const VkPhysicalDeviceLimits	deviceLimits				= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
-	const VkDeviceSize				offsetAlignment				= de::max((VkDeviceSize)16, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
-	const VkDeviceSize				bufferSize					= offsetAlignment * numColors;
-	const VkDeviceSize				bindingOffset				= bufferSize / numBindings;
-	const VkDescriptorType			nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	const deUint32					numOutputColors				= m_params.numCmdBuffers * m_params.numDescriptorSetBindings;
-	const VkDeviceSize				outputBufferSize			= offsetAlignment * numOutputColors;
+	const DeviceInterface&		vk							= m_context.getDeviceInterface();
+	const VkDevice				vkDevice					= m_context.getDevice();
+	const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkDeviceSize			colorBlockInputSize			= de::max(kColorSize, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? m_deviceLimits.minUniformBufferOffsetAlignment : m_deviceLimits.minStorageBufferOffsetAlignment);
+	const deUint32				colorBlockInputSizeU32		= static_cast<deUint32>(colorBlockInputSize);
+	const VkDeviceSize			colorBlockOutputSize		= de::max(kColorSize, m_deviceLimits.minStorageBufferOffsetAlignment);
+	const deUint32				colorBlockOutputSizeU32		= static_cast<deUint32>(colorBlockOutputSize);
+	const VkDeviceSize			bufferSize					= colorBlockInputSize * kNumTestColors;
+	const VkDeviceSize			bindingOffset				= bufferSize / m_numBindings;
+	const VkDescriptorType		nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const VkDeviceSize			outputBufferSize			= colorBlockOutputSize * m_numOutputColors;
 
 	// Create pipeline layout
 	{
 		// Create descriptor set layout
 		vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings;
 
-		for (deUint32 binding = 0; binding < numBindings; binding++)
+		for (deUint32 binding = 0; binding < m_numBindings; binding++)
 		{
 			const VkDescriptorType					descriptorType				= binding >= m_params.numDynamicBindings ? nonDynamicDescriptorType : m_params.descriptorType;
 			const VkDescriptorSetLayoutBinding		descriptorSetLayoutBinding	=
@@ -780,7 +785,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 
 		const VkDescriptorSetLayoutBinding		descriptorSetLayoutBindingOutput	=
 		{
-			numBindings,								// uint32_t				binding;
+			m_numBindings,								// uint32_t				binding;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	// VkDescriptorType		descriptorType;
 			1u,											// uint32_t				descriptorCount;
 			VK_SHADER_STAGE_COMPUTE_BIT,				// VkShaderStageFlags	stageFlags;
@@ -794,7 +799,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
 			DE_NULL,												// const void*							pNext;
 			0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-			numBindings + 1,										// uint32_t								bindingCount;
+			m_numBindings + 1,										// uint32_t								bindingCount;
 			descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
 		};
 
@@ -818,8 +823,8 @@ void DynamicOffsetComputeTestInstance::init (void)
 	// Create buffer
 	{
 		vector<deUint8> hostBuffer((deUint32)bufferSize, 0);
-		for (deUint32 colorIdx = 0; colorIdx < numColors; colorIdx++)
-			deMemcpy(&hostBuffer[(deUint32)offsetAlignment * colorIdx], &testColors[colorIdx], 16);
+		for (deUint32 colorIdx = 0; colorIdx < kNumTestColors; colorIdx++)
+			deMemcpy(&hostBuffer[colorBlockInputSizeU32 * colorIdx], &testColors[colorIdx], kColorSize);
 
 		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
@@ -836,7 +841,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 		};
 
 		m_buffer = createBuffer(vk, vkDevice, &bufferCreateInfo);
-		m_bufferAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
+		m_bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_buffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
 
 		deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
@@ -858,7 +863,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 		};
 
 		m_outputBuffer		= createBuffer(vk, vkDevice, &bufferCreateInfo);
-		m_outputBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outputBuffer), MemoryRequirement::HostVisible);
+		m_outputBufferAlloc	= m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outputBuffer), MemoryRequirement::HostVisible);
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_outputBuffer, m_outputBufferAlloc->getMemory(), m_outputBufferAlloc->getOffset()));
 	}
 
@@ -885,14 +890,14 @@ void DynamicOffsetComputeTestInstance::init (void)
 	}
 
 	// Update input buffer descriptors
-	for (deUint32 binding = 0; binding < numBindings; ++binding)
+	for (deUint32 binding = 0; binding < m_numBindings; ++binding)
 	{
 		const VkDescriptorType			descriptorType			= binding >= m_params.numDynamicBindings ? nonDynamicDescriptorType : m_params.descriptorType;
 		const VkDescriptorBufferInfo	descriptorBufferInfo	=
 		{
 			*m_buffer,					// VkBuffer			buffer;
 			bindingOffset * binding,	// VkDeviceSize		offset;
-			16u							// VkDeviceSize		range;
+			kColorSize					// VkDeviceSize		range;
 		};
 
 		const VkWriteDescriptorSet		writeDescriptorSet		=
@@ -918,7 +923,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 		{
 			*m_outputBuffer,	// VkBuffer			buffer;
 			0u,					// VkDeviceSize		offset;
-			16u					// VkDeviceSize		range;
+			kColorSize			// VkDeviceSize		range;
 		};
 
 		const VkWriteDescriptorSet		writeDescriptorSet		=
@@ -926,7 +931,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
 			DE_NULL,									// const void*						pNext;
 			*m_descriptorSet,							// VkDescriptorSet					dstSet;
-			numBindings,								// uint32_t							dstBinding;
+			m_numBindings,								// uint32_t							dstBinding;
 			0u,											// uint32_t							dstArrayElement;
 			1u,											// uint32_t							descriptorCount;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	// VkDescriptorType					descriptorType;
@@ -977,6 +982,9 @@ void DynamicOffsetComputeTestInstance::init (void)
 	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
 		m_cmdBuffers.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY))));
 
+	deUint32 inputOffset	= 0u;
+	deUint32 outputOffset	= 0u;
+
 	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
 	{
 		const deUint32 idx = m_params.reverseOrder ? m_params.numCmdBuffers - cmdBufferIdx - 1 : cmdBufferIdx;
@@ -987,14 +995,17 @@ void DynamicOffsetComputeTestInstance::init (void)
 		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
 		{
 			vector<deUint32> offsets;
+
+			// Offsets for input buffers
 			for (deUint32 dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
-				offsets.push_back(offset + (deUint32)offsetAlignment * dynamicBindingIdx);
+				offsets.push_back(inputOffset + colorBlockInputSizeU32 * dynamicBindingIdx);
+			inputOffset += colorBlockInputSizeU32;
 
 			// Offset for output buffer
-			offsets.push_back(offset);
+			offsets.push_back(outputOffset);
+			outputOffset += colorBlockOutputSizeU32;
 
 			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), (deUint32)offsets.size(), offsets.data());
-			offset += (deUint32)offsetAlignment;
 
 			// Dispatch
 			vk.cmdDispatch(**m_cmdBuffers[idx], 1, 1, 1);
@@ -1010,32 +1021,22 @@ DynamicOffsetComputeTestInstance::~DynamicOffsetComputeTestInstance (void)
 
 tcu::TestStatus DynamicOffsetComputeTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk			= m_context.getDeviceInterface();
-	const VkDevice			vkDevice	= m_context.getDevice();
-	const VkQueue			queue		= m_context.getUniversalQueue();
-
 	init();
 
 	for (deUint32 cmdBufferIdx = 0; cmdBufferIdx < m_params.numCmdBuffers; cmdBufferIdx++)
-		submitCommandsAndWait(vk, vkDevice, queue, **m_cmdBuffers[cmdBufferIdx]);
+		submitCommandsAndWait(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), **m_cmdBuffers[cmdBufferIdx]);
 
 	return verifyOutput();
 }
 
 tcu::TestStatus DynamicOffsetComputeTestInstance::verifyOutput (void)
 {
-	const DeviceInterface&			vk					= m_context.getDeviceInterface();
-	const VkDevice					vkDevice			= m_context.getDevice();
-	const deUint32					numBindings			= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const deUint32					numTestColors		= DE_LENGTH_OF_ARRAY(testColors);
-	const deUint32					bindingOffset		= numTestColors / numBindings;
-	const deUint32					numOutputColors		= m_params.numCmdBuffers * m_params.numDescriptorSetBindings;
-	const VkPhysicalDeviceLimits	deviceLimits		= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
-	const VkDeviceSize				offsetAlignment		= de::max((VkDeviceSize)16, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
-	vector<tcu::Vec4>				refColors			(numOutputColors);
-	vector<tcu::Vec4>				outColors			(numOutputColors);
+	const deUint32		bindingOffset			= kNumTestColors / m_numBindings;
+	const deUint32		colorBlockOutputSize	= static_cast<deUint32>(de::max(kColorSize, m_deviceLimits.minStorageBufferOffsetAlignment));
+	vector<tcu::Vec4>	refColors				(m_numOutputColors);
+	vector<tcu::Vec4>	outColors				(m_numOutputColors);
 
-	for (deUint32 i = 0; i < numOutputColors; i++)
+	for (deUint32 i = 0; i < m_numOutputColors; i++)
 	{
 		tcu::Vec4 refColor(0.0f);
 
@@ -1048,14 +1049,14 @@ tcu::TestStatus DynamicOffsetComputeTestInstance::verifyOutput (void)
 		refColors[i] = refColor;
 	}
 
-	invalidateAlloc(vk, vkDevice, *m_outputBufferAlloc);
+	invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), *m_outputBufferAlloc);
 
 	// Grab the output results using offset alignment
-	for (deUint32 i = 0; i < numOutputColors; i++)
-		outColors[i] = *(tcu::Vec4*)((deUint8*)m_outputBufferAlloc->getHostPtr() + offsetAlignment * i);
+	for (deUint32 i = 0; i < m_numOutputColors; i++)
+		outColors[i] = *(tcu::Vec4*)((deUint8*)m_outputBufferAlloc->getHostPtr() + colorBlockOutputSize * i);
 
 	// Verify results
-	for (deUint32 i = 0; i < numOutputColors; i++)
+	for (deUint32 i = 0; i < m_numOutputColors; i++)
 		if (outColors[i] != refColors[i])
 			return tcu::TestStatus::fail("Output mismatch");
 
