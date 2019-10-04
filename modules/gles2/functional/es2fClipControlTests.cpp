@@ -848,10 +848,10 @@ public:
 		for (size_t orig = 0; orig < DE_LENGTH_OF_ARRAY(origins); orig++)
 		{
 			//Set viewport to A = (x, y, w, h) = (1/8, 1/4, 1/2, 1/4) in terms of proportional window size
-			gl.viewport(static_cast<glw::GLint>(0.125f * static_cast<float>(windowW)),
-						static_cast<glw::GLint>(0.25f * static_cast<float>(windowH)),
-						static_cast<glw::GLsizei>(0.5f * static_cast<float>(windowW)),
-						static_cast<glw::GLsizei>(0.25f * static_cast<float>(windowH)));
+			gl.viewport(static_cast<glw::GLint>((0.125f * static_cast<float>(windowW))+0.5f),
+						static_cast<glw::GLint>((0.25f * static_cast<float>(windowH))+0.5f),
+						static_cast<glw::GLsizei>((0.5f * static_cast<float>(windowW))+0.5f),
+						static_cast<glw::GLsizei>((0.25f * static_cast<float>(windowH))+0.5f));
 
 			//Set ClipControl(<origin>, NEGATIVE_ONE_TO_ONE)
 			cc.clipControl(origins[orig], GL_NEGATIVE_ONE_TO_ONE);
