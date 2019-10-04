@@ -50,6 +50,17 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface&				vk,
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 
+Move<VkPipeline> createRayTracingPipelineNV (const DeviceInterface&				vk,
+										VkDevice							device,
+										VkPipelineCache						pipelineCache,
+										const VkRayTracingPipelineCreateInfoNV*	pCreateInfo,
+										const VkAllocationCallbacks*		pAllocator)
+{
+	VkPipeline object = 0;
+	VK_CHECK(vk.createRayTracingPipelinesNV(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
+	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
+}
+
 Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo)
 {
 	VkCommandBuffer object = 0;

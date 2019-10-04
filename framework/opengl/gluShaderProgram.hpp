@@ -307,6 +307,36 @@ struct TessellationEvaluationSource : public ShaderSource
 	TessellationEvaluationSource (const std::string& source_) : ShaderSource(glu::SHADERTYPE_TESSELLATION_EVALUATION, source_) {}
 };
 
+struct RaygenSource : public ShaderSource
+{
+	RaygenSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_RAYGEN, source_) {}
+};
+
+struct AnyHitSource : public ShaderSource
+{
+	AnyHitSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_ANY_HIT, source_) {}
+};
+
+struct ClosestHitSource : public ShaderSource
+{
+	ClosestHitSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_CLOSEST_HIT, source_) {}
+};
+
+struct MissSource : public ShaderSource
+{
+	MissSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_MISS, source_) {}
+};
+
+struct IntersectionSource : public ShaderSource
+{
+	IntersectionSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_INTERSECTION, source_) {}
+};
+
+struct CallableSource : public ShaderSource
+{
+	CallableSource(const std::string& source_) : ShaderSource(glu::SHADERTYPE_CALLABLE, source_) {}
+};
+
 struct ProgramSources
 {
 	std::vector<std::string>			sources[SHADERTYPE_LAST];

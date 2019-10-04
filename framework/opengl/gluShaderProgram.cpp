@@ -543,7 +543,13 @@ deUint32 getGLShaderType (ShaderType shaderType)
 		GL_GEOMETRY_SHADER,
 		GL_TESS_CONTROL_SHADER,
 		GL_TESS_EVALUATION_SHADER,
-		GL_COMPUTE_SHADER
+		GL_COMPUTE_SHADER,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_typeMap) == SHADERTYPE_LAST);
 	DE_ASSERT(de::inBounds<int>(shaderType, 0, DE_LENGTH_OF_ARRAY(s_typeMap)));
@@ -559,7 +565,13 @@ deUint32 getGLShaderTypeBit (ShaderType shaderType)
 		GL_GEOMETRY_SHADER_BIT,
 		GL_TESS_CONTROL_SHADER_BIT,
 		GL_TESS_EVALUATION_SHADER_BIT,
-		GL_COMPUTE_SHADER_BIT
+		GL_COMPUTE_SHADER_BIT,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_typebitMap) == SHADERTYPE_LAST);
 	DE_ASSERT(de::inBounds<int>(shaderType, 0, DE_LENGTH_OF_ARRAY(s_typebitMap)));
@@ -575,7 +587,13 @@ qpShaderType getLogShaderType (ShaderType shaderType)
 		QP_SHADER_TYPE_GEOMETRY,
 		QP_SHADER_TYPE_TESS_CONTROL,
 		QP_SHADER_TYPE_TESS_EVALUATION,
-		QP_SHADER_TYPE_COMPUTE
+		QP_SHADER_TYPE_COMPUTE,
+		QP_SHADER_TYPE_LAST,
+		QP_SHADER_TYPE_LAST,
+		QP_SHADER_TYPE_LAST,
+		QP_SHADER_TYPE_LAST,
+		QP_SHADER_TYPE_LAST,
+		QP_SHADER_TYPE_LAST
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_typeMap) == SHADERTYPE_LAST);
 	DE_ASSERT(de::inBounds<int>(shaderType, 0, DE_LENGTH_OF_ARRAY(s_typeMap)));
@@ -621,6 +639,12 @@ static void logShaderProgram (tcu::TestLog& log, const ProgramInfo& programInfo,
 			{ "TessControlCompileTime",		"Tesselation control shader compile time"		},
 			{ "TessEvaluationCompileTime",	"Tesselation evaluation shader compile time"	},
 			{ "ComputeCompileTime",			"Compute shader compile time"					},
+			{ "ERROR Unused for GL",		"ERROR Unused for GL"							},
+			{ "ERROR Unused for GL",		"ERROR Unused for GL"							},
+			{ "ERROR Unused for GL",		"ERROR Unused for GL"							},
+			{ "ERROR Unused for GL",		"ERROR Unused for GL"							},
+			{ "ERROR Unused for GL",		"ERROR Unused for GL"							},
+			{ "ERROR Unused for GL",		"ERROR Unused for GL"							},
 		};
 		DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_compileTimeDesc) == SHADERTYPE_LAST);
 

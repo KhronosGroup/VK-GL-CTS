@@ -10706,7 +10706,6 @@ tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 	outputColors[2] = RGBA(127, 255, 127, 255);
 	outputColors[3] = RGBA(127, 127, 255, 255);
 
-	extensions.push_back("VK_KHR_16bit_storage");
 	extensions.push_back("VK_KHR_shader_float16_int8");
 	features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
@@ -10714,7 +10713,6 @@ tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 	{
 		map<string, string> fragments;
 
-		fragments["extension"]	= "OpExtension \"SPV_KHR_16bit_storage\"";
 		fragments["capability"]	= "OpCapability Float16\n";
 		fragments["pre_main"]	= tests[testNdx].constants;
 		fragments["testfun"]	= string(functionStart) + tests[testNdx].code + functionEnd;

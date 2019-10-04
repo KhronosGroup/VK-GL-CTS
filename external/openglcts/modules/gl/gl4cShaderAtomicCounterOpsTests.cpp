@@ -173,7 +173,7 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 					 "layout (binding=1) uniform atomic_uint calls;\n";
 	}
 
-	for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
+	for (unsigned int i = 0; i <= glu::SHADERTYPE_COMPUTE; ++i)
 	{
 		prepareShader(m_shaders[i], "<version>", versionString);
 		prepareShader(m_shaders[i], "<head>", i == testedShader ? headString : "");

@@ -793,6 +793,9 @@ void populateQueryGroup (tcu::TestCaseGroup* group, QueryType query)
 		if (query == QUERY_TYPE_IMAGE_LOD && shaderType != glu::SHADERTYPE_FRAGMENT)
 			continue;
 
+		if (!executorSupported(shaderType))
+			continue;
+
 		addTestGroup(group, glu::getShaderTypeName(shaderType), "", populateQueryInShaderGroup, QueryGroupParams(query, shaderType));
 	}
 }

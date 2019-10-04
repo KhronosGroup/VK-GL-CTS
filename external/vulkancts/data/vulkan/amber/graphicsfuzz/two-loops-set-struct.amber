@@ -1,0 +1,206 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with two loops that write to a struct
+
+# The test passes because the shader always writes the color red.
+
+# Optimized using spirv-opt with the following arguments:
+# '--private-to-local'
+# '--private-to-local'
+# '--eliminate-dead-inserts'
+# '--if-conversion'
+# '--eliminate-dead-code-aggressive'
+# '--eliminate-dead-code-aggressive'
+# '--vector-dce'
+# '--convert-local-access-chains'
+# '--convert-local-access-chains'
+# '--eliminate-local-single-block'
+# '--eliminate-dead-code-aggressive'
+# '--redundancy-elimination'
+# '--eliminate-local-multi-store'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--eliminate-dead-code-aggressive'
+# '--eliminate-dead-branches'
+# '--eliminate-dead-inserts'
+# '--simplify-instructions'
+# '--eliminate-local-multi-store'
+# '--private-to-local'
+# '--combine-access-chains'
+# '--eliminate-local-single-store'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# spirv-opt commit hash: 06407250a169c6a03b3765e86619075af1a8c187
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# struct StructType
+# {
+#     vec3 col;
+#     bvec4 bbbb;
+# };
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     vec2 injectionSwitch;
+# };
+# void main()
+# {
+#     StructType s;
+#
+#     for (
+#         int i = 0;
+#         i < int(injectionSwitch.y); // i < 1
+#         i++)
+#     {
+#         s.col = vec3(1.0, 0.0, 0.0);
+#     }
+#
+#     for (
+#         int i = 0;
+#         i < int(injectionSwitch.y); // i < 1
+#         i++)
+#     {
+#         s.col = vec3(1.0, 0.0, 0.0);;
+#     }
+#     _GLF_color = vec4(s.col, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 75
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %58
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %18 "buf0"
+               OpMemberName %18 0 "injectionSwitch"
+               OpName %20 ""
+               OpName %31 "StructType"
+               OpMemberName %31 0 "col"
+               OpMemberName %31 1 "bbbb"
+               OpName %58 "_GLF_color"
+               OpMemberDecorate %18 0 Offset 0
+               OpDecorate %18 Block
+               OpDecorate %20 DescriptorSet 0
+               OpDecorate %20 Binding 0
+               OpDecorate %41 RelaxedPrecision
+               OpDecorate %55 RelaxedPrecision
+               OpDecorate %58 Location 0
+               OpDecorate %70 RelaxedPrecision
+               OpDecorate %71 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %9 = OpConstant %6 0
+         %16 = OpTypeFloat 32
+         %17 = OpTypeVector %16 2
+         %18 = OpTypeStruct %17
+         %19 = OpTypePointer Uniform %18
+         %20 = OpVariable %19 Uniform
+         %21 = OpTypeInt 32 0
+         %22 = OpConstant %21 1
+         %23 = OpTypePointer Uniform %16
+         %27 = OpTypeBool
+         %29 = OpTypeVector %16 3
+         %30 = OpTypeVector %27 4
+         %31 = OpTypeStruct %29 %30
+         %34 = OpConstant %16 1
+         %35 = OpConstant %16 0
+         %36 = OpConstantComposite %29 %34 %35 %35
+         %40 = OpConstant %6 1
+         %56 = OpTypeVector %16 4
+         %57 = OpTypePointer Output %56
+         %58 = OpVariable %57 Output
+         %74 = OpUndef %31
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+         %73 = OpPhi %31 %74 %5 %66 %11
+         %70 = OpPhi %6 %9 %5 %41 %11
+         %24 = OpAccessChain %23 %20 %9 %22
+         %25 = OpLoad %16 %24
+         %26 = OpConvertFToS %6 %25
+         %28 = OpSLessThan %27 %70 %26
+               OpLoopMerge %12 %11 None
+               OpBranchConditional %28 %11 %12
+         %11 = OpLabel
+         %66 = OpCompositeInsert %31 %36 %73 0
+         %41 = OpIAdd %6 %70 %40
+               OpBranch %10
+         %12 = OpLabel
+               OpBranch %43
+         %43 = OpLabel
+         %72 = OpPhi %31 %73 %12 %68 %44
+         %71 = OpPhi %6 %9 %12 %55 %44
+         %52 = OpSLessThan %27 %71 %26
+               OpLoopMerge %45 %44 None
+               OpBranchConditional %52 %44 %45
+         %44 = OpLabel
+         %68 = OpCompositeInsert %31 %36 %72 0
+         %55 = OpIAdd %6 %71 %40
+               OpBranch %43
+         %45 = OpLabel
+         %60 = OpCompositeExtract %29 %72 0
+         %61 = OpCompositeExtract %16 %60 0
+         %62 = OpCompositeExtract %16 %60 1
+         %63 = OpCompositeExtract %16 %60 2
+         %64 = OpCompositeConstruct %56 %61 %62 %63 %34
+               OpStore %58 %64
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
