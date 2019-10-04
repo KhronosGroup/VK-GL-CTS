@@ -207,7 +207,8 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ?	"#extension GL_ARB_shader_ballot: enable\n"
 																			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 																			"#extension GL_ARB_gpu_shader_int64: enable\n"
-																		:	"#extension GL_KHR_shader_subgroup_ballot: enable\n");
+																		:	"#extension GL_KHR_shader_subgroup_ballot: enable\n")
+									+ subgroups::getAdditionalExtensionForFormat(caseDef.format);
 
 	subgroups::setFragmentShaderFrameBuffer(programCollection);
 
@@ -222,7 +223,6 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 		std::ostringstream				vertex;
 		vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform  Buffer1\n"
@@ -247,7 +247,6 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -276,7 +275,6 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer2\n"
@@ -306,7 +304,6 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 		std::ostringstream evaluationSource;
 		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -343,7 +340,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	const string extensionHeader =  (caseDef.extShaderSubGroupBallotTests ?	"#extension GL_ARB_shader_ballot: enable\n"
 																			"#extension GL_KHR_shader_subgroup_basic: enable\n"
 																			"#extension GL_ARB_gpu_shader_int64: enable\n"
-																		:	"#extension GL_KHR_shader_subgroup_ballot: enable\n");
+																		:	"#extension GL_KHR_shader_subgroup_ballot: enable\n")
+									+ subgroups::getAdditionalExtensionForFormat(caseDef.format);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
@@ -351,7 +349,6 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		src << "#version 450\n"
 			<< extensionHeader.c_str()
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
 			"local_size_z_id = 2) in;\n"
 			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
@@ -380,8 +377,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		const string vertex =
 			"#version 450\n"
-			+ extensionHeader
-			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
+			+ extensionHeader +
 			"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 			"{\n"
 			"  uint result[];\n"
@@ -404,8 +400,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		const string tesc =
 			"#version 450\n"
-			+ extensionHeader
-			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
+			+ extensionHeader +
 			"layout(vertices=1) out;\n"
 			"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
 			"{\n"
@@ -431,8 +426,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		const string tese =
 			"#version 450\n"
-			+ extensionHeader
-			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
+			+ extensionHeader +
 			"layout(isolines) in;\n"
 			"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
 			"{\n"
@@ -454,8 +448,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		const string geometry =
 			"#version 450\n"
-			+ extensionHeader
-			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
+			+ extensionHeader +
 			"layout(${TOPOLOGY}) in;\n"
 			"layout(points, max_vertices = 1) out;\n"
 			"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
@@ -479,8 +472,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		const string fragment =
 			"#version 450\n"
-			+ extensionHeader
-			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
+			+ extensionHeader +
 			"layout(location = 0) out uint result;\n"
 			"layout(set = 0, binding = 4, std430) readonly buffer Buffer1\n"
 			"{\n"

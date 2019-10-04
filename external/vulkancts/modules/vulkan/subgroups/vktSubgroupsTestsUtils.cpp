@@ -1754,6 +1754,16 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 			case VK_FORMAT_R8G8_USCALED:
 			case VK_FORMAT_R8G8B8_USCALED:
 			case VK_FORMAT_R8G8B8A8_USCALED:
+			{
+				deUint32* ptr = reinterpret_cast<deUint32*>(alloc.getHostPtr());
+
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deUint32)); k++)
+				{
+					deUint32 r = rnd.getUint32();
+					ptr[k] = (r & 1) ? r : 0;
+				}
+			}
+			break;
 			case VK_FORMAT_R32_SINT:
 			case VK_FORMAT_R32G32_SINT:
 			case VK_FORMAT_R32G32B32_SINT:

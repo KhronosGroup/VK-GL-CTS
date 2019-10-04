@@ -601,6 +601,8 @@ BaseLineCase::IterateResult BaseLineCase::iterate (void)
 
 			scene.lines.swap(lines);
 			scene.lineWidth = lineWidth;
+			scene.stippleFactor = 1;
+			scene.stipplePattern = 0xFFFF;
 
 			compareOk = verifyLineGroupRasterization(resultImage, scene, args, m_testCtx.getLog());
 
@@ -2017,6 +2019,9 @@ LineInterpolationTest::IterateResult LineInterpolationTest::iterate (void)
 
 			scene.lines.swap(lines);
 			scene.lineWidth = getLineWidth();
+			scene.stippleFactor = 1;
+			scene.stipplePattern = 0xFFFF;
+
 
 			iterationResult = verifyLineGroupInterpolation(resultImage, scene, args, m_testCtx.getLog());
 			switch (iterationResult)
