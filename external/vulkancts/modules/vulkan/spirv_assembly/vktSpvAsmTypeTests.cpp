@@ -36,6 +36,8 @@
 #include "deStringUtil.hpp"
 
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
+#include "vktSpvAsmComputeShaderCase.hpp"
+#include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "spirv/unified1/spirv.h"
 #include "spirv/unified1/GLSL.std.450.h"
@@ -77,6 +79,43 @@ using std::map;
 using std::string;
 using std::vector;
 using tcu::StringTemplate;
+
+void createComputeTest(ComputeShaderSpec& computeResources, const tcu::StringTemplate& shaderTemplate, const map<string, string>& fragments, tcu::TestCaseGroup& group, const std::string& namePrefix)
+{
+	const string testName = namePrefix + "_comp";
+
+	computeResources.assembly		= shaderTemplate.specialize(fragments);
+	computeResources.numWorkGroups	= tcu::IVec3(1, 1, 1);
+
+	group.addChild(new SpvAsmComputeShaderCase(group.getTestContext(), testName.c_str(), testName.c_str(), computeResources));
+}
+
+// The compute shader switch tests output a single 32-bit integer.
+bool verifyComputeSwitchResult (const vector<Resource>&		,
+								const vector<AllocationSp>&	outputAllocations,
+								const vector<Resource>&		expectedOutputs,
+								tcu::TestLog&				log)
+{
+	DE_ASSERT(outputAllocations.size()	== 1);
+	DE_ASSERT(expectedOutputs.size()	== 1);
+
+	vector<deUint8> expectedBytes;
+	expectedOutputs[0].getBytes(expectedBytes);
+	DE_ASSERT(expectedBytes.size() == sizeof(deInt32));
+
+	const deInt32* obtained = reinterpret_cast<const deInt32*>(outputAllocations[0]->getHostPtr());
+	const deInt32* expected = reinterpret_cast<const deInt32*>(expectedBytes.data());
+
+	if (*obtained != *expected)
+	{
+		log << tcu::TestLog::Message
+			<< "Error: found unexpected result for compute switch: expected " << *expected << ", obtained " << *obtained
+			<< tcu::TestLog::EndMessage;
+		return false;
+	}
+
+	return true;
+}
 
 enum InputRange
 {
@@ -740,7 +779,7 @@ public:
 												 deUint32					spirvOperation);
 	virtual void	getDataset					(vector<T>& input,			deUint32 numElements) = 0;
 	virtual void	pushResource				(vector<Resource>&			resource,
-												 vector<T>&					data) = 0;
+												 const vector<T>&			data) = 0;
 
 	static bool		filterNone					(T a);
 	static bool		filterNone					(T a, T b);
@@ -771,29 +810,35 @@ private:
 	std::string	createInputTestfun				(deUint32						numInput,
 												 deUint32						spirvOpertaion);
 	deUint32	combine							(GraphicsResources&				resources,
+												 ComputeShaderSpec&				computeResources,
 												 vector<T>&						data,
 												 OpUnaryFuncType				operation,
 												 UnaryFilterFuncType			filter,
 												 InputRange						inputRange);
 	deUint32	combine							(GraphicsResources&				resources,
+												 ComputeShaderSpec&				computeResources,
 												 vector<T>&						data,
 												 OpBinaryFuncType				operation,
 												 BinaryFilterFuncType			filter,
 												 InputRange						inputRange);
 	deUint32	combine							(GraphicsResources&				resources,
+												 ComputeShaderSpec&				computeResources,
 												 vector<T>&						data,
 												 OpTernaryFuncType				operation,
 												 TernaryFilterFuncType			filter,
 												 InputRange						inputRange);
 	deUint32	combine							(GraphicsResources&				resources,
+												 ComputeShaderSpec&				computeResources,
 												 vector<T>&						data,
 												 OpQuaternaryFuncType			operation,
 												 QuaternaryFilterFuncType		filter,
 												 InputRange						inputRange);
 	deUint32	fillResources					(GraphicsResources&				resources,
-												 vector<T>&						data);
+												 ComputeShaderSpec&				computeResources,
+												 const vector<T>&				data);
 	void		createStageTests				(const char*					testName,
 												 GraphicsResources&				resources,
+												 ComputeShaderSpec&				computeResources,
 												 deUint32						numElements,
 												 vector<string>&				decorations,
 												 vector<string>&				pre_mains,
@@ -918,6 +963,7 @@ std::string SpvAsmTypeTests<T>::createInputTestfun (deUint32 numInput, deUint32 
 
 template <class T>
 deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&	resources,
+									  ComputeShaderSpec&	computeResources,
 									  vector<T>&			data,
 									  OpUnaryFuncType		operation,
 									  UnaryFilterFuncType	filter,
@@ -971,11 +1017,15 @@ deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&	resources,
 	pushResource(resources.inputs, inputs);
 	pushResource(resources.outputs, outputs);
 
+	pushResource(computeResources.inputs, inputs);
+	pushResource(computeResources.outputs, outputs);
+
 	return outputsSize / sizeWithPadding;
 }
 
 template <class T>
 deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&	resources,
+									  ComputeShaderSpec&	computeResources,
 									  vector<T>&			data,
 									  OpBinaryFuncType		operation,
 									  BinaryFilterFuncType	filter,
@@ -1055,11 +1105,16 @@ deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&	resources,
 	pushResource(resources.inputs, inputs1);
 	pushResource(resources.outputs, outputs);
 
+	pushResource(computeResources.inputs, inputs0);
+	pushResource(computeResources.inputs, inputs1);
+	pushResource(computeResources.outputs, outputs);
+
 	return outputsSize / sizeWithPadding;
 }
 
 template <class T>
 deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&	resources,
+									  ComputeShaderSpec&	computeResources,
 									  vector<T>&			data,
 									  OpTernaryFuncType		operation,
 									  TernaryFilterFuncType	filter,
@@ -1158,11 +1213,17 @@ deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&	resources,
 	pushResource(resources.inputs, inputs2);
 	pushResource(resources.outputs, outputs);
 
+	pushResource(computeResources.inputs, inputs0);
+	pushResource(computeResources.inputs, inputs1);
+	pushResource(computeResources.inputs, inputs2);
+	pushResource(computeResources.outputs, outputs);
+
 	return outputsSize / sizeWithPadding;
 }
 
 template <class T>
 deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&		resources,
+									  ComputeShaderSpec&		computeResources,
 									  vector<T>&				data,
 									  OpQuaternaryFuncType		operation,
 									  QuaternaryFilterFuncType	filter,
@@ -1270,12 +1331,20 @@ deUint32 SpvAsmTypeTests<T>::combine (GraphicsResources&		resources,
 	pushResource(resources.inputs, inputs3);
 	pushResource(resources.outputs, outputs);
 
+	pushResource(computeResources.inputs, inputs0);
+	pushResource(computeResources.inputs, inputs1);
+	pushResource(computeResources.inputs, inputs2);
+	pushResource(computeResources.inputs, inputs3);
+	pushResource(computeResources.outputs, outputs);
+
 	return outputsSize / sizeWithPadding;
 }
 
+// This one is used for switch tests.
 template <class T>
 deUint32 SpvAsmTypeTests<T>::fillResources (GraphicsResources&	resources,
-											vector<T>&			data)
+											ComputeShaderSpec&	computeResources,
+											const vector<T>&	data)
 {
 	vector<T>	outputs;
 
@@ -1296,12 +1365,22 @@ deUint32 SpvAsmTypeTests<T>::fillResources (GraphicsResources&	resources,
 	pushResource(resources.inputs, data);
 	pushResource(resources.inputs, outputs);
 
+	pushResource(computeResources.inputs, data);
+	pushResource(computeResources.inputs, outputs);
+
+	// Prepare an array of 32-bit integer values with a single integer. The expected value is 1.
+	vector<deInt32> expectedOutput;
+	expectedOutput.push_back(1);
+	computeResources.outputs.push_back(Resource(BufferSp(new Int32Buffer(expectedOutput))));
+	computeResources.verifyIO = verifyComputeSwitchResult;
+
 	return static_cast<deUint32>(outputs.size());
 }
 
 template <class T>
 void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 										   GraphicsResources&	resources,
+										   ComputeShaderSpec&	computeResources,
 										   deUint32				numElements,
 										   vector<string>&		decorations,
 										   vector<string>&		pre_mains,
@@ -1311,6 +1390,54 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 										   const char*			funVariables,
 										   const char*			spirvExtension)
 {
+	// Roughly equivalent to the following GLSL compute shader:
+	//
+	//      vec4 testfun(in vec4 param);
+	//
+	//      void main()
+	//      {
+	//          vec4 in_color	= vec4(0.0, 0.0, 0.0, 1.0);
+	//          vec4 out_color	= testfun(in_color);
+	//      }
+	//
+	// The input and output colors are irrelevant, but testfun will iterate over the input buffers and calculate results on the output
+	// buffer. After the compute shader has run, we can verify the output buffer contains the expected results.
+	const tcu::StringTemplate computeShaderTemplate(R"(
+					OpCapability Shader
+					${capability:opt}
+					${extension:opt}
+					OpMemoryModel Logical GLSL450
+					OpEntryPoint GLCompute %BP_main "main"
+					OpExecutionMode %BP_main LocalSize 1 1 1
+					${execution_mode:opt}
+					${debug:opt}
+					${moduleprocessed:opt}
+					${IF_decoration:opt}
+					${decoration:opt}
+	)"
+					SPIRV_ASSEMBLY_TYPES
+					SPIRV_ASSEMBLY_CONSTANTS
+					SPIRV_ASSEMBLY_ARRAYS
+	R"(
+		%BP_color = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_1
+					${pre_main:opt}
+					${IF_variable:opt}
+		 %BP_main = OpFunction %void None %voidf
+   %BP_label_main = OpLabel
+					${IF_carryforward:opt}
+					${post_interface_op_comp:opt}
+	 %BP_in_color = OpVariable %fp_v4f32 Function
+	%BP_out_color = OpVariable %fp_v4f32 Function
+					OpStore %BP_in_color %BP_color
+		 %BP_tmp1 = OpLoad %v4f32 %BP_in_color
+		 %BP_tmp2 = OpFunctionCall %v4f32 %test_code %BP_tmp1
+					OpStore %BP_out_color %BP_tmp2
+					OpReturn
+					OpFunctionEnd
+
+					${testfun}
+	)");
+
 	const StringTemplate		decoration		("OpDecorate %output DescriptorSet 0\n"
 												 "OpDecorate %output Binding ${output_binding}\n"
 												 "OpDecorate %a${num_elements}testtype ArrayStride ${typesize}\n"
@@ -1398,9 +1525,15 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 	getDefaultColors(defaultColors);
 
 	if (m_vectorSize == 3)
+	{
 		resources.verifyIO = verifyVec3Result;
+		computeResources.verifyIO = verifyVec3Result;
+	}
 	else
+	{
 		resources.verifyIO = verifyDefaultResult;
+		computeResources.verifyIO = verifyDefaultResult;
+	}
 
 	// All of the following tests write their results into an output SSBO, therefore they require the following features.
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
@@ -1498,8 +1631,10 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 	fragments["capability"]	= spirvCapabilities;
 
 	requiredFeaturesFromStrings(features, requiredFeatures);
+	computeResources.requestedVulkanFeatures = requiredFeatures;
 
 	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
+	createComputeTest(computeResources, computeShaderTemplate, fragments, *this, testName);
 }
 
 template <class T>
@@ -1713,6 +1848,7 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 	vector<string>		pre_mains;
 	vector<string>		testfuns;
 	GraphicsResources	resources;
+	ComputeShaderSpec	computeResources;
 	map<string, string>	fragments;
 	map<string, string>	specs;
 
@@ -1730,7 +1866,7 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 		getDataset(inputDataset, inputSize);
 		getConstantDataset(inputDataset, dataset, spirvOperation);
 
-		const deUint32		totalElements	= combine(resources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
+		const deUint32		totalElements	= combine(resources, computeResources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
 
 		pre_mains.reserve(1);
 		pre_mains.push_back(createConstantDeclaration(inputDataset, spirvOperation));
@@ -1771,14 +1907,14 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 
 		finalizeFullOperation(fullOperation, resultName, returnHighPart, false);
 
-		createStageTests(testName, resources, totalElements, decorations,
+		createStageTests(testName, resources, computeResources, totalElements, decorations,
 						 pre_mains, testfuns, fullOperation, inputWidth, funVariables.c_str(), spirvExtension);
 	}
 	else
 	{
 		dataset.reserve(TEST_DATASET_SIZE * m_vectorSize);
 		getDataset(dataset, TEST_DATASET_SIZE * m_vectorSize);
-		const deUint32	totalElements	= combine(resources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
+		const deUint32	totalElements	= combine(resources, computeResources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
 
 		decorations.reserve(1);
 		pre_mains.reserve(1);
@@ -1793,7 +1929,7 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 
 		finalizeFullOperation(full_operation, resultName, returnHighPart, false);
 
-		createStageTests(testName, resources, totalElements, decorations,
+		createStageTests(testName, resources, computeResources, totalElements, decorations,
 						 pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 	}
 }
@@ -1817,13 +1953,14 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 	vector<string>		pre_mains;
 	vector<string>		testfuns;
 	GraphicsResources	resources;
+	ComputeShaderSpec	computeResources;
 	map<string, string>	fragments;
 	map<string, string>	specs;
 	string				full_operation;
 
 	dataset.reserve(TEST_DATASET_SIZE * m_vectorSize);
 	getDataset(dataset, TEST_DATASET_SIZE * m_vectorSize);
-	const deUint32		totalElements	= combine(resources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
+	const deUint32		totalElements	= combine(resources, computeResources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
 
 	decorations.reserve(2);
 	pre_mains.reserve(2);
@@ -1862,7 +1999,7 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 
 	finalizeFullOperation(full_operation, resultName, returnHighPart, isBoolean);
 
-	createStageTests(testName, resources, totalElements, decorations,
+	createStageTests(testName, resources, computeResources, totalElements, decorations,
 					 pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
 
@@ -1885,12 +2022,13 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 	vector<string>		pre_mains;
 	vector<string>		testfuns;
 	GraphicsResources	resources;
+	ComputeShaderSpec	computeResources;
 	map<string, string>	fragments;
 	map<string, string>	specs;
 
 	dataset.reserve(TEST_DATASET_SIZE * m_vectorSize);
 	getDataset(dataset, TEST_DATASET_SIZE * m_vectorSize);
-	const deUint32		totalElements	= combine(resources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
+	const deUint32		totalElements	= combine(resources, computeResources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
 
 	decorations.reserve(3);
 	pre_mains.reserve(3);
@@ -1913,7 +2051,7 @@ void SpvAsmTypeTests<T>::createTests (const char*			testName,
 
 	finalizeFullOperation(full_operation, resultName, returnHighPart, false);
 
-	createStageTests(testName, resources, totalElements, decorations,
+	createStageTests(testName, resources, computeResources, totalElements, decorations,
 					 pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
 
@@ -1937,13 +2075,14 @@ void SpvAsmTypeTests<T>::createTests (const char*				testName,
 	vector<string>			pre_mains;
 	vector<string>			testfuns;
 	GraphicsResources		resources;
+	ComputeShaderSpec		computeResources;
 	map<string, string>		fragments;
 	map<string, string>		specs;
 	string					full_operation;
 
 	dataset.reserve(TEST_DATASET_SIZE * m_vectorSize);
 	getDataset(dataset, TEST_DATASET_SIZE * m_vectorSize);
-	const deUint32			totalElements	= combine(resources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
+	const deUint32			totalElements	= combine(resources, computeResources, dataset, (returnHighPart ? zeroFunc : operation), filter, inputRange);
 
 	decorations.reserve(4);
 	pre_mains.reserve(4);
@@ -1963,13 +2102,90 @@ void SpvAsmTypeTests<T>::createTests (const char*				testName,
 
 	finalizeFullOperation(full_operation, resultName, returnHighPart, false);
 
-	createStageTests(testName, resources, totalElements, decorations,
+	createStageTests(testName, resources, computeResources, totalElements, decorations,
 					 pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
 
 template <class T>
 void SpvAsmTypeTests<T>::createSwitchTests (void)
 {
+	// The switch case test function is a bit different from the normal one. It uses two input buffers for input data and expected
+	// results. The shader itself will calculate results based on input data and compare them to the expected results in the second
+	// buffer, instead of verifying results on the CPU.
+	//
+	// The test function will return the color passed to it if the obtained results match the expected results, and will return (0.5,
+	// 0.5, 0.5, 1.0) if they do not. For graphic stages, this returned color will be used to draw things and we can verify the output
+	// image as usual with the graphics shader test utils. For compute shaders, this does not work.
+	//
+	// In this case, we will pass black as the input color for the test function, and will verify it returns black. We will write a
+	// single integer in an output storage buffer as a boolean value indicating if the returned color matches the input color, to be
+	// checked after the shader runs. Roughly equivalent to the following GLSL code:
+	//
+	//      layout(binding = 2) buffer BlockType { int values[]; } block;
+	//
+	//      vec4 testfun(in vec4 param);
+	//
+	//      void main()
+	//      {
+	//              vec4 in_color   = vec4(0.0, 0.0, 0.0, 1.0);
+	//              vec4 out_color  = testfun(in_color);
+	//              block.values[0] = int(all(equal(in_color, out_color)));
+	//      }
+	const tcu::StringTemplate computeShaderSwitchTemplate(R"(
+					OpCapability Shader
+					${capability:opt}
+					${extension:opt}
+					OpMemoryModel Logical GLSL450
+					OpEntryPoint GLCompute %BP_main "main"
+					OpExecutionMode %BP_main LocalSize 1 1 1
+					${execution_mode:opt}
+					${debug:opt}
+					${moduleprocessed:opt}
+					${IF_decoration:opt}
+					${decoration:opt}
+					OpDecorate %rta_i32 ArrayStride 4
+					OpMemberDecorate %BlockType 0 Offset 0
+					OpDecorate %BlockType BufferBlock
+					OpDecorate %block DescriptorSet 0
+					OpDecorate %block Binding 2
+	)"
+					SPIRV_ASSEMBLY_TYPES
+					SPIRV_ASSEMBLY_CONSTANTS
+					SPIRV_ASSEMBLY_ARRAYS
+	R"(
+		 %rta_i32 = OpTypeRuntimeArray %i32
+	   %BlockType = OpTypeStruct %rta_i32
+	%up_BlockType = OpTypePointer Uniform %BlockType
+		   %block = OpVariable %up_BlockType Uniform
+		%BP_color = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_0 %c_f32_1
+					${pre_main:opt}
+					${IF_variable:opt}
+		  %up_i32 = OpTypePointer Uniform %i32
+		 %BP_main = OpFunction %void None %voidf
+   %BP_label_main = OpLabel
+					${IF_carryforward:opt}
+					${post_interface_op_comp:opt}
+	 %BP_in_color = OpVariable %fp_v4f32 Function
+	%BP_out_color = OpVariable %fp_v4f32 Function
+					OpStore %BP_in_color %BP_color
+		 %BP_tmp1 = OpLoad %v4f32 %BP_in_color
+		 %BP_tmp2 = OpFunctionCall %v4f32 %test_code %BP_tmp1
+					OpStore %BP_out_color %BP_tmp2
+
+		 %BP_tmp3 = OpLoad %v4f32 %BP_in_color
+		 %BP_tmp4 = OpLoad %v4f32 %BP_out_color
+		 %BP_tmp5 = OpFOrdEqual %v4bool %BP_tmp3 %BP_tmp4
+		 %BP_tmp6 = OpAll %bool %BP_tmp5
+		 %BP_tmp7 = OpSelect %i32 %BP_tmp6 %c_i32_1 %c_i32_0
+		 %BP_tmp8 = OpAccessChain %up_i32 %block %c_i32_0 %c_i32_0
+					OpStore %BP_tmp8 %BP_tmp7
+
+					OpReturn
+					OpFunctionEnd
+
+					${testfun}
+	)");
+
 	const StringTemplate	decoration		("OpDecorate %input DescriptorSet 0\n"
 											 "OpDecorate %input Binding 0\n"
 											 "OpDecorate %input NonWritable\n"
@@ -1990,6 +2206,7 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 											 "%c_case0 = OpConstant %${testtype} 100\n"
 											 "%c_case1 = OpConstant %${testtype} 110\n"
 											 "%c_case2 = OpConstant %${testtype} 120\n"
+											 "%fail_color = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_1\n"
 											 "%a${num_elements}testtype = OpTypeArray %${testtype} %c_u32_${num_elements}\n"
 											 "%up_testtype = OpTypePointer Uniform %${testtype}\n"
 											 "%buf = OpTypeStruct %a${num_elements}testtype\n"
@@ -2050,7 +2267,7 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 											 "%result_incorrect = OpLabel\n"
 											 "%counter_val_end = OpIAdd %i32 %counter_val %c_i32_${num_elements}\n"
 											 "OpStore %counter %counter_val_end\n"
-											 "OpStore %return %c_v4f32_1_0_0_1\n"
+											 "OpStore %return %fail_color\n"
 											 "OpBranch %result_end\n"
 
 											 "%result_end = OpLabel\n"
@@ -2070,6 +2287,7 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 	const bool				uses8bit		(m_inputType == TYPE_I8 || m_inputType == TYPE_U8);
 
 	GraphicsResources		resources;
+	ComputeShaderSpec		computeResources;
 	RGBA					defaultColors[4];
 	map<string, string>		fragments;
 	map<string, string>		specs;
@@ -2085,7 +2303,7 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 
 	dataset.reserve(TEST_DATASET_SIZE);
 	getDataset(dataset, TEST_DATASET_SIZE);
-	numElements = fillResources(resources, dataset);
+	numElements = fillResources(resources, computeResources, dataset);
 
 	if (m_deviceFeature)
 		features.insert(features.begin(), m_deviceFeature);
@@ -2130,8 +2348,12 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 	fragments["capability"]	= spirvCapabilities;
 
 	requiredFeaturesFromStrings(features, requiredFeatures);
+	computeResources.requestedVulkanFeatures = requiredFeatures;
 
-	createTestsForAllStages("switch", defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
+	const string testName = "switch";
+
+	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
+	createComputeTest(computeResources, computeShaderSwitchTemplate, fragments, *this, testName);
 }
 
 template <class T>
@@ -2289,13 +2511,13 @@ std::string	SpvAsmTypeTests<T>::replicate (const std::string&	replicant,
 class SpvAsmTypeInt8Tests : public SpvAsmTypeTests<deInt8>
 {
 public:
-				SpvAsmTypeInt8Tests		(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeInt8Tests		(tcu::TestContext&		testCtx,
+										 deUint32				vectorSize);
 				~SpvAsmTypeInt8Tests	(void);
-	void		getDataset				(vector<deInt8>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deInt8>&	data);
+	void		getDataset				(vector<deInt8>&		input,
+										 deUint32				numElements);
+	void		pushResource			(vector<Resource>&		resource,
+										 const vector<deInt8>&	data);
 };
 
 SpvAsmTypeInt8Tests::SpvAsmTypeInt8Tests	(tcu::TestContext&	testCtx,
@@ -2331,8 +2553,8 @@ void SpvAsmTypeInt8Tests::getDataset (vector<deInt8>&	input,
 		input.push_back(static_cast<deInt8>(m_rnd.getUint8()));
 }
 
-void SpvAsmTypeInt8Tests::pushResource (vector<Resource>&	resource,
-										vector<deInt8>&		data)
+void SpvAsmTypeInt8Tests::pushResource (vector<Resource>&		resource,
+										const vector<deInt8>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Int8Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2340,13 +2562,13 @@ void SpvAsmTypeInt8Tests::pushResource (vector<Resource>&	resource,
 class SpvAsmTypeInt16Tests : public SpvAsmTypeTests<deInt16>
 {
 public:
-				SpvAsmTypeInt16Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeInt16Tests	(tcu::TestContext&		testCtx,
+										 deUint32				vectorSize);
 				~SpvAsmTypeInt16Tests	(void);
-	void		getDataset				(vector<deInt16>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deInt16>&	data);
+	void		getDataset				(vector<deInt16>&		input,
+										 deUint32				numElements);
+	void		pushResource			(vector<Resource>&		resource,
+										 const vector<deInt16>&	data);
 };
 
 SpvAsmTypeInt16Tests::SpvAsmTypeInt16Tests	(tcu::TestContext&	testCtx,
@@ -2382,8 +2604,8 @@ void SpvAsmTypeInt16Tests::getDataset (vector<deInt16>&	input,
 		input.push_back(static_cast<deInt16>(m_rnd.getUint16()));
 }
 
-void SpvAsmTypeInt16Tests::pushResource (vector<Resource>&	resource,
-										 vector<deInt16>&	data)
+void SpvAsmTypeInt16Tests::pushResource (vector<Resource>&		resource,
+										 const vector<deInt16>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Int16Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2391,13 +2613,13 @@ void SpvAsmTypeInt16Tests::pushResource (vector<Resource>&	resource,
 class SpvAsmTypeInt32Tests : public SpvAsmTypeTests<deInt32>
 {
 public:
-				SpvAsmTypeInt32Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeInt32Tests	(tcu::TestContext&		testCtx,
+										 deUint32				vectorSize);
 				~SpvAsmTypeInt32Tests	(void);
-	void		getDataset				(vector<deInt32>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deInt32>&	data);
+	void		getDataset				(vector<deInt32>&		input,
+										 deUint32				numElements);
+	void		pushResource			(vector<Resource>&		resource,
+										 const vector<deInt32>&	data);
 };
 
 SpvAsmTypeInt32Tests::SpvAsmTypeInt32Tests (tcu::TestContext&	testCtx,
@@ -2433,8 +2655,8 @@ void SpvAsmTypeInt32Tests::getDataset (vector<deInt32>&	input,
 		input.push_back(static_cast<deInt32>(m_rnd.getUint32()));
 }
 
-void SpvAsmTypeInt32Tests::pushResource (vector<Resource>&	resource,
-										 vector<deInt32>&	data)
+void SpvAsmTypeInt32Tests::pushResource (vector<Resource>&		resource,
+										 const vector<deInt32>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Int32Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2442,13 +2664,13 @@ void SpvAsmTypeInt32Tests::pushResource (vector<Resource>&	resource,
 class SpvAsmTypeInt64Tests : public SpvAsmTypeTests<deInt64>
 {
 public:
-				SpvAsmTypeInt64Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeInt64Tests	(tcu::TestContext&		testCtx,
+										 deUint32				vectorSize);
 				~SpvAsmTypeInt64Tests	(void);
-	void		getDataset				(vector<deInt64>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deInt64>&	data);
+	void		getDataset				(vector<deInt64>&		input,
+										 deUint32				numElements);
+	void		pushResource			(vector<Resource>&		resource,
+										 const vector<deInt64>&	data);
 };
 
 SpvAsmTypeInt64Tests::SpvAsmTypeInt64Tests (tcu::TestContext&	testCtx,
@@ -2484,8 +2706,8 @@ void SpvAsmTypeInt64Tests::getDataset (vector<deInt64>&	input,
 		input.push_back(static_cast<deInt64>(m_rnd.getUint64()));
 }
 
-void SpvAsmTypeInt64Tests::pushResource	(vector<Resource>&	resource,
-										 vector<deInt64>&	data)
+void SpvAsmTypeInt64Tests::pushResource	(vector<Resource>&		resource,
+										 const vector<deInt64>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Int64Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2493,13 +2715,13 @@ void SpvAsmTypeInt64Tests::pushResource	(vector<Resource>&	resource,
 class SpvAsmTypeUint8Tests : public SpvAsmTypeTests<deUint8>
 {
 public:
-				SpvAsmTypeUint8Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeUint8Tests	(tcu::TestContext&		testCtx,
+										 deUint32				vectorSize);
 				~SpvAsmTypeUint8Tests	(void);
-	void		getDataset				(vector<deUint8>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deUint8>&	data);
+	void		getDataset				(vector<deUint8>&		input,
+										 deUint32				numElements);
+	void		pushResource			(vector<Resource>&		resource,
+										 const vector<deUint8>&	data);
 };
 
 SpvAsmTypeUint8Tests::SpvAsmTypeUint8Tests	(tcu::TestContext&	testCtx,
@@ -2534,8 +2756,8 @@ void SpvAsmTypeUint8Tests::getDataset (vector<deUint8>&	input,
 		input.push_back(m_rnd.getUint8());
 }
 
-void SpvAsmTypeUint8Tests::pushResource (vector<Resource>&	resource,
-										 vector<deUint8>&	data)
+void SpvAsmTypeUint8Tests::pushResource (vector<Resource>&		resource,
+										 const vector<deUint8>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Uint8Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2543,13 +2765,13 @@ void SpvAsmTypeUint8Tests::pushResource (vector<Resource>&	resource,
 class SpvAsmTypeUint16Tests : public SpvAsmTypeTests<deUint16>
 {
 public:
-				SpvAsmTypeUint16Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeUint16Tests	(tcu::TestContext&			testCtx,
+										 deUint32					vectorSize);
 				~SpvAsmTypeUint16Tests	(void);
-	void		getDataset				(vector<deUint16>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deUint16>&	data);
+	void		getDataset				(vector<deUint16>&			input,
+										 deUint32					numElements);
+	void		pushResource			(vector<Resource>&			resource,
+										 const vector<deUint16>&	data);
 };
 
 SpvAsmTypeUint16Tests::SpvAsmTypeUint16Tests	(tcu::TestContext&	testCtx,
@@ -2584,8 +2806,8 @@ void SpvAsmTypeUint16Tests::getDataset (vector<deUint16>&	input,
 		input.push_back(m_rnd.getUint16());
 }
 
-void SpvAsmTypeUint16Tests::pushResource (vector<Resource>&	resource,
-										  vector<deUint16>&	data)
+void SpvAsmTypeUint16Tests::pushResource (vector<Resource>&			resource,
+										  const vector<deUint16>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Uint16Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2593,13 +2815,13 @@ void SpvAsmTypeUint16Tests::pushResource (vector<Resource>&	resource,
 class SpvAsmTypeUint32Tests : public SpvAsmTypeTests<deUint32>
 {
 public:
-				SpvAsmTypeUint32Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeUint32Tests	(tcu::TestContext&			testCtx,
+										 deUint32					vectorSize);
 				~SpvAsmTypeUint32Tests	(void);
-	void		getDataset				(vector<deUint32>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deUint32>&	data);
+	void		getDataset				(vector<deUint32>&			input,
+										 deUint32					numElements);
+	void		pushResource			(vector<Resource>&			resource,
+										 const vector<deUint32>&	data);
 };
 
 SpvAsmTypeUint32Tests::SpvAsmTypeUint32Tests (tcu::TestContext&	testCtx,
@@ -2634,8 +2856,8 @@ void SpvAsmTypeUint32Tests::getDataset (vector<deUint32>&	input,
 		input.push_back(m_rnd.getUint32());
 }
 
-void SpvAsmTypeUint32Tests::pushResource (vector<Resource>&	resource,
-										  vector<deUint32>&	data)
+void SpvAsmTypeUint32Tests::pushResource (vector<Resource>&			resource,
+										  const vector<deUint32>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Uint32Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
@@ -2643,13 +2865,13 @@ void SpvAsmTypeUint32Tests::pushResource (vector<Resource>&	resource,
 class SpvAsmTypeUint64Tests : public SpvAsmTypeTests<deUint64>
 {
 public:
-				SpvAsmTypeUint64Tests	(tcu::TestContext&	testCtx,
-										 deUint32			vectorSize);
+				SpvAsmTypeUint64Tests	(tcu::TestContext&			testCtx,
+										 deUint32					vectorSize);
 				~SpvAsmTypeUint64Tests	(void);
-	void		getDataset				(vector<deUint64>&	input,
-										 deUint32			numElements);
-	void		pushResource			(vector<Resource>&	resource,
-										 vector<deUint64>&	data);
+	void		getDataset				(vector<deUint64>&			input,
+										 deUint32					numElements);
+	void		pushResource			(vector<Resource>&			resource,
+										 const vector<deUint64>&	data);
 };
 
 SpvAsmTypeUint64Tests::SpvAsmTypeUint64Tests (tcu::TestContext&	testCtx,
@@ -2684,8 +2906,8 @@ void SpvAsmTypeUint64Tests::getDataset (vector<deUint64>&	input,
 		input.push_back(m_rnd.getUint64());
 }
 
-void SpvAsmTypeUint64Tests::pushResource (vector<Resource>&	resource,
-										  vector<deUint64>&	data)
+void SpvAsmTypeUint64Tests::pushResource (vector<Resource>&			resource,
+										  const vector<deUint64>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Uint64Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
