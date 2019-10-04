@@ -279,6 +279,8 @@ public:
 	bool															isDeviceFeatureInitialized				(VkStructureType sType) const { return m_deviceFeatures.isDeviceFeatureInitialized(sType);		}
 	const VkPhysicalDeviceFeatures&									getDeviceFeatures						(void) const { return m_deviceFeatures.getCoreFeatures2().features;		}
 	const VkPhysicalDeviceFeatures2&								getDeviceFeatures2						(void) const { return m_deviceFeatures.getCoreFeatures2();				}
+	const VkPhysicalDeviceVulkan11Features&							getVulkan11Features						(void) const { return m_deviceFeatures.getVulkan11Features(); }
+	const VkPhysicalDeviceVulkan12Features&							getVulkan12Features						(void) const { return m_deviceFeatures.getVulkan12Features(); }
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
 
@@ -406,14 +408,66 @@ Context::~Context (void)
 }
 
 deUint32								Context::getMaximumFrameworkVulkanVersion	(void) const { return m_device->getMaximumFrameworkVulkanVersion();		}
-deUint32								Context::getAvailableInstanceVersion		(void) const { return m_device->getAvailableInstanceVersion();			}
-const vector<string>&					Context::getInstanceExtensions				(void) const { return m_device->getInstanceExtensions();				}
-vk::VkInstance							Context::getInstance						(void) const { return m_device->getInstance();							}
-const vk::InstanceInterface&			Context::getInstanceInterface				(void) const { return m_device->getInstanceInterface();					}
-vk::VkPhysicalDevice					Context::getPhysicalDevice					(void) const { return m_device->getPhysicalDevice();					}
-deUint32								Context::getDeviceVersion					(void) const { return m_device->getDeviceVersion();						}
-const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures					(void) const { return m_device->getDeviceFeatures();					}
-const vk::VkPhysicalDeviceFeatures2&	Context::getDeviceFeatures2					(void) const { return m_device->getDeviceFeatures2();					}
+deUint32								Context::getAvailableInstanceVersion		(void) const { return m_device->getAvailableInstanceVersion();	}
+const vector<string>&					Context::getInstanceExtensions				(void) const { return m_device->getInstanceExtensions();		}
+vk::VkInstance							Context::getInstance						(void) const { return m_device->getInstance();					}
+const vk::InstanceInterface&			Context::getInstanceInterface				(void) const { return m_device->getInstanceInterface();			}
+vk::VkPhysicalDevice					Context::getPhysicalDevice					(void) const { return m_device->getPhysicalDevice();			}
+deUint32								Context::getDeviceVersion					(void) const { return m_device->getDeviceVersion();				}
+const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures					(void) const { return m_device->getDeviceFeatures();			}
+const vk::VkPhysicalDeviceFeatures2&	Context::getDeviceFeatures2					(void) const { return m_device->getDeviceFeatures2();			}
+
+bool Context::isDeviceFunctionalitySupported (const std::string& extension) const
+{
+	// check if extension was promoted to core
+	deUint32 apiVersion = getUsedApiVersion();
+	if (isCoreDeviceExtension(getUsedApiVersion(), extension))
+	{
+		// all folowing checks are for vk12 and can be skipped for previous versions
+		if (apiVersion < VK_MAKE_VERSION(1, 2, 0))
+			return true;
+
+		// handle promoted functionality that was provided under feature bit
+		const auto& vk11Features = m_device->getVulkan11Features();
+		if (extension == "VK_KHR_multiview")
+			return !!vk11Features.multiview;
+		if (extension == "VK_KHR_variable_pointers")
+			return !!vk11Features.variablePointersStorageBuffer;
+		if (extension == "VK_KHR_sampler_ycbcr_conversion")
+			return !!vk11Features.samplerYcbcrConversion;
+		if (extension == "VK_KHR_shader_draw_parameters")
+			return !!vk11Features.shaderDrawParameters;
+
+		const auto& vk12Features = m_device->getVulkan12Features();
+		if (extension == "VK_KHR_buffer_device_address")
+			return !!vk12Features.bufferDeviceAddress;
+		if (extension == "VK_EXT_descriptor_indexing")
+			return !!vk12Features.descriptorIndexing;
+		if (extension == "VK_KHR_draw_indirect_count")
+			return !!vk12Features.drawIndirectCount;
+		if (extension == "VK_KHR_sampler_mirror_clamp_to_edge")
+			return !!vk12Features.samplerMirrorClampToEdge;
+		if (extension == "VK_EXT_sampler_filter_minmax")
+			return !!vk12Features.samplerFilterMinmax;
+		if (extension == "VK_EXT_shader_viewport_index_layer")
+			return !!vk12Features.shaderOutputViewportIndex && !!vk12Features.shaderOutputLayer;
+
+		// no feature flags to check
+		return true;
+	}
+
+	// check if extension is on the lits of extensions for current device
+	const auto& extensions = getDeviceExtensions();
+	return de::contains(extensions.begin(), extensions.end(), extension);
+}
+
+bool Context::isInstanceFunctionalitySupported(const std::string& extension) const
+{
+	// NOTE: current implementation uses isInstanceExtensionSupported but
+	// this will change when some instance extensions will be promoted to the
+	// core; don't use isInstanceExtensionSupported directly, use this method instead
+	return isInstanceExtensionSupported(getUsedApiVersion(), getInstanceExtensions(), extension);
+}
 
 #include "vkDeviceFeaturesForContextDefs.inl"
 
@@ -442,17 +496,17 @@ bool									Context::isDeviceFeatureInitialized			(vk::VkStructureType sType) c
 bool									Context::isDevicePropertyInitialized		(vk::VkStructureType sType) const
 																							{ return m_device->isDevicePropertyInitialized(sType);	}
 
-bool Context::requireDeviceExtension (const std::string& required)
+bool Context::requireDeviceFunctionality (const std::string& required)
 {
-	if (!isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), required))
+	if (!isDeviceFunctionalitySupported(required))
 		TCU_THROW(NotSupportedError, required + " is not supported");
 
 	return true;
 }
 
-bool Context::requireInstanceExtension (const std::string& required)
+bool Context::requireInstanceFunctionality (const std::string& required)
 {
-	if (!isInstanceExtensionSupported(getUsedApiVersion(), getInstanceExtensions(), required))
+	if (!isInstanceFunctionalitySupported(required))
 		TCU_THROW(NotSupportedError, required + " is not supported");
 
 	return true;
@@ -549,35 +603,10 @@ void* Context::getInstanceProcAddr	()
 
 bool Context::isBufferDeviceAddressSupported(void) const
 {
-	return isBufferDeviceAddressKHRSupported() || isBufferDeviceAddressEXTSupported();
+	return isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ||
+		   isDeviceFunctionalitySupported("VK_EXT_buffer_device_address");
 }
 
-bool Context::isBufferDeviceAddressKHRSupported(void) const
-{
-	if (isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_KHR_buffer_device_address"))
-		return !!getBufferDeviceAddressFeatures().bufferDeviceAddress;
-	return false;
-}
-
-bool Context::isBufferDeviceAddressEXTSupported(void) const
-{
-	if (isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_EXT_buffer_device_address"))
-		return !!getBufferDeviceAddressFeaturesEXT().bufferDeviceAddress;
-	return false;
-}
-
-bool Context::isBufferDeviceAddressWithCaptureReplaySupported(void) const
-{
-	return (isBufferDeviceAddressKHRSupported() && getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) || (isBufferDeviceAddressEXTSupported() && getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
-}
-
-bool Context::isDescriptorIndexingSupported(void) const
-{
-	if (contextSupports(vk::ApiVersion(1, 2, 0)))
-		return getPhysicalDeviceVulkan12Features(getInstanceInterface(), getPhysicalDevice()).descriptorIndexing;
-	else
-		return isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), "VK_EXT_descriptor_indexing");
-}
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

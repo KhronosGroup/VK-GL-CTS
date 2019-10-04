@@ -72,10 +72,12 @@ public:
 	const vk::InstanceInterface&				getInstanceInterface				(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice					(void) const;
 	deUint32									getDeviceVersion					(void) const;
-
 	bool										isDeviceFeatureInitialized			(vk::VkStructureType sType) const;
 	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures					(void) const;
 	const vk::VkPhysicalDeviceFeatures2&		getDeviceFeatures2					(void) const;
+
+	bool										isInstanceFunctionalitySupported	(const std::string& extension) const;
+	bool										isDeviceFunctionalitySupported		(const std::string& extension) const;
 
 #include "vkDeviceFeaturesForContextDecl.inl"
 
@@ -97,17 +99,13 @@ public:
 	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports						(const vk::ApiVersion version) const;
 	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
-	bool										requireDeviceExtension				(const std::string& required);
-	bool										requireInstanceExtension			(const std::string& required);
+	bool										requireDeviceFunctionality			(const std::string& required);
+	bool										requireInstanceFunctionality		(const std::string& required);
 	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 	void*										getInstanceProcAddr					();
 
 	bool										isBufferDeviceAddressSupported						(void) const;
-	bool										isBufferDeviceAddressKHRSupported					(void) const;
-	bool										isBufferDeviceAddressEXTSupported					(void) const;
-	bool										isBufferDeviceAddressWithCaptureReplaySupported		(void) const;
-	bool										isDescriptorIndexingSupported						(void) const;
 
 	bool										resultSetOnValidation			() const		{ return m_resultSetOnValidation;	}
 	void										resultSetOnValidation			(bool value)	{ m_resultSetOnValidation = value;	}

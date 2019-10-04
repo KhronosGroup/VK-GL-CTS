@@ -108,7 +108,7 @@ private:
 EnumerateAndValidateTest::EnumerateAndValidateTest (vkt::Context& context, VkQueueFlagBits queueFlagBits)
 	: TestInstance(context)
 	, m_queueFlagBits(queueFlagBits)
-	, m_requiredExtensionsPresent(context.requireDeviceExtension("VK_KHR_performance_query"))
+	, m_requiredExtensionsPresent(context.requireDeviceFunctionality("VK_KHR_performance_query"))
 {
 }
 
@@ -206,7 +206,7 @@ private:
 
 QueryTestBase::QueryTestBase(vkt::Context& context)
 	: TestInstance	(context)
-	, m_requiredExtensionsPresent(context.requireDeviceExtension("VK_KHR_performance_query"))
+	, m_requiredExtensionsPresent(context.requireDeviceFunctionality("VK_KHR_performance_query"))
 	, m_requiredNumerOfPasses(0)
 {
 }

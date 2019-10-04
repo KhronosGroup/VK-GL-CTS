@@ -100,7 +100,7 @@ Move<VkDevice> createDevice (const Context& context)
 	std::vector<deUint32>						queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
 	std::vector<const char*>					extensions;
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_timeline_semaphore"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 		extensions.push_back("VK_KHR_timeline_semaphore");
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_external_semaphore"))
@@ -108,10 +108,10 @@ Move<VkDevice> createDevice (const Context& context)
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_external_memory"))
 		extensions.push_back("VK_KHR_external_memory");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_fd"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_fd"))
 		extensions.push_back("VK_KHR_external_semaphore_fd");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_win32"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
 		extensions.push_back("VK_KHR_external_semaphore_win32");
 
 	try
@@ -1059,12 +1059,12 @@ public:
 
 		if ((m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT ||
 			 m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT) &&
-			 !isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_fd"))
+			 !context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_fd"))
 			TCU_THROW(NotSupportedError, "VK_KHR_external_semaphore_fd not supported");
 
 		if ((m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
 			 m_semaphoreHandleType == VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT) &&
-			!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_win32"))
+			!context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
 			TCU_THROW(NotSupportedError, "VK_KHR_external_semaphore_win32 not supported");
 	}
 

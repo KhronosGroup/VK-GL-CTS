@@ -100,7 +100,7 @@ public:
 	{}
 	virtual void							checkSupport							(Context&	ctx) const
 	{
-		ctx.requireDeviceExtension("VK_KHR_maintenance3");
+		ctx.requireDeviceFunctionality("VK_KHR_maintenance3");
 	}
 	virtual TestInstance*					createInstance							(Context&	ctx) const
 	{
@@ -273,7 +273,7 @@ public:
 	{}
 	virtual void							checkSupport							(Context&	ctx) const
 	{
-		ctx.requireDeviceExtension("VK_KHR_maintenance3");
+		ctx.requireDeviceFunctionality("VK_KHR_maintenance3");
 	}
 	virtual TestInstance*					createInstance							(Context&	ctx) const
 	{

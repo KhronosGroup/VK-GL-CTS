@@ -1055,8 +1055,8 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features2.pNext = DE_NULL;
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_subgroup_extended_types") &&
-		isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_float16_int8"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_shader_subgroup_extended_types") &&
+		context.isDeviceFunctionalitySupported("VK_KHR_shader_float16_int8"))
 	{
 		features2.pNext = &subgroupExtendedTypesFeatures;
 		subgroupExtendedTypesFeatures.pNext = &float16Int8Features;

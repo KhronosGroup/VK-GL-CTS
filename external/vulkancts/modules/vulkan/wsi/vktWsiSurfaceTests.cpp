@@ -171,7 +171,6 @@ struct CheckPhysicalDeviceSurfacePresentModesIncompleteResult : public CheckInco
 typedef vector<VkExtensionProperties> Extensions;
 
 CustomInstance createInstanceWithWsi (Context&						context,
-									  const Extensions&				supportedExtensions,
 									  Type							wsiType,
 									  const vector<string>			extraExtensions,
 									  const VkAllocationCallbacks*	pAllocator	= DE_NULL)
@@ -183,16 +182,13 @@ CustomInstance createInstanceWithWsi (Context&						context,
 	extensions.push_back(getExtensionName(wsiType));
 
 	vector<string>	instanceExtensions;
-
-	for (vector<string>::const_iterator extensionName = extensions.begin();
-		 extensionName != extensions.end();
-		 ++extensionName)
+	for (const auto& ext : extensions)
 	{
-		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extensionName)))
-			TCU_THROW(NotSupportedError, (*extensionName + " is not supported").c_str());
+		if (!context.isInstanceFunctionalitySupported(ext))
+			TCU_THROW(NotSupportedError, (ext + " is not supported").c_str());
 
-		if (!isCoreInstanceExtension(version, *extensionName))
-			instanceExtensions.push_back(*extensionName);
+		if (!isCoreInstanceExtension(version, ext))
+			instanceExtensions.push_back(ext);
 	}
 
 	return vkt::createCustomInstanceWithExtensions(context, instanceExtensions, pAllocator);
@@ -208,7 +204,6 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context,
-													   supportedExtensions,
 													   wsiType,
 													   vector<string>(),
 													   pAllocator))
@@ -219,7 +214,6 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context,
-													   supportedExtensions,
 													   wsiType,
 													   extensions,
 													   pAllocator))

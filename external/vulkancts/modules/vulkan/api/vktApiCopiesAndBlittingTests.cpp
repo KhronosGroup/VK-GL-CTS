@@ -1165,18 +1165,18 @@ public:
 	{
 		if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
 		{
-			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 				TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 		}
 
 		if (m_params.separateDepthStencilLayouts)
-			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_separate_depth_stencil_layouts"))
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 				TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 
 		if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
 			(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
 		{
-			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
+			if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
 				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 		}
 

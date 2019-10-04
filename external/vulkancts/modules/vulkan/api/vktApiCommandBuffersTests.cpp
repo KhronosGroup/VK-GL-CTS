@@ -962,7 +962,7 @@ bool executeSecondaryCmdBuffer (Context&						context,
 
 tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLevel cmdBufferLevel)
 {
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 
 	const VkDevice							vkDevice				= context.getDevice();

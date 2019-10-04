@@ -394,7 +394,7 @@ public:
 			context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_CLAMP);
 
 		if (m_params.minDepth > 1.0f || m_params.minDepth < 0.0f || m_params.maxDepth > 1.0f || m_params.maxDepth < 0.0f)
-			context.requireDeviceExtension("VK_EXT_depth_range_unrestricted");
+			context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const

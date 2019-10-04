@@ -528,7 +528,7 @@ CacheTestInstance::CacheTestInstance (Context&					context,
 									  const CacheTestParam*	param)
 	: TestInstance		(context)
 	, m_param			(param)
-	, m_extensions		(m_context.requireDeviceExtension("VK_EXT_pipeline_creation_feedback"))
+	, m_extensions		(m_context.requireDeviceFunctionality("VK_EXT_pipeline_creation_feedback"))
 {
 	const DeviceInterface&	vk				= m_context.getDeviceInterface();
 	const VkDevice			vkDevice		= m_context.getDevice();

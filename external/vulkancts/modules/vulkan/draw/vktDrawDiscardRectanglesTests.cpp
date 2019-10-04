@@ -676,7 +676,7 @@ void DiscardRectanglesTestCase::initPrograms(SourceCollections& programCollectio
 
 void DiscardRectanglesTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceExtension("VK_EXT_discard_rectangles");
+	context.requireDeviceFunctionality("VK_EXT_discard_rectangles");
 }
 
 TestInstance* DiscardRectanglesTestCase::createInstance (Context& context) const

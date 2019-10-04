@@ -922,7 +922,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 
 void checkSupportKhrPushDescriptor (Context& context)
 {
-	context.requireDeviceExtension("VK_KHR_push_descriptor");
+	context.requireDeviceFunctionality("VK_KHR_push_descriptor");
 }
 
 tcu::TestStatus validateLimitsKhrPushDescriptor (Context& context)
@@ -950,7 +950,7 @@ tcu::TestStatus validateLimitsKhrPushDescriptor (Context& context)
 
 void checkSupportKhrMultiview (Context& context)
 {
-	context.requireDeviceExtension("VK_KHR_multiview");
+	context.requireDeviceFunctionality("VK_KHR_multiview");
 }
 
 tcu::TestStatus validateLimitsKhrMultiview (Context& context)
@@ -980,7 +980,7 @@ tcu::TestStatus validateLimitsKhrMultiview (Context& context)
 
 void checkSupportExtDiscardRectangles (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_discard_rectangles");
+	context.requireDeviceFunctionality("VK_EXT_discard_rectangles");
 }
 
 tcu::TestStatus validateLimitsExtDiscardRectangles (Context& context)
@@ -1008,7 +1008,7 @@ tcu::TestStatus validateLimitsExtDiscardRectangles (Context& context)
 
 void checkSupportExtSampleLocations (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_sample_locations");
+	context.requireDeviceFunctionality("VK_EXT_sample_locations");
 }
 
 tcu::TestStatus validateLimitsExtSampleLocations (Context& context)
@@ -1041,7 +1041,7 @@ tcu::TestStatus validateLimitsExtSampleLocations (Context& context)
 
 void checkSupportExtExternalMemoryHost (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_external_memory_host");
+	context.requireDeviceFunctionality("VK_EXT_external_memory_host");
 }
 
 tcu::TestStatus validateLimitsExtExternalMemoryHost (Context& context)
@@ -1069,7 +1069,7 @@ tcu::TestStatus validateLimitsExtExternalMemoryHost (Context& context)
 
 void checkSupportExtBlendOperationAdvanced (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_blend_operation_advanced");
+	context.requireDeviceFunctionality("VK_EXT_blend_operation_advanced");
 }
 
 tcu::TestStatus validateLimitsExtBlendOperationAdvanced (Context& context)
@@ -1097,7 +1097,7 @@ tcu::TestStatus validateLimitsExtBlendOperationAdvanced (Context& context)
 
 void checkSupportKhrMaintenance3 (Context& context)
 {
-	context.requireDeviceExtension("VK_KHR_maintenance3");
+	context.requireDeviceFunctionality("VK_KHR_maintenance3");
 }
 
 tcu::TestStatus validateLimitsKhrMaintenance3 (Context& context)
@@ -1126,7 +1126,7 @@ tcu::TestStatus validateLimitsKhrMaintenance3 (Context& context)
 
 void checkSupportExtConservativeRasterization (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_conservative_rasterization");
+	context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
 }
 
 tcu::TestStatus validateLimitsExtConservativeRasterization (Context& context)
@@ -1228,7 +1228,7 @@ tcu::TestStatus validateLimitsExtDescriptorIndexing (Context& context)
 
 void checkSupportExtInlineUniformBlock (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_inline_uniform_block");
+	context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
 }
 
 tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
@@ -1260,7 +1260,7 @@ tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
 
 void checkSupportExtVertexAttributeDivisor (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_vertex_attribute_divisor");
+	context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 }
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
@@ -1341,7 +1341,7 @@ tcu::TestStatus validateLimitsNvMeshShader (Context& context)
 
 void checkSupportExtTransformFeedback (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_transform_feedback");
+	context.requireDeviceFunctionality("VK_EXT_transform_feedback");
 }
 
 tcu::TestStatus validateLimitsExtTransformFeedback (Context& context)
@@ -1374,7 +1374,7 @@ tcu::TestStatus validateLimitsExtTransformFeedback (Context& context)
 
 void checkSupportExtFragmentDensityMap (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_fragment_density_map");
+	context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
 }
 
 tcu::TestStatus validateLimitsExtFragmentDensityMap (Context& context)
@@ -1450,7 +1450,7 @@ tcu::TestStatus validateLimitsNvRayTracing (Context& context)
 
 void checkSupportKhrTimelineSemaphore (Context& context)
 {
-	context.requireDeviceExtension("VK_KHR_timeline_semaphore");
+	context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 }
 
 tcu::TestStatus validateLimitsKhrTimelineSemaphore (Context& context)
@@ -1478,7 +1478,7 @@ tcu::TestStatus validateLimitsKhrTimelineSemaphore (Context& context)
 
 void checkSupportExtLineRasterization (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_line_rasterization");
+	context.requireDeviceFunctionality("VK_EXT_line_rasterization");
 }
 
 tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
@@ -2782,7 +2782,7 @@ tcu::TestStatus deviceMemoryBudgetProperties (Context& context)
 	TestLog&							log			= context.getTestContext().getLog();
 	deUint8								buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
 
-	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_memory_budget"))
+	if (!context.isDeviceFunctionalitySupported("VK_EXT_memory_budget"))
 		TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
 
 	VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps = reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
@@ -3206,7 +3206,7 @@ void checkYcbcrApiSupport (Context& context)
 
 	if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
 	{
-		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 			TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
 
 		// Hard dependency for ycbcr
@@ -3787,7 +3787,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
 	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
 	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	const bool						hasKhrMaintenance1	= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1");
+	const bool						hasKhrMaintenance1	= context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
 	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(supportedFeatures, hasKhrMaintenance1);
@@ -5776,31 +5776,29 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 	// Instance extensions
 	{
-		static const char*					mandatoryExtensions[]	=
+		static const string mandatoryExtensions[]	=
 		{
 			"VK_KHR_get_physical_device_properties2",
 		};
-		const vector<VkExtensionProperties>	extensions				= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
+		for (const auto ext : mandatoryExtensions)
 		{
-			if (!isInstanceExtensionSupported(context.getUsedApiVersion(), extensions, RequiredExtension(mandatoryExtensions[ndx])))
-				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
+			if (!context.isInstanceFunctionalitySupported(ext))
+				results.fail(ext + " is not supported");
 		}
 	}
 
 	// Device extensions
 	{
-		static const char*					mandatoryExtensions[]	=
+		static const string mandatoryExtensions[] =
 		{
 			"VK_KHR_maintenance1",
 		};
-		const vector<VkExtensionProperties>	extensions				= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
+		for (const auto ext : mandatoryExtensions)
 		{
-			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, RequiredExtension(mandatoryExtensions[ndx])))
-				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
+			if (!context.isDeviceFunctionalitySupported(ext))
+				results.fail(ext + " is not supported");
 		}
 	}
 

@@ -830,7 +830,7 @@ bool ImageTranscodingCase::isFormatUsageFlagSupported (Context& context, const V
 
 void ImageTranscodingCase::checkSupport (Context& context) const
 {
-	context.requireDeviceExtension("VK_KHR_maintenance2");
+	context.requireDeviceFunctionality("VK_KHR_maintenance2");
 
 	if (!isFormatUsageFlagSupported(context, m_parameters.featuredFormat, m_parameters.testedImageUsageFeature))
 		TCU_THROW(NotSupportedError, "Test skipped due to feature is not supported by the format");

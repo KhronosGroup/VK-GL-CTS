@@ -361,7 +361,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 
 	// Check for renderpass2 extension if used
 	if (testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
-		context.requireDeviceExtension("VK_KHR_create_renderpass2");
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	// Create color image
 	{

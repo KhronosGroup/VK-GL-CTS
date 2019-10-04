@@ -226,7 +226,7 @@ InputAssemblyTest::InputAssemblyTest (tcu::TestContext&		testContext,
 void InputAssemblyTest::checkSupport (Context& context) const
 {
 	if (m_indexType == VK_INDEX_TYPE_UINT8_EXT)
-		context.requireDeviceExtension("VK_EXT_index_type_uint8");
+		context.requireDeviceFunctionality("VK_EXT_index_type_uint8");
 
 	switch (m_primitiveTopology)
 	{

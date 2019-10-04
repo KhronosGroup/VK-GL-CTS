@@ -324,7 +324,7 @@ T alignToPowerOfTwo (T value, T align)
 
 inline bool hasDeviceExtension (Context& context, const string name)
 {
-	return isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), name);
+	return context.isDeviceFunctionalitySupported(name);
 }
 
 VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
@@ -476,13 +476,14 @@ struct Instance
 	{
 		vector<const char*>					extensionNamePtrs;
 		const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(env.vkp, DE_NULL);
-		for (size_t extensionID = 0; extensionID < params.instanceExtensions.size(); extensionID++)
+		for (const auto& extName : params.instanceExtensions)
 		{
-			if (!isInstanceExtensionSupported(env.apiVersion, instanceExts, RequiredExtension(params.instanceExtensions[extensionID])))
-				TCU_THROW(NotSupportedError, (params.instanceExtensions[extensionID] + " is not supported").c_str());
+			bool extNotInCore = !isCoreInstanceExtension(env.apiVersion, extName);
+			if (extNotInCore && !isExtensionSupported(instanceExts.begin(), instanceExts.end(), RequiredExtension(extName)))
+				TCU_THROW(NotSupportedError, (extName + " is not supported").c_str());
 
-			if (!isCoreInstanceExtension(env.apiVersion, params.instanceExtensions[extensionID]))
-				extensionNamePtrs.push_back(params.instanceExtensions[extensionID].c_str());
+			if (extNotInCore)
+				extensionNamePtrs.push_back(extName.c_str());
 		}
 
 		const VkApplicationInfo		appInfo			=

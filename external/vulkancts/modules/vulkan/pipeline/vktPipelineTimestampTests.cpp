@@ -703,7 +703,7 @@ void TimestampTest::checkSupport (Context& context) const
 	if (m_hostQueryReset)
 	{
 		// Check VK_EXT_host_query_reset is supported
-		context.requireDeviceExtension("VK_EXT_host_query_reset");
+		context.requireDeviceFunctionality("VK_EXT_host_query_reset");
 
 		if(context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
 			throw tcu::NotSupportedError("Implementation doesn't support resetting queries from the host");
@@ -1069,7 +1069,7 @@ vkt::TestInstance* CalibratedTimestampTest<T>::createInstance (Context& context)
 template <class T>
 void CalibratedTimestampTest<T>::checkSupport (Context& context) const
 {
-	context.requireDeviceExtension("VK_EXT_calibrated_timestamps");
+	context.requireDeviceFunctionality("VK_EXT_calibrated_timestamps");
 }
 
 CalibratedTimestampTestInstance::CalibratedTimestampTestInstance (Context& context)

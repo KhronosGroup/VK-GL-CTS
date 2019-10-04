@@ -1352,7 +1352,7 @@ struct AddProgramsUpdateBufferUsingRendering
 
 void checkSupport (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_conditional_rendering");
+	context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
 }
 
 } // unnamed namespace

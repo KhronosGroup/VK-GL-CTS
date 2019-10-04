@@ -2238,7 +2238,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	if (m_usePhysStorageBuffer)
 	{
 		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-		if (m_context.isBufferDeviceAddressKHRSupported())
+		if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 			memoryDeviceAddress = true;
 	}
 
@@ -2341,7 +2341,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	// Query the buffer device addresses and push them via push constants
 	if (m_usePhysStorageBuffer)
 	{
-		const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
 		vk::VkBufferDeviceAddressInfo info =
 		{
@@ -2548,7 +2548,7 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
-	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
 		TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
 	if (!context.get16BitStorageFeatures().storageBuffer16BitAccess && uses16BitStorage(m_interface))
 		TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");

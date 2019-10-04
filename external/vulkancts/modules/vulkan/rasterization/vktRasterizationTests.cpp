@@ -1027,7 +1027,7 @@ BaseLineTestInstance::BaseLineTestInstance (Context& context,
 {
 	DE_ASSERT(m_primitiveWideness < PRIMITIVEWIDENESS_LAST);
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_line_rasterization"))
+	if (context.isDeviceFunctionalitySupported("VK_EXT_line_rasterization"))
 	{
 		VkPhysicalDeviceLineRasterizationPropertiesEXT lineRasterizationProperties =
 		{

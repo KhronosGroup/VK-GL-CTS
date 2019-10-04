@@ -867,7 +867,7 @@ class UploadDownloadExecutor
 public:
 	UploadDownloadExecutor(Context& context, VkDevice device, VkQueue queue, deUint32 queueFamilyIndex, const CaseDef& caseSpec) :
 	m_caseDef(caseSpec),
-	m_haveMaintenance2(isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2")),
+	m_haveMaintenance2(context.isDeviceFunctionalitySupported("VK_KHR_maintenance2")),
 	m_vk(context.getDeviceInterface()),
 	m_device(device),
 	m_queue(queue),
@@ -1651,7 +1651,7 @@ void checkSupport (Context& context, const CaseDef caseDef)
 
 	// If this is a VK_KHR_image_format_list test, check that the extension is supported
 	if (caseDef.isFormatListTest)
-		context.requireDeviceExtension("VK_KHR_image_format_list");
+		context.requireDeviceFunctionality("VK_KHR_image_format_list");
 
 	// Check required features on the format for the required upload/download methods
 	VkFormatProperties	imageFormatProps, viewFormatProps;
@@ -1706,7 +1706,7 @@ void checkSupport (Context& context, const CaseDef caseDef)
 	if ((viewFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags)
 		TCU_THROW(NotSupportedError, "View format doesn't support upload/download method");
 
-	const bool haveMaintenance2 = isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2");
+	const bool haveMaintenance2 = context.isDeviceFunctionalitySupported("VK_KHR_maintenance2");
 
 	// We don't use the base image for anything other than transfer
 	// operations so there are no features to check.  However, The Vulkan

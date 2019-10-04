@@ -353,7 +353,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	if (m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
 	{
 		// Check VK_EXT_host_query_reset is supported
-		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
+		m_context.requireDeviceFunctionality("VK_EXT_host_query_reset");
 		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
 			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
 	}
@@ -601,7 +601,7 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 	if (m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
 	{
 		// Check VK_EXT_host_query_reset is supported
-		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
+		m_context.requireDeviceFunctionality("VK_EXT_host_query_reset");
 		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
 			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
 	}

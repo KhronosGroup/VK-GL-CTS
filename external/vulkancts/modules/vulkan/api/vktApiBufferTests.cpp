@@ -183,12 +183,8 @@ class DedicatedAllocationBuffersTestCase : public TestCase
 
 	virtual void						checkSupport					(Context&					ctx) const
 	{
-		const std::vector<std::string>&	extensions		= ctx.getDeviceExtensions();
-		const deBool					isSupported		= isDeviceExtensionSupported(ctx.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
-		if (!isSupported)
-		{
+		if (!ctx.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 			TCU_THROW(NotSupportedError, "Not supported");
-		}
 	}
 private:
 	BufferCaseParameters				m_testCase;

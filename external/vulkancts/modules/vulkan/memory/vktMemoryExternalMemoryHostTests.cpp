@@ -1049,7 +1049,7 @@ struct FormatName
 
 void checkSupport (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_external_memory_host");
+	context.requireDeviceFunctionality("VK_EXT_external_memory_host");
 }
 
 } // unnamed namespace

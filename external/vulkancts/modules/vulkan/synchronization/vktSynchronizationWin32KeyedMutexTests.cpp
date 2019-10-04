@@ -1645,7 +1645,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferRead	(allocateCommandBuffer(m_vkd, *m_device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		vk::SimpleAllocator						allocator			(m_vkd, *m_device, vk::getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice));
 		const std::vector<std::string>			deviceExtensions;
-		OperationContext						operationContext	(m_context.getUsedApiVersion(), m_vki, m_vkd, m_physicalDevice, *m_device, allocator, deviceExtensions, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContext	(m_context, m_vki, m_vkd, m_physicalDevice, *m_device, allocator, deviceExtensions, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamilies[m_queueNdx].queueFlags, vk::VK_QUEUE_GRAPHICS_BIT))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
