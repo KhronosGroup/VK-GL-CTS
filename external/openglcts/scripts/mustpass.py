@@ -49,7 +49,7 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-	def __init__ (self, name, filters, glconfig = None, rotation = "unspecified", surfacetype = None, surfacewidth = None, surfaceheight = None, baseseed = None, fboconfig = None, required = False, runtime = None, os = "any"):
+	def __init__ (self, name, filters, glconfig = None, rotation = "unspecified", surfacetype = None, surfacewidth = None, surfaceheight = None, baseseed = None, fboconfig = None, required = False, runtime = None, os = "any", skip = "none"):
 		self.name				= name
 		self.glconfig			= glconfig
 		self.rotation			= rotation
@@ -62,6 +62,7 @@ class Configuration:
 		self.filters			= filters
 		self.expectedRuntime	= runtime
 		self.os					= os
+		self.skipPlatform		= skip
 
 class Package:
 	def __init__ (self, module, configurations, useforfirsteglconfig = True):
@@ -321,6 +322,8 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 	gtf_wrapper_close = "#endif // defined(DEQP_GTF_AVAILABLE)\n"
 	android_wrapper_open = "#if DE_OS == DE_OS_ANDROID\n"
 	android_wrapper_close = "#endif // DE_OS == DE_OS_ANDROID\n"
+	skip_x11_wrapper_open = "#ifndef DEQP_SUPPORT_X11\n"
+	skip_x11_wrapper_close = "#endif // DEQP_SUPPORT_X11\n"
 	TABLE_ELEM_PATTERN	= "{apiType} {configName} {glConfigName} {screenRotation} {baseSeed} {fboConfig} {surfaceWidth} {surfaceHeight}"
 
 	emitOtherCfgTbl = False
@@ -349,7 +352,13 @@ def genSpecCPPIncludeFile (specFilename, mustpass):
 			if config.os == "android":
 				elemFinal += android_wrapper_open
 
+			if config.skipPlatform == "x11":
+				elemFinal += skip_x11_wrapper_open
+
 			elemFinal += elem
+
+			if config.skipPlatform == "x11":
+				elemFinal += skip_x11_wrapper_close
 
 			if config.os == "android":
 				elemFinal += android_wrapper_close

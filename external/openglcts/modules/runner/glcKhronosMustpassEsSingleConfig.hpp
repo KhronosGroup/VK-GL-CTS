@@ -19,7 +19,7 @@
  * be lost! Modify the generating script instead.
  */
 
-const char* mustpassDir = "gl_cts/data/mustpass/gles/khronos_mustpass_single/master/";
+const char* mustpassDir = "gl_cts/data/mustpass/gles/khronos_mustpass_single/3.2.6.x/";
 
 static const RunParams khronos_mustpass_es_single_config_first_cfg[] = {
 	{ glu::ApiType::es(3, 2), "khr-single", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
