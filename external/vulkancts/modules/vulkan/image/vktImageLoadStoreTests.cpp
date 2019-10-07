@@ -1501,8 +1501,7 @@ class ImageExtendOperandTestInstance : public BaseTestInstance
 public:
 									ImageExtendOperandTestInstance			(Context&				context,
 																			 const Texture&			texture,
-																			 const VkFormat			format,
-																			 const bool				signExtend);
+																			 const VkFormat			format);
 
 	virtual							~ImageExtendOperandTestInstance			(void) {};
 
@@ -1521,7 +1520,6 @@ protected:
 
 protected:
 
-	bool							m_signExtend;
 	bool							m_isSigned;
 	tcu::TextureLevel				m_inputImageData;
 
@@ -1543,10 +1541,8 @@ protected:
 
 ImageExtendOperandTestInstance::ImageExtendOperandTestInstance (Context& context,
 																const Texture& texture,
-																const VkFormat format,
-																const bool signExtend)
+																const VkFormat format)
 	: BaseTestInstance		(context, texture, format, true, true, false, false)
-	, m_signExtend			(signExtend)
 {
 	const DeviceInterface&		vk				= m_context.getDeviceInterface();
 	const VkDevice				device			= m_context.getDevice();
@@ -1723,7 +1719,7 @@ public:
 													 const std::string&					name,
 													 const Texture						texture,
 													 const VkFormat						format,
-													 const bool							readSigned);
+													 const bool							signedInt);
 
 	void					checkSupport			(Context&				context) const;
 	void					initPrograms			(SourceCollections&		programCollection) const;
@@ -1732,18 +1728,18 @@ public:
 private:
 	const Texture					m_texture;
 	VkFormat						m_format;
-	bool							m_signExtend;
+	bool							m_operandForce;	// Use an operand that doesn't match SampledType?
 };
 
 ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 												const std::string&				name,
 												const Texture					texture,
 												const VkFormat					format,
-												const bool						signExtend)
+												const bool						operandForce)
 	: TestCase						(testCtx, name, "")
 	, m_texture						(texture)
 	, m_format						(format)
-	, m_signExtend					(signExtend)
+	, m_operandForce				(operandForce)
 {
 }
 
@@ -1796,7 +1792,6 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		"%type_vec4_u32                      = OpTypeVector %type_u32 4\n"
 
 		"%type_fun_void                      = OpTypeFunction %type_void\n"
-		"%type_ptr_fun_i32                   = OpTypePointer Function %type_i32\n"
 
 		"${image_types}"
 
@@ -1859,8 +1854,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	};
 
 	auto it = formatDataMap.find(m_format);
-	if (it == formatDataMap.end())
-		DE_ASSERT(DE_FALSE);	// Missing int format data
+	DE_ASSERT (it != formatDataMap.end());		// Missing int format data
 	auto spirvImageFormat = it->second.spirvImageFormat;
 	auto isExtendedFormat = it->second.isExtendedFormat;
 
@@ -1869,11 +1863,9 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	if (isExtendedFormat)
 		capability += "OpCapability StorageImageExtendedFormats\n";
 
-	// Read type and sampled type must match. For uint formats it does not
-	// matter if we do a Sign or ZeroExtend, it matters only for sint formats
-	std::string readTypePostfix = "u32";
-	if (isSigned && m_signExtend)
-		readTypePostfix = "i32";
+	// Use i32 SampledType only for signed images and only where we're not forcing
+	// the signedness usingthe SignExtend operand. Everything else uses u32.
+	std::string readTypePostfix = (isSigned && !m_operandForce) ? "i32" : "u32";
 
 	std::map<std::string, std::string> specializations =
 	{
@@ -1885,7 +1877,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		{ "image_format",			spirvImageFormat },
 		{ "sampled_type",			(std::string("%type_") + readTypePostfix) },
 		{ "read_vect4_type",		(std::string("%type_vec4_") + readTypePostfix) },
-		{ "extend_operand",			(m_signExtend ? "SignExtend" : "ZeroExtend") }
+		{ "extend_operand",			(isSigned ? "SignExtend" : "ZeroExtend") }
 	};
 
 	// Addidtional parametrization is needed for a case when source and destination textures have same format
@@ -1948,7 +1940,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 
 TestInstance* ImageExtendOperandTest::createInstance(Context& context) const
 {
-	return new ImageExtendOperandTestInstance(context, m_texture, m_format, m_signExtend);
+	return new ImageExtendOperandTestInstance(context, m_texture, m_format);
 }
 
 static const Texture s_textures[] =
@@ -2172,13 +2164,15 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 	const auto texture = Texture(IMAGE_TYPE_2D, tcu::IVec3(8, 8, 1), 1);
 	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 	{
-		auto format		= s_formats[formatNdx];
-		bool intFormat	= isIntFormat(format);
-		if (intFormat || isUintFormat(format))
-		{
-			const std::string caseName = getFormatShortString(format) + (intFormat ? "_sign_extend" : "_zero_extend");
-			testGroup->addChild(new ImageExtendOperandTest(testCtx, caseName, texture, format, intFormat));
-		}
+		auto format = s_formats[formatNdx];
+		if (!isIntFormat(format) && !isUintFormat(format))
+			continue;
+
+		const std::string name = getFormatShortString(format);
+		testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_matching_extend", texture, format, false));
+		// For signed types test both using the sign bit in SPIR-V and the new operand
+		if (isIntFormat(format))
+			testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_force_sign_extend", texture, format, true));
 	}
 
 	return testGroup.release();
