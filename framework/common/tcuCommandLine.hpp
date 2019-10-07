@@ -240,6 +240,9 @@ public:
 	//! Get must-list filename
 	const char*						getCaseFractionMandatoryTests(void) const;
 
+	//! Get archive directory path
+	const char*						getArchiveDir				(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

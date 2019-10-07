@@ -86,6 +86,7 @@ DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(ArchiveDir,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceGroupID,			int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
@@ -185,6 +186,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<LogImages>					(DE_NULL,	"deqp-log-images",							"Enable or disable logging of result images",		s_enableNames,		"enable")
 		<< Option<LogShaderSources>				(DE_NULL,	"deqp-log-shader-sources",					"Enable or disable logging of shader sources",		s_enableNames,		"enable")
 		<< Option<TestOOM>						(DE_NULL,	"deqp-test-oom",							"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
+		<< Option<ArchiveDir>					(DE_NULL,	"deqp-archive-dir",							"Path to test resource files",											".")
 		<< Option<LogFlush>						(DE_NULL,	"deqp-log-flush",							"Enable or disable log file fflush",				s_enableNames,		"enable")
 		<< Option<Validation>					(DE_NULL,	"deqp-validation",							"Enable or disable test case validation",			s_enableNames,		"disable")
 		<< Option<Optimization>					(DE_NULL,	"deqp-optimization-recipe",					"Shader optimization recipe (0=disabled, 1=performance, 2=size)",		"0")
@@ -824,6 +826,7 @@ bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLin
 bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();								}
 const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();							}
 const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return m_cmdLine.getOption<opt::CaseFractionMandatoryTests>().c_str();	}
+const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}
 
 const char* CommandLine::getGLContextType (void) const
 {
