@@ -23,6 +23,7 @@
  * \brief Context Info Class.
  *//*--------------------------------------------------------------------*/
 
+#include "glwFunctions.hpp"
 #include "gluDefs.hpp"
 
 #include <vector>
@@ -68,6 +69,8 @@ public:
 };
 
 typedef CachedValue<std::set<int>, GetCompressedTextureFormats>	CompressedTextureFormats;
+
+bool IsES3Compatible(const glw::Functions& gl);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Context information & limit query.

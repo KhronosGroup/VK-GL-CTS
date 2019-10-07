@@ -62,6 +62,17 @@ private:
 
 typedef CachedValue<bool, TryCompileProgram> IsProgramSupported;
 
+bool IsES3Compatible(const glw::Functions& gl)
+{
+	// Detect compatible GLES context by querying GL_MAJOR_VERSION.
+	// This query does not exist on GLES2 so succeeding query implies GLES3+ context.
+	glw::GLint majorVersion = 0;
+	gl.getError();
+	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+
+	return (gl.getError() == GL_NO_ERROR);
+}
+
 // ES2-specific context info
 class ES2ContextInfo : public ContextInfo
 {
@@ -249,17 +260,7 @@ bool ContextInfo::isExtensionSupported (const char* name) const
 
 bool ContextInfo::isES3Compatible() const
 {
-	// Detect compatible GLES context by querying GL_MAJOR_VERSION.
-	// This query does not exist on GLES2 so succeeding query implies GLES3+ context.
-	bool isES3Compatible = false;
-	glw::GLint majorVersion = 0;
-	const glw::Functions& gl = m_context.getFunctions();
-	gl.getError();
-	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
-	if (gl.getError() == GL_NO_ERROR)
-		isES3Compatible = true;
-
-	return isES3Compatible;
+   return IsES3Compatible(m_context.getFunctions());
 }
 
 ContextInfo* ContextInfo::create (const RenderContext& context)
