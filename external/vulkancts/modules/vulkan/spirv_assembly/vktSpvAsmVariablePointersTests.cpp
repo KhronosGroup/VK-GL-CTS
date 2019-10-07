@@ -1095,46 +1095,6 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* 
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
-				// Use OpConstantNull to choose between 2 pointers
-				if (physPtrs)
-				{
-					ComputeShaderSpec				spec;
-					map<string, string>				specs;
-					string opCodeForTests			= "opconstantnull";
-					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
-					specs["extra_types"]			= "%uint64				= OpTypeInt 64 0\n"
-													  "%c_u64_0				= OpConstant %uint64 0\n"
-													  "%cnull				= OpConstantNull %sb_f32ptr\n";
-					specs["extra_capability"]		= "OpCapability PhysicalStorageBufferAddressesEXT\nOpCapability Int64\n";
-					specs["input_decorations"]		= inputDecorations;
-					specs["input_variables"]		= inputVariables;
-					specs["input_intermediates"]	= inputIntermediates;
-					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
-					specs["select_inputA"]			= spirvSelectInputA;
-					specs["a_loc"]					= inputALocations[indexLevel];
-					specs["b_loc"]					= inputBLocations[indexLevel];
-					specs["remaining_indexes"]		= remainingIndexesAtLevel[indexLevel];
-					specs["selection_strategy"]		= "%cnullint = OpConvertPtrToU %uint64 %cnull\n"
-														"%nulleq0 = " + string(selectInputA ? "OpIEqual" : "OpINotEqual") + " %bool %cnullint %c_u64_0\n"
-														"%var_ptr	= OpSelect "
-														+ pointerTypeAtLevel[indexLevel]
-														+ " %nulleq0 "
-														+ baseANameAtLevel[indexLevel] + " "
-														+ baseBNameAtLevel[indexLevel] + "\n";
-					expectedOutput[0]				= selectedInput[baseOffset];
-					spec.usesPhysStorageBuffer		= physPtrs;
-					spec.assembly					= shaderTemplate.specialize(specs);
-					spec.numWorkGroups				= IVec3(1, 1, 1);
-					spec.requestedVulkanFeatures	= requiredFeatures;
-					spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
-					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputA)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back(extensions);
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
-				}
-
 				// Use OpFunctionCall to choose between 2 pointers
 				{
 					ComputeShaderSpec				spec;
