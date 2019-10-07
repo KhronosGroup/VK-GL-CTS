@@ -92,6 +92,8 @@ public:
 	const std::vector<std::string>&				getExtensions						(void) const { return m_extensions; }
 	bool										isExtensionSupported				(const char* extName) const;
 
+	bool											isES3Compatible() const;
+
 	static ContextInfo*							create								(const RenderContext& context);
 
 protected:
