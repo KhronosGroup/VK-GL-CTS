@@ -1719,7 +1719,8 @@ public:
 													 const std::string&					name,
 													 const Texture						texture,
 													 const VkFormat						format,
-													 const bool							signedInt);
+													 const bool							signedInt,
+													 const bool							relaxedPrecision);
 
 	void					checkSupport			(Context&				context) const;
 	void					initPrograms			(SourceCollections&		programCollection) const;
@@ -1729,17 +1730,20 @@ private:
 	const Texture					m_texture;
 	VkFormat						m_format;
 	bool							m_operandForce;	// Use an operand that doesn't match SampledType?
+	bool							m_relaxedPrecision;
 };
 
 ImageExtendOperandTest::ImageExtendOperandTest (tcu::TestContext&				testCtx,
 												const std::string&				name,
 												const Texture					texture,
 												const VkFormat					format,
-												const bool						operandForce)
+												const bool						operandForce,
+												const bool						relaxedPrecision)
 	: TestCase						(testCtx, name, "")
 	, m_texture						(texture)
 	, m_format						(format)
 	, m_operandForce				(operandForce)
+	, m_relaxedPrecision			(relaxedPrecision)
 {
 }
 
@@ -1777,6 +1781,8 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		"OpDecorate %src_image_ptr DescriptorSet 0\n"
 		"OpDecorate %src_image_ptr Binding 0\n"
 		"OpDecorate %src_image_ptr NonWritable\n"
+
+		"${relaxed_precision}"
 
 		"OpDecorate %dst_image_ptr DescriptorSet 0\n"
 		"OpDecorate %dst_image_ptr Binding 1\n"
@@ -1856,12 +1862,15 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 	auto it = formatDataMap.find(m_format);
 	DE_ASSERT (it != formatDataMap.end());		// Missing int format data
 	auto spirvImageFormat = it->second.spirvImageFormat;
-	auto isExtendedFormat = it->second.isExtendedFormat;
 
 	// Request additional capability when needed
 	std::string capability = "";
-	if (isExtendedFormat)
+	if (it->second.isExtendedFormat)
 		capability += "OpCapability StorageImageExtendedFormats\n";
+
+	std::string relaxed = "";
+	if (m_relaxedPrecision)
+		relaxed += "OpDecorate %src_image_ptr RelaxedPrecision\n";
 
 	// Use i32 SampledType only for signed images and only where we're not forcing
 	// the signedness usingthe SignExtend operand. Everything else uses u32.
@@ -1874,6 +1883,7 @@ void ImageExtendOperandTest::initPrograms (SourceCollections& programCollection)
 		{ "image_var_id",			"%src_image_ptr" },
 		{ "image_id",				"%src_image" },
 		{ "capability",				capability },
+		{ "relaxed_precision",		relaxed },
 		{ "image_format",			spirvImageFormat },
 		{ "sampled_type",			(std::string("%type_") + readTypePostfix) },
 		{ "read_vect4_type",		(std::string("%type_vec4_") + readTypePostfix) },
@@ -2157,6 +2167,13 @@ de::MovePtr<TestCase> createImageQualifierRestrictCase (tcu::TestContext& testCt
 	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 }
 
+static bool relaxedOK(VkFormat format)
+{
+	tcu::IVec4 bitDepth = tcu::getTextureFormatBitDepth(mapVkFormat(format));
+	int maxBitDepth = deMax32(deMax32(bitDepth[0], bitDepth[1]), deMax32(bitDepth[2], bitDepth[3]));
+	return maxBitDepth <= 16;
+}
+
 tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "extend_operands_spirv1p4", "Cases with SignExtend and ZeroExtend"));
@@ -2168,11 +2185,18 @@ tcu::TestCaseGroup* createImageExtendOperandsTests(tcu::TestContext& testCtx)
 		if (!isIntFormat(format) && !isUintFormat(format))
 			continue;
 
-		const std::string name = getFormatShortString(format);
-		testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_matching_extend", texture, format, false));
-		// For signed types test both using the sign bit in SPIR-V and the new operand
-		if (isIntFormat(format))
-			testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_force_sign_extend", texture, format, true));
+		for (int prec = 0; prec < 2; prec++)
+		{
+			bool relaxedPrecision = (prec != 0);
+			if (relaxedPrecision && !relaxedOK(format))
+				continue;
+
+			const std::string name = getFormatShortString(format) + (relaxedPrecision ? "_relaxed" : "");
+			testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_matching_extend", texture, format, false, relaxedPrecision));
+			// For signed types test both using the sign bit in SPIR-V and the new operand
+			if (isIntFormat(format))
+				testGroup->addChild(new ImageExtendOperandTest(testCtx, name + "_force_sign_extend", texture, format, true, relaxedPrecision));
+		}
 	}
 
 	return testGroup.release();
