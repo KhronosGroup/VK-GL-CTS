@@ -978,6 +978,16 @@ void initializeMemory(deqp::Context& context, glw::GLvoid *hostPtr, subgroups::S
 			case FORMAT_R32G32_BOOL:
 			case FORMAT_R32G32B32_BOOL:
 			case FORMAT_R32G32B32A32_BOOL:
+			{
+				deUint32* ptr = reinterpret_cast<deUint32*>(hostPtr);
+
+				for (deUint64 k = 0; k < (size / sizeof(deUint32)); k++)
+				{
+					deUint32 r = rnd.getUint32();
+					ptr[k] = (r & 1) ? r : 0;
+				}
+			}
+			break;
 			case FORMAT_R32_SINT:
 			case FORMAT_R32G32_SINT:
 			case FORMAT_R32G32B32_SINT:

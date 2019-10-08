@@ -39,7 +39,7 @@ namespace
 using namespace vk;
 
 static const deUint64	SHORT_FENCE_WAIT	= 1000ull;
-static const deUint64	LONG_FENCE_WAIT		= ~0ull;
+static const deUint64	LONG_FENCE_WAIT		= 10000000ull;
 
 tcu::TestStatus basicOneFenceCase (Context& context)
 {
@@ -261,16 +261,28 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));
 	endCommandBuffer(vk, *cmdBuffer);
 
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FIRST_FENCE]));
+
+	if (VK_TIMEOUT != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_FALSE, SHORT_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_TIMEOUT for case: Wait for any fence (No fence has been signaled)");
+
+	if (VK_TIMEOUT != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_TRUE, SHORT_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_TIMEOUT for case: Wait for all fences (No fence has been signaled)");
+
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[SECOND_FENCE]));
 
-	// Wait for any fence
 	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_FALSE, LONG_FENCE_WAIT))
-		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS for case: Wait for any fence (Only second fence signaled)");
 
-	// Wait for all fences
+	if (VK_TIMEOUT != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_TRUE, SHORT_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_TIMEOUT for case: Wait for all fences (Only second fence signaled)");
+
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FIRST_FENCE]));
+
+	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_FALSE, LONG_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS for case: Wait for any fence (All fences signaled)");
+
 	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_TRUE, LONG_FENCE_WAIT))
-		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS for case: Wait for all fences (All fences signaled)");
 
 	return tcu::TestStatus::pass("Basic multi fence test without waitAll passed");
 }

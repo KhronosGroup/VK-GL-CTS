@@ -653,7 +653,7 @@ void convertNormalizedInt (deInt64		num,
 
 bool isPackedType (const TextureFormat::ChannelType type)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
 
 	switch (type)
 	{
@@ -666,6 +666,8 @@ bool isPackedType (const TextureFormat::ChannelType type)
 		case TextureFormat::UNORM_INT_101010:
 		case TextureFormat::SNORM_INT_1010102_REV:
 		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::SSCALED_INT_1010102_REV:
+		case TextureFormat::USCALED_INT_1010102_REV:
 			return true;
 
 		default:
@@ -678,7 +680,7 @@ void getPackInfo (const TextureFormat texFormat,
 				  IVec4& bitOffsets,
 				  int& baseTypeBytes)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
 
 	switch (texFormat.type)
 	{
@@ -725,12 +727,14 @@ void getPackInfo (const TextureFormat texFormat,
 			break;
 
 		case TextureFormat::SNORM_INT_1010102_REV:
+		case TextureFormat::SSCALED_INT_1010102_REV:
 			bitSizes = IVec4(2, 10, 10, 10);
 			bitOffsets = IVec4(0, 2, 12, 22);
 			baseTypeBytes = 4;
 			break;
 
 		case TextureFormat::UNORM_INT_1010102_REV:
+		case TextureFormat::USCALED_INT_1010102_REV:
 			bitSizes = IVec4(2, 10, 10, 10);
 			bitOffsets = IVec4(0, 2, 12, 22);
 			baseTypeBytes = 4;
