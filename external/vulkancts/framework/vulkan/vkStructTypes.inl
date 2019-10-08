@@ -3567,6 +3567,14 @@ struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV
 	VkBool32		shaderSMBuiltins;
 };
 
+struct VkPhysicalDeviceShaderClockFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupClock;
+	VkBool32		shaderDeviceClock;
+};
+
 struct VkDrmFormatModifierPropertiesEXT
 {
 	deUint64				drmFormatModifier;

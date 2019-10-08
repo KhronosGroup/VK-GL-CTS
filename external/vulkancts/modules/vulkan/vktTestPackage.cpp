@@ -95,6 +95,7 @@
 #include "vktDescriptorIndexingTests.hpp"
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktFragmentShaderInterlockTests.hpp"
+#include "vktShaderClockTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -465,6 +466,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
 	glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests	(testCtx));
 	glslTests->addChild(shaderexecutor::createAtomicOperationTests		(testCtx));
+	glslTests->addChild(shaderexecutor::createShaderClockTests			(testCtx));
 }
 
 // TestPackage
