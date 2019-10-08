@@ -67,6 +67,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
 		{	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
 		{	"loop-call-discard.amber",						"loop-call-discard",					"A fragment shader with nested loops and a function call"								},
+		{	"loop-dead-if-loop.amber",						"loop-dead-if-loop",					"A fragment shader with a loop, dead if, and a loop"									},
 		{	"loop-nested-ifs.amber",						"loop-nested-ifs",						"A fragment shader with a for loop containing nested ifs"								},
 		{	"loops-breaks-returns.amber",					"loops-breaks-returns",					"A compute shader with loops, breaks, returns"											},
 		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
