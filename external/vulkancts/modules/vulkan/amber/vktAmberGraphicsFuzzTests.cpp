@@ -73,6 +73,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"loop-dead-if-loop.amber",						"loop-dead-if-loop",					"A fragment shader with a loop, dead if, and a loop"									},
 		{	"loop-nested-ifs.amber",						"loop-nested-ifs",						"A fragment shader with a for loop containing nested ifs"								},
 		{	"loops-breaks-returns.amber",					"loops-breaks-returns",					"A compute shader with loops, breaks, returns"											},
+		{	"loops-ifs-continues-call.amber",				"loops-ifs-continues-call",				"A fragment shader with nested control flow and a call"									},
 		{	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
 		{	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
 		{	"matrices-and-return-in-loop.amber",			"matrices-and-return-in-loop",			"A fragment shader with matrices and a return in a loop"								},
