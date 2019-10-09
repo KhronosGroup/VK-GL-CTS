@@ -140,27 +140,31 @@ class CacheTestParam
 public:
 								CacheTestParam				(const VkShaderStageFlagBits*	shaders,
 															 deUint32						count,
-															 deBool							noCache);
+															 deBool							noCache,
+															 deBool							delayedDestroy);
 	virtual					~CacheTestParam					(void);
 	virtual const std::string	generateTestName			(void)			const;
 	virtual const std::string	generateTestDescription		(void)			const;
 	VkShaderStageFlagBits		getShaderFlag				(deUint32 ndx)	const	{ return m_shaders[ndx]; }
 	deUint32					getShaderCount				(void)			const	{ return (deUint32)m_shaderCount; }
 	deBool						isCacheDisabled				(void)			const	{ return m_noCache; }
+	deBool						isDelayedDestroy			(void)			const	{ return m_delayedDestroy; }
 
 protected:
 	VkShaderStageFlagBits		m_shaders[VK_MAX_SHADER_STAGES];
 	size_t						m_shaderCount;
 	bool						m_noCache;
+	bool						m_delayedDestroy;
 };
 
-CacheTestParam::CacheTestParam (const VkShaderStageFlagBits* shaders, deUint32 count, deBool noCache)
+CacheTestParam::CacheTestParam (const VkShaderStageFlagBits* shaders, deUint32 count, deBool noCache, deBool delayedDestroy)
 {
 	DE_ASSERT(count <= VK_MAX_SHADER_STAGES);
 	for (deUint32 ndx = 0; ndx < count; ndx++)
 		m_shaders[ndx] = shaders[ndx];
-	m_shaderCount	= count;
-	m_noCache		= noCache;
+	m_shaderCount		= count;
+	m_noCache			= noCache;
+	m_delayedDestroy	= delayedDestroy;
 }
 
 CacheTestParam::~CacheTestParam (void)
@@ -171,12 +175,13 @@ const std::string CacheTestParam::generateTestName (void) const
 {
 	std::string result(getShaderFlagStr(m_shaders[0], false));
 	std::string cacheString [] = { "", "_no_cache" };
+	std::string delayedDestroyString [] = { "", "_delayed_destroy" };
 
 	for(deUint32 ndx = 1; ndx < m_shaderCount; ndx++)
-		result += '_' + getShaderFlagStr(m_shaders[ndx], false) + cacheString[m_noCache ? 1 : 0];
+		result += '_' + getShaderFlagStr(m_shaders[ndx], false) + cacheString[m_noCache ? 1 : 0] + delayedDestroyString[m_delayedDestroy ? 1 : 0];
 
 	if (m_shaderCount == 1)
-		result += cacheString[m_noCache ? 1 : 0];
+		result += cacheString[m_noCache ? 1 : 0] + delayedDestroyString[m_delayedDestroy ? 1 : 0];
 
 	return result;
 }
@@ -186,6 +191,8 @@ const std::string CacheTestParam::generateTestDescription (void) const
 	std::string result("Get pipeline creation feedback with " + getShaderFlagStr(m_shaders[0], true));
 	if (m_noCache)
 		result += " with no cache";
+	if (m_delayedDestroy)
+		result += " with delayed destroy";
 
 	for(deUint32 ndx = 1; ndx < m_shaderCount; ndx++)
 		result += ' ' + getShaderFlagStr(m_shaders[ndx], true);
@@ -802,9 +809,10 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 				break;
 			};
 		}
-		if (ndx == PIPELINE_CACHE_NDX_CACHED)
+		if (ndx == PIPELINE_CACHE_NDX_CACHED && !param->isDelayedDestroy())
 		{
-			// Destroy the NO_CACHE pipeline to check that the cached one really hits cache
+			// Destroy the NO_CACHE pipeline to check that the cached one really hits cache,
+			// except for the case where we're testing cache hit of a pipeline still active.
 			vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], DE_NULL);
 		}
 
@@ -819,7 +827,13 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&				context,
 			// Destroy the pipeline as soon as it is created, except the NO_CACHE because
 			// it is needed as a base pipeline for the derivative case.
 			vk.destroyPipeline(vkDevice, m_pipeline[ndx], DE_NULL);
-		}
+
+			if (ndx == PIPELINE_CACHE_NDX_CACHED && param->isDelayedDestroy())
+			{
+				// Destroy the pipeline we didn't destroy earlier for the isDelayedDestroy case.
+				vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], DE_NULL);
+			}
+	}
 	}
 }
 
@@ -959,9 +973,9 @@ public:
 	virtual					~ComputeCacheTestInstance	(void);
 protected:
 	virtual tcu::TestStatus verifyTestResult				(void);
-			void			buildDescriptorSets			(deUint32 ndx);
-			void			buildShader					(deUint32 ndx);
-			void			buildPipeline					(deUint32 ndx);
+			void			buildDescriptorSets				(deUint32 ndx);
+			void			buildShader						(deUint32 ndx);
+			void			buildPipeline					(const CacheTestParam*	param, deUint32 ndx);
 protected:
 	Move<VkBuffer>					m_inputBuf;
 	de::MovePtr<Allocation>		m_inputBufferAlloc;
@@ -1056,7 +1070,7 @@ void ComputeCacheTestInstance::buildShader (deUint32 ndx)
 	m_computeShaderModule[ndx] = createShaderModule(vk, vkDevice, &shaderModuleCreateInfo);
 }
 
-void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
+void ComputeCacheTestInstance::buildPipeline (const CacheTestParam*	param, deUint32 ndx)
 {
 	const DeviceInterface&	vk				 = m_context.getDeviceInterface();
 	const VkDevice			vkDevice		 = m_context.getDevice();
@@ -1121,9 +1135,10 @@ void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
 		pipelineCreateInfo.basePipelineIndex = -1;
 	}
 
-	if (ndx == PIPELINE_CACHE_NDX_CACHED)
+	if (ndx == PIPELINE_CACHE_NDX_CACHED && !param->isDelayedDestroy())
 	{
-		// Destroy the NO_CACHE pipeline to check that the cached one really hits cache
+		// Destroy the NO_CACHE pipeline to check that the cached one really hits cache,
+		// except for the case where we're testing cache hit of a pipeline still active.
 		vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], DE_NULL);
 	}
 
@@ -1134,6 +1149,12 @@ void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
 		// Destroy the pipeline as soon as it is created, except the NO_CACHE because
 		// it is needed as a base pipeline for the derivative case.
 		vk.destroyPipeline(vkDevice, m_pipeline[ndx], DE_NULL);
+
+		if (ndx == PIPELINE_CACHE_NDX_CACHED && param->isDelayedDestroy())
+		{
+			// Destroy the pipeline we didn't destroy earlier for the isDelayedDestroy case.
+			vk.destroyPipeline(vkDevice, m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE], DE_NULL);
+		}
 	}
 }
 
@@ -1145,7 +1166,7 @@ ComputeCacheTestInstance::ComputeCacheTestInstance (Context&				context,
 	{
 		buildDescriptorSets(ndx);
 		buildShader(ndx);
-		buildPipeline(ndx);
+		buildPipeline(param, ndx);
 	}
 }
 
@@ -1298,12 +1319,15 @@ tcu::TestCaseGroup* createCreationFeedbackTests (tcu::TestContext& testCtx)
 		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_FALSE),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), DE_FALSE),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), DE_FALSE),
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_TRUE),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), DE_TRUE),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), DE_TRUE),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_FALSE, DE_FALSE),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), DE_FALSE, DE_FALSE),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), DE_FALSE, DE_FALSE),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_TRUE, DE_FALSE),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), DE_TRUE, DE_FALSE),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), DE_TRUE, DE_FALSE),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_FALSE, DE_TRUE),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), DE_FALSE, DE_TRUE),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), DE_FALSE, DE_TRUE),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -1322,8 +1346,9 @@ tcu::TestCaseGroup* createCreationFeedbackTests (tcu::TestContext& testCtx)
 		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_FALSE),
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_TRUE),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_FALSE, DE_FALSE),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_TRUE, DE_FALSE),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), DE_FALSE, DE_TRUE),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
