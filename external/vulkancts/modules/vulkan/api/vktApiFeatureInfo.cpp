@@ -4940,8 +4940,6 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	{
 		// VkPhysicalDeviceDriverProperties
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, driverID),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, driverName),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, driverInfo),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, conformanceVersion),
 
 		// VkPhysicalDeviceFloatControlsProperties
@@ -5056,7 +5054,9 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 		return tcu::TestStatus::fail("VkPhysicalDeviceVulkan11Properties initialization failure");
 	}
 
-	if (!validateStructsWithGuard(properties12OffsetTable, vulkan12Properties, GUARD_VALUE, GUARD_SIZE))
+	if (!validateStructsWithGuard(properties12OffsetTable, vulkan12Properties, GUARD_VALUE, GUARD_SIZE) ||
+		strncmp(vulkan12Properties[0]->driverName, vulkan12Properties[1]->driverName, VK_MAX_DRIVER_NAME_SIZE) != 0 ||
+		strncmp(vulkan12Properties[0]->driverInfo, vulkan12Properties[1]->driverInfo, VK_MAX_DRIVER_INFO_SIZE) != 0 )
 	{
 		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceVulkan12Properties initialization failure" << TestLog::EndMessage;
 
