@@ -124,11 +124,11 @@ private:
 	{
 		m_context.requireDeviceExtension("VK_KHR_shader_clock");
 
-		VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures = {};
+		VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures;
 		shaderClockFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 		shaderClockFeatures.pNext = DE_NULL;
 
-		VkPhysicalDeviceFeatures2 features = {};
+		VkPhysicalDeviceFeatures2 features;
 		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		features.pNext = &shaderClockFeatures;
 
