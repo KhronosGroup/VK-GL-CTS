@@ -927,6 +927,8 @@ const PlanarFormatDescription& getYCbCrPlanarFormatDescription (VkFormat format)
 PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 {
 	const deUint8			unorm	= (deUint8)tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT;
+	const deUint8			uint	= (deUint8)tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	const deUint8			sfloat	= (deUint8)tcu::TEXTURECHANNELCLASS_FLOATING_POINT;
 
 	const deUint8			chanR	= (deUint8)PlanarFormatDescription::CHANNEL_R;
 	const deUint8			chanG	= (deUint8)PlanarFormatDescription::CHANNEL_G;
@@ -1420,6 +1422,176 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 					{	0,		unorm,	16,		16,		8 },	// G
 					{	0,		unorm,	32,		16,		8 },	// B
 					{	0,		unorm,	48,		16,		8 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R16_UINT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	2,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		uint,	0,		2,		2 },	// R
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R32_UINT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	4,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		uint,	0,		4,		4 },	// R
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R32_SFLOAT:
+		case VK_FORMAT_D32_SFLOAT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	4,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		sfloat,	0,		32,		4 },	// R
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_D16_UNORM:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	2,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		16,		2 },	// R
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_S8_UINT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR,
+				{
+				//		Size	WDiv	HDiv
+					{	1,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		uint,	0,		8,		1 },	// R
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R16G16B16A16_UINT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG|chanB|chanA,
+				{
+				//		Size	WDiv	HDiv
+					{	8,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		uint,	0,		16,		8 },	// R
+					{	0,		uint,	16,		16,		8 },	// G
+					{	0,		uint,	32,		16,		8 },	// B
+					{	0,		uint,	48,		16,		8 },	// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R32G32B32A32_UINT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG|chanB|chanA,
+				{
+				//		Size	WDiv	HDiv
+					{	16,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		uint,	0,		32,		16 },	// R
+					{	0,		uint,	32,		32,		16 },	// G
+					{	0,		uint,	64,		32,		16 },	// B
+					{	0,		uint,	96,		32,		16 },	// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG|chanB|chanA,
+				{
+				//		Size	WDiv	HDiv
+					{	16,		1,		1 },
+					{	0,		0,		0 },
+					{	0,		0,		0 },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		sfloat,	0,		32,		16 },	// R
+					{	0,		sfloat,	32,		32,		16 },	// G
+					{	0,		sfloat,	64,		32,		16 },	// B
+					{	0,		sfloat,	96,		32,		16 },	// A
 				}
 			};
 			return desc;

@@ -31,6 +31,8 @@
 #include "vktSynchronizationOperationMultiQueueTests.hpp"
 #include "vktSynchronizationInternallySynchronizedObjectsTests.hpp"
 #include "vktSynchronizationCrossInstanceSharingTests.hpp"
+#include "vktSynchronizationSignalOrderTests.hpp"
+#include "vktSynchronizationTimelineSemaphoreTests.hpp"
 #include "vktSynchronizationWin32KeyedMutexTests.hpp"
 #include "vktSynchronizationUtil.hpp"
 
@@ -46,9 +48,10 @@ namespace
 
 void createBasicTests (tcu::TestCaseGroup* group)
 {
-	group->addChild(createBasicFenceTests	 (group->getTestContext()));
-	group->addChild(createBasicSemaphoreTests(group->getTestContext()));
-	group->addChild(createBasicEventTests	 (group->getTestContext()));
+	group->addChild(createBasicFenceTests				(group->getTestContext()));
+	group->addChild(createBasicBinarySemaphoreTests		(group->getTestContext()));
+	group->addChild(createBasicTimelineSemaphoreTests	(group->getTestContext()));
+	group->addChild(createBasicEventTests				(group->getTestContext()));
 }
 
 class OperationTests : public tcu::TestCaseGroup
@@ -77,10 +80,12 @@ void createChildren (tcu::TestCaseGroup* group)
 
 	group->addChild(createSmokeTests(testCtx));
 	group->addChild(createTestGroup	(testCtx, "basic", "Basic synchronization tests", createBasicTests));
+	group->addChild(createTimelineSemaphoreTests(testCtx));
 	group->addChild(new OperationTests(testCtx));
 	group->addChild(createInternallySynchronizedObjects(testCtx));
 	group->addChild(synchronization::createCrossInstanceSharingTest(testCtx));
 	group->addChild(synchronization::createWin32KeyedMutexTest(testCtx));
+	group->addChild(synchronization::createSignalOrderTests(testCtx));
 }
 
 } // anonymous

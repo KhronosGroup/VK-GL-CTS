@@ -32,6 +32,7 @@ const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentat
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures			(void) const;
 const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&					getScalarBlockLayoutFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					getShaderAtomicInt64Features				(void) const;
+const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeatures	(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					getShaderDrawParametersFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderFloat16Int8FeaturesKHR&					getShaderFloat16Int8Features				(void) const;
@@ -41,6 +42,7 @@ const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR&		getShaderSubg
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFeatures					(void) const;
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				getSubgroupSizeControlFeatures				(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				getTexelBufferAlignmentFeatures				(void) const;
+const vk::VkPhysicalDeviceTimelineSemaphoreFeaturesKHR&					getTimelineSemaphoreFeatures				(void) const;
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					getTransformFeedbackFeatures				(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&		getUniformBufferStandardLayoutFeatures		(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&						getVariablePointersFeatures					(void) const;

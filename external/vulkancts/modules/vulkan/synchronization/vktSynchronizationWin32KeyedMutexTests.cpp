@@ -431,7 +431,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			1u,
 			vk::VK_SAMPLE_COUNT_1_BIT,
 			vk::VK_IMAGE_TILING_OPTIMAL,
-			readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags(),
+			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
 			vk::VK_SHARING_MODE_EXCLUSIVE,
 
 			(deUint32)queueFamilyIndices.size(),
@@ -448,7 +448,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 	{
 		const vk::VkDeviceSize								offset					= 0u;
 		const vk::VkDeviceSize								size					= static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
-		const vk::VkBufferUsageFlags						usage					= readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags();
+		const vk::VkBufferUsageFlags						usage					= readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags();
 		const vk::VkExternalMemoryBufferCreateInfo			externalInfo			=
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
@@ -1558,7 +1558,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 			m_config.resource.imageFormat,
 			m_config.resource.imageType,
 			vk::VK_IMAGE_TILING_OPTIMAL,
-			m_supportReadOp->getResourceUsageFlags() | m_supportWriteOp->getResourceUsageFlags(),
+			m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags(),
 			0u
 		};
 		vk::VkExternalImageFormatProperties					externalProperties	=
@@ -1604,7 +1604,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 			DE_NULL,
 
 			0u,
-			m_supportReadOp->getResourceUsageFlags() | m_supportWriteOp->getResourceUsageFlags(),
+			m_supportReadOp->getInResourceUsageFlags() | m_supportWriteOp->getOutResourceUsageFlags(),
 			m_memoryHandleType
 		};
 		vk::VkExternalBufferProperties						properties			=
@@ -1661,8 +1661,8 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 		const de::UniquePtr<Operation>			writeOp				(m_supportWriteOp->build(operationContext, *resourceWrite));
 		const de::UniquePtr<Operation>			readOp				(m_supportReadOp->build(operationContext, *resourceRead));
 
-		const SyncInfo							writeSync			= writeOp->getSyncInfo();
-		const SyncInfo							readSync			= readOp->getSyncInfo();
+		const SyncInfo							writeSync			= writeOp->getOutSyncInfo();
+		const SyncInfo							readSync			= readOp->getInSyncInfo();
 
 		beginCommandBuffer(m_vkd, *commandBufferWrite);
 		writeOp->recordCommands(*commandBufferWrite);

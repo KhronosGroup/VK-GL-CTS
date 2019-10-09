@@ -264,6 +264,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinTests.cpp \
+	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderClockTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderCommonFunctionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderExecutor.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderIntegerFunctionTests.cpp \
@@ -354,8 +355,10 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperation.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperationMultiQueueTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationOperationSingleQueueTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationSignalOrderTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationTests.cpp \
+	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationTimelineSemaphoreTests.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationUtil.cpp \
 	external/vulkancts/modules/vulkan/synchronization/vktSynchronizationWin32KeyedMutexTests.cpp \
 	external/vulkancts/modules/vulkan/tessellation/vktTessellationCommonEdgeTests.cpp \

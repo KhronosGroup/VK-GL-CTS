@@ -450,6 +450,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT = 1000178002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR = 1000180000,
     VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD = 1000183000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR = 1000181000,
     VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT = 1000184000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD = 1000185000,
     VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD = 1000189000,
@@ -471,6 +472,12 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV = 1000205002,
     VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV = 1000206000,
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV = 1000206001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR = 1000207000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR = 1000207001,
+    VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR = 1000207002,
+    VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR = 1000207003,
+    VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR = 1000207004,
+    VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR = 1000207005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL = 1000209000,
     VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL = 1000210000,
     VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL = 1000210001,
@@ -6482,6 +6489,89 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR
 #endif
 
 
+#define VK_KHR_timeline_semaphore 1
+#define VK_KHR_TIMELINE_SEMAPHORE_SPEC_VERSION 2
+#define VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME "VK_KHR_timeline_semaphore"
+
+typedef enum VkSemaphoreTypeKHR {
+    VK_SEMAPHORE_TYPE_BINARY_KHR = 0,
+    VK_SEMAPHORE_TYPE_TIMELINE_KHR = 1,
+    VK_SEMAPHORE_TYPE_BEGIN_RANGE_KHR = VK_SEMAPHORE_TYPE_BINARY_KHR,
+    VK_SEMAPHORE_TYPE_END_RANGE_KHR = VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+    VK_SEMAPHORE_TYPE_RANGE_SIZE_KHR = (VK_SEMAPHORE_TYPE_TIMELINE_KHR - VK_SEMAPHORE_TYPE_BINARY_KHR + 1),
+    VK_SEMAPHORE_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkSemaphoreTypeKHR;
+
+typedef enum VkSemaphoreWaitFlagBitsKHR {
+    VK_SEMAPHORE_WAIT_ANY_BIT_KHR = 0x00000001,
+    VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkSemaphoreWaitFlagBitsKHR;
+typedef VkFlags VkSemaphoreWaitFlagsKHR;
+typedef struct VkPhysicalDeviceTimelineSemaphoreFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           timelineSemaphore;
+} VkPhysicalDeviceTimelineSemaphoreFeaturesKHR;
+
+typedef struct VkPhysicalDeviceTimelineSemaphorePropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    uint64_t           maxTimelineSemaphoreValueDifference;
+} VkPhysicalDeviceTimelineSemaphorePropertiesKHR;
+
+typedef struct VkSemaphoreTypeCreateInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    VkSemaphoreTypeKHR    semaphoreType;
+    uint64_t              initialValue;
+} VkSemaphoreTypeCreateInfoKHR;
+
+typedef struct VkTimelineSemaphoreSubmitInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           waitSemaphoreValueCount;
+    const uint64_t*    pWaitSemaphoreValues;
+    uint32_t           signalSemaphoreValueCount;
+    const uint64_t*    pSignalSemaphoreValues;
+} VkTimelineSemaphoreSubmitInfoKHR;
+
+typedef struct VkSemaphoreWaitInfoKHR {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkSemaphoreWaitFlagsKHR    flags;
+    uint32_t                   semaphoreCount;
+    const VkSemaphore*         pSemaphores;
+    const uint64_t*            pValues;
+} VkSemaphoreWaitInfoKHR;
+
+typedef struct VkSemaphoreSignalInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkSemaphore        semaphore;
+    uint64_t           value;
+} VkSemaphoreSignalInfoKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetSemaphoreCounterValueKHR)(VkDevice device, VkSemaphore semaphore, uint64_t* pValue);
+typedef VkResult (VKAPI_PTR *PFN_vkWaitSemaphoresKHR)(VkDevice device, const VkSemaphoreWaitInfoKHR* pWaitInfo, uint64_t timeout);
+typedef VkResult (VKAPI_PTR *PFN_vkSignalSemaphoreKHR)(VkDevice device, const VkSemaphoreSignalInfoKHR* pSignalInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetSemaphoreCounterValueKHR(
+    VkDevice                                    device,
+    VkSemaphore                                 semaphore,
+    uint64_t*                                   pValue);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkWaitSemaphoresKHR(
+    VkDevice                                    device,
+    const VkSemaphoreWaitInfoKHR*               pWaitInfo,
+    uint64_t                                    timeout);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkSignalSemaphoreKHR(
+    VkDevice                                    device,
+    const VkSemaphoreSignalInfoKHR*             pSignalInfo);
+#endif
+
+
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
 #define VK_EXT_DEBUG_REPORT_SPEC_VERSION  9
@@ -8115,8 +8205,6 @@ typedef struct VkPipelineCoverageModulationStateCreateInfoNV {
     const float*                                      pCoverageModulationTable;
 } VkPipelineCoverageModulationStateCreateInfoNV;
 
-
-
 #define VK_NV_fill_rectangle 1
 #define VK_NV_FILL_RECTANGLE_SPEC_VERSION 1
 #define VK_NV_FILL_RECTANGLE_EXTENSION_NAME "VK_NV_fill_rectangle"
@@ -8144,6 +8232,16 @@ typedef struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV {
 #define VK_EXT_POST_DEPTH_COVERAGE_SPEC_VERSION 1
 #define VK_EXT_POST_DEPTH_COVERAGE_EXTENSION_NAME "VK_EXT_post_depth_coverage"
 
+#define VK_KHR_shader_clock                   1
+#define VK_KHR_SHADER_CLOCK_SPEC_VERSION      1
+#define VK_KHR_SHADER_CLOCK_EXTENSION_NAME    "VK_KHR_shader_clock"
+
+typedef struct VkPhysicalDeviceShaderClockFeaturesKHR {
+    VkStructureType sType;
+    void*           pNext;
+    VkBool32        shaderSubgroupClock;
+    VkBool32        shaderDeviceClock;
+} VkPhysicalDeviceShaderClockFeaturesKHR;
 
 #define VK_EXT_image_drm_format_modifier 1
 #define VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_SPEC_VERSION 1

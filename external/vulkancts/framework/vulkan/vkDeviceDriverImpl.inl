@@ -822,6 +822,21 @@ VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice
 	return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
 }
 
+VkResult DeviceDriver::getSemaphoreCounterValueKHR (VkDevice device, VkSemaphore semaphore, deUint64* pValue) const
+{
+	return m_vk.getSemaphoreCounterValueKHR(device, semaphore, pValue);
+}
+
+VkResult DeviceDriver::waitSemaphoresKHR (VkDevice device, const VkSemaphoreWaitInfoKHR* pWaitInfo, deUint64 timeout) const
+{
+	return m_vk.waitSemaphoresKHR(device, pWaitInfo, timeout);
+}
+
+VkResult DeviceDriver::signalSemaphoreKHR (VkDevice device, const VkSemaphoreSignalInfoKHR* pSignalInfo) const
+{
+	return m_vk.signalSemaphoreKHR(device, pSignalInfo);
+}
+
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
 {
 	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
