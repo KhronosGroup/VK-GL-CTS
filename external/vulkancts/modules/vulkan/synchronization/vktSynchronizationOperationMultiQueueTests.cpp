@@ -512,7 +512,7 @@ public:
 		// at least once. Each of the operation will be executing with
 		// a dependency on the previous using timeline points.
 		m_opSupports.push_back(writeOp);
-		m_opQueues.push_back(m_queues->getDefaultQueue(writeOp->getOutResourceUsageFlags()));
+		m_opQueues.push_back(m_queues->getDefaultQueue(writeOp->getQueueFlags(*m_opContext)));
 
 		for (deUint32 queueIdx = 0; queueIdx < maxQueues; queueIdx++)
 		{
@@ -536,7 +536,7 @@ public:
 		}
 
 		m_opSupports.push_back(readOp);
-		m_opQueues.push_back(m_queues->getDefaultQueue(readOp->getInResourceUsageFlags()));
+		m_opQueues.push_back(m_queues->getDefaultQueue(readOp->getQueueFlags(*m_opContext)));
 
 		// Now create the resources with the usage associated to the
 		// operation performed on the resource.
