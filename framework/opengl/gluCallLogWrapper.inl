@@ -1547,6 +1547,13 @@ void CallLogWrapper::glFramebufferTexture2D (glw::GLenum target, glw::GLenum att
 	m_gl.framebufferTexture2D(target, attachment, textarget, texture, level);
 }
 
+void CallLogWrapper::glFramebufferTexture2DMultisampleEXT (glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLsizei samples)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferTexture2DMultisampleEXT(" << toHex(target) << ", " << toHex(attachment) << ", " << toHex(textarget) << ", " << texture << ", " << level << ", " << samples << ");" << TestLog::EndMessage;
+	m_gl.framebufferTexture2DMultisampleEXT(target, attachment, textarget, texture, level, samples);
+}
+
 void CallLogWrapper::glFramebufferTexture3D (glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset)
 {
 	if (m_enableLog)
@@ -4738,6 +4745,13 @@ void CallLogWrapper::glRenderbufferStorageMultisample (glw::GLenum target, glw::
 	if (m_enableLog)
 		m_log << TestLog::Message << "glRenderbufferStorageMultisample(" << getFramebufferTargetStr(target) << ", " << samples << ", " << getUncompressedTextureFormatStr(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
 	m_gl.renderbufferStorageMultisample(target, samples, internalformat, width, height);
+}
+
+void CallLogWrapper::glRenderbufferStorageMultisampleEXT (glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glRenderbufferStorageMultisampleEXT(" << toHex(target) << ", " << samples << ", " << toHex(internalformat) << ", " << width << ", " << height << ");" << TestLog::EndMessage;
+	m_gl.renderbufferStorageMultisampleEXT(target, samples, internalformat, width, height);
 }
 
 void CallLogWrapper::glResumeTransformFeedback (void)
