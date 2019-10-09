@@ -84,6 +84,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"two-loops-matrix.amber",						"two-loops-matrix",						"A fragment shader with two loops and some matrices"									},
 		{	"two-loops-set-struct.amber",					"two-loops-set-struct",					"A fragment shader with two loops that write to a struct"								},
 		{	"two-loops-with-break.amber",					"two-loops-with-break",					"A fragment shader with two loops with breaks"											},
+		{	"two-nested-do-whiles.amber",					"two-nested-do-whiles",					"A fragment shader with nested do while"												},
 		{	"unreachable-barrier-in-loops.amber",			"unreachable-barrier-in-loops",			"A compute shader with an unreachable barrier in a loop nest"							},
 		{	"unreachable-continue-statement.amber",			"unreachable-continue-statement",		"A fragment shader with unreachable continue statement"									},
 		{	"unreachable-loops.amber",						"unreachable-loops",					"Fragment shader that writes red despite unreachable loops"								},
