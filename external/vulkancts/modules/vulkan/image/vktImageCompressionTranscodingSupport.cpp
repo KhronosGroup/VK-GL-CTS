@@ -2609,13 +2609,13 @@ void TexelViewCompatibleCase::initPrograms (vk::SourceCollections&	programCollec
 					{
 						// IMAGE_TYPE_1D
 						"    const int     pos = int(gl_GlobalInvocationID.x);\n"
-						"    const float coord = float(gl_GlobalInvocationID.x) / pixels_resolution.x;\n",
+						"    const float coord = (float(gl_GlobalInvocationID.x) + 0.5) / pixels_resolution.x;\n",
 						// IMAGE_TYPE_2D
 						"    const ivec2  pos = ivec2(gl_GlobalInvocationID.xy);\n"
-						"    const vec2 coord = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n",
+						"    const vec2 coord = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pixels_resolution);\n",
 						// IMAGE_TYPE_3D
 						"    const ivec3  pos = ivec3(gl_GlobalInvocationID.xy, 0);\n"
-						"    const vec2    v2 = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
+						"    const vec2    v2 = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pixels_resolution);\n"
 						"    const vec3 coord = vec3(v2, 0.0);\n",
 					};
 
