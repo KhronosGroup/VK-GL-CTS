@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos Vulkan API description (vk.xml) revision c5261decf68cb2ef8cd934b8a3e4824bfde81cda.
+ * Generated from Khronos Vulkan API description (vk.xml) revision 22a5a1459fbe8be546079525c4c9d50bfc20b30b.
  */
 static const std::tuple<deUint32, deUint32, const char*, const char*>	instanceExtensionDependencies[]	=
 {
@@ -157,6 +157,7 @@ static const std::tuple<deUint32, deUint32, const char*, const char*>	deviceExte
 	std::make_tuple(1, 0, "VK_KHR_sampler_ycbcr_conversion", "VK_KHR_get_memory_requirements2"),
 	std::make_tuple(1, 0, "VK_KHR_sampler_ycbcr_conversion", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_shader_atomic_int64", "VK_KHR_get_physical_device_properties2"),
+	std::make_tuple(1, 0, "VK_KHR_shader_clock", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_shader_float16_int8", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_shader_float_controls", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_shared_presentable_image", "VK_KHR_swapchain"),
@@ -171,6 +172,7 @@ static const std::tuple<deUint32, deUint32, const char*, const char*>	deviceExte
 	std::make_tuple(1, 0, "VK_KHR_swapchain_mutable_format", "VK_KHR_image_format_list"),
 	std::make_tuple(1, 1, "VK_KHR_swapchain_mutable_format", "VK_KHR_swapchain"),
 	std::make_tuple(1, 1, "VK_KHR_swapchain_mutable_format", "VK_KHR_image_format_list"),
+	std::make_tuple(1, 0, "VK_KHR_timeline_semaphore", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_uniform_buffer_standard_layout", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_variable_pointers", "VK_KHR_get_physical_device_properties2"),
 	std::make_tuple(1, 0, "VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class"),

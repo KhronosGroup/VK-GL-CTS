@@ -786,6 +786,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicInt64Fea
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDriverPropertiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
@@ -804,6 +809,36 @@ template<> VkStructureType getStructureType<VkSubpassDescriptionDepthStencilReso
 template<> VkStructureType getStructureType<VkPhysicalDeviceDepthStencilResolvePropertiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTimelineSemaphoreFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTimelineSemaphorePropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreTypeCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreWaitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreSignalInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceVulkanMemoryModelFeaturesKHR> (void)
@@ -849,36 +884,6 @@ template<> VkStructureType getStructureType<VkPipelineExecutableStatisticKHR> (v
 template<> VkStructureType getStructureType<VkPipelineExecutableInternalRepresentationKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceTimelineSemaphoreFeaturesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceTimelineSemaphorePropertiesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;
-}
-
-template<> VkStructureType getStructureType<VkSemaphoreTypeCreateInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
-}
-
-template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
-}
-
-template<> VkStructureType getStructureType<VkSemaphoreWaitInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
-}
-
-template<> VkStructureType getStructureType<VkSemaphoreSignalInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
@@ -1219,11 +1224,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsProp
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesListEXT> (void)

@@ -414,8 +414,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR";
-		case VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD:						return "VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD:						return "VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD";
 		case VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT:									return "VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD";
 		case VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD:					return "VK_STRUCTURE_TYPE_DEVICE_MEMORY_OVERALLOCATION_CREATE_INFO_AMD";
@@ -1474,6 +1474,17 @@ const char* getShaderFloatControlsIndependenceKHRName (VkShaderFloatControlsInde
 	}
 }
 
+const char* getSemaphoreTypeKHRName (VkSemaphoreTypeKHR value)
+{
+	switch (value)
+	{
+		case VK_SEMAPHORE_TYPE_BINARY_KHR:		return "VK_SEMAPHORE_TYPE_BINARY_KHR";
+		case VK_SEMAPHORE_TYPE_TIMELINE_KHR:	return "VK_SEMAPHORE_TYPE_TIMELINE_KHR";
+		case VK_SEMAPHORE_TYPE_MAX_ENUM_KHR:	return "VK_SEMAPHORE_TYPE_MAX_ENUM_KHR";
+		default:								return DE_NULL;
+	}
+}
+
 const char* getPipelineExecutableStatisticFormatKHRName (VkPipelineExecutableStatisticFormatKHR value)
 {
 	switch (value)
@@ -1484,17 +1495,6 @@ const char* getPipelineExecutableStatisticFormatKHRName (VkPipelineExecutableSta
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR:	return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR";
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_MAX_ENUM_KHR:	return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_MAX_ENUM_KHR";
 		default:													return DE_NULL;
-	}
-}
-
-const char* getSemaphoreTypeKHRName (VkSemaphoreTypeKHR value)
-{
-	switch (value)
-	{
-		case VK_SEMAPHORE_TYPE_BINARY_KHR:		return "VK_SEMAPHORE_TYPE_BINARY_KHR";
-		case VK_SEMAPHORE_TYPE_TIMELINE_KHR:	return "VK_SEMAPHORE_TYPE_TIMELINE_KHR";
-		case VK_SEMAPHORE_TYPE_MAX_ENUM_KHR:	return "VK_SEMAPHORE_TYPE_MAX_ENUM_KHR";
-		default:								return DE_NULL;
 	}
 }
 
@@ -6234,6 +6234,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicInt
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderClockFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderSubgroupClock = " << value.shaderSubgroupClock << '\n';
+	s << "\tshaderDeviceClock = " << value.shaderDeviceClock << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkConformanceVersionKHR& value)
 {
 	s << "VkConformanceVersionKHR = {\n";
@@ -6305,6 +6316,74 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthStencilRes
 	s << "\tsupportedStencilResolveModes = " << getResolveModeFlagsKHRStr(value.supportedStencilResolveModes) << '\n';
 	s << "\tindependentResolveNone = " << value.independentResolveNone << '\n';
 	s << "\tindependentResolve = " << value.independentResolve << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceTimelineSemaphoreFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttimelineSemaphore = " << value.timelineSemaphore << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTimelineSemaphorePropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceTimelineSemaphorePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxTimelineSemaphoreValueDifference = " << value.maxTimelineSemaphoreValueDifference << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreTypeCreateInfoKHR& value)
+{
+	s << "VkSemaphoreTypeCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphoreType = " << value.semaphoreType << '\n';
+	s << "\tinitialValue = " << value.initialValue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTimelineSemaphoreSubmitInfoKHR& value)
+{
+	s << "VkTimelineSemaphoreSubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twaitSemaphoreValueCount = " << value.waitSemaphoreValueCount << '\n';
+	s << "\tpWaitSemaphoreValues = " << value.pWaitSemaphoreValues << '\n';
+	s << "\tsignalSemaphoreValueCount = " << value.signalSemaphoreValueCount << '\n';
+	s << "\tpSignalSemaphoreValues = " << value.pSignalSemaphoreValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreWaitInfoKHR& value)
+{
+	s << "VkSemaphoreWaitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSemaphoreWaitFlagsKHRStr(value.flags) << '\n';
+	s << "\tsemaphoreCount = " << value.semaphoreCount << '\n';
+	s << "\tpSemaphores = " << value.pSemaphores << '\n';
+	s << "\tpValues = " << value.pValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfoKHR& value)
+{
+	s << "VkSemaphoreSignalInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\tvalue = " << value.value << '\n';
 	s << '}';
 	return s;
 }
@@ -6419,74 +6498,6 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableInternalRep
 	s << "\tisText = " << value.isText << '\n';
 	s << "\tdataSize = " << value.dataSize << '\n';
 	s << "\tpData = " << value.pData << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR& value)
-{
-	s << "VkPhysicalDeviceTimelineSemaphoreFeaturesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\ttimelineSemaphore = " << value.timelineSemaphore << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTimelineSemaphorePropertiesKHR& value)
-{
-	s << "VkPhysicalDeviceTimelineSemaphorePropertiesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tmaxTimelineSemaphoreValueDifference = " << value.maxTimelineSemaphoreValueDifference << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSemaphoreTypeCreateInfoKHR& value)
-{
-	s << "VkSemaphoreTypeCreateInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsemaphoreType = " << value.semaphoreType << '\n';
-	s << "\tinitialValue = " << value.initialValue << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkTimelineSemaphoreSubmitInfoKHR& value)
-{
-	s << "VkTimelineSemaphoreSubmitInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\twaitSemaphoreValueCount = " << value.waitSemaphoreValueCount << '\n';
-	s << "\tpWaitSemaphoreValues = " << value.pWaitSemaphoreValues << '\n';
-	s << "\tsignalSemaphoreValueCount = " << value.signalSemaphoreValueCount << '\n';
-	s << "\tpSignalSemaphoreValues = " << value.pSignalSemaphoreValues << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSemaphoreWaitInfoKHR& value)
-{
-	s << "VkSemaphoreWaitInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getSemaphoreWaitFlagsKHRStr(value.flags) << '\n';
-	s << "\tsemaphoreCount = " << value.semaphoreCount << '\n';
-	s << "\tpSemaphores = " << value.pSemaphores << '\n';
-	s << "\tpValues = " << value.pValues << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfoKHR& value)
-{
-	s << "VkSemaphoreSignalInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsemaphore = " << value.semaphore << '\n';
-	s << "\tvalue = " << value.value << '\n';
 	s << '}';
 	return s;
 }
@@ -7513,17 +7524,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSMBuiltin
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderSMBuiltins = " << value.shaderSMBuiltins << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value)
-{
-	s << "VkPhysicalDeviceShaderClockFeaturesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tshaderSubgroupClock = " << value.shaderSubgroupClock << '\n';
-	s << "\tshaderDeviceClock = " << value.shaderDeviceClock << '\n';
 	s << '}';
 	return s;
 }
