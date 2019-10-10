@@ -4069,9 +4069,25 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			vector<deUint8> expectedBytes;
 			expected->getBytes(expectedBytes);
 
-			if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
-				return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
+			// Same vertex shader may be executed for multiple times, the output value should be expected value + non-negative integer N
+			if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
+			{
+				const size_t numExpectedEntries = expectedBytes.size() / sizeof(float);
+				const float* expectedFloats     = reinterpret_cast<const float*>(&expectedBytes.front());
+				const float* outputFloats       = reinterpret_cast<const float*>(outResourceMemories[outputNdx]->getHostPtr());
 
+				for (size_t expectedNdx = 0; expectedNdx < numExpectedEntries; ++expectedNdx)
+				{
+					float diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+					if ((diff < 0) || (deFloatFloor(diff) != diff))
+						return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
+				}
+			}
+			else
+			{
+				if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
+					return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
+			}
 		}
 	}
 
