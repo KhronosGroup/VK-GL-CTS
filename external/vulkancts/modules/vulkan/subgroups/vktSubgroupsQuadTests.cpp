@@ -81,7 +81,6 @@ struct CaseDefinition
 	int					opType;
 	VkShaderStageFlags	shaderStage;
 	VkFormat			format;
-	int					direction;
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 };
 
@@ -101,29 +100,35 @@ std::string GetTestSrc(const CaseDefinition &caseDef)
 		"  const uint swapTable[4] = {3, 2, 1, 0};\n",
 	};
 
+	const std::string validate =
+		"  if (subgroupBallotBitExtract(mask, otherID) && op !=data[otherID])\n"
+		"    tempRes = 0;\n";
+
+	std::string fmt	= subgroups::getFormatNameForGLSL(caseDef.format);
+	std::string op	= getOpTypeName(caseDef.opType);
+
 	std::ostringstream testSrc;
 	testSrc	<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< swapTable[caseDef.opType];
-	if (OPTYPE_QUAD_BROADCAST == caseDef.opType)
+			<< swapTable[caseDef.opType]
+			<< "  tempRes = 1;\n";
+
+	if (caseDef.opType == OPTYPE_QUAD_BROADCAST)
 	{
-		testSrc << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-				<< getOpTypeName(caseDef.opType) << "(data[gl_SubgroupInvocationID], " << caseDef.direction << ");\n"
-				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + " << caseDef.direction << ";\n";
+		for (int i=0; i<4; i++)
+		{
+			testSrc << "  {\n"
+					<< "  " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], " << i << ");\n"
+					<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + " << i << ";\n"
+					<< validate
+					<< "  }\n";
+		}
 	}
 	else
 	{
-		testSrc << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-				<< getOpTypeName(caseDef.opType) << "(data[gl_SubgroupInvocationID]);\n"
-				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + swapTable[gl_SubgroupInvocationID & 0x3];\n";
+		testSrc << "  " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID]);\n"
+				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + swapTable[gl_SubgroupInvocationID & 0x3];\n"
+				<< validate;
 	}
-	testSrc	<< "  if (subgroupBallotBitExtract(mask, otherID))\n"
-			<< "  {\n"
-			<< "    tempRes = (op == data[otherID]) ? 1 : 0;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    tempRes = 1;\n" // Invocation we read from was inactive, so we can't verify results!
-			<< "  }\n";
 
 	return testSrc.str();
 }
@@ -254,6 +259,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+
 	std::string extHeader = GetExtHeader(caseDef.format);
 	std::string sourceType = GetTestSrc(caseDef);
 
@@ -285,8 +292,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  result[offset] = tempRes;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 	}
 	else
 	{
@@ -313,8 +319,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
 				"  gl_PointSize = 1.0f;\n"
 				"}\n";
-			programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+			programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << buildOptions;
 		}
 
 		{
@@ -343,8 +348,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  }\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 				"}\n";
-			programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc) << buildOptions;
 		}
 
 		{
@@ -369,8 +373,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
-			programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese) << buildOptions;
 		}
 
 		{
@@ -397,8 +400,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";
-			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
-													  programCollection.glslSources);
+			subgroups::addGeometryShadersFromTemplate(geometry, buildOptions, programCollection.glslSources);
 		}
 
 		{
@@ -416,8 +418,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				+ sourceType +
 				"  result = tempRes;\n"
 				"}\n";
-			programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+			programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment)<< buildOptions;
 		}
 		subgroups::addNoSubgroupShader(programCollection);
 	}
@@ -555,57 +556,40 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 
 	const std::vector<VkFormat> formats = subgroups::getAllFormats();
 
-	for (int direction = 0; direction < 4; ++direction)
+	for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
 	{
-		for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
+		const VkFormat format = formats[formatIndex];
+
+		for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 		{
-			const VkFormat format = formats[formatIndex];
+			const std::string op = de::toLower(getOpTypeName(opTypeIndex));
+			std::ostringstream name;
+			name << de::toLower(op);
 
-			for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
+			name << "_" << subgroups::getFormatNameForGLSL(format);
+
 			{
-				const std::string op = de::toLower(getOpTypeName(opTypeIndex));
-				std::ostringstream name;
-				name << de::toLower(op);
-
-				if (OPTYPE_QUAD_BROADCAST == opTypeIndex)
-				{
-					name << "_" << direction;
-				}
-				else
-				{
-					if (0 != direction)
-					{
-						// We don't need direction for swap operations.
-						continue;
-					}
-				}
-
-				name << "_" << subgroups::getFormatNameForGLSL(format);
-
-				{
-					const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, direction, de::SharedPtr<bool>(new bool)};
-					addFunctionCaseWithPrograms(computeGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
-				}
-
-				{
-					const CaseDefinition caseDef =
-					{
-						opTypeIndex,
-						VK_SHADER_STAGE_ALL_GRAPHICS,
-						format,
-						direction,
-						de::SharedPtr<bool>(new bool)
-					};
-					addFunctionCaseWithPrograms(graphicGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
-				}
-				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
-				{
-					const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, direction, de::SharedPtr<bool>(new bool)};
-					addFunctionCaseWithPrograms(framebufferGroup.get(), name.str()+"_"+ getShaderStageName(caseDef.shaderStage), "",
-												supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
-				}
-
+				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, de::SharedPtr<bool>(new bool)};
+				addFunctionCaseWithPrograms(computeGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
 			}
+
+			{
+				const CaseDefinition caseDef =
+				{
+					opTypeIndex,
+					VK_SHADER_STAGE_ALL_GRAPHICS,
+					format,
+					de::SharedPtr<bool>(new bool)
+				};
+				addFunctionCaseWithPrograms(graphicGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
+			}
+			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
+			{
+				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, de::SharedPtr<bool>(new bool)};
+				addFunctionCaseWithPrograms(framebufferGroup.get(), name.str()+"_"+ getShaderStageName(caseDef.shaderStage), "",
+											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+			}
+
 		}
 	}
 

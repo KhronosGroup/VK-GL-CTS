@@ -267,6 +267,7 @@ Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 
 Move<VkPipeline> makeComputePipeline(Context& context,
 									 const VkPipelineLayout pipelineLayout, const VkShaderModule shaderModule,
+									 const deUint32 pipelineCreateFlags, VkPipeline basePipelineHandle,
 									 deUint32 localSizeX, deUint32 localSizeY, deUint32 localSizeZ)
 {
 	const deUint32 localSize[3] = {localSizeX, localSizeY, localSizeZ};
@@ -288,24 +289,24 @@ Move<VkPipeline> makeComputePipeline(Context& context,
 
 	const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		0u,														// VkPipelineShaderStageCreateFlags	flags;
-		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits			stage;
-		shaderModule,											// VkShaderModule					module;
-		"main",													// const char*						pName;
-		&info,													// const VkSpecializationInfo*		pSpecializationInfo;
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,				// VkStructureType					sType;
+		DE_NULL,															// const void*						pNext;
+		0u,																	// VkPipelineShaderStageCreateFlags	flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,										// VkShaderStageFlagBits			stage;
+		shaderModule,														// VkShaderModule					module;
+		"main",																// const char*						pName;
+		&info,																// const VkSpecializationInfo*		pSpecializationInfo;
 	};
 
 	const vk::VkComputePipelineCreateInfo pipelineCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	// VkStructureType	sType;
 		DE_NULL,										// const void*						pNext;
-		0u,												// VkPipelineCreateFlags			flags;
+		pipelineCreateFlags,							// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,						// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,									// VkPipelineLayout					layout;
-		DE_NULL,										// VkPipeline						basePipelineHandle;
-		0,												// deInt32							basePipelineIndex;
+		basePipelineHandle,								// VkPipeline						basePipelineHandle;
+		-1,												// deInt32							basePipelineIndex;
 	};
 
 	return createComputePipeline(context.getDeviceInterface(),
@@ -3158,22 +3159,33 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 	};
 
-	Move<VkPipeline> lastPipeline(
+	Move<VkPipeline> pipelines[localSizesToTestCount - 1];
+	pipelines[0] =
 		makeComputePipeline(context, *pipelineLayout, *shaderModule,
-							localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2]));
+							VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, (VkPipeline) DE_NULL,
+							localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2]);
+
+	for (deUint32 index = 1; index < (localSizesToTestCount - 1); index++)
+	{
+		const deUint32 nextX = localSizesToTest[index][0];
+		const deUint32 nextY = localSizesToTest[index][1];
+		const deUint32 nextZ = localSizesToTest[index][2];
+
+		pipelines[index] =
+			makeComputePipeline(context, *pipelineLayout, *shaderModule,
+								VK_PIPELINE_CREATE_DERIVATIVE_BIT, *pipelines[0],
+								nextX, nextY, nextZ);
+	}
 
 	for (deUint32 index = 0; index < (localSizesToTestCount - 1); index++)
 	{
-		const deUint32 nextX = localSizesToTest[index + 1][0];
-		const deUint32 nextY = localSizesToTest[index + 1][1];
-		const deUint32 nextZ = localSizesToTest[index + 1][2];
 
 		// we are running one test
 		totalIterations++;
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *lastPipeline);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelines[index]);
 
 		vk.cmdBindDescriptorSets(*cmdBuffer,
 				VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
@@ -3182,10 +3194,6 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		vk.cmdDispatch(*cmdBuffer,numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
 
 		endCommandBuffer(vk, *cmdBuffer);
-
-		Move<VkPipeline> nextPipeline(
-			makeComputePipeline(context, *pipelineLayout, *shaderModule,
-								nextX, nextY, nextZ));
 
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
@@ -3217,8 +3225,6 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		}
 
 		vk.resetCommandBuffer(*cmdBuffer, 0);
-
-		lastPipeline = nextPipeline;
 	}
 
 	if (0 < failedIterations)
