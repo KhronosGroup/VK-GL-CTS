@@ -6468,6 +6468,10 @@ typedef struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
 } VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 
+#define VK_KHR_spirv_1_4 1
+#define VK_KHR_SPIRV_1_4_SPEC_VERSION     1
+#define VK_KHR_SPIRV_1_4_EXTENSION_NAME   "VK_KHR_spirv_1_4"
+
 
 #define VK_KHR_surface_protected_capabilities 1
 #define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_SPEC_VERSION 1
