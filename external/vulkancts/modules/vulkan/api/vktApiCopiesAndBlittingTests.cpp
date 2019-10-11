@@ -2640,14 +2640,14 @@ public:
 		VkImageFormatProperties properties;
 		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.src.image.format,
-																					VK_IMAGE_TYPE_2D,
+																					m_params.src.image.imageType,
 																					m_params.src.image.tiling,
 																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																					0,
 																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
 			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.dst.image.format,
-																					VK_IMAGE_TYPE_2D,
+																					m_params.dst.image.imageType,
 																					m_params.dst.image.tiling,
 																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 																					0,
