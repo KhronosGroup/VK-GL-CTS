@@ -1252,9 +1252,17 @@ tcu::TestStatus	CommonDescriptorInstance::iterate					(void)
 		updateDescriptors	(v);
 	}
 
-	vk::beginRenderPass		(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
-	m_vki.cmdDraw			(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
-	vk::endRenderPass		(m_vki, *v.commandBuffer);
+	v.renderArea.extent.width	= m_testParams.frameResolution.width/2;
+	v.renderArea.extent.height	= m_testParams.frameResolution.height/2;
+	for (int x = 0; x < 2; x++)
+		for (int y= 0; y < 2; y++)
+		{
+			v.renderArea.offset.x		= x * m_testParams.frameResolution.width/2;
+			v.renderArea.offset.y		= y * m_testParams.frameResolution.height/2;
+			vk::beginRenderPass		(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
+			m_vki.cmdDraw			(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
+			vk::endRenderPass		(m_vki, *v.commandBuffer);
+		}
 
 	return (iterateCommandEnd(v) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
 }

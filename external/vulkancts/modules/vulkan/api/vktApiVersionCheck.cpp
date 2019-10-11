@@ -72,16 +72,25 @@ public:
 	{}
 	virtual tcu::TestStatus		iterate					(void)
 	{
-		tcu::TestLog&			log				= m_context.getTestContext().getLog();
-		const vk::ApiVersion	instanceVersion	= vk::unpackVersion(m_context.getAvailableInstanceVersion());
-		const vk::ApiVersion	deviceVersion	= vk::unpackVersion(m_context.getDeviceVersion());
-		const vk::ApiVersion	usedApiVersion	= vk::unpackVersion(m_context.getUsedApiVersion());
+		tcu::TestLog&			log						= m_context.getTestContext().getLog();
+		const vk::ApiVersion	maxVulkanVersion		= vk::unpackVersion(m_context.getMaximumFrameworkVulkanVersion());
+		const vk::ApiVersion	instanceVersion			= vk::unpackVersion(m_context.getAvailableInstanceVersion());
+		const ::std::string		instanceVersionString	= de::toString(instanceVersion.majorNum) + ::std::string(".") + de::toString(instanceVersion.minorNum) + ::std::string(".") + de::toString(instanceVersion.patchNum);
+		const vk::ApiVersion	deviceVersion			= vk::unpackVersion(m_context.getDeviceVersion());
+		const ::std::string		deviceVersionString		= de::toString(deviceVersion.majorNum) + ::std::string(".") + de::toString(deviceVersion.minorNum) + ::std::string(".") + de::toString(deviceVersion.patchNum);
+		const vk::ApiVersion	usedApiVersion			= vk::unpackVersion(m_context.getUsedApiVersion());
+		const ::std::string		usedApiVersionString	= de::toString(usedApiVersion.majorNum) + ::std::string(".") + de::toString(usedApiVersion.minorNum) + ::std::string(".") + de::toString(usedApiVersion.patchNum);
 
 		log << tcu::TestLog::Message << "availableInstanceVersion: " << instanceVersion << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "deviceVersion: " << deviceVersion << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "usedApiVersion: " << usedApiVersion << tcu::TestLog::EndMessage;
-		const ::std::string		result			= de::toString(usedApiVersion.majorNum) + ::std::string(".") + de::toString(usedApiVersion.minorNum) + ::std::string(".") + de::toString(usedApiVersion.patchNum);
-		return tcu::TestStatus::pass(result);
+
+		if (instanceVersion.majorNum > maxVulkanVersion.majorNum || instanceVersion.minorNum > maxVulkanVersion.minorNum)
+			return tcu::TestStatus::fail(de::toString("This version of CTS does not support a Vulkan instance with version ") + instanceVersionString);
+		else if (deviceVersion.majorNum > maxVulkanVersion.majorNum || deviceVersion.minorNum > maxVulkanVersion.minorNum)
+			return tcu::TestStatus::fail(de::toString("This version of CTS does not support Vulkan device version ") + deviceVersionString);
+		else
+			return tcu::TestStatus::pass(usedApiVersionString);
 	}
 };
 
