@@ -31,6 +31,7 @@
 #include "vktShaderCommonFunctionTests.hpp"
 #include "vktShaderIntegerFunctionTests.hpp"
 #include "vktShaderPackingFunctionTests.hpp"
+#include "vktShaderFConvertTests.hpp"
 
 namespace vkt
 {
@@ -50,6 +51,7 @@ tcu::TestCaseGroup* createBuiltinTests (tcu::TestContext& testCtx)
 	builtinTests->addChild(new BuiltinPrecisionTests(testCtx));
 	builtinTests->addChild(new BuiltinPrecision16BitTests(testCtx));
 	builtinTests->addChild(new BuiltinPrecision16Storage32BitTests(testCtx));
+	builtinTests->addChild(createPrecisionFconvertGroup(testCtx));
 
 	return builtinTests.release();
 }
