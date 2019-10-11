@@ -1159,12 +1159,12 @@ tcu::TestStatus testSemaphores (Context& context, VkSemaphoreTypeKHR semaphoreTy
 	submitInfo[0].pSignalSemaphores					= &semaphore.get();
 	timelineSubmitInfo[0].pSignalSemaphoreValues	= &timelineValue;
 	timelineSubmitInfo[0].signalSemaphoreValueCount	= 1;
-	submitInfo[0].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE ? &timelineSubmitInfo[0] : DE_NULL);
+	submitInfo[0].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR ? &timelineSubmitInfo[0] : DE_NULL);
 	submitInfo[1].waitSemaphoreCount				= 1;
 	submitInfo[1].pWaitSemaphores					= &semaphore.get();
 	timelineSubmitInfo[1].pWaitSemaphoreValues		= &timelineValue;
 	timelineSubmitInfo[1].waitSemaphoreValueCount	= 1;
-	submitInfo[1].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE ? &timelineSubmitInfo[1] : DE_NULL);
+	submitInfo[1].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR ? &timelineSubmitInfo[1] : DE_NULL);
 	submitInfo[1].pWaitDstStageMask					= &waitDstStageMask;
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
