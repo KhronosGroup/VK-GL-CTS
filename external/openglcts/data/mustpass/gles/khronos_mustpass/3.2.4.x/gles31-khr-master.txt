@@ -2101,8 +2101,6 @@ KHR-GLES31.core.draw_indirect.advanced-twoPass-transformFeedback-elements
 KHR-GLES31.core.draw_indirect.advanced-twoPass-Compute-arrays
 KHR-GLES31.core.draw_indirect.advanced-twoPass-Compute-elements
 KHR-GLES31.core.draw_indirect.advanced-primitiveRestart-elements
-KHR-GLES31.core.draw_indirect.misc-reservedMustBeZero-arrays
-KHR-GLES31.core.draw_indirect.misc-reservedMustBeZero-elements
 KHR-GLES31.core.draw_indirect.negative-noindirect-arrays
 KHR-GLES31.core.draw_indirect.negative-noindirect-elements
 KHR-GLES31.core.draw_indirect.negative-invalidMode-arrays
