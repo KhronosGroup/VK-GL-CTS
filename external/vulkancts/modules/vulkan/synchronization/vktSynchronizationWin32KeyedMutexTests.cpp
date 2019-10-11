@@ -283,7 +283,7 @@ vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				vkd,
 		(requiresDedicated) ? &dedicatedInfo : DE_NULL,
 		externalType,
 		handle.getWin32Handle(),
-		NULL
+		(vk::pt::Win32LPCWSTR)NULL
 	};
 
 	deUint32 handleCompatibleMemoryTypeBits = ~0u;

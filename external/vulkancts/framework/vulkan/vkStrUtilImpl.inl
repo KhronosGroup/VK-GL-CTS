@@ -59,6 +59,7 @@ std::ostream& operator<< (std::ostream& s, Win32Handle					v) { return s << tcu:
 std::ostream& operator<< (std::ostream& s, Win32SecurityAttributesPtr	v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, AndroidHardwareBufferPtr		v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, Win32MonitorHandle			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, Win32LPCWSTR					v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, RROutput						v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, zx_handle_t					v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, GgpFrameToken				v) { return s << tcu::toHex(v.internal); }
@@ -8965,7 +8966,7 @@ std::ostream& operator<< (std::ostream& s, const VkImportMemoryWin32HandleInfoKH
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
 	s << "\thandle = " << value.handle << '\n';
-	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << "\tname = " << getWStr(value.name) << '\n';
 	s << '}';
 	return s;
 }
@@ -8977,7 +8978,7 @@ std::ostream& operator<< (std::ostream& s, const VkExportMemoryWin32HandleInfoKH
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpAttributes = " << value.pAttributes << '\n';
 	s << "\tdwAccess = " << value.dwAccess << '\n';
-	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << "\tname = " << getWStr(value.name) << '\n';
 	s << '}';
 	return s;
 }
@@ -9028,7 +9029,7 @@ std::ostream& operator<< (std::ostream& s, const VkImportSemaphoreWin32HandleInf
 	s << "\tflags = " << getSemaphoreImportFlagsStr(value.flags) << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
 	s << "\thandle = " << value.handle << '\n';
-	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << "\tname = " << getWStr(value.name) << '\n';
 	s << '}';
 	return s;
 }
@@ -9040,7 +9041,7 @@ std::ostream& operator<< (std::ostream& s, const VkExportSemaphoreWin32HandleInf
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpAttributes = " << value.pAttributes << '\n';
 	s << "\tdwAccess = " << value.dwAccess << '\n';
-	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << "\tname = " << getWStr(value.name) << '\n';
 	s << '}';
 	return s;
 }
@@ -9078,7 +9079,7 @@ std::ostream& operator<< (std::ostream& s, const VkImportFenceWin32HandleInfoKHR
 	s << "\tflags = " << getFenceImportFlagsStr(value.flags) << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
 	s << "\thandle = " << value.handle << '\n';
-	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << "\tname = " << getWStr(value.name) << '\n';
 	s << '}';
 	return s;
 }
@@ -9090,7 +9091,7 @@ std::ostream& operator<< (std::ostream& s, const VkExportFenceWin32HandleInfoKHR
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpAttributes = " << value.pAttributes << '\n';
 	s << "\tdwAccess = " << value.dwAccess << '\n';
-	s << "\tname = " << getCharPtrStr(value.name) << '\n';
+	s << "\tname = " << getWStr(value.name) << '\n';
 	s << '}';
 	return s;
 }

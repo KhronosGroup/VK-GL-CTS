@@ -817,7 +817,7 @@ tcu::TestStatus testSemaphoreWin32Create (Context&					context,
 
 			(vk::pt::Win32SecurityAttributesPtr)DE_NULL,
 			DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
-			DE_NULL
+			(vk::pt::Win32LPCWSTR)DE_NULL
 		};
 		const vk::VkExportSemaphoreCreateInfo			exportCreateInfo=
 		{
@@ -1756,7 +1756,7 @@ tcu::TestStatus testFenceWin32Create (Context&				context,
 
 			(vk::pt::Win32SecurityAttributesPtr)DE_NULL,
 			DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
-			DE_NULL
+			(vk::pt::Win32LPCWSTR)DE_NULL
 		};
 		const vk::VkExportFenceCreateInfo			exportCreateInfo=
 		{
@@ -2879,7 +2879,7 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 
 		(vk::pt::Win32SecurityAttributesPtr)DE_NULL,
 		DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
-		DE_NULL
+		(vk::pt::Win32LPCWSTR)DE_NULL
 	};
 	const vk::VkExportMemoryAllocateInfo		exportInfo			=
 	{
