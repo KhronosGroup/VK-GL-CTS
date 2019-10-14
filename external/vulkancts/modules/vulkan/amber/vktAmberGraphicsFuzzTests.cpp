@@ -82,6 +82,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"nested-loops-switch.amber",					"nested-loops-switch",					"A fragment shader with nested loops and a switch"										},
 		{	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
 		{	"return-before-writing-wrong-color.amber",		"return-before-writing-wrong-color",	"A fragment shader with return before writing wrong color"								},
+		{	"return-float-from-while-loop.amber",			"return-float-from-while-loop",			"A fragment shader with unreachable while loop"											},
 		{	"return-in-loop-in-function.amber",				"return-in-loop-in-function",			"A fragment shader with early return from loop in function"								},
 		{	"returned-boolean-in-vector.amber",				"returned-boolean-in-vector",			"A fragment shader with returned boolean in vector"										},
 		{	"similar-nested-ifs.amber",						"similar-nested-ifs",					"A fragment shader with similar nested ifs and loops"									},
