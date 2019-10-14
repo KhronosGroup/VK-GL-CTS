@@ -46,6 +46,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 	}
 	tests[] =
 	{
+		{	"access-new-vector-inside-if-condition.amber",	"access-new-vector-inside-if-condition","A shader that accesses a new vector within an if condition"							},
 		{	"always-false-if-in-do-while.amber",			"always-false-if-in-do-while",			"A fragment shader with an always false if."											},
 		{	"always-false-if-with-discard-return.amber",	"always-false-if-with-discard-return",	"A fragment shader with discard keyword and a return"									},
 		{	"barrier-in-loop-with-break.amber",				"barrier-in-loop-with-break",			"A compute shader with a barrier in a loop with a break"								},
