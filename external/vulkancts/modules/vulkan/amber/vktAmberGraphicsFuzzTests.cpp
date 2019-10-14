@@ -101,6 +101,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"two-nested-for-loops-with-returns.amber",		"two-nested-for-loops-with-returns",	"A compute shader with two nested for loops"											},
 		{	"two-nested-infinite-loops-discard.amber",		"two-nested-infinite-loops-discard",	"A fragment shader with an always false if function"									},
 		{	"uninitialized-var-decrement-and-add.amber",	"uninitialized-var-decrement-and-add",	"A fragment shader that uses an uninitialized variable"									},
+		{	"undefined-assign-in-infinite-loop.amber",		"undefined-assign-in-infinite-loop",	"A fragment shader with uninitialized read in infinite loop"							},
 		{	"unreachable-barrier-in-loops.amber",			"unreachable-barrier-in-loops",			"A compute shader with an unreachable barrier in a loop nest"							},
 		{	"unreachable-continue-statement.amber",			"unreachable-continue-statement",		"A fragment shader with unreachable continue statement"									},
 		{	"unreachable-discard-statement-in-if.amber",	"unreachable-discard-statement-in-if",	"A fragment shader with discard keyword and a return"									},
@@ -110,7 +111,6 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"unreachable-return-in-loop.amber",				"unreachable-return-in-loop",			"A fragment shader with an unreachable return in a loop"								},
 		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
 		{	"write-before-break.amber",						"write-before-break",					"Fragment shader that writes red before loop break"										},
-		{	"write-red-after-search.amber",					"write-red-after-search",				"A fragment shader performing a search computation, then writing red regardless"		},
 		{	"write-red-in-loop-nest.amber",					"write-red-in-loop-nest",				"A fragment shader that writes red in a nest of loops"									},
 		{	"wrong-color-in-always-false-if.amber",			"wrong-color-in-always-false-if",		"A fragment shader with wrong color write in false if"									},
 	};
