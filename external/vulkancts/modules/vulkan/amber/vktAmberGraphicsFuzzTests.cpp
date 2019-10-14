@@ -92,6 +92,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"write-before-break.amber",						"write-before-break",					"Fragment shader that writes red before loop break"										},
 		{	"write-red-after-search.amber",					"write-red-after-search",				"A fragment shader performing a search computation, then writing red regardless"		},
 		{	"write-red-in-loop-nest.amber",					"write-red-in-loop-nest",				"A fragment shader that writes red in a nest of loops"									},
+		{	"wrong-color-in-always-false-if.amber",			"wrong-color-in-always-false-if",		"A fragment shader with wrong color write in false if"									},
 	};
 
 	for (size_t i = 0; i < sizeof tests / sizeof tests[0]; i++)
