@@ -1554,6 +1554,11 @@ tcu::TestNode::IterateResult GeometryShaderMaxImageUniformsTest::iterate()
 	gl.getIntegerv(m_glExtTokens.MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &m_gl_max_geometry_texture_image_units_ext_value);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() failed for GL_MAX_GEOMETRY_IMAGE_UNIFORMS_EXT pname");
 
+	/* Retrieve GL_MAX_IMAGE_UNITS pname value */
+	glw::GLint m_gl_max_image_units_value = 0;
+	gl.getIntegerv(GL_MAX_IMAGE_UNITS, &m_gl_max_image_units_value);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetIntegerv() failed for GL_MAX_IMAGE_UNITS pname");
+
 	/* Check if m_gl_max_geometry_image_uniforms_value is less than or equal zero. */
 	if (m_gl_max_geometry_image_uniforms_ext_value <= 0)
 	{
@@ -1575,15 +1580,15 @@ tcu::TestNode::IterateResult GeometryShaderMaxImageUniformsTest::iterate()
 		}
 	}
 
-	/* Check if m_gl_max_geometry_texture_image_units_value is less than m_gl_max_geometry_image_uniforms_value. */
-	if (m_gl_max_geometry_texture_image_units_ext_value < m_gl_max_geometry_image_uniforms_ext_value)
+	/* Check if m_gl_max_image_units_value is less than m_gl_max_geometry_image_uniforms_value. */
+	if (m_gl_max_image_units_value < m_gl_max_geometry_image_uniforms_ext_value)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "GL_MAX_GEOMETRY_IMAGE_UNIFORMS_EXT query value "
 						   << "[" << m_gl_max_geometry_image_uniforms_ext_value
 						   << "]"
-							  " is greater than GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_EXT query value "
+							  " is greater than GL_MAX_IMAGE_UNITS query value "
 							  "["
-						   << m_gl_max_geometry_texture_image_units_ext_value << "]." << tcu::TestLog::EndMessage;
+						   << m_gl_max_image_units_value << "]." << tcu::TestLog::EndMessage;
 
 		result = false;
 		goto end;
