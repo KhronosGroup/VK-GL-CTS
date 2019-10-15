@@ -428,7 +428,7 @@ static void parseCaseTrie (CaseTreeNode* root, std::istream& in)
 	}
 }
 
-static void parseCaseList (CaseTreeNode* root, std::istream& in)
+static void parseCaseList (CaseTreeNode* root, std::istream& in, bool reportDuplicates)
 {
 	// \note Algorithm assumes that cases are sorted by groups, but will
 	//		 function fine, albeit more slowly, if that is not the case.
@@ -449,20 +449,22 @@ static void parseCaseList (CaseTreeNode* root, std::istream& in)
 			if (curName.empty())
 				throw std::invalid_argument("Empty test case name");
 
-			if (nodeStack[stackPos]->hasChild(curName))
+			if (!nodeStack[stackPos]->hasChild(curName))
+			{
+				CaseTreeNode* const newChild = new CaseTreeNode(curName);
+
+				try
+				{
+					nodeStack[stackPos]->addChild(newChild);
+				}
+				catch (...)
+				{
+					delete newChild;
+					throw;
+				}
+			}
+			else if (reportDuplicates)
 				throw std::invalid_argument("Duplicate test case");
-
-			CaseTreeNode* const newChild = new CaseTreeNode(curName);
-
-			try
-			{
-				nodeStack[stackPos]->addChild(newChild);
-			}
-			catch (...)
-			{
-				delete newChild;
-				throw;
-			}
 
 			curName.clear();
 			stackPos = 0;
@@ -530,7 +532,7 @@ static CaseTreeNode* parseCaseList (std::istream& in)
 		if (in.peek() == '{')
 			parseCaseTrie(root, in);
 		else
-			parseCaseList(root, in);
+			parseCaseList(root, in, true);
 
 		{
 			const int curChr = in.get();
@@ -1013,7 +1015,7 @@ CaseListFilter::CaseListFilter (const de::cmdline::CommandLine& cmdLine, const t
 				{
 					fileStream.clear();
 					fileStream.seekg(0, fileStream.beg);
-					parseCaseList(m_caseTree, fileStream);
+					parseCaseList(m_caseTree, fileStream, false);
 				}
 			}
 		}
