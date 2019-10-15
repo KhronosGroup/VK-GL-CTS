@@ -516,6 +516,20 @@ void validateLimitsCheckSupport (Context& context)
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
 }
 
+typedef struct FeatureLimitTableItem_
+{
+	const void*		cond;
+	const char*		condName;
+	const void*		ptr;
+	const char*		name;
+	deUint32		uintVal;			//!< Format is UNSIGNED_INT
+	deInt32			intVal;				//!< Format is SIGNED_INT
+	deUint64		deviceSizeVal;		//!< Format is DEVICE_SIZE
+	float			floatVal;			//!< Format is FLOAT
+	LimitFormat		format;
+	LimitType		type;
+} FeatureLimitTableItem;
+
 template<typename T>
 bool validateNumericLimit (const T limitToCheck, const T reportedValue, const LimitType limitType, const char* limitName, TestLog& log)
 {
@@ -530,6 +544,11 @@ bool validateNumericLimit (const T limitToCheck, const T reportedValue, const Li
 
 			return false;
 		}
+
+		log << TestLog::Message << limitName
+			<< "=" << reportedValue
+			<< " (>=" << limitToCheck << ")"
+			<< TestLog::EndMessage;
 	}
 	else if (limitType == LIMIT_TYPE_MAX)
 	{
@@ -542,6 +561,11 @@ bool validateNumericLimit (const T limitToCheck, const T reportedValue, const Li
 
 			return false;
 		}
+
+		log << TestLog::Message << limitName
+			<< "=" << reportedValue
+			<< " (<=" << limitToCheck << ")"
+			<< TestLog::EndMessage;
 	}
 
 	return true;
@@ -561,9 +585,73 @@ bool validateBitmaskLimit (const T limitToCheck, const T reportedValue, const Li
 
 			return false;
 		}
+
+		log << TestLog::Message << limitName
+			<< "=" << tcu::toHex(reportedValue)
+			<< " (contains " << tcu::toHex(limitToCheck) << ")"
+			<< TestLog::EndMessage;
 	}
 
 	return true;
+}
+
+bool validateLimit (FeatureLimitTableItem limit, TestLog& log)
+{
+	if (*((VkBool32*)limit.cond) == DE_FALSE)
+	{
+		log << TestLog::Message
+			<< "Limit validation skipped '" << limit.name << "' due to "
+			<< limit.condName << " == false'"
+			<< TestLog::EndMessage;
+
+		return true;
+	}
+
+	switch (limit.format)
+	{
+		case LIMIT_FORMAT_UNSIGNED_INT:
+		{
+			const deUint32	limitToCheck	= limit.uintVal;
+			const deUint32	reportedValue	= *(deUint32*)limit.ptr;
+
+			return validateNumericLimit(limitToCheck, reportedValue, limit.type, limit.name, log);
+		}
+
+		case LIMIT_FORMAT_FLOAT:
+		{
+			const float		limitToCheck	= limit.floatVal;
+			const float		reportedValue	= *(float*)limit.ptr;
+
+			return validateNumericLimit(limitToCheck, reportedValue, limit.type, limit.name, log);
+		}
+
+		case LIMIT_FORMAT_SIGNED_INT:
+		{
+			const deInt32	limitToCheck	= limit.intVal;
+			const deInt32	reportedValue	= *(deInt32*)limit.ptr;
+
+			return validateNumericLimit(limitToCheck, reportedValue, limit.type, limit.name, log);
+		}
+
+		case LIMIT_FORMAT_DEVICE_SIZE:
+		{
+			const deUint64	limitToCheck	= limit.deviceSizeVal;
+			const deUint64	reportedValue	= *(deUint64*)limit.ptr;
+
+			return validateNumericLimit(limitToCheck, reportedValue, limit.type, limit.name, log);
+		}
+
+		case LIMIT_FORMAT_BITMASK:
+		{
+			const deUint32	limitToCheck	= limit.uintVal;
+			const deUint32	reportedValue	= *(deUint32*)limit.ptr;
+
+			return validateBitmaskLimit(limitToCheck, reportedValue, limit.type, limit.name, log);
+		}
+
+		default:
+			TCU_THROW(InternalError, "Unknown LimitFormat specified");
+	}
 }
 
 #ifdef PN
@@ -590,30 +678,30 @@ bool validateBitmaskLimit (const T limitToCheck, const T reportedValue, const Li
 
 tcu::TestStatus validateLimits12 (Context& context)
 {
-	const VkPhysicalDevice											physicalDevice							= context.getPhysicalDevice();
-	const InstanceInterface&										vki										= context.getInstanceInterface();
-	TestLog&														log										= context.getTestContext().getLog();
-	bool															limitsOk								= true;
+	const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
+	const InstanceInterface&					vki						= context.getInstanceInterface();
+	TestLog&									log						= context.getTestContext().getLog();
+	bool										limitsOk				= true;
 
-	const VkPhysicalDeviceFeatures2&								features2								= context.getDeviceFeatures2();
-	const VkPhysicalDeviceFeatures&									features								= features2.features;
-	const VkPhysicalDeviceVulkan12Features							features12								= getPhysicalDeviceVulkan12Features(vki, physicalDevice);
+	const VkPhysicalDeviceFeatures2&			features2				= context.getDeviceFeatures2();
+	const VkPhysicalDeviceFeatures&				features				= features2.features;
+	const VkPhysicalDeviceVulkan12Features		features12				= getPhysicalDeviceVulkan12Features(vki, physicalDevice);
 
-	const VkPhysicalDeviceProperties2&								properties2								= context.getDeviceProperties2();
-	const VkPhysicalDeviceVulkan12Properties						vulkan12Properties						= getPhysicalDeviceVulkan12Properties(vki, physicalDevice);
-	const VkPhysicalDeviceVulkan11Properties						vulkan11Properties						= getPhysicalDeviceVulkan11Properties(vki, physicalDevice);
-	const VkPhysicalDeviceLimits&									limits									= properties2.properties.limits;
+	const VkPhysicalDeviceProperties2&			properties2				= context.getDeviceProperties2();
+	const VkPhysicalDeviceVulkan12Properties	vulkan12Properties		= getPhysicalDeviceVulkan12Properties(vki, physicalDevice);
+	const VkPhysicalDeviceVulkan11Properties	vulkan11Properties		= getPhysicalDeviceVulkan11Properties(vki, physicalDevice);
+	const VkPhysicalDeviceLimits&				limits					= properties2.properties.limits;
 
-	const VkBool32													checkAlways								= VK_TRUE;
-	const VkBool32													checkVulkan12Limit						= VK_TRUE;
+	const VkBool32								checkAlways				= VK_TRUE;
+	const VkBool32								checkVulkan12Limit		= VK_TRUE;
 
-	deUint32														shaderStages							= 3;
-	deUint32														maxPerStageResourcesMin					= deMin32(128,	limits.maxPerStageDescriptorUniformBuffers		+
-																															limits.maxPerStageDescriptorStorageBuffers		+
-																															limits.maxPerStageDescriptorSampledImages		+
-																															limits.maxPerStageDescriptorStorageImages		+
-																															limits.maxPerStageDescriptorInputAttachments	+
-																															limits.maxColorAttachments);
+	deUint32									shaderStages			= 3;
+	deUint32									maxPerStageResourcesMin	= deMin32(128,	limits.maxPerStageDescriptorUniformBuffers		+
+																						limits.maxPerStageDescriptorStorageBuffers		+
+																						limits.maxPerStageDescriptorSampledImages		+
+																						limits.maxPerStageDescriptorStorageImages		+
+																						limits.maxPerStageDescriptorInputAttachments	+
+																						limits.maxColorAttachments);
 
 	if (features.tessellationShader)
 	{
@@ -625,20 +713,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 		shaderStages++;
 	}
 
-	struct FeatureLimitTable
-	{
-		const void*		cond;
-		const char*		condName;
-		const void*		ptr;
-		const char*		name;
-		deUint32		uintVal;			//!< Format is UNSIGNED_INT
-		deInt32			intVal;				//!< Format is SIGNED_INT
-		deUint64		deviceSizeVal;		//!< Format is DEVICE_SIZE
-		float			floatVal;			//!< Format is FLOAT
-		LimitFormat		format;
-		LimitType		type;
-	}
-	featureLimitTable[] =
+	FeatureLimitTableItem featureLimitTable[] =
 	{
 		{ PN(checkAlways),								PN(limits.maxImageDimension1D),																	LIM_MIN_UINT32(4096) },
 		{ PN(checkAlways),								PN(limits.maxImageDimension2D),																	LIM_MIN_UINT32(4096) },
@@ -813,77 +888,7 @@ tcu::TestStatus validateLimits12 (Context& context)
 	log << TestLog::Message << limits << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
-	{
-		bool	limitOk		= true;
-
-		if (*((VkBool32*)featureLimitTable[ndx].cond) == DE_FALSE)
-		{
-			log << TestLog::Message
-				<< "Limit validation skipped '" << featureLimitTable[ndx].name << "' due to "
-				<< featureLimitTable[ndx].condName << " == false'"
-				<< TestLog::EndMessage;
-
-			continue;
-		}
-
-		switch (featureLimitTable[ndx].format)
-		{
-			case LIMIT_FORMAT_UNSIGNED_INT:
-			{
-				const deUint32	limitToCheck	= featureLimitTable[ndx].uintVal;
-				const deUint32	reportedValue	= *(deUint32*)featureLimitTable[ndx].ptr;
-
-				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
-
-				break;
-			}
-
-			case LIMIT_FORMAT_FLOAT:
-			{
-				const float		limitToCheck	= featureLimitTable[ndx].floatVal;
-				const float		reportedValue	= *(float*)featureLimitTable[ndx].ptr;
-
-				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
-
-				break;
-			}
-
-			case LIMIT_FORMAT_SIGNED_INT:
-			{
-				const deInt32	limitToCheck	= featureLimitTable[ndx].intVal;
-				const deInt32	reportedValue	= *(deInt32*)featureLimitTable[ndx].ptr;
-
-				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
-
-				break;
-			}
-
-			case LIMIT_FORMAT_DEVICE_SIZE:
-			{
-				const deUint64	limitToCheck	= featureLimitTable[ndx].deviceSizeVal;
-				const deUint64	reportedValue	= *(deUint64*)featureLimitTable[ndx].ptr;
-
-				limitOk = validateNumericLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
-
-				break;
-			}
-
-			case LIMIT_FORMAT_BITMASK:
-			{
-				const deUint32	limitToCheck	= featureLimitTable[ndx].uintVal;
-				const deUint32	reportedValue	= *(deUint32*)featureLimitTable[ndx].ptr;
-
-				limitOk = validateBitmaskLimit(limitToCheck, reportedValue, featureLimitTable[ndx].type, featureLimitTable[ndx].name, log);
-
-				break;
-			}
-
-			default:
-				TCU_THROW(InternalError, "Unknown LimitFormat specified");
-		}
-
-		limitsOk = limitsOk && limitOk;
-	}
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
 
 	if (limits.maxFramebufferWidth > limits.maxViewportDimensions[0] ||
 		limits.maxFramebufferHeight > limits.maxViewportDimensions[1])
@@ -908,6 +913,590 @@ tcu::TestStatus validateLimits12 (Context& context)
 			<< "is less than 2*maxViewportDimension[1] of " << 2*limits.maxViewportDimensions[1] << TestLog::EndMessage;
 		limitsOk = false;
 	}
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportKhrPushDescriptor (Context& context)
+{
+	context.requireDeviceExtension("VK_KHR_push_descriptor");
+}
+
+tcu::TestStatus validateLimitsKhrPushDescriptor (Context& context)
+{
+	const VkBool32										checkAlways					= VK_TRUE;
+	const VkPhysicalDevicePushDescriptorPropertiesKHR&	pushDescriptorPropertiesKHR	= context.getPushDescriptorProperties();
+	TestLog&											log							= context.getTestContext().getLog();
+	bool												limitsOk					= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(pushDescriptorPropertiesKHR.maxPushDescriptors),	LIM_MIN_UINT32(32) },
+	};
+
+	log << TestLog::Message << pushDescriptorPropertiesKHR << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportKhrMultiview (Context& context)
+{
+	context.requireDeviceExtension("VK_KHR_multiview");
+}
+
+tcu::TestStatus validateLimitsKhrMultiview (Context& context)
+{
+	const VkBool32								checkAlways			= VK_TRUE;
+	const VkPhysicalDeviceMultiviewProperties&	multiviewProperties	= context.getMultiviewProperties();
+	TestLog&									log					= context.getTestContext().getLog();
+	bool										limitsOk			= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		// VK_KHR_multiview
+		{ PN(checkAlways),	PN(multiviewProperties.maxMultiviewViewCount),		LIM_MIN_UINT32(6) },
+		{ PN(checkAlways),	PN(multiviewProperties.maxMultiviewInstanceIndex),	LIM_MIN_UINT32((1<<27) - 1) },
+	};
+
+	log << TestLog::Message << multiviewProperties << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtDiscardRectangles (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_discard_rectangles");
+}
+
+tcu::TestStatus validateLimitsExtDiscardRectangles (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceDiscardRectanglePropertiesEXT&	discardRectanglePropertiesEXT	= context.getDiscardRectanglePropertiesEXT();
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(discardRectanglePropertiesEXT.maxDiscardRectangles),	LIM_MIN_UINT32(4) },
+	};
+
+	log << TestLog::Message << discardRectanglePropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtSampleLocations (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_sample_locations");
+}
+
+tcu::TestStatus validateLimitsExtSampleLocations (Context& context)
+{
+	const VkBool32										checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceSampleLocationsPropertiesEXT&	sampleLocationsPropertiesEXT	= context.getSampleLocationsPropertiesEXT();
+	TestLog&											log								= context.getTestContext().getLog();
+	bool												limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(sampleLocationsPropertiesEXT.sampleLocationSampleCounts),		LIM_MIN_BITI32(VK_SAMPLE_COUNT_4_BIT) },
+		{ PN(checkAlways),	PN(sampleLocationsPropertiesEXT.maxSampleLocationGridSize.width),	LIM_MIN_FLOAT(0.0f) },
+		{ PN(checkAlways),	PN(sampleLocationsPropertiesEXT.maxSampleLocationGridSize.height),	LIM_MIN_FLOAT(0.0f) },
+		{ PN(checkAlways),	PN(sampleLocationsPropertiesEXT.sampleLocationCoordinateRange[0]),	LIM_MAX_FLOAT(0.0f) },
+		{ PN(checkAlways),	PN(sampleLocationsPropertiesEXT.sampleLocationCoordinateRange[1]),	LIM_MIN_FLOAT(0.9375f) },
+		{ PN(checkAlways),	PN(sampleLocationsPropertiesEXT.sampleLocationSubPixelBits),		LIM_MIN_UINT32(4) },
+	};
+
+	log << TestLog::Message << sampleLocationsPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtExternalMemoryHost (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_external_memory_host");
+}
+
+tcu::TestStatus validateLimitsExtExternalMemoryHost (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&	externalMemoryHostPropertiesEXT	= context.getExternalMemoryHostPropertiesEXT();
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(externalMemoryHostPropertiesEXT.minImportedHostPointerAlignment),	LIM_MAX_DEVSIZE(65536) },
+	};
+
+	log << TestLog::Message << externalMemoryHostPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtBlendOperationAdvanced (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_blend_operation_advanced");
+}
+
+tcu::TestStatus validateLimitsExtBlendOperationAdvanced (Context& context)
+{
+	const VkBool32												checkAlways							= VK_TRUE;
+	const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&	blendOperationAdvancedPropertiesEXT	= context.getBlendOperationAdvancedPropertiesEXT();
+	TestLog&													log									= context.getTestContext().getLog();
+	bool														limitsOk							= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(blendOperationAdvancedPropertiesEXT.advancedBlendMaxColorAttachments),	LIM_MIN_UINT32(4) },
+	};
+
+	log << TestLog::Message << blendOperationAdvancedPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportKhrMaintenance3 (Context& context)
+{
+	context.requireDeviceExtension("VK_KHR_maintenance3");
+}
+
+tcu::TestStatus validateLimitsKhrMaintenance3 (Context& context)
+{
+	const VkBool32									checkAlways				= VK_TRUE;
+	const VkPhysicalDeviceMaintenance3Properties&	maintenance3Properties	= context.getMaintenance3Properties();
+	TestLog&										log						= context.getTestContext().getLog();
+	bool											limitsOk				= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(maintenance3Properties.maxPerSetDescriptors),	LIM_MIN_UINT32(1024) },
+		{ PN(checkAlways),	PN(maintenance3Properties.maxMemoryAllocationSize),	LIM_MIN_DEVSIZE(1<<30) },
+	};
+
+	log << TestLog::Message << maintenance3Properties << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtConservativeRasterization (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_conservative_rasterization");
+}
+
+tcu::TestStatus validateLimitsExtConservativeRasterization (Context& context)
+{
+	const VkBool32													checkAlways								= VK_TRUE;
+	const VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	conservativeRasterizationPropertiesEXT	= context.getConservativeRasterizationPropertiesEXT();
+	TestLog&														log										= context.getTestContext().getLog();
+	bool															limitsOk								= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(conservativeRasterizationPropertiesEXT.primitiveOverestimationSize),					LIM_MIN_FLOAT(0.0f) },
+		{ PN(checkAlways),	PN(conservativeRasterizationPropertiesEXT.maxExtraPrimitiveOverestimationSize),			LIM_MIN_FLOAT(0.0f) },
+		{ PN(checkAlways),	PN(conservativeRasterizationPropertiesEXT.extraPrimitiveOverestimationSizeGranularity),	LIM_MIN_FLOAT(0.0f) },
+	};
+
+	log << TestLog::Message << conservativeRasterizationPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtDescriptorIndexing (Context& context)
+{
+	const std::string&							requiredDeviceExtension		= "VK_EXT_descriptor_indexing";
+	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
+	const InstanceInterface&					vki							= context.getInstanceInterface();
+	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
+
+	// Extension string is present, then extension is really supported and should have been added into chain in DefaultDevice properties and features
+}
+
+tcu::TestStatus validateLimitsExtDescriptorIndexing (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceProperties2&						properties2						= context.getDeviceProperties2();
+	const VkPhysicalDeviceLimits&							limits							= properties2.properties.limits;
+	const VkPhysicalDeviceDescriptorIndexingPropertiesEXT&	descriptorIndexingPropertiesEXT	= context.getDescriptorIndexingProperties();
+	const VkPhysicalDeviceFeatures&							features						= context.getDeviceFeatures();
+	const deUint32											tessellationShaderCount			= (features.tessellationShader) ? 2 : 0;
+	const deUint32											geometryShaderCount				= (features.geometryShader) ? 1 : 0;
+	const deUint32											shaderStages					= 3 + tessellationShaderCount + geometryShaderCount;
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxUpdateAfterBindDescriptorsInAllPools),				LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),		LIM_MIN_UINT32(12) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),		LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),		LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),		LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),	LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),					LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),				LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(shaderStages * 12) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),	LIM_MIN_UINT32(8) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),			LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(500000) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSamplers),			LIM_MIN_UINT32(limits.maxPerStageDescriptorSamplers) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindUniformBuffers),		LIM_MIN_UINT32(limits.maxPerStageDescriptorUniformBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageBuffers),		LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindSampledImages),		LIM_MIN_UINT32(limits.maxPerStageDescriptorSampledImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindStorageImages),		LIM_MIN_UINT32(limits.maxPerStageDescriptorStorageImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInputAttachments),	LIM_MIN_UINT32(limits.maxPerStageDescriptorInputAttachments) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxPerStageUpdateAfterBindResources),					LIM_MIN_UINT32(limits.maxPerStageResources) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSamplers),				LIM_MIN_UINT32(limits.maxDescriptorSetSamplers) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffers),			LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic),	LIM_MIN_UINT32(limits.maxDescriptorSetUniformBuffersDynamic) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffers),			LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffers) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic),	LIM_MIN_UINT32(limits.maxDescriptorSetStorageBuffersDynamic) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindSampledImages),			LIM_MIN_UINT32(limits.maxDescriptorSetSampledImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindStorageImages),			LIM_MIN_UINT32(limits.maxDescriptorSetStorageImages) },
+		{ PN(checkAlways),	PN(descriptorIndexingPropertiesEXT.maxDescriptorSetUpdateAfterBindInputAttachments),		LIM_MIN_UINT32(limits.maxDescriptorSetInputAttachments) },
+	};
+
+	log << TestLog::Message << descriptorIndexingPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtInlineUniformBlock (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_inline_uniform_block");
+}
+
+tcu::TestStatus validateLimitsExtInlineUniformBlock (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&	inlineUniformBlockPropertiesEXT	= context.getInlineUniformBlockPropertiesEXT();
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(inlineUniformBlockPropertiesEXT.maxInlineUniformBlockSize),									LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),	PN(inlineUniformBlockPropertiesEXT.maxPerStageDescriptorInlineUniformBlocks),					LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(inlineUniformBlockPropertiesEXT.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(inlineUniformBlockPropertiesEXT.maxDescriptorSetInlineUniformBlocks),						LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(inlineUniformBlockPropertiesEXT.maxDescriptorSetUpdateAfterBindInlineUniformBlocks),			LIM_MIN_UINT32(4) },
+	};
+
+	log << TestLog::Message << inlineUniformBlockPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtVertexAttributeDivisor (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_vertex_attribute_divisor");
+}
+
+tcu::TestStatus validateLimitsExtVertexAttributeDivisor (Context& context)
+{
+	const VkBool32												checkAlways							= VK_TRUE;
+	const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&	vertexAttributeDivisorPropertiesEXT	= context.getVertexAttributeDivisorPropertiesEXT();
+	TestLog&													log									= context.getTestContext().getLog();
+	bool														limitsOk							= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),	LIM_MIN_UINT32((1<<16) - 1) },
+	};
+
+	log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportNvMeshShader (Context& context)
+{
+	const std::string&							requiredDeviceExtension		= "VK_NV_mesh_shader";
+	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
+	const InstanceInterface&					vki							= context.getInstanceInterface();
+	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
+}
+
+tcu::TestStatus validateLimitsNvMeshShader (Context& context)
+{
+	const VkBool32							checkAlways				= VK_TRUE;
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+	const InstanceInterface&				vki						= context.getInstanceInterface();
+	TestLog&								log						= context.getTestContext().getLog();
+	bool									limitsOk				= true;
+	VkPhysicalDeviceMeshShaderPropertiesNV	meshShaderPropertiesNV	= initVulkanStructure();
+	VkPhysicalDeviceProperties2				properties2				= initVulkanStructure(&meshShaderPropertiesNV);
+
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxDrawMeshTasksCount),		LIM_MIN_UINT32(deUint32((1ull<<16) - 1)) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxTaskWorkGroupInvocations),	LIM_MIN_UINT32(32) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[0]),		LIM_MIN_UINT32(32) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[1]),		LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxTaskWorkGroupSize[2]),		LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxTaskTotalMemorySize),		LIM_MIN_UINT32(16384) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxTaskOutputCount),			LIM_MIN_UINT32((1<<16) - 1) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshWorkGroupInvocations),	LIM_MIN_UINT32(32) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[0]),		LIM_MIN_UINT32(32) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[1]),		LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshWorkGroupSize[2]),		LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshTotalMemorySize),		LIM_MIN_UINT32(16384) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshOutputVertices),		LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshOutputPrimitives),		LIM_MIN_UINT32(256) },
+		{ PN(checkAlways),	PN(meshShaderPropertiesNV.maxMeshMultiviewViewCount),	LIM_MIN_UINT32(1) },
+	};
+
+	log << TestLog::Message << meshShaderPropertiesNV << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtTransformFeedback (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_transform_feedback");
+}
+
+tcu::TestStatus validateLimitsExtTransformFeedback (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceTransformFeedbackPropertiesEXT&	transformFeedbackPropertiesEXT	= context.getTransformFeedbackPropertiesEXT();
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(transformFeedbackPropertiesEXT.maxTransformFeedbackStreams),				LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBuffers),				LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferSize),			LIM_MIN_DEVSIZE(1ull<<27) },
+		{ PN(checkAlways),	PN(transformFeedbackPropertiesEXT.maxTransformFeedbackStreamDataSize),		LIM_MIN_UINT32(512) },
+		{ PN(checkAlways),	PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferDataSize),		LIM_MIN_UINT32(512) },
+		{ PN(checkAlways),	PN(transformFeedbackPropertiesEXT.maxTransformFeedbackBufferDataStride),	LIM_MIN_UINT32(512) },
+	};
+
+	log << TestLog::Message << transformFeedbackPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtFragmentDensityMap (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_fragment_density_map");
+}
+
+tcu::TestStatus validateLimitsExtFragmentDensityMap (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&	fragmentDensityMapPropertiesEXT	= context.getFragmentDensityMapPropertiesEXT();
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(fragmentDensityMapPropertiesEXT.minFragmentDensityTexelSize.width),							LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(fragmentDensityMapPropertiesEXT.minFragmentDensityTexelSize.height),							LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(fragmentDensityMapPropertiesEXT.maxFragmentDensityTexelSize.width),							LIM_MIN_UINT32(1) },
+		{ PN(checkAlways),	PN(fragmentDensityMapPropertiesEXT.maxFragmentDensityTexelSize.height),							LIM_MIN_UINT32(1) },
+	};
+
+	log << TestLog::Message << fragmentDensityMapPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportNvRayTracing (Context& context)
+{
+	const std::string&							requiredDeviceExtension		= "VK_NV_ray_tracing";
+	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
+	const InstanceInterface&					vki							= context.getInstanceInterface();
+	const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	if (!isExtensionSupported(deviceExtensionProperties, RequiredExtension(requiredDeviceExtension)))
+		TCU_THROW(NotSupportedError, requiredDeviceExtension + " is not supported");
+}
+
+tcu::TestStatus validateLimitsNvRayTracing (Context& context)
+{
+	const VkBool32							checkAlways				= VK_TRUE;
+	const VkPhysicalDevice					physicalDevice			= context.getPhysicalDevice();
+	const InstanceInterface&				vki						= context.getInstanceInterface();
+	TestLog&								log						= context.getTestContext().getLog();
+	bool									limitsOk				= true;
+	VkPhysicalDeviceRayTracingPropertiesNV	rayTracingPropertiesNV	= initVulkanStructure();
+	VkPhysicalDeviceProperties2				properties2				= initVulkanStructure(&rayTracingPropertiesNV);
+
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.shaderGroupHandleSize),					LIM_MIN_UINT32(16) },
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.maxRecursionDepth),						LIM_MIN_UINT32(31) },
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.shaderGroupBaseAlignment),				LIM_MIN_UINT32(64) },
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.maxGeometryCount),						LIM_MIN_UINT32((1<<24) - 1) },
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.maxInstanceCount),						LIM_MIN_UINT32((1<<24) - 1) },
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.maxTriangleCount),						LIM_MIN_UINT32((1<<29) - 1) },
+		{ PN(checkAlways),	PN(rayTracingPropertiesNV.maxDescriptorSetAccelerationStructures),	LIM_MIN_UINT32(16) },
+	};
+
+	log << TestLog::Message << rayTracingPropertiesNV << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportKhrTimelineSemaphore (Context& context)
+{
+	context.requireDeviceExtension("VK_KHR_timeline_semaphore");
+}
+
+tcu::TestStatus validateLimitsKhrTimelineSemaphore (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceTimelineSemaphorePropertiesKHR&	timelineSemaphorePropertiesKHR	= context.getTimelineSemaphoreProperties();
+	bool													limitsOk						= true;
+	TestLog&												log								= context.getTestContext().getLog();
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(timelineSemaphorePropertiesKHR.maxTimelineSemaphoreValueDifference),	LIM_MIN_DEVSIZE((1ull<<31) - 1) },
+	};
+
+	log << TestLog::Message << timelineSemaphorePropertiesKHR << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
+
+	if (limitsOk)
+		return tcu::TestStatus::pass("pass");
+	else
+		return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportExtLineRasterization (Context& context)
+{
+	context.requireDeviceExtension("VK_EXT_line_rasterization");
+}
+
+tcu::TestStatus validateLimitsExtLineRasterization (Context& context)
+{
+	const VkBool32											checkAlways						= VK_TRUE;
+	const VkPhysicalDeviceLineRasterizationPropertiesEXT&	lineRasterizationPropertiesEXT	= context.getLineRasterizationPropertiesEXT();
+	TestLog&												log								= context.getTestContext().getLog();
+	bool													limitsOk						= true;
+
+	FeatureLimitTableItem featureLimitTable[] =
+	{
+		{ PN(checkAlways),	PN(lineRasterizationPropertiesEXT.lineSubPixelPrecisionBits),	LIM_MIN_UINT32(4) },
+	};
+
+	log << TestLog::Message << lineRasterizationPropertiesEXT << TestLog::EndMessage;
+
+	for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
+		limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
 
 	if (limitsOk)
 		return tcu::TestStatus::pass("pass");
@@ -5248,10 +5837,34 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(extendedPropertiesTests.get(), "properties",						"Extended Vulkan 1.2 Device Properties",					devicePropertiesVulkan12);
 		addFunctionCase(extendedPropertiesTests.get(), "feature_extensions_consistency",	"Vulkan 1.2 consistency between Features and Extensions",	deviceFeatureExtensionsConsistencyVulkan12);
 		addFunctionCase(extendedPropertiesTests.get(), "property_extensions_consistency",	"Vulkan 1.2 consistency between Properties and Extensions", devicePropertyExtensionsConsistencyVulkan12);
-		addFunctionCase(extendedPropertiesTests.get(), "limits_validation",					"Vulkan 1.2 Limit validation",								validateLimitsCheckSupport, validateLimits12);
 		addFunctionCase(extendedPropertiesTests.get(), "feature_bits_influence",			"Validate feature bits influence on feature activation",	checkSupportFeatureBitInfluence, featureBitInfluenceOnDeviceCreate);
 
 		infoTests->addChild(extendedPropertiesTests.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> limitsValidationTests (new tcu::TestCaseGroup(testCtx, "vulkan1p2_limits_validation", "Vulkan 1.2 and core extensions limits validation"));
+
+		addFunctionCase(limitsValidationTests.get(), "general",							"Vulkan 1.2 Limit validation",							validateLimitsCheckSupport,					validateLimits12);
+		addFunctionCase(limitsValidationTests.get(), "khr_push_descriptor",				"VK_KHR_push_descriptor limit validation",				checkSupportKhrPushDescriptor,				validateLimitsKhrPushDescriptor);
+		addFunctionCase(limitsValidationTests.get(), "khr_multiview",					"VK_KHR_multiview limit validation",					checkSupportKhrMultiview,					validateLimitsKhrMultiview);
+		addFunctionCase(limitsValidationTests.get(), "ext_discard_rectangles",			"VK_EXT_discard_rectangles limit validation",			checkSupportExtDiscardRectangles,			validateLimitsExtDiscardRectangles);
+		addFunctionCase(limitsValidationTests.get(), "ext_sample_locations",			"VK_EXT_sample_locations limit validation",				checkSupportExtSampleLocations,				validateLimitsExtSampleLocations);
+		addFunctionCase(limitsValidationTests.get(), "ext_external_memory_host",		"VK_EXT_external_memory_host limit validation",			checkSupportExtExternalMemoryHost,			validateLimitsExtExternalMemoryHost);
+		addFunctionCase(limitsValidationTests.get(), "ext_blend_operation_advanced",	"VK_EXT_blend_operation_advanced limit validation",		checkSupportExtBlendOperationAdvanced,		validateLimitsExtBlendOperationAdvanced);
+		addFunctionCase(limitsValidationTests.get(), "khr_maintenance_3",				"VK_KHR_maintenance3 limit validation",					checkSupportKhrMaintenance3,				validateLimitsKhrMaintenance3);
+		addFunctionCase(limitsValidationTests.get(), "ext_conservative_rasterization",	"VK_EXT_conservative_rasterization limit validation",	checkSupportExtConservativeRasterization,	validateLimitsExtConservativeRasterization);
+		addFunctionCase(limitsValidationTests.get(), "ext_descriptor_indexing",			"VK_EXT_descriptor_indexing limit validation",			checkSupportExtDescriptorIndexing,			validateLimitsExtDescriptorIndexing);
+		addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block",		"VK_EXT_inline_uniform_block limit validation",			checkSupportExtInlineUniformBlock,			validateLimitsExtInlineUniformBlock);
+		addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",	"VK_EXT_vertex_attribute_divisor limit validation",		checkSupportExtVertexAttributeDivisor,		validateLimitsExtVertexAttributeDivisor);
+		addFunctionCase(limitsValidationTests.get(), "nv_mesh_shader",					"VK_NV_mesh_shader limit validation",					checkSupportNvMeshShader,					validateLimitsNvMeshShader);
+		addFunctionCase(limitsValidationTests.get(), "ext_transform_feedback",			"VK_EXT_transform_feedback limit validation",			checkSupportExtTransformFeedback,			validateLimitsExtTransformFeedback);
+		addFunctionCase(limitsValidationTests.get(), "fragment_density_map",			"VK_EXT_fragment_density_map limit validation",			checkSupportExtFragmentDensityMap,			validateLimitsExtFragmentDensityMap);
+		addFunctionCase(limitsValidationTests.get(), "nv_ray_tracing",					"VK_NV_ray_tracing limit validation",					checkSupportNvRayTracing,					validateLimitsNvRayTracing);
+		addFunctionCase(limitsValidationTests.get(), "timeline_semaphore",				"VK_KHR_timeline_semaphore limit validation",			checkSupportKhrTimelineSemaphore,			validateLimitsKhrTimelineSemaphore);
+		addFunctionCase(limitsValidationTests.get(), "ext_line_rasterization",			"VK_EXT_line_rasterization limit validation",			checkSupportExtLineRasterization,			validateLimitsExtLineRasterization);
+
+		infoTests->addChild(limitsValidationTests.release());
 	}
 
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties2",		"VkGetPhysicalDeviceImageFormatProperties2() Tests",		createImageFormatTests, imageFormatProperties2));
