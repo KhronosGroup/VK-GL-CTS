@@ -269,7 +269,8 @@ static void qpTestLog_flushFile (qpTestLog* log)
 static const char* qpLookupString (const qpKeyStringMap* keyMap, int keyMapSize, int key)
 {
 	DE_ASSERT(keyMap);
-	DE_ASSERT(deInBounds32(key, 0, keyMapSize));
+	DE_ASSERT(deInBounds32(key, 0, keyMapSize - 1)); /* Last element in map is assumed to be terminator */
+	DE_ASSERT(keyMap[keyMapSize - 1].string == DE_NULL); /* Ensure map is properly completed, *_LAST element is not missing */
 	DE_ASSERT(keyMap[key].key == key);
 	DE_UNREF(keyMapSize); /* for asserting only */
 	return keyMap[key].string;
