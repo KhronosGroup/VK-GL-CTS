@@ -318,7 +318,7 @@ protected:
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance			(context)
-	, m_extensionSupported	((parameters.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported	((parameters.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_parameters			(fillMissingParameters(parameters))
 	, m_seed				(context.getTestContext().getCommandLine().getBaseSeed())
 	, m_squareCount			(4u)
@@ -3364,7 +3364,7 @@ private:
 
 	virtual void		checkSupport		(Context& context) const
 	{
-		context.requireDeviceExtension("VK_KHR_multiview");
+		context.requireDeviceFunctionality("VK_KHR_multiview");
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const

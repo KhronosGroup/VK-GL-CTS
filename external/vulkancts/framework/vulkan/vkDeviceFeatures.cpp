@@ -26,11 +26,6 @@
 namespace vk
 {
 
-static bool isPhysicalDeviceFeatures2Supported (const deUint32 version, const std::vector<std::string>& instanceExtensions)
-{
-	return isInstanceExtensionSupported(version, instanceExtensions, "VK_KHR_get_physical_device_properties2");
-}
-
 DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const deUint32						apiVersion,
 								 const VkPhysicalDevice				physicalDevice,
@@ -40,7 +35,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 	deMemset(&m_coreFeatures2, 0, sizeof(m_coreFeatures2));
 	m_coreFeatures2.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-	if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
+	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
 	{
 		const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		void**										nextPtr						= &m_coreFeatures2.pNext;

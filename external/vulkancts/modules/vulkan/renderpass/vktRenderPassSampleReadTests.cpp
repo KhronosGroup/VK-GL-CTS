@@ -797,7 +797,7 @@ private:
 SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
 	, m_extensionSupported			(context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING) &&
-									 ((config.renderPassType != RENDERPASS_TYPE_RENDERPASS2) || context.requireDeviceExtension("VK_KHR_create_renderpass2")))
+									 ((config.renderPassType != RENDERPASS_TYPE_RENDERPASS2) || context.requireDeviceFunctionality("VK_KHR_create_renderpass2")))
 	, m_renderPassType				(config.renderPassType)
 	, m_sampleCount					(config.sampleCount)
 	, m_width						(32u)

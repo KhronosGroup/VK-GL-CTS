@@ -403,38 +403,6 @@ bool isCompatible (const VkLayerProperties& layerProperties, const RequiredLayer
 	return true;
 }
 
-bool isInstanceExtensionSupported (const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required)
-{
-	if (isCoreInstanceExtension(instanceVersion, required))
-		return true;
-	else
-		return de::contains(extensions.begin(), extensions.end(), required);
-}
-
-bool isDeviceExtensionSupported (const deUint32 deviceVersion, const std::vector<std::string>& extensions, const std::string& required)
-{
-	if (isCoreDeviceExtension(deviceVersion, required))
-		return true;
-	else
-		return de::contains(extensions.begin(), extensions.end(), required);
-}
-
-bool isInstanceExtensionSupported (const deUint32 instanceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
-{
-	if (isCoreInstanceExtension(instanceVersion, required.name))
-		return true;
-	else
-		return isExtensionSupported(extensions.begin(), extensions.end(), required);
-}
-
-bool isDeviceExtensionSupported (const deUint32 deviceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
-{
-	if (isCoreDeviceExtension(deviceVersion, required.name))
-		return true;
-	else
-		return isExtensionSupported(extensions.begin(), extensions.end(), required);
-}
-
 bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
 {
 	return isExtensionSupported(extensions.begin(), extensions.end(), required);
@@ -443,6 +411,15 @@ bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions,
 bool isExtensionSupported (const vector<std::string>& extensionStrings, const std::string& extensionName)
 {
 	return de::contains(extensionStrings.begin(), extensionStrings.end(), extensionName);
+}
+
+bool isInstanceExtensionSupported(const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required)
+{
+	// NOTE: this function is only needed in few cases during creation of context,
+	// dont use it, call Context::isInstanceFunctionalitySupported instead
+	if (isCoreInstanceExtension(instanceVersion, required))
+		return true;
+	return de::contains(extensions.begin(), extensions.end(), required);
 }
 
 bool isLayerSupported (const std::vector<VkLayerProperties>& layers, const RequiredLayer& required)

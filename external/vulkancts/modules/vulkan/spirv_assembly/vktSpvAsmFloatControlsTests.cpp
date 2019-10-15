@@ -2751,8 +2751,7 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 // features are set to the same value when specific independence settings are used.
 tcu::TestStatus verifyIndependenceSettings(Context& context)
 {
-	const std::vector<std::string>& deviceExtensions = context.getDeviceExtensions();
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), deviceExtensions, "VK_KHR_shader_float_controls"))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_float_controls"))
 		TCU_THROW(NotSupportedError, "VK_KHR_shader_float_controls not supported");
 
 	vk::VkPhysicalDeviceFloatControlsPropertiesKHR	fcProperties;

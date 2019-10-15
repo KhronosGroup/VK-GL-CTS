@@ -217,7 +217,7 @@ DepthStencilResolveTest::~DepthStencilResolveTest (void)
 
 bool DepthStencilResolveTest::isFeaturesSupported()
 {
-	m_context.requireDeviceExtension("VK_KHR_depth_stencil_resolve");
+	m_context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 	if (m_config.imageLayers > 1)
 		m_context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 

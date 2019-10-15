@@ -468,7 +468,7 @@ AtomicOperationCaseInstance::AtomicOperationCaseInstance (Context&				context,
 {
 	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
 	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_atomic_int64"))
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_atomic_int64"))
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_atomic_int64");
 
 		VkPhysicalDeviceShaderAtomicInt64FeaturesKHR shaderAtomicInt64Features;

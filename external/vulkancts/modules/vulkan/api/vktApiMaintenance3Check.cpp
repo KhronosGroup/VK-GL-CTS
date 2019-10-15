@@ -475,7 +475,7 @@ public:
 	{}
 	virtual void							checkSupport							(Context&	ctx) const
 	{
-		ctx.requireDeviceExtension("VK_KHR_maintenance3");
+		ctx.requireDeviceFunctionality("VK_KHR_maintenance3");
 	}
 	virtual TestInstance*					createInstance							(Context&	ctx) const
 	{
@@ -499,9 +499,8 @@ public:
 		const auto&	device			= m_context.getDevice();
 		auto&		log				= m_context.getTestContext().getLog();
 		bool		iubSupported	= false;
-		bool		iubExtSupported	= isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_inline_uniform_block");
 
-		if (iubExtSupported)
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 		{
 			DevIubFeat	iubFeatures	=
 			{
@@ -644,7 +643,7 @@ public:
 	{}
 	virtual void							checkSupport							(Context&	ctx) const
 	{
-		ctx.requireDeviceExtension("VK_KHR_maintenance3");
+		ctx.requireDeviceFunctionality("VK_KHR_maintenance3");
 	}
 	virtual TestInstance*					createInstance							(Context&	ctx) const
 	{

@@ -112,10 +112,8 @@ bool										isCompatible							(const VkLayerProperties& layerProperties, cons
 template<typename ExtensionIterator>
 bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
 bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
-bool										isDeviceExtensionSupported				(const deUint32 deviceVersion, const std::vector<std::string>& extensions, const std::string& required);
+
 bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required);
-bool										isDeviceExtensionSupported				(const deUint32 deviceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
-bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
 
 template<typename LayerIterator>
 bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);

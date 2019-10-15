@@ -706,7 +706,7 @@ private:
 void checkRequirements (Context& context, const int)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
-	context.requireDeviceExtension("VK_EXT_shader_viewport_index_layer");
+	context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
 
 	const VkPhysicalDeviceLimits	limits	= context.getDeviceProperties().limits;
 

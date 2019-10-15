@@ -364,7 +364,7 @@ bool TestCaseExecutor::spirvVersionSupported (vk::SpirvVersion spirvVersion)
 		return true;
 
 	if (spirvVersion <= vk::SPIRV_VERSION_1_4)
-		return vk::isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_spirv_1_4");
+		return m_context.isDeviceFunctionalitySupported("VK_KHR_spirv_1_4");
 
 	return false;
 }

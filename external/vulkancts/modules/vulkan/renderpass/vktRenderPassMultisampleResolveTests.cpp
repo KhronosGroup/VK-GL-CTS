@@ -185,7 +185,7 @@ protected:
 MultisampleRenderPassTestBase::MultisampleRenderPassTestBase (Context& context, TestConfig config, deUint32 attachmentsCount)
 	: TestInstance				(context)
 	, m_featuresSupported		(featuresSupported(context, config))
-	, m_extensionSupported		((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported		((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_renderPassType			(config.renderPassType)
 	, m_format					(config.format)
 	, m_sampleCount				(sampleCountBitFromSampleCount(config.sampleCount))

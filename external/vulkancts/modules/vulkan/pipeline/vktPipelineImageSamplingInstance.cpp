@@ -205,8 +205,8 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 
 	if (params.separateStencilUsage)
 	{
-		context.requireDeviceExtension("VK_EXT_separate_stencil_usage");
-		context.requireInstanceExtension("VK_KHR_get_physical_device_properties2");
+		context.requireDeviceFunctionality("VK_EXT_separate_stencil_usage");
+		context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
 		const VkImageStencilUsageCreateInfoEXT  stencilUsage	=
 		{
@@ -259,7 +259,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 
 		if (nextType == VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT)
 		{
-			context.requireDeviceExtension("VK_EXT_sampler_filter_minmax");
+			context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
 
 			if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
 				throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
@@ -270,7 +270,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		params.samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE ||
 		params.samplerParams.addressModeW == VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE)
 	{
-		context.requireDeviceExtension("VK_KHR_sampler_mirror_clamp_to_edge");
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 	}
 
 	if ((isCompressedFormat(params.imageFormat) || isDepthStencilFormat(params.imageFormat)) && params.imageViewType == VK_IMAGE_VIEW_TYPE_3D)
@@ -301,7 +301,7 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
 	if (params.allocationKind == ALLOCATION_KIND_DEDICATED)
-		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,

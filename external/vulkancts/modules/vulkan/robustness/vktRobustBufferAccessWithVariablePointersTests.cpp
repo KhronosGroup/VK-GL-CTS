@@ -64,10 +64,7 @@ namespace
 {
 
 // A function for getting information on variable pointer features supported through physical device
-vk::VkPhysicalDeviceVariablePointersFeatures querySupportedVariablePointersFeatures (const deUint32					apiVersion,
-																					const InstanceInterface&		vki,
-																					VkPhysicalDevice				device,
-																					const std::vector<std::string>&	instanceExtensions)
+vk::VkPhysicalDeviceVariablePointersFeatures querySupportedVariablePointersFeatures (const Context& context)
 {
 	VkPhysicalDeviceVariablePointersFeatures extensionFeatures =
 	{
@@ -83,9 +80,9 @@ vk::VkPhysicalDeviceVariablePointersFeatures querySupportedVariablePointersFeatu
 	features.pNext = &extensionFeatures;
 
 	// Call the getter only if supported. Otherwise above "zero" defaults are used
-	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
+	if (context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))
 	{
-		vki.getPhysicalDeviceFeatures2(device, &features);
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
 	}
 
 	return extensionFeatures;
@@ -1231,7 +1228,7 @@ RobustReadTest::RobustReadTest (tcu::TestContext&		testContext,
 
 TestInstance* RobustReadTest::createInstance (Context& context) const
 {
-	VkPhysicalDeviceVariablePointersFeatures pointerFeatures = querySupportedVariablePointersFeatures(context.getUsedApiVersion(), context.getInstanceInterface(), context.getPhysicalDevice(), context.getInstanceExtensions());
+	VkPhysicalDeviceVariablePointersFeatures pointerFeatures = querySupportedVariablePointersFeatures(context);
 
 	if (pointerFeatures.variablePointersStorageBuffer != DE_TRUE)
 		return new NotSupportedInstance(context, std::string("VariablePointersStorageBuffer support is required for this test."));
@@ -1271,7 +1268,7 @@ RobustWriteTest::RobustWriteTest (tcu::TestContext&		testContext,
 
 TestInstance* RobustWriteTest::createInstance (Context& context) const
 {
-	VkPhysicalDeviceVariablePointersFeatures pointerFeatures = querySupportedVariablePointersFeatures(context.getUsedApiVersion(), context.getInstanceInterface(), context.getPhysicalDevice(), context.getInstanceExtensions());
+	VkPhysicalDeviceVariablePointersFeatures pointerFeatures = querySupportedVariablePointersFeatures(context);
 	if (pointerFeatures.variablePointersStorageBuffer != DE_TRUE)
 		return new NotSupportedInstance(context, std::string("VariablePointersStorageBuffer support is required for this test."));
 

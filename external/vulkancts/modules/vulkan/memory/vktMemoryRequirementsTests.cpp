@@ -453,7 +453,7 @@ void checkSupportBufferMemoryRequirementsExtended (Context& context, VkBufferCre
 {
 	checkSupportBufferMemoryRequirementsOriginal(context, flags);
 
-	context.requireDeviceExtension("VK_KHR_get_memory_requirements2");
+	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 }
 
 void BufferMemoryRequirementsExtended::addFunctionTestCase (tcu::TestCaseGroup*	group,
@@ -526,7 +526,7 @@ void checkSupportBufferMemoryRequirementsDedicatedAllocation (Context& context, 
 {
 	checkSupportBufferMemoryRequirementsExtended(context, flags);
 
-	context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+	context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 }
 
 void BufferMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*	group,
@@ -656,10 +656,9 @@ protected:
 											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties);
 
 private:
-	virtual bool isImageSupported			(const deUint32								apiVersion,
+	virtual bool isImageSupported			(const Context&								context,
 											 const InstanceInterface&					vki,
 											 const VkPhysicalDevice						physDevice,
-											 const std::vector<std::string>&			deviceExtensions,
 											 const VkImageCreateInfo&					info);
 
 	virtual bool isFormatMatchingAspect		(const VkFormat								format,
@@ -816,7 +815,7 @@ bool isUsageMatchesFeatures (const VkImageUsageFlags usage, const VkFormatFeatur
 }
 
 //! This catches both invalid as well as legal but unsupported combinations of image parameters
-bool ImageMemoryRequirementsOriginal::isImageSupported (const deUint32 apiVersion, const InstanceInterface& vki, const VkPhysicalDevice physDevice, const std::vector<std::string>& deviceExtensions, const VkImageCreateInfo& info)
+bool ImageMemoryRequirementsOriginal::isImageSupported (const Context& context, const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkImageCreateInfo& info)
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
@@ -825,7 +824,7 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const deUint32 apiVersio
 			|| info.mipLevels != 1
 			|| info.arrayLayers != 1
 			|| info.samples != VK_SAMPLE_COUNT_1_BIT))
-			|| !isDeviceExtensionSupported(apiVersion, deviceExtensions, "VK_KHR_sampler_ycbcr_conversion"))
+			|| !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 	{
 		return false;
 	}
@@ -1315,7 +1314,7 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 
 					m_currentTestImageInfo = imageInfo;
 
-					if (!isImageSupported(context.getUsedApiVersion(), vki, physDevice, context.getDeviceExtensions(), m_currentTestImageInfo))
+					if (!isImageSupported(context, vki, physDevice, m_currentTestImageInfo))
 						continue;
 
 					log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
@@ -1375,7 +1374,7 @@ void checkSupportImageMemoryRequirementsExtended (Context& context, ImageTestPar
 {
 	checkSupportImageMemoryRequirementsOriginal(context, params);
 
-	context.requireDeviceExtension("VK_KHR_get_memory_requirements2");
+	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
 }
 
 void ImageMemoryRequirementsExtended::addFunctionTestCase (tcu::TestCaseGroup*		group,
@@ -1428,7 +1427,7 @@ void checkSupportImageMemoryRequirementsDedicatedAllocation (Context& context, I
 {
 	checkSupportImageMemoryRequirementsExtended(context, params);
 
-	context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+	context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 }
 
 void ImageMemoryRequirementsDedicatedAllocation::addFunctionTestCase (tcu::TestCaseGroup*		group,
@@ -1684,8 +1683,8 @@ void checkSupportMultiplane (Context& context, ImageTestParams params)
 {
 	checkSupportImageMemoryRequirementsOriginal(context, params);
 
-	context.requireDeviceExtension("VK_KHR_get_memory_requirements2");
-	context.requireDeviceExtension("VK_KHR_sampler_ycbcr_conversion");
+	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
+	context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
 }
 
 void populateMultiplaneTestGroup (tcu::TestCaseGroup* group)

@@ -1252,12 +1252,12 @@ bool isExtensionSupported(Context& context, RenderPassType renderPassType, TestS
 {
 
 	if (renderPassType == RENDERPASS_TYPE_RENDERPASS2)
-		context.requireDeviceExtension("VK_KHR_create_renderpass2");
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	if (separateStencilUsage)
 	{
-		context.requireDeviceExtension	("VK_EXT_separate_stencil_usage");
-		context.requireInstanceExtension("VK_KHR_get_physical_device_properties2");
+		context.requireDeviceFunctionality	("VK_EXT_separate_stencil_usage");
+		context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	}
 
 	return true;

@@ -114,6 +114,38 @@ struct CaseDef
 	VkFlags allPipelineStages;
 };
 
+static void getNeededFeatures(const Context&									context,
+							  VkPhysicalDeviceFeatures2&						features,
+							  VkPhysicalDeviceInlineUniformBlockFeaturesEXT&	inlineUniformFeatures,
+							  VkPhysicalDeviceDescriptorIndexingFeaturesEXT&	indexingFeatures)
+{
+	deMemset(&inlineUniformFeatures, 0, sizeof(inlineUniformFeatures));
+	inlineUniformFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
+
+	deMemset(&indexingFeatures, 0, sizeof(indexingFeatures));
+	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+
+	deMemset(&features, 0, sizeof(features));
+	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+	bool descriptorIndexing		= context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
+	bool uniformBlock			= context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block");
+	if (descriptorIndexing && uniformBlock)
+	{
+		indexingFeatures.pNext = &inlineUniformFeatures;
+		features.pNext = &indexingFeatures;
+	}
+	else if (descriptorIndexing)
+	{
+		features.pNext = &indexingFeatures;
+	}
+	else if (uniformBlock)
+	{
+		features.pNext = &inlineUniformFeatures;
+	}
+
+	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
+}
 
 class RandomLayout
 {
@@ -194,13 +226,13 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	void ** pNextTail = &properties.pNext;
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
+	if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 	{
 		*pNextTail = &inlineUniformProperties;
 		pNextTail = &inlineUniformProperties.pNext;
 	}
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	if (context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		*pNextTail = &rayTracingProperties;
 		pNextTail = &rayTracingProperties.pNext;
@@ -209,40 +241,17 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 
 	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
-	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
-	deMemset(&inlineUniformFeatures, 0, sizeof(inlineUniformFeatures));
-	inlineUniformFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
-
-	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures;
-	deMemset(&indexingFeatures, 0, sizeof(indexingFeatures));
-	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-
 	VkPhysicalDeviceFeatures2 features;
-	deMemset(&features, 0, sizeof(features));
-	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures;
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
+	getNeededFeatures(context, features, inlineUniformFeatures, indexingFeatures);
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") &&
-		isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
-	{
-		indexingFeatures.pNext = &inlineUniformFeatures;
-		features.pNext = &indexingFeatures;
-	}
-	else if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_descriptor_indexing"))
-	{
-		features.pNext = &indexingFeatures;
-	}
-	else if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
-	{
-		features.pNext = &inlineUniformFeatures;
-	}
-
-	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
 	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
 	{
 		return TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
 	}
 	else if (m_data.stage == STAGE_RAYGEN &&
-		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+		!context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		return TCU_THROW(NotSupportedError, "Ray tracing is not supported");
 	}
@@ -860,39 +869,17 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
 	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
 
-	if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	if (m_context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		properties.pNext = &rayTracingProperties;
 	}
 
 	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties);
 
-	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
-	deMemset(&inlineUniformFeatures, 0, sizeof(inlineUniformFeatures));
-	inlineUniformFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
-
-	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures;
-	deMemset(&indexingFeatures, 0, sizeof(indexingFeatures));
-	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-
 	VkPhysicalDeviceFeatures2 features;
-	deMemset(&features, 0, sizeof(features));
-	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-
-	if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_descriptor_indexing") &&
-		isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
-	{
-		indexingFeatures.pNext = &inlineUniformFeatures;
-		features.pNext = &indexingFeatures;
-	}
-	else if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_descriptor_indexing"))
-	{
-		features.pNext = &indexingFeatures;
-	}
-	else if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
-	{
-		features.pNext = &inlineUniformFeatures;
-	}
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures;
+	getNeededFeatures(m_context, features, inlineUniformFeatures, indexingFeatures);
 
 	m_context.getInstanceInterface().getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features);
 

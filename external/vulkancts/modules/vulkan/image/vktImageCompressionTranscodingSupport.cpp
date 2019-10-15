@@ -2849,7 +2849,7 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
 	const InstanceInterface&		vk						= context.getInstanceInterface();
 
-	context.requireDeviceExtension("VK_KHR_maintenance2");
+	context.requireDeviceFunctionality("VK_KHR_maintenance2");
 
 	{
 		VkImageFormatProperties imageFormatProperties;
