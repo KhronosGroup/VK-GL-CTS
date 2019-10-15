@@ -131,12 +131,12 @@ BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance (Context& con
 
 TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 {
-	TestLog&					log				= m_context.getTestContext().getLog();
-	std::vector<Vec4>			vertices;
-	std::vector<VulkanShader>	shaders;
-	FrontFacingVertexShader		vertexShader;
-	FrontFacingFragmentShader	fragmentShader;
-	std::string					testDesc;
+	TestLog&							log				= m_context.getTestContext().getLog();
+	std::vector<Vec4>					vertices;
+	std::vector<VulkanShader>			shaders;
+	std::shared_ptr<rr::VertexShader>	vertexShader	= std::make_shared<FrontFacingVertexShader>();
+	std::shared_ptr<rr::FragmentShader>	fragmentShader	= std::make_shared<FrontFacingFragmentShader>();
+	std::string							testDesc;
 
 	vertices.push_back(Vec4( -0.75f,	-0.75f,	0.0f,	1.0f));
 	vertices.push_back(Vec4(  0.0f,		-0.75f,	0.0f,	1.0f));
@@ -150,14 +150,16 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 
 	testDesc = "gl_FrontFacing " + getPrimitiveTopologyShortName(m_topology) + " ";
 
-	DrawState					drawState		(m_topology, FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT, m_context.getDeviceProperties().limits.subPixelPrecisionBits);
-	DrawCallData				drawCallData	(vertices);
-	VulkanProgram				vulkanProgram	(shaders);
-
-	VulkanDrawContext			dc(m_context, drawState, drawCallData, vulkanProgram);
+	FrameBufferState			frameBufferState	(FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT);
+	PipelineState				pipelineState		(m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+	DrawCallData				drawCallData		(m_topology, vertices);
+	VulkanProgram				vulkanProgram		(shaders);
+	VulkanDrawContext			dc					(m_context, frameBufferState);
+	dc.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
 	dc.draw();
 
-	ReferenceDrawContext		refDrawContext(drawState, drawCallData, vertexShader, fragmentShader);
+	ReferenceDrawContext		refDrawContext(frameBufferState);
+	refDrawContext.registerDrawObject(pipelineState, vertexShader, fragmentShader, drawCallData);
 	refDrawContext.draw();
 
 	log << TestLog::Image( "reference",
@@ -753,22 +755,24 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVert")));
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFrag")));
 
-		DrawState				drawState(m_topology, m_renderSize.x(), m_renderSize.y(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
-		DrawCallData			drawCallData(vertices);
-		VulkanProgram			vulkanProgram(shaders);
+		FrameBufferState			frameBufferState(m_renderSize.x(), m_renderSize.y());
+		PipelineState				pipelineState(m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+		DrawCallData				drawCallData(m_topology, vertices);
+		VulkanProgram				vulkanProgram(shaders);
 
-		drawState.depthClampEnable			= m_depthClampEnable;
-		drawState.depthFormat				= m_format;
-		drawState.numSamples				= m_samples;
-		drawState.compareOp					= rr::TESTFUNC_ALWAYS;
-		drawState.depthTestEnable			= true;
-		drawState.depthWriteEnable			= true;
-		drawState.sampleShadingEnable		= true;
-		vulkanProgram.depthImageView		= *depthImageView;
+		frameBufferState.depthFormat		= m_format;
+		frameBufferState.numSamples			= m_samples;
+		frameBufferState.depthImageView		= *depthImageView;
+		pipelineState.depthClampEnable		= m_depthClampEnable;
+		pipelineState.compareOp				= rr::TESTFUNC_ALWAYS;
+		pipelineState.depthTestEnable		= true;
+		pipelineState.depthWriteEnable		= true;
+		pipelineState.sampleShadingEnable	= true;
 		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
 		vulkanProgram.descriptorSet			= *descriptorSet;
 
-		VulkanDrawContext		vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
+		VulkanDrawContext			vulkanDrawContext(m_context, frameBufferState);
+		vulkanDrawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
 		vulkanDrawContext.draw();
 
 		log << TestLog::Image(	"resultColor",
@@ -897,16 +901,18 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVertPass2")));
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFragPass2")));
 
-		DrawState				drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
-		DrawCallData			drawCallData(vertices);
-		VulkanProgram			vulkanProgram(shaders);
+		FrameBufferState			frameBufferState(m_renderSize.x(), m_renderSize.y());
+		PipelineState				pipelineState(m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+		DrawCallData				drawCallData(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, vertices);
+		VulkanProgram				vulkanProgram(shaders);
 
-		drawState.numSamples				= m_samples;
-		drawState.sampleShadingEnable		= true;
-		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
-		vulkanProgram.descriptorSet			= *descriptorSet;
+		frameBufferState.numSamples				= m_samples;
+		pipelineState.sampleShadingEnable		= true;
+		vulkanProgram.descriptorSetLayout		= *descriptorSetLayout;
+		vulkanProgram.descriptorSet				= *descriptorSet;
 
-		VulkanDrawContext		vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
+		VulkanDrawContext		vulkanDrawContext(m_context, frameBufferState);
+		vulkanDrawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
 		vulkanDrawContext.draw();
 	}
 
@@ -1239,16 +1245,18 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragCoordMsaaVert")));
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragCoordMsaaFrag")));
 
-		DrawState			drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
-		DrawCallData		drawCallData(vertices);
-		VulkanProgram		vulkanProgram(shaders);
+		FrameBufferState			frameBufferState(m_renderSize.x(), m_renderSize.y());
+		PipelineState				pipelineState(m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+		DrawCallData				drawCallData(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, vertices);
+		VulkanProgram				vulkanProgram(shaders);
 
-		drawState.numSamples				= m_sampleCount;
-		drawState.sampleShadingEnable		= true;
+		frameBufferState.numSamples				= m_sampleCount;
+		pipelineState.sampleShadingEnable		= true;
 		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
 		vulkanProgram.descriptorSet			= *descriptorSet;
 
-		VulkanDrawContext	vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
+		VulkanDrawContext			vulkanDrawContext(m_context, frameBufferState);
+		vulkanDrawContext.registerDrawObject(pipelineState, vulkanProgram, drawCallData);
 		vulkanDrawContext.draw();
 
 		log << TestLog::Image(	"result",
