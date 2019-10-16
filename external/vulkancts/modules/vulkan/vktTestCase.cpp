@@ -439,6 +439,8 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 			return !!vk11Features.shaderDrawParameters;
 
 		const auto& vk12Features = m_device->getVulkan12Features();
+		if (extension == "VK_KHR_timeline_semaphore")
+			return !!vk12Features.timelineSemaphore;
 		if (extension == "VK_KHR_buffer_device_address")
 			return !!vk12Features.bufferDeviceAddress;
 		if (extension == "VK_EXT_descriptor_indexing")
@@ -458,7 +460,15 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 
 	// check if extension is on the lits of extensions for current device
 	const auto& extensions = getDeviceExtensions();
-	return de::contains(extensions.begin(), extensions.end(), extension);
+	if (de::contains(extensions.begin(), extensions.end(), extension))
+	{
+		if (extension == "VK_KHR_timeline_semaphore")
+			return !!getTimelineSemaphoreFeatures().timelineSemaphore;
+
+		return true;
+	}
+
+	return false;
 }
 
 bool Context::isInstanceFunctionalitySupported(const std::string& extension) const
@@ -496,7 +506,7 @@ bool									Context::isDeviceFeatureInitialized			(vk::VkStructureType sType) c
 bool									Context::isDevicePropertyInitialized		(vk::VkStructureType sType) const
 																							{ return m_device->isDevicePropertyInitialized(sType);	}
 
-bool Context::requireDeviceFunctionality (const std::string& required)
+bool Context::requireDeviceFunctionality (const std::string& required) const
 {
 	if (!isDeviceFunctionalitySupported(required))
 		TCU_THROW(NotSupportedError, required + " is not supported");
@@ -504,7 +514,7 @@ bool Context::requireDeviceFunctionality (const std::string& required)
 	return true;
 }
 
-bool Context::requireInstanceFunctionality (const std::string& required)
+bool Context::requireInstanceFunctionality (const std::string& required) const
 {
 	if (!isInstanceFunctionalitySupported(required))
 		TCU_THROW(NotSupportedError, required + " is not supported");

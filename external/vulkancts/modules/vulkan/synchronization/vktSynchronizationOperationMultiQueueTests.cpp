@@ -114,6 +114,9 @@ class MultiQueues
 		const VkPhysicalDevice						physicalDevice			= context.getPhysicalDevice();
 		const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
 
+		if (timelineSemaphore)
+			context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+
 		for (deUint32 queuePropertiesNdx = 0; queuePropertiesNdx < queueFamilyProperties.size(); ++queuePropertiesNdx)
 		{
 			addQueueIndex(queuePropertiesNdx,
@@ -156,9 +159,6 @@ class MultiQueues
 				extensions,														//const char* const*				ppEnabledExtensionNames;
 				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
-
-			if (timelineSemaphore && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
-				TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
 			m_logicalDevice	= createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
 			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
