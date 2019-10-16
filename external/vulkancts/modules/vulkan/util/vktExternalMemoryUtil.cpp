@@ -73,6 +73,7 @@ NativeHandle::NativeHandle (void)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(DE_NULL)
+	, m_hostPtr					(DE_NULL)
 {
 }
 
@@ -81,6 +82,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(DE_NULL)
+	, m_hostPtr					(DE_NULL)
 {
 	if (other.m_fd >= 0)
 	{
@@ -140,6 +142,7 @@ NativeHandle::NativeHandle (int fd)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(DE_NULL)
+	, m_hostPtr					(DE_NULL)
 {
 }
 
@@ -148,6 +151,7 @@ NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle hand
 	, m_win32HandleType			(handleType)
 	, m_win32Handle				(handle)
 	, m_androidHardwareBuffer	(DE_NULL)
+	, m_hostPtr					(DE_NULL)
 {
 }
 
@@ -156,6 +160,7 @@ NativeHandle::NativeHandle (vk::pt::AndroidHardwareBufferPtr buffer)
 	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
 	, m_win32Handle				(DE_NULL)
 	, m_androidHardwareBuffer	(buffer)
+	, m_hostPtr					(DE_NULL)
 {
 }
 
@@ -208,6 +213,7 @@ void NativeHandle::reset (void)
 	m_win32Handle			= vk::pt::Win32Handle(DE_NULL);
 	m_win32HandleType		= WIN32HANDLETYPE_LAST;
 	m_androidHardwareBuffer	= vk::pt::AndroidHardwareBufferPtr(DE_NULL);
+	m_hostPtr				= DE_NULL;
 }
 
 NativeHandle& NativeHandle::operator= (int fd)
@@ -236,17 +242,27 @@ void NativeHandle::setWin32Handle (Win32HandleType type, vk::pt::Win32Handle han
 	m_win32Handle		= handle;
 }
 
+void NativeHandle::setHostPtr(void* hostPtr)
+{
+	reset();
+
+	m_hostPtr = hostPtr;
+}
+
 void NativeHandle::disown (void)
 {
 	m_fd = -1;
 	m_win32Handle = vk::pt::Win32Handle(DE_NULL);
 	m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
+	m_hostPtr = DE_NULL;
 }
 
 vk::pt::Win32Handle NativeHandle::getWin32Handle (void) const
 {
 	DE_ASSERT(m_fd == -1);
 	DE_ASSERT(!m_androidHardwareBuffer.internal);
+	DE_ASSERT(m_hostPtr == DE_NULL);
+
 	return m_win32Handle;
 }
 
@@ -254,15 +270,23 @@ int NativeHandle::getFd (void) const
 {
 	DE_ASSERT(!m_win32Handle.internal);
 	DE_ASSERT(!m_androidHardwareBuffer.internal);
+	DE_ASSERT(m_hostPtr == DE_NULL);
 	return m_fd;
 }
-
 
 vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer (void) const
 {
 	DE_ASSERT(m_fd == -1);
 	DE_ASSERT(!m_win32Handle.internal);
+	DE_ASSERT(m_hostPtr == DE_NULL);
 	return m_androidHardwareBuffer;
+}
+
+void* NativeHandle::getHostPtr(void) const
+{
+	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(!m_win32Handle.internal);
+	return m_hostPtr;
 }
 
 const char* externalSemaphoreTypeToName (vk::VkExternalSemaphoreHandleTypeFlagBits type)
@@ -342,6 +366,9 @@ const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBits typ
 
 		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT:
 			return "dma_buf";
+
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT:
+			return "host_allocation";
 
 		default:
 			DE_FATAL("Unknown external memory type");
@@ -1134,6 +1161,35 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 		return memory;
 	}
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT)
+	{
+		DE_ASSERT(memoryTypeIndex != ~0U);
+
+		const vk::VkImportMemoryHostPointerInfoEXT	importInfo		=
+		{
+			vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+			DE_NULL,
+			externalType,
+			handle.getHostPtr()
+		};
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+			&importInfo,
+			image,
+			buffer,
+		};
+		const vk::VkMemoryAllocateInfo					info =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
+			requirements.size,
+			memoryTypeIndex
+		};
+		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
+
+		return memory;
+	}
 	else
 	{
 		DE_FATAL("Unknown external memory type");
@@ -1561,6 +1617,28 @@ AndroidHardwareBufferExternalApi* AndroidHardwareBufferExternalApi::getInstance(
 	DE_UNREF(sdkVersion);
 #endif // DE_OS == DE_OS_ANDROID
 	return DE_NULL;
+}
+
+vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT getPhysicalDeviceExternalMemoryHostProperties(const vk::InstanceInterface&	vki,
+																								  vk::VkPhysicalDevice			physicalDevice)
+{
+	vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT externalProps =
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
+		DE_NULL,
+		0u,
+	};
+
+	vk::VkPhysicalDeviceProperties2 props2 =
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+		&externalProps,
+		{}
+	};
+
+	vki.getPhysicalDeviceProperties2(physicalDevice, &props2);
+
+	return externalProps;
 }
 
 } // ExternalMemoryUtil
