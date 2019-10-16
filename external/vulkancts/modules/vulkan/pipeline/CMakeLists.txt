@@ -26,6 +26,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelinePushConstantTests.hpp
 	vktPipelinePushDescriptorTests.cpp
 	vktPipelinePushDescriptorTests.hpp
+	vktPipelineSampleLocationsUtil.cpp
+	vktPipelineSampleLocationsUtil.hpp
 	vktPipelineSpecConstantTests.hpp
 	vktPipelineSpecConstantTests.cpp
 	vktPipelineSpecConstantUtil.hpp
@@ -52,8 +54,12 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMultisampleShaderBuiltInTests.hpp
 	vktPipelineMultisampleImageTests.cpp
 	vktPipelineMultisampleImageTests.hpp
+	vktPipelineMultisampleMixedAttachmentSamplesTests.cpp
+	vktPipelineMultisampleMixedAttachmentSamplesTests.hpp
 	vktPipelineMultisampleSampleLocationsExtTests.cpp
 	vktPipelineMultisampleSampleLocationsExtTests.hpp
+	vktPipelineMultisampleShaderFragmentMaskTests.cpp
+	vktPipelineMultisampleShaderFragmentMaskTests.hpp
 	vktPipelineInputAssemblyTests.cpp
 	vktPipelineInputAssemblyTests.hpp
 	vktPipelineReferenceRenderer.cpp
