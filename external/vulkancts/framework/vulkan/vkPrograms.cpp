@@ -258,7 +258,7 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 	deUint8*		bin			= 0;
 	char*			source		= 0;
 	deBool			ok			= true;
-	deBool			diff;
+	deBool			diff		= true;
 	cacheFileMutex.lock();
 
 	if (cacheFileIndex.count(hash) == 0)
@@ -286,8 +286,8 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 			source = new char[sourcelength + 1];
 			ok = fread(source, 1, sourcelength, file)				== (size_t)sourcelength;
 			source[sourcelength] = 0;
+			diff = shaderstring != std::string(source);
 		}
-		diff = shaderstring != std::string(source);
 		if (!ok || diff)
 		{
 			// Mismatch, but may still exist in cache if there were hash collisions
