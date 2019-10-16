@@ -725,12 +725,17 @@ public:
 		DE_ASSERT(stageBits.size() == iterations.size());
 		DE_ASSERT(semaphoreHandlesA.size() == iterations.size());
 
-		// Record all read operations into a single command buffer.
+		// Record all read operations into a single command buffer and record the union of their stage masks.
+		VkPipelineStageFlags readStages = 0;
 		ptrCmdBufferB = makeVkSharedPtr(makeCommandBuffer(vkB, *deviceB, *cmdPoolB));
 		cmdBufferB = **(ptrCmdBufferB);
 		beginCommandBuffer(vkB, cmdBufferB);
 		for (deUint32 iterIdx = 0; iterIdx < iterations.size(); iterIdx++)
-			iterations[iterIdx].readOp->recordCommands(cmdBufferB);
+		{
+			QueueSubmitOrderSharedIteration& iter = iterations[iterIdx];
+			readStages |= iter.readOp->getInSyncInfo().stageMask;
+			iter.readOp->recordCommands(cmdBufferB);
+		}
 		endCommandBuffer(vkB, cmdBufferB);
 
 		// Export the last semaphore for use on deviceB and create another semaphore to signal on deviceB.
@@ -808,7 +813,7 @@ public:
 				&timelineSubmitInfo : DE_NULL,							// const void*					pNext;
 				1u,														// deUint32						waitSemaphoreCount;
 				&semaphoreHandlesB.front(),								// const VkSemaphore*			pWaitSemaphores;
-				&stageBits[0],											// const VkPipelineStageFlags*	pWaitDstStageMask;
+				&readStages,											// const VkPipelineStageFlags*	pWaitDstStageMask;
 				1u,														// deUint32						commandBufferCount;
 				&cmdBufferB,											// const VkCommandBuffer*		pCommandBuffers;
 				1u,														// deUint32						signalSemaphoreCount;
@@ -1376,12 +1381,17 @@ public:
 		DE_ASSERT(stageBits.size() == iterations.size());
 		DE_ASSERT(semaphoreHandlesA.size() == iterations.size());
 
-		// Record all read operations into a single command buffer.
+		// Record all read operations into a single command buffer and track the union of their execution stages.
+		VkPipelineStageFlags readStages = 0;
 		ptrCmdBufferB = makeVkSharedPtr(makeCommandBuffer(vk, device, *cmdPoolB));
 		cmdBufferB = **(ptrCmdBufferB);
 		beginCommandBuffer(vk, cmdBufferB);
 		for (deUint32 iterIdx = 0; iterIdx < iterations.size(); iterIdx++)
-			iterations[iterIdx].readOp->recordCommands(cmdBufferB);
+		{
+			QueueSubmitOrderIteration& iter = iterations[iterIdx];
+			readStages |= iter.readOp->getInSyncInfo().stageMask;
+			iter.readOp->recordCommands(cmdBufferB);
+		}
 		endCommandBuffer(vk, cmdBufferB);
 
 		addSemaphore(vk, device, semaphoresB, semaphoreHandlesB, timelineValuesB, timelineValuesA.back());
@@ -1448,7 +1458,7 @@ public:
 				&timelineSubmitInfo : DE_NULL,							// const void*					pNext;
 				1u,														// deUint32						waitSemaphoreCount;
 				&semaphoreHandlesA.back(),								// const VkSemaphore*			pWaitSemaphores;
-				&stageBits[0],											// const VkPipelineStageFlags*	pWaitDstStageMask;
+				&readStages,											// const VkPipelineStageFlags*	pWaitDstStageMask;
 				1u,														// deUint32						commandBufferCount;
 				&cmdBufferB,											// const VkCommandBuffer*		pCommandBuffers;
 				1u,														// deUint32						signalSemaphoreCount;
