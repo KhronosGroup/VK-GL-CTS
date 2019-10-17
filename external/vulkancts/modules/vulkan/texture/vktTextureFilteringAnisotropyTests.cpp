@@ -137,10 +137,12 @@ public:
 				return tcu::TestStatus::fail("Fail");
 
 			// Anisotropic filtering is implementation dependent. Expecting differences with minification/magnification filter set to NEAREST is too strict.
+			// The specification does not require that your aniso & bi-linear filtering are different even in LINEAR, but this check is 'generally' going
+			// to detect *some* difference and possibly be useful in catching issues where an implementation hasn't setup their filtering modes correctly.
 			if (m_refParams.minFilter != tcu::Sampler::NEAREST && m_refParams.magFilter != tcu::Sampler::NEAREST)
 			{
 				if (floatThresholdCompare (m_context.getTestContext().getLog(), "Expecting comparison to fail", "Expecting comparison to fail",
-							   renderedFrame.getAccess(), renderedAnisotropyFrame.getAccess(), Vec4(0.05f), tcu::COMPARE_LOG_RESULT))
+							   renderedFrame.getAccess(), renderedAnisotropyFrame.getAccess(), Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
 					return tcu::TestStatus::fail("Fail");
 			}
 		}
