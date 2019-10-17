@@ -2103,7 +2103,7 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 	typedef tcu::Vector<deInt64, 2> I64Vec2;
 
 	const deUint64		numSubPixels						= ((deUint64)1) << subpixelBits;
-	const deUint64		pixelHitBoxSize						= (multisample) ? (numSubPixels) : (2+2);	//!< allow 4 central (2x2) for non-multisample pixels. Rounding may move edges 1 subpixel to any direction.
+	const deUint64		pixelHitBoxSize						= (multisample) ? (numSubPixels) : 5;		//!< 5 = ceil(6 * sqrt(2) / 2) to account for a 3 subpixel fuzz around pixel center
 	const bool			order								= isTriangleClockwise(p0, p1, p2);			//!< clockwise / counter-clockwise
 	const tcu::Vec4&	orderedP0							= p0;										//!< vertices of a clockwise triangle
 	const tcu::Vec4&	orderedP1							= (order) ? (p1) : (p2);
@@ -2137,12 +2137,13 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 
 	// Broad triangle - pixel area intersection
 	{
-		const I64Vec2 pixelCenterPosition = I64Vec2(pixel.x(), pixel.y()) * I64Vec2(numSubPixels, numSubPixels) + I64Vec2(numSubPixels / 2, numSubPixels / 2);
-		const I64Vec2 triangleSubPixelSpaceRound[3] =
+		const DVec2 pixelCenterPosition			=	DVec2((double)pixel.x(), (double)pixel.y()) * DVec2((double)numSubPixels, (double)numSubPixels) +
+													DVec2((double)numSubPixels / 2, (double)numSubPixels / 2);
+		const DVec2 triangleSubPixelSpace[3]	=
 		{
-			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[0].x() * (float)numSubPixels), deRoundFloatToInt32(triangleScreenSpace[0].y() * (float)numSubPixels)),
-			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[1].x() * (float)numSubPixels), deRoundFloatToInt32(triangleScreenSpace[1].y() * (float)numSubPixels)),
-			I64Vec2(deRoundFloatToInt32(triangleScreenSpace[2].x() * (float)numSubPixels), deRoundFloatToInt32(triangleScreenSpace[2].y() * (float)numSubPixels)),
+			DVec2(triangleScreenSpace[0].x() * (double)numSubPixels, triangleScreenSpace[0].y() * (double)numSubPixels),
+			DVec2(triangleScreenSpace[1].x() * (double)numSubPixels, triangleScreenSpace[1].y() * (double)numSubPixels),
+			DVec2(triangleScreenSpace[2].x() * (double)numSubPixels, triangleScreenSpace[2].y() * (double)numSubPixels),
 		};
 
 		// Check (using cross product) if pixel center is
@@ -2152,10 +2153,10 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 		for (int vtxNdx = 0; vtxNdx < 3; ++vtxNdx)
 		{
 			const int		otherVtxNdx				= (vtxNdx + 1) % 3;
-			const deInt64	maxPixelDistanceSquared	= pixelHitBoxSize*pixelHitBoxSize; // Max distance from the pixel center from within the pixel is (sqrt(2) * boxWidth/2). Use 2x value for rounding tolerance
-			const I64Vec2	edge					= triangleSubPixelSpaceRound[otherVtxNdx]	- triangleSubPixelSpaceRound[vtxNdx];
-			const I64Vec2	v						= pixelCenterPosition						- triangleSubPixelSpaceRound[vtxNdx];
-			const deInt64	crossProduct			= (edge.x() * v.y() - edge.y() * v.x());
+			const double	maxPixelDistanceSquared	= (double)(pixelHitBoxSize * pixelHitBoxSize); // Max distance from the pixel center from within the pixel is (sqrt(2) * boxWidth/2). Use 2x value for rounding tolerance
+			const DVec2		edge					= triangleSubPixelSpace[otherVtxNdx]	- triangleSubPixelSpace[vtxNdx];
+			const DVec2		v						= pixelCenterPosition					- triangleSubPixelSpace[vtxNdx];
+			const double	crossProduct			= (edge.x() * v.y() - edge.y() * v.x());
 
 			// distance from edge: (edge x v) / |edge|
 			//     (edge x v) / |edge| > maxPixelDistance
@@ -2181,12 +2182,14 @@ CoverageType calculateTriangleCoverage (const tcu::Vec4& p0, const tcu::Vec4& p1
 			I64Vec2((pixel.x()+1) * numSubPixels, (pixel.y()+1) * numSubPixels),
 			I64Vec2((pixel.x()+0) * numSubPixels, (pixel.y()+1) * numSubPixels),
 		};
+
+		// 3 subpixel tolerance around pixel center to account for accumulated errors during various line rasterization methods
 		const I64Vec2 pixelCenterCorners[4] =
 		{
-			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 + 0, pixel.y() * numSubPixels + numSubPixels/2 + 0),
-			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 + 1, pixel.y() * numSubPixels + numSubPixels/2 + 0),
-			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 + 1, pixel.y() * numSubPixels + numSubPixels/2 + 1),
-			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 + 0, pixel.y() * numSubPixels + numSubPixels/2 + 1),
+			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 - 3, pixel.y() * numSubPixels + numSubPixels/2 - 3),
+			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 + 3, pixel.y() * numSubPixels + numSubPixels/2 - 3),
+			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 + 3, pixel.y() * numSubPixels + numSubPixels/2 + 3),
+			I64Vec2(pixel.x() * numSubPixels + numSubPixels/2 - 3, pixel.y() * numSubPixels + numSubPixels/2 + 3),
 		};
 
 		// both rounding directions
