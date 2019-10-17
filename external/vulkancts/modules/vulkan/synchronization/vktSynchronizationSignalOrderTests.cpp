@@ -260,32 +260,43 @@ MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface&				vkd,
 }
 
 
-MovePtr<Allocation> importAndBindMemory (const DeviceInterface&				vkd,
-										 VkDevice							device,
-										 VkBuffer							buffer,
-										 NativeHandle&						nativeHandle,
-										 VkExternalMemoryHandleTypeFlagBits	externalType,
-										 const deUint32						exportedMemoryTypeIndex)
+MovePtr<Allocation> importAndBindMemory (const DeviceInterface&					vkd,
+										 VkDevice								device,
+										 VkBuffer								buffer,
+										 NativeHandle&							nativeHandle,
+										 VkExternalMemoryHandleTypeFlagBits		externalType,
+										 const deUint32							exportedMemoryTypeIndex,
+										 const VkExternalMemoryFeatureFlags&	externalMemoryFeatureFlags)
 {
 	const VkMemoryRequirements	requirements			= getBufferMemoryRequirements(vkd, device, buffer);
-	Move<VkDeviceMemory>		memory					= importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
+	Move<VkDeviceMemory>		memory;
 
-	NativeHandle				nativeMemoryHandle;
+	if ((externalMemoryFeatureFlags & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+		memory = importDedicatedMemory(vkd, device, buffer, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
+	else
+		memory = importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
 
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
 	return MovePtr<Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
 }
 
-MovePtr<Allocation> importAndBindMemory (const DeviceInterface&				vkd,
-										 VkDevice							device,
-										 VkImage							image,
-										 NativeHandle&						nativeHandle,
-										 VkExternalMemoryHandleTypeFlagBits	externalType,
-										 deUint32							exportedMemoryTypeIndex)
+MovePtr<Allocation> importAndBindMemory (const DeviceInterface&					vkd,
+										 VkDevice								device,
+										 VkImage								image,
+										 NativeHandle&							nativeHandle,
+										 VkExternalMemoryHandleTypeFlagBits		externalType,
+										 deUint32								exportedMemoryTypeIndex,
+										 const VkExternalMemoryFeatureFlags&	externalMemoryFeatureFlags)
 {
 	const VkMemoryRequirements	requirements	= getImageMemoryRequirements(vkd, device, image);
-	Move<VkDeviceMemory>		memory			=  importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
+	Move<VkDeviceMemory>		memory;
+
+	if ((externalMemoryFeatureFlags & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+		memory = importDedicatedMemory(vkd, device, image, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
+	else
+		memory = importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
+
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
 	return MovePtr<Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -415,7 +426,8 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 									  const OperationSupport&				writeOp,
 									  NativeHandle&							nativeHandle,
 									  VkExternalMemoryHandleTypeFlagBits	externalType,
-									  deUint32								exportedMemoryTypeIndex)
+									  deUint32								exportedMemoryTypeIndex,
+									  const VkExternalMemoryFeatureFlags&	externalMemoryFeatureFlags)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
 	{
@@ -468,7 +480,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 		};
 
 		Move<VkImage>			image		= createImage(vkd, device, &createInfo);
-		MovePtr<Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex);
+		MovePtr<Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex, externalMemoryFeatureFlags);
 
 		return MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -495,8 +507,14 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 			1u,
 			&queueFamilyIndex
 		};
-		Move<VkBuffer>							buffer			= createBuffer(vkd, device, &createInfo);
-		MovePtr<Allocation>						allocation		= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType, exportedMemoryTypeIndex);
+		Move<VkBuffer>							buffer		= createBuffer(vkd, device, &createInfo);
+		MovePtr<Allocation>						allocation	= importAndBindMemory(vkd,
+																				  device,
+																				  *buffer,
+																				  nativeHandle,
+																				  externalType,
+																				  exportedMemoryTypeIndex,
+																				  externalMemoryFeatureFlags);
 
 		return MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -648,7 +666,8 @@ public:
 														   *m_writeOpSupport,
 														   nativeMemoryHandle,
 														   m_memoryHandleType,
-														   memoryTypeIndex));
+														   memoryTypeIndex,
+														   m_externalMemoryFeatureFlags));
 
 			iter.writeOp = makeSharedPtr(m_writeOpSupport->build(*operationContextA,
 																 *iter.resourceA));
@@ -940,6 +959,8 @@ private:
 			if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 				return false;
 
+			m_externalMemoryFeatureFlags = externalProperties.externalMemoryProperties.externalMemoryFeatures;
+
 			return true;
 		}
 		else
@@ -965,6 +986,8 @@ private:
 				|| (properties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 				return false;
 
+			m_externalMemoryFeatureFlags = properties.externalMemoryProperties.externalMemoryFeatures;
+
 			return true;
 		}
 	}
@@ -977,6 +1000,7 @@ private:
 	VkExternalSemaphoreHandleTypeFlagBits		m_semaphoreHandleType;
 	PipelineCacheData&							m_pipelineCacheData;
 	de::Random									m_rng;
+	VkExternalMemoryFeatureFlags				m_externalMemoryFeatureFlags;
 };
 
 class QueueSubmitSignalOrderSharedTestCase : public TestCase
