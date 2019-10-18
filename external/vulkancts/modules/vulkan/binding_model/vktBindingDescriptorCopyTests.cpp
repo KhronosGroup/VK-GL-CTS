@@ -1578,20 +1578,16 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	{
 		if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
 		{
-			VkPhysicalDeviceFeatures2 features2 =
-			{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-				&iubFeatures,
-				{}
-			};
+			VkPhysicalDeviceFeatures2 features2;
+			deMemset(&features2, 0, sizeof(features2));
+			features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			features2.pNext = &iubFeatures;
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
 
-			VkPhysicalDeviceProperties2 properties2 =
-			{
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-				&iubProperties,
-				{}
-			};
+			VkPhysicalDeviceProperties2 properties2;
+			deMemset(&properties2, 0, sizeof(properties2));
+			properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+			properties2.pNext = &iubProperties;
 			vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 		}
 	}
