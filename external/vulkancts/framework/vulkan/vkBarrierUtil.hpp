@@ -50,6 +50,30 @@ VkImageMemoryBarrier makeImageMemoryBarrier (const VkAccessFlags			srcAccessMask
 VkMemoryBarrier makeMemoryBarrier (const VkAccessFlags	srcAccessMask,
 								   const VkAccessFlags	dstAccessMask);
 
+void cmdPipelineMemoryBarrier		(const DeviceInterface&			vk,
+									 const VkCommandBuffer			commandBuffer,
+									 const VkPipelineStageFlags		srcStageMask,
+									 const VkPipelineStageFlags		dstStageMask,
+									 const VkMemoryBarrier*			pMemoryBarriers,
+									 const size_t					memoryBarrierCount = 1u,
+									 const VkDependencyFlags		dependencyFlags = 0);
+
+void cmdPipelineBufferMemoryBarrier	(const DeviceInterface&			vk,
+									 const VkCommandBuffer			commandBuffer,
+									 const VkPipelineStageFlags		srcStageMask,
+									 const VkPipelineStageFlags		dstStageMask,
+									 const VkBufferMemoryBarrier*	pBufferMemoryBarriers,
+									 const size_t					bufferMemoryBarrierCount = 1u,
+									 const VkDependencyFlags		dependencyFlags = 0);
+
+void cmdPipelineImageMemoryBarrier	(const DeviceInterface&			vk,
+									 const VkCommandBuffer			commandBuffer,
+									 const VkPipelineStageFlags		srcStageMask,
+									 const VkPipelineStageFlags		dstStageMask,
+									 const VkImageMemoryBarrier*	pImageMemoryBarriers,
+									 const size_t					imageMemoryBarrierCount = 1u,
+									 const VkDependencyFlags		dependencyFlags = 0);
+
 } // vk
 
 #endif // _VKBARRIERUTIL_HPP

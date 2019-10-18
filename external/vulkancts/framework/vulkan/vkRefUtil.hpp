@@ -46,6 +46,11 @@ Move<VkPipeline>		createRayTracingPipelineNV(const DeviceInterface&					vk,
 												 VkPipelineCache						pipelineCache,
 												 const VkRayTracingPipelineCreateInfoNV*	pCreateInfo,
 												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
+Move<VkPipeline>		createRayTracingPipelineKHR	(const DeviceInterface&					vk,
+												 VkDevice									device,
+												 VkPipelineCache							pipelineCache,
+												 const VkRayTracingPipelineCreateInfoKHR*	pCreateInfo,
+												 const VkAllocationCallbacks*				pAllocator = DE_NULL);
 Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo);
 Move<VkDescriptorSet>	allocateDescriptorSet	(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo);
 

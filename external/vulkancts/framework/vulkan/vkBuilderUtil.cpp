@@ -200,13 +200,14 @@ DescriptorSetUpdateBuilder& DescriptorSetUpdateBuilder::write (VkDescriptorSet		
 															   VkDescriptorType					descriptorType,
 															   const VkDescriptorImageInfo*		pImageInfo,
 															   const VkDescriptorBufferInfo*	pBufferInfo,
-															   const VkBufferView*				pTexelBufferView)
+															   const VkBufferView*				pTexelBufferView,
+															   const void*						pNext)
 {
 	// pImageInfo, pBufferInfo and pTexelBufferView will be updated when calling update()
 	const VkWriteDescriptorSet writeParams =
 	{
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		DE_NULL,
+		pNext,
 		destSet,			//!< destSet
 		destBinding,		//!< destBinding
 		destArrayElement,	//!< destArrayElement

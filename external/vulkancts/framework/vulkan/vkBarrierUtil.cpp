@@ -88,4 +88,49 @@ VkMemoryBarrier makeMemoryBarrier (const VkAccessFlags	srcAccessMask,
 	return barrier;
 }
 
+void cmdPipelineMemoryBarrier		(const DeviceInterface&			vk,
+									 const VkCommandBuffer			commandBuffer,
+									 const VkPipelineStageFlags		srcStageMask,
+									 const VkPipelineStageFlags		dstStageMask,
+									 const VkMemoryBarrier*			pMemoryBarriers,
+									 const size_t					memoryBarrierCount,
+									 const VkDependencyFlags		dependencyFlags)
+{
+	const deUint32	memoryBarrierCount32	=static_cast<deUint32>(memoryBarrierCount);
+
+	DE_ASSERT(memoryBarrierCount == memoryBarrierCount32);
+
+	vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount32, pMemoryBarriers, 0u, DE_NULL, 0u, DE_NULL);
+}
+
+void cmdPipelineBufferMemoryBarrier	(const DeviceInterface&			vk,
+									 const VkCommandBuffer			commandBuffer,
+									 const VkPipelineStageFlags		srcStageMask,
+									 const VkPipelineStageFlags		dstStageMask,
+									 const VkBufferMemoryBarrier*	pBufferMemoryBarriers,
+									 const size_t					bufferMemoryBarrierCount,
+									 const VkDependencyFlags		dependencyFlags)
+{
+	const deUint32	bufferMemoryBarrierCount32	=static_cast<deUint32>(bufferMemoryBarrierCount);
+
+	DE_ASSERT(bufferMemoryBarrierCount == bufferMemoryBarrierCount32);
+
+	vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, DE_NULL, bufferMemoryBarrierCount32, pBufferMemoryBarriers, 0u, DE_NULL);
+}
+
+void cmdPipelineImageMemoryBarrier	(const DeviceInterface&			vk,
+									 const VkCommandBuffer			commandBuffer,
+									 const VkPipelineStageFlags		srcStageMask,
+									 const VkPipelineStageFlags		dstStageMask,
+									 const VkImageMemoryBarrier*	pImageMemoryBarriers,
+									 const size_t					imageMemoryBarrierCount,
+									 const VkDependencyFlags		dependencyFlags)
+{
+	const deUint32	imageMemoryBarrierCount32	=static_cast<deUint32>(imageMemoryBarrierCount);
+
+	DE_ASSERT(imageMemoryBarrierCount == imageMemoryBarrierCount32);
+
+	vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, 0u, DE_NULL, 0u, DE_NULL, imageMemoryBarrierCount32, pImageMemoryBarriers);
+}
+
 } // vkt
