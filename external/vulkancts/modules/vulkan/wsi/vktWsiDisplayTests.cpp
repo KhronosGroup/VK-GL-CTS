@@ -1533,7 +1533,7 @@ namespace
 {
 	struct SurfaceCountersError : public std::runtime_error
 	{
-		SurfaceCountersError(const std::string& what) : std::runtime_error(what) {}
+		SurfaceCountersError(const std::string& what_) : std::runtime_error(what_) {}
 	};
 }
 
