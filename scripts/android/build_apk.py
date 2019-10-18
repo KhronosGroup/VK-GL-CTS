@@ -343,7 +343,6 @@ def buildNativeLibrary (config, abiName):
 				'-DDEQP_TARGET_TOOLCHAIN=ndk-modern',
 				'-DCMAKE_C_FLAGS=-Werror',
 				'-DCMAKE_CXX_FLAGS=-Werror',
-				'-DANDROID_NDK_HOST_OS=%s' % config.env.ndk.hostOsName,
 				'-DANDROID_NDK_PATH=%s' % config.env.ndk.path,
 				'-DANDROID_ABI=%s' % abiName,
 				'-DDE_ANDROID_API=%s' % config.nativeApi,
