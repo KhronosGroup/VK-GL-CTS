@@ -102,6 +102,7 @@ public:
 	~TestRunner(void);
 
 	bool iterate(void);
+	bool isConformant() const { return m_summary.isConformant; }
 
 private:
 	TestRunner(const TestRunner& other);
