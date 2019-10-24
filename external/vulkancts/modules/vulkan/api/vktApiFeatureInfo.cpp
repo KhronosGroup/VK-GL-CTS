@@ -4839,7 +4839,7 @@ tcu::TestStatus deviceFeaturesVulkan12 (Context& context)
 	TestLog&											log										= context.getTestContext().getLog();
 	const VkPhysicalDevice								physicalDevice							= context.getPhysicalDevice();
 	const CustomInstance								instance								(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&								vki										(instance.getDriver());
+	const InstanceDriver&								vki										= instance.getDriver();
 	const deUint32										vulkan11FeaturesBufferSize				= sizeof(VkPhysicalDeviceVulkan11Features) + GUARD_SIZE;
 	const deUint32										vulkan12FeaturesBufferSize				= sizeof(VkPhysicalDeviceVulkan12Features) + GUARD_SIZE;
 	VkPhysicalDeviceFeatures2							extFeatures;
@@ -4935,8 +4935,6 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	{
 		// VkPhysicalDeviceDriverProperties
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, driverID),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, driverName),
-		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, driverInfo),
 		OFFSET_TABLE_ENTRY(VkPhysicalDeviceVulkan12Properties, conformanceVersion),
 
 		// VkPhysicalDeviceFloatControlsProperties
@@ -5003,7 +5001,7 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 	TestLog&										log											= context.getTestContext().getLog();
 	const VkPhysicalDevice							physicalDevice								= context.getPhysicalDevice();
 	const CustomInstance							instance									(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&							vki											(instance.getDriver());
+	const InstanceDriver&							vki											= instance.getDriver();
 	const deUint32									vulkan11PropertiesBufferSize				= sizeof(VkPhysicalDeviceVulkan11Properties) + GUARD_SIZE;
 	const deUint32									vulkan12PropertiesBufferSize				= sizeof(VkPhysicalDeviceVulkan12Properties) + GUARD_SIZE;
 	VkPhysicalDeviceProperties2						extProperties;
@@ -5050,7 +5048,9 @@ tcu::TestStatus devicePropertiesVulkan12 (Context& context)
 		return tcu::TestStatus::fail("VkPhysicalDeviceVulkan11Properties initialization failure");
 	}
 
-	if (!validateStructsWithGuard(properties12OffsetTable, vulkan12Properties, GUARD_VALUE, GUARD_SIZE))
+	if (!validateStructsWithGuard(properties12OffsetTable, vulkan12Properties, GUARD_VALUE, GUARD_SIZE) ||
+		strncmp(vulkan12Properties[0]->driverName, vulkan12Properties[1]->driverName, VK_MAX_DRIVER_NAME_SIZE) != 0 ||
+		strncmp(vulkan12Properties[0]->driverInfo, vulkan12Properties[1]->driverInfo, VK_MAX_DRIVER_INFO_SIZE) != 0 )
 	{
 		log << TestLog::Message << "deviceProperties - VkPhysicalDeviceVulkan12Properties initialization failure" << TestLog::EndMessage;
 
@@ -5065,7 +5065,7 @@ tcu::TestStatus deviceFeatureExtensionsConsistencyVulkan12(Context& context)
 	TestLog&											log										= context.getTestContext().getLog();
 	const VkPhysicalDevice								physicalDevice							= context.getPhysicalDevice();
 	const CustomInstance								instance								(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&								vki										(instance.getDriver());
+	const InstanceDriver&								vki										= instance.getDriver();
 
 	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");
@@ -5278,7 +5278,7 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan12(Context& context)
 	TestLog&										log											= context.getTestContext().getLog();
 	const VkPhysicalDevice							physicalDevice								= context.getPhysicalDevice();
 	const CustomInstance							instance									(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
-	const InstanceDriver&							vki											(instance.getDriver());
+	const InstanceDriver&							vki											= instance.getDriver();
 
 	if (!context.contextSupports(vk::ApiVersion(1, 2, 0)))
 		TCU_THROW(NotSupportedError, "At least Vulkan 1.2 required to run test");

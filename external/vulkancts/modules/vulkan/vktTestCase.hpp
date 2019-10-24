@@ -55,52 +55,53 @@ class DefaultDevice;
 class Context
 {
 public:
-												Context							(tcu::TestContext&				testCtx,
-																				 const vk::PlatformInterface&	platformInterface,
-																				 vk::BinaryCollection&			progCollection);
-												~Context						(void);
+												Context								(tcu::TestContext&				testCtx,
+																					 const vk::PlatformInterface&	platformInterface,
+																					 vk::BinaryCollection&			progCollection);
+												~Context							(void);
 
-	tcu::TestContext&							getTestContext					(void) const { return m_testCtx;			}
-	const vk::PlatformInterface&				getPlatformInterface			(void) const { return m_platformInterface;	}
-	vk::BinaryCollection&						getBinaryCollection				(void) const { return m_progCollection;		}
+	tcu::TestContext&							getTestContext						(void) const { return m_testCtx;			}
+	const vk::PlatformInterface&				getPlatformInterface				(void) const { return m_platformInterface;	}
+	vk::BinaryCollection&						getBinaryCollection					(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
-	deUint32									getAvailableInstanceVersion		(void) const;
-	const std::vector<std::string>&				getInstanceExtensions			(void) const;
-	vk::VkInstance								getInstance						(void) const;
-	const vk::InstanceInterface&				getInstanceInterface			(void) const;
-	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
-	deUint32									getDeviceVersion				(void) const;
+	deUint32									getMaximumFrameworkVulkanVersion	(void) const;
+	deUint32									getAvailableInstanceVersion			(void) const;
+	const std::vector<std::string>&				getInstanceExtensions				(void) const;
+	vk::VkInstance								getInstance							(void) const;
+	const vk::InstanceInterface&				getInstanceInterface				(void) const;
+	vk::VkPhysicalDevice						getPhysicalDevice					(void) const;
+	deUint32									getDeviceVersion					(void) const;
 
-	bool										isDeviceFeatureInitialized		(vk::VkStructureType sType) const;
-	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures				(void) const;
-	const vk::VkPhysicalDeviceFeatures2&		getDeviceFeatures2				(void) const;
+	bool										isDeviceFeatureInitialized			(vk::VkStructureType sType) const;
+	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures					(void) const;
+	const vk::VkPhysicalDeviceFeatures2&		getDeviceFeatures2					(void) const;
 
 #include "vkDeviceFeaturesForContextDecl.inl"
 
-	bool										isDevicePropertyInitialized		(vk::VkStructureType sType) const;
-	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
-	const vk::VkPhysicalDeviceProperties2&		getDeviceProperties2			(void) const;
+	bool										isDevicePropertyInitialized			(vk::VkStructureType sType) const;
+	const vk::VkPhysicalDeviceProperties&		getDeviceProperties					(void) const;
+	const vk::VkPhysicalDeviceProperties2&		getDeviceProperties2				(void) const;
 
 #include "vkDevicePropertiesForContextDecl.inl"
 
-	const std::vector<std::string>&				getDeviceExtensions				(void) const;
-	vk::VkDevice								getDevice						(void) const;
-	const vk::DeviceInterface&					getDeviceInterface				(void) const;
-	deUint32									getUniversalQueueFamilyIndex	(void) const;
-	vk::VkQueue									getUniversalQueue				(void) const;
-	deUint32									getUsedApiVersion				(void) const;
-	deUint32									getSparseQueueFamilyIndex		(void) const;
-	vk::VkQueue									getSparseQueue					(void) const;
-	vk::Allocator&								getDefaultAllocator				(void) const;
-	bool										contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
-	bool										contextSupports					(const vk::ApiVersion version) const;
-	bool										contextSupports					(const deUint32 requiredApiVersionBits) const;
-	bool										requireDeviceExtension			(const std::string& required);
-	bool										requireInstanceExtension		(const std::string& required);
-	bool										requireDeviceCoreFeature		(const DeviceCoreFeature requiredDeviceCoreFeature);
+	const std::vector<std::string>&				getDeviceExtensions					(void) const;
+	vk::VkDevice								getDevice							(void) const;
+	const vk::DeviceInterface&					getDeviceInterface					(void) const;
+	deUint32									getUniversalQueueFamilyIndex		(void) const;
+	vk::VkQueue									getUniversalQueue					(void) const;
+	deUint32									getUsedApiVersion					(void) const;
+	deUint32									getSparseQueueFamilyIndex			(void) const;
+	vk::VkQueue									getSparseQueue						(void) const;
+	vk::Allocator&								getDefaultAllocator					(void) const;
+	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
+	bool										contextSupports						(const vk::ApiVersion version) const;
+	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
+	bool										requireDeviceExtension				(const std::string& required);
+	bool										requireInstanceExtension			(const std::string& required);
+	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
-	void*										getInstanceProcAddr				();
+	void*										getInstanceProcAddr					();
 
 	bool										isBufferDeviceAddressSupported						(void) const;
 	bool										isBufferDeviceAddressKHRSupported					(void) const;
@@ -122,8 +123,8 @@ protected:
 	bool										m_resultSetOnValidation;
 
 private:
-												Context							(const Context&); // Not allowed
-	Context&									operator=						(const Context&); // Not allowed
+												Context								(const Context&); // Not allowed
+	Context&									operator=							(const Context&); // Not allowed
 };
 
 class TestInstance;

@@ -324,8 +324,7 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 										 const vk::PlatformInterface&	vkp,
 										 vk::VkInstance					instance,
 										 const vk::InstanceInterface&	vki,
-										 const vk::VkPhysicalDevice		physicalDevice,
-										 bool							timelineSemaphores)
+										 const vk::VkPhysicalDevice		physicalDevice)
 {
 	const bool										validationEnabled		= context.getTestContext().getCommandLine().isValidationEnabled();
 	const float										priority				= 0.0f;
@@ -354,7 +353,7 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory_win32"))
 		extensions.push_back("VK_KHR_external_memory_win32");
 
-	if (timelineSemaphores)
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_timeline_semaphore"))
 		extensions.push_back("VK_KHR_timeline_semaphore");
 
 	try
@@ -414,34 +413,74 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 // Class to wrap a singleton instance and device
 class InstanceAndDevice
 {
-public:
-	InstanceAndDevice	(Context&			context,
-	                     const TestConfig&	config)
+	InstanceAndDevice	(Context& context)
 		: m_instance		(createTestInstance(context))
 		, m_vki				(m_instance.getDriver())
 		, m_physicalDevice	(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
-		, m_logicalDevice	(createTestDevice(context, context.getPlatformInterface(), m_instance, m_vki, m_physicalDevice, config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR))
+		, m_logicalDevice	(createTestDevice(context, context.getPlatformInterface(), m_instance, m_vki, m_physicalDevice))
 	{
 	}
 
-	vk::VkInstance				getInstance()
-	{
-		return m_instance;
-	}
+public:
 
-	const vk::InstanceDriver&	getDriver()
+	static vk::VkInstance getInstanceA(Context& context)
 	{
-		return m_vki;
-	}
+		if (!m_instanceA)
+			m_instanceA = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
 
-	vk::VkPhysicalDevice		getPhysicalDevice()
-	{
-		return m_physicalDevice;
+		return m_instanceA->m_instance;
 	}
-
-	const Unique<vk::VkDevice>& getDevice()
+	static vk::VkInstance getInstanceB(Context& context)
 	{
-		return m_logicalDevice;
+		if (!m_instanceB)
+			m_instanceB = SharedPtr<InstanceAndDevice>(new InstanceAndDevice(context));
+
+		return m_instanceB->m_instance;
+	}
+	static const vk::InstanceDriver& getDriverA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_instance.getDriver();
+	}
+	static const vk::InstanceDriver& getDriverB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_instance.getDriver();
+	}
+	static vk::VkPhysicalDevice getPhysicalDeviceA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_physicalDevice;
+	}
+	static vk::VkPhysicalDevice getPhysicalDeviceB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_physicalDevice;
+	}
+	static const Unique<vk::VkDevice>& getDeviceA()
+	{
+		DE_ASSERT(m_instanceA);
+		return m_instanceA->m_logicalDevice;
+	}
+	static const Unique<vk::VkDevice>& getDeviceB()
+	{
+		DE_ASSERT(m_instanceB);
+		return m_instanceB->m_logicalDevice;
+	}
+	static void collectMessagesA()
+	{
+		DE_ASSERT(m_instanceA);
+		m_instanceA->m_instance.collectMessages();
+	}
+	static void collectMessagesB()
+	{
+		DE_ASSERT(m_instanceB);
+		m_instanceB->m_instance.collectMessages();
+	}
+	static void destroy()
+	{
+		m_instanceA.clear();
+		m_instanceB.clear();
 	}
 
 private:
@@ -449,7 +488,12 @@ private:
 	const vk::InstanceDriver&		m_vki;
 	const vk::VkPhysicalDevice		m_physicalDevice;
 	const Unique<vk::VkDevice>		m_logicalDevice;
+
+	static SharedPtr<InstanceAndDevice>	m_instanceA;
+	static SharedPtr<InstanceAndDevice>	m_instanceB;
 };
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceA;
+SharedPtr<InstanceAndDevice>		InstanceAndDevice::m_instanceB;
 
 
 vk::VkQueue getQueue (const vk::DeviceInterface&	vkd,
@@ -968,7 +1012,6 @@ private:
 
 	const bool											m_getMemReq2Supported;
 
-	InstanceAndDevice									m_instanceAndDeviceA;
 	const vk::VkInstance								m_instanceA;
 	const vk::InstanceDriver&							m_vkiA;
 	const vk::VkPhysicalDevice							m_physicalDeviceA;
@@ -977,7 +1020,6 @@ private:
 	const vk::Unique<vk::VkDevice>&						m_deviceA;
 	const vk::DeviceDriver								m_vkdA;
 
-	InstanceAndDevice									m_instanceAndDeviceB;
 	const vk::VkInstance								m_instanceB;
 	const vk::InstanceDriver&							m_vkiB;
 	const vk::VkPhysicalDevice							m_physicalDeviceB;
@@ -1005,22 +1047,20 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_notSupportedChecker		(context, m_config, *m_supportWriteOp, *m_supportReadOp)
 	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
 
-	, m_instanceAndDeviceA		(context, config)
-	, m_instanceA				(m_instanceAndDeviceA.getInstance())
-	, m_vkiA					(m_instanceAndDeviceA.getDriver())
-	, m_physicalDeviceA			(m_instanceAndDeviceA.getPhysicalDevice())
+	, m_instanceA				(InstanceAndDevice::getInstanceA(context))
+	, m_vkiA					(InstanceAndDevice::getDriverA())
+	, m_physicalDeviceA			(InstanceAndDevice::getPhysicalDeviceA())
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
-	, m_deviceA					(m_instanceAndDeviceA.getDevice())
+	, m_deviceA					(InstanceAndDevice::getDeviceA())
 	, m_vkdA					(context.getPlatformInterface(), m_instanceA, *m_deviceA)
 
-	, m_instanceAndDeviceB		(context, config)
-	, m_instanceB				(m_instanceAndDeviceB.getInstance())
-	, m_vkiB					(m_instanceAndDeviceB.getDriver())
-	, m_physicalDeviceB			(m_instanceAndDeviceB.getPhysicalDevice())
+	, m_instanceB				(InstanceAndDevice::getInstanceB(context))
+	, m_vkiB					(InstanceAndDevice::getDriverB())
+	, m_physicalDeviceB			(InstanceAndDevice::getPhysicalDeviceB())
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(m_instanceAndDeviceB.getDevice())
+	, m_deviceB					(InstanceAndDevice::getDeviceB())
 	, m_vkdB					(context.getPlatformInterface(), m_instanceB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
@@ -1252,6 +1292,10 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		m_resultCollector.fail(std::string("Exception: ") + error.getMessage());
 	}
 
+	// Collect possible validation errors.
+	InstanceAndDevice::collectMessagesA();
+	InstanceAndDevice::collectMessagesB();
+
 	// Move to next queue
 	{
 		m_queueBNdx++;
@@ -1375,7 +1419,7 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
 	// Destroy singleton object
-
+	InstanceAndDevice::destroy();
 }
 
 tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)

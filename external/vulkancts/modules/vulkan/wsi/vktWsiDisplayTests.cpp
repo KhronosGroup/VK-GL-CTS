@@ -1968,7 +1968,7 @@ tcu::TestStatus	DisplayCoverageTestInstance::testGetDisplayPlaneCapabilities2KHR
 		TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
 	if (planeCountReported == 0)
-		TCU_FAIL("No planes defined");
+		TCU_THROW(NotSupportedError, "No display plane reported");
 
 	if (planeCountReported > MAX_TESTED_PLANE_COUNT)
 	{

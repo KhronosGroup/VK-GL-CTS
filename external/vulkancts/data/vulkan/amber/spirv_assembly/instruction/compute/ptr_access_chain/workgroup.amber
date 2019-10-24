@@ -21,6 +21,9 @@
 # Compiled with `clspv -no-inline-single -cl-opt-disable <X.clc>` with a (correct) ArrayStride decoration
 # added. This is allowed but not needed so provides a baseline for comparison.
 
+[require]
+VariablePointerFeatures.variablePointers
+
 [compute shader spirv]
                OpCapability Shader
                OpCapability VariablePointers

@@ -65,7 +65,9 @@ static const deUint32 knownDriverIds[] =
 
 static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
+	makeConformanceVersion(1, 2, 0, 1),
 	makeConformanceVersion(1, 2, 0, 0),
+	makeConformanceVersion(1, 1, 6, 0),
 	makeConformanceVersion(1, 1, 5, 2),
 	makeConformanceVersion(1, 1, 5, 1),
 	makeConformanceVersion(1, 1, 5, 0),

@@ -1092,17 +1092,17 @@ tcu::TestStatus testFences (Context& context)
 
 tcu::TestStatus testSemaphores (Context& context, VkSemaphoreType semaphoreType)
 {
-	TestLog&							log						= context.getTestContext().getLog();
-	const PlatformInterface&			platformInterface		= context.getPlatformInterface();
-	const InstanceInterface&			instanceInterface		= context.getInstanceInterface();
-	const VkPhysicalDevice				physicalDevice			= context.getPhysicalDevice();
-	deUint32							queueFamilyIdx;
-	vk::Move<VkDevice>					device					= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, context.getTestContext().getCommandLine().isValidationEnabled(), &queueFamilyIdx);
-	const DeviceDriver					deviceInterface			(platformInterface, context.getInstance(), *device);
-	SimpleAllocator						allocator				(deviceInterface,
-																 *device,
-																 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
-	const VkQueue						queue[2]				=
+	TestLog&					log					= context.getTestContext().getLog();
+	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
+	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+	deUint32					queueFamilyIdx;
+	vk::Move<VkDevice>			device				= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, context.getTestContext().getCommandLine().isValidationEnabled(), &queueFamilyIdx);
+	const DeviceDriver			deviceInterface		(platformInterface, context.getInstance(), *device);
+	SimpleAllocator				allocator			(deviceInterface,
+													 *device,
+													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
+	const VkQueue				queue[2]			=
 	{
 		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 0),
 		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 1)
@@ -1110,7 +1110,7 @@ tcu::TestStatus testSemaphores (Context& context, VkSemaphoreType semaphoreType)
 	VkResult							testStatus;
 	TestContext							testContext1			(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
 	TestContext							testContext2			(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
-	Unique<VkSemaphore>					semaphore				(createSemaphore(deviceInterface, *device, semaphoreType));
+	Unique<VkSemaphore>					semaphore				(createSemaphoreType(deviceInterface, *device, semaphoreType));
 	VkSubmitInfo						submitInfo[2];
 	VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo[2];
 	const deUint64						timelineValue			= 1u;
@@ -1161,10 +1161,12 @@ tcu::TestStatus testSemaphores (Context& context, VkSemaphoreType semaphoreType)
 	submitInfo[0].pSignalSemaphores					= &semaphore.get();
 	timelineSubmitInfo[0].pSignalSemaphoreValues	= &timelineValue;
 	timelineSubmitInfo[0].signalSemaphoreValueCount	= 1;
+	submitInfo[0].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE ? &timelineSubmitInfo[0] : DE_NULL);
 	submitInfo[1].waitSemaphoreCount				= 1;
 	submitInfo[1].pWaitSemaphores					= &semaphore.get();
 	timelineSubmitInfo[1].pWaitSemaphoreValues		= &timelineValue;
 	timelineSubmitInfo[1].waitSemaphoreValueCount	= 1;
+	submitInfo[1].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE ? &timelineSubmitInfo[1] : DE_NULL);
 	submitInfo[1].pWaitDstStageMask					= &waitDstStageMask;
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));
