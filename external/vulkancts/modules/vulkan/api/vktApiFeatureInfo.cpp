@@ -1081,7 +1081,7 @@ tcu::TestStatus validateLimitsExtBlendOperationAdvanced (Context& context)
 
 	FeatureLimitTableItem featureLimitTable[] =
 	{
-		{ PN(checkAlways),	PN(blendOperationAdvancedPropertiesEXT.advancedBlendMaxColorAttachments),	LIM_MIN_UINT32(4) },
+		{ PN(checkAlways),	PN(blendOperationAdvancedPropertiesEXT.advancedBlendMaxColorAttachments),	LIM_MIN_UINT32(1) },
 	};
 
 	log << TestLog::Message << blendOperationAdvancedPropertiesEXT << TestLog::EndMessage;
