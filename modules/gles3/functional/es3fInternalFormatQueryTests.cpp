@@ -176,11 +176,6 @@ void InternalFormatQueryTests::init (void)
 		bool		isIntegerFormat;
 	} internalFormats[] =
 	{
-		// color renderable and unsized
-		// \note These unsized formats seem to allowed by the spec, but they are not useful in any way. (You can't create a renderbuffer with such internalFormat)
-		{ "rgba",					GL_RGBA,				false	},
-		{ "rgb",					GL_RGB,					false	},
-
 		// color renderable
 		{ "r8",						GL_R8,					false	},
 		{ "rg8",					GL_RG8,					false	},
