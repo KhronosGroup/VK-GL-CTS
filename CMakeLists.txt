@@ -55,8 +55,10 @@ include_directories(
 include(targets/${DEQP_TARGET}/${DEQP_TARGET}.cmake)
 
 # zlib
-find_path(ZLIB_INCLUDE_PATH	zlib.h)
-find_library(ZLIB_LIBRARY	z)
+find_package(ZLIB)
+# dEQP CMake compatibility (as for libpng)
+set(ZLIB_INCLUDE_PATH ${ZLIB_INCLUDE_DIRS})
+set(ZLIB_LIBRARY ${ZLIB_LIBRARIES})
 
 if (NOT ZLIB_INCLUDE_PATH OR NOT ZLIB_LIBRARY)
 	message(STATUS "System version of zlib not found, using external/zlib")
@@ -72,7 +74,7 @@ include_directories(${ZLIB_INCLUDE_PATH})
 # CMake files expect the non-standard PNG_INCLUDE_PATH and PNG_LIBRARY. Set the
 # non-standard variables here to retain compatibility with dEQP's existing
 # CMake files.
-include(FindPNG)
+find_package(PNG)
 set(PNG_INCLUDE_PATH ${PNG_INCLUDE_DIRS})
 set(PNG_LIBRARY ${PNG_LIBRARIES})
 
