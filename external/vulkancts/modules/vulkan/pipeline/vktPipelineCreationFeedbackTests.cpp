@@ -1109,7 +1109,7 @@ void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
 		0u,															// deInt32							basePipelineIndex;
 	};
 
-	if (ndx == PIPELINE_CACHE_NDX_NO_CACHE)
+	if (ndx != PIPELINE_CACHE_NDX_DERIVATIVE)
 	{
 		pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
 	}

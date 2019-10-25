@@ -4606,7 +4606,33 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			expected->getBytes(expectedBytes);
 
 			if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
-				return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
+			{
+				// Some *variable_pointers* tests store counters in buffer
+				// whose value may vary if the same vertex shader may be executed for multiple times
+				// in this case the output value can be expected value + non-negative integer N
+				if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
+				{
+					const size_t	numExpectedEntries	= expectedBytes.size() / sizeof(float);
+					const float*	expectedFloats		= reinterpret_cast<const float*>(&expectedBytes.front());
+					const float*	outputFloats		= reinterpret_cast<const float*>(outResourceMemories[outputNdx]->getHostPtr());
+					float			diff				= 0.0f;
+
+					for (size_t expectedNdx = 0; expectedNdx < numExpectedEntries; ++expectedNdx)
+					{
+						if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
+							return tcu::TestStatus::fail("Value returned is invalid");
+
+						diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+
+						if ((diff < 0.0f) || (deFloatFloor(diff) != diff))
+							return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
+					}
+				}
+				else
+				{
+					return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
+				}
+			}
 
 		}
 	}
