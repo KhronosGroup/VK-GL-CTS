@@ -229,7 +229,7 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 
 	for (const auto& ext : extensions)
 	{
-		if (!vk::isInstanceExtensionSupported(apiVersion, availableExtensions, vk::RequiredExtension(ext)))
+		if (!context.isInstanceFunctionalitySupported(ext))
 			TCU_THROW(NotSupportedError, ext + " is not supported");
 
 		if (!vk::isCoreInstanceExtension(apiVersion, ext))

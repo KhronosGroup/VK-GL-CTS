@@ -614,7 +614,7 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	if (caseDef.opType > OPTYPE_LAST_NON_ARB)
 	{
-		context.requireDeviceExtension("VK_EXT_shader_subgroup_vote");
+		context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
 	}
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
@@ -641,7 +641,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 	if (caseDef.opType > OPTYPE_LAST_NON_ARB)
 	{
-		context.requireDeviceExtension("VK_EXT_shader_subgroup_vote");
+		context.requireDeviceFunctionality("VK_EXT_shader_subgroup_vote");
 	}
 
 	subgroups::SSBOData inputData;

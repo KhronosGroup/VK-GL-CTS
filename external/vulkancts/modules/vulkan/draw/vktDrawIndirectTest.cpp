@@ -919,7 +919,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 
 void checkIndirectCountExt (Context& context)
 {
-	context.requireDeviceExtension("VK_KHR_draw_indirect_count");
+	context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
 }
 
 }	// anonymous

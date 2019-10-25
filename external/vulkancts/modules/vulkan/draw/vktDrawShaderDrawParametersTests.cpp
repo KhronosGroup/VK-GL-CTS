@@ -313,7 +313,7 @@ tcu::TestStatus DrawTest::iterate (void)
 
 void checkSupport (Context& context, TestFlags flags)
 {
-	context.requireDeviceExtension("VK_KHR_shader_draw_parameters");
+	context.requireDeviceFunctionality("VK_KHR_shader_draw_parameters");
 
 	// Shader draw parameters is part of Vulkan 1.1 but is optional
 	if (context.contextSupports(vk::ApiVersion(1, 1, 0)) )

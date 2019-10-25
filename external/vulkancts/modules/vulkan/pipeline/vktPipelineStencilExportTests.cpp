@@ -544,7 +544,7 @@ tcu::TestStatus testStencilExportReplace (Context& context)
 
 void checkSupport (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_shader_stencil_export");
+	context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
 
 	const VkFormat stencilFormat = VK_FORMAT_S8_UINT;
 	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), stencilFormat))

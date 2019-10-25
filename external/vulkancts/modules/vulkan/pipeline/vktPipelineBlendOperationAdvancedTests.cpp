@@ -1647,7 +1647,7 @@ void BlendOperationAdvancedTest::checkSupport(Context& context) const
 {
 	const InstanceInterface&	vki				 = context.getInstanceInterface();
 
-	context.requireDeviceExtension("VK_EXT_blend_operation_advanced");
+	context.requireDeviceFunctionality("VK_EXT_blend_operation_advanced");
 
 	VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT blendProperties;
 	blendProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT;

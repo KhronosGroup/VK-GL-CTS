@@ -1753,7 +1753,7 @@ void ImageExtendOperandTest::checkSupport (Context& context) const
 																							   context.getPhysicalDevice(),
 																							   m_format));
 
-	if (!context.requireDeviceExtension("VK_KHR_spirv_1_4"))
+	if (!context.requireDeviceFunctionality("VK_KHR_spirv_1_4"))
 		TCU_THROW(NotSupportedError, "VK_KHR_spirv_1_4 not supported");
 
 	if ((m_texture.type() != IMAGE_TYPE_BUFFER) && !(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))

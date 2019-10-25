@@ -2537,7 +2537,7 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
-	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
 		TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
 	if (!context.get16BitStorageFeatures().storageBuffer16BitAccess && uses16BitStorage(m_interface))
 		TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");

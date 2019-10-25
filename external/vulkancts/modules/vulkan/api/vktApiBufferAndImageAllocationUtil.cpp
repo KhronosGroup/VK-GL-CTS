@@ -75,12 +75,8 @@ void BufferDedicatedAllocation::createTestBuffer						(VkDeviceSize				size,
 																		 de::MovePtr<Allocation>&	memory) const
 {
 	DE_UNREF(allocator);
-	const std::vector<std::string>&	extensions							= context.getDeviceExtensions();
-	const deBool					isSupported							= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
-	if (!isSupported)
-	{
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 		TCU_THROW(NotSupportedError, "Not supported");
-	}
 
 	const InstanceInterface&			vkInstance						= context.getInstanceInterface();
 	const VkDevice						vkDevice						= context.getDevice();
@@ -153,12 +149,8 @@ void ImageDedicatedAllocation::createTestImage							(tcu::IVec2					size,
 																		 VkImageTiling				tiling) const
 {
 	DE_UNREF(allocator);
-	const std::vector<std::string>&		extensions						= context.getDeviceExtensions();
-	const deBool						isSupported						= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
-	if (!isSupported)
-	{
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 		TCU_THROW(NotSupportedError, "Not supported");
-	}
 
 	const InstanceInterface&			vkInstance						= context.getInstanceInterface();
 	const VkDevice						vkDevice						= context.getDevice();

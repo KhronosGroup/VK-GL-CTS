@@ -99,7 +99,7 @@ DE_INLINE bool operator==(const VkConformanceVersionKHR& a, const VkConformanceV
 void checkSupport (Context& context, const TestType config)
 {
 	DE_UNREF(config);
-	context.requireDeviceExtension("VK_KHR_driver_properties");
+	context.requireDeviceFunctionality("VK_KHR_driver_properties");
 }
 
 void testDriverMatch (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)

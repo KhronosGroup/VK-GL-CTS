@@ -122,7 +122,7 @@ public:
 private:
 	void checkSupported(void)
 	{
-		m_context.requireDeviceExtension("VK_KHR_shader_clock");
+		m_context.requireDeviceFunctionality("VK_KHR_shader_clock");
 
 		VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures;
 		shaderClockFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;

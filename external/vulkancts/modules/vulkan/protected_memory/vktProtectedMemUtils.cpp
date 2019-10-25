@@ -56,12 +56,18 @@ CustomInstance makeProtectedMemInstance (vkt::Context& context, const std::vecto
 	const Extensions			supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, DE_NULL));
 	std::vector<std::string>	requiredExtensions = extraExtensions;
 
-	if (!isCoreInstanceExtension(context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"))
+	deUint32 apiVersion = context.getUsedApiVersion();
+	if (!isCoreInstanceExtension(apiVersion, "VK_KHR_get_physical_device_properties2"))
 		requiredExtensions.push_back("VK_KHR_get_physical_device_properties2");
+
+	// extract extension names
+	std::vector<std::string> extensions;
+	for (const auto& e : supportedExtensions)
+		extensions.push_back(e.extensionName);
 
 	for (const auto& extName : requiredExtensions)
 	{
-		if (!isInstanceExtensionSupported(context.getUsedApiVersion(), supportedExtensions, vk::RequiredExtension(extName)))
+		if (!isInstanceExtensionSupported(apiVersion, extensions, extName))
 			TCU_THROW(NotSupportedError, (extName + " is not supported").c_str());
 	}
 
@@ -148,10 +154,11 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp
 	// Check if the physical device supports the protected memory extension name
 	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
 	{
-		if (!isDeviceExtensionSupported(apiVersion, supportedExtensions, vk::RequiredExtension(extensions[ndx])))
+		bool notInCore = !isCoreDeviceExtension(apiVersion, extensions[ndx]);
+		if (notInCore && !isExtensionSupported(supportedExtensions.begin(), supportedExtensions.end(), RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (extensions[ndx] + " is not supported").c_str());
 
-		if (!isCoreDeviceExtension(apiVersion, extensions[ndx]))
+		if (notInCore)
 			requiredExtensions.push_back(extensions[ndx]);
 	}
 

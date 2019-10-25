@@ -138,7 +138,7 @@ public:
 															 const vk::VkDevice			device,
 															 vk::Allocator&				allocator);
 
-									OperationContext		(const deUint32						apiVersion,
+									OperationContext		(Context&							context,
 															 const vk::InstanceInterface&		vki,
 															 const vk::DeviceInterface&			vkd,
 															 vk::VkPhysicalDevice				physicalDevice,
@@ -158,8 +158,13 @@ public:
 	const std::vector<std::string>&	getDeviceExtensions		(void) const { return m_deviceExtensions;}
 	deUint32						getUsedApiVersion		(void) const { return m_usedApiVersion; }
 
+	bool isDeviceFunctionalitySupported(const std::string& extension) const
+	{
+		return m_context.isDeviceFunctionalitySupported(extension);
+	}
 
 private:
+	const vkt::Context&				m_context;
 	const vk::InstanceInterface&	m_vki;
 	const vk::DeviceInterface&		m_vk;
 	const vk::VkPhysicalDevice		m_physicalDevice;

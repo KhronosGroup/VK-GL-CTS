@@ -500,7 +500,7 @@ public:
 
 	virtual void checkSupport (Context& context) const
 	{
-		context.requireDeviceExtension("VK_KHR_maintenance1");
+		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 	}
 
 	virtual TestInstance* createInstance (Context& context) const

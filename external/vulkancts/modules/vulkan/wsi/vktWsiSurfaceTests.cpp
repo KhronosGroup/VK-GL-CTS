@@ -171,7 +171,6 @@ struct CheckPhysicalDeviceSurfacePresentModesIncompleteResult : public CheckInco
 typedef vector<VkExtensionProperties> Extensions;
 
 CustomInstance createInstanceWithWsi (Context&						context,
-									  const Extensions&				supportedExtensions,
 									  Type							wsiType,
 									  const vector<string>			extraExtensions,
 									  const VkAllocationCallbacks*	pAllocator	= DE_NULL)
@@ -188,7 +187,7 @@ CustomInstance createInstanceWithWsi (Context&						context,
 		 extensionName != extensions.end();
 		 ++extensionName)
 	{
-		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extensionName)))
+		if (!context.isInstanceFunctionalitySupported(*extensionName))
 			TCU_THROW(NotSupportedError, (*extensionName + " is not supported").c_str());
 
 		if (!isCoreInstanceExtension(version, *extensionName))
@@ -208,7 +207,6 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context,
-													   supportedExtensions,
 													   wsiType,
 													   vector<string>(),
 													   pAllocator))
@@ -219,7 +217,6 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context,
-													   supportedExtensions,
 													   wsiType,
 													   extensions,
 													   pAllocator))

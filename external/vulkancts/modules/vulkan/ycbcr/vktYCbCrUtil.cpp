@@ -202,10 +202,10 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 			reqExts.push_back("VK_KHR_get_memory_requirements2");
 	}
 
-	for (vector<string>::const_iterator extIter = reqExts.begin(); extIter != reqExts.end(); ++extIter)
+	for (const string& ext : reqExts)
 	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), *extIter))
-			TCU_THROW(NotSupportedError, (*extIter + " is not supported").c_str());
+		if (!context.isDeviceFunctionalitySupported(ext))
+			TCU_THROW(NotSupportedError, (ext + " is not supported").c_str());
 	}
 
 	if (features.samplerYcbcrConversion == VK_FALSE)

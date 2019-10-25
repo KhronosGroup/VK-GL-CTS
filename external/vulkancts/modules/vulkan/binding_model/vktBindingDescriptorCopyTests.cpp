@@ -1576,7 +1576,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		0u, 0u, 0u, 0u, 0u
 	};
 	{
-		if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_inline_uniform_block"))
+		if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 		{
 			VkPhysicalDeviceFeatures2 features2;
 			deMemset(&features2, 0, sizeof(features2));

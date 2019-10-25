@@ -82,7 +82,7 @@ void checkSupport (Context& context, const TestParameters params)
 
 	for ( const auto& extIter : reqExts )
 	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extIter))
+		if (!context.isDeviceFunctionalitySupported(extIter))
 			TCU_THROW(NotSupportedError, (extIter + " is not supported").c_str());
 	}
 

@@ -2999,7 +2999,7 @@ public:
 
 	virtual void checkSupport (vkt::Context& context) const
 	{
-		context.requireDeviceExtension("VK_EXT_descriptor_indexing");
+		context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
 
 		const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT& feats = context.getDescriptorIndexingFeatures();
 

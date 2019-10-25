@@ -1491,7 +1491,7 @@ void SampleMaskWithDepthTestTest::checkSupport (Context& context) const
 	if (!context.getDeviceProperties().limits.standardSampleLocations)
 		TCU_THROW(NotSupportedError, "standardSampleLocations required");
 
-	context.requireDeviceExtension("VK_EXT_post_depth_coverage");
+	context.requireDeviceFunctionality("VK_EXT_post_depth_coverage");
 }
 
 void SampleMaskWithDepthTestTest::initPrograms (SourceCollections& programCollection) const

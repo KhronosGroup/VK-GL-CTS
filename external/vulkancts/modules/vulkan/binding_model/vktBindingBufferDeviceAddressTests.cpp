@@ -175,7 +175,7 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 
 #if ENABLE_RAYTRACING
 	if (m_data.stage == STAGE_RAYGEN &&
-		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+		!context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		TCU_THROW(NotSupportedError, "Ray tracing not supported");
 	}
@@ -466,7 +466,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
 	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
 
-	if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	if (m_context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		properties.pNext = &rayTracingProperties;
 	}

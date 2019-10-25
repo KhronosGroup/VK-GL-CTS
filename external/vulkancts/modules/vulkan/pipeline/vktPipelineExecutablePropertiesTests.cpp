@@ -575,7 +575,7 @@ ExecutablePropertiesTestInstance::ExecutablePropertiesTestInstance (Context&				
 												const ExecutablePropertiesTestParam*	param)
 	: TestInstance		(context)
 	, m_param			(param)
-	, m_extensions		(m_context.requireDeviceExtension("VK_KHR_pipeline_executable_properties"))
+	, m_extensions		(m_context.requireDeviceFunctionality("VK_KHR_pipeline_executable_properties"))
 {
 	const DeviceInterface&	vk				= m_context.getDeviceInterface();
 	const VkDevice			vkDevice		= m_context.getDevice();

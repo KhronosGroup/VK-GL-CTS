@@ -575,7 +575,7 @@ void logTestCaseInfo (TestLog& log, const TestConfig& config)
 void checkSupport (Context& context, const TestConfig config)
 {
 #if !defined(FAKE_COLOR_CONVERSION)
-	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
 	try

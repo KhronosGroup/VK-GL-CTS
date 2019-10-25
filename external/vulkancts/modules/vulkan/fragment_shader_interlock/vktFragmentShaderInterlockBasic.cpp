@@ -151,7 +151,7 @@ FSITestCase::~FSITestCase	(void)
 
 void FSITestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceExtension("VK_EXT_fragment_shader_interlock");
+	context.requireDeviceFunctionality("VK_EXT_fragment_shader_interlock");
 
 	if ((m_data.interlock == INT_SAMPLE_ORDERED || m_data.interlock == INT_SAMPLE_UNORDERED) &&
 		!context.getFragmentShaderInterlockFeatures().fragmentShaderSampleInterlock)

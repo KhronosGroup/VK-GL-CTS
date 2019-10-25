@@ -1213,7 +1213,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_3D)
-		context.requireDeviceExtension("VK_KHR_maintenance1");
+		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
@@ -1224,7 +1224,7 @@ void checkSupportAttachmentSize (Context& context, const CaseDef caseDef)
 	checkImageViewTypeRequirements(context, caseDef.viewType);
 
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
-		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
 	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
@@ -1367,7 +1367,7 @@ void checkSupportRenderToMipMaps (Context& context, const CaseDef caseDef)
 	checkImageViewTypeRequirements(context, caseDef.viewType);
 
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
-		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
 	if (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED  && !isDepthStencilFormatSupported(context.getInstanceInterface(), context.getPhysicalDevice(), caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");

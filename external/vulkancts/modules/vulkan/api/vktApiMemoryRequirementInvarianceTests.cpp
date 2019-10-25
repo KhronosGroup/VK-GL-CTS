@@ -260,11 +260,10 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	size_t									refSizes[testCycles];
 	unsigned int							order[testCycles];
 	bool									success							= true;
-	const std::vector<std::string>&			extensions						= m_context.getDeviceExtensions();
 	const deBool							isDedicatedAllocationSupported	=
-		isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
+		m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
 	const deBool							isYcbcrSupported =
-		isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_sampler_ycbcr_conversion");
+		m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;

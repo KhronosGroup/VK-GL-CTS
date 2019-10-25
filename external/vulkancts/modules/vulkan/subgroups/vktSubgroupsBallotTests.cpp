@@ -903,7 +903,7 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 	}
 
-	if (caseDef.extShaderSubGroupBallotTests && !context.requireDeviceExtension("VK_EXT_shader_subgroup_ballot"))
+	if (caseDef.extShaderSubGroupBallotTests && !context.requireDeviceFunctionality("VK_EXT_shader_subgroup_ballot"))
 	{
 		TCU_THROW(NotSupportedError, "Device does not support VK_EXT_shader_subgroup_ballot extension");
 	}

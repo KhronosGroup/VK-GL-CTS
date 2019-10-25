@@ -385,7 +385,7 @@ protected:
 
 TransformFeedbackTestInstance::TransformFeedbackTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance		(context)
-	, m_extensions		(context.requireDeviceExtension("VK_EXT_transform_feedback"))
+	, m_extensions		(context.requireDeviceFunctionality("VK_EXT_transform_feedback"))
 	, m_imageExtent2D	(makeExtent2D(IMAGE_SIZE, IMAGE_SIZE))
 	, m_parameters		(parameters)
 	, m_rnd				(0)
@@ -1468,7 +1468,7 @@ TransformFeedbackQueryTestInstance::TransformFeedbackQueryTestInstance (Context&
 	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
 	{
 		// Check VK_EXT_host_query_reset is supported
-		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
+		m_context.requireDeviceFunctionality("VK_EXT_host_query_reset");
 		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
 			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
 	}

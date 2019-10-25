@@ -491,7 +491,7 @@ private:
 
 ExternalDependencyTestInstance::ExternalDependencyTestInstance (Context& context, ExternalTestConfig testConfig)
 	: TestInstance					(context)
-	, m_extensionSupported			((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported			((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_renderPassType				(testConfig.renderPassType)
 	, m_width						(testConfig.imageSize.x())
 	, m_height						(testConfig.imageSize.y())
@@ -1086,7 +1086,7 @@ private:
 
 SubpassDependencyTestInstance::SubpassDependencyTestInstance (Context& context, SubpassTestConfig testConfig)
 	: TestInstance					(context)
-	, m_extensionSupported			((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported			((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_renderPassInfo				(testConfig.renderPass)
 	, m_renderPassType				(testConfig.renderPassType)
 	, m_width						(testConfig.imageSize.x())
@@ -1805,7 +1805,7 @@ private:
 
 SubpassSelfDependencyBackwardsTestInstance::SubpassSelfDependencyBackwardsTestInstance (Context& context, SubpassSelfDependencyBackwardsTestConfig testConfig)
 	: TestInstance			(context)
-	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_featuresSupported	(context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER))
 	, m_renderPassType		(testConfig.renderPassType)
 	, m_width				(testConfig.imageSize.x())
@@ -2264,7 +2264,7 @@ private:
 
 SeparateChannelsTestInstance::SeparateChannelsTestInstance (Context& context, SeparateChannelsTestConfig testConfig)
 	: TestInstance			(context)
-	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_extensionSupported	((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
 	, m_renderPassType		(testConfig.renderPassType)
 	, m_width				(256u)
 	, m_height				(256u)

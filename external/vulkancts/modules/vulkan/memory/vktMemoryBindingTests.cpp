@@ -951,7 +951,7 @@ public:
 
 	virtual void						checkSupport						(Context&				ctx) const
 	{
-		ctx.requireDeviceExtension("VK_KHR_bind_memory2");
+		ctx.requireDeviceFunctionality("VK_KHR_bind_memory2");
 
 		if (m_params.usePriority && !ctx.getMemoryPriorityFeatures().memoryPriority)
 			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");

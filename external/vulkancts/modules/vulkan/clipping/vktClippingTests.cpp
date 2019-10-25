@@ -739,7 +739,7 @@ tcu::TestStatus testLargePoints (Context& context)
 
 	bool pointClippingOutside = true;
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
 	{
 		VkPointClippingBehavior clippingBehavior = getClippingBehavior(context.getInstanceInterface(), context.getPhysicalDevice());
 

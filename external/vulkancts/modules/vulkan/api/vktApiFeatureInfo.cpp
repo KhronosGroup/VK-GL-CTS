@@ -1501,7 +1501,7 @@ tcu::TestStatus deviceMemoryBudgetProperties (Context& context)
 	TestLog&							log			= context.getTestContext().getLog();
 	deUint8								buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
 
-	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_memory_budget"))
+	if (!context.isDeviceFunctionalitySupported("VK_EXT_memory_budget"))
 		TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
 
 	VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps = reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
@@ -1925,7 +1925,7 @@ void checkYcbcrApiSupport (Context& context)
 
 	if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
 	{
-		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
+		if (!context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
 			TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
 
 		// Hard dependency for ycbcr
@@ -2506,7 +2506,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
 	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
 	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	const bool						hasKhrMaintenance1	= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1");
+	const bool						hasKhrMaintenance1	= context.isDeviceFunctionalitySupported("VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
 	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(supportedFeatures, hasKhrMaintenance1);
@@ -3607,31 +3607,31 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 	// Instance extensions
 	{
-		static const char*					mandatoryExtensions[]	=
+		static const string					mandatoryExtensions[]	=
 		{
 			"VK_KHR_get_physical_device_properties2",
 		};
 		const vector<VkExtensionProperties>	extensions				= enumerateInstanceExtensionProperties(context.getPlatformInterface(), DE_NULL);
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
+		for (const auto ext : mandatoryExtensions)
 		{
-			if (!isInstanceExtensionSupported(context.getUsedApiVersion(), extensions, RequiredExtension(mandatoryExtensions[ndx])))
-				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
+			if (!context.isDeviceFunctionalitySupported(ext))
+				results.fail(ext + " is not supported");
 		}
 	}
 
 	// Device extensions
 	{
-		static const char*					mandatoryExtensions[]	=
+		static const string					mandatoryExtensions[]	=
 		{
 			"VK_KHR_maintenance1",
 		};
 		const vector<VkExtensionProperties>	extensions				= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
 
-		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
+		for (const auto ext : mandatoryExtensions)
 		{
-			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, RequiredExtension(mandatoryExtensions[ndx])))
-				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
+			if (!context.isDeviceFunctionalitySupported(ext))
+				results.fail(ext + " is not supported");
 		}
 	}
 

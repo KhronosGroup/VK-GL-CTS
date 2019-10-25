@@ -617,8 +617,7 @@ public:
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
-		if (m_bufferOp == BUFFER_OP_FILL &&
-			!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
+		if (m_bufferOp == BUFFER_OP_FILL && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
 		{
 			return VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT;
 		}
@@ -4618,7 +4617,8 @@ private:
 } // anonymous ns
 
 OperationContext::OperationContext (Context& context, PipelineCacheData& pipelineCacheData)
-	: m_vki					(context.getInstanceInterface())
+	: m_context				(context)
+	, m_vki					(context.getInstanceInterface())
 	, m_vk					(context.getDeviceInterface())
 	, m_physicalDevice		(context.getPhysicalDevice())
 	, m_device				(context.getDevice())
@@ -4631,7 +4631,8 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 }
 
 OperationContext::OperationContext (Context& context, PipelineCacheData& pipelineCacheData, const DeviceInterface& vk, const VkDevice device, vk::Allocator& allocator)
-	: m_vki					(context.getInstanceInterface())
+	: m_context				(context)
+	, m_vki					(context.getInstanceInterface())
 	, m_vk					(vk)
 	, m_physicalDevice		(context.getPhysicalDevice())
 	, m_device				(device)
@@ -4643,7 +4644,7 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 {
 }
 
-OperationContext::OperationContext (const deUint32					apiVersion,
+OperationContext::OperationContext (Context&						context,
 									const vk::InstanceInterface&	vki,
 									const vk::DeviceInterface&		vkd,
 									vk::VkPhysicalDevice			physicalDevice,
@@ -4652,7 +4653,8 @@ OperationContext::OperationContext (const deUint32					apiVersion,
 									const std::vector<std::string>&	deviceExtensions,
 									vk::BinaryCollection&			programCollection,
 									PipelineCacheData&				pipelineCacheData)
-	: m_vki					(vki)
+	: m_context				(context)
+	, m_vki					(vki)
 	, m_vk					(vkd)
 	, m_physicalDevice		(physicalDevice)
 	, m_device				(device)
@@ -4660,7 +4662,7 @@ OperationContext::OperationContext (const deUint32					apiVersion,
 	, m_progCollection		(programCollection)
 	, m_pipelineCacheData	(pipelineCacheData)
 	, m_deviceExtensions	(deviceExtensions)
-	, m_usedApiVersion		(apiVersion)
+	, m_usedApiVersion		(context.getUsedApiVersion())
 {
 }
 

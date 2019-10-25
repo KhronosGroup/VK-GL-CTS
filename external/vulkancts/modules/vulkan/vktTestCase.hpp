@@ -75,6 +75,9 @@ public:
 	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures					(void) const;
 	const vk::VkPhysicalDeviceFeatures2&		getDeviceFeatures2					(void) const;
 
+	bool										isInstanceFunctionalitySupported	(const std::string& extension) const;
+	bool										isDeviceFunctionalitySupported		(const std::string& extension) const;
+
 #include "vkDeviceFeaturesForContextDecl.inl"
 
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties					(void) const;
@@ -90,8 +93,8 @@ public:
 	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports						(const vk::ApiVersion version) const;
 	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
-	bool										requireDeviceExtension				(const std::string& required);
-	bool										requireInstanceExtension			(const std::string& required);
+	bool										requireDeviceFunctionality			(const std::string& required);
+	bool										requireInstanceFunctionality		(const std::string& required);
 	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 	void*										getInstanceProcAddr					();

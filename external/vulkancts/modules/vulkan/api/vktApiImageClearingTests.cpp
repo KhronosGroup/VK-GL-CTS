@@ -584,7 +584,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount) : vk::Move<vk::VkFramebuffer>())
 {
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
-		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 }
 
 ImageClearingTestInstance::ViewType ImageClearingTestInstance::getViewType (deUint32 imageLayerCount) const

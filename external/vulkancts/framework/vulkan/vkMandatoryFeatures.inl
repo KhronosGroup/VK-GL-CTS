@@ -3,7 +3,7 @@
  */
 bool checkMandatoryFeatures(const vkt::Context& context)
 {
-	if ( !vk::isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_KHR_get_physical_device_properties2") )
+	if ( !context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2") )
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");
 
 	VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
