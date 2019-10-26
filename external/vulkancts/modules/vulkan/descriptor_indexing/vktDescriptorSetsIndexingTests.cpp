@@ -1092,7 +1092,6 @@ PixelBufferAccess CommonDescriptorInstance::getPixelAccess			(deUint32									i
 	return tcu::PixelBufferAccess(vk::mapVkFormat(imageFormat), (imageExtent.width >> mipLevel), (imageExtent.height >> mipLevel), imageExtent.depth, data);
 }
 
-
 void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&					variables)
 {
 	const std::vector<deUint32>	primes = ut::generatePrimes(variables.availableDescriptorCount);
@@ -1103,7 +1102,6 @@ void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&			
 		const VkDescriptorBufferInfo*	pBufferInfo			= DE_NULL;
 		const VkDescriptorImageInfo*	pImageInfo			= DE_NULL;
 		const VkBufferView*				pTexelBufferView	= DE_NULL;
-
 
 		VkDescriptorImageInfo		imageInfo =
 		{
@@ -2395,9 +2393,25 @@ Move<VkRenderPass> InputAttachmentInstance::createRenderPass		(const IterateComm
 
 	// build input atachments
 	{
+		const std::vector<deUint32>	primes = ut::generatePrimes(variables.availableDescriptorCount);
 		const deUint32 inputCount = static_cast<deUint32>(variables.descriptorImageViews.size());
 		for (deUint32 inputIdx = 0; inputIdx < inputCount; ++inputIdx)
 		{
+			// primes holds the indices of input attachments for shader binding 10 which has input_attachment_index=1
+			deUint32 nextInputAttachmentIndex = primes[inputIdx] + 1;
+
+			// Fill up the subpass description's input attachments with unused attachments forming gaps to the next referenced attachment
+			for (deUint32 unusedIdx = static_cast<deUint32>(inputAttachmentRefs.size()); unusedIdx < nextInputAttachmentIndex; ++unusedIdx)
+			{
+				const VkAttachmentReference		inputAttachmentRef =
+				{
+					VK_ATTACHMENT_UNUSED,						// deUint32							attachment;
+					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout					layout;
+				};
+
+				inputAttachmentRefs.push_back(inputAttachmentRef);
+			}
+
 			const VkAttachmentDescription	inputAttachmentDescription =
 			{
 				VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,		// VkAttachmentDescriptionFlags		flags;
