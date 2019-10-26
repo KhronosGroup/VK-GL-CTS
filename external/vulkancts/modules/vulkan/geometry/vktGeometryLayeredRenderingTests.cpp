@@ -1743,7 +1743,7 @@ void checkSupport (Context& context, const TestParams params)
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
 	if (params.image.viewType == VK_IMAGE_VIEW_TYPE_3D)
-		context.requireDeviceExtension("VK_KHR_maintenance1");
+		context.requireDeviceFunctionality("VK_KHR_maintenance1");
 
 	if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);

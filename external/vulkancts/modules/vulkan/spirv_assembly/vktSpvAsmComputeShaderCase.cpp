@@ -101,7 +101,7 @@ Move<VkBuffer> createBufferAndBindMemory (vkt::Context&				context,
 	const VkMemoryRequirements	requirements	= getBufferMemoryRequirements(vkdi, device, *buffer);
 	AllocationMp				bufferMemory	= allocator.allocate(requirements,
 													(coherent ? MemoryRequirement::Coherent : MemoryRequirement::Any) |
-													(context.isBufferDeviceAddressKHRSupported() && physStorageBuffer ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
+													(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && physStorageBuffer ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
 													MemoryRequirement::HostVisible);
 
 	VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
@@ -423,11 +423,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	vector<VkDescriptorType>			descriptorTypes;
 
 	// Check all required extensions are supported
-	for (std::vector<std::string>::const_iterator i = m_shaderSpec.extensions.begin(); i != m_shaderSpec.extensions.end(); ++i)
-	{
-		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), *i))
-			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
-	}
+	for (const auto& ext : m_shaderSpec.extensions)
+		m_context.requireDeviceFunctionality(ext);
 
 	// Core features
 	{
@@ -761,7 +758,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// all the descriptors with just a desciptor to this new buffer.
 	if (m_shaderSpec.usesPhysStorageBuffer)
 	{
-		const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
 		VkBufferDeviceAddressInfo info =
 		{

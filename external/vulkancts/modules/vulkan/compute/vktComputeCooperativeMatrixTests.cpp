@@ -636,7 +636,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	MemoryRequirement		memoryDeviceAddress		= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-														m_context.isBufferDeviceAddressKHRSupported() ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
+													  m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
 	qpTestResult			finalres				= QP_TEST_RESULT_PASS;
 	tcu::TestLog&			log						= m_context.getTestContext().getLog();
 
@@ -844,7 +844,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 		if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
 		{
-			const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
 			VkBufferDeviceAddressInfo info =
 			{

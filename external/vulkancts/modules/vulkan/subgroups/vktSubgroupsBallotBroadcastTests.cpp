@@ -508,7 +508,7 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
-	if (caseDef.extShaderSubGroupBallotTests && !context.requireDeviceExtension("VK_EXT_shader_subgroup_ballot"))
+	if (caseDef.extShaderSubGroupBallotTests && !context.requireDeviceFunctionality("VK_EXT_shader_subgroup_ballot"))
 	{
 		TCU_THROW(NotSupportedError, "Device does not support VK_EXT_shader_subgroup_ballot extension");
 	}

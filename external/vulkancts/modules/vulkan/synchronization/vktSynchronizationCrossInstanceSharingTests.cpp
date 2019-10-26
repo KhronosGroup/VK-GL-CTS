@@ -332,28 +332,28 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
 	std::vector<const char*>						extensions;
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 		extensions.push_back("VK_KHR_dedicated_allocation");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_get_memory_requirements2"))
 		extensions.push_back("VK_KHR_get_memory_requirements2");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore"))
 		extensions.push_back("VK_KHR_external_semaphore");
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory"))
 		extensions.push_back("VK_KHR_external_memory");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_fd"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_fd"))
 		extensions.push_back("VK_KHR_external_semaphore_fd");
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory_fd"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_fd"))
 		extensions.push_back("VK_KHR_external_memory_fd");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_semaphore_win32"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
 		extensions.push_back("VK_KHR_external_semaphore_win32");
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_external_memory_win32"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_win32"))
 		extensions.push_back("VK_KHR_external_memory_win32");
 
-	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_timeline_semaphore"))
+	if (context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
 		extensions.push_back("VK_KHR_timeline_semaphore");
 
 	try
@@ -1045,7 +1045,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_supportWriteOp			(makeOperationSupport(config.writeOp, config.resource))
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 	, m_notSupportedChecker		(context, m_config, *m_supportWriteOp, *m_supportReadOp)
-	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
+	, m_getMemReq2Supported		(context.isDeviceFunctionalitySupported("VK_KHR_get_memory_requirements2"))
 
 	, m_instanceA				(InstanceAndDevice::getInstanceA(context))
 	, m_vkiA					(InstanceAndDevice::getDriverA())
@@ -1102,7 +1102,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferA		(createCommandBuffer(m_vkdA, *m_deviceA, *commandPoolA));
 		vk::SimpleAllocator						allocatorA			(m_vkdA, *m_deviceA, vk::getPhysicalDeviceMemoryProperties(m_vkiA, m_physicalDeviceA));
 		const std::vector<std::string>			deviceExtensionsA;
-		OperationContext						operationContextA	(m_context.getUsedApiVersion(), m_vkiA, m_vkdA, m_physicalDeviceA, *m_deviceA, allocatorA, deviceExtensionsA, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContextA	(m_context, m_vkiA, m_vkdA, m_physicalDeviceA, *m_deviceA, allocatorA, deviceExtensionsA, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamiliesA[m_queueANdx].queueFlags , m_supportWriteOp->getQueueFlags(operationContextA)))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
@@ -1112,7 +1112,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferB		(createCommandBuffer(m_vkdB, *m_deviceB, *commandPoolB));
 		vk::SimpleAllocator						allocatorB			(m_vkdB, *m_deviceB, vk::getPhysicalDeviceMemoryProperties(m_vkiB, m_physicalDeviceB));
 		const std::vector<std::string>			deviceExtensionsB;
-		OperationContext						operationContextB	(m_context.getUsedApiVersion(), m_vkiB, m_vkdB, m_physicalDeviceB, *m_deviceB, allocatorB, deviceExtensionsB, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContextB	(m_context, m_vkiB, m_vkdB, m_physicalDeviceB, *m_deviceB, allocatorB, deviceExtensionsB, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamiliesB[m_queueBNdx].queueFlags , m_supportReadOp->getQueueFlags(operationContextB)))
 			TCU_THROW(NotSupportedError, "Operation not supported by the destination queue");

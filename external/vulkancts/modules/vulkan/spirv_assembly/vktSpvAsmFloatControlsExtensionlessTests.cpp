@@ -187,7 +187,7 @@ void SpvAsmFloatControlsExtensionlessCase::checkSupport (Context& context) const
 {
 	if (m_spirv14)
 	{
-		context.requireDeviceExtension("VK_KHR_spirv_1_4");
+		context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
 	}
 	else
 	{
@@ -197,7 +197,7 @@ void SpvAsmFloatControlsExtensionlessCase::checkSupport (Context& context) const
 
 	if (m_fpWideness == 16)
 	{
-		context.requireDeviceExtension("VK_KHR_shader_float16_int8");
+		context.requireDeviceFunctionality("VK_KHR_shader_float16_int8");
 		if (!isFloat16Int8FeaturesSupported(context, EXTFLOAT16INT8FEATURES_FLOAT16))
 			TCU_THROW(NotSupportedError, "Floating point number of width 16 bit are not supported");
 	}

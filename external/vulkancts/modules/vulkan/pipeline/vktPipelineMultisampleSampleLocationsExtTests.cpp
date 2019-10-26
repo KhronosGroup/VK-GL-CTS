@@ -140,7 +140,7 @@ void addInstanceTestCaseWithPrograms (tcu::TestCaseGroup*								group,
 
 void checkSupportSampleLocations (Context& context)
 {
-	context.requireDeviceExtension("VK_EXT_sample_locations");
+	context.requireDeviceFunctionality("VK_EXT_sample_locations");
 }
 
 std::string getString (const VkSampleCountFlagBits sampleCount)

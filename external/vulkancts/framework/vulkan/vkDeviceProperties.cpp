@@ -26,11 +26,6 @@
 namespace vk
 {
 
-static bool isPhysicalDeviceProperties2Supported (const deUint32 version, const std::vector<std::string>& instanceExtensions)
-{
-	return isInstanceExtensionSupported(version, instanceExtensions, "VK_KHR_get_physical_device_properties2");
-}
-
 DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 									 const deUint32						apiVersion,
 									 const VkPhysicalDevice				physicalDevice,
@@ -39,7 +34,7 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 {
 	m_coreProperties2 = initVulkanStructure();
 
-	if (isPhysicalDeviceProperties2Supported(apiVersion, instanceExtensions))
+	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
 	{
 		const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		void**										nextPtr						= &m_coreProperties2.pNext;

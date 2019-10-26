@@ -390,7 +390,7 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
 
-	if (!context.requireDeviceExtension("VK_EXT_shader_subgroup_ballot"))
+	if (!context.requireDeviceFunctionality("VK_EXT_shader_subgroup_ballot"))
 	{
 		TCU_THROW(NotSupportedError, "Device does not support VK_EXT_shader_subgroup_ballot extension");
 	}

@@ -794,7 +794,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance	(Context&
 																		 const DepthRangeUnrestrictedParam	param)
 	: TestInstance			(context)
 	, m_param				(param)
-	, m_extensions			(m_context.requireDeviceExtension("VK_EXT_depth_range_unrestricted"))
+	, m_extensions			(m_context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted"))
 	, m_renderSize			(tcu::UVec2(32,32))
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_shaderStageCount	(0)

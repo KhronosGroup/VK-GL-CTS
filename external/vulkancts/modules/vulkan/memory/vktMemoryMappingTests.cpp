@@ -1627,7 +1627,7 @@ void checkSupport (Context& context, TestConfig config)
 	if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE
 		|| config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
 	{
-		context.requireDeviceExtension("VK_KHR_dedicated_allocation");
+		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 	}
 }
 

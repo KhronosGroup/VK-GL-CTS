@@ -953,7 +953,7 @@ protected:
 
 ColorImagelessTestInstance::ColorImagelessTestInstance (Context& context, const TestParameters& parameters)
 	: TestInstance				(context)
-	, m_extensions				(context.requireDeviceExtension("VK_KHR_imageless_framebuffer"))
+	, m_extensions				(context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer"))
 	, m_imageExtent2D			(makeExtent2D(32u, 32u))
 	, m_parameters				(parameters)
 	, m_colorImageUsage			(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
@@ -1748,7 +1748,7 @@ protected:
 DepthResolveImagelessTestInstance::DepthResolveImagelessTestInstance (Context& context, const TestParameters& parameters)
 	: DepthImagelessTestInstance	(context, parameters)
 {
-	context.requireDeviceExtension("VK_KHR_depth_stencil_resolve");
+	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
 
 	const InstanceInterface&							vki					= m_context.getInstanceInterface();
 	const VkPhysicalDevice								physDevice			= m_context.getPhysicalDevice();

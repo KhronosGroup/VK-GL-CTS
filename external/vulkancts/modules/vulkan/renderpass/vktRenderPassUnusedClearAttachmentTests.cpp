@@ -205,7 +205,7 @@ void UnusedClearAttachmentTest::checkSupport (Context& context) const
 {
 	// Check for renderpass2 extension if used
 	if (m_testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
-		context.requireDeviceExtension("VK_KHR_create_renderpass2");
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	// Check support for the needed color, depth and stencil formats.
 	if (!m_testParams.colorUsed.empty())

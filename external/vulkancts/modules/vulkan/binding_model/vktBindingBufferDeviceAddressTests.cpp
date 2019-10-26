@@ -173,7 +173,10 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 	if (m_data.set >= context.getDeviceProperties().limits.maxBoundDescriptorSets)
 		TCU_THROW(NotSupportedError, "descriptor set number not supported");
 
-	if (m_data.bufType == BT_REPLAY && !context.isBufferDeviceAddressWithCaptureReplaySupported())
+	bool isBufferDeviceAddressWithCaptureReplaySupported =
+			(context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") && context.getBufferDeviceAddressFeatures().bufferDeviceAddressCaptureReplay) ||
+			(context.isDeviceFunctionalitySupported("VK_EXT_buffer_device_address") && context.getBufferDeviceAddressFeaturesEXT().bufferDeviceAddressCaptureReplay);
+	if (m_data.bufType == BT_REPLAY && !isBufferDeviceAddressWithCaptureReplaySupported)
 		TCU_THROW(NotSupportedError, "Capture/replay of physical storage buffer pointers not supported");
 
 	if (m_data.layout == LAYOUT_SCALAR && !context.getScalarBlockLayoutFeatures().scalarBlockLayout)
@@ -181,7 +184,7 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 
 #if ENABLE_RAYTRACING
 	if (m_data.stage == STAGE_RAYGEN &&
-		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+		!context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		TCU_THROW(NotSupportedError, "Ray tracing not supported");
 	}
@@ -189,7 +192,7 @@ void BufferAddressTestCase::checkSupport (Context& context) const
 
 	if (m_data.convertUToPtr == CONVERT_UTOPTR && !context.getDeviceFeatures().shaderInt64)
 		TCU_THROW(NotSupportedError, "Int64 not supported");
-	if (m_data.convertUToPtr == CONVERT_UVEC2 && !context.isBufferDeviceAddressKHRSupported())
+	if (m_data.convertUToPtr == CONVERT_UVEC2 && !context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 		TCU_THROW(NotSupportedError, "VK_KHR_buffer_device_address not supported");
 }
 
@@ -466,7 +469,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	const VkPhysicalDevice&	physDevice				= m_context.getPhysicalDevice();
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
-	const bool				useKHR					= m_context.isBufferDeviceAddressKHRSupported();
+	const bool				useKHR					= m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
 
 	VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -489,7 +492,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
 	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
 
-	if (isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_NV_ray_tracing"))
+	if (context.isDeviceFunctionalitySupported("VK_NV_ray_tracing")))
 	{
 		properties.pNext = &rayTracingProperties;
 	}

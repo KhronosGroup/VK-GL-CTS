@@ -244,7 +244,7 @@ void DepthTest::checkSupport (Context& context) const
 	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_depthFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(m_depthFormat));
 
-	if (m_separateDepthStencilLayouts && !isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_separate_depth_stencil_layouts"))
+	if (m_separateDepthStencilLayouts && !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
 		TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 }
 

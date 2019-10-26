@@ -198,8 +198,7 @@ bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFl
 		return true;
 
 	// return false when float control features are requested and proper extension is not supported
-	const std::vector<std::string>& deviceExtensions = context.getDeviceExtensions();
-	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), deviceExtensions, "VK_KHR_shader_float_controls"))
+	if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_float_controls"))
 		return false;
 
 	// perform query to get supported float control properties

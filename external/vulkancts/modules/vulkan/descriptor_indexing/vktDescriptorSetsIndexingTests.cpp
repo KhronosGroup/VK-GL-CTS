@@ -2999,7 +2999,7 @@ public:
 
 	virtual void checkSupport (vkt::Context& context) const
 	{
-		if (!context.isDescriptorIndexingSupported())
+		if (!context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing"))
 			TCU_THROW(NotSupportedError, "Descriptor indexing is not supported");
 
 		const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT& feats = context.getDescriptorIndexingFeatures();

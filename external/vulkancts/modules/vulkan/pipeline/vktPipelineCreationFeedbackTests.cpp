@@ -528,7 +528,7 @@ CacheTestInstance::CacheTestInstance (Context&					context,
 									  const CacheTestParam*	param)
 	: TestInstance		(context)
 	, m_param			(param)
-	, m_extensions		(m_context.requireDeviceExtension("VK_EXT_pipeline_creation_feedback"))
+	, m_extensions		(m_context.requireDeviceFunctionality("VK_EXT_pipeline_creation_feedback"))
 {
 	const DeviceInterface&	vk				= m_context.getDeviceInterface();
 	const VkDevice			vkDevice		= m_context.getDevice();
@@ -1109,7 +1109,7 @@ void ComputeCacheTestInstance::buildPipeline (deUint32 ndx)
 		0u,															// deInt32							basePipelineIndex;
 	};
 
-	if (ndx == PIPELINE_CACHE_NDX_NO_CACHE)
+	if (ndx != PIPELINE_CACHE_NDX_DERIVATIVE)
 	{
 		pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
 	}

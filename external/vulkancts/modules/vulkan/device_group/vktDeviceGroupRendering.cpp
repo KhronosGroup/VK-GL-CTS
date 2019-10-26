@@ -211,7 +211,7 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed (deUint32 memoryTypeIndex, deUi
 
 void DeviceGroupTestInstance::init (void)
 {
-	if (!isInstanceExtensionSupported(m_context.getUsedApiVersion(), m_context.getInstanceExtensions(), "VK_KHR_device_group_creation"))
+	if (!m_context.isInstanceFunctionalitySupported("VK_KHR_device_group_creation"))
 		TCU_THROW(NotSupportedError, "Device Group tests are not supported, no device group extension present.");
 
 	const InstanceInterface&		instanceInterface	= m_context.getInstanceInterface();
@@ -224,7 +224,7 @@ void DeviceGroupTestInstance::init (void)
 	vector<string>					deviceExtensions;
 	vector<string>					enabledLayers;
 
-	if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_device_group"))
+	if (!m_context.isDeviceFunctionalitySupported("VK_KHR_device_group"))
 		TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_device_group");
 
 	if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
@@ -232,7 +232,7 @@ void DeviceGroupTestInstance::init (void)
 
 	if(m_useDedicated)
 	{
-		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+		if (!m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_dedicated_allocation");
 
 		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_dedicated_allocation"))

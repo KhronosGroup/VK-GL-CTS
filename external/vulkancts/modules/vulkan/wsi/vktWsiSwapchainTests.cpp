@@ -1436,10 +1436,8 @@ public:
 		DE_UNREF(deviceMask);	// needed for compatibility with acquireNextImage2KHR
 	}
 
-	bool featureAvailable(const deUint32 deviceVersion, const Extensions& supportedExtensions)
+	bool featureAvailable(Context&)
 	{
-		DE_UNREF(deviceVersion);
-		DE_UNREF(supportedExtensions);
 		return true;			// needed for compatibility with acquireNextImage2KHR
 	}
 
@@ -1482,9 +1480,9 @@ public:
 		m_info.deviceMask	= deviceMask;
 	}
 
-	bool featureAvailable(const deUint32 deviceVersion, const Extensions& supportedExtensions)
+	bool featureAvailable(Context& context)
 	{
-		return isDeviceExtensionSupported(deviceVersion, supportedExtensions, RequiredExtension("VK_KHR_device_group"));
+		return context.isDeviceFunctionalitySupported("VK_KHR_device_group");
 	}
 
 	VkResult call(VkSemaphore semaphore, VkFence fence, deUint32* imageIndex)
@@ -1520,7 +1518,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
 
 	AcquireWrapperType acquireImageWrapper(vkd, device, 1u, *swapchain, std::numeric_limits<deUint64>::max());
-	if (!acquireImageWrapper.featureAvailable(context.getUsedApiVersion(), instHelper.supportedExtensions))
+	if (!acquireImageWrapper.featureAvailable(context))
 		TCU_THROW(NotSupportedError, "Required extension is not supported");
 
 	const TriangleRenderer			renderer					(vkd,

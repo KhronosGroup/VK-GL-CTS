@@ -987,7 +987,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			if (m_data.payloadSC == SC_PHYSBUFFER)
 			{
 				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-				if (m_context.isBufferDeviceAddressKHRSupported())
+				if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 					memoryDeviceAddress = true;
 			}
 			break;
@@ -998,7 +998,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			if (m_data.guardSC == SC_PHYSBUFFER)
 			{
 				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-				if (m_context.isBufferDeviceAddressKHRSupported())
+				if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 					memoryDeviceAddress = true;
 			}
 			break;
@@ -1504,7 +1504,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		if (m_data.payloadSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[0];
 			VkDeviceAddress addr;
 			if (useKHR)
@@ -1516,7 +1516,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		}
 		if (m_data.guardSC == SC_PHYSBUFFER)
 		{
-			const bool useKHR = m_context.isBufferDeviceAddressKHRSupported();
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[1];
 			VkDeviceAddress addr;
 			if (useKHR)
