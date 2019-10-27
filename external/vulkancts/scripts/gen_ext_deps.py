@@ -32,8 +32,8 @@ from collections import defaultdict
 VK_SOURCE						= khr_util.registry_cache.RegistrySource(
 									"https://github.com/KhronosGroup/Vulkan-Docs.git",
 									"xml/vk.xml",
-									"c5261decf68cb2ef8cd934b8a3e4824bfde81cda",
-									"e301b17d23373eb0309b250dcf528eccd53a9aa6f9ce686c465ec6eb9e60f8e3")
+									"22a5a1459fbe8be546079525c4c9d50bfc20b30b",
+									"26b7945a5fd040e3a3adc578d8ff786d09a7cfeeb48ff1e62aeea8b8cb34fb5b")
 VK_INL_FILE						= os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "vkApiExtensionDependencyInfo.inl")
 VK_INL_HEADER					= khr_util.format.genInlHeader("Khronos Vulkan API description (vk.xml)", VK_SOURCE.getRevision())
 

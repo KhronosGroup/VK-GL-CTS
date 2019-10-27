@@ -149,6 +149,44 @@ private:
 	vector<VkBufferView>			m_bufferViewHandles;
 };
 
+// Inline uniform block descriptor.
+class InlineUniformBlockDescriptor : public Descriptor
+{
+public:
+									InlineUniformBlockDescriptor		(deUint32 arraySize, deUint32 writeStart, deUint32 elementsToWrite, deUint32 numDynamicAreas = 1u);
+	virtual							~InlineUniformBlockDescriptor		(void);
+	void							init								(Context& context, PipelineType pipelineType);
+
+	VkWriteDescriptorSet			getDescriptorWrite					(void);
+	virtual string					getShaderDeclaration				(void) const;
+	virtual string					getShaderVerifyCode					(void) const;
+	virtual bool					usesBufferView						(void) { return false; }
+	deUint32						getElementSizeInBytes				(void) const { return static_cast<deUint32>(sizeof(decltype(m_blockData)::value_type)); }
+	deUint32						getSizeInBytes						(void) const { return m_blockElements * getElementSizeInBytes(); }
+
+private:
+	// Inline uniform blocks cannot form arrays, so we will reuse the array size to create a data array inside the uniform block as
+	// an array of integers. However, with std140, each of those ints will be padded to 16 bytes in the shader. The struct below
+	// allows memory to match between the host and the shader.
+	struct PaddedUint
+	{
+					PaddedUint	() : value(0) { deMemset(padding, 0, sizeof(padding)); }
+					PaddedUint	(deUint32 value_) : value(value_) { deMemset(padding, 0, sizeof(padding)); }
+		PaddedUint&	operator=	(deUint32 value_) { value = value_; return *this; }
+
+		deUint32	value;
+		deUint32	padding[3];
+	};
+
+	vector<PaddedUint>							m_blockData;
+	VkWriteDescriptorSetInlineUniformBlockEXT	m_inlineWrite;
+	deUint32									m_blockElements;
+	deUint32									m_writeStart;
+	deUint32									m_elementsToWrite;
+	deUint32									m_writeStartByteOffset;
+	deUint32									m_bytesToWrite;
+};
+
 class UniformBufferDescriptor : public BufferDescriptor
 {
 public:
@@ -623,6 +661,89 @@ vector<deUint32> BufferDescriptor::getData (void)
 		data.push_back(hostPtr[i]);
 
 	return data;
+}
+
+// Inline Uniform Block descriptor. These are similar to uniform buffers, but they can't form arrays for spec reasons.
+// The array size is reused, instead, as the size of a data array inside the uniform block.
+InlineUniformBlockDescriptor::InlineUniformBlockDescriptor (deUint32	arraySize,
+															deUint32	writeStart,
+															deUint32	elementsToWrite,
+															deUint32	numDynamicAreas)
+: Descriptor(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT, arraySize, writeStart, elementsToWrite, 1u)
+, m_blockElements(arraySize)
+, m_writeStart(writeStart)
+, m_elementsToWrite(elementsToWrite)
+, m_writeStartByteOffset(m_writeStart * getElementSizeInBytes())
+, m_bytesToWrite(m_elementsToWrite * getElementSizeInBytes())
+{
+	DE_UNREF(numDynamicAreas);
+}
+
+InlineUniformBlockDescriptor::~InlineUniformBlockDescriptor (void)
+{
+}
+
+void InlineUniformBlockDescriptor::init (Context&		context,
+										 PipelineType	pipelineType)
+{
+	DE_UNREF(context);
+	DE_UNREF(pipelineType);
+
+	// Initialize host memory.
+	m_blockData.resize(m_blockElements);
+	for (deUint32 i = 0; i < m_blockElements; ++i)
+		m_blockData[i] = m_id + i;
+
+	// Initialize descriptor write extension structure.
+	m_inlineWrite.sType		= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT;
+	m_inlineWrite.pNext		= DE_NULL;
+	m_inlineWrite.dataSize	= m_bytesToWrite;
+	m_inlineWrite.pData		= &m_blockData[m_writeStart];
+}
+
+VkWriteDescriptorSet InlineUniformBlockDescriptor::getDescriptorWrite (void)
+{
+	// Set and binding will be overwritten later
+	const VkWriteDescriptorSet	descriptorWrite	=
+	{
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType
+		&m_inlineWrite,								// const void*						pNext
+		(VkDescriptorSet)0u,						// VkDescriptorSet					dstSet
+		0u,											// deUint32							dstBinding
+		m_writeStartByteOffset,						// deUint32							dstArrayElement
+		m_bytesToWrite,								// deUint32							descriptorCount
+		getType(),									// VkDescriptorType					descriptorType
+		DE_NULL,									// const VkDescriptorImageInfo		pImageInfo
+		DE_NULL,									// const VkDescriptorBufferInfo*	pBufferInfo
+		DE_NULL										// const VkBufferView*				pTexelBufferView
+	};
+
+	return descriptorWrite;
+}
+
+string InlineUniformBlockDescriptor::getShaderDeclaration (void) const
+{
+	const string idStr = de::toString(m_id);
+	return string(") uniform InlineUniformBlock" + idStr + "\n"
+		"{\n"
+		"	int data" + getArrayString(m_arraySize) + ";\n"
+		"} inlineUniformBlock" + idStr + ";\n");
+}
+
+string InlineUniformBlockDescriptor::getShaderVerifyCode (void) const
+{
+	const string idStr = de::toString(m_id);
+	string ret;
+
+	for (deUint32 i = 0; i < m_arraySize; i++)
+	{
+		if (m_data[i].written || m_data[i].copiedInto)
+		{
+			ret += string("if (inlineUniformBlock") + idStr + ".data" + getArrayString(i) + " != " + de::toString(m_data[i].data[0]) + ") result = 0;\n";
+		}
+	}
+
+	return ret;
 }
 
 UniformBufferDescriptor::UniformBufferDescriptor (deUint32	arraySize,
@@ -1293,11 +1414,13 @@ void DescriptorCommands::addDescriptor (DescriptorSp	descriptor,
 
 	m_descriptorSets[descriptorSet]->addBinding(descriptor);
 
-	// Keep track of how many descriptors of each type is needed
+	// Keep track of how many descriptors of each type is needed. Inline uniform blocks cannot form arrays. We reuse the array size
+	// as size of the data array for them, within a single descriptor.
+	const deUint32 count = ((type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT) ? 1u : descriptor->getArraySize());
 	if (m_descriptorCounts.find(type) != m_descriptorCounts.end())
-		m_descriptorCounts[type] += descriptor->getArraySize();
+		m_descriptorCounts[type] += count;
 	else
-		m_descriptorCounts[type] = descriptor->getArraySize();
+		m_descriptorCounts[type] = count;
 
 	// Keep descriptors also in a flat list for easier iteration
 	m_descriptors.push_back(descriptor);
@@ -1311,7 +1434,20 @@ void DescriptorCommands::copyDescriptor (deUint32	srcSet,
 										 deUint32	dstArrayElement,
 										 deUint32	descriptorCount)
 {
-	const DescriptorCopy descriptorCopy = { srcSet, srcBinding, srcArrayElement, dstSet, dstBinding, dstArrayElement, descriptorCount };
+	// For inline uniform blocks, (src|dst)ArrayElement are data array indices and descriptorCount is the number of integers to copy.
+	DescriptorCopy descriptorCopy = { srcSet, srcBinding, srcArrayElement, dstSet, dstBinding, dstArrayElement, descriptorCount };
+
+	if (m_descriptorSets[srcSet]->getBindings()[srcBinding]->getType() == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+	{
+		// For inline uniform blocks, these members of VkCopyDescriptorSet are offsets and sizes in bytes.
+		const InlineUniformBlockDescriptor* iub	=	static_cast<InlineUniformBlockDescriptor*>(m_descriptorSets[srcSet]->getBindings()[srcBinding].get());
+		const deUint32 elementSize				=	iub->getElementSizeInBytes();
+
+		descriptorCopy.srcArrayElement *= elementSize;
+		descriptorCopy.dstArrayElement *= elementSize;
+		descriptorCopy.descriptorCount *= elementSize;
+	}
+
 	m_descriptorCopies.push_back(descriptorCopy);
 	m_descriptorSets[descriptorCopy.dstSet]->getBindings()[descriptorCopy.dstBinding]->copyValue(*m_descriptorSets[descriptorCopy.srcSet]->getBindings()[descriptorCopy.srcBinding], srcArrayElement, dstArrayElement, descriptorCount);
 }
@@ -1394,10 +1530,12 @@ bool DescriptorCommands::hasDynamicAreas (void) const
 
 tcu::TestStatus DescriptorCommands::run (Context& context)
 {
+	const InstanceInterface&				vki					= context.getInstanceInterface();
 	const DeviceInterface&					vk					= context.getDeviceInterface();
     const VkDevice							device				= context.getDevice();
 	const VkQueue							queue				= context.getUniversalQueue();
-	const VkPhysicalDeviceLimits			limits				= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
+	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
+	const VkPhysicalDeviceLimits			limits				= getPhysicalDeviceProperties(vki, physicalDevice).limits;
 	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
     Allocator&								allocator			= context.getDefaultAllocator();
 	tcu::TestLog&							log					= context.getTestContext().getLog();
@@ -1405,6 +1543,8 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	const Unique<VkCommandBuffer>			commandBuffer		(allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const VkShaderStageFlags				shaderStage			= m_pipelineType == PIPELINE_TYPE_COMPUTE ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
 	const VkFormat							resultFormat		= VK_FORMAT_R8G8B8A8_UNORM;
+	deUint32								numTotalIUBs		= 0;
+	deUint32								iubTotalBytes		= 0;
 	de::MovePtr<ImageWithMemory>			resultImage;
 	de::MovePtr<BufferWithMemory>			resultImageBuffer;
 	Move<VkImageView>						resultImageView;
@@ -1419,8 +1559,38 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	vector<VkAttachmentDescription>			attachmentDescriptions;
 	vector<VkImageView>						imageViews;
 
-	if(limits.maxBoundDescriptorSets <= m_descriptorSets.size())
+	if (limits.maxBoundDescriptorSets <= m_descriptorSets.size())
 		TCU_THROW(NotSupportedError, "Maximum bound descriptor sets limit exceeded.");
+
+	// Check if inline uniform blocks are supported.
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT	iubFeatures =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT,
+		DE_NULL,
+		VK_FALSE, VK_FALSE
+	};
+	VkPhysicalDeviceInlineUniformBlockPropertiesEXT	iubProperties =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT,
+		DE_NULL,
+		0u, 0u, 0u, 0u, 0u
+	};
+	{
+		if (context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
+		{
+			VkPhysicalDeviceFeatures2 features2;
+			deMemset(&features2, 0, sizeof(features2));
+			features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			features2.pNext = &iubFeatures;
+			vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+			VkPhysicalDeviceProperties2 properties2;
+			deMemset(&properties2, 0, sizeof(properties2));
+			properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+			properties2.pNext = &iubProperties;
+			vki.getPhysicalDeviceProperties2(physicalDevice, &properties2);
+		}
+	}
 
 	// Check physical device limits of per stage and per desriptor set descriptor count
 	{
@@ -1442,6 +1612,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			deUint32					numSampledImages			= 0;
 			deUint32					numStorageImages			= 0;
 			deUint32					numInputAttachments			= 0;
+			deUint32					numIUBs						= 0;
 			deUint32					numTotalResources			= m_pipelineType == PIPELINE_TYPE_GRAPHICS ? 1u : 0u; // Color buffer counts as a resource.
 
 			const vector<DescriptorSp>&	bindings					= m_descriptorSets[descriptorSetIdx]->getBindings();
@@ -1450,7 +1621,28 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			{
 				const deUint32 arraySize = bindings[bindingIdx]->getArraySize();
 
-				numTotalResources += arraySize;
+				// Inline uniform blocks cannot form arrays. The array size is the size of the data array in the descriptor.
+				if (bindings[bindingIdx]->getType() == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+				{
+					const InlineUniformBlockDescriptor* iub		= static_cast<InlineUniformBlockDescriptor*>(bindings[bindingIdx].get());
+					const deUint32						bytes	= iub->getSizeInBytes();
+
+					// Check inline uniform block size.
+					if (bytes > iubProperties.maxInlineUniformBlockSize)
+					{
+						std::ostringstream msg;
+						msg << "Maximum size for an inline uniform block exceeded by binding "
+							<< bindingIdx << " from set " << descriptorSetIdx;
+						TCU_THROW(NotSupportedError, msg.str().c_str());
+					}
+
+					iubTotalBytes += bytes;
+					++numTotalResources;
+				}
+				else
+				{
+					numTotalResources += arraySize;
+				}
 
 				switch (bindings[bindingIdx]->getType())
 				{
@@ -1495,6 +1687,10 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 						numSamplers += arraySize;
 						break;
 
+					case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
+						++numIUBs;
+						break;
+
 					default:
 						DE_FATAL("Unexpected descriptor type");
 						break;
@@ -1532,6 +1728,7 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			numPerStageStorageImages	+= numStorageImages;
 			numPerStageInputAttachments	+= numInputAttachments;
 			numPerStageTotalResources	+= numTotalResources;
+			numTotalIUBs				+= numIUBs;
 		}
 
 		if (numPerStageTotalResources > limits.maxPerStageResources)
@@ -1554,6 +1751,12 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 
 		if (numPerStageInputAttachments > limits.maxPerStageDescriptorInputAttachments)
 			TCU_THROW(NotSupportedError, "Maximum per stage input attachment limit exceeded.");
+
+		if (numTotalIUBs > iubProperties.maxDescriptorSetInlineUniformBlocks ||
+			numTotalIUBs > iubProperties.maxPerStageDescriptorInlineUniformBlocks)
+		{
+			TCU_THROW(NotSupportedError, "Number of per stage inline uniform blocks exceeds limits.");
+		}
 	}
 
 	// Initialize all descriptors
@@ -1562,20 +1765,24 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 
 	// Create descriptor pool
 	{
-		vector<VkDescriptorPoolSize>		poolSizes;
+		vector<VkDescriptorPoolSize> poolSizes;
 
 		for (map<VkDescriptorType, deUint32>::iterator i = m_descriptorCounts.begin(); i != m_descriptorCounts.end(); i++)
 		{
-			const VkDescriptorPoolSize	poolSize	=
+			VkDescriptorPoolSize poolSize =
 			{
 				i->first,	// VkDescriptorType	type
 				i->second	// deUint32			descriptorCount
 			};
 
+			// Inline uniform blocks have a special meaning for descriptorCount.
+			if (poolSize.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+				poolSize.descriptorCount = iubTotalBytes;
+
 			poolSizes.push_back(poolSize);
 		}
 
-		const VkDescriptorPoolCreateInfo	descriptorPoolCreateInfo	=
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,		// VkStructureType				sType
 			DE_NULL,											// const void*					pNext
@@ -1585,6 +1792,16 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 			poolSizes.data(),									// const VkDescriptorPoolSize*	pPoolSizes
 		};
 
+		// Include information about inline uniform blocks if needed.
+		VkDescriptorPoolInlineUniformBlockCreateInfoEXT iubPoolCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT,
+			DE_NULL,
+			numTotalIUBs
+		};
+		if (numTotalIUBs > 0)
+			descriptorPoolCreateInfo.pNext = &iubPoolCreateInfo;
+
 		descriptorPool = createDescriptorPool(vk, device, &descriptorPoolCreateInfo);
 	}
 
@@ -1593,11 +1810,11 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		for (size_t descriptorSetIdx = 0; descriptorSetIdx < m_descriptorSets.size(); descriptorSetIdx++)
 		{
 			vector<VkDescriptorSetLayoutBinding>	layoutBindings;
-			const vector<DescriptorSp>&				bindings	= m_descriptorSets[descriptorSetIdx]->getBindings();
+			const vector<DescriptorSp>&				bindings		= m_descriptorSets[descriptorSetIdx]->getBindings();
 
 			for (size_t bindingIdx = 0; bindingIdx < bindings.size(); bindingIdx++)
 			{
-				const VkDescriptorSetLayoutBinding	layoutBinding	=
+				VkDescriptorSetLayoutBinding layoutBinding =
 				{
 					(deUint32)bindingIdx,					// deUint32				binding
 					bindings[bindingIdx]->getType(),		// VkDescriptorType		descriptorType
@@ -1605,6 +1822,13 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 					shaderStage,							// VkShaderStageFlags	stageFlags
 					DE_NULL									// const VkSampler*		pImmutableSamplers
 				};
+
+				// Inline uniform blocks have a special meaning for descriptorCount.
+				if (layoutBinding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+				{
+					const InlineUniformBlockDescriptor* iub = static_cast<InlineUniformBlockDescriptor*>(bindings[bindingIdx].get());
+					layoutBinding.descriptorCount = iub->getSizeInBytes();
+				}
 
 				layoutBindings.push_back(layoutBinding);
 			}
@@ -1996,7 +2220,8 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 		m_resultBuffer->invalidate(context);
 
 		// Verify result data
-		if (m_resultBuffer->getData()[0] == 1)
+		const auto data = m_resultBuffer->getData();
+		if (data[0] == 1)
 			return tcu::TestStatus::pass("Pass");
 		else
 			return tcu::TestStatus::fail("Data validation failed");
@@ -2622,6 +2847,51 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_2", "", commands));
 	}
 
+	if (pipelineType == PIPELINE_TYPE_GRAPHICS)
+	{
+		// Similar to the previous one, but adding inline uniform blocks to the mix.
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		InlineUniformBlockDescriptor*	iub0					(new InlineUniformBlockDescriptor(4u, 0u, 4u));
+		InlineUniformBlockDescriptor*	iub1					(new InlineUniformBlockDescriptor(4u, 0u, 1u));
+		InputAttachmentDescriptor*		inputAttachment0		(new InputAttachmentDescriptor());
+		InputAttachmentDescriptor*		inputAttachment1		(new InputAttachmentDescriptor());
+		CombinedImageSamplerDescriptor*	combinedImageSampler0	(new CombinedImageSamplerDescriptor());
+		CombinedImageSamplerDescriptor*	combinedImageSampler1	(new CombinedImageSamplerDescriptor());
+		UniformTexelBufferDescriptor*	uniformTexelBuffer0		(new UniformTexelBufferDescriptor(5u, 0u, 5u));
+		UniformTexelBufferDescriptor*	uniformTexelBuffer1		(new UniformTexelBufferDescriptor(3u, 1u, 1u));
+
+		commands->addDescriptor(DescriptorSp(iub0), 0u);					// Set 0, binding 0
+		commands->addDescriptor(DescriptorSp(combinedImageSampler0), 0u);	// Set 0, binding 1
+		commands->addDescriptor(DescriptorSp(inputAttachment0), 0u);		// Set 0, binding 2
+		commands->addDescriptor(DescriptorSp(uniformTexelBuffer0), 0u);		// Set 0, binding 3
+		commands->addDescriptor(DescriptorSp(iub1), 1u);					// Set 1, binding 0
+		commands->addDescriptor(DescriptorSp(combinedImageSampler1), 1u);	// Set 1, binding 1
+		commands->addDescriptor(DescriptorSp(inputAttachment1), 1u);		// Set 1, binding 2
+		commands->addDescriptor(DescriptorSp(uniformTexelBuffer1), 1u);		// Set 1, binding 3
+
+		// iub0.data[0..2] to iub1.data[1..3]
+		commands->copyDescriptor(0u, 0u, 0u,	// from
+								 1u, 0u, 1u,	// to
+								 3u);			// num descriptors
+
+		// uniformTexelBuffer0[1..3] to uniformTexelBuffer1[0..2]
+		commands->copyDescriptor(0u, 3u, 1u,	// from
+								 1u, 3u, 0u,	// to
+								 3u);			// num descriptors
+
+		// inputAttachment0 to inputAttachment1
+		commands->copyDescriptor(0u, 2u,	// from
+								 1u, 2u);	// to
+
+		// combinedImageSampler0 to combinedImageSampler1
+		commands->copyDescriptor(0u, 1u,	// from
+								 1u, 1u);	// to
+
+		commands->addResultBuffer();
+
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_3", "", commands));
+	}
+
 	// Mixture of descriptors using descriptor arrays
 	{
 		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
@@ -2660,6 +2930,54 @@ void addMixedDescriptorCopyTests (tcu::TestContext&					testCtx,
 
 		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array0", "", commands));
 	}
+
+	// Similar to the previous one but including inline uniform blocks.
+	{
+		DescriptorCommandsSp			commands				(new DescriptorCommands(pipelineType));
+		InlineUniformBlockDescriptor*	iub0					(new InlineUniformBlockDescriptor(4u, 0u, 1u));
+		InlineUniformBlockDescriptor*	iub1					(new InlineUniformBlockDescriptor(4u, 0u, 4u));
+		CombinedImageSamplerDescriptor*	combinedImageSampler0	(new CombinedImageSamplerDescriptor(3u, 0u, 3u));
+		CombinedImageSamplerDescriptor*	combinedImageSampler1	(new CombinedImageSamplerDescriptor(4u, 0u, 2u));
+		CombinedImageSamplerDescriptor*	combinedImageSampler2	(new CombinedImageSamplerDescriptor(3u, 0u, 3u));
+		StorageImageDescriptor*			storageImage0			(new StorageImageDescriptor(5u, 0u, 5u));
+		StorageImageDescriptor*			storageImage1			(new StorageImageDescriptor(3u, 0u, 0u));
+		StorageBufferDescriptor*		storageBuffer0			(new StorageBufferDescriptor(2u, 0u, 1u));
+		StorageBufferDescriptor*		storageBuffer1			(new StorageBufferDescriptor(3u, 0u, 3u));
+
+		commands->addDescriptor(DescriptorSp(iub0), 0u);					// Set 0, binding 0
+		commands->addDescriptor(DescriptorSp(combinedImageSampler0), 0u);	// Set 0, binding 1
+		commands->addDescriptor(DescriptorSp(storageImage0), 0u);			// Set 0, binding 2
+		commands->addDescriptor(DescriptorSp(combinedImageSampler1), 0u);	// Set 0, binding 3
+		commands->addDescriptor(DescriptorSp(storageBuffer0), 0u);			// Set 0, binding 4
+		commands->addDescriptor(DescriptorSp(storageBuffer1), 0u);			// Set 0, binding 5
+		commands->addDescriptor(DescriptorSp(combinedImageSampler2), 0u);	// Set 0, binding 6
+		commands->addDescriptor(DescriptorSp(iub1), 1u);					// Set 1, binding 0
+		commands->addDescriptor(DescriptorSp(storageImage1), 1u);			// Set 1, binding 1
+
+		// iub1.data[0..2] to iub0.data[1..3]
+		commands->copyDescriptor(1u, 0u, 0u,	// from
+								 0u, 0u, 1u,	// to
+								 3u);			// num descriptors
+
+		// combinedImageSampler0[1..2] to combinedImageSampler1[2..3]
+		commands->copyDescriptor(0u, 1u, 1u,	// from
+								 0u, 3u, 2u,	// to
+								 2u);			// num descriptors
+
+		// storageImage0[2..4] to storageImage1[0..2]
+		commands->copyDescriptor(0u, 2u, 2u,	// from
+								 1u, 1u, 0u,	// to
+								 3u);			// num descriptors
+
+		// storageBuffer1[1..2] to storageBuffer0[0..1]
+		commands->copyDescriptor(0u, 5u, 1u,	// from
+								 0u, 4u, 0u,	// to
+								 2u);			// num descriptors
+
+		commands->addResultBuffer();
+
+		group->addChild(new DescriptorCopyTestCase(testCtx, "mix_array1", "", commands));
+	}
 }
 
 } // anonymous
@@ -2673,6 +2991,7 @@ tcu::TestCaseGroup*	createDescriptorCopyTests (tcu::TestContext& testCtx)
 
 	// Compute tests
 	addDescriptorCopyTests<UniformBufferDescriptor>(testCtx, computeGroup, "uniform_buffer", PIPELINE_TYPE_COMPUTE);
+	addDescriptorCopyTests<InlineUniformBlockDescriptor>(testCtx, computeGroup, "inline_uniform_block", PIPELINE_TYPE_COMPUTE);
 	addDescriptorCopyTests<StorageBufferDescriptor>(testCtx, computeGroup, "storage_buffer", PIPELINE_TYPE_COMPUTE);
 	addDescriptorCopyTests<CombinedImageSamplerDescriptor>(testCtx, computeGroup, "combined_image_sampler", PIPELINE_TYPE_COMPUTE);
 	addDescriptorCopyTests<StorageImageDescriptor>(testCtx, computeGroup, "storage_image", PIPELINE_TYPE_COMPUTE);
@@ -2686,6 +3005,7 @@ tcu::TestCaseGroup*	createDescriptorCopyTests (tcu::TestContext& testCtx)
 
 	// Graphics tests
 	addDescriptorCopyTests<UniformBufferDescriptor>(testCtx, graphicsGroup, "uniform_buffer", PIPELINE_TYPE_GRAPHICS);
+	addDescriptorCopyTests<InlineUniformBlockDescriptor>(testCtx, graphicsGroup, "inline_uniform_block", PIPELINE_TYPE_GRAPHICS);
 	addDescriptorCopyTests<StorageBufferDescriptor>(testCtx, graphicsGroup, "storage_buffer", PIPELINE_TYPE_GRAPHICS);
 	addDescriptorCopyTests<CombinedImageSamplerDescriptor>(testCtx, graphicsGroup, "combined_image_sampler", PIPELINE_TYPE_GRAPHICS);
 	addDescriptorCopyTests<StorageImageDescriptor>(testCtx, graphicsGroup, "storage_image", PIPELINE_TYPE_GRAPHICS);

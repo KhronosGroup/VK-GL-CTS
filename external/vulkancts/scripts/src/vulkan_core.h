@@ -44,7 +44,7 @@ extern "C" {
 #define VK_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((uint32_t)(version) & 0xfff)
 // Version of this file
-#define VK_HEADER_VERSION 123
+#define VK_HEADER_VERSION 124
 
 
 #define VK_NULL_HANDLE 0
@@ -7121,6 +7121,18 @@ typedef VkPhysicalDeviceShaderAtomicInt64Features VkPhysicalDeviceShaderAtomicIn
 
 
 
+#define VK_KHR_shader_clock 1
+#define VK_KHR_SHADER_CLOCK_SPEC_VERSION  1
+#define VK_KHR_SHADER_CLOCK_EXTENSION_NAME "VK_KHR_shader_clock"
+typedef struct VkPhysicalDeviceShaderClockFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderSubgroupClock;
+    VkBool32           shaderDeviceClock;
+} VkPhysicalDeviceShaderClockFeaturesKHR;
+
+
+
 #define VK_KHR_driver_properties 1
 #define VK_KHR_DRIVER_PROPERTIES_SPEC_VERSION 1
 #define VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME "VK_KHR_driver_properties"
@@ -7207,7 +7219,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkSignalSemaphoreKHR(
 #define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 3
 #define VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME "VK_KHR_vulkan_memory_model"
 typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
-
 
 
 #define VK_KHR_spirv_1_4 1
@@ -8984,6 +8995,8 @@ typedef struct VkPipelineCoverageModulationStateCreateInfoNV {
     const float*                                      pCoverageModulationTable;
 } VkPipelineCoverageModulationStateCreateInfoNV;
 
+
+
 #define VK_NV_fill_rectangle 1
 #define VK_NV_FILL_RECTANGLE_SPEC_VERSION 1
 #define VK_NV_FILL_RECTANGLE_EXTENSION_NAME "VK_NV_fill_rectangle"
@@ -9008,16 +9021,6 @@ typedef struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV {
 #define VK_EXT_POST_DEPTH_COVERAGE_SPEC_VERSION 1
 #define VK_EXT_POST_DEPTH_COVERAGE_EXTENSION_NAME "VK_EXT_post_depth_coverage"
 
-#define VK_KHR_shader_clock                   1
-#define VK_KHR_SHADER_CLOCK_SPEC_VERSION      1
-#define VK_KHR_SHADER_CLOCK_EXTENSION_NAME    "VK_KHR_shader_clock"
-
-typedef struct VkPhysicalDeviceShaderClockFeaturesKHR {
-    VkStructureType sType;
-    void*           pNext;
-    VkBool32        shaderSubgroupClock;
-    VkBool32        shaderDeviceClock;
-} VkPhysicalDeviceShaderClockFeaturesKHR;
 
 #define VK_EXT_image_drm_format_modifier 1
 #define VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_SPEC_VERSION 1

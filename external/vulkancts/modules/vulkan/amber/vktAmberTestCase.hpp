@@ -58,7 +58,8 @@ class AmberTestCase : public TestCase
 public:
 	AmberTestCase	(tcu::TestContext&	testCtx,
 					 const char*		name,
-					 const char*		description);
+					 const char*		description,
+					 const std::string&	readFilename);
 
 	virtual ~AmberTestCase (void);
 
@@ -72,13 +73,13 @@ public:
 	//  - Otherwise, we do a secondary sanity check depending on code inside
 	//    Amber itself: if the Amber test says it is not supported, then
 	//    throw an internal error exception.
-	virtual void checkSupport(Context& ctx) const; // override
+	virtual void checkSupport (Context& ctx) const; // override
 
-	bool parse(const char* category, const std::string& filename);
-	void initPrograms(vk::SourceCollections& programCollection) const;
 	// If the test case uses SPIR-V Assembly, use these build options.
 	// Otherwise, defaults to target Vulkan 1.0, SPIR-V 1.0.
 	void setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options);
+	virtual void delayedInit (void);
+	virtual void initPrograms (vk::SourceCollections& programCollection) const;
 
 	// Add a required instance extension, device extension, or feature bit.
 	// A feature bit is represented by a string of form "<structure>.<feature>", where
@@ -88,8 +89,12 @@ public:
 	void addRequirement(const std::string& requirement);
 
 private:
+	bool parse (const std::string& readFilename);
+
 	amber::Recipe* m_recipe;
 	vk::SpirVAsmBuildOptions m_asm_options;
+
+	std::string m_readFilename;
 
 	// Instance and device extensions required by the test.
 	// We don't differentiate between the two:  We consider the requirement

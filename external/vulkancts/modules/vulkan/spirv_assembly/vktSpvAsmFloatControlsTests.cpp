@@ -65,6 +65,32 @@ enum FloatUsage
 	FLOAT_ARITHMETIC
 };
 
+enum FloatStatementUsageBits
+{
+	B_STATEMENT_USAGE_ARGS_CONST_FLOAT		= (1<<0 ),
+	B_STATEMENT_USAGE_ARGS_CONST_FP16		= (1<<1 ),
+	B_STATEMENT_USAGE_ARGS_CONST_FP32		= (1<<2 ),
+	B_STATEMENT_USAGE_ARGS_CONST_FP64		= (1<<3 ),
+	B_STATEMENT_USAGE_TYPES_TYPE_FLOAT		= (1<<4 ),
+	B_STATEMENT_USAGE_TYPES_TYPE_FP16		= (1<<5 ),
+	B_STATEMENT_USAGE_TYPES_TYPE_FP32		= (1<<6 ),
+	B_STATEMENT_USAGE_TYPES_TYPE_FP64		= (1<<7 ),
+	B_STATEMENT_USAGE_CONSTS_TYPE_FLOAT		= (1<<8 ),
+	B_STATEMENT_USAGE_CONSTS_TYPE_FP16		= (1<<9 ),
+	B_STATEMENT_USAGE_CONSTS_TYPE_FP32		= (1<<10),
+	B_STATEMENT_USAGE_CONSTS_TYPE_FP64		= (1<<11),
+	B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT	= (1<<12),
+	B_STATEMENT_USAGE_COMMANDS_CONST_FP16	= (1<<13),
+	B_STATEMENT_USAGE_COMMANDS_CONST_FP32	= (1<<14),
+	B_STATEMENT_USAGE_COMMANDS_CONST_FP64	= (1<<15),
+	B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT	= (1<<16),
+	B_STATEMENT_USAGE_COMMANDS_TYPE_FP16	= (1<<17),
+	B_STATEMENT_USAGE_COMMANDS_TYPE_FP32	= (1<<18),
+	B_STATEMENT_USAGE_COMMANDS_TYPE_FP64	= (1<<19),
+};
+
+typedef deUint32 FloatStatementUsageFlags;
+
 // Enum containing float behaviors that its possible to test.
 enum BehaviorFlagBits
 {
@@ -684,7 +710,7 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"%type_float_uptr        = OpTypePointer Uniform %type_float\n"
 		"%type_float_arr_2       = OpTypeArray %type_float %c_i32_2\n";
 
-	// definition off all constans that are used by tests
+	// definition off all constants that are used by tests
 	const string constantsDefinitionsTemplate =
 		"%c_float_n1             = OpConstant %type_float -1\n"
 		"%c_float_0              = OpConstant %type_float 0.0\n"
@@ -1326,10 +1352,13 @@ struct Operation
 	// arguments for OpSpecConstant need to be specified also as constant
 	bool		isSpecConstant;
 
+	// set if c_float* constant is used in operation
+	FloatStatementUsageFlags	statementUsageFlags;
+
 	Operation()		{}
 
 	// Minimal constructor - used by most of operations
-	Operation(const char* _name, FloatUsage _floatUsage, const char* _commands)
+	Operation(const char* _name, FloatUsage _floatUsage, const char* _commands, const FloatStatementUsageFlags _statementUsageFlags = 0)
 		: name(_name)
 		, floatUsage(_floatUsage)
 		, annotations("")
@@ -1341,6 +1370,7 @@ struct Operation
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
 		, isSpecConstant(false)
+		, statementUsageFlags(_statementUsageFlags)
 	{}
 
 	// Conversion operations constructor (used also by conversions done in SpecConstantOp)
@@ -1349,7 +1379,8 @@ struct Operation
 			  bool specConstant,
 			  FloatType _inputType,
 			  const char* _constants,
-			  const char* _commands)
+			  const char* _commands,
+			  const FloatStatementUsageFlags _statementUsageFlags = 0)
 		: name(_name)
 		, floatUsage(_floatUsage)
 		, annotations("")
@@ -1361,6 +1392,7 @@ struct Operation
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
 		, isSpecConstant(specConstant)
+		, statementUsageFlags(_statementUsageFlags)
 	{}
 
 	// Full constructor - used by few operations, that are more complex to test
@@ -1371,7 +1403,8 @@ struct Operation
 			  const char* _constants,
 			  const char* _variables,
 			  const char* _functions,
-			  const char* _commands)
+			  const char* _commands,
+			  const FloatStatementUsageFlags _statementUsageFlags = 0)
 		: name(_name)
 		, floatUsage(_floatUsage)
 		, annotations(_annotations)
@@ -1383,6 +1416,7 @@ struct Operation
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
 		, isSpecConstant(false)
+		, statementUsageFlags(_statementUsageFlags)
 	{}
 
 	// Full constructor - used by rounding override cases
@@ -1392,7 +1426,8 @@ struct Operation
 			  const char* _annotations,
 			  const char* _types,
 			  const char* _constants,
-			  const char* _commands)
+			  const char* _commands,
+			  const FloatStatementUsageFlags _statementUsageFlags = 0)
 		: name(_name)
 		, floatUsage(_floatUsage)
 		, annotations(_annotations)
@@ -1404,6 +1439,7 @@ struct Operation
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
 		, isSpecConstant(false)
+		, statementUsageFlags(_statementUsageFlags)
 	{}
 };
 
@@ -1443,7 +1479,7 @@ public:
 // data. This data is ready to be used during shader assembly.
 struct SpecializedOperation
 {
-	string constans;
+	string constants;
 	string annotations;
 	string types;
 	string arguments;
@@ -1451,9 +1487,10 @@ struct SpecializedOperation
 	string functions;
 	string commands;
 
-	FloatType		inFloatType;
-	TypeSnippetsSP	inTypeSnippets;
-	TypeSnippetsSP	outTypeSnippets;
+	FloatType					inFloatType;
+	TypeSnippetsSP				inTypeSnippets;
+	TypeSnippetsSP				outTypeSnippets;
+	FloatStatementUsageFlags	argumentsUsesFloatConstant;
 };
 
 // Class responsible for constructing list of test cases for specified
@@ -1496,36 +1533,44 @@ void TestCasesBuilder::init()
 	// used for all float types
 
 	mo[O_NEGATE]		= Op("negate",		FLOAT_ARITHMETIC,
-										    "%result             = OpFNegate %type_float %arg1\n");
+											"%result             = OpFNegate %type_float %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_COMPOSITE]		= Op("composite",	FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%result             = OpCompositeExtract %type_float %vec1 0\n");
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%result             = OpCompositeExtract %type_float %vec1 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_COMPOSITE_INS]	= Op("comp_ins",	FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_0\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_0\n"
 											"%vec2               = OpCompositeInsert %type_float_vec2 %arg1 %vec1 0\n"
-											"%result             = OpCompositeExtract %type_float %vec2 0\n");
+											"%result             = OpCompositeExtract %type_float %vec2 0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_COPY]			= Op("copy",		FLOAT_STORAGE_ONLY,
-										    "%result             = OpCopyObject %type_float %arg1\n");
+											"%result             = OpCopyObject %type_float %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_D_EXTRACT]		= Op("extract",		FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-											"%result             = OpVectorExtractDynamic %type_float %vec1 %c_i32_0\n");
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%result             = OpVectorExtractDynamic %type_float %vec1 %c_i32_0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_D_INSERT]		= Op("insert",		FLOAT_ARITHMETIC,
-										    "%tmpVec             = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"
+											"%tmpVec             = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"
 											"%vec1               = OpVectorInsertDynamic %type_float_vec2 %tmpVec %arg1 %c_i32_0\n"
-											"%result             = OpCompositeExtract %type_float %vec1 0\n");
+											"%result             = OpCompositeExtract %type_float %vec1 0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SHUFFLE]		= Op("shuffle",		FLOAT_ARITHMETIC,
-										    "%tmpVec1            = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%tmpVec1            = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%tmpVec2            = OpCompositeConstruct %type_float_vec2 %c_float_2 %c_float_2\n"	// NOTE: its impossible to test shuffle with denorms flushed
 											"%vec1               = OpVectorShuffle %type_float_vec2 %tmpVec1 %tmpVec2 0 2\n"		//       to zero as this will be done by earlier operation
-											"%result             = OpCompositeExtract %type_float %vec1 0\n");						//       (this also applies to few other operations)
+											"%result             = OpCompositeExtract %type_float %vec1 0\n",						//       (this also applies to few other operations)
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_TRANSPOSE]		= Op("transpose",	FLOAT_ARITHMETIC,
-										    "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%tmat               = OpTranspose %type_float_mat2x2 %mat\n"
 											"%tcol               = OpCompositeExtract %type_float_vec2 %tmat 0\n"
-											"%result             = OpCompositeExtract %type_float %tcol 0\n");
+											"%result             = OpCompositeExtract %type_float %tcol 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_RETURN_VAL]	= Op("ret_val",		FLOAT_ARITHMETIC,
-										    "",
+											"",
 											"%type_test_fun      = OpTypeFunction %type_float %type_float\n",
 											"",
 											"",
@@ -1534,13 +1579,14 @@ void TestCasesBuilder::init()
 											"%entry = OpLabel\n"
 											"OpReturnValue %param\n"
 											"OpFunctionEnd\n",
-											"%result             = OpFunctionCall %type_float %test_fun %arg1\n");
+											"%result             = OpFunctionCall %type_float %test_fun %arg1\n",
+											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// conversion operations that are meant to be used only for single output type (defined by the second number in name)
 	const char* convertSource =				"%result             = OpFConvert %type_float %arg1\n";
-	mo[O_CONV_FROM_FP16]	= Op("conv_from_fp16", FLOAT_STORAGE_ONLY, false, FP16, "", convertSource);
-	mo[O_CONV_FROM_FP32]	= Op("conv_from_fp32", FLOAT_STORAGE_ONLY, false, FP32, "", convertSource);
-	mo[O_CONV_FROM_FP64]	= Op("conv_from_fp64", FLOAT_STORAGE_ONLY, false, FP64, "", convertSource);
+	mo[O_CONV_FROM_FP16]	= Op("conv_from_fp16", FLOAT_STORAGE_ONLY, false, FP16, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_CONV_FROM_FP32]	= Op("conv_from_fp32", FLOAT_STORAGE_ONLY, false, FP32, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_CONV_FROM_FP64]	= Op("conv_from_fp64", FLOAT_STORAGE_ONLY, false, FP64, "", convertSource, B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// from all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
 	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equiwalent to
@@ -1549,26 +1595,29 @@ void TestCasesBuilder::init()
 						= Op("sconst_conv_from_fp32", FLOAT_ARITHMETIC, true, FP32,
 											"%c_arg              = OpConstant %type_f32 1.22334445\n"
 											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
-											"");
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP32);
 	mo[O_SCONST_CONV_FROM_FP64_TO_FP32]
 						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
 											"%c_arg              = OpConstant %type_f64 1.22334455\n"
 											"%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n",
-											"");
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 	mo[O_SCONST_CONV_FROM_FP64_TO_FP16]
 						= Op("sconst_conv_from_fp64", FLOAT_ARITHMETIC, true, FP64,
 											"%c_arg              = OpConstant %type_f64 1.22334445\n"
 											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
-											"");
+											"",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 
-	mo[O_ADD]			= Op("add",			FLOAT_ARITHMETIC, "%result             = OpFAdd %type_float %arg1 %arg2\n");
-	mo[O_SUB]			= Op("sub",			FLOAT_ARITHMETIC, "%result             = OpFSub %type_float %arg1 %arg2\n");
-	mo[O_MUL]			= Op("mul",			FLOAT_ARITHMETIC, "%result             = OpFMul %type_float %arg1 %arg2\n");
-	mo[O_DIV]			= Op("div",			FLOAT_ARITHMETIC, "%result             = OpFDiv %type_float %arg1 %arg2\n");
-	mo[O_REM]			= Op("rem",			FLOAT_ARITHMETIC, "%result             = OpFRem %type_float %arg1 %arg2\n");
-	mo[O_MOD]			= Op("mod",			FLOAT_ARITHMETIC, "%result             = OpFMod %type_float %arg1 %arg2\n");
+	mo[O_ADD]			= Op("add",			FLOAT_ARITHMETIC, "%result             = OpFAdd %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_SUB]			= Op("sub",			FLOAT_ARITHMETIC, "%result             = OpFSub %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_MUL]			= Op("mul",			FLOAT_ARITHMETIC, "%result             = OpFMul %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_DIV]			= Op("div",			FLOAT_ARITHMETIC, "%result             = OpFDiv %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_REM]			= Op("rem",			FLOAT_ARITHMETIC, "%result             = OpFRem %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+	mo[O_MOD]			= Op("mod",			FLOAT_ARITHMETIC, "%result             = OpFMod %type_float %arg1 %arg2\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_PHI]			= Op("phi",			FLOAT_ARITHMETIC,
-										    "%comp               = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
+											"%comp               = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
 											"                      OpSelectionMerge %comp_merge None\n"
 											"                      OpBranchConditional %comp %true_branch %false_branch\n"
 											"%true_branch        = OpLabel\n"
@@ -1576,188 +1625,253 @@ void TestCasesBuilder::init()
 											"%false_branch       = OpLabel\n"
 											"                      OpBranch %comp_merge\n"
 											"%comp_merge         = OpLabel\n"
-											"%result             = OpPhi %type_float %arg2 %true_branch %arg1 %false_branch\n");
+											"%result             = OpPhi %type_float %arg2 %true_branch %arg1 %false_branch\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SELECT]		= Op("select",		FLOAT_ARITHMETIC,
-										    "%always_true        = OpFOrdGreaterThan %type_bool %c_float_1 %c_float_0\n"
-											"%result             = OpSelect %type_float %always_true %arg1 %arg2\n");
+											"%always_true        = OpFOrdGreaterThan %type_bool %c_float_1 %c_float_0\n"
+											"%result             = OpSelect %type_float %always_true %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_DOT]			= Op("dot",			FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vec2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
-											"%result             = OpDot %type_float %vec1 %vec2\n");
+											"%result             = OpDot %type_float %vec1 %vec2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_VEC_MUL_S]		= Op("vmuls",		FLOAT_ARITHMETIC,
-										    "%vec                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%vec                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%tmpVec             = OpVectorTimesScalar %type_float_vec2 %vec %arg2\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_VEC_MUL_M]		= Op("vmulm",		FLOAT_ARITHMETIC,
-										    "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%vec                = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%tmpVec             = OpVectorTimesMatrix %type_float_vec2 %vec %mat\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MAT_MUL_S]		= Op("mmuls",		FLOAT_ARITHMETIC,
-										    "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%mulMat             = OpMatrixTimesScalar %type_float_mat2x2 %mat %arg2\n"
 											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
-											"%result             = OpCompositeExtract %type_float %extCol 0\n");
+											"%result             = OpCompositeExtract %type_float %extCol 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MAT_MUL_V]		= Op("mmulv",		FLOAT_ARITHMETIC,
-										    "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
 											"%vec                = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%mulVec             = OpMatrixTimesVector %type_float_vec2 %mat %vec\n"
-											"%result             = OpCompositeExtract %type_float %mulVec 0\n");
+											"%result             = OpCompositeExtract %type_float %mulVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MAT_MUL_M]		= Op("mmulm",		FLOAT_ARITHMETIC,
-										    "%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat1               = OpCompositeConstruct %type_float_mat2x2 %col1 %col1\n"
 											"%col2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%mat2               = OpCompositeConstruct %type_float_mat2x2 %col2 %col2\n"
 											"%mulMat             = OpMatrixTimesMatrix %type_float_mat2x2 %mat1 %mat2\n"
 											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
-											"%result             = OpCompositeExtract %type_float %extCol 0\n");
+											"%result             = OpCompositeExtract %type_float %extCol 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_OUT_PROD]		= Op("out_prod",	FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vec2               = OpCompositeConstruct %type_float_vec2 %arg2 %arg2\n"
 											"%mulMat             = OpOuterProduct %type_float_mat2x2 %vec1 %vec2\n"
 											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
-											"%result             = OpCompositeExtract %type_float %extCol 0\n");
+											"%result             = OpCompositeExtract %type_float %extCol 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// comparison operations
 	mo[O_ORD_EQ]		= Op("ord_eq",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFOrdEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFOrdEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_UORD_EQ]		= Op("uord_eq",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFUnordEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFUnordEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ORD_NEQ]		= Op("ord_neq",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFOrdNotEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFOrdNotEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_UORD_NEQ]		= Op("uord_neq",	FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFUnordNotEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFUnordNotEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ORD_LS]		= Op("ord_ls",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFOrdLessThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFOrdLessThan %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_UORD_LS]		= Op("uord_ls",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFUnordLessThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFUnordLessThan %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ORD_GT]		= Op("ord_gt",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_UORD_GT]		= Op("uord_gt",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFUnordGreaterThan %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFUnordGreaterThan %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ORD_LE]		= Op("ord_le",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFOrdLessThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFOrdLessThanEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_UORD_LE]		= Op("uord_le",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFUnordLessThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFUnordLessThanEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ORD_GE]		= Op("ord_ge",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFOrdGreaterThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFOrdGreaterThanEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_UORD_GE]		= Op("uord_ge",		FLOAT_ARITHMETIC,
-										    "%boolVal           = OpFUnordGreaterThanEqual %type_bool %arg1 %arg2\n"
-											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n");
+											"%boolVal           = OpFUnordGreaterThanEqual %type_bool %arg1 %arg2\n"
+											"%result            = OpSelect %type_float %boolVal %c_float_1 %c_float_0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	mo[O_ATAN2]			= Op("atan2",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Atan2 %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 Atan2 %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_POW]			= Op("pow",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Pow %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 Pow %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MIX]			= Op("mix",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FMix %arg1 %arg2 %c_float_0_5\n");
+											"%result             = OpExtInst %type_float %std450 FMix %arg1 %arg2 %c_float_0_5\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_FMA]			= Op("fma",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Fma %arg1 %arg2 %c_float_0_5\n");
+											"%result             = OpExtInst %type_float %std450 Fma %arg1 %arg2 %c_float_0_5\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MIN]			= Op("min",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FMin %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 FMin %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MAX]			= Op("max",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FMax %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 FMax %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_CLAMP]			= Op("clamp",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FClamp %arg1 %arg2 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 FClamp %arg1 %arg2 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_STEP]			= Op("step",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Step %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 Step %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SSTEP]			= Op("sstep",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 SmoothStep %arg1 %arg2 %c_float_0_5\n");
+											"%result             = OpExtInst %type_float %std450 SmoothStep %arg1 %arg2 %c_float_0_5\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_DIST]			= Op("distance",	FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Distance %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 Distance %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_CROSS]			= Op("cross",		FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec3 %arg1 %arg1 %arg1\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec3 %arg1 %arg1 %arg1\n"
 											"%vec2               = OpCompositeConstruct %type_float_vec3 %arg2 %arg2 %arg2\n"
 											"%tmpVec             = OpExtInst %type_float_vec3 %std450 Cross %vec1 %vec2\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_FACE_FWD]		= Op("face_fwd",	FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FaceForward %c_float_1 %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 FaceForward %c_float_1 %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_NMIN]			= Op("nmin",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 NMin %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 NMin %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_NMAX]			= Op("nmax",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 NMax %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 NMax %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_NCLAMP]		= Op("nclamp",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 NClamp %arg2 %arg1 %arg2\n");
+											"%result             = OpExtInst %type_float %std450 NClamp %arg2 %arg1 %arg2\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	mo[O_ROUND]			= Op("round",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Round %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Round %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ROUND_EV]		= Op("round_ev",	FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 RoundEven %arg1\n");
+											"%result             = OpExtInst %type_float %std450 RoundEven %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_TRUNC]			= Op("trunc",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Trunc %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Trunc %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ABS]			= Op("abs",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FAbs %arg1\n");
+											"%result             = OpExtInst %type_float %std450 FAbs %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SIGN]			= Op("sign",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 FSign %arg1\n");
+											"%result             = OpExtInst %type_float %std450 FSign %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_FLOOR]			= Op("floor",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Floor %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Floor %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_CEIL]			= Op("ceil",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Ceil %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Ceil %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_FRACT]			= Op("fract",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Fract %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Fract %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_RADIANS]		= Op("radians",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Radians %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Radians %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_DEGREES]		= Op("degrees",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Degrees %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Degrees %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SIN]			= Op("sin",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Sin %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Sin %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_COS]			= Op("cos",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Cos %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Cos %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_TAN]			= Op("tan",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Tan %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Tan %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ASIN]			= Op("asin",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Asin %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Asin %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ACOS]			= Op("acos",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Acos %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Acos %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ATAN]			= Op("atan",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Atan %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Atan %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SINH]			= Op("sinh",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Sinh %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Sinh %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_COSH]			= Op("cosh",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Cosh %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Cosh %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_TANH]			= Op("tanh",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Tanh %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Tanh %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ASINH]			= Op("asinh",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Asinh %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Asinh %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ACOSH]			= Op("acosh",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Acosh %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Acosh %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_ATANH]			= Op("atanh",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Atanh %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Atanh %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_EXP]			= Op("exp",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Exp %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Exp %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_LOG]			= Op("log",			FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Log %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Log %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_EXP2]			= Op("exp2",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Exp2 %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Exp2 %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_LOG2]			= Op("log2",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Log2 %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Log2 %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_SQRT]			= Op("sqrt",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Sqrt %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Sqrt %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_INV_SQRT]		= Op("inv_sqrt",	FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 InverseSqrt %arg1\n");
+											"%result             = OpExtInst %type_float %std450 InverseSqrt %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MODF]			= Op("modf",		FLOAT_ARITHMETIC,
-										    "",
+											"",
 											"",
 											"",
 											"%tmpVarPtr          = OpVariable %type_float_fptr Function\n",
 											"",
-											"%result             = OpExtInst %type_float %std450 Modf %arg1 %tmpVarPtr\n");
+											"%result             = OpExtInst %type_float %std450 Modf %arg1 %tmpVarPtr\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MODF_ST]		= Op("modf_st",		FLOAT_ARITHMETIC,
-										    "OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
+											"OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_ff 1 Offset ${float_width}\n",
 											"%struct_ff          = OpTypeStruct %type_float %type_float\n"
 											"%struct_ff_fptr     = OpTypePointer Function %struct_ff\n",
@@ -1767,16 +1881,18 @@ void TestCasesBuilder::init()
 											"%tmpStruct          = OpExtInst %struct_ff %std450 ModfStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
-											"%result             = OpLoad %type_float %tmpLoc\n");
+											"%result             = OpLoad %type_float %tmpLoc\n",
+											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_FREXP]			= Op("frexp",		FLOAT_ARITHMETIC,
-										    "",
+											"",
 											"",
 											"",
 											"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n",
 											"",
-											"%result             = OpExtInst %type_float %std450 Frexp %arg1 %tmpVarPtr\n");
+											"%result             = OpExtInst %type_float %std450 Frexp %arg1 %tmpVarPtr\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_FREXP_ST]		= Op("frexp_st",	FLOAT_ARITHMETIC,
-										    "OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
+											"OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_fi 1 Offset 32\n",
 											"%struct_fi          = OpTypeStruct %type_float %type_i32\n"
 											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
@@ -1786,39 +1902,46 @@ void TestCasesBuilder::init()
 											"%tmpStruct          = OpExtInst %struct_fi %std450 FrexpStruct %arg1\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
-											"%result             = OpLoad %type_float %tmpLoc\n");
+											"%result             = OpLoad %type_float %tmpLoc\n",
+											B_STATEMENT_USAGE_TYPES_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_LENGHT]		= Op("length",		FLOAT_ARITHMETIC,
-										    "%result             = OpExtInst %type_float %std450 Length %arg1\n");
+											"%result             = OpExtInst %type_float %std450 Length %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_NORMALIZE]		= Op("normalize",	FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_2\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_2\n"
 											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Normalize %vec1\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_REFLECT]		= Op("reflect",		FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vecN               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_n1\n"
 											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Reflect %vec1 %vecN\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_REFRACT]		= Op("refract",		FLOAT_ARITHMETIC,
-										    "%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%vec1               = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%vecN               = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_n1\n"
 											"%tmpVec             = OpExtInst %type_float_vec2 %std450 Refract %vec1 %vecN %c_float_0_5\n"
-											"%result             = OpCompositeExtract %type_float %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_float %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MAT_DET]		= Op("mat_det",		FLOAT_ARITHMETIC,
-										    "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
+											"%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
-											"%result             = OpExtInst %type_float %std450 Determinant %mat\n");
+											"%result             = OpExtInst %type_float %std450 Determinant %mat\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 	mo[O_MAT_INV]		= Op("mat_inv",		FLOAT_ARITHMETIC,
-										    "%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_1\n"
+											"%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_1\n"
 											"%col2               = OpCompositeConstruct %type_float_vec2 %c_float_1 %c_float_1\n"
 											"%mat                = OpCompositeConstruct %type_float_mat2x2 %col1 %col2\n"
 											"%invMat             = OpExtInst %type_float_mat2x2 %std450 MatrixInverse %mat\n"
 											"%extCol             = OpCompositeExtract %type_float_vec2 %invMat 1\n"
-											"%result             = OpCompositeExtract %type_float %extCol 1\n");
+											"%result             = OpCompositeExtract %type_float %extCol 1\n",
+											B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
 
 	// PackHalf2x16 is a special case as it operates on fp32 vec2 and returns unsigned int,
 	// the verification is done in SPIR-V code (if result is correct 1.0 will be written to SSBO)
 	mo[O_PH_DENORM]		= Op("ph_denorm",	FLOAT_STORAGE_ONLY,
-										    "",
+											"",
 											"",
 											"%c_fp32_denorm_fp16 = OpConstant %type_f32 6.01e-5\n"		// fp32 representation of fp16 denorm value
 											"%c_ref              = OpConstant %type_u32 66061296\n",
@@ -1827,30 +1950,33 @@ void TestCasesBuilder::init()
 											"%srcVec             = OpCompositeConstruct %type_f32_vec2 %c_fp32_denorm_fp16 %c_fp32_denorm_fp16\n"
 											"%packedInt          = OpExtInst %type_u32 %std450 PackHalf2x16 %srcVec\n"
 											"%boolVal            = OpIEqual %type_bool %c_ref %packedInt\n"
-											"%result             = OpSelect %type_f32 %boolVal %c_f32_1 %c_f32_0\n");
+											"%result             = OpSelect %type_f32 %boolVal %c_f32_1 %c_f32_0\n",
+											B_STATEMENT_USAGE_CONSTS_TYPE_FP32 | B_STATEMENT_USAGE_COMMANDS_CONST_FP32 | B_STATEMENT_USAGE_COMMANDS_TYPE_FP32);
 
 	// UnpackHalf2x16 is a special case that operates on uint32 and returns two 32-bit floats,
 	// this function is tested using constants
 	mo[O_UPH_DENORM]	= Op("uph_denorm",	FLOAT_STORAGE_ONLY,
-										    "",
+											"",
 											"",
 											"%c_u32_2_16_pack    = OpConstant %type_u32 66061296\n", // == packHalf2x16(vec2(denorm))
 											"",
 											"",
 											"%tmpVec             = OpExtInst %type_f32_vec2 %std450 UnpackHalf2x16 %c_u32_2_16_pack\n"
-											"%result             = OpCompositeExtract %type_f32 %tmpVec 0\n");
+											"%result             = OpCompositeExtract %type_f32 %tmpVec 0\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FP32);
 
 	// PackDouble2x32 is a special case that operates on two uint32 and returns
 	// double, this function is tested using constants
 	mo[O_PD_DENORM]		= Op("pd_denorm",	FLOAT_STORAGE_ONLY,
-										    "",
+											"",
 											"",
 											"%c_p1               = OpConstant %type_u32 0\n"
 											"%c_p2               = OpConstant %type_u32 262144\n",		// == UnpackDouble2x32(denorm)
 											"",
 											"",
 											"%srcVec             = OpCompositeConstruct %type_u32_vec2 %c_p1 %c_p2\n"
-											"%result             = OpExtInst %type_f64 %std450 PackDouble2x32 %srcVec\n");
+											"%result             = OpExtInst %type_f64 %std450 PackDouble2x32 %srcVec\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FP64);
 
 	// UnpackDouble2x32 is a special case as it operates only on FP64 and returns two ints,
 	// the verification is done in SPIR-V code (if result is correct 1.0 will be written to SSBO)
@@ -1866,25 +1992,29 @@ void TestCasesBuilder::init()
 											"%c_p2               = OpConstant %type_u32 0\n",
 											"",
 											"",
-											unpackDouble2x32Source);
+											unpackDouble2x32Source,
+											B_STATEMENT_USAGE_COMMANDS_CONST_FP64 | B_STATEMENT_USAGE_COMMANDS_TYPE_FP64);
 	mo[O_UPD_DENORM_PRESERVE]	= Op("upd_denorm",	FLOAT_STORAGE_ONLY, "",
 											unpackDouble2x32Types,
 											"%c_p1               = OpConstant %type_u32 1008\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
 											"",
 											"",
-											unpackDouble2x32Source);
+											unpackDouble2x32Source,
+											B_STATEMENT_USAGE_COMMANDS_CONST_FP64 | B_STATEMENT_USAGE_COMMANDS_TYPE_FP64);
 
 	mo[O_ORTE_ROUND]	= Op("orte_round",	FLOAT_STORAGE_ONLY, FP32,
-										    "OpDecorate %result FPRoundingMode RTE\n",
+											"OpDecorate %result FPRoundingMode RTE\n",
 											"",
 											"",
-											"%result             = OpFConvert %type_f16 %arg1\n");
+											"%result             = OpFConvert %type_f16 %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FP16);
 	mo[O_ORTZ_ROUND]	= Op("ortz_round",	FLOAT_STORAGE_ONLY, FP32,
-										    "OpDecorate %result FPRoundingMode RTZ\n",
+											"OpDecorate %result FPRoundingMode RTZ\n",
 											"",
 											"",
-											"%result             = OpFConvert %type_f16 %arg1\n");
+											"%result             = OpFConvert %type_f16 %arg1\n",
+											B_STATEMENT_USAGE_COMMANDS_TYPE_FP16);
 }
 
 void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResultsSP typeTestResults, bool argumentsFromInput)
@@ -2472,8 +2602,8 @@ TestGroupBuilderBase::TestGroupBuilderBase()
 	m_behaviorToName[B_RTZ_ROUNDING]	= "RoundingModeRTZ";
 }
 
-void TestGroupBuilderBase::specializeOperation(const OperationTestCaseInfo&	testCaseInfo,
-											   SpecializedOperation&		specializedOperation) const
+void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	testCaseInfo,
+												SpecializedOperation&			specializedOperation) const
 {
 	const string		typeToken		= "_float";
 	const string		widthToken		= "${float_width}";
@@ -2493,16 +2623,17 @@ void TestGroupBuilderBase::specializeOperation(const OperationTestCaseInfo&	test
 	const string inTypePrefix	= string("_f") + inTypeSnippets->bitWidth;
 	const string outTypePrefix	= string("_f") + outTypeSnippets->bitWidth;
 
-	specializedOperation.constans		= replace(operation.constants, typeToken, inTypePrefix);
+	specializedOperation.constants		= replace(operation.constants, typeToken, inTypePrefix);
 	specializedOperation.annotations	= replace(operation.annotations, widthToken, outTypeSnippets->bitWidth);
 	specializedOperation.types			= replace(operation.types, typeToken, outTypePrefix);
 	specializedOperation.variables		= replace(operation.variables, typeToken, outTypePrefix);
 	specializedOperation.functions		= replace(operation.functions, typeToken, outTypePrefix);
 	specializedOperation.commands		= replace(operation.commands, typeToken, outTypePrefix);
 
-	specializedOperation.inFloatType		= inFloatType;
-	specializedOperation.inTypeSnippets		= inTypeSnippets;
-	specializedOperation.outTypeSnippets	= outTypeSnippets;
+	specializedOperation.inFloatType				= inFloatType;
+	specializedOperation.inTypeSnippets				= inTypeSnippets;
+	specializedOperation.outTypeSnippets			= outTypeSnippets;
+	specializedOperation.argumentsUsesFloatConstant	= 0;
 
 	if (operation.isSpecConstant)
 		return;
@@ -2521,9 +2652,15 @@ void TestGroupBuilderBase::specializeOperation(const OperationTestCaseInfo&	test
 
 		const ValueId* inputArguments = testCaseInfo.testCase.input;
 		if (inputArguments[0] != V_UNUSED)
-			specializedOperation.arguments  = arg1 + inTypeSnippets->valueIdToSnippetArgMap.at(inputArguments[0]);
+		{
+			specializedOperation.arguments					= arg1 + inTypeSnippets->valueIdToSnippetArgMap.at(inputArguments[0]);
+			specializedOperation.argumentsUsesFloatConstant	|= B_STATEMENT_USAGE_ARGS_CONST_FLOAT;
+		}
 		if (inputArguments[1] != V_UNUSED)
-			specializedOperation.arguments += arg2 + inTypeSnippets->valueIdToSnippetArgMap.at(inputArguments[1]);
+		{
+			specializedOperation.arguments					+= arg2 + inTypeSnippets->valueIdToSnippetArgMap.at(inputArguments[1]);
+			specializedOperation.argumentsUsesFloatConstant	|= B_STATEMENT_USAGE_ARGS_CONST_FLOAT;
+		}
 	}
 }
 
@@ -3010,6 +3147,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	string constants		= outTypeSnippets->constantsDefinitionsSnippet;
 	string ioDefinitions	= inTypeSnippets->inputDefinitionsSnippet + outTypeSnippets->outputDefinitionsSnippet;
 
+	bool outFp16TypeUsage	= outTypeSnippets->loadStoreRequiresShaderFloat16;
+	bool inFp16TypeUsage	= false;
+
 	if (testOperation.isInputTypeRestricted)
 	{
 		annotations		+= inTypeSnippets->typeAnnotationsSnippet;
@@ -3017,6 +3157,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 		extensions		+= inTypeSnippets->extensions;
 		types			+= inTypeSnippets->typeDefinitionsSnippet;
 		constants		+= inTypeSnippets->constantsDefinitionsSnippet;
+
+		inFp16TypeUsage	= inTypeSnippets->loadStoreRequiresShaderFloat16;
 	}
 
 	map<string, string> specializations;
@@ -3031,20 +3173,23 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	specializations["arguments"]		= specOpData.arguments;
 	specializations["commands"]			= specOpData.commands;
 
-
 	// Build constants. They are only needed sometimes.
+	const FloatStatementUsageFlags	argsAnyFloatConstMask				= B_STATEMENT_USAGE_ARGS_CONST_FLOAT | B_STATEMENT_USAGE_ARGS_CONST_FP16 | B_STATEMENT_USAGE_ARGS_CONST_FP32 | B_STATEMENT_USAGE_ARGS_CONST_FP64;
+	const bool						argsUseFPConstants					= (specOpData.argumentsUsesFloatConstant & argsAnyFloatConstMask) != 0;
+	const FloatStatementUsageFlags	commandsAnyFloatConstMask			= B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_CONST_FP16 | B_STATEMENT_USAGE_COMMANDS_CONST_FP32 | B_STATEMENT_USAGE_COMMANDS_CONST_FP64;
+	const bool						commandsUseFPConstants				= (testCaseInfo.operation.statementUsageFlags & commandsAnyFloatConstMask) != 0;
+	const bool						needConstants						= argsUseFPConstants || commandsUseFPConstants;
+	const FloatStatementUsageFlags	constsFloatTypeMask					= B_STATEMENT_USAGE_CONSTS_TYPE_FLOAT | B_STATEMENT_USAGE_CONSTS_TYPE_FP16;
+	const bool						constsUsesFP16Type					= (testCaseInfo.operation.statementUsageFlags & constsFloatTypeMask) != 0;
+	const bool						loadStoreRequiresShaderFloat16		= inFp16TypeUsage || outFp16TypeUsage;
+	const bool						usesFP16Constants					= constsUsesFP16Type || (needConstants && loadStoreRequiresShaderFloat16);
+
 	specializations["constants"]		= "";
-	const bool argsUseFPConstants = DE_NULL != strstr(specOpData.arguments.c_str(), " %c_f");
-	const bool commandsUseFPConstants = DE_NULL != strstr(specOpData.commands.c_str(), " %c_f");
-	const bool needConstants = argsUseFPConstants || commandsUseFPConstants;
 	if (needConstants)
 	{
 		specializations["constants"]	= constants;
 	}
-	specializations["constants"]		+= specOpData.constans;
-
-	// Various bits of text can use 16bit constants.
-	const bool usesFP16Constants = DE_NULL != strstr(specializations["constants"].c_str(), " %type_f16 ");
+	specializations["constants"]		+= specOpData.constants;
 
 	// check which format features are needed
 	bool float16FeatureRequired = (outFloatType == FP16) || (inFloatType == FP16);
@@ -3743,7 +3888,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			vertTypes			= outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
 			fragTypes			= vertTypes;
 			vertConstants		= outTypeSnippets->constantsDefinitionsSnippet;
-			fragConstants		= vertConstants;
+			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
 
 		if (outFloatType != FP32)
@@ -3753,9 +3898,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 				vertTypes += f32TypeMinimalRequired;
 		}
 
-		vertAnnotations += specOpData.annotations;
+		vertAnnotations	+= specOpData.annotations;
 		vertTypes		+= specOpData.types;
-		vertConstants	+= specOpData.constans;
+		vertConstants	+= specOpData.constants;
 
 		vertExecutionMode		= behaviorExecutionMode;
 		fragExecutionMode		= "";
@@ -3811,7 +3956,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 		fragAnnotations += specOpData.annotations;
 		fragTypes		+= specOpData.types;
-		fragConstants	+= specOpData.constans;
+		fragConstants	+= specOpData.constants;
 
 		vertExecutionMode	= "";
 		fragExecutionMode	= behaviorExecutionMode;
@@ -3852,17 +3997,18 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	if (!needsFP16Constants && float16FeatureRequired)
 	{
 		// Check various code fragments
-		auto hasFP16Constants = [](const std::string& spirv) { return DE_NULL != strstr(spirv.c_str(), "%c_f16"); };
-		if (hasFP16Constants(vertConstants) || hasFP16Constants(fragConstants))
+		const FloatStatementUsageFlags	commandsFloatConstMask				= B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_CONST_FP16;
+		const bool						commandsUsesFloatConstant			= (testCaseInfo.operation.statementUsageFlags & commandsFloatConstMask) != 0;;
+		const FloatStatementUsageFlags	argumentsFloatConstMask				= B_STATEMENT_USAGE_ARGS_CONST_FLOAT | B_STATEMENT_USAGE_ARGS_CONST_FP16;
+		const bool						argumentsUsesFloatConstant			= (specOpData.argumentsUsesFloatConstant & argumentsFloatConstMask) != 0;
+		bool							hasFP16ConstsInCommandsOrArguments	= commandsUsesFloatConstant || argumentsUsesFloatConstant;
+
+		needsFP16Constants |= hasFP16ConstsInCommandsOrArguments;
+
+		if (!needsFP16Constants)
 		{
-			needsFP16Constants |=
-				hasFP16Constants(vertCommands) || hasFP16Constants(vertArguments)
-				|| hasFP16Constants(fragCommands) || hasFP16Constants(fragArguments);
-			if (!needsFP16Constants)
-			{
-				vertConstants = "";
-				fragConstants = "";
-			}
+			vertConstants = "";
+			fragConstants = "";
 		}
 	}
 	needsShaderFloat16 |= needsFP16Constants;

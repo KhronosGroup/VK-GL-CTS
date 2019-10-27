@@ -46,6 +46,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 	}
 	tests[] =
 	{
+		{	"always-false-if-with-discard-return.amber",	"always-false-if-with-discard-return",	"A fragment shader with discard keyword and a return"									},
 		{	"barrier-in-loop-with-break.amber",				"barrier-in-loop-with-break",			"A compute shader with a barrier in a loop with a break"								},
 		{	"color-write-in-loop.amber",					"color-write-in-loop",					"A fragment shader that writes to color in a loop"										},
 		{	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
@@ -53,6 +54,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
 		{	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
 		{	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
+		{	"disc-and-add-in-func-in-loop.amber",			"disc-and-add-in-func-in-loop",			"A fragment shader with discard and add in function in loop"							},
 		{	"discard-continue-return.amber",				"discard-continue-return",				"A fragment shader with a discard, continue, and return"								},
 		{	"do-while-loop-in-conditionals.amber",			"do-while-loop-in-conditionals",		"A fragment shader with do-while loop in conditional nest"								},
 		{	"early-return-and-barrier.amber",				"early-return-and-barrier",				"A compute shader with an early return and a barrier"									},
@@ -75,6 +77,8 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"return-in-loop-in-function.amber",				"return-in-loop-in-function",			"A fragment shader with early return from loop in function"								},
 		{	"similar-nested-ifs.amber",						"similar-nested-ifs",					"A fragment shader with similar nested ifs and loops"									},
 		{	"struct-used-as-temporary.amber",				"struct-used-as-temporary",				"A fragment shader that uses a temporary struct variable"								},
+		{	"switch-if-discard.amber",						"switch-if-discard",					"A fragment shader with a switch, if, and discard"										},
+		{	"switch-with-empty-if-false.amber",				"switch-with-empty-if-false",			"A fragment shader with always false if in switch statement"							},
 		{	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
 		{	"two-loops-matrix.amber",						"two-loops-matrix",						"A fragment shader with two loops and some matrices"									},
 		{	"two-loops-set-struct.amber",					"two-loops-set-struct",					"A fragment shader with two loops that write to a struct"								},
@@ -83,6 +87,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"unreachable-continue-statement.amber",			"unreachable-continue-statement",		"A fragment shader with unreachable continue statement"									},
 		{	"unreachable-loops.amber",						"unreachable-loops",					"Fragment shader that writes red despite unreachable loops"								},
 		{	"unreachable-loops-in-switch.amber",			"unreachable-loops-in-switch",			"A fragment shader with unreachable loops in a switch"									},
+		{	"unreachable-return-in-loop.amber",				"unreachable-return-in-loop",			"A fragment shader with an unreachable return in a loop"								},
 		{	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
 		{	"write-before-break.amber",						"write-before-break",					"Fragment shader that writes red before loop break"										},
 		{	"write-red-after-search.amber",					"write-red-after-search",				"A fragment shader performing a search computation, then writing red regardless"		},

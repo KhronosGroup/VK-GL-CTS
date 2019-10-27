@@ -182,6 +182,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewTests.cpp \
 	external/vulkancts/modules/vulkan/pch.cpp \
+	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendOperationAdvancedTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineClearUtil.cpp \
@@ -421,6 +422,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrCopyTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrStorageImageWriteTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp \
 	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp \

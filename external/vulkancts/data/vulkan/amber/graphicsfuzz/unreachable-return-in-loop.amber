@@ -1,0 +1,150 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with an unreachable return in a loop
+
+# The test passes because main always writes the color red.
+
+# Optimized using spirv-opt with the following arguments:
+# '--simplify-instructions'
+# '--eliminate-local-single-store'
+# '--simplify-instructions'
+# '--inline-entry-points-exhaustive'
+# '--reduce-load-size'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--inline-entry-points-exhaustive'
+# '--private-to-local'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--copy-propagate-arrays'
+# '--convert-local-access-chains'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--eliminate-local-single-store'
+# '--copy-propagate-arrays'
+# '--scalar-replacement=100'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--eliminate-dead-branches'
+# '--if-conversion'
+# '--copy-propagate-arrays'
+# '--reduce-load-size'
+# '--eliminate-local-multi-store'
+# '--eliminate-dead-code-aggressive'
+# '--convert-local-access-chains'
+# '--private-to-local'
+# '--if-conversion'
+# spirv-opt commit hash: ad7f2c5c4c7f51360e9e079109a9217aa5ba5cc0
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#   for(int i = 1; i < 0; i++)
+#     return;
+#
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 43
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %25
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %25 "_GLF_color"
+               OpDecorate %25 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %9 = OpConstant %6 1
+         %16 = OpConstant %6 0
+         %17 = OpTypeBool
+         %22 = OpTypeFloat 32
+         %23 = OpTypeVector %22 4
+         %24 = OpTypePointer Output %23
+         %25 = OpVariable %24 Output
+         %26 = OpConstant %22 1
+         %27 = OpConstant %22 0
+         %28 = OpConstantComposite %23 %26 %27 %27 %26
+         %33 = OpConstantFalse %17
+         %36 = OpConstantTrue %17
+         %42 = OpUndef %17
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %30
+         %30 = OpLabel
+         %41 = OpPhi %17 %33 %5 %42 %32
+               OpLoopMerge %29 %32 None
+               OpBranch %10
+         %10 = OpLabel
+         %40 = OpPhi %17 %41 %30 %42 %13
+         %18 = OpSLessThan %17 %9 %16
+               OpLoopMerge %12 %13 None
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+               OpBranch %12
+         %13 = OpLabel
+               OpBranch %10
+         %12 = OpLabel
+         %39 = OpPhi %17 %40 %10 %36 %11
+               OpSelectionMerge %37 None
+               OpBranchConditional %39 %29 %37
+         %37 = OpLabel
+               OpStore %25 %28
+               OpBranch %29
+         %32 = OpLabel
+               OpBranch %30
+         %29 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

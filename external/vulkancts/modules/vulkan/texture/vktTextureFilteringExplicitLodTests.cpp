@@ -67,7 +67,7 @@ using std::string;
 namespace
 {
 
-std::vector<tcu::FloatFormat> getPrecision (VkFormat format)
+std::vector<tcu::FloatFormat> getPrecision (VkFormat format, int fpPrecisionDelta)
 {
 	std::vector<tcu::FloatFormat>	floatFormats;
 	const tcu::FloatFormat			fp16			(-14, 15, 10, false);
@@ -82,13 +82,13 @@ std::vector<tcu::FloatFormat> getPrecision (VkFormat format)
 		{
 			case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 			case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-				floatFormats.push_back(tcu::FloatFormat(0, 0, channelDepth[channelIdx], false, tcu::YES));
+				floatFormats.push_back(tcu::FloatFormat(0, 0, std::max(0,channelDepth[channelIdx] + fpPrecisionDelta), false, tcu::YES));
 				break;
 
 			case TEXTURECHANNELCLASS_FLOATING_POINT:
 				if (channelDepth[channelIdx] == 16)
 				{
-					floatFormats.push_back(fp16);
+					floatFormats.push_back(tcu::FloatFormat(fp16.getMinExp(), fp16.getMaxExp(), std::max(0,fp16.getFractionBits() + fpPrecisionDelta), false, tcu::YES));
 				}
 				else
 				{
@@ -611,42 +611,66 @@ bool TextureFilteringTestInstance::verify (void)
 {
 	// \todo [2016-06-24 collinbaker] Handle cubemaps
 
-	const int				coordBits			= (int)m_context.getDeviceProperties().limits.subTexelPrecisionBits;
-	const int				mipmapBits			= (int)m_context.getDeviceProperties().limits.mipmapPrecisionBits;
-	const int				maxPrintedFailures	= 5;
-	int						failCount			= 0;
+	const int						coordBits			= (int)m_context.getDeviceProperties().limits.subTexelPrecisionBits;
+	const int						mipmapBits			= (int)m_context.getDeviceProperties().limits.mipmapPrecisionBits;
+	const int						maxPrintedFailures	= 5;
+	int								failCount			= 0;
+	const tcu::TextureFormat		tcuFormat			= mapVkFormat(m_imParams.format);
+	std::vector<tcu::FloatFormat>	strictPrecision		= getPrecision(m_imParams.format, 0);
+	std::vector<tcu::FloatFormat>	relaxedPrecision	= tcuFormat.type == tcu::TextureFormat::HALF_FLOAT ? getPrecision(m_imParams.format, -3) : getPrecision(m_imParams.format, -2);
+	const bool						allowRelaxedPrecision	= (tcuFormat.type == tcu::TextureFormat::HALF_FLOAT || tcuFormat.type == tcu::TextureFormat::SNORM_INT8) &&
+		(m_samplerParams.minFilter == VK_FILTER_LINEAR || m_samplerParams.magFilter == VK_FILTER_LINEAR);
 
-	const SampleVerifier	verifier			(m_imParams,
-												 m_samplerParams,
-												 m_sampleLookupSettings,
-												 coordBits,
-												 mipmapBits,
-												 getPrecision(m_imParams.format),
-												 getPrecision(m_imParams.format),
-												 m_levels);
+	const SampleVerifier			verifier			(m_imParams,
+														 m_samplerParams,
+														 m_sampleLookupSettings,
+														 coordBits,
+														 mipmapBits,
+														 strictPrecision,
+														 strictPrecision,
+														 m_levels);
 
+	const SampleVerifier			relaxedVerifier		(m_imParams,
+														 m_samplerParams,
+														 m_sampleLookupSettings,
+														 coordBits,
+														 mipmapBits,
+														 strictPrecision,
+														 relaxedPrecision,
+														 m_levels);
 
 	for (deUint32 sampleNdx = 0; sampleNdx < m_numSamples; ++sampleNdx)
 	{
-		if (!verifier.verifySample(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx]))
+		bool compareOK = verifier.verifySample(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx]);
+		if (compareOK)
+			continue;
+		if (allowRelaxedPrecision)
 		{
-			if (failCount++ < maxPrintedFailures)
-			{
-				// Re-run with report logging
-				std::string report;
-				verifier.verifySampleReport(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx], report);
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message
+				<< "Warning: Strict validation failed, re-trying with lower precision for SNORM8 format or half float"
+				<< tcu::TestLog::EndMessage;
 
-				m_context.getTestContext().getLog()
-					<< TestLog::Section("Failed sample", "Failed sample")
-					<< TestLog::Message
-					<< "Sample " << sampleNdx << ".\n"
-					<< "\tCoordinate: " << m_sampleArguments[sampleNdx].coord << "\n"
-					<< "\tLOD: " << m_sampleArguments[sampleNdx].lod << "\n"
-					<< "\tGPU Result: " << m_resultSamples[sampleNdx] << "\n\n"
-					<< "Failure report:\n" << report << "\n"
-					<< TestLog::EndMessage
-					<< TestLog::EndSection;
-			}
+			compareOK = relaxedVerifier.verifySample(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx]);
+			if (compareOK)
+				continue;
+		}
+		if ( failCount++ < maxPrintedFailures )
+		{
+			// Re-run with report logging
+			std::string report;
+			verifier.verifySampleReport(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx], report);
+
+			m_context.getTestContext().getLog()
+				<< TestLog::Section("Failed sample", "Failed sample")
+				<< TestLog::Message
+				<< "Sample " << sampleNdx << ".\n"
+				<< "\tCoordinate: " << m_sampleArguments[sampleNdx].coord << "\n"
+				<< "\tLOD: " << m_sampleArguments[sampleNdx].lod << "\n"
+				<< "\tGPU Result: " << m_resultSamples[sampleNdx] << "\n\n"
+				<< "Failure report:\n" << report << "\n"
+				<< TestLog::EndMessage
+				<< TestLog::EndSection;
 		}
 	}
 

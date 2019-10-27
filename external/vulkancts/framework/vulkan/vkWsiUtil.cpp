@@ -268,6 +268,38 @@ VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const InstanceInt
 	return capabilities;
 }
 
+VkSurfaceCapabilities2EXT getPhysicalDeviceSurfaceCapabilities2EXT (const InstanceInterface&		vki,
+																	VkPhysicalDevice				physicalDevice,
+																	VkSurfaceKHR					surface)
+{
+	VkSurfaceCapabilities2EXT capabilities;
+
+	deMemset(&capabilities, 0, sizeof(capabilities));
+	capabilities.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_EXT;
+
+	VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2EXT(physicalDevice, surface, &capabilities));
+
+	return capabilities;
+}
+
+bool sameSurfaceCapabilities (const VkSurfaceCapabilitiesKHR&	khr,
+							  const VkSurfaceCapabilities2EXT&	ext)
+{
+	return (	khr.minImageCount			== ext.minImageCount &&
+				khr.maxImageCount			== ext.maxImageCount &&
+				khr.currentExtent.width		== ext.currentExtent.width &&
+				khr.currentExtent.height	== ext.currentExtent.height &&
+				khr.minImageExtent.width	== ext.minImageExtent.width &&
+				khr.minImageExtent.height	== ext.minImageExtent.height &&
+				khr.maxImageExtent.width	== ext.maxImageExtent.width &&
+				khr.maxImageExtent.height	== ext.maxImageExtent.height &&
+				khr.maxImageArrayLayers		== ext.maxImageArrayLayers &&
+				khr.supportedTransforms		== ext.supportedTransforms &&
+				khr.currentTransform		== ext.currentTransform &&
+				khr.supportedCompositeAlpha	== ext.supportedCompositeAlpha &&
+				khr.supportedUsageFlags		== ext.supportedUsageFlags	);
+}
+
 std::vector<VkSurfaceFormatKHR> getPhysicalDeviceSurfaceFormats (const InstanceInterface&		vki,
 																 VkPhysicalDevice				physicalDevice,
 																 VkSurfaceKHR					surface)

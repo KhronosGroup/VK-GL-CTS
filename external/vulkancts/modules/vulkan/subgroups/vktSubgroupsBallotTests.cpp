@@ -895,7 +895,6 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 void supportedCheck (Context& context, CaseDefinition caseDef)
 {
-	DE_UNREF(caseDef);
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
 
@@ -1055,7 +1054,7 @@ tcu::TestCaseGroup* createSubgroupsBallotTests(tcu::TestContext& testCtx)
 
 	for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 	{
-		CaseDefinition caseDef = {stages[stageIndex],de::SharedPtr<bool>(new bool), DE_TRUE};
+		CaseDefinition caseDef = {stages[stageIndex],de::SharedPtr<bool>(new bool), DE_FALSE};
 		addFunctionCaseWithPrograms(framebufferGroup.get(), getShaderStageName(caseDef.shaderStage), "",
 					supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		caseDef.extShaderSubGroupBallotTests = DE_TRUE;

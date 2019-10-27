@@ -246,7 +246,7 @@ tcu::TestStatus BufferSparseBindingInstance::iterate (void)
 			VK_CHECK(deviceInterface.queueBindSparse(sparseQueue.queueHandle, 1u, &bindSparseInfo, DE_NULL));
 		}
 
-		// Create command buffer for transfer oparations
+		// Create command buffer for transfer operations
 		const Unique<VkCommandPool>		commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
 		const Unique<VkCommandBuffer>	commandBuffer(allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 

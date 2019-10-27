@@ -35,31 +35,13 @@ tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "shader_intrinsics", "Sparse Resources Shader Intrinsics"));
 
-	static const deUint32 sizeCountPerImageType = 4u;
-
-	struct ImageParameters
+	const std::vector<TestImageParameters> imageParameters =
 	{
-		ImageType	imageType;
-		tcu::UVec3	imageSizes[sizeCountPerImageType];
-	};
-
-	static const ImageParameters imageParametersArray[] =
-	{
-		{ IMAGE_TYPE_2D,		{ tcu::UVec3(512u, 256u, 1u),	tcu::UVec3(128u, 128u, 1u), tcu::UVec3(503u, 137u, 1u), tcu::UVec3(11u, 37u, 1u) } },
-		{ IMAGE_TYPE_2D_ARRAY,	{ tcu::UVec3(512u, 256u, 6u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(503u, 137u, 3u),	tcu::UVec3(11u, 37u, 3u) } },
-		{ IMAGE_TYPE_CUBE,		{ tcu::UVec3(256u, 256u, 1u),	tcu::UVec3(128u, 128u, 1u),	tcu::UVec3(137u, 137u, 1u),	tcu::UVec3(11u, 11u, 1u) } },
-		{ IMAGE_TYPE_CUBE_ARRAY,{ tcu::UVec3(256u, 256u, 6u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(137u, 137u, 3u),	tcu::UVec3(11u, 11u, 3u) } },
-		{ IMAGE_TYPE_3D,		{ tcu::UVec3(256u, 256u, 16u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(503u, 137u, 3u),	tcu::UVec3(11u, 37u, 3u) } }
-	};
-
-	static const tcu::TextureFormat formats[] =
-	{
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT8),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT8)
+		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u),	tcu::UVec3(128u, 128u, 1u), tcu::UVec3(503u, 137u, 1u), tcu::UVec3(11u, 37u, 1u) },	getTestFormats(IMAGE_TYPE_2D) },
+		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(503u, 137u, 3u),	tcu::UVec3(11u, 37u, 3u) },	getTestFormats(IMAGE_TYPE_2D_ARRAY) },
+		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u, 1u),	tcu::UVec3(128u, 128u, 1u),	tcu::UVec3(137u, 137u, 1u),	tcu::UVec3(11u, 11u, 1u) },	getTestFormats(IMAGE_TYPE_CUBE) },
+		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(137u, 137u, 3u),	tcu::UVec3(11u, 11u, 3u) },	getTestFormats(IMAGE_TYPE_CUBE_ARRAY) },
+		{ IMAGE_TYPE_3D,			{ tcu::UVec3(256u, 256u, 16u),	tcu::UVec3(128u, 128u, 8u),	tcu::UVec3(503u, 137u, 3u),	tcu::UVec3(11u, 37u, 3u) },	getTestFormats(IMAGE_TYPE_3D) }
 	};
 
 	static const std::string functions[SPARSE_SPIRV_FUNCTION_TYPE_LAST] =
@@ -75,57 +57,64 @@ tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext
 	{
 		const SpirVFunction function = static_cast<SpirVFunction>(functionNdx);
 
-		for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParametersArray); ++imageTypeNdx)
+		for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 		{
-			const ImageType					imageType = imageParametersArray[imageTypeNdx].imageType;
-			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, (getImageTypeName(imageType) + functions[functionNdx]).c_str(), ""));
+			const ImageType					imageType		= imageParameters[imageTypeNdx].imageType;
+			de::MovePtr<tcu::TestCaseGroup> imageTypeGroup	(new tcu::TestCaseGroup(testCtx, (getImageTypeName(imageType) + functions[functionNdx]).c_str(), ""));
 
-			for (deInt32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
+			for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 			{
-				const tcu::TextureFormat&		format = formats[formatNdx];
-				de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, getShaderImageFormatQualifier(format).c_str(), ""));
+				VkFormat						format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
+				tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
+				de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
 
-				for (deInt32 imageSizeNdx = 0; imageSizeNdx < DE_LENGTH_OF_ARRAY(imageParametersArray[imageTypeNdx].imageSizes); ++imageSizeNdx)
+				for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
 				{
-					const tcu::UVec3 imageSize = imageParametersArray[imageTypeNdx].imageSizes[imageSizeNdx];
+					const tcu::UVec3 imageSize = imageParameters[imageTypeNdx].imageSizes[imageSizeNdx];
+
+					// skip test for images with odd sizes for some YCbCr formats
+					if ((imageSize.x() % imageSizeAlignment.x()) != 0)
+						continue;
+					if ((imageSize.y() % imageSizeAlignment.y()) != 0)
+						continue;
 
 					std::ostringstream stream;
 					stream << imageSize.x() << "_" << imageSize.y() << "_" << imageSize.z();
 
 					switch (function)
 					{
-					case SPARSE_FETCH:
-						if ((imageType == IMAGE_TYPE_CUBE) || (imageType == IMAGE_TYPE_CUBE_ARRAY)) continue;
-						break;
-					case SPARSE_SAMPLE_EXPLICIT_LOD:
-					case SPARSE_SAMPLE_IMPLICIT_LOD:
-					case SPARSE_GATHER:
-						if ((imageType == IMAGE_TYPE_CUBE) || (imageType == IMAGE_TYPE_CUBE_ARRAY) || (imageType == IMAGE_TYPE_3D)) continue;
-						break;
-					default:
-						break;
+						case SPARSE_FETCH:
+							if ((imageType == IMAGE_TYPE_CUBE) || (imageType == IMAGE_TYPE_CUBE_ARRAY)) continue;
+							break;
+						case SPARSE_SAMPLE_EXPLICIT_LOD:
+						case SPARSE_SAMPLE_IMPLICIT_LOD:
+						case SPARSE_GATHER:
+							if ((imageType == IMAGE_TYPE_CUBE) || (imageType == IMAGE_TYPE_CUBE_ARRAY) || (imageType == IMAGE_TYPE_3D)) continue;
+							break;
+						default:
+							break;
 					}
 
 					switch (function)
 					{
-					case SPARSE_FETCH:
-						formatGroup->addChild(new SparseCaseOpImageSparseFetch(testCtx, stream.str(), function, imageType, imageSize, format));
-						break;
-					case SPARSE_READ:
-						formatGroup->addChild(new SparseCaseOpImageSparseRead(testCtx, stream.str(), function, imageType, imageSize, format));
-						break;
-					case SPARSE_SAMPLE_EXPLICIT_LOD:
-						formatGroup->addChild(new SparseCaseOpImageSparseSampleExplicitLod(testCtx, stream.str(), function, imageType, imageSize, format));
-						break;
-					case SPARSE_SAMPLE_IMPLICIT_LOD:
-						formatGroup->addChild(new SparseCaseOpImageSparseSampleImplicitLod(testCtx, stream.str(), function, imageType, imageSize, format));
-						break;
-					case SPARSE_GATHER:
-						formatGroup->addChild(new SparseCaseOpImageSparseGather(testCtx, stream.str(), function, imageType, imageSize, format));
-						break;
-					default:
-						DE_ASSERT(0);
-						break;
+						case SPARSE_FETCH:
+							formatGroup->addChild(new SparseCaseOpImageSparseFetch(testCtx, stream.str(), function, imageType, imageSize, format));
+							break;
+						case SPARSE_READ:
+							formatGroup->addChild(new SparseCaseOpImageSparseRead(testCtx, stream.str(), function, imageType, imageSize, format));
+							break;
+						case SPARSE_SAMPLE_EXPLICIT_LOD:
+							formatGroup->addChild(new SparseCaseOpImageSparseSampleExplicitLod(testCtx, stream.str(), function, imageType, imageSize, format));
+							break;
+						case SPARSE_SAMPLE_IMPLICIT_LOD:
+							formatGroup->addChild(new SparseCaseOpImageSparseSampleImplicitLod(testCtx, stream.str(), function, imageType, imageSize, format));
+							break;
+						case SPARSE_GATHER:
+							formatGroup->addChild(new SparseCaseOpImageSparseGather(testCtx, stream.str(), function, imageType, imageSize, format));
+							break;
+						default:
+							DE_FATAL("Unexpected function type");
+							break;
 					}
 				}
 				imageTypeGroup->addChild(formatGroup.release());

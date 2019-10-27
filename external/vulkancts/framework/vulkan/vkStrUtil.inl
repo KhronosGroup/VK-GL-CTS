@@ -670,6 +670,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneProperties2KHR& v
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeProperties2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilities2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineInfoKHR& value);
@@ -764,7 +765,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageToColorStateC
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageModulationStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSMBuiltinsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderSMBuiltinsFeaturesNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDrmFormatModifierPropertiesListEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageDrmFormatModifierInfoEXT& value);

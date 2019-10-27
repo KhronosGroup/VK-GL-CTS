@@ -26,6 +26,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "deStringUtil.hpp"
 
 #include <deMath.h>
 
@@ -36,6 +37,69 @@ namespace vkt
 namespace sparse
 {
 
+std::vector<TestFormat> getTestFormats (const ImageType& imageType)
+{
+	std::vector<TestFormat> results =
+	{
+		{ VK_FORMAT_R32_SINT },				{ VK_FORMAT_R16_SINT },				{ VK_FORMAT_R8_SINT },
+		{ VK_FORMAT_R32_UINT },				{ VK_FORMAT_R16_UINT },				{ VK_FORMAT_R8_UINT },
+											{ VK_FORMAT_R16_UNORM },			{ VK_FORMAT_R8_UNORM },
+											{ VK_FORMAT_R16_SNORM },			{ VK_FORMAT_R8_SNORM },
+		{ VK_FORMAT_R32G32_SINT },			{ VK_FORMAT_R16G16_SINT },			{ VK_FORMAT_R8G8_SINT },
+		{ VK_FORMAT_R32G32_UINT },			{ VK_FORMAT_R16G16_UINT },			{ VK_FORMAT_R8G8_UINT },
+											{ VK_FORMAT_R16G16_UNORM },			{ VK_FORMAT_R8G8_UNORM },
+											{ VK_FORMAT_R16G16_SNORM },			{ VK_FORMAT_R8G8_SNORM },
+		{ VK_FORMAT_R32G32B32A32_SINT },	{ VK_FORMAT_R16G16B16A16_SINT },	{ VK_FORMAT_R8G8B8A8_SINT },
+		{ VK_FORMAT_R32G32B32A32_UINT },	{ VK_FORMAT_R16G16B16A16_UINT },	{ VK_FORMAT_R8G8B8A8_UINT },
+											{ VK_FORMAT_R16G16B16A16_UNORM },	{ VK_FORMAT_R8G8B8A8_UNORM },
+											{ VK_FORMAT_R16G16B16A16_SNORM },	{ VK_FORMAT_R8G8B8A8_SNORM }
+	};
+
+	if (imageType == IMAGE_TYPE_2D || imageType == IMAGE_TYPE_2D_ARRAY)
+	{
+		std::vector<TestFormat> ycbcrFormats =
+		{
+			{ VK_FORMAT_G8B8G8R8_422_UNORM },
+			{ VK_FORMAT_B8G8R8G8_422_UNORM },
+			{ VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM },
+			{ VK_FORMAT_G8_B8R8_2PLANE_420_UNORM },
+			{ VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM },
+			{ VK_FORMAT_G8_B8R8_2PLANE_422_UNORM },
+			{ VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM },
+			{ VK_FORMAT_R10X6_UNORM_PACK16 },
+			{ VK_FORMAT_R10X6G10X6_UNORM_2PACK16 },
+			{ VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 },
+			{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 },
+			{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 },
+			{ VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 },
+			{ VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 },
+			{ VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 },
+			{ VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 },
+			{ VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16 },
+			{ VK_FORMAT_R12X4_UNORM_PACK16 },
+			{ VK_FORMAT_R12X4G12X4_UNORM_2PACK16 },
+			{ VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16 },
+			{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 },
+			{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 },
+			{ VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 },
+			{ VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 },
+			{ VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 },
+			{ VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 },
+			{ VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16 },
+			{ VK_FORMAT_G16B16G16R16_422_UNORM },
+			{ VK_FORMAT_B16G16R16G16_422_UNORM },
+			{ VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM },
+			{ VK_FORMAT_G16_B16R16_2PLANE_420_UNORM },
+			{ VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM },
+			{ VK_FORMAT_G16_B16R16_2PLANE_422_UNORM },
+			{ VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM }
+		};
+		std::copy(begin(ycbcrFormats), end(ycbcrFormats), std::back_inserter(results));
+	}
+
+	return results;
+}
+
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize, const deUint32 mipLevel)
 {
 	const deUint32 mipLevelX = std::max(imageSize.x() >> mipLevel, 1u);
@@ -44,33 +108,33 @@ tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& image
 
 	switch (imageType)
 	{
-	case IMAGE_TYPE_1D:
-		return tcu::UVec3(mipLevelX, 1u, 1u);
+		case IMAGE_TYPE_1D:
+			return tcu::UVec3(mipLevelX, 1u, 1u);
 
-	case IMAGE_TYPE_BUFFER:
-		return tcu::UVec3(imageSize.x(), 1u, 1u);
+		case IMAGE_TYPE_BUFFER:
+			return tcu::UVec3(imageSize.x(), 1u, 1u);
 
-	case IMAGE_TYPE_1D_ARRAY:
-		return tcu::UVec3(mipLevelX, imageSize.z(), 1u);
+		case IMAGE_TYPE_1D_ARRAY:
+			return tcu::UVec3(mipLevelX, imageSize.z(), 1u);
 
-	case IMAGE_TYPE_2D:
-		return tcu::UVec3(mipLevelX, mipLevelY, 1u);
+		case IMAGE_TYPE_2D:
+			return tcu::UVec3(mipLevelX, mipLevelY, 1u);
 
-	case IMAGE_TYPE_2D_ARRAY:
-		return tcu::UVec3(mipLevelX, mipLevelY, imageSize.z());
+		case IMAGE_TYPE_2D_ARRAY:
+			return tcu::UVec3(mipLevelX, mipLevelY, imageSize.z());
 
-	case IMAGE_TYPE_3D:
-		return tcu::UVec3(mipLevelX, mipLevelY, mipLevelZ);
+		case IMAGE_TYPE_3D:
+			return tcu::UVec3(mipLevelX, mipLevelY, mipLevelZ);
 
-	case IMAGE_TYPE_CUBE:
-		return tcu::UVec3(mipLevelX, mipLevelY, 6u);
+		case IMAGE_TYPE_CUBE:
+			return tcu::UVec3(mipLevelX, mipLevelY, 6u);
 
-	case IMAGE_TYPE_CUBE_ARRAY:
-		return tcu::UVec3(mipLevelX, mipLevelY, 6u * imageSize.z());
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return tcu::UVec3(mipLevelX, mipLevelY, 6u * imageSize.z());
 
-	default:
-		DE_FATAL("Unknown image type");
-		return tcu::UVec3(1u, 1u, 1u);
+		default:
+			DE_FATAL("Unknown image type");
+			return tcu::UVec3(1u, 1u, 1u);
 	}
 }
 
@@ -78,23 +142,23 @@ tcu::UVec3 getLayerSize (const ImageType imageType, const tcu::UVec3& imageSize)
 {
 	switch (imageType)
 	{
-	case IMAGE_TYPE_1D:
-	case IMAGE_TYPE_1D_ARRAY:
-	case IMAGE_TYPE_BUFFER:
-		return tcu::UVec3(imageSize.x(), 1u, 1u);
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_BUFFER:
+			return tcu::UVec3(imageSize.x(), 1u, 1u);
 
-	case IMAGE_TYPE_2D:
-	case IMAGE_TYPE_2D_ARRAY:
-	case IMAGE_TYPE_CUBE:
-	case IMAGE_TYPE_CUBE_ARRAY:
-		return tcu::UVec3(imageSize.x(), imageSize.y(), 1u);
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), 1u);
 
-	case IMAGE_TYPE_3D:
-		return tcu::UVec3(imageSize.x(), imageSize.y(), imageSize.z());
+		case IMAGE_TYPE_3D:
+			return tcu::UVec3(imageSize.x(), imageSize.y(), imageSize.z());
 
-	default:
-		DE_FATAL("Unknown image type");
-		return tcu::UVec3(1u, 1u, 1u);
+		default:
+			DE_FATAL("Unknown image type");
+			return tcu::UVec3(1u, 1u, 1u);
 	}
 }
 
@@ -102,25 +166,25 @@ deUint32 getNumLayers (const ImageType imageType, const tcu::UVec3& imageSize)
 {
 	switch (imageType)
 	{
-	case IMAGE_TYPE_1D:
-	case IMAGE_TYPE_2D:
-	case IMAGE_TYPE_3D:
-	case IMAGE_TYPE_BUFFER:
-		return 1u;
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_3D:
+		case IMAGE_TYPE_BUFFER:
+			return 1u;
 
-	case IMAGE_TYPE_1D_ARRAY:
-	case IMAGE_TYPE_2D_ARRAY:
-		return imageSize.z();
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_2D_ARRAY:
+			return imageSize.z();
 
-	case IMAGE_TYPE_CUBE:
-		return 6u;
+		case IMAGE_TYPE_CUBE:
+			return 6u;
 
-	case IMAGE_TYPE_CUBE_ARRAY:
-		return imageSize.z() * 6u;
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return imageSize.z() * 6u;
 
-	default:
-		DE_FATAL("Unknown image type");
-		return 0u;
+		default:
+			DE_FATAL("Unknown image type");
+			return 0u;
 	}
 }
 
@@ -135,23 +199,23 @@ deUint32 getDimensions (const ImageType imageType)
 {
 	switch (imageType)
 	{
-	case IMAGE_TYPE_1D:
-	case IMAGE_TYPE_BUFFER:
-		return 1u;
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_BUFFER:
+			return 1u;
 
-	case IMAGE_TYPE_1D_ARRAY:
-	case IMAGE_TYPE_2D:
-		return 2u;
+		case IMAGE_TYPE_1D_ARRAY:
+		case IMAGE_TYPE_2D:
+			return 2u;
 
-	case IMAGE_TYPE_2D_ARRAY:
-	case IMAGE_TYPE_CUBE:
-	case IMAGE_TYPE_CUBE_ARRAY:
-	case IMAGE_TYPE_3D:
-		return 3u;
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+		case IMAGE_TYPE_3D:
+			return 3u;
 
-	default:
-		DE_FATAL("Unknown image type");
-		return 0u;
+		default:
+			DE_FATAL("Unknown image type");
+			return 0u;
 	}
 }
 
@@ -159,23 +223,23 @@ deUint32 getLayerDimensions (const ImageType imageType)
 {
 	switch (imageType)
 	{
-	case IMAGE_TYPE_1D:
-	case IMAGE_TYPE_BUFFER:
-	case IMAGE_TYPE_1D_ARRAY:
-		return 1u;
+		case IMAGE_TYPE_1D:
+		case IMAGE_TYPE_BUFFER:
+		case IMAGE_TYPE_1D_ARRAY:
+			return 1u;
 
-	case IMAGE_TYPE_2D:
-	case IMAGE_TYPE_2D_ARRAY:
-	case IMAGE_TYPE_CUBE:
-	case IMAGE_TYPE_CUBE_ARRAY:
-		return 2u;
+		case IMAGE_TYPE_2D:
+		case IMAGE_TYPE_2D_ARRAY:
+		case IMAGE_TYPE_CUBE:
+		case IMAGE_TYPE_CUBE_ARRAY:
+			return 2u;
 
-	case IMAGE_TYPE_3D:
-		return 3u;
+		case IMAGE_TYPE_3D:
+			return 3u;
 
-	default:
-		DE_FATAL("Unknown image type");
-		return 0u;
+		default:
+			DE_FATAL("Unknown image type");
+			return 0u;
 	}
 }
 
@@ -356,7 +420,7 @@ VkImageType	mapImageType (const ImageType imageType)
 			return VK_IMAGE_TYPE_3D;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected image type");
 			return VK_IMAGE_TYPE_LAST;
 	}
 }
@@ -374,7 +438,7 @@ VkImageViewType	mapImageViewType (const ImageType imageType)
 		case IMAGE_TYPE_CUBE_ARRAY:	return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected image type");
 			return VK_IMAGE_VIEW_TYPE_LAST;
 	}
 }
@@ -393,7 +457,7 @@ std::string getImageTypeName (const ImageType imageType)
 		case IMAGE_TYPE_BUFFER:		return "buffer";
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected image type");
 			return "";
 	}
 }
@@ -416,12 +480,52 @@ std::string getShaderImageType (const tcu::TextureFormat& format, const ImageTyp
 		case IMAGE_TYPE_BUFFER:		imageTypePart = "Buffer";		break;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected image type");
 	}
 
 	return formatPart + "image" + imageTypePart;
 }
 
+std::string getShaderImageType (const vk::PlanarFormatDescription& description, const ImageType imageType)
+{
+	std::string	formatPart;
+	std::string	imageTypePart;
+
+	// all PlanarFormatDescription types have at least one channel ( 0 ) and all channel types are the same :
+	switch (description.channels[0].type)
+	{
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			formatPart = "i";
+			break;
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			formatPart = "u";
+			break;
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			break;
+
+		default:
+			DE_FATAL("Unexpected channel type");
+	}
+
+	switch (imageType)
+	{
+		case IMAGE_TYPE_1D:			imageTypePart = "1D";			break;
+		case IMAGE_TYPE_1D_ARRAY:	imageTypePart = "1DArray";		break;
+		case IMAGE_TYPE_2D:			imageTypePart = "2D";			break;
+		case IMAGE_TYPE_2D_ARRAY:	imageTypePart = "2DArray";		break;
+		case IMAGE_TYPE_3D:			imageTypePart = "3D";			break;
+		case IMAGE_TYPE_CUBE:		imageTypePart = "Cube";			break;
+		case IMAGE_TYPE_CUBE_ARRAY:	imageTypePart = "CubeArray";	break;
+		case IMAGE_TYPE_BUFFER:		imageTypePart = "Buffer";		break;
+
+		default:
+			DE_FATAL("Unexpected image type");
+	}
+
+	return formatPart + "image" + imageTypePart;
+}
 
 std::string getShaderImageDataType(const tcu::TextureFormat& format)
 {
@@ -431,14 +535,33 @@ std::string getShaderImageDataType(const tcu::TextureFormat& format)
 			return "uvec4";
 		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
 			return "ivec4";
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
 			return "vec4";
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected channel type");
 			return "";
 	}
 }
 
+std::string getShaderImageDataType (const vk::PlanarFormatDescription& description)
+{
+	switch (description.channels[0].type)
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return "uvec4";
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return "ivec4";
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			return "vec4";
+		default:
+			DE_FATAL("Unexpected channel type");
+			return "";
+	}
+}
 
 std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 {
@@ -453,7 +576,7 @@ std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 		case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected channel order");
 			orderPart = DE_NULL;
 	}
 
@@ -477,11 +600,168 @@ std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 		case tcu::TextureFormat::SNORM_INT8:		typePart = "8_snorm";	break;
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected channel type");
 			typePart = DE_NULL;
 	}
 
 	return std::string() + orderPart + typePart;
+}
+
+std::string getShaderImageFormatQualifier (VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_R8_SINT:										return "r8i";
+		case VK_FORMAT_R16_SINT:									return "r16i";
+		case VK_FORMAT_R32_SINT:									return "r32i";
+		case VK_FORMAT_R8_UINT:										return "r8ui";
+		case VK_FORMAT_R16_UINT:									return "r16ui";
+		case VK_FORMAT_R32_UINT:									return "r32ui";
+		case VK_FORMAT_R8_SNORM:									return "r8_snorm";
+		case VK_FORMAT_R16_SNORM:									return "r16_snorm";
+		case VK_FORMAT_R8_UNORM:									return "r8";
+		case VK_FORMAT_R16_UNORM:									return "r16";
+
+		case VK_FORMAT_R8G8_SINT:									return "rg8i";
+		case VK_FORMAT_R16G16_SINT:									return "rg16i";
+		case VK_FORMAT_R32G32_SINT:									return "rg32i";
+		case VK_FORMAT_R8G8_UINT:									return "rg8ui";
+		case VK_FORMAT_R16G16_UINT:									return "rg16ui";
+		case VK_FORMAT_R32G32_UINT:									return "rg32ui";
+		case VK_FORMAT_R8G8_SNORM:									return "rg8_snorm";
+		case VK_FORMAT_R16G16_SNORM:								return "rg16_snorm";
+		case VK_FORMAT_R8G8_UNORM:									return "rg8";
+		case VK_FORMAT_R16G16_UNORM:								return "rg16";
+
+		case VK_FORMAT_R8G8B8A8_SINT:								return "rgba8i";
+		case VK_FORMAT_R16G16B16A16_SINT:							return "rgba16i";
+		case VK_FORMAT_R32G32B32A32_SINT:							return "rgba32i";
+		case VK_FORMAT_R8G8B8A8_UINT:								return "rgba8ui";
+		case VK_FORMAT_R16G16B16A16_UINT:							return "rgba16ui";
+		case VK_FORMAT_R32G32B32A32_UINT:							return "rgba32ui";
+		case VK_FORMAT_R8G8B8A8_SNORM:								return "rgba8_snorm";
+		case VK_FORMAT_R16G16B16A16_SNORM:							return "rgba16_snorm";
+		case VK_FORMAT_R8G8B8A8_UNORM:								return "rgba8";
+		case VK_FORMAT_R16G16B16A16_UNORM:							return "rgba16";
+
+		case VK_FORMAT_G8B8G8R8_422_UNORM:							return "rgba8";
+		case VK_FORMAT_B8G8R8G8_422_UNORM:							return "rgba8";
+		case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:					return "rgba8";
+		case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:					return "rgba8";
+		case VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:					return "rgba8";
+		case VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:					return "rgba8";
+		case VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:					return "rgba8";
+		case VK_FORMAT_R10X6_UNORM_PACK16:							return "r16";
+		case VK_FORMAT_R10X6G10X6_UNORM_2PACK16:					return "rg16";
+		case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:			return "rgba16";
+		case VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:		return "rgba16";
+		case VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:		return "rgba16";
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_R12X4_UNORM_PACK16:							return "r16";
+		case VK_FORMAT_R12X4G12X4_UNORM_2PACK16:					return "rg16";
+		case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:			return "rgba16";
+		case VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:		return "rgba16";
+		case VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:		return "rgba16";
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:	return "rgba16";
+		case VK_FORMAT_G16B16G16R16_422_UNORM:						return "rgba16";
+		case VK_FORMAT_B16G16R16G16_422_UNORM:						return "rgba16";
+		case VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:				return "rgba16";
+		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:					return "rgba16";
+		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:				return "rgba16";
+		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:					return "rgba16";
+		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:				return "rgba16";
+
+		default:
+			DE_FATAL("Unexpected texture format");
+			return "error";
+	}
+}
+
+std::string getImageFormatID (VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_R8_SINT:				return "r8i";
+		case VK_FORMAT_R16_SINT:			return "r16i";
+		case VK_FORMAT_R32_SINT:			return "r32i";
+		case VK_FORMAT_R8_UINT:				return "r8ui";
+		case VK_FORMAT_R16_UINT:			return "r16ui";
+		case VK_FORMAT_R32_UINT:			return "r32ui";
+		case VK_FORMAT_R8_SNORM:			return "r8_snorm";
+		case VK_FORMAT_R16_SNORM:			return "r16_snorm";
+		case VK_FORMAT_R8_UNORM:			return "r8";
+		case VK_FORMAT_R16_UNORM:			return "r16";
+
+		case VK_FORMAT_R8G8_SINT:			return "rg8i";
+		case VK_FORMAT_R16G16_SINT:			return "rg16i";
+		case VK_FORMAT_R32G32_SINT:			return "rg32i";
+		case VK_FORMAT_R8G8_UINT:			return "rg8ui";
+		case VK_FORMAT_R16G16_UINT:			return "rg16ui";
+		case VK_FORMAT_R32G32_UINT:			return "rg32ui";
+		case VK_FORMAT_R8G8_SNORM:			return "rg8_snorm";
+		case VK_FORMAT_R16G16_SNORM:		return "rg16_snorm";
+		case VK_FORMAT_R8G8_UNORM:			return "rg8";
+		case VK_FORMAT_R16G16_UNORM:		return "rg16";
+
+		case VK_FORMAT_R8G8B8A8_SINT:		return "rgba8i";
+		case VK_FORMAT_R16G16B16A16_SINT:	return "rgba16i";
+		case VK_FORMAT_R32G32B32A32_SINT:	return "rgba32i";
+		case VK_FORMAT_R8G8B8A8_UINT:		return "rgba8ui";
+		case VK_FORMAT_R16G16B16A16_UINT:	return "rgba16ui";
+		case VK_FORMAT_R32G32B32A32_UINT:	return "rgba32ui";
+		case VK_FORMAT_R8G8B8A8_SNORM:		return "rgba8_snorm";
+		case VK_FORMAT_R16G16B16A16_SNORM:	return "rgba16_snorm";
+		case VK_FORMAT_R8G8B8A8_UNORM:		return "rgba8";
+		case VK_FORMAT_R16G16B16A16_UNORM:	return "rgba16";
+
+		case VK_FORMAT_G8B8G8R8_422_UNORM:
+		case VK_FORMAT_B8G8R8G8_422_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
+		case VK_FORMAT_R10X6_UNORM_PACK16:
+		case VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+		case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		case VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+		case VK_FORMAT_R12X4_UNORM_PACK16:
+		case VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+		case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+		case VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+		case VK_FORMAT_G16B16G16R16_422_UNORM:
+		case VK_FORMAT_B16G16R16G16_422_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+			return de::toLower(std::string(getFormatName(format)).substr(10));
+
+		default:
+			DE_FATAL("Unexpected texture format");
+			return "error";
+	}
 }
 
 std::string getShaderImageCoordinates	(const ImageType	imageType,
@@ -506,16 +786,9 @@ std::string getShaderImageCoordinates	(const ImageType	imageType,
 			return xyz;
 
 		default:
-			DE_ASSERT(0);
+			DE_FATAL("Unexpected image type");
 			return "";
 	}
-}
-
-deUint32 getImageMaxMipLevels (const VkImageFormatProperties& imageFormatProperties, const VkExtent3D& extent)
-{
-	const deUint32 widestEdge = std::max(std::max(extent.width, extent.height), extent.depth);
-
-	return std::min(static_cast<deUint32>(deFloatLog2(static_cast<float>(widestEdge))) + 1u, imageFormatProperties.maxMipLevels);
 }
 
 deUint32 getImageMipLevelSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layersCount, const tcu::TextureFormat& format, const deUint32 mipmapLevel, const deUint32 mipmapMemoryAlignment)
@@ -530,6 +803,21 @@ deUint32 getImageSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layer
 	deUint32 imageSizeInBytes = 0;
 	for (deUint32 mipmapLevel = 0; mipmapLevel < mipmapLevelsCount; ++mipmapLevel)
 		imageSizeInBytes += getImageMipLevelSizeInBytes(baseExtents, layersCount, format, mipmapLevel, mipmapMemoryAlignment);
+
+	return imageSizeInBytes;
+}
+
+deUint32 getImageMipLevelSizeInBytes (const VkExtent3D& baseExtents, const deUint32 layersCount, const vk::PlanarFormatDescription& formatDescription, const deUint32 planeNdx, const deUint32 mipmapLevel, const deUint32 mipmapMemoryAlignment)
+{
+	return layersCount * getPlaneSizeInBytes(formatDescription, baseExtents, planeNdx, mipmapLevel, mipmapMemoryAlignment);
+}
+
+deUint32 getImageSizeInBytes (const VkExtent3D& baseExtents, const deUint32 layersCount, const vk::PlanarFormatDescription& formatDescription, const deUint32 planeNdx, const deUint32 mipmapLevelsCount, const deUint32 mipmapMemoryAlignment)
+{
+	deUint32 imageSizeInBytes = 0;
+
+	for (deUint32 mipmapLevel = 0; mipmapLevel < mipmapLevelsCount; ++mipmapLevel)
+		imageSizeInBytes += getImageMipLevelSizeInBytes(baseExtents, layersCount, formatDescription, planeNdx, mipmapLevel, mipmapMemoryAlignment);
 
 	return imageSizeInBytes;
 }
@@ -661,7 +949,7 @@ bool checkSparseSupportForImageType (const InstanceInterface&	instance,
 		case VK_IMAGE_TYPE_3D:
 			return deviceFeatures.sparseResidencyImage3D == VK_TRUE;
 		default:
-			DE_ASSERT(0);
+			DE_FATAL("Unexpected image type");
 			return false;
 	};
 }
@@ -696,6 +984,29 @@ deUint32 getSparseAspectRequirementsIndex (const std::vector<VkSparseImageMemory
 	}
 
 	return NO_MATCH_FOUND;
+}
+
+vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescription& formatInfo, deUint32 planeNdx)
+{
+	DE_ASSERT(planeNdx < formatInfo.numPlanes);
+	vk::VkFormat result = formatInfo.planes[planeNdx].planeCompatibleFormat;
+
+	// redirect result for some of the YCbCr image formats
+	static const std::pair<vk::VkFormat, vk::VkFormat> ycbcrFormats[] =
+	{
+		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_G16B16G16R16_422_UNORM_KHR,					VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B8G8R8G8_422_UNORM_KHR,						VK_FORMAT_R8G8B8A8_UNORM		},
+		{ VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,	VK_FORMAT_R16G16B16A16_UNORM	},
+		{ VK_FORMAT_B16G16R16G16_422_UNORM_KHR,					VK_FORMAT_R16G16B16A16_UNORM	}
+	};
+	auto it = std::find_if(std::begin(ycbcrFormats), std::end(ycbcrFormats), [result](const std::pair<vk::VkFormat, vk::VkFormat>& p) { return p.first == result; });
+	if (it != std::end(ycbcrFormats))
+		result = it->second;
+	return result;
 }
 
 } // sparse

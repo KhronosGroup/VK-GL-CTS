@@ -3139,23 +3139,16 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 
 	const deUint32 numWorkgroups[3] = {4, 2, 2};
 
-	const deUint32 localSizesToTestCount = 15;
+	const deUint32 localSizesToTestCount = 8;
 	deUint32 localSizesToTest[localSizesToTestCount][3] =
 	{
 		{1, 1, 1},
-		{32, 4, 1},
-		{32, 1, 4},
-		{1, 32, 4},
-		{1, 4, 32},
-		{4, 1, 32},
-		{4, 32, 1},
 		{subgroupSize, 1, 1},
 		{1, subgroupSize, 1},
 		{1, 1, subgroupSize},
+		{32, 4, 1},
+		{1, 4, 32},
 		{3, 5, 7},
-		{128, 1, 1},
-		{1, 128, 1},
-		{1, 1, 64},
 		{1, 1, 1} // Isn't used, just here to make double buffering checks easier
 	};
 

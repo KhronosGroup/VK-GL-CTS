@@ -9887,7 +9887,7 @@ const string getTestName (ConversionDataType from, ConversionDataType to, const 
 	return getTypeName(from) + "_to_" + getTypeName(to) + fullSuffix;
 }
 
-const string getAsmTypeName (ConversionDataType type)
+const string getAsmTypeName (ConversionDataType type, deUint32 elements = 1)
 {
 	string prefix;
 
@@ -9896,33 +9896,37 @@ const string getAsmTypeName (ConversionDataType type)
 	else if (type == DATA_TYPE_VEC2_SIGNED_16)	return "i16vec2";
 	else if (type == DATA_TYPE_VEC2_SIGNED_32)	return "v2i32";
 	else										DE_ASSERT(false);
+	if ((isInt(type) || isFloat(type)) && elements == 2)
+	{
+		prefix = "v2" + prefix;
+	}
 
 	return prefix + getBitWidthStr(type);
 }
 
 template<typename T>
-BufferSp getSpecializedBuffer (deInt64 number)
+BufferSp getSpecializedBuffer (deInt64 number, deUint32 elements = 1)
 {
-	return BufferSp(new Buffer<T>(vector<T>(1, (T)number)));
+	return BufferSp(new Buffer<T>(vector<T>(elements, (T)number)));
 }
 
-BufferSp getBuffer (ConversionDataType type, deInt64 number)
+BufferSp getBuffer (ConversionDataType type, deInt64 number, deUint32 elements = 1)
 {
 	switch (type)
 	{
-		case DATA_TYPE_SIGNED_8:		return getSpecializedBuffer<deInt8>(number);
-		case DATA_TYPE_SIGNED_16:		return getSpecializedBuffer<deInt16>(number);
-		case DATA_TYPE_SIGNED_32:		return getSpecializedBuffer<deInt32>(number);
-		case DATA_TYPE_SIGNED_64:		return getSpecializedBuffer<deInt64>(number);
-		case DATA_TYPE_UNSIGNED_8:		return getSpecializedBuffer<deUint8>(number);
-		case DATA_TYPE_UNSIGNED_16:		return getSpecializedBuffer<deUint16>(number);
-		case DATA_TYPE_UNSIGNED_32:		return getSpecializedBuffer<deUint32>(number);
-		case DATA_TYPE_UNSIGNED_64:		return getSpecializedBuffer<deUint64>(number);
-		case DATA_TYPE_FLOAT_16:		return getSpecializedBuffer<deUint16>(number);
-		case DATA_TYPE_FLOAT_32:		return getSpecializedBuffer<deUint32>(number);
-		case DATA_TYPE_FLOAT_64:		return getSpecializedBuffer<deUint64>(number);
-		case DATA_TYPE_VEC2_SIGNED_16:	return getSpecializedBuffer<deUint32>(number);
-		case DATA_TYPE_VEC2_SIGNED_32:	return getSpecializedBuffer<deUint64>(number);
+		case DATA_TYPE_SIGNED_8:		return getSpecializedBuffer<deInt8>(number, elements);
+		case DATA_TYPE_SIGNED_16:		return getSpecializedBuffer<deInt16>(number, elements);
+		case DATA_TYPE_SIGNED_32:		return getSpecializedBuffer<deInt32>(number, elements);
+		case DATA_TYPE_SIGNED_64:		return getSpecializedBuffer<deInt64>(number, elements);
+		case DATA_TYPE_UNSIGNED_8:		return getSpecializedBuffer<deUint8>(number, elements);
+		case DATA_TYPE_UNSIGNED_16:		return getSpecializedBuffer<deUint16>(number, elements);
+		case DATA_TYPE_UNSIGNED_32:		return getSpecializedBuffer<deUint32>(number, elements);
+		case DATA_TYPE_UNSIGNED_64:		return getSpecializedBuffer<deUint64>(number, elements);
+		case DATA_TYPE_FLOAT_16:		return getSpecializedBuffer<deUint16>(number, elements);
+		case DATA_TYPE_FLOAT_32:		return getSpecializedBuffer<deUint32>(number, elements);
+		case DATA_TYPE_FLOAT_64:		return getSpecializedBuffer<deUint64>(number, elements);
+		case DATA_TYPE_VEC2_SIGNED_16:	return getSpecializedBuffer<deUint32>(number, elements);
+		case DATA_TYPE_VEC2_SIGNED_32:	return getSpecializedBuffer<deUint64>(number, elements);
 
 		default:						TCU_THROW(InternalError, "Unimplemented type passed");
 	}
@@ -9969,7 +9973,7 @@ bool usesFloat64 (ConversionDataType from, ConversionDataType to)
 	return (from == DATA_TYPE_FLOAT_64 || to == DATA_TYPE_FLOAT_64);
 }
 
-void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType to, VulkanFeatures& vulkanFeatures, vector<string>& extensions)
+void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType to, bool useStorageExt, VulkanFeatures& vulkanFeatures, vector<string>& extensions)
 {
 	if (usesInt16(from, to) && !usesInt32(from, to))
 		vulkanFeatures.coreFeatures.shaderInt16 = DE_TRUE;
@@ -9980,7 +9984,7 @@ void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType
 	if (usesFloat64(from, to))
 		vulkanFeatures.coreFeatures.shaderFloat64 = DE_TRUE;
 
-	if (usesInt16(from, to) || usesFloat16(from, to))
+	if ((usesInt16(from, to) || usesFloat16(from, to)) && useStorageExt)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
 		vulkanFeatures.ext16BitStorage |= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
@@ -10007,23 +10011,67 @@ void getVulkanFeaturesAndExtensions (ConversionDataType from, ConversionDataType
 
 struct ConvertCase
 {
-	ConvertCase (const string& instruction, ConversionDataType from, ConversionDataType to, deInt64 number, bool separateOutput = false, deInt64 outputNumber = 0, const char* suffix = DE_NULL)
+	ConvertCase (const string& instruction, ConversionDataType from, ConversionDataType to, deInt64 number, bool separateOutput = false, deInt64 outputNumber = 0, const char* suffix = DE_NULL, bool useStorageExt = true)
 	: m_fromType		(from)
 	, m_toType			(to)
+	, m_elements		(1)
+	, m_useStorageExt	(useStorageExt)
 	, m_name			(getTestName(from, to, suffix))
-	, m_inputBuffer		(getBuffer(from, number))
 	{
 		string caps;
 		string decl;
 		string exts;
 
-		m_asmTypes["inputType"]		= getAsmTypeName(from);
-		m_asmTypes["outputType"]	= getAsmTypeName(to);
+		m_asmTypes["inStorageType"]	= getAsmTypeName(from);
+		m_asmTypes["outStorageType"] = getAsmTypeName(to);
+		m_asmTypes["inCast"] = "OpCopyObject";
+		m_asmTypes["outCast"] = "OpCopyObject";
+		// If the storage extensions are being avoided, tests instead uses
+		// vectors so that they are easily convertible to 32-bit integers.
+		// |m_elements| indicates the size of the vector. It modifies how many
+		// items added to the buffers and converted in the tests.
+		//
+		// Currently only supports 1 (default) or 2 elements.
+		if (!m_useStorageExt)
+		{
+			bool in_change = false;
+			bool out_change = false;
+			if (usesFloat16(from, from) || usesInt16(from, from))
+			{
+				m_asmTypes["inStorageType"] = "u32";
+				m_asmTypes["inCast"] = "OpBitcast";
+				m_elements = 2;
+				in_change = true;
+			}
+			if (usesFloat16(to, to) || usesInt16(to, to))
+			{
+				m_asmTypes["outStorageType"] = "u32";
+				m_asmTypes["outCast"] = "OpBitcast";
+				m_elements = 2;
+				out_change = true;
+			}
+			if (in_change && !out_change)
+			{
+				m_asmTypes["outStorageType"] = getAsmTypeName(to, m_elements);
+			}
+			if (!in_change && out_change)
+			{
+				m_asmTypes["inStorageType"] = getAsmTypeName(from, m_elements);
+			}
+		}
 
+		// Safety check for implementation.
+		if (m_elements < 1 || m_elements > 2)
+			TCU_THROW(InternalError, "Unsupported number of elements");
+
+		m_asmTypes["inputType"]		= getAsmTypeName(from, m_elements);
+		m_asmTypes["outputType"]	= getAsmTypeName(to, m_elements);
+
+		m_inputBuffer = getBuffer(from, number, m_elements);
 		if (separateOutput)
-			m_outputBuffer = getBuffer(to, outputNumber);
+			m_outputBuffer = getBuffer(to, outputNumber, m_elements);
 		else
-			m_outputBuffer = getBuffer(to, number);
+			m_outputBuffer = getBuffer(to, number, m_elements);
 
 		if (usesInt8(from, to))
 		{
@@ -10041,6 +10089,12 @@ struct ConvertCase
 
 			decl += "%i8         = OpTypeInt 8 1\n"
 					"%u8         = OpTypeInt 8 0\n";
+
+			if (m_elements == 2)
+			{
+				decl += "%v2i8       = OpTypeVector %i8 2\n"
+						"%v2u8       = OpTypeVector %u8 2\n";
+			}
 			exts += "OpExtension \"SPV_KHR_8bit_storage\"\n";
 		}
 
@@ -10056,24 +10110,36 @@ struct ConvertCase
 			}
 
 			decl += "%i16        = OpTypeInt 16 1\n"
-					"%u16        = OpTypeInt 16 0\n"
-					"%i16vec2    = OpTypeVector %i16 2\n";
+					"%u16        = OpTypeInt 16 0\n";
+			if (m_elements == 2)
+			{
+				decl += "%v2i16      = OpTypeVector %i16 2\n"
+						"%v2u16      = OpTypeVector %u16 2\n";
+			}
+			else
+			{
+				decl += "%i16vec2    = OpTypeVector %i16 2\n";
+			}
 
 			// Conversions between 16 and 32 bit are provided by SPV_KHR_16bit_storage. The rest requires explicit Int16
-			if (requiresInt16Capability)
+			if (requiresInt16Capability || !m_useStorageExt)
 				caps += "OpCapability Int16\n";
 		}
 
 		if (usesFloat16(from, to))
 		{
 			decl += "%f16        = OpTypeFloat 16\n";
+			if (m_elements == 2)
+			{
+				decl += "%v2f16      = OpTypeVector %f16 2\n";
+			}
 
 			// Width-only conversions between 16 and 32 bit are provided by SPV_KHR_16bit_storage. The rest requires explicit Float16
-			if (!usesFloat32(from, to))
+			if (!usesFloat32(from, to) || !m_useStorageExt)
 				caps += "OpCapability Float16\n";
 		}
 
-		if (usesInt16(from, to) || usesFloat16(from, to))
+		if ((usesInt16(from, to) || usesFloat16(from, to)) && m_useStorageExt)
 		{
 			caps += "OpCapability StorageUniformBufferBlock16\n";
 			exts += "OpExtension \"SPV_KHR_16bit_storage\"\n";
@@ -10084,12 +10150,21 @@ struct ConvertCase
 			caps += "OpCapability Int64\n";
 			decl += "%i64        = OpTypeInt 64 1\n"
 					"%u64        = OpTypeInt 64 0\n";
+			if (m_elements == 2)
+			{
+				decl += "%v2i64      = OpTypeVector %i64 2\n"
+						"%v2u64      = OpTypeVector %u64 2\n";
+			}
 		}
 
 		if (usesFloat64(from, to))
 		{
 			caps += "OpCapability Float64\n";
 			decl += "%f64        = OpTypeFloat 64\n";
+			if (m_elements == 2)
+			{
+				decl += "%v2f64        = OpTypeVector %f64 2\n";
+			}
 		}
 
 		m_asmTypes["datatype_capabilities"]		= caps;
@@ -10099,13 +10174,15 @@ struct ConvertCase
 
 	ConversionDataType		m_fromType;
 	ConversionDataType		m_toType;
+	deUint32				m_elements;
+	bool					m_useStorageExt;
 	string					m_name;
 	map<string, string>		m_asmTypes;
 	BufferSp				m_inputBuffer;
 	BufferSp				m_outputBuffer;
 };
 
-const string getConvertCaseShaderStr (const string& instruction, const ConvertCase& convertCase)
+const string getConvertCaseShaderStr (const string& instruction, const ConvertCase& convertCase, bool addVectors = false)
 {
 	map<string, string> params = convertCase.m_asmTypes;
 
@@ -10113,7 +10190,7 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 	params["inDecorator"]	= getByteWidthStr(convertCase.m_fromType);
 	params["outDecorator"]	= getByteWidthStr(convertCase.m_toType);
 
-	const StringTemplate shader (
+	std::string shader (
 		"OpCapability Shader\n"
 		"${datatype_capabilities}"
 		"${datatype_extensions:opt}"
@@ -10139,12 +10216,19 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 		"%f32        = OpTypeFloat 32\n"
 		"%v2i32      = OpTypeVector %i32 2\n"
 		"${datatype_additional_decl}"
+	);
+	if (addVectors)
+	{
+		shader += "%v2u32 = OpTypeVector %u32 2\n"
+					"%v2f32 = OpTypeVector %f32 2\n";
+	}
+	shader +=
 		"%uvec3      = OpTypeVector %u32 3\n"
 		// Derived types
-		"%in_ptr     = OpTypePointer Uniform %${inputType}\n"
-		"%out_ptr    = OpTypePointer Uniform %${outputType}\n"
-		"%in_buf     = OpTypeStruct %${inputType}\n"
-		"%out_buf    = OpTypeStruct %${outputType}\n"
+		"%in_ptr     = OpTypePointer Uniform %${inStorageType}\n"
+		"%out_ptr    = OpTypePointer Uniform %${outStorageType}\n"
+		"%in_buf     = OpTypeStruct %${inStorageType}\n"
+		"%out_buf    = OpTypeStruct %${outStorageType}\n"
 		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
 		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
 		"%indata     = OpVariable %in_bufptr Uniform\n"
@@ -10156,14 +10240,16 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 		"%label      = OpLabel\n"
 		"%inloc      = OpAccessChain %in_ptr %indata %zero\n"
 		"%outloc     = OpAccessChain %out_ptr %outdata %zero\n"
-		"%inval      = OpLoad %${inputType} %inloc\n"
-		"%conv       = ${instruction} %${outputType} %inval\n"
-		"              OpStore %outloc %conv\n"
+		"%inval      = OpLoad %${inStorageType} %inloc\n"
+		"%in_cast    = ${inCast} %${inputType} %inval\n"
+		"%conv       = ${instruction} %${outputType} %in_cast\n"
+		"%out_cast   = ${outCast} %${outStorageType} %conv\n"
+		"              OpStore %outloc %out_cast\n"
 		"              OpReturn\n"
 		"              OpFunctionEnd\n"
-	);
+	;
 
-	return shader.specialize(params);
+	return StringTemplate(shader).specialize(params);
 }
 
 void createConvertCases (vector<ConvertCase>& testCases, const string& instruction)
@@ -10186,6 +10272,22 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_32,		701256243));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_16,		4741));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_8,		65));
+
+		// Zero extension for int->uint
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_UNSIGNED_16,		56));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_UNSIGNED_32,		-47,								true,	209));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_UNSIGNED_64,		-5,									true,	251));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_32,		14669));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_64,		-3341,								true,	62195));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_64,		973610259));
+
+		// Truncate for int->uint
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_8,		-25711,								true,	145));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_8,		103));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_8,		-1067742499291926803ll,				true,	237));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_16,		12382));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_32,		-972812359,							true,	3322154937u));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_16,		-1067742499291926803ll,				true,	61165));
 	}
 	else if (instruction == "OpSConvert")
 	{
@@ -10216,7 +10318,7 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		// Truncate for int->uint
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_8,		-25711,								true,	145));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_8,		103));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_8,		-1067742499291926803ll,				true,	61165));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_8,		-1067742499291926803ll,				true,	237));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_16,		12382));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_32,		-972812359,							true,	3322154937u));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_16,		-1067742499291926803ll,				true,	61165));
@@ -10249,8 +10351,13 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_FLOAT_64,			0x449a4000,							true,	0x4093480000000000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_FLOAT_32,			0x4093480000000000,					true,	0x449a4000));
 
+		// Conversion to/from 32-bit floats are supported by both 16-bit
+		// storage and Float16. The tests are duplicated to exercise both
+		// cases.
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_FLOAT_16,			0x449a4000,							true,	0x64D2));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_FLOAT_32,			0x64D2,								true,	0x449a4000));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_FLOAT_16,			0x449a4000,							true,	0x64D2,					"no_storage",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_FLOAT_32,			0x64D2,								true,	0x449a4000,				"no_storage",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_FLOAT_64,			0x64D2,								true,	0x4093480000000000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_FLOAT_16,			0x4093480000000000,					true,	0x64D2));
@@ -10258,44 +10365,44 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	else if (instruction == "OpConvertFToU")
 	{
 		// Normal numbers from uint8 range
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5020,								true,	33,									"33"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5020,								true,	33,									"33",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x42280000,							true,	42,									"42"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x4067800000000000ull,				true,	188,								"188"));
 
 		// Maximum uint8 value
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5BF8,								true,	255,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x5BF8,								true,	255,								"max",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x437F0000,							true,	255,								"max"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x406FE00000000000ull,				true,	255,								"max"));
 
 		// +0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x0000,								true,	0,									"p0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x0000,								true,	0,									"p0",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x00000000,							true,	0,									"p0"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x0000000000000000ull,				true,	0,									"p0"));
 
 		// -0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x8000,								true,	0,									"m0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_8,		0x8000,								true,	0,									"m0",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_8,		0x80000000,							true,	0,									"m0"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_8,		0x8000000000000000ull,				true,	0,									"m0"));
 
 		// All hexadecimal values below represent 1234.0 as 16/32/64-bit IEEE 754 float
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x64D2,								true,	1234,								"1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x64D2,								true,	1234,								"1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x64D2,								true,	1234,								"1234"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x64D2,								true,	1234,								"1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x64D2,								true,	1234,								"1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x64D2,								true,	1234,								"1234",	false));
 
 		// 0x7BFF = 0111 1011 1111 1111 = 0 11110 1111111111 = 65504
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x7BFF,								true,	65504,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x7BFF,								true,	65504,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x7BFF,								true,	65504,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x7BFF,								true,	65504,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x7BFF,								true,	65504,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x7BFF,								true,	65504,								"max",	false));
 
 		// +0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x0000,								true,	0,									"p0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x0000,								true,	0,									"p0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x0000,								true,	0,									"p0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x0000,								true,	0,									"p0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x0000,								true,	0,									"p0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x0000,								true,	0,									"p0",	false));
 
 		// -0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x8000,								true,	0,									"m0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x8000,								true,	0,									"m0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x8000,								true,	0,									"m0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_16,		0x8000,								true,	0,									"m0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_32,		0x8000,								true,	0,									"m0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_UNSIGNED_64,		0x8000,								true,	0,									"m0",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_16,		0x449a4000,							true,	1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_32,		0x449a4000,							true,	1234));
@@ -10307,24 +10414,24 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	else if (instruction == "OpConvertUToF")
 	{
 		// Normal numbers from uint8 range
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_16,			116,								true,	0x5740,								"116"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_16,			116,								true,	0x5740,								"116",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_32,			232,								true,	0x43680000,							"232"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_64,			164,								true,	0x4064800000000000ull,				"164"));
 
 		// Maximum uint8 value
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_16,			255,								true,	0x5BF8,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_16,			255,								true,	0x5BF8,								"max",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_32,			255,								true,	0x437F0000,							"max"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_8,		DATA_TYPE_FLOAT_64,			255,								true,	0x406FE00000000000ull,				"max"));
 
 		// All hexadecimal values below represent 1234.0 as 32/64-bit IEEE 754 float
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_16,			1234,								true,	0x64D2,								"1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_16,			1234,								true,	0x64D2,								"1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_16,			1234,								true,	0x64D2,								"1234"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_16,			1234,								true,	0x64D2,								"1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_16,			1234,								true,	0x64D2,								"1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_16,			1234,								true,	0x64D2,								"1234",	false));
 
 		// 0x7BFF = 0111 1011 1111 1111 = 0 11110 1111111111 = 65504
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_16,			65504,								true,	0x7BFF,								"max",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
@@ -10336,54 +10443,54 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	else if (instruction == "OpConvertFToS")
 	{
 		// Normal numbers from int8 range
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0xC980,								true,	-11,								"m11"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0xC980,								true,	-11,								"m11",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_8,			0xC2140000,							true,	-37,								"m37"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_8,			0xC050800000000000ull,				true,	-66,								"m66"));
 
 		// Minimum int8 value
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0xD800,								true,	-128,								"min"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0xD800,								true,	-128,								"min",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_8,			0xC3000000,							true,	-128,								"min"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_8,			0xC060000000000000ull,				true,	-128,								"min"));
 
 		// Maximum int8 value
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0x57F0,								true,	127,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0x57F0,								true,	127,								"max",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_8,			0x42FE0000,							true,	127,								"max"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_8,			0x405FC00000000000ull,				true,	127,								"max"));
 
 		// +0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0x0000,								true,	0,									"p0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0x0000,								true,	0,									"p0",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_8,			0x00000000,							true,	0,									"p0"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_8,			0x0000000000000000ull,				true,	0,									"p0"));
 
 		// -0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0x8000,								true,	0,									"m0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_8,			0x8000,								true,	0,									"m0",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_8,			0x80000000,							true,	0,									"m0"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_8,			0x8000000000000000ull,				true,	0,									"m0"));
 
 		// All hexadecimal values below represent -1234.0 as 32/64-bit IEEE 754 float
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0xE4D2,								true,	-1234,								"m1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0xE4D2,								true,	-1234,								"m1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xE4D2,								true,	-1234,								"m1234"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0xE4D2,								true,	-1234,								"m1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0xE4D2,								true,	-1234,								"m1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xE4D2,								true,	-1234,								"m1234",	false));
 
 		// 0xF800 = 1111 1000 0000 0000 = 1 11110 0000000000 = -32768
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0xF800,								true,	-32768,								"min"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0xF800,								true,	-32768,								"min"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xF800,								true,	-32768,								"min"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0xF800,								true,	-32768,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0xF800,								true,	-32768,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0xF800,								true,	-32768,								"min",	false));
 
 		// 0x77FF = 0111 0111 1111 1111 = 0 11101 1111111111 = 32752
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x77FF,								true,	32752,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x77FF,								true,	32752,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x77FF,								true,	32752,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x77FF,								true,	32752,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x77FF,								true,	32752,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x77FF,								true,	32752,								"max",	false));
 
 		// +0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x0000,								true,	0,									"p0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x0000,								true,	0,									"p0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x0000,								true,	0,									"p0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x0000,								true,	0,									"p0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x0000,								true,	0,									"p0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x0000,								true,	0,									"p0",	false));
 
 		// -0
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x8000,								true,	0,									"m0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x8000,								true,	0,									"m0"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x8000,								true,	0,									"m0"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_16,		0x8000,								true,	0,									"m0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_32,		0x8000,								true,	0,									"m0",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_SIGNED_64,		0x8000,								true,	0,									"m0",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_16,		0xc49a4000,							true,	-1234));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_32,		0xc49a4000,							true,	-1234));
@@ -10397,34 +10504,34 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	else if (instruction == "OpConvertSToF")
 	{
 		// Normal numbers from int8 range
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_16,			-12,								true,	0xCA00,								"m21"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_16,			-12,								true,	0xCA00,								"m21",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_32,			-21,								true,	0xC1A80000,							"m21"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_64,			-99,								true,	0xC058C00000000000ull,				"m99"));
 
 		// Minimum int8 value
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_16,			-128,								true,	0xD800,								"min"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_16,			-128,								true,	0xD800,								"min",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_32,			-128,								true,	0xC3000000,							"min"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_64,			-128,								true,	0xC060000000000000ull,				"min"));
 
 		// Maximum int8 value
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_16,			127,								true,	0x57F0,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_16,			127,								true,	0x57F0,								"max",	false));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_32,			127,								true,	0x42FE0000,							"max"));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_8,			DATA_TYPE_FLOAT_64,			127,								true,	0x405FC00000000000ull,				"max"));
 
 		// All hexadecimal values below represent 1234.0 as 32/64-bit IEEE 754 float
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-1234,								true,	0xE4D2,								"m1234",	false));
 
 		// 0xF800 = 1111 1000 0000 0000 = 1 11110 0000000000 = -32768
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			-32768,								true,	0xF800,								"min",	false));
 
 		// 0x77FF = 0111 0111 1111 1111 = 0 11101 1111111111 = 32752
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max"));
-		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max"));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max",	false));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_16,			32752,								true,	0x77FF,								"max",	false));
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
@@ -10501,12 +10608,12 @@ tcu::TestCaseGroup* createConvertComputeTests (tcu::TestContext& testCtx, const 
 	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
 	{
 		ComputeShaderSpec spec;
-		spec.assembly			= getConvertCaseShaderStr(instruction, *test);
+		spec.assembly			= getConvertCaseShaderStr(instruction, *test, true);
 		spec.numWorkGroups		= IVec3(1, 1, 1);
 		spec.inputs.push_back	(test->m_inputBuffer);
 		spec.outputs.push_back	(test->m_outputBuffer);
 
-		getVulkanFeaturesAndExtensions(test->m_fromType, test->m_toType, spec.requestedVulkanFeatures, spec.extensions);
+		getVulkanFeaturesAndExtensions(test->m_fromType, test->m_toType, test->m_useStorageExt, spec.requestedVulkanFeatures, spec.extensions);
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "", spec));
 	}
@@ -10536,7 +10643,7 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 		resources.outputs.push_back	(Resource(test->m_outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 
-		getVulkanFeaturesAndExtensions(test->m_fromType, test->m_toType, vulkanFeatures, extensions);
+		getVulkanFeaturesAndExtensions(test->m_fromType, test->m_toType, test->m_useStorageExt, vulkanFeatures, extensions);
 
 		vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 		vulkanFeatures.coreFeatures.fragmentStoresAndAtomics		= true;

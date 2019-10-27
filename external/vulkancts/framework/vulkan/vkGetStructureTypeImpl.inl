@@ -991,6 +991,11 @@ template<> VkStructureType getStructureType<VkDisplayPlaneCapabilities2KHR> (voi
 	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
@@ -1354,11 +1359,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsProp
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV;
-}
-
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderClockFeaturesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesListEXT> (void)

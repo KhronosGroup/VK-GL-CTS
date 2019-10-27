@@ -51,6 +51,7 @@
 #include "vktPipelineExecutablePropertiesTests.hpp"
 #include "vktPipelineVertexOnlyTests.hpp"
 #include "vktPipelineMaxVaryingsTests.hpp"
+#include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -93,6 +94,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createExecutablePropertiesTests		(testCtx));
 	pipelineTests->addChild(createVertexOnlyTests				(testCtx));
 	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
+	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
 }
 
 } // anonymous

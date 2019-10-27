@@ -67,9 +67,22 @@ typedef deUint32 FeatureFlags;
 
 enum
 {
-	BUFFER_IMAGE_COPY_OFFSET_GRANULARITY	= 4u,
 	NO_MATCH_FOUND							= ~((deUint32)0),	//!< no matching index
 };
+
+struct TestFormat
+{
+	vk::VkFormat	format;
+};
+
+struct TestImageParameters
+{
+	ImageType				imageType;
+	std::vector<tcu::UVec3>	imageSizes;
+	std::vector<TestFormat>	formats;
+};
+
+std::vector<TestFormat>			getTestFormats						(const ImageType& imageType);
 
 vk::VkImageType					mapImageType						(const ImageType					imageType);
 
@@ -80,9 +93,18 @@ std::string						getImageTypeName					(const ImageType					imageType);
 std::string						getShaderImageType					(const tcu::TextureFormat&			format,
 																	 const ImageType					imageType);
 
+std::string						getShaderImageType					(const vk::PlanarFormatDescription& description,
+																	 const ImageType imageType);
+
 std::string						getShaderImageDataType				(const tcu::TextureFormat&			format);
 
+std::string						getShaderImageDataType				(const vk::PlanarFormatDescription& description);
+
 std::string						getShaderImageFormatQualifier		(const tcu::TextureFormat&			format);
+
+std::string						getShaderImageFormatQualifier		(vk::VkFormat						format);
+
+std::string						getImageFormatID					(vk::VkFormat						format);
 
 std::string						getShaderImageCoordinates			(const ImageType					imageType,
 																	 const std::string&					x,
@@ -118,9 +140,6 @@ bool							isImageSizeSupported				(const vk::InstanceInterface&		instance,
 																	 const ImageType					imageType,
 																	 const tcu::UVec3&					imageSize);
 
-deUint32						getImageMaxMipLevels				(const vk::VkImageFormatProperties& imageFormatProperties,
-																	 const vk::VkExtent3D&				extent);
-
 deUint32						getImageMipLevelSizeInBytes			(const vk::VkExtent3D&				baseExtents,
 																	 const deUint32						layersCount,
 																	 const tcu::TextureFormat&			format,
@@ -132,6 +151,20 @@ deUint32						getImageSizeInBytes					(const vk::VkExtent3D&				baseExtents,
 																	 const tcu::TextureFormat&			format,
 																	 const deUint32						mipmapLevelsCount		= 1u,
 																	 const deUint32						mipmapMemoryAlignment	= 1u);
+
+deUint32						getImageMipLevelSizeInBytes			(const vk::VkExtent3D&				baseExtents,
+																	 const deUint32						layersCount,
+																	 const vk::PlanarFormatDescription&	formatDescription,
+																	 const deUint32						planeNdx,
+																	 const deUint32						mipmapLevel,
+																	 const deUint32						mipmapMemoryAlignment	= 1u);
+
+deUint32						getImageSizeInBytes					(const vk::VkExtent3D&				baseExtents,
+																	 const deUint32						layersCount,
+																	 const vk::PlanarFormatDescription&	formatDescription,
+																	 const deUint32						planeNdx,
+																	 const deUint32						mipmapLevelsCount		=1u,
+																	 const deUint32						mipmapMemoryAlignment	=1u);
 
 vk::Move<vk::VkPipeline>		makeComputePipeline					(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
@@ -208,6 +241,9 @@ bool							checkImageFormatFeatureSupport		(const vk::InstanceInterface&		instan
 
 deUint32						getSparseAspectRequirementsIndex	(const std::vector<vk::VkSparseImageMemoryRequirements>&	requirements,
 																	 const vk::VkImageAspectFlags								aspectFlags);
+
+vk::VkFormat					getPlaneCompatibleFormatForWriting	(const vk::PlanarFormatDescription&	formatInfo,
+																	 deUint32							planeNdx);
 
 template<typename T>
 inline de::SharedPtr<vk::Unique<T> > makeVkSharedPtr (vk::Move<T> vkMove)

@@ -280,6 +280,33 @@ tcu::TestStatus createSurfaceTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Creating surface succeeded");
 }
 
+tcu::TestStatus querySurfaceCounterTest (Context& context, Type wsiType)
+{
+	const InstanceHelper			instHelper		(context, wsiType);
+	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const vk::InstanceInterface&	vki				= context.getInstanceInterface();
+	const vk::VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	if (!isInstanceExtensionSupported(context.getUsedApiVersion(), context.getInstanceExtensions(), "VK_EXT_display_surface_counter"))
+		TCU_THROW(NotSupportedError, "VK_EXT_display_surface_counter not supported");
+
+	const vk::VkSurfaceCapabilities2EXT	capsExt = getPhysicalDeviceSurfaceCapabilities2EXT	(vki, physicalDevice, surface.get());
+	const vk::VkSurfaceCapabilitiesKHR	capsKhr = getPhysicalDeviceSurfaceCapabilities		(vki, physicalDevice, surface.get());
+
+	if (!sameSurfaceCapabilities(capsKhr, capsExt))
+	{
+		return tcu::TestStatus::fail("KHR and EXT surface capabilities do not match");
+	}
+
+	if (capsExt.supportedSurfaceCounters != 0)
+	{
+		return tcu::TestStatus::fail("supportedSurfaceCounters nonzero (" + de::toString(capsExt.supportedSurfaceCounters) + ") for non-display surface");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus createSurfaceCustomAllocatorTest (Context& context, Type wsiType)
 {
 	AllocationCallbackRecorder	allocationRecorder	(getSystemAllocator());
@@ -1242,6 +1269,7 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addFunctionCase(testGroup, "query_capabilities",					"Query surface capabilities",								querySurfaceCapabilitiesTest,				wsiType);
 	addFunctionCase(testGroup, "query_capabilities2",					"Query extended surface capabilities",						querySurfaceCapabilities2Test,				wsiType);
 	addFunctionCase(testGroup, "query_protected_capabilities",			"Query protected surface capabilities",						querySurfaceProtectedCapabilitiesTest,		wsiType);
+	addFunctionCase(testGroup, "query_surface_counters",				"Query and check available surface counters",				querySurfaceCounterTest,					wsiType);
 	addFunctionCase(testGroup, "query_formats",							"Query surface formats",									querySurfaceFormatsTest,					wsiType);
 	addFunctionCase(testGroup, "query_formats2",						"Query extended surface formats",							querySurfaceFormats2Test,					wsiType);
 	addFunctionCase(testGroup, "query_present_modes",					"Query surface present modes",								querySurfacePresentModesTest,				wsiType);

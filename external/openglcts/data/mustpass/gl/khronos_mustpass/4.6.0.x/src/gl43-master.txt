@@ -3878,8 +3878,6 @@ KHR-GL43.draw_indirect.basic-mode-drawElements-triangle_strip_adjacency
 KHR-GL43.draw_indirect.advanced-twoPass-transformFeedback-arrays
 KHR-GL43.draw_indirect.advanced-twoPass-transformFeedback-elements
 KHR-GL43.draw_indirect.advanced-primitiveRestart-elements
-KHR-GL43.draw_indirect.misc-reservedMustBeZero-arrays
-KHR-GL43.draw_indirect.misc-reservedMustBeZero-elements
 KHR-GL43.draw_indirect.negative-noindirect-arrays
 KHR-GL43.draw_indirect.negative-noindirect-elements
 KHR-GL43.draw_indirect.negative-invalidMode-arrays

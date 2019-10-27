@@ -2752,6 +2752,14 @@ struct VkDisplayPlaneCapabilities2KHR
 	VkDisplayPlaneCapabilitiesKHR	capabilities;
 };
 
+struct VkPhysicalDeviceShaderClockFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupClock;
+	VkBool32		shaderDeviceClock;
+};
+
 struct VkSurfaceProtectedCapabilitiesKHR
 {
 	VkStructureType	sType;
@@ -3565,14 +3573,6 @@ struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderSMBuiltins;
-};
-
-struct VkPhysicalDeviceShaderClockFeaturesKHR
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		shaderSubgroupClock;
-	VkBool32		shaderDeviceClock;
 };
 
 struct VkDrmFormatModifierPropertiesEXT
@@ -4536,7 +4536,7 @@ struct VkImportMemoryWin32HandleInfoKHR
 	const void*							pNext;
 	VkExternalMemoryHandleTypeFlagBits	handleType;
 	pt::Win32Handle						handle;
-	char*								name;
+	pt::Win32LPCWSTR					name;
 };
 
 struct VkExportMemoryWin32HandleInfoKHR
@@ -4545,7 +4545,7 @@ struct VkExportMemoryWin32HandleInfoKHR
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
 	deUint32						dwAccess;
-	char*							name;
+	pt::Win32LPCWSTR				name;
 };
 
 struct VkMemoryWin32HandlePropertiesKHR
@@ -4584,7 +4584,7 @@ struct VkImportSemaphoreWin32HandleInfoKHR
 	VkSemaphoreImportFlags					flags;
 	VkExternalSemaphoreHandleTypeFlagBits	handleType;
 	pt::Win32Handle							handle;
-	char*									name;
+	pt::Win32LPCWSTR						name;
 };
 
 struct VkExportSemaphoreWin32HandleInfoKHR
@@ -4593,7 +4593,7 @@ struct VkExportSemaphoreWin32HandleInfoKHR
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
 	deUint32						dwAccess;
-	char*							name;
+	pt::Win32LPCWSTR				name;
 };
 
 struct VkD3D12FenceSubmitInfoKHR
@@ -4622,7 +4622,7 @@ struct VkImportFenceWin32HandleInfoKHR
 	VkFenceImportFlags					flags;
 	VkExternalFenceHandleTypeFlagBits	handleType;
 	pt::Win32Handle						handle;
-	char*								name;
+	pt::Win32LPCWSTR					name;
 };
 
 struct VkExportFenceWin32HandleInfoKHR
@@ -4631,7 +4631,7 @@ struct VkExportFenceWin32HandleInfoKHR
 	const void*						pNext;
 	pt::Win32SecurityAttributesPtr	pAttributes;
 	deUint32						dwAccess;
-	char*							name;
+	pt::Win32LPCWSTR				name;
 };
 
 struct VkFenceGetWin32HandleInfoKHR

@@ -92,6 +92,7 @@ PLATFORM_TYPES		= [
 	(["const", "SECURITY_ATTRIBUTES", "*"],	["Win32SecurityAttributesPtr"],	"const void*"),
 	(["AHardwareBuffer", "*"],				["AndroidHardwareBufferPtr"],	"void*"),
 	(["HMONITOR"],							["Win32MonitorHandle"],			"void*"),
+	(["LPCWSTR"],							["Win32LPCWSTR"],				"const void*"),
 
 	# VK_EXT_acquire_xlib_display
 	(["RROutput"],							["RROutput"],					"void*"),
@@ -119,7 +120,6 @@ TYPE_SUBSTITUTIONS		= [
 	# Platform-specific
 	("DWORD",		"deUint32"),
 	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
-	("LPCWSTR",		"char*"),
 ]
 
 EXTENSION_POSTFIXES				= ["KHR", "EXT", "NV", "NVX", "KHX", "NN", "MVK", "FUCHSIA", "GGP", "AMD"]
@@ -1084,6 +1084,8 @@ def writeStrUtilImpl (api, filename):
 						valFmt = "get%sStr(value.%s)" % (member.getType()[2:], member.name)
 					elif member.getType() == "const char*" or member.getType() == "char*":
 						valFmt = "getCharPtrStr(value.%s)" % member.name
+					elif member.getType() == PLATFORM_TYPE_NAMESPACE + "::Win32LPCWSTR":
+						valFmt = "getWStr(value.%s)" % member.name
 					elif member.arraySize != '':
 						if member.name in ["extensionName", "deviceName", "layerName", "description"]:
 							valFmt = "(const char*)value.%s" % member.name

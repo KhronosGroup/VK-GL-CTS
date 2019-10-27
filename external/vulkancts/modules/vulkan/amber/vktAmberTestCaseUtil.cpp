@@ -34,24 +34,18 @@ AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
 									const std::string&				filename,
 									const std::vector<std::string>	requirements)
 {
-	AmberTestCase *testCase = new AmberTestCase(testCtx, name, description);
+	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
+	std::string readFilename("vulkan/amber/");
+	readFilename.append(category);
+	readFilename.append("/");
+	readFilename.append(filename);
+
+	AmberTestCase *testCase = new AmberTestCase(testCtx, name, description, readFilename);
 
 	for (auto req : requirements)
 		testCase->addRequirement(req);
 
-	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
-	// Make sure the input can be parsed before we use it.
-	if (testCase->parse(category, filename))
-		return testCase;
-	else
-	{
-		const std::string msg = "Failed to parse Amber file: " + filename;
-
-		delete testCase;
-		TCU_THROW(InternalError, msg.c_str());
-	}
-
-	return DE_NULL;
+	return testCase;
 }
 
 } // cts_amber

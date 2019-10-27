@@ -56,37 +56,37 @@ namespace
 class ImageBlockShapesCase : public TestCase
 {
 public:
-					ImageBlockShapesCase	(tcu::TestContext&			testCtx,
-											 const std::string&			name,
-											 const std::string&			description,
-											 const ImageType			imageType,
-											 const tcu::UVec3&			imageSize,
-											 const tcu::TextureFormat&	format,
-											 deUint32					numSamples);
+	ImageBlockShapesCase			(tcu::TestContext&	testCtx,
+									 const std::string&	name,
+									 const std::string&	description,
+									 const ImageType	imageType,
+									 const tcu::UVec3&	imageSize,
+									 const VkFormat		format,
+									 deUint32			numSamples);
 
 	void			initPrograms			(SourceCollections&			sourceCollections) const {DE_UNREF(sourceCollections);};
 	TestInstance*	createInstance			(Context&					context) const;
 	virtual void	checkSupport			(Context&					context) const;
 
 private:
-	const ImageType				m_imageType;
-	const tcu::UVec3			m_imageSize;
-	const tcu::TextureFormat	m_format;
-	const deUint32				m_numSamples;
+	const ImageType		m_imageType;
+	const tcu::UVec3	m_imageSize;
+	const VkFormat		m_format;
+	const deUint32		m_numSamples;
 };
 
-ImageBlockShapesCase::ImageBlockShapesCase (tcu::TestContext&			testCtx,
-											const std::string&			name,
-											const std::string&			description,
-											const ImageType				imageType,
-											const tcu::UVec3&			imageSize,
-											const tcu::TextureFormat&	format,
-											deUint32					numSamples)
-	: TestCase				(testCtx, name, description)
-	, m_imageType			(imageType)
-	, m_imageSize			(imageSize)
-	, m_format				(format)
-	, m_numSamples			(numSamples)
+ImageBlockShapesCase::ImageBlockShapesCase (tcu::TestContext&	testCtx,
+											const std::string&	name,
+											const std::string&	description,
+											const ImageType		imageType,
+											const tcu::UVec3&	imageSize,
+											const VkFormat		format,
+											deUint32			numSamples)
+	: TestCase		(testCtx, name, description)
+	, m_imageType	(imageType)
+	, m_imageSize	(imageSize)
+	, m_format		(format)
+	, m_numSamples	(numSamples)
 {
 }
 
@@ -107,26 +107,26 @@ void ImageBlockShapesCase::checkSupport (Context& context) const
 class ImageBlockShapesInstance : public SparseResourcesBaseInstance
 {
 public:
-					ImageBlockShapesInstance(Context&							context,
-											 const ImageType					imageType,
-											 const tcu::UVec3&					imageSize,
-											 const tcu::TextureFormat&			format,
-											 deUint32							numSamples);
+	ImageBlockShapesInstance	(Context&			context,
+								 const ImageType	imageType,
+								 const tcu::UVec3&	imageSize,
+								 const VkFormat		format,
+								 deUint32			numSamples);
 
-	tcu::TestStatus	iterate						(void);
+	tcu::TestStatus	iterate		(void);
 
 private:
-	const ImageType				m_imageType;
-	const tcu::UVec3			m_imageSize;
-	const tcu::TextureFormat	m_format;
-	const deUint32				m_numSamples;
+	const ImageType		m_imageType;
+	const tcu::UVec3	m_imageSize;
+	const VkFormat		m_format;
+	const deUint32		m_numSamples;
 };
 
-ImageBlockShapesInstance::ImageBlockShapesInstance (Context&					context,
-													const ImageType				imageType,
-													const tcu::UVec3&			imageSize,
-													const tcu::TextureFormat&	format,
-													deUint32					numSamples)
+ImageBlockShapesInstance::ImageBlockShapesInstance (Context&			context,
+													const ImageType		imageType,
+													const tcu::UVec3&	imageSize,
+													const VkFormat		format,
+													deUint32			numSamples)
 	: SparseResourcesBaseInstance	(context)
 	, m_imageType					(imageType)
 	, m_imageSize					(imageSize)
@@ -137,21 +137,19 @@ ImageBlockShapesInstance::ImageBlockShapesInstance (Context&					context,
 
 tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 {
-	const InstanceInterface&				instance = m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice = m_context.getPhysicalDevice();
-	const VkPhysicalDeviceProperties		physicalDeviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
-	VkImageCreateInfo						imageCreateInfo;
-	VkSparseImageMemoryRequirements			aspectRequirements;
-	VkExtent3D								imageGranularity;
-	const VkPhysicalDeviceSparseProperties	sparseProperties = physicalDeviceProperties.sparseProperties;
-	const deUint32							pixelSize = tcu::getPixelSize(m_format) * 8;
-	VkExtent3D								expectedGranularity;
+	const InstanceInterface&						instance					= m_context.getInstanceInterface();
+	const VkPhysicalDevice							physicalDevice				= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceProperties				physicalDeviceProperties	= getPhysicalDeviceProperties(instance, physicalDevice);
+	VkImageCreateInfo								imageCreateInfo;
+	std::vector<VkSparseImageMemoryRequirements>	sparseMemoryRequirements;
+	const VkPhysicalDeviceSparseProperties			sparseProperties			= physicalDeviceProperties.sparseProperties;
+	const PlanarFormatDescription					formatDescription			= getPlanarFormatDescription(m_format);
 
 	imageCreateInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.pNext					= DE_NULL;
 	imageCreateInfo.flags					= VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
 	imageCreateInfo.imageType				= mapImageType(m_imageType);
-	imageCreateInfo.format					= mapTextureFormat(m_format);
+	imageCreateInfo.format					= m_format;
 	imageCreateInfo.extent					= makeExtent3D(getLayerSize(m_imageType, m_imageSize));
 	imageCreateInfo.mipLevels				= 1u;
 	imageCreateInfo.arrayLayers				= getNumLayers(m_imageType, m_imageSize);
@@ -170,9 +168,20 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 	}
 
 	// Check the format supports given number of samples
-	const VkImageFormatProperties formatProperties = getPhysicalDeviceImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.tiling, imageCreateInfo.usage, imageCreateInfo.flags);
+	VkImageFormatProperties	imageFormatProperties;
 
-	if (!(formatProperties.sampleCounts & imageCreateInfo.samples))
+	if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
+		imageCreateInfo.format,
+		imageCreateInfo.imageType,
+		imageCreateInfo.tiling,
+		imageCreateInfo.usage,
+		imageCreateInfo.flags,
+		&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+	{
+		TCU_THROW(NotSupportedError, "Image format does not support sparse operations");
+	}
+
+	if (!(imageFormatProperties.sampleCounts & imageCreateInfo.samples))
 		TCU_THROW(NotSupportedError, "The image format does not support the number of samples specified");
 
 	// Check if device supports sparse operations for image format
@@ -187,233 +196,236 @@ tcu::TestStatus ImageBlockShapesInstance::iterate (void)
 	}
 
 	{
-		const DeviceInterface&								deviceInterface				= getDeviceInterface();
+		const DeviceInterface&		deviceInterface	= getDeviceInterface();
 
 		// Create sparse image
-		const Unique<VkImage>								sparseImage					(createImage(deviceInterface, getDevice(), &imageCreateInfo));
+		const Unique<VkImage>		imageSparse( createImage(deviceInterface, getDevice(), &imageCreateInfo) );
 
 		// Get sparse image sparse memory requirements
-		const std::vector<VkSparseImageMemoryRequirements>	sparseMemoryRequirements	= getImageSparseMemoryRequirements(deviceInterface, getDevice(), *sparseImage);
+		sparseMemoryRequirements	= getImageSparseMemoryRequirements(deviceInterface, getDevice(), *imageSparse);
 
 		DE_ASSERT(sparseMemoryRequirements.size() != 0);
-
-		const deUint32										colorAspectIndex			= getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_COLOR_BIT);
-
-		if (colorAspectIndex == NO_MATCH_FOUND)
-			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT");
-
-		aspectRequirements	= sparseMemoryRequirements[colorAspectIndex];
-		imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
 	}
 
-	if (m_imageType == IMAGE_TYPE_3D)
+	for (deUint32 planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
 	{
-		if (!sparseProperties.residencyStandard3DBlockShape)
-			return tcu::TestStatus::pass("Pass (residencyStandard3DBlockShape disabled)");
+		const VkImageAspectFlags		aspect				= (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+		const deUint32					aspectIndex			= getSparseAspectRequirementsIndex(sparseMemoryRequirements, aspect);
 
-		switch (pixelSize)
+		if (aspectIndex == NO_MATCH_FOUND)
+			TCU_THROW(NotSupportedError, "Not supported image aspect");
+
+		VkSparseImageMemoryRequirements	aspectRequirements	= sparseMemoryRequirements[aspectIndex];
+		VkExtent3D						imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
+		deUint32						pixelSize			= static_cast<deUint32>(formatDescription.planes[planeNdx].elementSizeBytes) * 8u;
+		VkExtent3D						expectedGranularity;
+
+		if (m_imageType == IMAGE_TYPE_3D)
 		{
-			case 8:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 32;
-				expectedGranularity.depth	= 32;
-				break;
-			case 16:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 32;
-				expectedGranularity.depth	= 32;
-				break;
-			case 32:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 32;
-				expectedGranularity.depth	= 16;
-				break;
-			case 64:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 16;
-				expectedGranularity.depth	= 16;
-				break;
-			default:
-				DE_ASSERT(pixelSize == 128);
-				expectedGranularity.width	= 16;
-				expectedGranularity.height	= 16;
-				expectedGranularity.depth	= 16;
-				break;
-		};
-	}
-	else if (m_numSamples == 2)
-	{
-		if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
-			return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
+			if (!sparseProperties.residencyStandard3DBlockShape)
+				return tcu::TestStatus::pass("Pass (residencyStandard3DBlockShape disabled)");
 
-		expectedGranularity.depth = 1;
-
-		switch (pixelSize)
+			switch (pixelSize)
+			{
+				case 8:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 32;
+					expectedGranularity.depth = 32;
+					break;
+				case 16:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 32;
+					expectedGranularity.depth = 32;
+					break;
+				case 32:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 32;
+					expectedGranularity.depth = 16;
+					break;
+				case 64:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 16;
+					expectedGranularity.depth = 16;
+					break;
+				default:
+					DE_ASSERT(pixelSize == 128);
+					expectedGranularity.width = 16;
+					expectedGranularity.height = 16;
+					expectedGranularity.depth = 16;
+					break;
+			};
+		}
+		else if (m_numSamples == 2)
 		{
-			case 8:
-				expectedGranularity.width	= 128;
-				expectedGranularity.height	= 256;
-				break;
-			case 16:
-				expectedGranularity.width	= 128;
-				expectedGranularity.height	= 128;
-				break;
-			case 32:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 128;
-				break;
-			case 64:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 64;
-				break;
-			default:
-				DE_ASSERT(pixelSize == 128);
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 64;
-				break;
-		};
-	}
-	else if (m_numSamples == 4)
-	{
-		if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
-			return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
+			if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
+				return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
 
-		expectedGranularity.depth = 1;
+			expectedGranularity.depth = 1;
 
-		switch (pixelSize)
+			switch (pixelSize)
+			{
+				case 8:
+					expectedGranularity.width = 128;
+					expectedGranularity.height = 256;
+					break;
+				case 16:
+					expectedGranularity.width = 128;
+					expectedGranularity.height = 128;
+					break;
+				case 32:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 128;
+					break;
+				case 64:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 64;
+					break;
+				default:
+					DE_ASSERT(pixelSize == 128);
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 64;
+					break;
+			};
+		}
+		else if (m_numSamples == 4)
 		{
-			case 8:
-				expectedGranularity.width	= 128;
-				expectedGranularity.height	= 128;
-				break;
-			case 16:
-				expectedGranularity.width	= 128;
-				expectedGranularity.height	= 64;
-				break;
-			case 32:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 64;
-				break;
-			case 64:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 32;
-				break;
-			default:
-				DE_ASSERT(pixelSize == 128);
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 32;
-				break;
-		};
-	}
-	else if (m_numSamples == 8)
-	{
-		if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
-			return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
+			if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
+				return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
 
-		expectedGranularity.depth = 1;
+			expectedGranularity.depth = 1;
 
-		switch (pixelSize)
+			switch (pixelSize)
+			{
+				case 8:
+					expectedGranularity.width = 128;
+					expectedGranularity.height = 128;
+					break;
+				case 16:
+					expectedGranularity.width = 128;
+					expectedGranularity.height = 64;
+					break;
+				case 32:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 64;
+					break;
+				case 64:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 32;
+					break;
+				default:
+					DE_ASSERT(pixelSize == 128);
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 32;
+					break;
+			};
+		}
+		else if (m_numSamples == 8)
 		{
-			case 8:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 128;
-				break;
-			case 16:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 64;
-				break;
-			case 32:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 64;
-				break;
-			case 64:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 32;
-				break;
-			default:
-				DE_ASSERT(pixelSize == 128);
-				expectedGranularity.width	= 16;
-				expectedGranularity.height	= 32;
-				break;
-		};
-	}
-	else if (m_numSamples == 16)
-	{
-		if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
-			return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
+			if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
+				return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
 
-		expectedGranularity.depth = 1;
+			expectedGranularity.depth = 1;
 
-		switch (pixelSize)
+			switch (pixelSize)
+			{
+				case 8:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 128;
+					break;
+				case 16:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 64;
+					break;
+				case 32:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 64;
+					break;
+				case 64:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 32;
+					break;
+				default:
+					DE_ASSERT(pixelSize == 128);
+					expectedGranularity.width = 16;
+					expectedGranularity.height = 32;
+					break;
+			};
+		}
+		else if (m_numSamples == 16)
 		{
-			case 8:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 64;
-				break;
-			case 16:
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 32;
-				break;
-			case 32:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 32;
-				break;
-			case 64:
-				expectedGranularity.width	= 32;
-				expectedGranularity.height	= 16;
-				break;
-			default:
-				DE_ASSERT(pixelSize == 128);
-				expectedGranularity.width	= 16;
-				expectedGranularity.height	= 16;
-				break;
-		};
-	}
-	else
-	{
-		DE_ASSERT(m_numSamples == 1);
+			if (!sparseProperties.residencyStandard2DMultisampleBlockShape)
+				return tcu::TestStatus::pass("Pass (residencyStandard2DMultisampleBlockShape disabled)");
 
-		if (!sparseProperties.residencyStandard2DBlockShape)
-			return tcu::TestStatus::pass("Pass (residencyStandard2DBlockShape disabled)");
+			expectedGranularity.depth = 1;
 
-		expectedGranularity.depth = 1;
-
-		switch (pixelSize)
+			switch (pixelSize)
+			{
+				case 8:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 64;
+					break;
+				case 16:
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 32;
+					break;
+				case 32:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 32;
+					break;
+				case 64:
+					expectedGranularity.width = 32;
+					expectedGranularity.height = 16;
+					break;
+				default:
+					DE_ASSERT(pixelSize == 128);
+					expectedGranularity.width = 16;
+					expectedGranularity.height = 16;
+					break;
+			};
+		}
+		else
 		{
-			case 8:
-				expectedGranularity.width	= 256;
-				expectedGranularity.height	= 256;
-				break;
-			case 16:
-				expectedGranularity.width	= 256;
-				expectedGranularity.height	= 128;
-				break;
-			case 32:
-				expectedGranularity.width	= 128;
-				expectedGranularity.height	= 128;
-				break;
-			case 64:
-				expectedGranularity.width	= 128;
-				expectedGranularity.height	= 64;
-				break;
-			default:
-				DE_ASSERT(pixelSize == 128);
-				expectedGranularity.width	= 64;
-				expectedGranularity.height	= 64;
-				break;
-		};
-	}
+			DE_ASSERT(m_numSamples == 1);
 
-	if (imageGranularity.width == expectedGranularity.width
-		&& imageGranularity.height == expectedGranularity.height
-		&& imageGranularity.depth == expectedGranularity.depth)
-	{
-		return tcu::TestStatus::pass("Passed");
+			if (!sparseProperties.residencyStandard2DBlockShape)
+				return tcu::TestStatus::pass("Pass (residencyStandard2DBlockShape disabled)");
+
+			expectedGranularity.depth = 1;
+
+			switch (pixelSize)
+			{
+				case 8:
+					expectedGranularity.width = 256;
+					expectedGranularity.height = 256;
+					break;
+				case 16:
+					expectedGranularity.width = 256;
+					expectedGranularity.height = 128;
+					break;
+				case 32:
+					expectedGranularity.width = 128;
+					expectedGranularity.height = 128;
+					break;
+				case 64:
+					expectedGranularity.width = 128;
+					expectedGranularity.height = 64;
+					break;
+				default:
+					DE_ASSERT(pixelSize == 128);
+					expectedGranularity.width = 64;
+					expectedGranularity.height = 64;
+					break;
+			};
+		}
+
+		if (   imageGranularity.width  != expectedGranularity.width
+			|| imageGranularity.height != expectedGranularity.height
+			|| imageGranularity.depth  != expectedGranularity.depth)
+		{
+			return tcu::TestStatus::fail("Non-standard block shape used");
+		}
 	}
-	else
-	{
-		return tcu::TestStatus::fail("Non-standard block shape used");
-	}
+	return tcu::TestStatus::pass("Passed");
 }
 
 TestInstance* ImageBlockShapesCase::createInstance (Context& context) const
@@ -427,53 +439,45 @@ tcu::TestCaseGroup* createImageBlockShapesTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_block_shapes", "Standard block shape"));
 
-	struct ImageParameters
+	const std::vector<TestImageParameters> imageParameters =
 	{
-		ImageType	imageType;
-		tcu::UVec3	imageSize;
-	};
-
-	static const ImageParameters imageParametersArray[] =
-	{
-		{ IMAGE_TYPE_2D,		 tcu::UVec3(512u, 256u, 1u)		},
-		{ IMAGE_TYPE_2D_ARRAY,	 tcu::UVec3(512u, 256u, 6u)		},
-		{ IMAGE_TYPE_CUBE,		 tcu::UVec3(256u, 256u, 1u)		},
-		{ IMAGE_TYPE_CUBE_ARRAY, tcu::UVec3(256u, 256u, 6u)		},
-		{ IMAGE_TYPE_3D,		 tcu::UVec3(512u, 256u, 16u)	}
-	};
-
-	static const tcu::TextureFormat formats[] =
-	{
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::R,	 tcu::TextureFormat::SIGNED_INT8),
-		tcu::TextureFormat(tcu::TextureFormat::RG,	 tcu::TextureFormat::SIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::RG,   tcu::TextureFormat::SIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::RG,   tcu::TextureFormat::SIGNED_INT8),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT16),
-		tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT8)
+		{ IMAGE_TYPE_2D,			{ tcu::UVec3(512u, 256u, 1u) },		getTestFormats(IMAGE_TYPE_2D) },
+		{ IMAGE_TYPE_2D_ARRAY,		{ tcu::UVec3(512u, 256u, 6u) },		getTestFormats(IMAGE_TYPE_2D_ARRAY) },
+		{ IMAGE_TYPE_CUBE,			{ tcu::UVec3(256u, 256u, 1u) },		getTestFormats(IMAGE_TYPE_CUBE) },
+		{ IMAGE_TYPE_CUBE_ARRAY,	{ tcu::UVec3(256u, 256u, 6u) },		getTestFormats(IMAGE_TYPE_CUBE_ARRAY) },
+		{ IMAGE_TYPE_3D,			{ tcu::UVec3(512u, 256u, 16u) },	getTestFormats(IMAGE_TYPE_3D) }
 	};
 
 	static const deUint32 sampleCounts[] = { 1u, 2u, 4u, 8u, 16u };
 
-	for (deInt32 imageTypeNdx = 0; imageTypeNdx < DE_LENGTH_OF_ARRAY(imageParametersArray); ++imageTypeNdx)
+	for (size_t imageTypeNdx = 0; imageTypeNdx < imageParameters.size(); ++imageTypeNdx)
 	{
-		const ImageType					imageType = imageParametersArray[imageTypeNdx].imageType;
+		const ImageType					imageType = imageParameters[imageTypeNdx].imageType;
 		de::MovePtr<tcu::TestCaseGroup> imageTypeGroup(new tcu::TestCaseGroup(testCtx, getImageTypeName(imageType).c_str(), ""));
 
-		for (deInt32 formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
+		for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
 		{
-			const tcu::TextureFormat&		format = formats[formatNdx];
-			de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, getShaderImageFormatQualifier(format).c_str(), ""));
+			VkFormat						format				= imageParameters[imageTypeNdx].formats[formatNdx].format;
+			tcu::UVec3						imageSizeAlignment	= getImageSizeAlignment(format);
+			de::MovePtr<tcu::TestCaseGroup> formatGroup			(new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str(), ""));
 
 			for (deInt32 sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); ++sampleCountNdx)
 			{
-				const tcu::UVec3	imageSize	= imageParametersArray[imageTypeNdx].imageSize;
-				const deUint32		sampleCount	= sampleCounts[sampleCountNdx];
-				const std::string	name		= std::string("samples_") + de::toString(sampleCount);
+				for (size_t imageSizeNdx = 0; imageSizeNdx < imageParameters[imageTypeNdx].imageSizes.size(); ++imageSizeNdx)
+				{
+					const tcu::UVec3	imageSize = imageParameters[imageTypeNdx].imageSizes[imageSizeNdx];
 
-				formatGroup->addChild(new ImageBlockShapesCase(testCtx, name.c_str(), "", imageType, imageSize, format, sampleCount));
+					// skip test for images with odd sizes for some YCbCr formats
+					if ((imageSize.x() % imageSizeAlignment.x()) != 0)
+						continue;
+					if ((imageSize.y() % imageSizeAlignment.y()) != 0)
+						continue;
+
+					const deUint32		sampleCount = sampleCounts[sampleCountNdx];
+					const std::string	name = std::string("samples_") + de::toString(sampleCount);
+
+					formatGroup->addChild(new ImageBlockShapesCase(testCtx, name.c_str(), "", imageType, imageSize, format, sampleCount));
+				}
 			}
 			imageTypeGroup->addChild(formatGroup.release());
 		}

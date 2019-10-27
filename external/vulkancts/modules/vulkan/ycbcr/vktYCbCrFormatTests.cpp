@@ -70,9 +70,6 @@ using de::UniquePtr;
 using std::vector;
 using std::string;
 
-typedef de::SharedPtr<Allocation>				AllocationSp;
-typedef de::SharedPtr<vk::Unique<VkBuffer> >	VkBufferSp;
-
 Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 							   VkDevice					device,
 							   VkFormat					format,

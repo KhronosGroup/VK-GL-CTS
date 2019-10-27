@@ -1,0 +1,115 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with always false if in switch statement
+
+# The test passes because the shader always writes the color red
+
+# Optimized using spirv-opt with the following arguments:
+# '--private-to-local'
+# '--eliminate-local-multi-store'
+# '--simplify-instructions'
+# '--eliminate-dead-inserts'
+# spirv-opt commit hash: 4a00a80c40484a6f6f72f48c9d34943cf8f180d4
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+#
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#   switch (0)
+#   {
+#   case 0:
+#     if (false)
+#     {
+#     }
+#   }
+#
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 22
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %18
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %18 "_GLF_color"
+               OpDecorate %18 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 0
+         %10 = OpTypeBool
+         %11 = OpConstantFalse %10
+         %15 = OpTypeFloat 32
+         %16 = OpTypeVector %15 4
+         %17 = OpTypePointer Output %16
+         %18 = OpVariable %17 Output
+         %19 = OpConstant %15 1
+         %20 = OpConstant %15 0
+         %21 = OpConstantComposite %16 %19 %20 %20 %19
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %9 None
+               OpSwitch %7 %9 0 %8
+          %8 = OpLabel
+               OpSelectionMerge %13 None
+               OpBranchConditional %11 %12 %13
+         %12 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpStore %18 %21
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

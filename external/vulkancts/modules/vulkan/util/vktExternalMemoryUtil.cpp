@@ -668,7 +668,7 @@ void importFence (const vk::DeviceInterface&				vkd,
 			flags,
 			externalType,
 			handle.getWin32Handle(),
-			DE_NULL
+			(vk::pt::Win32LPCWSTR)DE_NULL
 		};
 
 		VK_CHECK(vkd.importFenceWin32HandleKHR(device, &importInfo));
@@ -851,7 +851,7 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 			flags,
 			externalType,
 			handle.getWin32Handle(),
-			DE_NULL
+			(vk::pt::Win32LPCWSTR)DE_NULL
 		};
 
 		VK_CHECK(vkd.importSemaphoreWin32HandleKHR(device, &importInfo));
@@ -1038,7 +1038,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			DE_NULL,
 			externalType,
 			handle.getWin32Handle(),
-			DE_NULL
+			(vk::pt::Win32LPCWSTR)DE_NULL
 		};
 		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
 		{

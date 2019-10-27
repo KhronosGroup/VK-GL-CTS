@@ -51,6 +51,9 @@ namespace ycbcr
 #define VK_YCBCR_FORMAT_FIRST	VK_FORMAT_G8B8G8R8_422_UNORM
 #define VK_YCBCR_FORMAT_LAST	((vk::VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1))
 
+typedef de::SharedPtr<vk::Allocation>				AllocationSp;
+typedef de::SharedPtr<vk::Unique<vk::VkBuffer> >	VkBufferSp;
+
 class MultiPlaneImageData
 {
 public:

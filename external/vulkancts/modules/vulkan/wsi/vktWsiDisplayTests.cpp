@@ -28,6 +28,8 @@
 #include "vkStrUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkRef.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkWsiUtil.hpp"
 
 #include "tcuDefs.hpp"
 #include "tcuTestLog.hpp"
@@ -40,6 +42,8 @@
 #include <set>
 #include <map>
 #include <limits>
+#include <sstream>
+#include <stdexcept>
 
 namespace vkt
 {
@@ -65,6 +69,7 @@ enum DisplayIndexTest
 	DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE,
 	DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES,
 	DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE,
+	DISPLAY_TEST_INDEX_SURFACE_COUNTERS,
 	DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2,
 	DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2,
 	DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2,
@@ -197,7 +202,15 @@ private:
 	tcu::TestStatus				testGetDisplayModePropertiesKHR					(void);
 	tcu::TestStatus				testCreateDisplayModeKHR						(void);
 	tcu::TestStatus				testGetDisplayPlaneCapabilitiesKHR				(void);
-	tcu::TestStatus				testCreateDisplayPlaneSurfaceKHR				(void);
+
+	enum SurfaceTestKind
+	{
+		SURFACE_CREATE = 0,
+		SURFACE_COUNTERS,
+		SURFACE_TEST_KIND_MAX_ENUM
+	};
+
+	tcu::TestStatus				testDisplaySurface								(SurfaceTestKind testKind);
 
 	// VK_KHR_get_display_properties2 extension tests
 	tcu::TestStatus				testGetPhysicalDeviceDisplayProperties2KHR		(void);
@@ -276,7 +289,8 @@ tcu::TestStatus DisplayCoverageTestInstance::iterate (void)
 		case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE:						return testGetDisplayModePropertiesKHR();					break;
 		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE:					return testCreateDisplayModeKHR();							break;
 		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES:			return testGetDisplayPlaneCapabilitiesKHR();				break;
-		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE:			return testCreateDisplayPlaneSurfaceKHR();					break;
+		case DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE:			return testDisplaySurface(SURFACE_CREATE);					break;
+		case DISPLAY_TEST_INDEX_SURFACE_COUNTERS:						return testDisplaySurface(SURFACE_COUNTERS);				break;
 		case DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2:				return testGetPhysicalDeviceDisplayProperties2KHR();		break;
 		case DISPLAY_TEST_INDEX_GET_DISPLAY_PLANES2:					return testGetPhysicalDeviceDisplayPlaneProperties2KHR();	break;
 		case DISPLAY_TEST_INDEX_GET_DISPLAY_MODE2:						return testGetDisplayModeProperties2KHR();					break;
@@ -1515,14 +1529,25 @@ tcu::TestStatus	DisplayCoverageTestInstance::testGetDisplayPlaneCapabilitiesKHR 
 	return tcu::TestStatus::pass("pass");
 }
 
+namespace
+{
+	struct SurfaceCountersError : public std::runtime_error
+	{
+		SurfaceCountersError(const std::string& what_) : std::runtime_error(what_) {}
+	};
+}
+
 /*--------------------------------------------------------------------*//*!
- * \brief Create display plane surface coverage test
+ * \brief Test display surface creation or counters.
+ *
+ * In the counter variant, it needs VK_EXT_display_surface_counter
+ * and checks the available surface counters.
  *
  * Throws an exception on fail.
  *
  * \return tcu::TestStatus::pass on success
  *//*--------------------------------------------------------------------*/
-tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR (void)
+tcu::TestStatus	DisplayCoverageTestInstance::testDisplaySurface (SurfaceTestKind testKind)
 {
 	deUint32									planeCountReported	=	0u;
 	deUint32									planeCountTested	=	0u;
@@ -1531,6 +1556,13 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR (v
 	bool										testPerformed		=	false;
 	DisplayVector								displaysVector;
 	VkResult									result;
+	std::string									surfaceCountersErr;
+
+	DE_ASSERT(testKind >= 0 && testKind < SURFACE_TEST_KIND_MAX_ENUM);
+
+	// Check the needed extension.
+	if (testKind == SURFACE_COUNTERS && (!isInstanceExtensionSupported(m_context.getUsedApiVersion(), m_context.getInstanceExtensions(), "VK_EXT_display_surface_counter")))
+		TCU_THROW(NotSupportedError, "VK_EXT_display_surface_counter not supported");
 
 	// Get displays
 	if (!getDisplays(displaysVector))
@@ -1661,6 +1693,39 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR (v
 							if (surface == DE_NULL)
 								TCU_FAIL("Invalid surface handle returned");
 
+							if (testKind == SURFACE_COUNTERS)
+							{
+								// Check surface counters.
+								try
+								{
+									const vk::VkSurfaceCapabilities2EXT	capsExt = vk::wsi::getPhysicalDeviceSurfaceCapabilities2EXT	(m_vki, m_physicalDevice, surface);
+									const vk::VkSurfaceCapabilitiesKHR	capsKhr = vk::wsi::getPhysicalDeviceSurfaceCapabilities		(m_vki, m_physicalDevice, surface);
+
+									if (!vk::wsi::sameSurfaceCapabilities(capsKhr, capsExt))
+									{
+										throw SurfaceCountersError("KHR and EXT surface capabilities do not match");
+									}
+
+									for (deUint32 i = 0; i < sizeof(capsExt.supportedSurfaceCounters) * 8; ++i)
+									{
+										deUint32 mask = (1<<i);
+										if (capsExt.supportedSurfaceCounters & mask)
+										{
+											if (mask != static_cast<deUint32>(VK_SURFACE_COUNTER_VBLANK_EXT))
+											{
+												std::ostringstream msg;
+												msg << "Invalid bit set in supportedSurfaceCounters: 0x" << std::hex << mask;
+												throw SurfaceCountersError(msg.str());
+											}
+										}
+									}
+								}
+								catch(const SurfaceCountersError& err)
+								{
+									surfaceCountersErr = err.what();
+								}
+							}
+
 							m_vki.destroySurfaceKHR(	instance,	// VkInstance							instance
 														surface,	// VkSurfaceKHR*						pSurface
 														DE_NULL);	// const VkAllocationCallbacks*			pAllocator
@@ -1676,7 +1741,7 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR (v
 	if (!testPerformed)
 		TCU_THROW(NotSupportedError, "Cannot find suitable parameters for the test");
 
-	return tcu::TestStatus::pass("pass");
+	return ((surfaceCountersErr.empty()) ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail(surfaceCountersErr));
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -2230,6 +2295,7 @@ void createDisplayCoverageTests (tcu::TestCaseGroup* group)
 	addTest(group, DISPLAY_TEST_INDEX_CREATE_DISPLAY_MODE,					"create_display_mode",					"Create display mode coverage test");
 	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PLANE_CAPABILITIES,		"get_display_plane_capabilities",		"Display-plane capabilities coverage test");
 	addTest(group, DISPLAY_TEST_INDEX_CREATE_DISPLAY_PLANE_SURFACE,			"create_display_plane_surface",			"Create display plane surface coverage test");
+	addTest(group, DISPLAY_TEST_INDEX_SURFACE_COUNTERS,						"surface_counters",						"Display plane surface counters test");
 
 	// VK_KHR_get_display_properties2 extension tests
 	addTest(group, DISPLAY_TEST_INDEX_GET_DISPLAY_PROPERTIES2,				"get_display_properties2",				"Display enumeration coverage test using VK_KHR_get_display_properties2");

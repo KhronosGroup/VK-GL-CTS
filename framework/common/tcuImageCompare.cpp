@@ -807,6 +807,108 @@ bool intThresholdCompare (TestLog& log, const char* imageSetName, const char* im
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Per-pixel depth/stencil threshold-based comparison
+ *
+ * This compare computes per-pixel differences between result and reference
+ * image. Comparison fails if any pixels exceed the given threshold value.
+ *
+ * This comparison can be used for depth and depth/stencil images.
+ * Difference is computed in integer space.
+ *
+ * On failure error image is generated that shows where the failing pixels
+ * are.
+ *
+ * \param log			Test log for results
+ * \param imageSetName	Name for image set when logging results
+ * \param imageSetDesc	Description for image set
+ * \param reference		Reference image
+ * \param result		Result image
+ * \param threshold		Maximum allowed depth difference (stencil must be exact)
+ * \param logMode		Logging mode
+ * \return true if comparison passes, false otherwise
+ *//*--------------------------------------------------------------------*/
+bool dsThresholdCompare(TestLog& log, const char* imageSetName, const char* imageSetDesc, const ConstPixelBufferAccess& reference, const ConstPixelBufferAccess& result, const float threshold, CompareLogMode logMode)
+{
+	int					width = reference.getWidth();
+	int					height = reference.getHeight();
+	int					depth = reference.getDepth();
+	TextureLevel		errorMaskStorage(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height, depth);
+	PixelBufferAccess	errorMask = errorMaskStorage.getAccess();
+	float				maxDiff = 0.0;
+	bool				allStencilOk = true;
+	bool				hasDepth = tcu::hasDepthComponent(result.getFormat().order);
+	bool				hasStencil = tcu::hasStencilComponent(result.getFormat().order);
+
+	TCU_CHECK_INTERNAL(result.getWidth() == width && result.getHeight() == height && result.getDepth() == depth);
+
+	for (int z = 0; z < depth; z++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				bool	isOk = true;
+
+				if (hasDepth)
+				{
+					float	refDepth = reference.getPixDepth(x, y, z);
+					float	cmpDepth = result.getPixDepth(x, y, z);
+
+					float	diff = refDepth - cmpDepth;
+					isOk = diff <= threshold;
+					maxDiff = (float) deMax(maxDiff, diff);
+				}
+
+				if (hasStencil)
+				{
+					deUint8 refStencil = (deUint8) reference.getPixStencil(x, y, z);
+					deUint8 cmpStencil = (deUint8) result.getPixStencil(x, y, z);
+
+					bool isStencilOk = (refStencil == cmpStencil);
+					allStencilOk = allStencilOk && isStencilOk;
+					isOk = isOk && isStencilOk;
+				}
+
+				errorMask.setPixel(isOk ? IVec4(0, 0xff, 0, 0xff) : IVec4(0xff, 0, 0, 0xff), x, y, z);
+			}
+		}
+	}
+
+	bool compareOk = (maxDiff <= threshold) && allStencilOk;
+
+	if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+	{
+		if (!compareOk)
+		{
+			if (maxDiff > threshold)
+				log << TestLog::Message << "Depth comparison failed: max difference = " << maxDiff << ", threshold = " << threshold << TestLog::EndMessage;
+			if (!allStencilOk)
+				log << TestLog::Message << "Stencil comparison failed" << TestLog::EndMessage;
+		}
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			// TODO: Convert depth/stencil buffers into separate depth & stencil for logging?
+//			<< TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+//			<< TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
+			<< TestLog::Image("ErrorMask", "Error mask", errorMask)
+			<< TestLog::EndImageSet;
+	}
+	else if (logMode == COMPARE_LOG_RESULT)
+	{
+#if 0
+		if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
+			computePixelScaleBias(result, pixelScale, pixelBias);
+
+		log << TestLog::ImageSet(imageSetName, imageSetDesc)
+			<< TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+			<< TestLog::EndImageSet;
+#endif
+	}
+
+	return compareOk;
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Per-pixel threshold-based deviation-ignoring comparison
  *
  * This compare computes per-pixel differences between result and reference

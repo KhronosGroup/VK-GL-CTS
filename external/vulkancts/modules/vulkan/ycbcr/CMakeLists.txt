@@ -21,6 +21,8 @@ set(DEQP_VK_YCBCR_SRCS
 	vktYCbCrUtil.hpp
 	vktYCbCrCopyTests.cpp
 	vktYCbCrCopyTests.hpp
+	vktYCbCrStorageImageWriteTests.cpp
+	vktYCbCrStorageImageWriteTests.hpp
 	)
 
 set(DEQP_VK_YCBCR_LIBS

@@ -1136,12 +1136,10 @@ VkDeviceSize getYCbCrImageDataSize (VkFormat format, VkExtent3D extent)
 
 	for (deUint32 planeNdx = 0; planeNdx < desc.numPlanes; ++planeNdx)
 	{
-		const deUint32		planeW		= extent.width / desc.planes[planeNdx].widthDivisor;
-		const deUint32		planeH		= extent.height / desc.planes[planeNdx].heightDivisor;
-		const deUint32		elementSize	= desc.planes[planeNdx].elementSizeBytes;
+		const deUint32	elementSize	= desc.planes[planeNdx].elementSizeBytes;
 
 		totalSize = (VkDeviceSize)deAlign64((deInt64)totalSize, elementSize);
-		totalSize += planeW * planeH * elementSize;
+		totalSize += getPlaneSizeInBytes(desc, extent, planeNdx, 0, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
 	}
 
 	return totalSize;

@@ -77,6 +77,8 @@ deUint32					getBlockSizeInBytes			(const VkFormat compressedFormat);
 deUint32					getBlockWidth				(const VkFormat compressedFormat);
 deUint32					getBlockHeight				(const VkFormat compressedFormat);
 
+const deUint32 BUFFER_IMAGE_COPY_OFFSET_GRANULARITY = 4u;
+
 // \todo [2017-05-18 pyry] Consider moving this to tcu
 struct PlanarFormatDescription
 {
@@ -99,6 +101,7 @@ struct PlanarFormatDescription
 		deUint8		elementSizeBytes;
 		deUint8		widthDivisor;
 		deUint8		heightDivisor;
+		VkFormat	planeCompatibleFormat;
 	};
 
 	struct Channel
@@ -112,6 +115,8 @@ struct PlanarFormatDescription
 
 	deUint8		numPlanes;
 	deUint8		presentChannels;
+	deUint8		blockWidth;
+	deUint8		blockHeight;
 	Plane		planes[MAX_PLANES];
 	Channel		channels[MAX_CHANNELS];
 
@@ -122,15 +127,46 @@ struct PlanarFormatDescription
 	}
 };
 
-bool							isYCbCrFormat					(VkFormat format);
-PlanarFormatDescription			getPlanarFormatDescription		(VkFormat format);
-const PlanarFormatDescription&	getYCbCrPlanarFormatDescription	(VkFormat format);
-int								getPlaneCount					(VkFormat format);
-VkImageAspectFlagBits			getPlaneAspect					(deUint32 planeNdx);
-deUint32						getAspectPlaneNdx				(VkImageAspectFlagBits planeAspect);
-bool							isChromaSubsampled				(VkFormat format);
-bool							isYCbCr422Format				(VkFormat format);
-bool							isYCbCr420Format				(VkFormat format);
+bool							isYCbCrFormat					(VkFormat						format);
+PlanarFormatDescription			getPlanarFormatDescription		(VkFormat						format);
+int								getPlaneCount					(VkFormat						format);
+deUint32						getMipmapCount					(VkFormat						format,
+																 const vk::PlanarFormatDescription&	formatDescription,
+																 const vk::VkImageFormatProperties& imageFormatProperties,
+																 const vk::VkExtent3D&				extent);
+
+deUint32						getPlaneSizeInBytes				(const PlanarFormatDescription&	formatInfo,
+																 const VkExtent3D&				baseExtents,
+																 const deUint32					planeNdx,
+																 const deUint32					mipmapLevel,
+																 const deUint32					mipmapMemoryAlignment);
+deUint32						getPlaneSizeInBytes				(const PlanarFormatDescription&	formatInfo,
+																 const tcu::UVec2&				baseExtents,
+																 const deUint32					planeNdx,
+																 const deUint32					mipmapLevel,
+																 const deUint32					mipmapMemoryAlignment);
+VkExtent3D						getPlaneExtent					(const PlanarFormatDescription&	formatInfo,
+																 const VkExtent3D&				baseExtents,
+																 const deUint32					planeNdx,
+																 const deUint32					mipmapLevel);
+tcu::UVec2						getPlaneExtent					(const PlanarFormatDescription&	formatInfo,
+																 const tcu::UVec2&				baseExtents,
+																 const deUint32					planeNdx,
+																 const deUint32					mipmapLevel);
+tcu::UVec3						getImageSizeAlignment			(VkFormat						format);
+tcu::UVec3						getImageSizeAlignment			(const PlanarFormatDescription&	formatInfo);
+tcu::UVec2						getBlockExtent					(VkFormat						format);
+tcu::UVec2						getBlockExtent					(const PlanarFormatDescription&	formatInfo);
+VkFormat						getPlaneCompatibleFormat		(VkFormat						format,
+																 deUint32						planeNdx);
+VkFormat						getPlaneCompatibleFormat		(const PlanarFormatDescription&	formatInfo,
+																 deUint32						planeNdx);
+
+VkImageAspectFlagBits			getPlaneAspect					(deUint32						planeNdx);
+deUint32						getAspectPlaneNdx				(VkImageAspectFlagBits			planeAspect);
+bool							isChromaSubsampled				(VkFormat						format);
+bool							isYCbCr422Format				(VkFormat						format);
+bool							isYCbCr420Format				(VkFormat						format);
 
 tcu::PixelBufferAccess			getChannelAccess				(const PlanarFormatDescription&	formatInfo,
 																 const tcu::UVec2&				size,
@@ -139,6 +175,16 @@ tcu::PixelBufferAccess			getChannelAccess				(const PlanarFormatDescription&	for
 																 deUint32						channelNdx);
 tcu::ConstPixelBufferAccess		getChannelAccess				(const PlanarFormatDescription&	formatInfo,
 																 const tcu::UVec2&				size,
+																 const deUint32*				planeRowPitches,
+																 const void* const*				planePtrs,
+																 deUint32						channelNdx);
+tcu::PixelBufferAccess			getChannelAccess				(const PlanarFormatDescription&	formatInfo,
+																 const tcu::UVec3&				size,
+																 const deUint32*				planeRowPitches,
+																 void* const*					planePtrs,
+																 deUint32						channelNdx);
+tcu::ConstPixelBufferAccess		getChannelAccess				(const PlanarFormatDescription&	formatInfo,
+																 const tcu::UVec3&				size,
 																 const deUint32*				planeRowPitches,
 																 const void* const*				planePtrs,
 																 deUint32						channelNdx);

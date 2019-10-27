@@ -57,9 +57,6 @@ using tcu::Vec4;
 using std::vector;
 using std::string;
 
-typedef de::SharedPtr<Allocation>				AllocationSp;
-typedef de::SharedPtr<vk::Unique<VkBuffer> >	VkBufferSp;
-
 // MultiPlaneImageData
 
 MultiPlaneImageData::MultiPlaneImageData (VkFormat format, const UVec2& size)
@@ -68,13 +65,7 @@ MultiPlaneImageData::MultiPlaneImageData (VkFormat format, const UVec2& size)
 	, m_size		(size)
 {
 	for (deUint32 planeNdx = 0; planeNdx < m_description.numPlanes; ++planeNdx)
-	{
-		const deUint32	planeW		= size.x() / m_description.planes[planeNdx].widthDivisor;
-		const deUint32	planeH		= size.y() / m_description.planes[planeNdx].heightDivisor;
-		const deUint32	planeSize	= m_description.planes[planeNdx].elementSizeBytes * planeW * planeH;
-
-		m_planeData[planeNdx].resize(planeSize);
-	}
+		m_planeData[planeNdx].resize(getPlaneSizeInBytes(m_description, size, planeNdx, 0, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY));
 }
 
 MultiPlaneImageData::MultiPlaneImageData (const MultiPlaneImageData& other)
@@ -97,8 +88,7 @@ tcu::PixelBufferAccess MultiPlaneImageData::getChannelAccess (deUint32 channelNd
 
 	for (deUint32 planeNdx = 0; planeNdx < m_description.numPlanes; ++planeNdx)
 	{
-		const deUint32	planeW		= m_size.x() / m_description.planes[planeNdx].widthDivisor;
-
+		const deUint32	planeW		= m_size.x() / ( m_description.blockWidth * m_description.planes[planeNdx].widthDivisor);
 		planeRowPitches[planeNdx]	= m_description.planes[planeNdx].elementSizeBytes * planeW;
 		planePtrs[planeNdx]			= &m_planeData[planeNdx][0];
 	}
@@ -117,8 +107,7 @@ tcu::ConstPixelBufferAccess MultiPlaneImageData::getChannelAccess (deUint32 chan
 
 	for (deUint32 planeNdx = 0; planeNdx < m_description.numPlanes; ++planeNdx)
 	{
-		const deUint32	planeW		= m_size.x() / m_description.planes[planeNdx].widthDivisor;
-
+		const deUint32	planeW		= m_size.x() / (m_description.blockWidth * m_description.planes[planeNdx].widthDivisor);
 		planeRowPitches[planeNdx]	= m_description.planes[planeNdx].elementSizeBytes * planeW;
 		planePtrs[planeNdx]			= &m_planeData[planeNdx][0];
 	}
@@ -364,12 +353,8 @@ void uploadImage (const DeviceInterface&		vkd,
 		const VkImageAspectFlagBits	aspect	= (formatDesc.numPlanes > 1)
 											? getPlaneAspect(planeNdx)
 											: VK_IMAGE_ASPECT_COLOR_BIT;
-		const deUint32				planeW	= (formatDesc.numPlanes > 1)
-											? imageData.getSize().x() / formatDesc.planes[planeNdx].widthDivisor
-											: imageData.getSize().x();
-		const deUint32				planeH	= (formatDesc.numPlanes > 1)
-											? imageData.getSize().y() / formatDesc.planes[planeNdx].heightDivisor
-											: imageData.getSize().y();
+		const VkExtent3D imageExtent		= makeExtent3D(imageData.getSize().x(), imageData.getSize().y(), 1u);
+		const VkExtent3D planeExtent		= getPlaneExtent(formatDesc, imageExtent, planeNdx, 0);
 		const VkBufferImageCopy		copy	=
 		{
 			0u,		// bufferOffset
@@ -377,7 +362,7 @@ void uploadImage (const DeviceInterface&		vkd,
 			0u,		// bufferImageHeight
 			{ (VkImageAspectFlags)aspect, 0u, arrayLayer, 1u },
 			makeOffset3D(0u, 0u, 0u),
-			makeExtent3D(planeW, planeH, 1u),
+			planeExtent
 		};
 
 		vkd.cmdCopyBufferToImage(*cmdBuffer, **stagingBuffers[planeNdx], image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copy);
@@ -554,12 +539,8 @@ void downloadImage (const DeviceInterface&	vkd,
 									&preCopyBarrier);
 		}
 		{
-			const deUint32				planeW	= (formatDesc.numPlanes > 1)
-												? imageData->getSize().x() / formatDesc.planes[planeNdx].widthDivisor
-												: imageData->getSize().x();
-			const deUint32				planeH	= (formatDesc.numPlanes > 1)
-												? imageData->getSize().y() / formatDesc.planes[planeNdx].heightDivisor
-												: imageData->getSize().y();
+			const VkExtent3D imageExtent		= makeExtent3D(imageData->getSize().x(), imageData->getSize().y(), 1u);
+			const VkExtent3D planeExtent		= getPlaneExtent(formatDesc, imageExtent, planeNdx, 0);
 			const VkBufferImageCopy		copy	=
 			{
 				0u,		// bufferOffset
@@ -567,7 +548,7 @@ void downloadImage (const DeviceInterface&	vkd,
 				0u,		// bufferImageHeight
 				{ (VkImageAspectFlags)aspect, 0u, 0u, 1u },
 				makeOffset3D(0u, 0u, 0u),
-				makeExtent3D(planeW, planeH, 1u),
+				planeExtent
 			};
 
 			vkd.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **stagingBuffers[planeNdx], 1u, &copy);
@@ -750,7 +731,6 @@ ChannelAccess::ChannelAccess (tcu::TextureChannelClass	channelClass,
 	, m_channelSize		(channelSize)
 	, m_size			(size)
 	, m_bitPitch		(bitPitch)
-
 	, m_data			((deUint8*)data + (bitOffset / 8))
 	, m_bitOffset		(bitOffset % 8)
 {
@@ -944,13 +924,12 @@ ChannelAccess getChannelAccess (MultiPlaneImageData&				data,
 	const deUint32	pixelStrideBits		= pixelStrideBytes * 8;
 	const deUint8	sizeBits			= formatInfo.channels[channelNdx].sizeBits;
 
-	DE_ASSERT(size.x() % formatInfo.planes[planeNdx].widthDivisor == 0);
-	DE_ASSERT(size.y() % formatInfo.planes[planeNdx].heightDivisor == 0);
+	DE_ASSERT(size.x() % (formatInfo.blockWidth * formatInfo.planes[planeNdx].widthDivisor) == 0);
+	DE_ASSERT(size.y() % (formatInfo.blockHeight * formatInfo.planes[planeNdx].heightDivisor) == 0);
 
-	deUint32		accessWidth			= size.x() / formatInfo.planes[planeNdx].widthDivisor;
-	const deUint32	accessHeight		= size.y() / formatInfo.planes[planeNdx].heightDivisor;
+	deUint32		accessWidth			= size.x() / ( formatInfo.blockWidth * formatInfo.planes[planeNdx].widthDivisor );
+	const deUint32	accessHeight		= size.y() / ( formatInfo.blockHeight * formatInfo.planes[planeNdx].heightDivisor );
 	const deUint32	elementSizeBytes	= formatInfo.planes[planeNdx].elementSizeBytes;
-
 	const deUint32	rowPitch			= formatInfo.planes[planeNdx].elementSizeBytes * accessWidth;
 	const deUint32	rowPitchBits		= rowPitch * 8;
 
@@ -1893,6 +1872,6 @@ void calculateBounds (const ChannelAccess&				rPlane,
 	}
 }
 
-
 } // ycbcr
+
 } // vkt

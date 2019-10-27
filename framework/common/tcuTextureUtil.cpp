@@ -1051,7 +1051,7 @@ void fillWithMetaballs (const PixelBufferAccess& dst, int numBalls, deUint32 see
 	}
 }
 
-void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
+void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src, const bool clearUnused)
 {
 	DE_ASSERT(src.getSize() == dst.getSize());
 
@@ -1097,7 +1097,7 @@ void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
 			for (int x = 0; x < width; x++)
 				dst.setPixDepth(src.getPixDepth(x, y, z), x, y, z);
 		}
-		else if (dstHasDepth && !srcHasDepth)
+		else if (dstHasDepth && !srcHasDepth && clearUnused)
 		{
 			// consistency with color copies
 			tcu::clearDepth(dst, 0.0f);
@@ -1110,7 +1110,7 @@ void copy (const PixelBufferAccess& dst, const ConstPixelBufferAccess& src)
 			for (int x = 0; x < width; x++)
 				dst.setPixStencil(src.getPixStencil(x, y, z), x, y, z);
 		}
-		else if (dstHasStencil && !srcHasStencil)
+		else if (dstHasStencil && !srcHasStencil && clearUnused)
 		{
 			// consistency with color copies
 			tcu::clearStencil(dst, 0u);
