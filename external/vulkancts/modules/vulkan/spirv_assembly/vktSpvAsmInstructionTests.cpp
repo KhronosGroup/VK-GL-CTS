@@ -11448,6 +11448,9 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 		const size_t	typeStride;
 		const char*		typeName;
 		const char*		typeDecls;
+		const char*		typeStorage;
+		const string		loadFunction;
+		const string		storeFunction;
 	};
 
 	const TestType	testTypes[]	=
@@ -11457,41 +11460,65 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 			2 * sizeof(deFloat16),
 			"v2f16",
 			"      %v2f16 = OpTypeVector %f16 2\n"
+			"%v2f16_i32_fn = OpTypeFunction %v2f16 %i32\n"
+			"%void_f16_i32_fn = OpTypeFunction %void %f16 %i32\n"
+			"%c_u32_high_ones = OpConstant %u32 0xffff0000\n"
+			" %c_u32_low_ones = OpConstant %u32 0x0000ffff\n",
+			"u32",
+			loadV2F16FromUint,
+			storeScalarF16AsUint
 		},
 		{
 			3,
 			4 * sizeof(deFloat16),
 			"v3f16",
+			"      %v2f16 = OpTypeVector %f16 2\n"
 			"      %v3f16 = OpTypeVector %f16 3\n"
+			"%v3f16_i32_fn = OpTypeFunction %v3f16 %i32\n"
+			"%void_f16_i32_fn = OpTypeFunction %void %f16 %i32\n"
+			"%c_u32_high_ones = OpConstant %u32 0xffff0000\n"
+			" %c_u32_low_ones = OpConstant %u32 0x0000ffff\n",
+			"ra_u32_2",
+			loadV3F16FromUints,
+			storeScalarF16AsUint
 		},
 		{
 			4,
 			4 * sizeof(deFloat16),
 			"v4f16",
+			"      %v2f16 = OpTypeVector %f16 2\n"
 			"      %v4f16 = OpTypeVector %f16 4\n"
+			"%v4f16_i32_fn = OpTypeFunction %v4f16 %i32\n"
+			"%void_f16_i32_fn = OpTypeFunction %void %f16 %i32\n"
+			"%c_u32_high_ones = OpConstant %u32 0xffff0000\n"
+			" %c_u32_low_ones = OpConstant %u32 0x0000ffff\n",
+			"ra_u32_2",
+			loadV4F16FromUints,
+			storeScalarF16AsUint
 		},
 	};
 
 	const StringTemplate preMain
 	(
 		"  %c_i32_ndp = OpConstant %i32 ${num_data_points}\n"
+		" %c_i32_hndp = OpSpecConstantOp %i32 SDiv %c_i32_ndp %c_i32_2\n"
 		"        %f16 = OpTypeFloat 16\n"
 
 		"${type_decl}"
-
-		"   %up_${tt} = OpTypePointer Uniform %${tt}\n"
-		"   %ra_${tt} = OpTypeArray %${tt} %c_i32_ndp\n"
-		"   %SSBO_SRC = OpTypeStruct %ra_${tt}\n"
-		"%up_SSBO_SRC = OpTypePointer Uniform %SSBO_SRC\n"
 
 		"     %up_u32 = OpTypePointer Uniform %u32\n"
 		"     %ra_u32 = OpTypeArray %u32 %c_i32_ndp\n"
 		"   %SSBO_IDX = OpTypeStruct %ra_u32\n"
 		"%up_SSBO_IDX = OpTypePointer Uniform %SSBO_IDX\n"
 
-		"     %up_f16 = OpTypePointer Uniform %f16\n"
-		"     %ra_f16 = OpTypeArray %f16 %c_i32_ndp\n"
-		"   %SSBO_DST = OpTypeStruct %ra_f16\n"
+		"   %ra_u32_2 = OpTypeArray %u32 %c_u32_2\n"
+		" %ra_u32_ndp = OpTypeArray %u32 %c_i32_ndp\n"
+		"%ra_ra_u32_2 = OpTypeArray %ra_u32_2 %c_i32_ndp\n"
+		"   %SSBO_SRC = OpTypeStruct %ra_${ts}\n"
+		"%up_SSBO_SRC = OpTypePointer Uniform %SSBO_SRC\n"
+
+		" %ra_u32_hndp = OpTypeArray %u32 %c_i32_hndp\n"
+		"   %SSBO_DST = OpTypeStruct %ra_u32_hndp\n"
 		"%up_SSBO_DST = OpTypePointer Uniform %SSBO_DST\n"
 
 		"   %ssbo_src = OpVariable %up_SSBO_SRC Uniform\n"
@@ -11501,7 +11528,9 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 
 	const StringTemplate decoration
 	(
-		"OpDecorate %ra_${tt} ArrayStride ${tt_stride}\n"
+		"OpDecorate %ra_u32_2 ArrayStride 4\n"
+		"OpDecorate %ra_u32_hndp ArrayStride 4\n"
+		"OpDecorate %ra_ra_u32_2 ArrayStride 8\n"
 		"OpMemberDecorate %SSBO_SRC 0 Offset 0\n"
 		"OpDecorate %SSBO_SRC BufferBlock\n"
 		"OpDecorate %ssbo_src DescriptorSet 0\n"
@@ -11513,7 +11542,6 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 		"OpDecorate %ssbo_idx DescriptorSet 0\n"
 		"OpDecorate %ssbo_idx Binding 1\n"
 
-		"OpDecorate %ra_f16 ArrayStride 2\n"
 		"OpMemberDecorate %SSBO_DST 0 Offset 0\n"
 		"OpDecorate %SSBO_DST BufferBlock\n"
 		"OpDecorate %ssbo_dst DescriptorSet 0\n"
@@ -11545,16 +11573,14 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 		"    %write = OpLabel\n"
 		"      %ndx = OpLoad %i32 %i\n"
 
-		"      %src = OpAccessChain %up_${tt} %ssbo_src %c_i32_0 %ndx\n"
-		"  %val_src = OpLoad %${tt} %src\n"
+		"  %val_src = OpFunctionCall %${tt} %ld_arg_ssbo_src %ndx\n"
 
 		"  %src_idx = OpAccessChain %up_u32 %ssbo_idx %c_i32_0 %ndx\n"
 		"  %val_idx = OpLoad %u32 %src_idx\n"
 
 		"  %val_dst = OpVectorExtractDynamic %f16 %val_src %val_idx\n"
-		"      %dst = OpAccessChain %up_f16 %ssbo_dst %c_i32_0 %ndx\n"
+		"      %dst = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n"
 
-		"             OpStore %dst %val_dst\n"
 		"             OpBranch %next\n"
 
 		"     %next = OpLabel\n"
@@ -11589,25 +11615,25 @@ tcu::TestCaseGroup* createFloat16VectorExtractSet (tcu::TestContext& testCtx)
 
 		specs["num_data_points"]	= de::toString(iterations);
 		specs["tt"]					= testType.typeName;
+		specs["ts"]					= testType.typeStorage;
 		specs["tt_stride"]			= de::toString(testType.typeStride);
 		specs["type_decl"]			= testType.typeDecls;
 
-		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
+		fragments["capability"]		= "OpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
+		fragments["testfun"]		+= StringTemplate(testType.loadFunction).specialize({{"var", "ssbo_src"}});
+		fragments["testfun"]		+= StringTemplate(testType.storeFunction).specialize({{"var", "ssbo_dst"}});
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16InputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inputDataNdx)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = compareFP16VectorExtractFunc;
 
-		extensions.push_back("VK_KHR_16bit_storage");
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
 		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
-		features.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -11684,6 +11710,9 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 		const char*		typeName;
 		const char*		typeDecls;
 		VerifyIOFunc	verifyIOFunc;
+		const char*		typeStorage;
+		const string		loadFunction;
+		const string		storeFunction;
 	};
 
 	const TestType	testTypes[]	=
@@ -11692,22 +11721,39 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 			2,
 			2 * sizeof(deFloat16),
 			"v2f16",
-			"      %v2f16 = OpTypeVector %f16 2\n",
-			compareFP16VectorInsertFunc<2, replacement>
+			"      %v2f16 = OpTypeVector %f16 2\n"
+			"%v2f16_i32_fn = OpTypeFunction %v2f16 %i32\n"
+			"%void_v2f16_i32_fn = OpTypeFunction %void %v2f16 %i32\n",
+			compareFP16VectorInsertFunc<2, replacement>,
+			"u32",
+			loadV2F16FromUint,
+			storeV2F16AsUint
 		},
 		{
 			3,
 			4 * sizeof(deFloat16),
 			"v3f16",
-			"      %v3f16 = OpTypeVector %f16 3\n",
-			compareFP16VectorInsertFunc<3, replacement>
+			"      %v2f16 = OpTypeVector %f16 2\n"
+			"      %v3f16 = OpTypeVector %f16 3\n"
+			"%v3f16_i32_fn = OpTypeFunction %v3f16 %i32\n"
+			"%void_v3f16_i32_fn = OpTypeFunction %void %v3f16 %i32\n",
+			compareFP16VectorInsertFunc<3, replacement>,
+			"ra_u32_2",
+			loadV3F16FromUints,
+			storeV3F16AsUints
 		},
 		{
 			4,
 			4 * sizeof(deFloat16),
 			"v4f16",
-			"      %v4f16 = OpTypeVector %f16 4\n",
-			compareFP16VectorInsertFunc<4, replacement>
+			"      %v2f16 = OpTypeVector %f16 2\n"
+			"      %v4f16 = OpTypeVector %f16 4\n"
+			"%v4f16_i32_fn = OpTypeFunction %v4f16 %i32\n"
+			"%void_v4f16_i32_fn = OpTypeFunction %void %v4f16 %i32\n",
+			compareFP16VectorInsertFunc<4, replacement>,
+			"ra_u32_2",
+			loadV4F16FromUints,
+			storeV4F16AsUints
 		},
 	};
 
@@ -11719,17 +11765,17 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 
 		"${type_decl}"
 
-		"   %up_${tt} = OpTypePointer Uniform %${tt}\n"
-		"   %ra_${tt} = OpTypeArray %${tt} %c_i32_ndp\n"
-		"   %SSBO_SRC = OpTypeStruct %ra_${tt}\n"
-		"%up_SSBO_SRC = OpTypePointer Uniform %SSBO_SRC\n"
-
-		"     %up_u32 = OpTypePointer Uniform %u32\n"
 		"     %ra_u32 = OpTypeArray %u32 %c_i32_ndp\n"
+		"	  %up_u32 = OpTypePointer Uniform %u32\n"
 		"   %SSBO_IDX = OpTypeStruct %ra_u32\n"
 		"%up_SSBO_IDX = OpTypePointer Uniform %SSBO_IDX\n"
 
-		"   %SSBO_DST = OpTypeStruct %ra_${tt}\n"
+		"   %ra_u32_2 = OpTypeArray %u32 %c_u32_2\n"
+		"%ra_ra_u32_2 = OpTypeArray %ra_u32_2 %c_i32_ndp\n"
+		"   %SSBO_SRC = OpTypeStruct %ra_${ts}\n"
+		"%up_SSBO_SRC = OpTypePointer Uniform %SSBO_SRC\n"
+
+		"   %SSBO_DST = OpTypeStruct %ra_${ts}\n"
 		"%up_SSBO_DST = OpTypePointer Uniform %SSBO_DST\n"
 
 		"   %ssbo_src = OpVariable %up_SSBO_SRC Uniform\n"
@@ -11739,7 +11785,8 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 
 	const StringTemplate decoration
 	(
-		"OpDecorate %ra_${tt} ArrayStride ${tt_stride}\n"
+		"OpDecorate %ra_u32_2 ArrayStride 4\n"
+		"OpDecorate %ra_ra_u32_2 ArrayStride 8\n"
 		"OpMemberDecorate %SSBO_SRC 0 Offset 0\n"
 		"OpDecorate %SSBO_SRC BufferBlock\n"
 		"OpDecorate %ssbo_src DescriptorSet 0\n"
@@ -11782,16 +11829,14 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 		"    %write = OpLabel\n"
 		"      %ndx = OpLoad %i32 %i\n"
 
-		"      %src = OpAccessChain %up_${tt} %ssbo_src %c_i32_0 %ndx\n"
-		"  %val_src = OpLoad %${tt} %src\n"
+		"  %val_src = OpFunctionCall %${tt} %ld_arg_ssbo_src %ndx\n"
 
 		"  %src_idx = OpAccessChain %up_u32 %ssbo_idx %c_i32_0 %ndx\n"
 		"  %val_idx = OpLoad %u32 %src_idx\n"
 
 		"  %val_dst = OpVectorInsertDynamic %${tt} %val_src %c_f16_ins %val_idx\n"
-		"      %dst = OpAccessChain %up_${tt} %ssbo_dst %c_i32_0 %ndx\n"
+		"      %dst = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n"
 
-		"             OpStore %dst %val_dst\n"
 		"             OpBranch %next\n"
 
 		"     %next = OpLabel\n"
@@ -11826,26 +11871,26 @@ tcu::TestCaseGroup* createFloat16VectorInsertSet (tcu::TestContext& testCtx)
 
 		specs["num_data_points"]	= de::toString(iterations);
 		specs["tt"]					= testType.typeName;
+		specs["ts"]					= testType.typeStorage;
 		specs["tt_stride"]			= de::toString(testType.typeStride);
 		specs["type_decl"]			= testType.typeDecls;
 		specs["replacement"]		= de::toString(replacement);
 
-		fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-		fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
+		fragments["capability"]		= "OpCapability Float16\n";
 		fragments["decoration"]		= decoration.specialize(specs);
 		fragments["pre_main"]		= preMain.specialize(specs);
 		fragments["testfun"]		= testFun.specialize(specs);
+		fragments["testfun"]		+= StringTemplate(testType.loadFunction).specialize({{"var", "ssbo_src"}});
+		fragments["testfun"]		+= StringTemplate(testType.storeFunction).specialize({{"var", "ssbo_dst"}});
 
 		specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16InputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.inputs.push_back(Resource(BufferSp(new Uint32Buffer(inputDataNdx)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		specResource.verifyIO = testType.verifyIOFunc;
 
-		extensions.push_back("VK_KHR_16bit_storage");
 		extensions.push_back("VK_KHR_shader_float16_int8");
 
 		features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
-		features.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 	}
@@ -11989,6 +12034,8 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 	{
 		const deUint32	typeComponents;
 		const char*		typeName;
+		const string	loadFunction;
+		const string	storeFunction;
 	};
 
 	const TestType	testTypes[]	=
@@ -11996,14 +12043,20 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 		{
 			2,
 			"v2f16",
+			loadV2F16FromUint,
+			storeV2F16AsUint
 		},
 		{
 			3,
 			"v3f16",
+			loadV3F16FromUints,
+			storeV3F16AsUints
 		},
 		{
 			4,
 			"v4f16",
+			loadV4F16FromUints,
+			storeV4F16AsUints
 		},
 	};
 
@@ -12016,19 +12069,23 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 		"        %v3f16 = OpTypeVector %f16 3\n"
 		"        %v4f16 = OpTypeVector %f16 4\n"
 
-		"     %up_v2f16 = OpTypePointer Uniform %v2f16\n"
-		"     %ra_v2f16 = OpTypeArray %v2f16 %c_i32_ndp\n"
-		"   %SSBO_v2f16 = OpTypeStruct %ra_v2f16\n"
+		"     %v2f16_i32_fn = OpTypeFunction %v2f16 %i32\n"
+		"     %v3f16_i32_fn = OpTypeFunction %v3f16 %i32\n"
+		"     %v4f16_i32_fn = OpTypeFunction %v4f16 %i32\n"
+		"%void_v2f16_i32_fn = OpTypeFunction %void %v2f16 %i32\n"
+		"%void_v3f16_i32_fn = OpTypeFunction %void %v3f16 %i32\n"
+		"%void_v4f16_i32_fn = OpTypeFunction %void %v4f16 %i32\n"
+
+		"     %ra_u32_2 = OpTypeArray %u32 %c_u32_2\n"
+		"   %ra_u32_ndp = OpTypeArray %u32 %c_i32_ndp\n"
+		"  %ra_ra_u32_2 = OpTypeArray %ra_u32_2 %c_i32_ndp\n"
+		"       %up_u32 = OpTypePointer Uniform %u32\n"
+		"   %SSBO_v2f16 = OpTypeStruct %ra_u32_ndp\n"
+		"   %SSBO_v3f16 = OpTypeStruct %ra_ra_u32_2\n"
+		"   %SSBO_v4f16 = OpTypeStruct %ra_ra_u32_2\n"
+
 		"%up_SSBO_v2f16 = OpTypePointer Uniform %SSBO_v2f16\n"
-
-		"     %up_v3f16 = OpTypePointer Uniform %v3f16\n"
-		"     %ra_v3f16 = OpTypeArray %v3f16 %c_i32_ndp\n"
-		"   %SSBO_v3f16 = OpTypeStruct %ra_v3f16\n"
 		"%up_SSBO_v3f16 = OpTypePointer Uniform %SSBO_v3f16\n"
-
-		"     %up_v4f16 = OpTypePointer Uniform %v4f16\n"
-		"     %ra_v4f16 = OpTypeArray %v4f16 %c_i32_ndp\n"
-		"   %SSBO_v4f16 = OpTypeStruct %ra_v4f16\n"
 		"%up_SSBO_v4f16 = OpTypePointer Uniform %SSBO_v4f16\n"
 
 		"        %fun_t = OpTypeFunction %${tt_dst} %${tt_src0} %${tt_src1} %i32\n"
@@ -12040,9 +12097,9 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 
 	const StringTemplate decoration
 	(
-		"OpDecorate %ra_v2f16 ArrayStride 4\n"
-		"OpDecorate %ra_v3f16 ArrayStride 8\n"
-		"OpDecorate %ra_v4f16 ArrayStride 8\n"
+		"OpDecorate %ra_u32_2 ArrayStride 4\n"
+		"OpDecorate %ra_u32_ndp ArrayStride 4\n"
+		"OpDecorate %ra_ra_u32_2 ArrayStride 8\n"
 
 		"OpMemberDecorate %SSBO_v2f16 0 Offset 0\n"
 		"OpDecorate %SSBO_v2f16 BufferBlock\n"
@@ -12085,13 +12142,10 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 
 		"    %write = OpLabel\n"
 		"      %ndx = OpLoad %i32 %i\n"
-		"     %src0 = OpAccessChain %up_${tt_src0} %ssbo_src0 %c_i32_0 %ndx\n"
-		" %val_src0 = OpLoad %${tt_src0} %src0\n"
-		"     %src1 = OpAccessChain %up_${tt_src1} %ssbo_src1 %c_i32_0 %ndx\n"
-		" %val_src1 = OpLoad %${tt_src1} %src1\n"
+		" %val_src0 = OpFunctionCall %${tt_src0} %ld_arg_ssbo_src0 %ndx\n"
+		" %val_src1 = OpFunctionCall %${tt_src1} %ld_arg_ssbo_src1 %ndx\n"
 		"  %val_dst = OpFunctionCall %${tt_dst} %sw_fun %val_src0 %val_src1 %ndx\n"
-		"      %dst = OpAccessChain %up_${tt_dst} %ssbo_dst %c_i32_0 %ndx\n"
-		"             OpStore %dst %val_dst\n"
+		"      %dst = OpFunctionCall %void %st_fn_ssbo_dst %val_dst %ndx\n"
 		"             OpBranch %next\n"
 
 		"     %next = OpLabel\n"
@@ -12201,22 +12255,22 @@ tcu::TestCaseGroup* createFloat16VectorShuffleSet (tcu::TestContext& testCtx)
 				specs["case_list"]			= caseList;
 				specs["case_count"]			= de::toString(caseCount);
 
-				fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-				fragments["capability"]		= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
+				fragments["capability"]		= "OpCapability Float16\n";
 				fragments["decoration"]		= decoration.specialize(specs);
 				fragments["pre_main"]		= preMain.specialize(specs);
 				fragments["testfun"]		= testFun.specialize(specs);
+				fragments["testfun"]		+= StringTemplate(src0Type.loadFunction).specialize({{"var", "ssbo_src0"}});
+				fragments["testfun"]		+= StringTemplate(src1Type.loadFunction).specialize({{"var", "ssbo_src1"}});
+				fragments["testfun"]		+= StringTemplate(dstType.storeFunction).specialize({{"var", "ssbo_dst"}});
 
 				specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Input0Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Input1Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutputDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				specResource.verifyIO = getFloat16VectorShuffleVerifyIOFunc(dstType.typeComponents, src0Type.typeComponents, src1Type.typeComponents);
 
-				extensions.push_back("VK_KHR_16bit_storage");
 				extensions.push_back("VK_KHR_shader_float16_int8");
 
 				features.extFloat16Int8		= EXTFLOAT16INT8FEATURES_FLOAT16;
-				features.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 				finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
 			}
