@@ -3615,7 +3615,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 		for (const auto ext : mandatoryExtensions)
 		{
-			if (!context.isDeviceFunctionalitySupported(ext))
+			if (!context.isInstanceFunctionalitySupported(ext))
 				results.fail(ext + " is not supported");
 		}
 	}

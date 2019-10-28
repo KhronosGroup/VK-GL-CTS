@@ -878,8 +878,22 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 		attributeDescriptions						// pVertexAttributeDescriptions
 	};
 
+	const	VkDynamicState							dynamicStates[]				=
+	{
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	const VkPipelineDynamicStateCreateInfo			dynamicStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,  // sType
+		DE_NULL,											   // pNext
+		0u,													   // flags
+		DE_LENGTH_OF_ARRAY(dynamicStates),					   // dynamicStateCount
+		dynamicStates										   // pDynamicStates
+	};
+
 	const std::vector<VkViewport>	viewports	(1, makeViewport(m_testParams.frameResolution.width, m_testParams.frameResolution.height));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_testParams.frameResolution.width, m_testParams.frameResolution.height));
+	const std::vector<VkRect2D>		scissors	(1, makeRect2D(0u, 0u));
 
 	DE_ASSERT(m_vertexModule && m_fragmentModule);
 
@@ -898,7 +912,12 @@ Move<VkPipeline> CommonDescriptorInstance::createGraphicsPipeline	(VkPipelineLay
 		VK_PRIMITIVE_TOPOLOGY_POINT_LIST,				// topology
 		0U,												// subpass
 		0U,												// patchControlPoints
-		&vertexInputStateCreateInfo);					// vertexInputStateCreateInfo
+		&vertexInputStateCreateInfo,					// vertexInputStateCreateInfo
+		nullptr,										// rasterizationStateCreateInfo
+		nullptr,										// multisampleStateCreateInfo
+		nullptr,										// depthStencilStateCreateInfo
+		nullptr,										// colorBlendStateCreateInfo
+		&dynamicStateCreateInfo);						// dynamicStateCreateInfo
 }
 
 VkDeviceSize CommonDescriptorInstance::createBuffers				(std::vector<VkDescriptorBufferInfo>&		bufferInfos,
@@ -1320,6 +1339,10 @@ tcu::TestStatus	CommonDescriptorInstance::iterate					(void)
 		{
 			v.renderArea.offset.x		= x * m_testParams.frameResolution.width/2;
 			v.renderArea.offset.y		= y * m_testParams.frameResolution.height/2;
+
+			vk::VkRect2D scissor = makeRect2D(v.renderArea.offset.x, v.renderArea.offset.y, v.renderArea.extent.width, v.renderArea.extent.height);
+			m_vki.cmdSetScissor(*v.commandBuffer, 0u, 1u, &scissor);
+
 			vk::beginRenderPass		(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
 			m_vki.cmdDraw			(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
 			vk::endRenderPass		(m_vki, *v.commandBuffer);
@@ -2207,6 +2230,9 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 		descriptorSets,							// pDescriptorSets
 		v.availableDescriptorCount,				// dynamicOffsetCount
 		dynamicOffsets.data());					// pDynamicOffsets
+
+	vk::VkRect2D scissor = makeRect2D(m_testParams.frameResolution.width, m_testParams.frameResolution.height);
+	m_vki.cmdSetScissor(*v.commandBuffer, 0u, 1u, &scissor);
 
 	vk::beginRenderPass	(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
 	m_vki.cmdDraw		(*v.commandBuffer, v.vertexCount, 1, 0, 0);
