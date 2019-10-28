@@ -1,0 +1,239 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A compute shader with loops, breaks, returns
+
+# The test passes because the shader immediately writes 42 to the 0th position
+# in the SSBO and that is the only thing we check. All loops terminate. All
+# other writes to the SSBO are at indices greater than 0.
+
+# Optimized using spirv-opt with the following arguments:
+# '--eliminate-dead-code-aggressive'
+# '--simplify-instructions'
+# '--redundancy-elimination'
+# '--copy-propagate-arrays'
+# '--convert-local-access-chains'
+# '--eliminate-dead-branches'
+# '--eliminate-local-multi-store'
+# '--eliminate-local-multi-store'
+# '--eliminate-dead-inserts'
+# '--eliminate-local-single-block'
+# '--redundancy-elimination'
+# '--eliminate-dead-branches'
+# spirv-opt commit hash: 4a00a80c40484a6f6f72f48c9d34943cf8f180d4
+
+
+
+# variant_compute_shader is derived from the following GLSL:
+# #version 310 es
+#
+# layout(std430, binding = 0) buffer theSSBO
+# {
+#   uint data_out[5];
+# };
+#
+# layout(set = 0, binding = 1) uniform buf0 {
+#   vec2 injectionSwitch;
+# };
+#
+# layout(local_size_x = 100, local_size_y = 1, local_size_z = 1) in;
+#
+# void main()
+# {
+#   data_out[0] = 42u;
+#   uint gid = uint(injectionSwitch.y); // 1
+#   do
+#   {
+#     if (1u != gid) // always false
+#     {
+#       data_out[1] = 1u;
+#       return;
+#     }
+#   } while (false);
+#
+#   uint d;
+#   while (true)
+#   {
+#     if (d != 0u)
+#     {
+#       data_out[1] = 2u;
+#       for (int i = 0; i < 1; ++i)
+#       {
+#         data_out[1] = 3u;
+#         return;
+#       }
+#     }
+#     break;
+#   }
+#   data_out[gid] = 7u; // gid == 1
+# }
+SHADER compute variant_compute_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 86
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main"
+               OpExecutionMode %4 LocalSize 100 1 1
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "theSSBO"
+               OpMemberName %9 0 "data_out"
+               OpName %11 ""
+               OpName %18 "gid"
+               OpName %21 "buf0"
+               OpMemberName %21 0 "injectionSwitch"
+               OpName %23 ""
+               OpName %48 "d"
+               OpName %57 "i"
+               OpDecorate %8 ArrayStride 4
+               OpMemberDecorate %9 0 Offset 0
+               OpDecorate %9 BufferBlock
+               OpDecorate %11 DescriptorSet 0
+               OpDecorate %11 Binding 0
+               OpMemberDecorate %21 0 Offset 0
+               OpDecorate %21 Block
+               OpDecorate %23 DescriptorSet 0
+               OpDecorate %23 Binding 1
+               OpDecorate %76 BuiltIn WorkgroupSize
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 5
+          %8 = OpTypeArray %6 %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypePointer Uniform %9
+         %11 = OpVariable %10 Uniform
+         %12 = OpTypeInt 32 1
+         %13 = OpConstant %12 0
+         %14 = OpConstant %6 42
+         %15 = OpTypePointer Uniform %6
+         %17 = OpTypePointer Function %6
+         %19 = OpTypeFloat 32
+         %20 = OpTypeVector %19 2
+         %21 = OpTypeStruct %20
+         %22 = OpTypePointer Uniform %21
+         %23 = OpVariable %22 Uniform
+         %24 = OpConstant %6 1
+         %25 = OpTypePointer Uniform %19
+         %34 = OpTypeBool
+         %38 = OpConstant %12 1
+         %41 = OpConstantFalse %34
+         %47 = OpConstantTrue %34
+         %50 = OpConstant %6 0
+         %54 = OpConstant %6 2
+         %56 = OpTypePointer Function %12
+         %65 = OpConstant %6 3
+         %72 = OpConstant %6 7
+         %74 = OpTypeVector %6 3
+         %75 = OpConstant %6 100
+         %76 = OpConstantComposite %74 %75 %24 %24
+         %80 = OpUndef %6
+         %85 = OpUndef %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %18 = OpVariable %17 Function
+         %48 = OpVariable %17 Function
+         %57 = OpVariable %56 Function
+         %16 = OpAccessChain %15 %11 %13 %13
+               OpStore %16 %14
+         %26 = OpAccessChain %25 %23 %13 %24
+         %27 = OpLoad %19 %26
+         %28 = OpConvertFToU %6 %27
+               OpStore %18 %28
+               OpBranch %29
+         %29 = OpLabel
+               OpLoopMerge %31 %32 None
+               OpBranch %30
+         %30 = OpLabel
+         %35 = OpINotEqual %34 %24 %28
+               OpSelectionMerge %37 None
+               OpBranchConditional %35 %36 %37
+         %36 = OpLabel
+         %39 = OpAccessChain %15 %11 %13 %38
+               OpStore %39 %24
+               OpReturn
+         %37 = OpLabel
+               OpBranch %32
+         %32 = OpLabel
+               OpBranchConditional %41 %29 %31
+         %31 = OpLabel
+               OpBranch %42
+         %42 = OpLabel
+               OpLoopMerge %44 %45 None
+               OpBranch %46
+         %46 = OpLabel
+               OpBranch %43
+         %43 = OpLabel
+         %51 = OpINotEqual %34 %80 %50
+               OpSelectionMerge %53 None
+               OpBranchConditional %51 %52 %53
+         %52 = OpLabel
+         %55 = OpAccessChain %15 %11 %13 %38
+               OpStore %55 %54
+               OpStore %57 %13
+               OpBranch %58
+         %58 = OpLabel
+               OpLoopMerge %60 %61 None
+               OpBranch %62
+         %62 = OpLabel
+         %64 = OpSLessThan %34 %13 %38
+               OpBranchConditional %64 %59 %60
+         %59 = OpLabel
+               OpStore %55 %65
+               OpReturn
+         %61 = OpLabel
+               OpBranch %58
+         %60 = OpLabel
+               OpBranch %53
+         %53 = OpLabel
+         %82 = OpPhi %6 %28 %43 %28 %60
+               OpBranch %44
+         %45 = OpLabel
+               OpBranch %42
+         %44 = OpLabel
+         %73 = OpAccessChain %15 %11 %13 %82
+               OpStore %73 %72
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_ssbo DATA_TYPE uint32 DATA
+ 0 0 0 0 0
+END
+
+PIPELINE compute variant_pipeline
+  ATTACH variant_compute_shader
+  BIND BUFFER variant_ssbo AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN variant_pipeline 1 1 1
+
+EXPECT variant_ssbo IDX 0 EQ 42
