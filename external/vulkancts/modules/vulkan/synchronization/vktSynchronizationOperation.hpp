@@ -144,7 +144,6 @@ public:
 															 vk::VkPhysicalDevice				physicalDevice,
 															 vk::VkDevice						device,
 															 vk::Allocator&						allocator,
-															 const std::vector<std::string>&	deviceExtensions,
 															 vk::BinaryCollection&				programCollection,
 															 PipelineCacheData&					pipelineCacheData);
 
@@ -155,8 +154,6 @@ public:
 	vk::Allocator&					getAllocator			(void) const { return m_allocator; }
 	vk::BinaryCollection&			getBinaryCollection		(void) const { return m_progCollection; }
 	PipelineCacheData&				getPipelineCacheData	(void) const { return m_pipelineCacheData; }
-	const std::vector<std::string>&	getDeviceExtensions		(void) const { return m_deviceExtensions;}
-	deUint32						getUsedApiVersion		(void) const { return m_usedApiVersion; }
 
 	bool isDeviceFunctionalitySupported(const std::string& extension) const
 	{
@@ -172,8 +169,6 @@ private:
 	vk::Allocator&					m_allocator;
 	vk::BinaryCollection&			m_progCollection;
 	PipelineCacheData&				m_pipelineCacheData;
-	const std::vector<std::string>&	m_deviceExtensions;
-	const deUint32					m_usedApiVersion;
 
 	// Disabled
 									OperationContext		(const OperationContext&);

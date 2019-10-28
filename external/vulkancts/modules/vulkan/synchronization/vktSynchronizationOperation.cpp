@@ -4625,8 +4625,6 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 	, m_allocator			(context.getDefaultAllocator())
 	, m_progCollection		(context.getBinaryCollection())
 	, m_pipelineCacheData	(pipelineCacheData)
-	, m_deviceExtensions	(context.getDeviceExtensions())
-	, m_usedApiVersion		(context.getUsedApiVersion())
 {
 }
 
@@ -4639,8 +4637,6 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 	, m_allocator			(allocator)
 	, m_progCollection		(context.getBinaryCollection())
 	, m_pipelineCacheData	(pipelineCacheData)
-	, m_deviceExtensions	(context.getDeviceExtensions())
-	, m_usedApiVersion		(context.getUsedApiVersion())
 {
 }
 
@@ -4650,7 +4646,6 @@ OperationContext::OperationContext (Context&						context,
 									vk::VkPhysicalDevice			physicalDevice,
 									vk::VkDevice					device,
 									vk::Allocator&					allocator,
-									const std::vector<std::string>&	deviceExtensions,
 									vk::BinaryCollection&			programCollection,
 									PipelineCacheData&				pipelineCacheData)
 	: m_context				(context)
@@ -4661,8 +4656,6 @@ OperationContext::OperationContext (Context&						context,
 	, m_allocator			(allocator)
 	, m_progCollection		(programCollection)
 	, m_pipelineCacheData	(pipelineCacheData)
-	, m_deviceExtensions	(deviceExtensions)
-	, m_usedApiVersion		(context.getUsedApiVersion())
 {
 }
 
