@@ -492,7 +492,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	deMemset(&rayTracingProperties, 0, sizeof(rayTracingProperties));
 	rayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
 
-	if (context.isDeviceFunctionalitySupported("VK_NV_ray_tracing")))
+	if (m_context.isDeviceFunctionalitySupported("VK_NV_ray_tracing"))
 	{
 		properties.pNext = &rayTracingProperties;
 	}

@@ -220,6 +220,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferRenderbufferFunc)							(
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureFunc)								(GLenum target, GLenum attachment, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture1DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture2DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture2DMultisampleEXTFunc)				(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLsizei samples);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture3DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture3DOESFunc)							(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureLayerFunc)							(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
@@ -646,6 +647,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glReleaseShaderCompilerFunc)								(v
 typedef GLW_APICALL void			(GLW_APIENTRY* glRenderGpuMaskNVFunc)									(GLbitfield mask);
 typedef GLW_APICALL void			(GLW_APIENTRY* glRenderbufferStorageFunc)								(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 typedef GLW_APICALL void			(GLW_APIENTRY* glRenderbufferStorageMultisampleFunc)					(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
+typedef GLW_APICALL void			(GLW_APIENTRY* glRenderbufferStorageMultisampleEXTFunc)					(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 typedef GLW_APICALL void			(GLW_APIENTRY* glResumeTransformFeedbackFunc)							(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glSampleCoverageFunc)									(GLfloat value, GLboolean invert);
 typedef GLW_APICALL void			(GLW_APIENTRY* glSampleMaskiFunc)										(GLuint maskNumber, GLbitfield mask);

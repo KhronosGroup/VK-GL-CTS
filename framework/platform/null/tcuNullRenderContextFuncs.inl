@@ -1956,6 +1956,17 @@ GLW_APICALL void GLW_APIENTRY glFramebufferTexture2D (GLenum target, GLenum atta
 
 }
 
+GLW_APICALL void GLW_APIENTRY glFramebufferTexture2DMultisampleEXT (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLsizei samples)
+{
+	DE_UNREF(target);
+	DE_UNREF(attachment);
+	DE_UNREF(textarget);
+	DE_UNREF(texture);
+	DE_UNREF(level);
+	DE_UNREF(samples);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glFramebufferTexture3D (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
 {
 	DE_UNREF(target);
@@ -5580,6 +5591,16 @@ GLW_APICALL void GLW_APIENTRY glRenderbufferStorage (GLenum target, GLenum inter
 }
 
 GLW_APICALL void GLW_APIENTRY glRenderbufferStorageMultisample (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	DE_UNREF(target);
+	DE_UNREF(samples);
+	DE_UNREF(internalformat);
+	DE_UNREF(width);
+	DE_UNREF(height);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glRenderbufferStorageMultisampleEXT (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	DE_UNREF(target);
 	DE_UNREF(samples);

@@ -227,11 +227,10 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
 	VkPhysicalDeviceFeatures2 features;
-	VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures;
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
 	getNeededFeatures(context, features, inlineUniformFeatures, indexingFeatures);
 
-	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
 	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
 	{
 		return TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
@@ -863,7 +862,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	VkPhysicalDeviceFeatures2 features;
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformFeatures;
-	VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures;
 	getNeededFeatures(m_context, features, inlineUniformFeatures, indexingFeatures);
 
 	deRandom rnd;

@@ -220,6 +220,7 @@ void					glFramebufferRenderbuffer							(glw::GLenum target, glw::GLenum attach
 void					glFramebufferTexture								(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture1D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture2D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
+void					glFramebufferTexture2DMultisampleEXT				(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLsizei samples);
 void					glFramebufferTexture3D								(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset);
 void					glFramebufferTexture3DOES							(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset);
 void					glFramebufferTextureLayer							(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer);
@@ -646,6 +647,7 @@ void					glReleaseShaderCompiler								(void);
 void					glRenderGpuMaskNV									(glw::GLbitfield mask);
 void					glRenderbufferStorage								(glw::GLenum target, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height);
 void					glRenderbufferStorageMultisample					(glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height);
+void					glRenderbufferStorageMultisampleEXT					(glw::GLenum target, glw::GLsizei samples, glw::GLenum internalformat, glw::GLsizei width, glw::GLsizei height);
 void					glResumeTransformFeedback							(void);
 void					glSampleCoverage									(glw::GLfloat value, glw::GLboolean invert);
 void					glSampleMaski										(glw::GLuint maskNumber, glw::GLbitfield mask);

@@ -150,9 +150,7 @@ void ImageDedicatedAllocation::createTestImage							(tcu::IVec2					size,
 {
 	DE_UNREF(allocator);
 	if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
-	{
 		TCU_THROW(NotSupportedError, "Not supported");
-	}
 
 	const InstanceInterface&			vkInstance						= context.getInstanceInterface();
 	const VkDevice						vkDevice						= context.getDevice();

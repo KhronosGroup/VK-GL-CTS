@@ -919,10 +919,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 
 void checkIndirectCountExt (Context& context)
 {
-	if (context.contextSupports(vk::ApiVersion(1, 2, 0)) && !vk::getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).drawIndirectCount)
-		TCU_THROW(NotSupportedError, "drawIndirectCount is not supported");
-	else
-		context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+	context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
 }
 
 }	// anonymous

@@ -119,6 +119,12 @@ if (de::contains(extSet, "GL_EXT_texture_border_clamp"))
 	gl->texParameterIuiv		= (glTexParameterIuivFunc)			loader->get("glTexParameterIuivEXT");
 }
 
+if (de::contains(extSet, "GL_EXT_multisampled_render_to_texture"))
+{
+	gl->framebufferTexture2DMultisampleEXT	= (glFramebufferTexture2DMultisampleEXTFunc)	loader->get("glFramebufferTexture2DMultisampleEXT");
+	gl->renderbufferStorageMultisample		= (glRenderbufferStorageMultisampleFunc)		loader->get("glRenderbufferStorageMultisampleEXT");
+}
+
 if (de::contains(extSet, "GL_EXT_debug_marker"))
 {
 	gl->insertEventMarkerEXT	= (glInsertEventMarkerEXTFunc)	loader->get("glInsertEventMarkerEXT");

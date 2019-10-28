@@ -499,9 +499,8 @@ public:
 		const auto&	device			= m_context.getDevice();
 		auto&		log				= m_context.getTestContext().getLog();
 		bool		iubSupported	= false;
-		bool		iubExtSupported	= m_context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block");
 
-		if (iubExtSupported)
+		if (m_context.isDeviceFunctionalitySupported("VK_EXT_inline_uniform_block"))
 		{
 			DevIubFeat	iubFeatures	=
 			{
