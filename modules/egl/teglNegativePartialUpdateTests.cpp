@@ -50,10 +50,10 @@ namespace
 class NegativePartialUpdateTest : public TestCase
 {
 public:
-	enum SurfaceType
+	enum SurfaceType // used as a bit field when selecting a suitable EGL config
 	{
-		SURFACETYPE_WINDOW = 0,
-		SURFACETYPE_PBUFFER
+		SURFACETYPE_WINDOW  = 1 << 0,
+		SURFACETYPE_PBUFFER = 1 << 1
 	};
 
 								NegativePartialUpdateTest		(EglTestContext& eglTestCtx, bool preserveBuffer, SurfaceType surfaceType, const char* name, const char* description);
@@ -97,14 +97,15 @@ bool hasPreserveSwap (const CandidateConfig& c)
 	return (c.surfaceType() & EGL_SWAP_BEHAVIOR_PRESERVED_BIT) == EGL_SWAP_BEHAVIOR_PRESERVED_BIT;
 }
 
-EGLConfig getEGLConfig (const Library& egl, EGLDisplay eglDisplay, NegativePartialUpdateTest::SurfaceType surfaceType, bool preserveBuffer)
+EGLConfig getEGLConfig (const Library& egl, EGLDisplay eglDisplay, unsigned surfaceTypes, bool preserveBuffer)
 {
 	FilterList filters;
-	if (surfaceType == NegativePartialUpdateTest::SURFACETYPE_WINDOW)
+	if ((surfaceTypes & NegativePartialUpdateTest::SURFACETYPE_WINDOW) != 0)
 		filters << isWindow;
-	else if (surfaceType == NegativePartialUpdateTest::SURFACETYPE_PBUFFER)
+	if ((surfaceTypes & NegativePartialUpdateTest::SURFACETYPE_PBUFFER) != 0)
 		filters << isPbuffer;
-	else
+	if (((surfaceTypes & NegativePartialUpdateTest::SURFACETYPE_WINDOW) == 0) &&
+		((surfaceTypes & NegativePartialUpdateTest::SURFACETYPE_PBUFFER) == 0))
 		DE_FATAL("Invalid surfaceType");
 
 	filters << isES2Renderable;
@@ -157,15 +158,15 @@ void NegativePartialUpdateTest::init (void)
 	if (!hasExtension(egl, m_eglDisplay, "EGL_KHR_partial_update"))
 		TCU_THROW(NotSupportedError, "EGL_KHR_partial_update is not supported");
 
-	m_eglConfig = getEGLConfig(egl, m_eglDisplay, m_surfaceType, m_preserveBuffer);
-
 	if (m_surfaceType == SURFACETYPE_PBUFFER)
 	{
+		m_eglConfig = getEGLConfig(egl, m_eglDisplay, SURFACETYPE_PBUFFER, m_preserveBuffer);
 		const EGLint pbufferAttribList[] = { EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE };
 		m_eglSurface = egl.createPbufferSurface(m_eglDisplay, m_eglConfig, pbufferAttribList);
 	}
 	else
 	{
+		m_eglConfig = getEGLConfig(egl, m_eglDisplay, SURFACETYPE_WINDOW | SURFACETYPE_PBUFFER, m_preserveBuffer);
 		const NativeWindowFactory&	factory	= selectNativeWindowFactory(m_eglTestCtx.getNativeDisplayFactory(), m_testCtx.getCommandLine());
 		m_window = factory.createWindow(&m_eglTestCtx.getNativeDisplay(), m_eglDisplay, m_eglConfig, DE_NULL,
 										WindowParams(width, height, parseWindowVisibility(m_testCtx.getCommandLine())));
@@ -272,14 +273,13 @@ TestCase::IterateResult NotCurrentSurfaceTest::iterate (void)
 {
 	const int					impossibleBufferAge = -26084;
 	const Library&				egl					= m_eglTestCtx.getLibrary();
-	const EGLConfig				config				= getEGLConfig(egl, m_eglDisplay, SURFACETYPE_PBUFFER, false);
 	const EGLint				attribList[]		=
 	{
 		EGL_WIDTH,	64,
 		EGL_HEIGHT,	64,
 		EGL_NONE
 	};
-	const eglu::UniqueSurface	dummyPbuffer		(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, config, attribList));
+	const eglu::UniqueSurface	dummyPbuffer		(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribList));
 	TestLog&					log					= m_testCtx.getLog();
 	CallLogWrapper				wrapper				(egl, log);
 	EGLint						damageRegion[]		= { 10, 10, 10, 10 };
@@ -496,14 +496,13 @@ NotCurrentSurfaceTest2::NotCurrentSurfaceTest2 (EglTestContext& context)
 TestCase::IterateResult NotCurrentSurfaceTest2::iterate (void)
 {
 	const Library&				egl				= m_eglTestCtx.getLibrary();
-	const EGLConfig				config			= getEGLConfig(egl, m_eglDisplay, SURFACETYPE_PBUFFER, false);
 	const EGLint				attribList[]	=
 	{
 		EGL_WIDTH,	64,
 		EGL_HEIGHT,	64,
 		EGL_NONE
 	};
-	const eglu::UniqueSurface	dummyPbuffer	(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, config, attribList));
+	const eglu::UniqueSurface	dummyPbuffer	(egl, m_eglDisplay, egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribList));
 	TestLog&					log				= m_testCtx.getLog();
 	CallLogWrapper				wrapper			(egl, log);
 	EGLint						damageRegion[]	= { 10, 10, 10, 10 };

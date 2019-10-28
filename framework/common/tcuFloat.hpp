@@ -37,6 +37,13 @@ enum FloatFlags
 	FLOAT_SUPPORT_DENORM	= (1<<1)
 };
 
+enum RoundingDirection
+{
+	ROUND_TO_EVEN = 0,
+	ROUND_DOWNWARD,		// Towards -Inf.
+	ROUND_UPWARD,		// Towards +Inf.
+};
+
 /*--------------------------------------------------------------------*//*!
  * \brief Floating-point format template
  *
@@ -60,13 +67,13 @@ public:
 
 							Float			(void);
 	explicit				Float			(StorageType value);
-	explicit				Float			(float v);
-	explicit				Float			(double v);
+	explicit				Float			(float v, RoundingDirection rd = ROUND_TO_EVEN);
+	explicit				Float			(double v, RoundingDirection rd = ROUND_TO_EVEN);
 
 	template <typename OtherStorageType, int OtherExponentBits, int OtherMantissaBits, int OtherExponentBias, deUint32 OtherFlags>
-	static Float			convert			(const Float<OtherStorageType, OtherExponentBits, OtherMantissaBits, OtherExponentBias, OtherFlags>& src);
+	static Float			convert			(const Float<OtherStorageType, OtherExponentBits, OtherMantissaBits, OtherExponentBias, OtherFlags>& src, RoundingDirection rd = ROUND_TO_EVEN);
 
-	static inline Float		convert			(const Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>& src) { return src; }
+	static inline Float		convert			(const Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>& src, RoundingDirection = ROUND_TO_EVEN) { return src; }
 
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Construct floating point value
@@ -123,6 +130,9 @@ public:
 	static Float			inf				(int sign);
 	static Float			nan				(void);
 
+	static Float			largestNormal	(int sign);
+	static Float			smallestNormal	(int sign);
+
 private:
 	StorageType				m_value;
 } DE_WARN_UNUSED_TYPE;
@@ -147,21 +157,21 @@ inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Floa
 }
 
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
-inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Float (float value)
+inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Float (float value, RoundingDirection rd)
 	: m_value(0)
 {
 	deUint32 u32;
 	memcpy(&u32, &value, sizeof(deUint32));
-	*this = convert(Float32(u32));
+	*this = convert(Float32(u32), rd);
 }
 
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
-inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Float (double value)
+inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Float (double value, RoundingDirection rd)
 	: m_value(0)
 {
 	deUint64 u64;
 	memcpy(&u64, &value, sizeof(deUint64));
-	*this = convert(Float64(u64));
+	*this = convert(Float64(u64), rd);
 }
 
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
@@ -200,6 +210,20 @@ template <typename StorageType, int ExponentBits, int MantissaBits, int Exponent
 inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::nan (void)
 {
 	return Float(StorageType((1ull<<(ExponentBits+MantissaBits))-1));
+}
+
+template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
+inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::largestNormal (int sign)
+{
+	DE_ASSERT(sign == 1 || ((Flags & FLOAT_HAS_SIGN) && sign == -1));
+	return Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::construct(sign, ExponentBias, (static_cast<StorageType>(1) << (MantissaBits + 1)) - 1);
+}
+
+template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
+inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::smallestNormal (int sign)
+{
+	DE_ASSERT(sign == 1 || ((Flags & FLOAT_HAS_SIGN) && sign == -1));
+	return Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::construct(sign, 1 - ExponentBias, (static_cast<StorageType>(1) << MantissaBits));
 }
 
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
@@ -242,98 +266,148 @@ template <typename StorageType, int ExponentBits, int MantissaBits, int Exponent
 template <typename OtherStorageType, int OtherExponentBits, int OtherMantissaBits, int OtherExponentBias, deUint32 OtherFlags>
 Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>
 Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::convert
-	(const Float<OtherStorageType, OtherExponentBits, OtherMantissaBits, OtherExponentBias, OtherFlags>& other)
+	(const Float<OtherStorageType, OtherExponentBits, OtherMantissaBits, OtherExponentBias, OtherFlags>& other, RoundingDirection rd)
 {
 	if (!(Flags & FLOAT_HAS_SIGN) && other.sign() < 0)
 	{
 		// Negative number, truncate to zero.
 		return zero(+1);
 	}
-	else if (other.isInf())
+
+	if (other.isInf())
 	{
 		return inf(other.sign());
 	}
-	else if (other.isNaN())
+
+	if (other.isNaN())
 	{
 		return nan();
 	}
-	else if (other.isZero())
+
+	if (other.isZero())
 	{
 		return zero(other.sign());
 	}
-	else
+
+	const int			eMin	= 1 - ExponentBias;
+	const int			eMax	= ((1<<ExponentBits)-2) - ExponentBias;
+
+	const StorageType	s		= StorageType((StorageType(other.signBit())) << (StorageType(ExponentBits+MantissaBits))); // \note Not sign, but sign bit.
+	int					e		= other.exponent();
+	deUint64			m		= other.mantissa();
+
+	// Normalize denormalized values prior to conversion.
+	while (!(m & (1ull<<OtherMantissaBits)))
 	{
-		const int			eMin	= 1 - ExponentBias;
-		const int			eMax	= ((1<<ExponentBits)-2) - ExponentBias;
+		m <<= 1;
+		e  -= 1;
+	}
 
-		const StorageType	s		= StorageType((StorageType(other.signBit())) << (StorageType(ExponentBits+MantissaBits))); // \note Not sign, but sign bit.
-		int					e		= other.exponent();
-		deUint64			m		= other.mantissa();
-
-		// Normalize denormalized values prior to conversion.
-		while (!(m & (1ull<<OtherMantissaBits)))
+	if (e < eMin)
+	{
+		// Underflow.
+		if ((Flags & FLOAT_SUPPORT_DENORM) && (eMin-e-1 <= MantissaBits))
 		{
-			m <<= 1;
-			e  -= 1;
-		}
+			// Shift and round.
+			int			bitDiff			= (OtherMantissaBits-MantissaBits) + (eMin-e);
+			deUint64	lastBitsMask	= (1ull << bitDiff) - 1ull;
+			deUint64	lastBits		= (static_cast<deUint64>(m) & lastBitsMask);
+			deUint64	half			= (1ull << (bitDiff - 1)) - 1;
+			deUint64	bias			= (m >> bitDiff) & 1;
 
-		if (e < eMin)
-		{
-			// Underflow.
-			if ((Flags & FLOAT_SUPPORT_DENORM) && (eMin-e-1 <= MantissaBits))
+			switch (rd)
 			{
-				// Shift and round (RTE).
-				int			bitDiff	= (OtherMantissaBits-MantissaBits) + (eMin-e);
-				deUint64	half	= (1ull << (bitDiff - 1)) - 1;
-				deUint64	bias	= (m >> bitDiff) & 1;
-
+			case ROUND_TO_EVEN:
 				return Float(StorageType(s | (m + half + bias) >> bitDiff));
-			}
-			else
-				return zero(other.sign());
-		}
-		else
-		{
-			// Remove leading 1.
-			m = m & ~(1ull<<OtherMantissaBits);
 
-			if (MantissaBits < OtherMantissaBits)
-			{
-				// Round mantissa (round to nearest even).
-				int			bitDiff	= OtherMantissaBits-MantissaBits;
-				deUint64	half	= (1ull << (bitDiff - 1)) - 1;
-				deUint64	bias	= (m >> bitDiff) & 1;
-
-				m = (m + half + bias) >> bitDiff;
-
-				if (m & (1ull<<MantissaBits))
+			case ROUND_DOWNWARD:
+				m = (m >> bitDiff);
+				if (lastBits != 0ull && other.sign() < 0)
 				{
-					// Overflow in mantissa.
-					m  = 0;
-					e += 1;
+					m += 1;
 				}
-			}
-			else
-			{
-				int bitDiff = MantissaBits-OtherMantissaBits;
-				m = m << bitDiff;
-			}
+				return Float(StorageType(s | m));
 
-			if (e > eMax)
-			{
-				// Overflow.
-				return inf(other.sign());
-			}
-			else
-			{
-				DE_ASSERT(de::inRange(e, eMin, eMax));
-				DE_ASSERT(((e + ExponentBias) & ~((1ull<<ExponentBits)-1)) == 0);
-				DE_ASSERT((m & ~((1ull<<MantissaBits)-1)) == 0);
+			case ROUND_UPWARD:
+				m = (m >> bitDiff);
+				if (lastBits != 0ull && other.sign() > 0)
+				{
+					m += 1;
+				}
+				return Float(StorageType(s | m));
 
-				return Float(StorageType(s | (StorageType(e + ExponentBias) << MantissaBits) | m));
+			default:
+				DE_ASSERT(false);
+				break;
 			}
+		}
+
+		return zero(other.sign());
+	}
+
+	// Remove leading 1.
+	m = m & ~(1ull<<OtherMantissaBits);
+
+	if (MantissaBits < OtherMantissaBits)
+	{
+		// Round mantissa.
+		int			bitDiff			= OtherMantissaBits-MantissaBits;
+		deUint64	lastBitsMask	= (1ull << bitDiff) - 1ull;
+		deUint64	lastBits		= (static_cast<deUint64>(m) & lastBitsMask);
+		deUint64	half			= (1ull << (bitDiff - 1)) - 1;
+		deUint64	bias			= (m >> bitDiff) & 1;
+
+		switch (rd)
+		{
+		case ROUND_TO_EVEN:
+			m = (m + half + bias) >> bitDiff;
+			break;
+
+		case ROUND_DOWNWARD:
+			m = (m >> bitDiff);
+			if (lastBits != 0ull && other.sign() < 0)
+			{
+				m += 1;
+			}
+			break;
+
+		case ROUND_UPWARD:
+			m = (m >> bitDiff);
+			if (lastBits != 0ull && other.sign() > 0)
+			{
+				m += 1;
+			}
+			break;
+
+		default:
+			DE_ASSERT(false);
+			break;
+		}
+
+		if (m & (1ull<<MantissaBits))
+		{
+			// Overflow in mantissa.
+			m  = 0;
+			e += 1;
 		}
 	}
+	else
+	{
+		int bitDiff = MantissaBits-OtherMantissaBits;
+		m = m << bitDiff;
+	}
+
+	if (e > eMax)
+	{
+		// Overflow.
+		return (((other.sign() < 0 && rd == ROUND_UPWARD) || (other.sign() > 0 && rd == ROUND_DOWNWARD)) ? largestNormal(other.sign()) : inf(other.sign()));
+	}
+
+	DE_ASSERT(de::inRange(e, eMin, eMax));
+	DE_ASSERT(((e + ExponentBias) & ~((1ull<<ExponentBits)-1)) == 0);
+	DE_ASSERT((m & ~((1ull<<MantissaBits)-1)) == 0);
+
+	return Float(StorageType(s | (StorageType(e + ExponentBias) << MantissaBits) | m));
 }
 
 } // tcu

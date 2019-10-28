@@ -122,35 +122,18 @@ BasicTranscodingTestInstance::BasicTranscodingTestInstance (Context& context, co
 {
 }
 
-// The templated functions below work with specializations of tcu::Float as class T. See "tcuFloat.hpp".
-
-// Return smallest floating point normal value preserving the existing sign bit.
-// The smallest normal value has the mantissa bits zeroed out and 1 as the exponent (tough constructBits() expects something else).
-template <class T>
-inline T SmallestFloat (T value)
-{
-	return T::constructBits(value.sign(), -(T::EXPONENT_BIAS - 1), typename T::StorageType(0u));
-}
-
-// Return the largest floating point normal value preserving the existing sign bit.
-// The largest normal value has the mantissa bits all set to 1 and the exponent set to the largest even value (see constructBits() for the details).
-template <class T>
-inline T LargestFloat (T value)
-{
-	return T::constructBits(value.sign(), T::EXPONENT_BIAS, typename T::StorageType((1<<T::MANTISSA_BITS)-1));
-}
-
 // Replace Infs and NaNs with the largest normal value.
 // Replace denormal numbers with the smallest normal value.
 // Leave the rest untouched.
+// T is a tcu::Float specialization.
 template <class T>
 void fixFloatIfNeeded(deUint8* ptr_)
 {
 	T* ptr = reinterpret_cast<T*>(ptr_);
 	if (ptr->isInf() || ptr->isNaN())
-		*ptr = LargestFloat<T>(*ptr);
+		*ptr = T::largestNormal(ptr->sign());
 	else if (ptr->isDenorm())
-		*ptr = SmallestFloat<T>(*ptr);
+		*ptr = T::smallestNormal(ptr->sign());
 }
 
 void BasicTranscodingTestInstance::generateData (deUint8* toFill, size_t size, const VkFormat format)
