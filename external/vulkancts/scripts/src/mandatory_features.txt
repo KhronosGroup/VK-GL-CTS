@@ -39,6 +39,7 @@ VkPhysicalDeviceVulkan12Features						imagelessFramebuffer								REQUIREMENTS (
 VkPhysicalDeviceVulkan12Features						uniformBufferStandardLayout							REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features						separateDepthStencilLayouts							REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features						hostQueryReset										REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
+VkPhysicalDeviceTimelineSemaphoreFeaturesKHR 			timelineSemaphore									REQUIREMENTS ( VK_KHR_timeline_semaphore )
 VkPhysicalDeviceVulkan12Features						timelineSemaphore									REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features						shaderUniformTexelBufferArrayDynamicIndexing		REQUIREMENTS ( "ApiVersion(1, 2, 0)" physicalDeviceVulkan12Features.descriptorIndexing )
 VkPhysicalDeviceVulkan12Features						shaderStorageTexelBufferArrayDynamicIndexing		REQUIREMENTS ( "ApiVersion(1, 2, 0)" physicalDeviceVulkan12Features.descriptorIndexing )
