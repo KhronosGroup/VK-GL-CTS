@@ -119,7 +119,7 @@ std::vector<deUint32> generatePrimes (deUint32						limit)
 		}
 	}
 
-	std::vector<deUint32>::iterator x = std::stable_partition(v.begin(), v.end(), std::bind2nd(std::greater_equal<deUint32>(), 2));
+	std::vector<deUint32>::iterator x = std::stable_partition(v.begin(), v.end(), [](deUint32 value) { return value >= 2; });
 
 	return std::vector<deUint32>(v.begin(), x);
 }
