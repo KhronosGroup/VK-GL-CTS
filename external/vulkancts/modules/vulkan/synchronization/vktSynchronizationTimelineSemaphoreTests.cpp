@@ -263,8 +263,7 @@ public:
 
 	virtual void checkSupport(Context& context) const
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	TestInstance* createInstance (Context& context) const
@@ -396,8 +395,7 @@ public:
 
 	virtual void checkSupport(Context& context) const
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	TestInstance* createInstance (Context& context) const
@@ -937,8 +935,7 @@ public:
 
 	virtual void checkSupport(Context& context) const
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1450,8 +1447,7 @@ public:
 
 	virtual void checkSupport(Context& context) const
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1907,8 +1903,7 @@ public:
 
 	virtual void checkSupport(Context& context) const
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const

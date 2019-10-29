@@ -95,29 +95,29 @@ public:
 	: m_context	(context)
 	{
 		// Check instance support
-		requireInstanceExtension("VK_KHR_get_physical_device_properties2");
+		m_context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-		requireInstanceExtension("VK_KHR_external_semaphore_capabilities");
-		requireInstanceExtension("VK_KHR_external_memory_capabilities");
+		m_context.requireInstanceFunctionality("VK_KHR_external_semaphore_capabilities");
+		m_context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
 
 		// Check device support
 		if (config.dedicated)
-			requireDeviceExtension("VK_KHR_dedicated_allocation");
+			m_context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
-		requireDeviceExtension("VK_KHR_external_semaphore");
-		requireDeviceExtension("VK_KHR_external_memory");
+		m_context.requireDeviceFunctionality("VK_KHR_external_semaphore");
+		m_context.requireDeviceFunctionality("VK_KHR_external_memory");
 
 		if (config.semaphoreType == vk::VK_SEMAPHORE_TYPE_TIMELINE_KHR)
 		{
-			requireDeviceExtension("VK_KHR_timeline_semaphore");
+			m_context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 		}
 
 		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR
 			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
 			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
 		{
-			requireDeviceExtension("VK_KHR_external_semaphore_fd");
-			requireDeviceExtension("VK_KHR_external_memory_fd");
+			m_context.requireDeviceFunctionality("VK_KHR_external_semaphore_fd");
+			m_context.requireDeviceFunctionality("VK_KHR_external_memory_fd");
 		}
 
 		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
@@ -125,8 +125,8 @@ public:
 			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
 			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
 		{
-			requireDeviceExtension("VK_KHR_external_semaphore_win32");
-			requireDeviceExtension("VK_KHR_external_memory_win32");
+			m_context.requireDeviceFunctionality("VK_KHR_external_semaphore_win32");
+			m_context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
 		}
 
 		TestLog&						log				= context.getTestContext().getLog();
@@ -260,17 +260,6 @@ public:
 	}
 
 private:
-	void requireDeviceExtension(const char* name) const
-	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), name))
-			TCU_THROW(NotSupportedError, (std::string(name) + " is not supported").c_str());
-	}
-
-	void requireInstanceExtension(const char* name) const
-	{
-		if (!de::contains(m_context.getInstanceExtensions().begin(), m_context.getInstanceExtensions().end(), name))
-			TCU_THROW(NotSupportedError, (std::string(name) + " is not supported").c_str());
-	}
 
 	const Context& m_context;
 };

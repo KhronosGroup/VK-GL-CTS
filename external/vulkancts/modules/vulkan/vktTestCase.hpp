@@ -99,8 +99,8 @@ public:
 	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports						(const vk::ApiVersion version) const;
 	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
-	bool										requireDeviceFunctionality			(const std::string& required);
-	bool										requireInstanceFunctionality		(const std::string& required);
+	bool										requireDeviceFunctionality			(const std::string& required) const;
+	bool										requireInstanceFunctionality		(const std::string& required) const;
 	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 	void*										getInstanceProcAddr					();

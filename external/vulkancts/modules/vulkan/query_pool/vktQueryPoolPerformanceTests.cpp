@@ -124,7 +124,8 @@ tcu::TestStatus EnumerateAndValidateTest::iterate (void)
 			continue;
 
 		deUint32 counterCount = 0;
-		vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCount, DE_NULL, DE_NULL);
+		VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCount, DE_NULL, DE_NULL));
+
 		if (counterCount == 0)
 			continue;
 
@@ -133,7 +134,17 @@ tcu::TestStatus EnumerateAndValidateTest::iterate (void)
 			deUint32								counterCountRead	= counterCount;
 			std::map<std::string, size_t>			uuidValidator;
 
-			vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCountRead, &counters[0], DE_NULL);
+			if (counterCount > 1)
+			{
+				deUint32	incompleteCounterCount	= counterCount - 1;
+				VkResult	result;
+
+				result = vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &incompleteCounterCount, &counters[0], DE_NULL);
+				if (result != VK_INCOMPLETE)
+					TCU_FAIL("VK_INCOMPLETE not returned");
+			}
+
+			VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCountRead, &counters[0], DE_NULL));
 
 			if (counterCountRead != counterCount)
 				TCU_FAIL("Number of counters read (" + de::toString(counterCountRead) + ") is not equal to number of counters reported (" + de::toString(counterCount) + ")");
@@ -162,7 +173,7 @@ tcu::TestStatus EnumerateAndValidateTest::iterate (void)
 			std::vector<VkPerformanceCounterDescriptionKHR>	counterDescriptors	(counterCount);
 			deUint32										counterCountRead	= counterCount;
 
-			vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCountRead, DE_NULL, &counterDescriptors[0]);
+			VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueNdx, &counterCountRead, DE_NULL, &counterDescriptors[0]));
 
 			if (counterCountRead != counterCount)
 				TCU_FAIL("Number of counters read (" + de::toString(counterCountRead) + ") is not equal to number of counters reported (" + de::toString(counterCount) + ")");
@@ -223,13 +234,14 @@ void QueryTestBase::setupCounters()
 		TCU_THROW(NotSupportedError, "Performance counter query pools feature not supported");
 
 	// get the number of supported counters
-	vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, NULL, NULL);
+	VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, NULL, NULL));
+
 	if (!counterCount)
 		TCU_THROW(NotSupportedError, "QualityWarning: there are no performance counters");
 
 	// get supported counters
 	m_counters.resize(counterCount);
-	vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, &m_counters[0], DE_NULL);
+	VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, queueFamilyIndex, &counterCount, &m_counters[0], DE_NULL));
 }
 
 Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, deUint32 enabledCounterStride)
@@ -1191,4 +1203,3 @@ void QueryPoolPerformanceTests::init (void)
 
 } //QueryPool
 } //vkt
-
