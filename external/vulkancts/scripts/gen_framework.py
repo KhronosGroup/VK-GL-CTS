@@ -1547,11 +1547,15 @@ def generateDeviceFeaturesDefs(src):
 	for sType, sSuffix in matches:
 		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
 		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features' + sSuffix[1:] + ')'
-		matchStructName		= re.search(ptrnStructName, src, re.M)
+		matchStructName		= re.search(ptrnStructName, src, re.IGNORECASE)
 		if matchStructName:
 			# handle special cases
 			if sType == "EXCLUSIVE_SCISSOR":
 				sType = "SCISSOR_EXCLUSIVE"
+			elif sType == "ASTC_DECODE":
+				sType = "ASTC_DECODE_MODE"
+			elif sType == "TEXTURE_COMPRESSION_ASTC_HDR":
+				continue # skip due to const pNext
 			# end handling special cases
 			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
@@ -1579,6 +1583,8 @@ def writeDeviceFeatures(dfDefs, filename):
 		# handle special cases
 		if sType == "SCISSOR_EXCLUSIVE":
 			sType = "EXCLUSIVE_SCISSOR"
+		elif sType == "ASTC_DECODE_MODE":
+			sType = "ASTC_DECODE"
 		# end handling special cases
 		# construct makeFeatureDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_FEATURES{1}".format(sType, sSuffix)

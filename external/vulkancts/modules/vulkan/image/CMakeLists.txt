@@ -5,6 +5,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTests.hpp
 	vktImageTestsUtil.cpp
 	vktImageTestsUtil.hpp
+	vktImageAstcDecodeModeTests.cpp
+	vktImageAstcDecodeModeTests.hpp
 	vktImageAtomicOperationTests.cpp
 	vktImageAtomicOperationTests.hpp
 	vktImageLoadStoreTests.cpp
