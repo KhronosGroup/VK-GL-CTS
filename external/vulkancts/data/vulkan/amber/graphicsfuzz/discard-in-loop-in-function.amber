@@ -1,0 +1,178 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A shader with a discard nested in a loop in a function
+
+# The test passes because the discard is always reached, so we end up with the background color, black.
+
+# Optimized using spirv-opt with the following arguments:
+# '--simplify-instructions'
+# '--eliminate-dead-inserts'
+# '--redundancy-elimination'
+# '--inline-entry-points-exhaustive'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--convert-local-access-chains'
+# '--convert-local-access-chains'
+# '--eliminate-dead-code-aggressive'
+# '--eliminate-local-single-store'
+# '--if-conversion'
+# '--simplify-instructions'
+# spirv-opt commit hash: 6b072126595dd8c2448eb1fda616251c5e6d7079
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0 {
+#  vec2 injectionSwitch;
+# };
+# void f()
+# {
+#  do
+#   {
+#    if(1.0 > injectionSwitch.y)
+#     {
+#      if(gl_FragCoord.y < 0.0)
+#       {
+#       }
+#      continue;
+#     }
+#    discard;
+#   }
+#  while(false);
+# }
+# void main()
+# {
+#  f();
+#  _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 47
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %31 %44
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %6 "f("
+               OpName %15 "buf0"
+               OpMemberName %15 0 "injectionSwitch"
+               OpName %17 ""
+               OpName %31 "gl_FragCoord"
+               OpName %44 "_GLF_color"
+               OpMemberDecorate %15 0 Offset 0
+               OpDecorate %15 Block
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %31 BuiltIn FragCoord
+               OpDecorate %44 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %12 = OpTypeFloat 32
+         %13 = OpConstant %12 1
+         %14 = OpTypeVector %12 2
+         %15 = OpTypeStruct %14
+         %16 = OpTypePointer Uniform %15
+         %17 = OpVariable %16 Uniform
+         %18 = OpTypeInt 32 1
+         %19 = OpConstant %18 0
+         %20 = OpTypeInt 32 0
+         %21 = OpConstant %20 1
+         %22 = OpTypePointer Uniform %12
+         %25 = OpTypeBool
+         %29 = OpTypeVector %12 4
+         %30 = OpTypePointer Input %29
+         %31 = OpVariable %30 Input
+         %32 = OpTypePointer Input %12
+         %35 = OpConstant %12 0
+         %41 = OpConstantFalse %25
+         %43 = OpTypePointer Output %29
+         %44 = OpVariable %43 Output
+         %45 = OpConstantComposite %29 %13 %35 %35 %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %42 = OpFunctionCall %2 %6
+               OpStore %44 %45
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpBranch %8
+          %8 = OpLabel
+               OpLoopMerge %10 %38 None
+               OpBranch %9
+          %9 = OpLabel
+         %23 = OpAccessChain %22 %17 %19 %21
+         %24 = OpLoad %12 %23
+         %26 = OpFOrdGreaterThan %25 %13 %24
+               OpSelectionMerge %28 None
+               OpBranchConditional %26 %27 %28
+         %27 = OpLabel
+         %33 = OpAccessChain %32 %31 %21
+         %34 = OpLoad %12 %33
+         %36 = OpFOrdLessThan %25 %34 %35
+               OpSelectionMerge %46 None
+               OpBranchConditional %36 %37 %38
+         %37 = OpLabel
+               OpBranch %38
+         %46 = OpLabel
+               OpBranch %38
+         %38 = OpLabel
+               OpBranchConditional %41 %8 %10
+         %28 = OpLabel
+               OpKill
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 0 0 0 255
