@@ -265,13 +265,12 @@ MovePtr<Allocation> importAndBindMemory (const DeviceInterface&					vkd,
 										 VkBuffer								buffer,
 										 NativeHandle&							nativeHandle,
 										 VkExternalMemoryHandleTypeFlagBits		externalType,
-										 const deUint32							exportedMemoryTypeIndex,
-										 const VkExternalMemoryFeatureFlags&	externalMemoryFeatureFlags)
+										 const deUint32							exportedMemoryTypeIndex)
 {
 	const VkMemoryRequirements	requirements			= getBufferMemoryRequirements(vkd, device, buffer);
 	Move<VkDeviceMemory>		memory;
 
-	if ((externalMemoryFeatureFlags & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+	if (!!buffer)
 		memory = importDedicatedMemory(vkd, device, buffer, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
 	else
 		memory = importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
@@ -286,13 +285,12 @@ MovePtr<Allocation> importAndBindMemory (const DeviceInterface&					vkd,
 										 VkImage								image,
 										 NativeHandle&							nativeHandle,
 										 VkExternalMemoryHandleTypeFlagBits		externalType,
-										 deUint32								exportedMemoryTypeIndex,
-										 const VkExternalMemoryFeatureFlags&	externalMemoryFeatureFlags)
+										 deUint32								exportedMemoryTypeIndex)
 {
 	const VkMemoryRequirements	requirements	= getImageMemoryRequirements(vkd, device, image);
 	Move<VkDeviceMemory>		memory;
 
-	if ((externalMemoryFeatureFlags & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0)
+	if (!!image)
 		memory = importDedicatedMemory(vkd, device, image, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
 	else
 		memory = importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
@@ -426,8 +424,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 									  const OperationSupport&				writeOp,
 									  NativeHandle&							nativeHandle,
 									  VkExternalMemoryHandleTypeFlagBits	externalType,
-									  deUint32								exportedMemoryTypeIndex,
-									  const VkExternalMemoryFeatureFlags&	externalMemoryFeatureFlags)
+									  deUint32								exportedMemoryTypeIndex)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
 	{
@@ -480,7 +477,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 		};
 
 		Move<VkImage>			image		= createImage(vkd, device, &createInfo);
-		MovePtr<Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex, externalMemoryFeatureFlags);
+		MovePtr<Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex);
 
 		return MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -513,8 +510,7 @@ de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 																				  *buffer,
 																				  nativeHandle,
 																				  externalType,
-																				  exportedMemoryTypeIndex,
-																				  externalMemoryFeatureFlags);
+																				  exportedMemoryTypeIndex);
 
 		return MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -666,8 +662,7 @@ public:
 														   *m_writeOpSupport,
 														   nativeMemoryHandle,
 														   m_memoryHandleType,
-														   memoryTypeIndex,
-														   m_externalMemoryFeatureFlags));
+														   memoryTypeIndex));
 
 			iter.writeOp = makeSharedPtr(m_writeOpSupport->build(*operationContextA,
 																 *iter.resourceA));
@@ -963,8 +958,6 @@ private:
 			if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 				return false;
 
-			m_externalMemoryFeatureFlags = externalProperties.externalMemoryProperties.externalMemoryFeatures;
-
 			return true;
 		}
 		else
@@ -990,8 +983,6 @@ private:
 				|| (properties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
 				return false;
 
-			m_externalMemoryFeatureFlags = properties.externalMemoryProperties.externalMemoryFeatures;
-
 			return true;
 		}
 	}
@@ -1004,7 +995,6 @@ private:
 	VkExternalSemaphoreHandleTypeFlagBits		m_semaphoreHandleType;
 	PipelineCacheData&							m_pipelineCacheData;
 	de::Random									m_rng;
-	VkExternalMemoryFeatureFlags				m_externalMemoryFeatureFlags;
 };
 
 class QueueSubmitSignalOrderSharedTestCase : public TestCase
