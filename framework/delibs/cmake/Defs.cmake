@@ -24,7 +24,7 @@
 # project(deproject)
 # include(delibs/cmake/Defs.cmake NO_POLICY_SCOPE)
 
-cmake_policy(VERSION 2.6)
+cmake_policy(VERSION 3.10.2)
 
 # \todo [pyry] More intelligent detection, perhaps use some script?
 
