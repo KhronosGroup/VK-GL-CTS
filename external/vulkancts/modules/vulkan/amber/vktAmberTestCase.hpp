@@ -118,6 +118,11 @@ AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
 									const std::string&				filename,
 									const std::vector<std::string>	requirements = std::vector<std::string>());
 
+void createAmberTestsFromIndexFile (tcu::TestContext&	testCtx,
+									tcu::TestCaseGroup*	group,
+									const std::string	filename,
+									const char*			category);
+
 } // cts_amber
 } // vkt
 
