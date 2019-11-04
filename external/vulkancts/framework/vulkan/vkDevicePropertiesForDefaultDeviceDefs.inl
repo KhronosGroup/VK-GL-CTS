@@ -11,7 +11,6 @@ const VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) c
 const VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>();			}
 const VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceFloatControlsProperties>();					}
 const VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceFragmentDensityMapPropertiesEXT>();			}
-const VkPhysicalDeviceGroupProperties&							getGroupProperties							(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceGroupProperties>();							}
 const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceInlineUniformBlockPropertiesEXT>();			}
 const VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesEXT>();				}
 const VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMaintenance3Properties>();						}
