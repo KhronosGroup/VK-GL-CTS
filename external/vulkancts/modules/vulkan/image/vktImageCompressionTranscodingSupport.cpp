@@ -2882,10 +2882,12 @@ void TexelViewCompatibleCase::checkSupport (Context& context) const
 			!physicalDeviceFeatures.textureCompressionASTC_LDR)
 			TCU_THROW(NotSupportedError, "textureCompressionASTC_LDR not supported");
 
-		if ((m_parameters.uncompressedImageUsage & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) &&
-			isStorageImageExtendedFormat(m_parameters.formatUncompressed) &&
-			!physicalDeviceFeatures.shaderStorageImageExtendedFormats)
-			TCU_THROW(NotSupportedError, "Storage view format requires shaderStorageImageExtended");
+		if (m_parameters.uncompressedImageUsage & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT)
+		{
+			const VkFormatProperties p = getPhysicalDeviceFormatProperties(vk, physicalDevice, m_parameters.formatUncompressed);
+			if ((p.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+				TCU_THROW(NotSupportedError, "Storage view format not supported");
+		}
 	}
 }
 

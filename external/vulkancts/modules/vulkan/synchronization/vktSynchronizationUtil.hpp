@@ -176,7 +176,6 @@ enum FeatureFlagBits
 	FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS			= 1u << 3,
 	FEATURE_FRAGMENT_STORES_AND_ATOMICS					= 1u << 4,
 	FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE	= 1u << 5,
-	FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS		= 1u << 6,
 };
 typedef deUint32 FeatureFlags;
 
@@ -229,6 +228,7 @@ vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface
 vk::Move<vk::VkPipeline>		makeComputePipeline							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkShaderModule shaderModule, const vk::VkSpecializationInfo* specInfo, PipelineCacheData& pipelineCacheData);
 void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void							requireFeatures								(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
+void							requireStorageImageSupport					(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const vk::VkFormat fmt);
 std::string						getResourceName								(const ResourceDescription& resource);
 bool							isIndirectBuffer							(const ResourceType type);
 

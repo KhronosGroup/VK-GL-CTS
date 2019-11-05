@@ -1696,13 +1696,6 @@ void checkSupport (Context& context, const CaseDef caseDef)
 		break;
 	}
 
-	if ((viewFormatFeatureFlags & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) &&
-		isStorageImageExtendedFormat(caseDef.viewFormat) &&
-		!getPhysicalDeviceFeatures(vki, physDevice).shaderStorageImageExtendedFormats)
-	{
-		TCU_THROW(NotSupportedError, "View format requires shaderStorageImageExtended");
-	}
-
 	if ((viewFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags)
 		TCU_THROW(NotSupportedError, "View format doesn't support upload/download method");
 
