@@ -3392,16 +3392,19 @@ deUint32 getBlockHeight (const VkFormat compressedFormat)
 
 VkFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
 {
-	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 9);
 
 	switch (filterMode)
 	{
 		case tcu::Sampler::NEAREST:					return VK_FILTER_NEAREST;
 		case tcu::Sampler::LINEAR:					return VK_FILTER_LINEAR;
+		case tcu::Sampler::CUBIC:					return VK_FILTER_CUBIC_EXT;
 		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_FILTER_NEAREST;
 		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_FILTER_NEAREST;
 		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_FILTER_LINEAR;
 		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_FILTER_LINEAR;
+		case tcu::Sampler::CUBIC_MIPMAP_NEAREST:	return VK_FILTER_CUBIC_EXT;
+		case tcu::Sampler::CUBIC_MIPMAP_LINEAR:		return VK_FILTER_CUBIC_EXT;
 		default:
 			DE_FATAL("Illegal filter mode");
 			return (VkFilter)0;
@@ -3410,7 +3413,7 @@ VkFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
 
 VkSamplerMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
 {
-	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
+	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 9);
 
 	// \note VkSamplerCreateInfo doesn't have a flag for disabling mipmapping. Instead
 	//		 minLod = 0 and maxLod = 0.25 should be used to match OpenGL NEAREST and LINEAR
@@ -3420,10 +3423,13 @@ VkSamplerMipmapMode mapMipmapMode (tcu::Sampler::FilterMode filterMode)
 	{
 		case tcu::Sampler::NEAREST:					return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		case tcu::Sampler::LINEAR:					return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::CUBIC:					return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		case tcu::Sampler::NEAREST_MIPMAP_NEAREST:	return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		case tcu::Sampler::NEAREST_MIPMAP_LINEAR:	return VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		case tcu::Sampler::LINEAR_MIPMAP_NEAREST:	return VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		case tcu::Sampler::LINEAR_MIPMAP_LINEAR:	return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		case tcu::Sampler::CUBIC_MIPMAP_NEAREST:	return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		case tcu::Sampler::CUBIC_MIPMAP_LINEAR:		return VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		default:
 			DE_FATAL("Illegal filter mode");
 			return (VkSamplerMipmapMode)0;
@@ -3679,6 +3685,15 @@ tcu::Sampler::FilterMode mapVkMinTexFilter (VkFilter filter, VkSamplerMipmapMode
 					break;
 			}
 			break;
+		case VK_FILTER_CUBIC_EXT:
+			switch (mipMode)
+			{
+			case VK_SAMPLER_MIPMAP_MODE_LINEAR:		return tcu::Sampler::CUBIC_MIPMAP_LINEAR;
+			case VK_SAMPLER_MIPMAP_MODE_NEAREST:	return tcu::Sampler::CUBIC_MIPMAP_NEAREST;
+			default:
+				break;
+			}
+			break;
 
 		default:
 			break;
@@ -3694,6 +3709,7 @@ tcu::Sampler::FilterMode mapVkMagTexFilter (VkFilter filter)
 	{
 		case VK_FILTER_LINEAR:		return tcu::Sampler::LINEAR;
 		case VK_FILTER_NEAREST:		return tcu::Sampler::NEAREST;
+		case VK_FILTER_CUBIC_EXT:	return tcu::Sampler::CUBIC;
 		default:
 			break;
 	}
