@@ -520,8 +520,6 @@ dEQP-GLES3.functional.state_query.integers.draw_buffer_getinteger
 dEQP-GLES3.functional.state_query.integers.draw_buffer_getinteger64
 dEQP-GLES3.functional.state_query.integers.draw_buffer_getfloat
 dEQP-GLES3.functional.state_query.shader.uniform_value_boolean
-dEQP-GLES3.functional.state_query.internal_format.rgba_samples
-dEQP-GLES3.functional.state_query.internal_format.rgb_samples
 dEQP-GLES3.functional.state_query.string.extensions
 dEQP-GLES3.functional.texture.filtering.3d.combinations.linear_mipmap_linear_linear_clamp_clamp_clamp
 dEQP-GLES3.functional.texture.filtering.3d.combinations.linear_mipmap_linear_linear_clamp_clamp_mirror

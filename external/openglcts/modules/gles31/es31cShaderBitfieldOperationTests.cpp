@@ -26,6 +26,7 @@
 #include "deRandom.hpp"
 #include "deString.h"
 #include "deStringUtil.hpp"
+#include "deFloat16.h"
 #include "gluContextInfo.hpp"
 #include "gluDrawUtil.hpp"
 #include "gluPixelTransfer.hpp"
@@ -390,6 +391,32 @@ public:
 	}
 };
 
+static float reduce32PrecisionTo16(float f)
+{
+	return deFloat16To32(deFloat32To16(f));
+}
+
+static GLuint pack(float x, float y, float z, float w, float range)
+{
+	return ((int(deFloatFloor(x * range + 0.5f)) & 0xFF) << 0) |
+			((int(deFloatFloor(y * range + 0.5f)) & 0xFF) << 8) |
+			((int(deFloatFloor(z * range + 0.5f)) & 0xFF) << 16)|
+			((int(deFloatFloor(w * range + 0.5f)) & 0xFF) << 24);
+}
+
+static bool checkOutData(GLuint result, const GLfloat input[4], float range)
+{
+	GLuint expected = pack(input[0], input[1], input[2], input[3], range);
+
+	GLuint expected_mp = pack(reduce32PrecisionTo16(input[0]),
+									reduce32PrecisionTo16(input[1]),
+									reduce32PrecisionTo16(input[2]),
+									reduce32PrecisionTo16(input[3]),
+									range);
+
+	return (expected == result || expected_mp == result);
+}
+
 class ShaderBitfieldOperationCasePackUnorm : public ShaderBitfieldOperationCase
 {
 public:
@@ -402,14 +429,7 @@ public:
 private:
 	virtual bool test(Data const* data)
 	{
-		GLuint expected =
-			((int(data->inVec4[0] * 255.0 + 0.5) & 0xFF) << 0) | ((int(data->inVec4[1] * 255.0 + 0.5) & 0xFF) << 8) |
-			((int(data->inVec4[2] * 255.0 + 0.5) & 0xFF) << 16) | ((int(data->inVec4[3] * 255.0 + 0.5) & 0xFF) << 24);
-		if (expected != data->outUvec4[0])
-		{
-			return false;
-		}
-		return true;
+					return checkOutData(data->outUvec4[0], data->inVec4, 255.0f);
 	}
 };
 
@@ -425,15 +445,7 @@ public:
 private:
 	virtual bool test(Data const* data)
 	{
-		GLuint expected = ((int(deFloatFloor(data->inVec4[0] * 127.0f + 0.5f)) & 0xFF) << 0) |
-						  ((int(deFloatFloor(data->inVec4[1] * 127.0f + 0.5f)) & 0xFF) << 8) |
-						  ((int(deFloatFloor(data->inVec4[2] * 127.0f + 0.5f)) & 0xFF) << 16) |
-						  ((int(deFloatFloor(data->inVec4[3] * 127.0f + 0.5f)) & 0xFF) << 24);
-		if (expected != data->outUvec4[0])
-		{
-			return false;
-		}
-		return true;
+					return checkOutData(data->outUvec4[0], data->inVec4, 127.0f);
 	}
 };
 

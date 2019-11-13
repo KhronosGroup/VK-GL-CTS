@@ -761,11 +761,7 @@ void VertexCubeTextureCase::init (void)
 		"	gl_FragColor = v_color;\n"
 		"}\n";
 
-	// GL_MAJOR_VERSION query does not exist on GLES2
-	// so succeeding query implies GLES3+ hardware.
-	glw::GLint majorVersion = 0;
-	glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
-	m_isES3Capable = (glGetError() == GL_NO_ERROR);
+	m_isES3Capable = glu::IsES3Compatible(m_context.getRenderContext().getFunctions());
 
 	if (m_context.getRenderTarget().getNumSamples() != 0)
 		throw tcu::NotSupportedError("MSAA config not supported by this test");

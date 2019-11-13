@@ -23,6 +23,7 @@
  * \brief Context Info Class.
  *//*--------------------------------------------------------------------*/
 
+#include "glwFunctions.hpp"
 #include "gluDefs.hpp"
 
 #include <vector>
@@ -69,6 +70,8 @@ public:
 
 typedef CachedValue<std::set<int>, GetCompressedTextureFormats>	CompressedTextureFormats;
 
+bool IsES3Compatible(const glw::Functions& gl);
+
 /*--------------------------------------------------------------------*//*!
  * \brief Context information & limit query.
  *//*--------------------------------------------------------------------*/
@@ -91,6 +94,8 @@ public:
 
 	const std::vector<std::string>&				getExtensions						(void) const { return m_extensions; }
 	bool										isExtensionSupported				(const char* extName) const;
+
+	bool											isES3Compatible() const;
 
 	static ContextInfo*							create								(const RenderContext& context);
 
