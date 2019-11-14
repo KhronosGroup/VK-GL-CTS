@@ -82,6 +82,12 @@ VkBool32						getPhysicalDeviceSurfaceSupport			(const InstanceInterface&		vki,
 																		 deUint32						queueFamilyIndex,
 																		 VkSurfaceKHR					surface);
 
+VkBool32						getPhysicalDevicePresentationSupport	(const InstanceInterface&		vki,
+																		 VkPhysicalDevice				physicalDevice,
+																		 deUint32						queueFamilyIndex,
+																		 Type							wsiType,
+																		 const Display&					nativeDisplay);
+
 VkSurfaceCapabilitiesKHR		getPhysicalDeviceSurfaceCapabilities	(const InstanceInterface&		vki,
 																		 VkPhysicalDevice				physicalDevice,
 																		 VkSurfaceKHR					surface);

@@ -27,6 +27,13 @@
 
 #include <limits>
 
+#if defined (DEQP_SUPPORT_X11)
+#	include <X11/Xlib.h>
+#	if defined (DEQP_SUPPORT_XCB)
+#		include <xcb/xcb.h>
+#	endif // DEQP_SUPPORT_XCB
+#endif // DEQP_SUPPORT_X11
+
 namespace vk
 {
 namespace wsi
@@ -253,6 +260,56 @@ VkBool32 getPhysicalDeviceSurfaceSupport (const InstanceInterface&	vki,
 	VK_CHECK(vki.getPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, &result));
 
 	return result;
+}
+
+VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
+											   VkPhysicalDevice			physicalDevice,
+											   deUint32					queueFamilyIndex,
+											   Type						wsiType,
+											   const Display&			nativeDisplay)
+{
+	switch (wsiType)
+	{
+		case TYPE_XLIB:
+		{
+			const XlibDisplayInterface&		xlibDisplay	= dynamic_cast<const XlibDisplayInterface&>(nativeDisplay);
+			pt::XlibVisualID				visualID	(0U);
+#if defined (DEQP_SUPPORT_X11)
+			::Display*						displayPtr	= (::Display*)(xlibDisplay.getNative().internal);
+			visualID.internal							= (deUint32)(::XDefaultVisual(displayPtr,0)->visualid);
+#endif
+			return vki.getPhysicalDeviceXlibPresentationSupportKHR(physicalDevice, queueFamilyIndex, xlibDisplay.getNative(), visualID);
+		}
+		case TYPE_XCB:
+		{
+			const XcbDisplayInterface&		xcbDisplay	= dynamic_cast<const XcbDisplayInterface&>(nativeDisplay);
+			pt::XcbVisualid					visualID	(0U);
+#if defined (DEQP_SUPPORT_XCB)
+			xcb_connection_t*				connPtr		= (xcb_connection_t*)(xcbDisplay.getNative().internal);
+			xcb_screen_t*					screen		= xcb_setup_roots_iterator(xcb_get_setup(connPtr)).data;
+			visualID.internal							= (deUint32)(screen->root_visual);
+#endif
+			return vki.getPhysicalDeviceXcbPresentationSupportKHR(physicalDevice, queueFamilyIndex, xcbDisplay.getNative(), visualID);
+		}
+		case TYPE_WAYLAND:
+		{
+			const WaylandDisplayInterface&	waylandDisplay	= dynamic_cast<const WaylandDisplayInterface&>(nativeDisplay);
+			return vki.getPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, queueFamilyIndex, waylandDisplay.getNative());
+		}
+		case TYPE_WIN32:
+		{
+			return vki.getPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
+		}
+		case TYPE_ANDROID:
+		case TYPE_MACOS:
+		{
+			return 1;
+		}
+		default:
+			DE_FATAL("Unknown WSI type");
+			return 0;
+	}
+	return 1;
 }
 
 VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const InstanceInterface&		vki,

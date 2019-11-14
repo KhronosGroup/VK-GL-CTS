@@ -443,6 +443,39 @@ tcu::TestStatus querySurfaceSupportTest (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus queryPresentationSupportTest(Context& context, Type wsiType)
+{
+	tcu::TestLog&					log						= context.getTestContext().getLog();
+	tcu::ResultCollector			results					(log);
+
+	const InstanceHelper			instHelper				(context, wsiType);
+	const NativeObjects				native					(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>		surface					(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const vector<VkPhysicalDevice>	physicalDevices			= enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
+
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		const VkPhysicalDevice		physicalDevice		= physicalDevices[deviceNdx];
+		const deUint32				numQueueFamilies	= getNumQueueFamilies(instHelper.vki, physicalDevice);
+
+		for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < numQueueFamilies; ++queueFamilyNdx)
+		{
+			VkBool32	isPresentationSupported	= getPhysicalDevicePresentationSupport(instHelper.vki, physicalDevice, queueFamilyNdx, wsiType, *native.display);
+			VkBool32	isSurfaceSupported		= getPhysicalDeviceSurfaceSupport(instHelper.vki, physicalDevice, queueFamilyNdx, *surface);
+
+			log << TestLog::Message << "Device " << deviceNdx << ", queue family " << queueFamilyNdx << ": presentation "
+									<< (isPresentationSupported == VK_FALSE ? "NOT " : "") << "supported. Surface "
+									<< (isSurfaceSupported == VK_FALSE ? "NOT " : "") << "supported."
+				<< TestLog::EndMessage;
+
+			if (isPresentationSupported != isSurfaceSupported)
+				results.fail("Presentation support is different from surface support");
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 bool isSupportedByAnyQueue (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
 	const deUint32	numQueueFamilies	= getNumQueueFamilies(vki, physicalDevice);
@@ -1269,6 +1302,7 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addFunctionCase(testGroup, "create_custom_allocator",				"Create surface with custom allocator",						createSurfaceCustomAllocatorTest,			wsiType);
 	addFunctionCase(testGroup, "create_simulate_oom",					"Create surface with simulating OOM",						createSurfaceSimulateOOMTest,				wsiType);
 	addFunctionCase(testGroup, "query_support",							"Query surface support",									querySurfaceSupportTest,					wsiType);
+	addFunctionCase(testGroup, "query_presentation_support",			"Query native presentation support",						queryPresentationSupportTest,				wsiType);
 	addFunctionCase(testGroup, "query_capabilities",					"Query surface capabilities",								querySurfaceCapabilitiesTest,				wsiType);
 	addFunctionCase(testGroup, "query_capabilities2",					"Query extended surface capabilities",						querySurfaceCapabilities2Test,				wsiType);
 	addFunctionCase(testGroup, "query_protected_capabilities",			"Query protected surface capabilities",						querySurfaceProtectedCapabilitiesTest,		wsiType);
