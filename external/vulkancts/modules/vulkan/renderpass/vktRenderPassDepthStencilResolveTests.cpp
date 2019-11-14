@@ -1154,6 +1154,68 @@ struct Programs
 	}
 };
 
+class PropertiesTestCase : public vkt::TestCase
+{
+public:
+							PropertiesTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description)
+								: vkt::TestCase(testCtx, name, description)
+								{}
+	virtual					~PropertiesTestCase		(void) {}
+
+	virtual TestInstance*	createInstance			(Context& context) const;
+	virtual void			checkSupport			(Context& context) const;
+};
+
+class PropertiesTestInstance : public vkt::TestInstance
+{
+public:
+								PropertiesTestInstance	(Context& context)
+									: vkt::TestInstance(context)
+									{}
+	virtual						~PropertiesTestInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate					(void);
+
+};
+
+TestInstance* PropertiesTestCase::createInstance (Context& context) const
+{
+	return new PropertiesTestInstance(context);
+}
+
+void PropertiesTestCase::checkSupport (Context& context) const
+{
+	context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+}
+
+tcu::TestStatus PropertiesTestInstance::iterate (void)
+{
+	vk::VkPhysicalDeviceDepthStencilResolvePropertiesKHR dsrProperties;
+	dsrProperties.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+	dsrProperties.pNext = nullptr;
+
+	vk::VkPhysicalDeviceProperties2 properties2;
+	properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	properties2.pNext = &dsrProperties;
+
+	m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
+
+	if ((dsrProperties.supportedDepthResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR) == 0)
+		TCU_FAIL("supportedDepthResolveModes does not include VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR");
+
+	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR) == 0)
+		TCU_FAIL("supportedStencilResolveModes does not include VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR");
+
+	if ((dsrProperties.supportedStencilResolveModes & vk::VK_RESOLVE_MODE_AVERAGE_BIT_KHR) != 0)
+		TCU_FAIL("supportedStencilResolveModes includes forbidden VK_RESOLVE_MODE_AVERAGE_BIT_KHR");
+
+	if (dsrProperties.independentResolve == VK_TRUE && dsrProperties.independentResolveNone != VK_TRUE)
+		TCU_FAIL("independentResolve supported but independentResolveNone not supported");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+
 void initTests (tcu::TestCaseGroup* group)
 {
 	typedef InstanceFactory1<DepthStencilResolveTest, TestConfig, Programs> DSResolveTestInstance;
@@ -1238,6 +1300,13 @@ void initTests (tcu::TestCaseGroup* group)
 	};
 
 	tcu::TestContext& testCtx(group->getTestContext());
+
+	// Misc tests.
+	{
+		de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc", "Miscellaneous depth/stencil resolve tests"));
+		miscGroup->addChild(new PropertiesTestCase(testCtx, "properties", "Check reported depth/stencil resolve properties"));
+		group->addChild(miscGroup.release());
+	}
 
 	// iterate over image data
 	for	 (deUint32 imageDataNdx = 0; imageDataNdx < DE_LENGTH_OF_ARRAY(imagesTestData); imageDataNdx++)
