@@ -31,6 +31,7 @@ const VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures		
 const VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>();			}
 const VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSamplerYcbcrConversionFeatures>();				}
 const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&					getScalarBlockLayoutFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceScalarBlockLayoutFeaturesEXT>();					}
+const VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR&		getSeparateDepthStencilLayoutsFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR>();		}
 const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					getShaderAtomicInt64Features				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderAtomicInt64FeaturesKHR>();					}
 const VkPhysicalDeviceShaderClockFeaturesKHR&						getShaderClockFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderClockFeaturesKHR>();						}
 const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	getShaderDemoteToHelperInvocationFeatures	(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>();		}

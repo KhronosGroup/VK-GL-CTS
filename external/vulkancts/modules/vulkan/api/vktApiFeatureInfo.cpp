@@ -2758,7 +2758,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		variablePointerFeatures[ndx].pNext = &scalarBlockLayoutFeatures[ndx];
 
 		scalarBlockLayoutFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		scalarBlockLayoutFeatures[ndx].pNext = &timelineSemaphoreFeatures;
+		scalarBlockLayoutFeatures[ndx].pNext = &timelineSemaphoreFeatures[ndx];
 
 		timelineSemaphoreFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
 		timelineSemaphoreFeatures[ndx].pNext			= DE_NULL;
