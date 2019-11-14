@@ -180,9 +180,6 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 			imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 		}
 
-		if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageSparseInfo))
-			TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
-
 		{
 			VkImageFormatProperties imageFormatProperties;
 			if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice,
@@ -193,7 +190,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 				imageSparseInfo.flags,
 				&imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 			{
-				TCU_THROW(NotSupportedError, "Image format does not support sparse operations");
+				TCU_THROW(NotSupportedError, "Image format does not support sparse binding operations");
 			}
 
 			imageSparseInfo.mipLevels = getMipmapCount(m_format, formatDescription, imageFormatProperties, imageSparseInfo.extent);
