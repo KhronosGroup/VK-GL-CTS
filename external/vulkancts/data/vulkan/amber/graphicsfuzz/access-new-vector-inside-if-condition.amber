@@ -1,0 +1,110 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A shader that accesses a new vector within an if condition
+
+# The test passes because the shader always writes the color red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#   int x = 0;
+#
+#   if (vec4(1.0)[clamp(x, 0, 3)] >= 1.0)
+#   {
+#   }
+#
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 26
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %23
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "x"
+               OpName %23 "_GLF_color"
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %14 RelaxedPrecision
+               OpDecorate %16 RelaxedPrecision
+               OpDecorate %23 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %10 = OpTypeFloat 32
+         %11 = OpTypeVector %10 4
+         %12 = OpConstant %10 1
+         %13 = OpConstantComposite %11 %12 %12 %12 %12
+         %15 = OpConstant %6 3
+         %18 = OpTypeBool
+         %22 = OpTypePointer Output %11
+         %23 = OpVariable %22 Output
+         %24 = OpConstant %10 0
+         %25 = OpConstantComposite %11 %12 %24 %24 %12
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+         %14 = OpLoad %6 %8
+         %16 = OpExtInst %6 %1 SClamp %14 %9 %15
+         %17 = OpVectorExtractDynamic %10 %13 %16
+         %19 = OpFOrdGreaterThanEqual %18 %17 %12
+               OpSelectionMerge %21 None
+               OpBranchConditional %19 %20 %21
+         %20 = OpLabel
+               OpBranch %21
+         %21 = OpLabel
+               OpStore %23 %25
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

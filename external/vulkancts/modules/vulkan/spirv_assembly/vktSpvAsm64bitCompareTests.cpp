@@ -24,6 +24,7 @@
 
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktSpvAsmUtils.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vkQueryUtil.hpp"
@@ -203,6 +204,7 @@ struct TestParameters
 	const CompareOperation<T>&	operation;
 	vk::VkShaderStageFlagBits	stage;
 	const OperandsVector<T>&	operands;
+	bool						requireNanPreserve;
 };
 
 // Shader template for the compute stage using single scalars.
@@ -225,9 +227,12 @@ void main()
 const tcu::StringTemplate CompShaderSingle(R"(
                         OpCapability Shader
                         ${OPCAPABILITY}
+                        ${NANCAP}
+                        ${NANEXT}
                    %1 = OpExtInstImport "GLSL.std.450"
                         OpMemoryModel Logical GLSL450
                         OpEntryPoint GLCompute %main "main"
+                        ${NANMODE}
                         OpExecutionMode %main LocalSize 1 1 1
                         OpName %main "main"
                         OpName %i "i"
@@ -334,9 +339,12 @@ void main()
 const tcu::StringTemplate CompShaderVector(R"(
                           OpCapability Shader
                           ${OPCAPABILITY}
+                          ${NANCAP}
+                          ${NANEXT}
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint GLCompute %main "main"
+                          ${NANMODE}
                           OpExecutionMode %main LocalSize 1 1 1
                           OpName %main "main"
                           OpName %i "i"
@@ -450,9 +458,12 @@ void main()
 const tcu::StringTemplate VertShaderSingle(R"(
                             OpCapability Shader
                             ${OPCAPABILITY}
+                            ${NANCAP}
+                            ${NANEXT}
                        %1 = OpExtInstImport "GLSL.std.450"
                             OpMemoryModel Logical GLSL450
                             OpEntryPoint Vertex %main "main" %_
+                            ${NANMODE}
                             OpName %main "main"
                             OpName %gl_PerVertex "gl_PerVertex"
                             OpMemberName %gl_PerVertex 0 "gl_Position"
@@ -587,9 +598,12 @@ void main()
 const tcu::StringTemplate VertShaderVector(R"(
                             OpCapability Shader
                             ${OPCAPABILITY}
+                            ${NANCAP}
+                            ${NANEXT}
                        %1 = OpExtInstImport "GLSL.std.450"
                             OpMemoryModel Logical GLSL450
                             OpEntryPoint Vertex %main "main" %_
+                            ${NANMODE}
                             OpName %main "main"
                             OpName %gl_PerVertex "gl_PerVertex"
                             OpMemberName %gl_PerVertex 0 "gl_Position"
@@ -739,9 +753,12 @@ void main()
 const tcu::StringTemplate FragShaderSingle(R"(
                         OpCapability Shader
                         ${OPCAPABILITY}
+                        ${NANCAP}
+                        ${NANEXT}
                    %1 = OpExtInstImport "GLSL.std.450"
                         OpMemoryModel Logical GLSL450
                         OpEntryPoint Fragment %main "main"
+                        ${NANMODE}
                         OpExecutionMode %main OriginUpperLeft
                         OpSource GLSL 430
                         OpName %main "main"
@@ -849,9 +866,12 @@ void main()
 const tcu::StringTemplate FragShaderVector(R"(
                           OpCapability Shader
                           ${OPCAPABILITY}
+                          ${NANCAP}
+                          ${NANEXT}
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main"
+                          ${NANMODE}
                           OpExecutionMode %main OriginUpperLeft
                           OpName %main "main"
                           OpName %i "i"
@@ -972,6 +992,11 @@ struct SpirvTemplateManager
 	// Same.
 	template <class T>
 	static std::string getOpType();
+
+	// Return the capabilities, extensions and execution modes for NaN preservation.
+	static std::string getNanCapability	(bool preserve);
+	static std::string getNanExtension	(bool preserve);
+	static std::string getNanExeMode	(bool preserve);
 };
 
 template <> std::string SpirvTemplateManager::getOpCapability<double>()		{ return "OpCapability Float64";	}
@@ -981,6 +1006,21 @@ template <> std::string SpirvTemplateManager::getOpCapability<deUint64>()	{ retu
 template <> std::string SpirvTemplateManager::getOpType<double>()	{ return "OpTypeFloat 64";	}
 template <> std::string SpirvTemplateManager::getOpType<deInt64>()	{ return "OpTypeInt 64 1";	}
 template <> std::string SpirvTemplateManager::getOpType<deUint64>()	{ return "OpTypeInt 64 0";	}
+
+std::string SpirvTemplateManager::getNanCapability (bool preserve)
+{
+	return (preserve ? "OpCapability SignedZeroInfNanPreserve" : "");
+}
+
+std::string SpirvTemplateManager::getNanExtension (bool preserve)
+{
+	return (preserve ? "OpExtension \"SPV_KHR_float_controls\"" : "");
+}
+
+std::string SpirvTemplateManager::getNanExeMode (bool preserve)
+{
+	return (preserve ? "OpExecutionMode %main SignedZeroInfNanPreserve 64" : "");
+}
 
 struct BufferWithMemory
 {
@@ -1136,6 +1176,18 @@ T64bitCompareTestInstance<T>::T64bitCompareTestInstance (Context& ctx, const Tes
 	, m_inputBufferSize(m_numOperations * sizeof(T))
 	, m_outputBufferSize(m_numOperations * sizeof(int))
 {
+}
+
+template<class T>
+bool genericIsNan (T)
+{
+	return false;
+}
+
+template<>
+bool genericIsNan<double> (double value)
+{
+	return std::isnan(value);
 }
 
 template <class T>
@@ -1584,7 +1636,7 @@ tcu::TestStatus T64bitCompareTestInstance<T>::iterate (void)
 	for (size_t i = 0; i < m_numOperations; ++i)
 	{
 		int expected = static_cast<int>(m_params.operation.run(m_params.operands[i].first, m_params.operands[i].second));
-		if (results[i] != expected)
+		if (results[i] != expected && (m_params.requireNanPreserve || (!genericIsNan<T>(m_params.operands[i].first) && !genericIsNan<T>(m_params.operands[i].second))))
 		{
 			std::ostringstream msg;
 			msg << "Invalid result found in position " << i << ": expected " << expected << " and found " << results[i];
@@ -1670,6 +1722,13 @@ void T64bitCompareTest<T>::checkSupport (Context& context) const
 	default:
 		DE_ASSERT(DE_NULL == "Invalid shader stage specified");
 	}
+
+	ExtensionFloatControlsFeatures fcFeatures;
+	deMemset(&fcFeatures, 0, sizeof(fcFeatures));
+	fcFeatures.shaderSignedZeroInfNanPreserveFloat64 = VK_TRUE;
+
+	if (m_params.requireNanPreserve && !isFloatControlsFeaturesSupported(context, fcFeatures))
+		TCU_THROW(NotSupportedError, "NaN preservation not supported");
 }
 
 template <class T>
@@ -1684,6 +1743,9 @@ void T64bitCompareTest<T>::initPrograms (vk::SourceCollections& programCollectio
 	replacements["OPNAME"]			= m_params.operation.spirvName();
 	replacements["OPCAPABILITY"]	= SpirvTemplateManager::getOpCapability<T>();
 	replacements["OPTYPE"]			= SpirvTemplateManager::getOpType<T>();
+	replacements["NANCAP"]			= SpirvTemplateManager::getNanCapability(m_params.requireNanPreserve);
+	replacements["NANEXT"]			= SpirvTemplateManager::getNanExtension(m_params.requireNanPreserve);
+	replacements["NANMODE"]			= SpirvTemplateManager::getNanExeMode(m_params.requireNanPreserve);
 
 	static const std::map<vk::VkShaderStageFlagBits, std::string>	sourceNames			=
 	{
@@ -1706,7 +1768,13 @@ TestInstance* T64bitCompareTest<T>::createInstance (Context& ctx) const
 	return new T64bitCompareTestInstance<T>(ctx, m_params);
 }
 
-const std::map<DataType, std::string> dataTypeName =
+const std::map<bool, std::string>		requireNanName =
+{
+	std::make_pair( false,	"nonan"		),
+	std::make_pair( true,	"withnan"	),
+};
+
+const std::map<DataType, std::string>	dataTypeName =
 {
 	std::make_pair(DATA_TYPE_SINGLE, "single"),
 	std::make_pair(DATA_TYPE_VECTOR, "vector"),
@@ -1736,10 +1804,11 @@ void createDoubleCompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 
 	for (const auto&	stageNamePair	: *stageNames)
 	for (const auto&	typeNamePair	: dataTypeName)
+	for (const auto&	requireNanPair	: requireNanName)
 	for (const auto		opPtr			: operationList)
 	{
-		TestParameters<double>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, DOUBLE_OPERANDS };
-		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
+		TestParameters<double>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, DOUBLE_OPERANDS, requireNanPair.first };
+		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + requireNanPair.second + "_" + typeNamePair.second;
 		tests->addChild(new T64bitCompareTest<double>(tests->getTestContext(), testName, "", params));
 	}
 }
@@ -1760,7 +1829,7 @@ void createInt64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName*
 	for (const auto&	typeNamePair	: dataTypeName)
 	for (const auto		opPtr			: operationList)
 	{
-		TestParameters<deInt64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, INT64_OPERANDS };
+		TestParameters<deInt64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, INT64_OPERANDS, false };
 		std::string				testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
 		tests->addChild(new T64bitCompareTest<deInt64>(tests->getTestContext(), testName, "", params));
 	}
@@ -1782,7 +1851,7 @@ void createUint64CompareTestsInGroup (tcu::TestCaseGroup* tests, const StageName
 	for (const auto&	typeNamePair	: dataTypeName)
 	for (const auto		opPtr			: operationList)
 	{
-		TestParameters<deUint64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, UINT64_OPERANDS };
+		TestParameters<deUint64>	params		= { typeNamePair.first, *opPtr, stageNamePair.first, UINT64_OPERANDS, false };
 		std::string					testName	= stageNamePair.second + "_" + de::toLower(opPtr->spirvName()) + "_" + typeNamePair.second;
 		tests->addChild(new T64bitCompareTest<deUint64>(tests->getTestContext(), testName, "", params));
 	}
