@@ -287,6 +287,8 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 												   vk::VkRenderPass				renderPass,
 												   vk::VkFramebuffer			framebuffer,
 												   vk::VkPipeline				pipeline,
+												   vk::VkImage					image,
+												   bool							isFirst,
 												   size_t						frameNdx,
 												   deUint32						quadCount,
 												   deUint32						imageWidth,
@@ -305,7 +307,32 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 	vk::Move<vk::VkCommandBuffer>	commandBuffer	(vk::allocateCommandBuffer(vkd, device, &allocateInfo));
 	beginCommandBuffer(vkd, *commandBuffer, 0u);
 
-	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(0, 0, imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
+	{
+		const vk::VkImageSubresourceRange subRange =
+		{
+			vk::VK_IMAGE_ASPECT_COLOR_BIT,
+			0,
+			1,
+			0,
+			1
+		};
+		const vk::VkImageMemoryBarrier barrier =
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			image,
+			subRange
+		};
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+	}
+
+	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
 
 	cmdRenderFrame(vkd, *commandBuffer, pipelineLayout, pipeline, frameNdx, quadCount);
 
@@ -572,6 +599,7 @@ private:
 
 	vk::Move<vk::VkSwapchainKHR>			m_swapchain;
 	std::vector<vk::VkImage>				m_swapchainImages;
+	std::vector<bool>						m_isFirst;
 
 	vk::Move<vk::VkRenderPass>				m_renderPass;
 	vk::Move<vk::VkPipeline>				m_pipeline;
@@ -747,6 +775,7 @@ void DisplayTimingTestInstance::initSwapchainResources (void)
 
 	m_swapchain				= vk::createSwapchainKHR(m_vkd, *m_device, &m_swapchainConfig);
 	m_swapchainImages		= vk::wsi::getSwapchainImages(m_vkd, *m_device, *m_swapchain);
+	m_isFirst.resize(m_swapchainImages.size(), true);
 
 	m_renderPass			= createRenderPass(m_vkd, *m_device, imageFormat);
 	m_pipeline				= createPipeline(m_vkd, *m_device, *m_renderPass, *m_pipelineLayout, *m_vertexShaderModule, *m_fragmentShaderModule, imageWidth, imageHeight);
@@ -811,6 +840,7 @@ void DisplayTimingTestInstance::deinitSwapchainResources (void)
 	deinitImageViews(m_vkd, *m_device, m_swapchainImageViews);
 
 	m_swapchainImages.clear();
+	m_isFirst.clear();
 
 	m_swapchain		= vk::Move<vk::VkSwapchainKHR>();
 	m_renderPass	= vk::Move<vk::VkRenderPass>();
@@ -861,7 +891,9 @@ void DisplayTimingTestInstance::render (void)
 	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
 
 	// Create command buffer
-	m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_pipelineLayout, *m_renderPass, m_framebuffers[imageIndex], *m_pipeline, m_frameNdx, m_quadCount, width, height).disown();
+	m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_pipelineLayout, *m_renderPass, m_framebuffers[imageIndex], *m_pipeline,
+																				 m_swapchainImages[imageIndex], m_isFirst[imageIndex], m_frameNdx, m_quadCount, width, height).disown();
+	m_isFirst[imageIndex] = false;
 
 	// Obtain timing data from previous frames
 	if (m_useDisplayTiming)
