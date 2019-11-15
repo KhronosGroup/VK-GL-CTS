@@ -50,6 +50,7 @@ void createAmberTests (tcu::TestCaseGroup* group)
 		{	"always-false-if-in-do-while.amber",			"always-false-if-in-do-while",			"A fragment shader with an always false if."											},
 		{	"always-false-if-with-discard-return.amber",	"always-false-if-with-discard-return",	"A fragment shader with discard keyword and a return"									},
 		{	"barrier-in-loop-with-break.amber",				"barrier-in-loop-with-break",			"A compute shader with a barrier in a loop with a break"								},
+		{	"call-if-while-switch.amber",					"call-if-while-switch",					"A fragment shader with a call, if, while, switch"										},
 		{	"color-write-in-loop.amber",					"color-write-in-loop",					"A fragment shader that writes to color in a loop"										},
 		{	"complex-nested-loops-and-call.amber",			"complex-nested-loops-and-call",		"A fragment shader with complex nested loops, breaks, etc."								},
 		{	"conditional-return-in-infinite-while.amber",	"conditional-return-in-infinite-while",	"A shader with conditional return inside an infinite loop"								},
