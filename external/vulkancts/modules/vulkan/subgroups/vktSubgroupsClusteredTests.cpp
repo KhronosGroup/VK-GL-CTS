@@ -375,10 +375,18 @@ struct CaseDefinition
 	de::SharedPtr<bool>	geometryPointSizeSupported;
 };
 
+std::string getExtHeader(CaseDefinition caseDef)
+{
+	return	"#extension GL_KHR_shader_subgroup_clustered: enable\n"
+			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			+ subgroups::getAdditionalExtensionForFormat(caseDef.format);
+}
+
 std::string getBodySource(CaseDefinition caseDef)
 {
 	std::ostringstream bdy;
-	bdy << "  bool tempResult = true;\n";
+	bdy << "  bool tempResult = true;\n"
+		<< "  uvec4 mask = subgroupBallot(true);\n";
 
 	for (deUint32 i = 1; i <= subgroups::maxSupportedSubgroupSize(); i *= 2)
 	{
@@ -408,324 +416,27 @@ std::string getBodySource(CaseDefinition caseDef)
 			<< "        }\n"
 			<< "      }\n"
 			<< "    }\n"
-			<< "  }\n";
+			<< "  }\n"
+			<< "  tempRes = tempResult ? 1 : 0;\n";
 	}
 	return bdy.str();
 }
 
-void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
+void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 
-	subgroups::setFragmentShaderFrameBuffer(programCollection);
-
-	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
-		subgroups::setVertexShaderFrameBuffer(programCollection);
-
-	std::string bdy = getBodySource(caseDef);
-
-	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream				vertexSrc;
-		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450 )<< "\n"
-			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
-			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(location = 0) in highp vec4 in_position;\n"
-			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy
-			<< "  out_color = float(tempResult ? 1 : 0);\n"
-			<< "  gl_Position = in_position;\n"
-			<< "  gl_PointSize = 1.0f;\n"
-			<< "}\n";
-		programCollection.glslSources.add("vert")
-			<< glu::VertexSource(vertexSrc.str()) <<buildOptions;
-	}
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream geometry;
-
-		geometry  << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
-			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(points) in;\n"
-			<< "layout(points, max_vertices = 1) out;\n"
-			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy
-			<< "  out_color = tempResult ? 1.0 : 0.0;\n"
-			<< "  gl_Position = gl_in[0].gl_Position;\n"
-			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
-			<< "  EmitVertex();\n"
-			<< "  EndPrimitive();\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("geometry")
-			<< glu::GeometrySource(geometry.str()) << buildOptions;
-	}
-	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream controlSource;
-
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
-			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(vertices = 2) out;\n"
-			<< "layout(location = 0) out float out_color[];\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  if (gl_InvocationID == 0)\n"
-			<<"  {\n"
-			<< "    gl_TessLevelOuter[0] = 1.0f;\n"
-			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
-			<< "  }\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy
-			<< "  out_color[gl_InvocationID] = tempResult ? 1.0 : 0.0;\n"
-			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("tesc")
-			<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
-		subgroups::setTesEvalShaderFrameBuffer(programCollection);
-	}
-	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream evaluationSource;
-
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
-			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout(isolines, equal_spacing, ccw ) in;\n"
-			<< "layout(location = 0) out float out_color;\n"
-			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
-			<< "{\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy
-			<< "  out_color = tempResult ? 1.0 : 0.0;\n"
-			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
-			<< "}\n";
-
-		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
-		programCollection.glslSources.add("tese")
-			<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
-	}
-	else
-	{
-		DE_FATAL("Unsupported shader stage");
-	}
+	subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, *caseDef.geometryPointSizeSupported, getExtHeader(caseDef), getBodySource(caseDef), "");
 }
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	std::string bdy = getBodySource(caseDef);
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 
-	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
-	{
-		std::ostringstream src;
+	std::string extHeader = getExtHeader(caseDef);
+	std::string testSrc = getBodySource(caseDef);
 
-		src << "#version 450\n"
-			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
-			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
-			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-			"local_size_z_id = 2) in;\n"
-			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-			<< "{\n"
-			<< "  uint result[];\n"
-			<< "};\n"
-			<< "layout(set = 0, binding = 1, std430) buffer Buffer2\n"
-			<< "{\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[];\n"
-			<< "};\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
-			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
-			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
-			"gl_GlobalInvocationID.x;\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy
-			<< "  result[offset] = tempResult ? 1 : 0;\n"
-			<< "}\n";
-
-		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	}
-	else
-	{
-		{
-			const string vertex =
-				"#version 450\n"
-				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint result[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy +
-				"  result[gl_VertexIndex] = tempResult ? 1 : 0;\n"
-				"  float pixelSize = 2.0f/1024.0f;\n"
-				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
-				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
-				"  gl_PointSize = 1.0f;\n"
-				"}\n";
-
-			programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		{
-			const string tesc =
-			"#version 450\n"
-			"#extension GL_KHR_shader_subgroup_clustered: enable\n"
-			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-			"layout(vertices=1) out;\n"
-			"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
-			"{\n"
-			"  uint result[];\n"
-			"};\n"
-			"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-			"{\n"
-			"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data[];\n"
-			"};\n"
-			"\n"
-			"void main (void)\n"
-			"{\n"
-			"  uvec4 mask = subgroupBallot(true);\n"
-			+ bdy +
-			"  result[gl_PrimitiveID] = tempResult ? 1 : 0;\n"
-			"  if (gl_InvocationID == 0)\n"
-			"  {\n"
-			"    gl_TessLevelOuter[0] = 1.0f;\n"
-			"    gl_TessLevelOuter[1] = 1.0f;\n"
-			"  }\n"
-			"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-			"}\n";
-
-			programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		{
-			const string tese =
-				"#version 450\n"
-				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(isolines) in;\n"
-				"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint result[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy +
-				"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult ? 1 : 0;\n"
-				"  float pixelSize = 2.0f/1024.0f;\n"
-				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
-				"}\n";
-			programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		{
-			const string geometry =
-				"#version 450\n"
-				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(${TOPOLOGY}) in;\n"
-				"layout(points, max_vertices = 1) out;\n"
-				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
-				"{\n"
-				"  uint result[];\n"
-				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data[];\n"
-				"};\n"
-				"\n"
-				"void main (void)\n"
-				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy +
-				"  result[gl_PrimitiveIDIn] = tempResult ? 1 : 0;\n"
-				"  gl_Position = gl_in[0].gl_Position;\n"
-				"  EmitVertex();\n"
-				"  EndPrimitive();\n"
-				"}\n";
-			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u), programCollection.glslSources);
-		}
-
-		{
-			const string fragment =
-				"#version 450\n"
-				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
-				"layout(location = 0) out uint result;\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data[];\n"
-				"};\n"
-				"void main (void)\n"
-				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy +
-				"  result = tempResult ? 1 : 0;\n"
-				"}\n";
-			programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-		}
-
-		subgroups::addNoSubgroupShader(programCollection);
-	}
+   subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, extHeader, testSrc, "");
 }
 
 void supportedCheck (Context& context, CaseDefinition caseDef)
@@ -744,11 +455,9 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::areSubgroupOperationsSupportedForStage(
-				context, caseDef.shaderStage))
+	if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
 	{
-		if (subgroups::areSubgroupOperationsRequiredForStage(
-					caseDef.shaderStage))
+		if (subgroups::areSubgroupOperationsRequiredForStage(caseDef.shaderStage))
 		{
 			return tcu::TestStatus::fail(
 					   "Shader stage " +
@@ -774,10 +483,11 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
 		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
-		return subgroups::makeTessellationEvaluationFrameBufferTest(context,  VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 	else
 		TCU_THROW(InternalError, "Unhandled shader stage");
 }
+
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
@@ -785,10 +495,10 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 	{
 		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
 		{
-				return tcu::TestStatus::fail(
-						   "Shader stage " +
-						   subgroups::getShaderStageName(caseDef.shaderStage) +
-						   " is required to support subgroup operations!");
+			return tcu::TestStatus::fail(
+					"Shader stage " +
+					subgroups::getShaderStageName(caseDef.shaderStage) +
+					" is required to support subgroup operations!");
 		}
 		subgroups::SSBOData inputData;
 		inputData.format = caseDef.format;
@@ -854,7 +564,7 @@ tcu::TestCaseGroup* createSubgroupsClusteredTests(tcu::TestContext& testCtx)
 		VK_SHADER_STAGE_VERTEX_BIT,
 		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-		VK_SHADER_STAGE_GEOMETRY_BIT
+		VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
 
 	const std::vector<VkFormat> formats = subgroups::getAllFormats();
@@ -937,7 +647,7 @@ tcu::TestCaseGroup* createSubgroupsClusteredTests(tcu::TestContext& testCtx)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, de::SharedPtr<bool>(new bool)};
 				addFunctionCaseWithPrograms(framebufferGroup.get(), name +"_" + getShaderStageName(caseDef.shaderStage), "",
-											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
+							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 	}
@@ -950,6 +660,5 @@ tcu::TestCaseGroup* createSubgroupsClusteredTests(tcu::TestContext& testCtx)
 
 	return group.release();
 }
-
 } // subgroups
 } // vkt

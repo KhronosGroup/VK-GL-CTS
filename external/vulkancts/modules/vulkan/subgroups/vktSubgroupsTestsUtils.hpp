@@ -104,6 +104,23 @@ void addNoSubgroupShader (vk::SourceCollections& programCollection);
 
 std::string getVertShaderForStage(vk::VkShaderStageFlags stage);//TODO
 
+void initStdFrameBufferPrograms(	vk::SourceCollections&			programCollection,
+									const vk::ShaderBuildOptions&	buildOptions,
+									vk::VkShaderStageFlags			shaderStage,
+									vk::VkFormat					format,
+									bool							gsPointSize,
+									std::string						extHeader,
+									std::string						testSrc,
+									std::string						helperStr);
+
+void initStdPrograms(	vk::SourceCollections&			programCollection,
+								const vk::ShaderBuildOptions&	buildOptions,
+								vk::VkShaderStageFlags			shaderStage,
+								vk::VkFormat					format,
+								std::string						extHeader,
+								std::string						testSrc,
+								std::string						helperStr);
+
 bool isSubgroupSupported(Context& context);
 
 bool areSubgroupOperationsSupportedForStage(

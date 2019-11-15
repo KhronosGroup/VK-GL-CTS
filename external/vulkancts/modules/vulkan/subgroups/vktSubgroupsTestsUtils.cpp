@@ -962,6 +962,299 @@ std::string vkt::subgroups::getVertShaderForStage(vk::VkShaderStageFlags stage)
 	}
 }
 
+void vkt::subgroups::initStdFrameBufferPrograms(	SourceCollections&				programCollection,
+													const vk::ShaderBuildOptions&	buildOptions,
+													VkShaderStageFlags				shaderStage,
+													VkFormat						format,
+													bool							gsPointSize,
+													std::string						extHeader,
+													std::string						testSrc,
+													std::string						helperStr)
+{
+	subgroups::setFragmentShaderFrameBuffer(programCollection);
+
+	if (shaderStage != VK_SHADER_STAGE_VERTEX_BIT)
+		subgroups::setVertexShaderFrameBuffer(programCollection);
+
+	if (shaderStage == VK_SHADER_STAGE_VERTEX_BIT)
+	{
+		std::ostringstream vertex;
+		vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extHeader.c_str()
+			<< "layout(location = 0) in highp vec4 in_position;\n"
+			<< "layout(location = 0) out float result;\n"
+			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "{\n"
+			<< "  " << subgroups::getFormatNameForGLSL(format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
+			<< "};\n"
+			<< "\n"
+			<< helperStr.c_str()
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  uint tempRes;\n"
+			<< testSrc
+			<< "  result = float(tempRes);\n"
+			<< "  gl_Position = in_position;\n"
+			<< "  gl_PointSize = 1.0f;\n"
+			<< "}\n";
+		programCollection.glslSources.add("vert")
+			<< glu::VertexSource(vertex.str()) << buildOptions;
+	}
+	else if (shaderStage == VK_SHADER_STAGE_GEOMETRY_BIT)
+	{
+		std::ostringstream geometry;
+
+		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extHeader.c_str()
+			<< "layout(points) in;\n"
+			<< "layout(points, max_vertices = 1) out;\n"
+			<< "layout(location = 0) out float out_color;\n"
+			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "{\n"
+			<< "  " << subgroups::getFormatNameForGLSL(format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
+			<< "};\n"
+			<< "\n"
+			<< helperStr.c_str()
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  uint tempRes;\n"
+			<< testSrc
+			<< "  out_color = float(tempRes);\n"
+			<< "  gl_Position = gl_in[0].gl_Position;\n"
+			<< (gsPointSize ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
+			<< "  EmitVertex();\n"
+			<< "  EndPrimitive();\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("geometry")
+			<< glu::GeometrySource(geometry.str()) << buildOptions;
+	}
+	else if (shaderStage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+	{
+		std::ostringstream controlSource;
+		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extHeader.c_str()
+			<< "layout(vertices = 2) out;\n"
+			<< "layout(location = 0) out float out_color[];\n"
+			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "{\n"
+			<< "  " << subgroups::getFormatNameForGLSL(format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
+			<< "};\n"
+			<< "\n"
+			<< helperStr.c_str()
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  if (gl_InvocationID == 0)\n"
+			<< "  {\n"
+			<< "    gl_TessLevelOuter[0] = 1.0f;\n"
+			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
+			<< "  }\n"
+			<< "  uint tempRes;\n"
+			<< testSrc
+			<< "  out_color[gl_InvocationID] = float(tempRes);\n"
+			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("tesc")
+			<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
+		subgroups::setTesEvalShaderFrameBuffer(programCollection);
+	}
+	else if (shaderStage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+	{
+		ostringstream evaluationSource;
+		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extHeader.c_str()
+			<< "layout(isolines, equal_spacing, ccw ) in;\n"
+			<< "layout(location = 0) out float out_color;\n"
+			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "{\n"
+			<< "  " << subgroups::getFormatNameForGLSL(format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
+			<< "};\n"
+			<< "\n"
+			<< helperStr.c_str()
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  uint tempRes;\n"
+			<< testSrc
+			<< "  out_color = float(tempRes);\n"
+			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+			<< "}\n";
+
+		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
+	}
+	else
+	{
+		DE_FATAL("Unsupported shader stage");
+	}
+}
+
+void vkt::subgroups::initStdPrograms(	vk::SourceCollections&			programCollection,
+										const vk::ShaderBuildOptions&	buildOptions,
+										vk::VkShaderStageFlags			shaderStage,
+										vk::VkFormat					format,
+										std::string						extHeader,
+										std::string						testSrc,
+										std::string						helperStr)
+{
+	if (shaderStage == VK_SHADER_STAGE_COMPUTE_BIT)
+	{
+		std::ostringstream src;
+
+		src << "#version 450\n"
+			<< extHeader.c_str()
+			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
+			"local_size_z_id = 2) in;\n"
+			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
+			<< "{\n"
+			<< "  uint result[];\n"
+			<< "};\n"
+			<< "layout(set = 0, binding = 1, std430) buffer Buffer2\n"
+			<< "{\n"
+			<< "  " << subgroups::getFormatNameForGLSL(format) << " data[];\n"
+			<< "};\n"
+			<< "\n"
+			<< helperStr.c_str()
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  uvec3 globalSize = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
+			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
+			"gl_GlobalInvocationID.x;\n"
+			<< "  uint tempRes;\n"
+			<< testSrc
+			<< "  result[offset] = tempRes;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
+	}
+	else
+	{
+		const string vertex =
+			"#version 450\n"
+			+ extHeader +
+			"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
+			"{\n"
+			"  uint result[];\n"
+			"};\n"
+			"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
+			"{\n"
+			"  " + subgroups::getFormatNameForGLSL(format) + " data[];\n"
+			"};\n"
+			"\n"
+			+ helperStr +
+			"void main (void)\n"
+			"{\n"
+			"  uint tempRes;\n"
+			+ testSrc +
+			"  result[gl_VertexIndex] = tempRes;\n"
+			"  float pixelSize = 2.0f/1024.0f;\n"
+			"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
+			"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
+			"  gl_PointSize = 1.0f;\n"
+			"}\n";
+
+		const string tesc =
+			"#version 450\n"
+			+ extHeader +
+			"layout(vertices=1) out;\n"
+			"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
+			"{\n"
+			"  uint result[];\n"
+			"};\n"
+			"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
+			"{\n"
+			"  " + subgroups::getFormatNameForGLSL(format) + " data[];\n"
+			"};\n"
+			"\n"
+			+ helperStr +
+			"void main (void)\n"
+			"{\n"
+			"  uint tempRes;\n"
+			+ testSrc +
+			"  result[gl_PrimitiveID] = tempRes;\n"
+			"  if (gl_InvocationID == 0)\n"
+			"  {\n"
+			"    gl_TessLevelOuter[0] = 1.0f;\n"
+			"    gl_TessLevelOuter[1] = 1.0f;\n"
+			"  }\n"
+			"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			"}\n";
+
+		const string tese =
+			"#version 450\n"
+			+ extHeader +
+			"layout(isolines) in;\n"
+			"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
+			"{\n"
+			"  uint result[];\n"
+			"};\n"
+			"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
+			"{\n"
+			"  " + subgroups::getFormatNameForGLSL(format) + " data[];\n"
+			"};\n"
+			"\n"
+			+ helperStr +
+			"void main (void)\n"
+			"{\n"
+			"  uint tempRes;\n"
+			+ testSrc +
+			"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempRes;\n"
+			"  float pixelSize = 2.0f/1024.0f;\n"
+			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+			"}\n";
+
+		const string geometry =
+			"#version 450\n"
+			+ extHeader +
+			"layout(${TOPOLOGY}) in;\n"
+			"layout(points, max_vertices = 1) out;\n"
+			"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
+			"{\n"
+			"  uint result[];\n"
+			"};\n"
+			"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
+			"{\n"
+			"  " + subgroups::getFormatNameForGLSL(format) + " data[];\n"
+			"};\n"
+			"\n"
+			+ helperStr +
+			"void main (void)\n"
+			"{\n"
+			"  uint tempRes;\n"
+			+ testSrc +
+			"  result[gl_PrimitiveIDIn] = tempRes;\n"
+			"  gl_Position = gl_in[0].gl_Position;\n"
+			"  EmitVertex();\n"
+			"  EndPrimitive();\n"
+			"}\n";
+
+		const string fragment =
+			"#version 450\n"
+			+ extHeader +
+			"layout(location = 0) out uint result;\n"
+			"layout(set = 0, binding = 4, std430) readonly buffer Buffer1\n"
+			"{\n"
+			"  " + subgroups::getFormatNameForGLSL(format) + " data[];\n"
+			"};\n"
+			+ helperStr +
+			"void main (void)\n"
+			"{\n"
+			"  uint tempRes;\n"
+			+ testSrc +
+			"  result = tempRes;\n"
+			"}\n";
+
+		subgroups::addNoSubgroupShader(programCollection);
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << buildOptions;
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(tesc) << buildOptions;
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese) << buildOptions;
+		subgroups::addGeometryShadersFromTemplate(geometry, buildOptions, programCollection.glslSources);
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragment)<< buildOptions;
+	}
+}
+
 bool vkt::subgroups::isSubgroupSupported(Context& context)
 {
 	return context.contextSupports(vk::ApiVersion(1, 1, 0));
