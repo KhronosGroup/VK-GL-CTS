@@ -33,7 +33,6 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-
 using namespace tcu;
 using namespace std;
 using namespace vk;
@@ -1056,11 +1055,22 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features2.pNext = DE_NULL;
 
+	VkPhysicalDevice16BitStorageFeatures storage16bit;
+	deMemset(&storage16bit, 0, sizeof(storage16bit));
+	storage16bit.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
+	storage16bit.pNext = DE_NULL;
+	bool is16bitStorageSupported = context.isDeviceFunctionalitySupported("VK_KHR_16bit_storage");
+
 	if (context.isDeviceFunctionalitySupported("VK_KHR_shader_subgroup_extended_types") &&
 		context.isDeviceFunctionalitySupported("VK_KHR_shader_float16_int8"))
 	{
 		features2.pNext = &subgroupExtendedTypesFeatures;
 		subgroupExtendedTypesFeatures.pNext = &float16Int8Features;
+		if ( is16bitStorageSupported )
+		{
+			float16Int8Features.pNext = &storage16bit;
+		}
+
 	}
 
 	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
@@ -1077,7 +1087,7 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 		case VK_FORMAT_R16G16_SFLOAT:
 		case VK_FORMAT_R16G16B16_SFLOAT:
 		case VK_FORMAT_R16G16B16A16_SFLOAT:
-			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & float16Int8Features.shaderFloat16 ? true : false;
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & float16Int8Features.shaderFloat16 & storage16bit.storageBuffer16BitAccess ? true : false;
 		case VK_FORMAT_R64_SFLOAT:
 		case VK_FORMAT_R64G64_SFLOAT:
 		case VK_FORMAT_R64G64B64_SFLOAT:
@@ -1100,7 +1110,7 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 		case VK_FORMAT_R16G16_UINT:
 		case VK_FORMAT_R16G16B16_UINT:
 		case VK_FORMAT_R16G16B16A16_UINT:
-			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & features2.features.shaderInt16 ? true : false;
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & features2.features.shaderInt16 & storage16bit.storageBuffer16BitAccess ? true : false;
 		case VK_FORMAT_R64_SINT:
 		case VK_FORMAT_R64G64_SINT:
 		case VK_FORMAT_R64G64B64_SINT:
