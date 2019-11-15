@@ -244,7 +244,7 @@ TestInstance* InputAttachmentSparseFillingTest::createInstance(Context& context)
 void InputAttachmentSparseFillingTest::checkSupport(Context& context) const
 {
 	if (m_testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
-		context.requireDeviceExtension("VK_KHR_create_renderpass2");
+		context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
 	const vk::VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
 
