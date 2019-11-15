@@ -1,0 +1,148 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with a for loop that loops only once
+
+# The test passes because the shader always writes the color red. The for loop only goes through once.
+
+# Optimized using spirv-opt with the following arguments:
+# '--vector-dce'
+# '--eliminate-local-multi-store'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--ccp'
+# '--eliminate-dead-inserts'
+# '--convert-local-access-chains'
+# '--vector-dce'
+# '--eliminate-dead-code-aggressive'
+# '--vector-dce'
+# '--eliminate-local-multi-store'
+# '--if-conversion'
+# '--eliminate-dead-branches'
+# spirv-opt commit hash: 06407250a169c6a03b3765e86619075af1a8c187
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# vec3 mand()
+# {
+#   do
+#   {
+#     return vec3(1.0);
+#   } while (true);
+# }
+# void main()
+# {
+#   mand();
+#
+#   for (
+#       int i = 1;
+#       true;
+#       1)
+#   {
+#     _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#     return;
+#   }
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 36
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %33
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "mand("
+               OpName %33 "_GLF_color"
+               OpDecorate %33 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 3
+          %8 = OpTypeFunction %7
+         %15 = OpConstant %6 1
+         %16 = OpConstantComposite %7 %15 %15 %15
+         %31 = OpTypeVector %6 4
+         %32 = OpTypePointer Output %31
+         %33 = OpVariable %32 Output
+         %34 = OpConstant %6 0
+         %35 = OpConstantComposite %31 %15 %34 %34 %15
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpFunctionCall %7 %9
+               OpBranch %26
+         %26 = OpLabel
+               OpLoopMerge %28 %29 None
+               OpBranch %27
+         %27 = OpLabel
+               OpStore %33 %35
+               OpReturn
+         %29 = OpLabel
+               OpBranch %26
+         %28 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+          %9 = OpFunction %7 None %8
+         %10 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranch %12
+         %12 = OpLabel
+               OpReturnValue %16
+         %14 = OpLabel
+               OpBranch %11
+         %13 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
