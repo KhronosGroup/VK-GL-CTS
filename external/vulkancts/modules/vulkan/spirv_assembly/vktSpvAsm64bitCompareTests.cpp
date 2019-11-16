@@ -1109,12 +1109,10 @@ const OperandsVector<double>	DOUBLE_OPERANDS		=
 	{	-6.0,	-5.0	},
 	{	 6.0,	 5.0	},
 	{	 0.0,	 1.0	},
-#if 0
 	{	 1.0,	 0.0	},
 	{	 0.0,	 NAN	},
 	{	 NAN,	 0.0	},
 	{	 NAN,	 NAN	},
-#endif
 };
 
 const OperandsVector<deInt64>	INT64_OPERANDS	=
