@@ -32,6 +32,7 @@
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 #include "vktRenderPassUnusedClearAttachmentTests.hpp"
 #include "vktRenderPassDepthStencilResolveTests.hpp"
+#include "vktRenderPassUnusedAttachmentSparseFillingTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -6989,6 +6990,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSparseRenderTargetTests(testCtx)	: createRenderPass2SparseRenderTargetTests(testCtx));
 	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
 	suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, renderPassType));
+	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentSparseFillingTests(testCtx, renderPassType));
 
 	renderpassTests->addChild(suballocationTestGroup.release());
 	renderpassTests->addChild(dedicatedAllocationTestGroup.release());

@@ -257,6 +257,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassSubpassDependencyTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedAttachmentSparseFillingTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedClearAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustBufferAccessWithVariablePointersTests.cpp \
