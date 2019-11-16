@@ -694,6 +694,9 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 	if (!requiredExtensionsSupported(m_testFormat.requiredExtension, m_testFormat.secondReqiredExtension))
 		return STOP;
 
+	glu::RenderContext&  renderContext   = m_context.getRenderContext();
+	const Functions&	 gl				 = renderContext.getFunctions();
+
 	typedef std::map<GLenum, TextureFormat> ReferenceFormatMap;
 	static ReferenceFormatMap formatMap;
 	if (formatMap.empty())
@@ -710,7 +713,7 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 		formatMap[GL_DEPTH_COMPONENT] = TextureFormat(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT);
 		formatMap[GL_DEPTH_STENCIL] = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL);
 
-		if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 0)))
+		if (glu::IsES3Compatible(gl))
 		{
 			formatMap[GL_DEPTH_STENCIL] = TextureFormat(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8_OES);
 		}
@@ -726,8 +729,6 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 	}
 
 	const TextureFormat& referenceFormat = formatIterator->second;
-	glu::RenderContext&  renderContext   = m_context.getRenderContext();
-	const Functions&	 gl				 = renderContext.getFunctions();
 
 	if (m_renderWidth > m_context.getRenderTarget().getWidth())
 		m_renderWidth = m_context.getRenderTarget().getWidth();

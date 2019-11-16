@@ -42890,8 +42890,6 @@ dEQP-GLES3.functional.state_query.shader.precision_fragment_highp_float
 dEQP-GLES3.functional.state_query.shader.precision_fragment_lowp_int
 dEQP-GLES3.functional.state_query.shader.precision_fragment_mediump_int
 dEQP-GLES3.functional.state_query.shader.precision_fragment_highp_int
-dEQP-GLES3.functional.state_query.internal_format.rgba_samples
-dEQP-GLES3.functional.state_query.internal_format.rgb_samples
 dEQP-GLES3.functional.state_query.internal_format.r8_samples
 dEQP-GLES3.functional.state_query.internal_format.rg8_samples
 dEQP-GLES3.functional.state_query.internal_format.rgb8_samples

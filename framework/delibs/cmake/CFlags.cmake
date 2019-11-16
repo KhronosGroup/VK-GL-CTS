@@ -39,10 +39,6 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 		set(LINK_FLAGS		"${LINK_FLAGS} -lgcov")
 	endif ()
 
-	# For 3rd party sw disable all warnings
-	set(DE_3RD_PARTY_C_FLAGS	"${CMAKE_C_FLAGS} ${TARGET_FLAGS} -w")
-	set(DE_3RD_PARTY_CXX_FLAGS	"${CMAKE_CXX_FLAGS} ${TARGET_FLAGS} -w")
-
 	# \note Remove -Wno-sign-conversion for more warnings
 	set(WARNING_FLAGS			"-Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion -Wno-sign-conversion")
 
@@ -58,6 +54,10 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# Any static libraries build are linked into the standalone executable binaries.
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} -fvisibility=hidden")
 	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+
+	# For 3rd party sw disable all warnings
+	set(DE_3RD_PARTY_C_FLAGS	"${CMAKE_C_FLAGS} ${TARGET_FLAGS} -w")
+	set(DE_3RD_PARTY_CXX_FLAGS	"${CMAKE_CXX_FLAGS} ${TARGET_FLAGS} -w")
 elseif (DE_COMPILER_IS_MSC)
 	# Compiler flags for msc
 
@@ -70,13 +70,12 @@ elseif (DE_COMPILER_IS_MSC)
 	set(MSC_BASE_FLAGS "/DWIN32 /D_WINDOWS /D_CRT_SECURE_NO_WARNINGS")
 	set(MSC_WARNING_FLAGS "/W3 /wd4820 /wd4255 /wd4668 /wd4738 /wd4711")
 
-	# For 3rd party sw disable all warnings
-	set(DE_3RD_PARTY_C_FLAGS	"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} /W0")
-	set(DE_3RD_PARTY_CXX_FLAGS	"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc /W0")
-
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} ${MSC_WARNING_FLAGS}")
 	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc ${MSC_WARNING_FLAGS}")
 
+	# For 3rd party sw disable all warnings
+	set(DE_3RD_PARTY_C_FLAGS	"${CMAKE_C_FLAGS} ${MSC_BASE_FLAGS} /W0")
+	set(DE_3RD_PARTY_CXX_FLAGS	"${CMAKE_CXX_FLAGS} ${MSC_BASE_FLAGS} /EHsc /W0")
 else ()
 	message(FATAL_ERROR "DE_COMPILER is not valid")
 endif ()

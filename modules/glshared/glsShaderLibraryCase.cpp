@@ -945,15 +945,8 @@ bool ShaderLibraryCase::execute (void)
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "ShaderCase::execute(): start");
 
-	if(isCapabilityRequired(CAPABILITY_ONLY_GLSL_ES_100_SUPPORT, m_spec))
-	{
-		// GL_MAJOR_VERSION query does not exist on GLES2
-		// so succeeding query implies GLES3+ hardware.
-		glw::GLint majorVersion = 0;
-		gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
-		if (gl.getError() == GL_NO_ERROR)
-			return true;
-	}
+	if(isCapabilityRequired(CAPABILITY_ONLY_GLSL_ES_100_SUPPORT, m_spec) && glu::IsES3Compatible(gl))
+		return true;
 
 	if(isCapabilityRequired(CAPABILITY_EXACTLY_ONE_DRAW_BUFFER, m_spec))
 	{

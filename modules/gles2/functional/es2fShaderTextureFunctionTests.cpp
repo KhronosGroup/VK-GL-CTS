@@ -576,11 +576,7 @@ void ShaderTextureFunctionTests::init (void)
 	static tcu::Sampler			samplerLinearMipmap		(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 														 tcu::Sampler::LINEAR_MIPMAP_NEAREST, tcu::Sampler::LINEAR);
 
-	// GL_MAJOR_VERSION query does not exist on GLES2
-	// so succeeding query implies GLES3+ hardware.
-	glw::GLint majorVersion = 0;
-	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
-	samplerLinearMipmap.seamlessCubeMap = (gl.getError() == GL_NO_ERROR);
+	samplerLinearMipmap.seamlessCubeMap = glu::IsES3Compatible(gl);
 
 	// Default textures.
 	//												Type			Format		DataType			W		H		L	Sampler
