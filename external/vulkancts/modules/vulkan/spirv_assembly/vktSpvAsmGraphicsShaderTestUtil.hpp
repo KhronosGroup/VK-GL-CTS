@@ -285,6 +285,7 @@ struct InstanceContext
 	qpTestResult							failResult;
 	std::string								failMessageTemplate;	//!< ${reason} in the template will be replaced with a detailed failure message
 	bool									renderFullSquare;		// Forces to render whole render area, though with background color
+	bool									splitRenderArea;		// Split render into multiple submissions.
 
 	InstanceContext (const tcu::RGBA							(&inputs)[4],
 					 const tcu::RGBA							(&outputs)[4],
@@ -414,7 +415,8 @@ void createTestForStage (vk::VkShaderStageFlagBits					stage,
 						 tcu::TestCaseGroup*						tests,
 						 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 						 const std::string&							failMessageTemplate = std::string(),
-						 const bool									renderFullSquare	= false);
+						 const bool									renderFullSquare	= false,
+						 const bool									splitRenderArea		= false);
 
 void createTestsForAllStages (const std::string&						name,
 							  const tcu::RGBA							(&inputColors)[4],
@@ -428,7 +430,8 @@ void createTestsForAllStages (const std::string&						name,
 							  VulkanFeatures							vulkanFeatures,
 							  tcu::TestCaseGroup*						tests,
 							  const qpTestResult						failResult			= QP_TEST_RESULT_FAIL,
-							  const std::string&						failMessageTemplate	= std::string());
+							  const std::string&						failMessageTemplate	= std::string(),
+							  const bool								splitRenderArea		= false);
 
 inline void createTestsForAllStages (const std::string&							name,
 									 const tcu::RGBA							(&inputColors)[4],
@@ -479,7 +482,8 @@ inline void createTestsForAllStages (const std::string&							name,
 									 tcu::TestCaseGroup*						tests,
 									 VulkanFeatures								vulkanFeatures		= VulkanFeatures(),
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
-									 const std::string&							failMessageTemplate	= std::string())
+									 const std::string&							failMessageTemplate	= std::string(),
+									 const bool									splitRenderArea = false)
 {
 	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
@@ -488,7 +492,7 @@ inline void createTestsForAllStages (const std::string&							name,
 	createTestsForAllStages(
 			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
 			resources, noInterfaces, extensions, vulkanFeatures,
-			tests, failResult, failMessageTemplate);
+			tests, failResult, failMessageTemplate, splitRenderArea );
 }
 
 inline void createTestsForAllStages (const std::string& name,
