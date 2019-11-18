@@ -1765,6 +1765,15 @@ tcu::TestStatus InterfaceBlockCaseInstance::iterate (void)
 			vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
 		}
 		endRenderPass(vk, *cmdBuffer);
+
+		const VkMemoryBarrier tfMemoryBarrier =
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,               // VkStructureType      sType;
+			DE_NULL,                                        // const void*          pNext;
+			VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,     // VkAccessFlags        outputMask;
+			VK_ACCESS_HOST_READ_BIT                         // VkAccessFlags        inputMask;
+		};
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &tfMemoryBarrier, 0u, DE_NULL, 0u, DE_NULL);
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);

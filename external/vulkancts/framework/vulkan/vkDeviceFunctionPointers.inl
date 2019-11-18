@@ -160,6 +160,8 @@ CmdEndRenderPass2KHRFunc							cmdEndRenderPass2KHR;
 GetSwapchainStatusKHRFunc							getSwapchainStatusKHR;
 ImportFenceFdKHRFunc								importFenceFdKHR;
 GetFenceFdKHRFunc									getFenceFdKHR;
+AcquireProfilingLockKHRFunc							acquireProfilingLockKHR;
+ReleaseProfilingLockKHRFunc							releaseProfilingLockKHR;
 CmdDrawIndirectCountKHRFunc							cmdDrawIndirectCountKHR;
 CmdDrawIndexedIndirectCountKHRFunc					cmdDrawIndexedIndirectCountKHR;
 GetSemaphoreCounterValueKHRFunc						getSemaphoreCounterValueKHR;

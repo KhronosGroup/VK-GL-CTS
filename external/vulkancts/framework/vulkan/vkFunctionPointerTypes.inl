@@ -219,6 +219,10 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainStatusKHRFunc)										
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalFencePropertiesKHRFunc)						(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo, VkExternalFenceProperties* pExternalFenceProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceFdKHRFunc)													(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceFdKHRFunc)														(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* EnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHRFunc)		(VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, deUint32* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions);
+typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHRFunc)				(VkPhysicalDevice physicalDevice, const VkQueryPoolPerformanceCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireProfilingLockKHRFunc)											(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* ReleaseProfilingLockKHRFunc)											(VkDevice device);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceCapabilities2KHRFunc)							(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceFormats2KHRFunc)								(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, deUint32* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceDisplayProperties2KHRFunc)							(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayProperties2KHR* pProperties);

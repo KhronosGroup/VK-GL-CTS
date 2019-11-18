@@ -1461,6 +1461,35 @@ VKAPI_ATTR VkResult VKAPI_CALL getFenceFdKHR (VkDevice device, const VkFenceGetF
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, deUint32* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(pCounterCount);
+	DE_UNREF(pCounters);
+	DE_UNREF(pCounterDescriptions);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkQueryPoolPerformanceCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPerformanceQueryCreateInfo);
+	DE_UNREF(pNumPasses);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireProfilingLockKHR (VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL releaseProfilingLockKHR (VkDevice device)
+{
+	DE_UNREF(device);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilities2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 {
 	DE_UNREF(physicalDevice);
@@ -2483,6 +2512,8 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,						getPhysicalDeviceExternalBufferProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,					getPhysicalDeviceExternalSemaphoreProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,						getPhysicalDeviceExternalFenceProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,		enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR,				getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,							getPhysicalDeviceSurfaceCapabilities2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,								getPhysicalDeviceSurfaceFormats2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,							getPhysicalDeviceDisplayProperties2KHR),
@@ -2692,6 +2723,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,								getSwapchainStatusKHR),
 	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,									importFenceFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,										getFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireProfilingLockKHR,							acquireProfilingLockKHR),
+	VK_NULL_FUNC_ENTRY(vkReleaseProfilingLockKHR,							releaseProfilingLockKHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,					getImageMemoryRequirements2),
 	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,					getBufferMemoryRequirements2),
 	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,				getImageSparseMemoryRequirements2),
