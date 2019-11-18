@@ -346,11 +346,19 @@ public:
 																 const IterateCommonVariables&				variables,
 																 bool										fromTest);
 
+	void						iterateCommandSetup				(IterateCommonVariables&					variables);
 
-	void						iterateCommandBegin				(IterateCommonVariables&					variables);
+	void						iterateCommandBegin				(IterateCommonVariables&					variables,
+																bool										firstPass = true);
 
-	bool						iterateCommandEnd				(IterateCommonVariables&					variables,
+	void						iterateCommandEnd				(IterateCommonVariables&					variables,
+																ut::UpdatablePixelBufferAccessPtr&	programResult,
+																ut::UpdatablePixelBufferAccessPtr&	referenceResult,
 																 bool										collectBeforeSubmit = true);
+
+	bool						iterateVerifyResults			(IterateCommonVariables&					variables,
+																	 ut::UpdatablePixelBufferAccessPtr	programResult,
+																	 ut::UpdatablePixelBufferAccessPtr	referenceResult);
 
 	Move<VkCommandBuffer>		createCmdBuffer					(void);
 
@@ -1165,7 +1173,7 @@ void CommonDescriptorInstance::updateDescriptors					(IterateCommonVariables&			
 	}
 }
 
-void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&					variables)
+void CommonDescriptorInstance::iterateCommandSetup					(IterateCommonVariables&					variables)
 {
 	variables.dataAlignment				= 0;
 
@@ -1217,6 +1225,10 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 		updateDescriptors				(variables);
 	}
 
+}
+
+void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&					variables,	bool firstPass)
+{
 	vk::beginCommandBuffer				(m_vki, *variables.commandBuffer);
 
 	// Clear color attachment, and transition it to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
@@ -1249,7 +1261,9 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 								1, &preImageBarrier);
 
 		const VkClearColorValue	clearColorValue		= makeClearValueColor(m_clearColor).color;
-		m_vki.cmdClearColorImage(*variables.commandBuffer, *variables.frameBuffer->image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &preImageBarrier.subresourceRange);
+
+		if (firstPass)
+			m_vki.cmdClearColorImage(*variables.commandBuffer, *variables.frameBuffer->image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &preImageBarrier.subresourceRange);
 
 		const VkImageMemoryBarrier postImageBarrier =
 		{
@@ -1318,25 +1332,35 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 tcu::TestStatus	CommonDescriptorInstance::iterate					(void)
 {
 	IterateCommonVariables	v;
-	iterateCommandBegin		(v);
+	ut::UpdatablePixelBufferAccessPtr	programResult;
+	ut::UpdatablePixelBufferAccessPtr	referenceResult;
 
-	if (true == m_testParams.copyBuffersToImages)
-	{
-		copyBuffersToImages	(v);
-	}
+	bool firstPass = true;
 
-	if (true == m_testParams.updateAfterBind)
-	{
-		updateDescriptors	(v);
-	}
+	iterateCommandSetup		(v);
 
-	v.renderArea.extent.width	= m_testParams.frameResolution.width/2;
-	v.renderArea.extent.height	= m_testParams.frameResolution.height/2;
-	for (int x = 0; x < 2; x++)
-		for (int y= 0; y < 2; y++)
+	v.renderArea.extent.width	= m_testParams.frameResolution.width/4;
+	v.renderArea.extent.height	= m_testParams.frameResolution.height/4;
+
+	for (int x = 0; x < 4; x++)
+		for (int y= 0; y < 4; y++)
 		{
-			v.renderArea.offset.x		= x * m_testParams.frameResolution.width/2;
-			v.renderArea.offset.y		= y * m_testParams.frameResolution.height/2;
+			iterateCommandBegin		(v, firstPass);
+
+			if (true == firstPass && true == m_testParams.copyBuffersToImages)
+			{
+				copyBuffersToImages	(v);
+			}
+
+			firstPass = false;
+
+			if (true == m_testParams.updateAfterBind)
+			{
+				updateDescriptors	(v);
+			}
+
+			v.renderArea.offset.x		= x * m_testParams.frameResolution.width/4;
+			v.renderArea.offset.y		= y * m_testParams.frameResolution.height/4;
 
 			vk::VkRect2D scissor = makeRect2D(v.renderArea.offset.x, v.renderArea.offset.y, v.renderArea.extent.width, v.renderArea.extent.height);
 			m_vki.cmdSetScissor(*v.commandBuffer, 0u, 1u, &scissor);
@@ -1344,9 +1368,11 @@ tcu::TestStatus	CommonDescriptorInstance::iterate					(void)
 			vk::beginRenderPass		(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
 			m_vki.cmdDraw			(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
 			vk::endRenderPass		(m_vki, *v.commandBuffer);
+
+			iterateCommandEnd(v, programResult, referenceResult);
 		}
 
-	return (iterateCommandEnd(v) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
+	return ( iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
 }
 
 std::vector<float> CommonDescriptorInstance::createColorScheme		(void)
@@ -1361,12 +1387,11 @@ std::vector<float> CommonDescriptorInstance::createColorScheme		(void)
 	return cs;
 }
 
-bool CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&					variables,
+void CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&					variables,
+																	 ut::UpdatablePixelBufferAccessPtr&	programResult,
+																	 ut::UpdatablePixelBufferAccessPtr&	referenceResult,
 																	 bool										collectBeforeSubmit)
 {
-	ut::UpdatablePixelBufferAccessPtr	programResult;
-	ut::UpdatablePixelBufferAccessPtr	referenceResult;
-
 	if (collectBeforeSubmit)
 	{
 		iterateCollectResults(programResult, variables, true);
@@ -1382,7 +1407,12 @@ bool CommonDescriptorInstance::iterateCommandEnd					(IterateCommonVariables&			
 		iterateCollectResults(programResult, variables, true);
 		iterateCollectResults(referenceResult, variables, false);
 	}
+}
 
+bool CommonDescriptorInstance::iterateVerifyResults			(IterateCommonVariables&					variables,
+																	 ut::UpdatablePixelBufferAccessPtr	programResult,
+																	 ut::UpdatablePixelBufferAccessPtr	referenceResult)
+{
 	bool result = false;
 	if (m_testParams.fuzzyComparison)
 	{
@@ -2190,7 +2220,11 @@ void DynamicBuffersInstance::updateDescriptors						(IterateCommonVariables&				
 tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 {
 	IterateCommonVariables	v;
-	iterateCommandBegin		(v);
+	iterateCommandSetup		(v);
+
+	ut::UpdatablePixelBufferAccessPtr	programResult;
+	ut::UpdatablePixelBufferAccessPtr	referenceResult;
+	bool firstPass = true;
 
 	DE_ASSERT(v.dataAlignment);
 
@@ -2219,6 +2253,19 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 
 	const VkDescriptorSet	descriptorSets[] = { *v.descriptorSet };
 
+	v.renderArea.extent.width	= m_testParams.frameResolution.width/4;
+	v.renderArea.extent.height	= m_testParams.frameResolution.height/4;
+
+	for (int x = 0; x < 4; x++)
+		for (int y= 0; y < 4; y++)
+		{
+
+			v.renderArea.offset.x		= x * m_testParams.frameResolution.width/4;
+			v.renderArea.offset.y		= y * m_testParams.frameResolution.height/4;
+
+			iterateCommandBegin		(v, firstPass);
+			firstPass = false;
+
 	m_vki.cmdBindDescriptorSets(
 		*v.commandBuffer,						// commandBuffer
 		VK_PIPELINE_BIND_POINT_GRAPHICS,		// pipelineBindPoint
@@ -2229,14 +2276,17 @@ tcu::TestStatus	DynamicBuffersInstance::iterate						(void)
 		v.availableDescriptorCount,				// dynamicOffsetCount
 		dynamicOffsets.data());					// pDynamicOffsets
 
-	vk::VkRect2D scissor = makeRect2D(m_testParams.frameResolution.width, m_testParams.frameResolution.height);
+			vk::VkRect2D scissor = makeRect2D(v.renderArea.offset.x, v.renderArea.offset.y, v.renderArea.extent.width, v.renderArea.extent.height);
 	m_vki.cmdSetScissor(*v.commandBuffer, 0u, 1u, &scissor);
 
 	vk::beginRenderPass	(m_vki, *v.commandBuffer, *v.renderPass, *v.frameBuffer->buffer, v.renderArea, m_clearColor);
-	m_vki.cmdDraw		(*v.commandBuffer, v.vertexCount, 1, 0, 0);
+			m_vki.cmdDraw			(*v.commandBuffer, v.vertexCount, 1u, 0u, 0u);
 	vk::endRenderPass	(m_vki, *v.commandBuffer);
 
-	return (iterateCommandEnd(v) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
+			iterateCommandEnd(v, programResult, referenceResult);
+		}
+
+	return (iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
 }
 
 class DynamicStorageBufferInstance : public DynamicBuffersInstance, public StorageBufferInstance
@@ -2934,7 +2984,11 @@ void StorageImageInstance::createAndPopulateDescriptors				(IterateCommonVariabl
 tcu::TestStatus StorageImageInstance::iterate						(void)
 {
 	IterateCommonVariables	v;
+	iterateCommandSetup		(v);
 	iterateCommandBegin		(v);
+
+	ut::UpdatablePixelBufferAccessPtr	programResult;
+	ut::UpdatablePixelBufferAccessPtr	referenceResult;
 
 	if (m_testParams.updateAfterBind)
 	{
@@ -2950,7 +3004,9 @@ tcu::TestStatus StorageImageInstance::iterate						(void)
 
 	copyImagesToBuffers		(v);
 
-	return (iterateCommandEnd(v, false) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
+	iterateCommandEnd(v, programResult, referenceResult, false);
+
+	return ( iterateVerifyResults(v, programResult, referenceResult) ? tcu::TestStatus::pass : tcu::TestStatus::fail)("");
 }
 
 void StorageImageInstance::iterateCollectResults					(ut::UpdatablePixelBufferAccessPtr&			result,
