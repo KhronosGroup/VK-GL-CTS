@@ -40,6 +40,8 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuPlatform.hpp"
+#include "vkPlatform.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -901,6 +903,10 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 	const float						additionalMemory	= 1.15f;			//left some free memory on device (15%)
 	VkDeviceSize					neededMemory		= static_cast<VkDeviceSize>(static_cast<float>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
 	VkDeviceSize					maxMemory			= getMaxDeviceHeapSize(context, caseDef) >> 2;
+
+	vk::PlatformMemoryLimits		memoryLimits;
+	context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+	maxMemory = std::min(maxMemory, VkDeviceSize(memoryLimits.totalSystemMemory));
 
 	const VkDeviceSize				deviceMemoryBudget	= std::min(neededMemory, maxMemory);
 	bool							allocationPossible	= false;
