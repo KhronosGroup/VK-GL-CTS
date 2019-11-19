@@ -124,7 +124,7 @@ Swizzle2DTestInstance::Swizzle2DTestInstance (Context&				context,
 								: new pipeline::TestTexture2D(m_format, testParameters.width, testParameters.height)))
 	, m_renderer			(context, testParameters.sampleCount, testParameters.width, testParameters.height, testParameters.componentMapping)
 {
-	m_renderer.add2DTexture(m_texture, testParameters.backingMode);
+	m_renderer.add2DTexture(m_texture, testParameters.aspectMask, testParameters.backingMode);
 }
 
 tcu::TestStatus Swizzle2DTestInstance::iterate (void)
@@ -479,6 +479,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.height			= sizes2D[sizeNdx].height;
 		testParameters.minFilter		= tcu::Sampler::NEAREST;
 		testParameters.magFilter		= tcu::Sampler::NEAREST;
+		testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(formats2D[formatNdx].program);
 
 		groupCompMap->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
@@ -507,6 +508,7 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.height			= sizes2D[sizeNdx].height;
 		testParameters.minFilter		= tcu::Sampler::NEAREST;
 		testParameters.magFilter		= tcu::Sampler::NEAREST;
+		testParameters.aspectMask		= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(formats2D[formatNdx].program);
 
 		groupTexCoord->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));

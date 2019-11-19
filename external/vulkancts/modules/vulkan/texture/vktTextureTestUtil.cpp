@@ -308,14 +308,23 @@ TextureBinding::TextureBinding (Context& context)
 {
 }
 
-TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const TextureBinding::ImageBackingMode backingMode, const VkComponentMapping componentMapping)
+TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const vk::VkImageAspectFlags aspectMask, const TextureBinding::ImageBackingMode backingMode, const VkComponentMapping componentMapping)
 	: m_context				(context)
 	, m_type				(type)
 	, m_backingMode			(backingMode)
 	, m_textureData			(textureData)
+	, m_aspectMask			(aspectMask)
 	, m_componentMapping	(componentMapping)
 {
 	updateTextureData(m_textureData, m_type);
+}
+
+VkImageAspectFlags	guessAspectMask(const vk::VkFormat format)
+{
+	tcu::TextureFormat			textureFormat		= mapVkFormat(format);
+	const bool					isShadowTexture		= tcu::hasDepthComponent(textureFormat.order);
+	const bool					isStencilTexture	= tcu::hasStencilComponent(textureFormat.order);
+	return isShadowTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : isStencilTexture ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 void TextureBinding::updateTextureData (const TestTextureSp& textureData, const TextureBinding::Type textureType)
@@ -434,8 +443,7 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	const VkDevice								vkDevice				= m_context.getDevice();
 	const vk::VkImageViewType					imageViewType			= textureTypeToImageViewType(m_type);
 	const vk::VkFormat							format					= m_textureData->isCompressed() ? mapCompressedTextureFormat(m_textureData->getCompressedLevel(0, 0).getFormat()) : mapTextureFormat(m_textureData->getTextureFormat());
-	const bool									isShadowTexture			= tcu::hasDepthComponent(m_textureData->getTextureFormat().order);
-	const VkImageAspectFlags					aspectMask				= isShadowTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	const VkImageAspectFlags					aspectMask				= ( m_aspectMask != VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM ) ? m_aspectMask : guessAspectMask(format);
 	const deUint32								layerCount				= m_textureData->getArraySize();
 	const vk::VkImageViewCreateInfo				viewParams				=
 	{
@@ -842,24 +850,24 @@ void TextureRenderer::clearImage(VkImage image)
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 }
 
-void TextureRenderer::add2DTexture (const TestTexture2DSp& texture, TextureBinding::ImageBackingMode backingMode)
+void TextureRenderer::add2DTexture (const TestTexture2DSp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D, backingMode, m_componentMapping)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D, aspectMask, backingMode, m_componentMapping)));
 }
 
-void TextureRenderer::addCubeTexture (const TestTextureCubeSp& texture, TextureBinding::ImageBackingMode backingMode)
+void TextureRenderer::addCubeTexture (const TestTextureCubeSp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_MAP, backingMode, m_componentMapping)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_MAP, aspectMask, backingMode, m_componentMapping)));
 }
 
-void TextureRenderer::add2DArrayTexture (const TestTexture2DArraySp& texture, TextureBinding::ImageBackingMode backingMode)
+void TextureRenderer::add2DArrayTexture (const TestTexture2DArraySp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D_ARRAY, backingMode, m_componentMapping)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D_ARRAY, aspectMask, backingMode, m_componentMapping)));
 }
 
-void TextureRenderer::add3DTexture (const TestTexture3DSp& texture, TextureBinding::ImageBackingMode backingMode)
+void TextureRenderer::add3DTexture (const TestTexture3DSp& texture, const vk::VkImageAspectFlags& aspectMask, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D, backingMode, m_componentMapping)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D, aspectMask, backingMode, m_componentMapping)));
 }
 
 const pipeline::TestTexture2D& TextureRenderer::get2DTexture (int textureIndex) const

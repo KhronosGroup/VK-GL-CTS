@@ -113,7 +113,7 @@ public:
 		}
 
 		renderer.setViewport(0.0f, 0.0f, static_cast<float>(ANISOTROPY_TEST_RESOLUTION), static_cast<float>(ANISOTROPY_TEST_RESOLUTION));
-		renderer.add2DTexture(texture);
+		renderer.add2DTexture(texture, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		{
 			Surface			renderedFrame			(ANISOTROPY_TEST_RESOLUTION, ANISOTROPY_TEST_RESOLUTION);

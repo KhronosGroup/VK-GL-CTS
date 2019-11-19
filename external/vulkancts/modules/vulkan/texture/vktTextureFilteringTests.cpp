@@ -115,14 +115,24 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 {
 	const bool						mipmaps		= m_testParameters.mipmaps;
 	const int						numLevels	= mipmaps ? deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height))+1 : 1;
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
+	const tcu::TextureFormat		texFormat	= vk::mapVkFormat(m_testParameters.format);
+	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFormat);
+	tcu::Vec4						cBias, cScale;
+	if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		const tcu::TextureFormat		texFormatStencil	= vk::mapVkFormat(VK_FORMAT_S8_UINT);
+		const tcu::TextureFormatInfo	fmtInfoStencil		= tcu::getTextureFormatInfo(texFormatStencil);
+		cBias												= fmtInfoStencil.valueMin;
+		cScale												= fmtInfoStencil.valueMax - fmtInfoStencil.valueMin;
+	}
+	else
+	{
+		cBias												= fmtInfo.valueMin;
+		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
+	}
 
-	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
-		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
-		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
+	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 	// Create 2 textures.
 	m_textures.reserve(2);
@@ -138,7 +148,10 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 		const tcu::Vec4 gMin = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)*cScale + cBias;
 		const tcu::Vec4 gMax = tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)*cScale + cBias;
 
-		tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), gMin, gMax);
+		if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+			tcu::fillWithComponentGradients(getEffectiveDepthStencilAccess(m_textures[0]->getLevel(levelNdx, 0), tcu::Sampler::MODE_STENCIL), gMin, gMax);
+		else
+			tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), gMin, gMax);
 	}
 
 	// Fill second with grid texture.
@@ -149,13 +162,16 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 		const deUint32	colorA	= 0xff000000 | rgb;
 		const deUint32	colorB	= 0xff000000 | ~rgb;
 
-		tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+		if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+			tcu::fillWithGrid(getEffectiveDepthStencilAccess(m_textures[1]->getLevel(levelNdx, 0), tcu::Sampler::MODE_STENCIL), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+		else
+			tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 	}
 
 	// Upload.
 	for (vector<TestTexture2DSp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
 	{
-		m_renderer.add2DTexture(*i);
+		m_renderer.add2DTexture(*i, testParameters.aspectMask);
 	}
 
 	// Compute cases.
@@ -209,8 +225,13 @@ tcu::TestStatus Texture2DFilteringTestInstance::iterate (void)
 	// Setup params for reference.
 
 	refParams.sampler		= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter, !m_testParameters.unnormal);
-	refParams.samplerType	= getSamplerType(texFmt);
-	refParams.lodMode		= LODMODE_EXACT;
+	if (texFmt.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		refParams.sampler.depthStencilMode = tcu::Sampler::MODE_STENCIL;
+		refParams.samplerType = SAMPLERTYPE_UINT;
+	}
+	else
+		refParams.samplerType = getSamplerType(texFmt);
 	refParams.colorBias		= fmtInfo.lookupBias;
 	refParams.colorScale	= fmtInfo.lookupScale;
 	refParams.unnormal		= m_testParameters.unnormal;
@@ -314,14 +335,24 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance (Context& con
 	, m_caseNdx				(0)
 {
 	const int						numLevels	= deLog2Floor32(m_testParameters.size)+1;
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
+	const tcu::TextureFormat		texFormat	= vk::mapVkFormat(m_testParameters.format);
+	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFormat);
+	tcu::Vec4						cBias, cScale;
+	if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		const tcu::TextureFormat		texFormatStencil	= vk::mapVkFormat(VK_FORMAT_S8_UINT);
+		const tcu::TextureFormatInfo	fmtInfoStencil		= tcu::getTextureFormatInfo(texFormatStencil);
+		cBias												= fmtInfoStencil.valueMin;
+		cScale												= fmtInfoStencil.valueMax - fmtInfoStencil.valueMin;
+	}
+	else
+	{
+		cBias												= fmtInfo.valueMin;
+		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
+	}
 
-	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
-		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
-		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
+	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -342,7 +373,10 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance (Context& con
 	{
 		for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
 		{
-			tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, face), gradients[face][0]*cScale + cBias, gradients[face][1]*cScale + cBias);
+			if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+				tcu::fillWithComponentGradients(getEffectiveDepthStencilAccess(m_textures[0]->getLevel(levelNdx, face), tcu::Sampler::MODE_STENCIL), gradients[face][0] * cScale + cBias, gradients[face][1] * cScale + cBias);
+			else
+				tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, face), gradients[face][0] * cScale + cBias, gradients[face][1] * cScale + cBias);
 		}
 	}
 
@@ -357,13 +391,18 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance (Context& con
 			const deUint32	colorB	= 0xff000000 | ~rgb;
 
 			tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, face), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+
+			if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+				tcu::fillWithGrid(getEffectiveDepthStencilAccess(m_textures[1]->getLevel(levelNdx, face), tcu::Sampler::MODE_STENCIL), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+			else
+				tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, face), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 		}
 	}
 
 	// Upload.
 	for (vector<TestTextureCubeSp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
 	{
-		m_renderer.addCubeTexture(*i);
+		m_renderer.addCubeTexture(*i, testParameters.aspectMask);
 	}
 
 	// Compute cases
@@ -421,8 +460,14 @@ tcu::TestStatus TextureCubeFilteringTestInstance::iterate (void)
 
 	// Params for reference computation.
 	refParams.sampler					= util::createSampler(Sampler::CLAMP_TO_EDGE, Sampler::CLAMP_TO_EDGE, m_testParameters.minFilter, m_testParameters.magFilter);
+	if (texFmt.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		refParams.sampler.depthStencilMode	= tcu::Sampler::MODE_STENCIL;
+		refParams.samplerType				= SAMPLERTYPE_UINT;
+	}
+	else
+		refParams.samplerType				= getSamplerType(texFmt);
 	refParams.sampler.seamlessCubeMap	= true;
-	refParams.samplerType				= getSamplerType(texFmt);
 	refParams.lodMode					= LODMODE_EXACT;
 	refParams.colorBias					= fmtInfo.lookupBias;
 	refParams.colorScale				= fmtInfo.lookupScale;
@@ -535,15 +580,25 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance (Contex
 	, m_renderer			(context, testParameters.sampleCount, TEX3D_VIEWPORT_WIDTH, TEX3D_VIEWPORT_HEIGHT)
 	, m_caseNdx				(0)
 {
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
 	const int						numLevels	= deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height)) + 1;
+	const tcu::TextureFormat		texFormat	= vk::mapVkFormat(m_testParameters.format);
+	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFormat);
+	tcu::Vec4						cBias, cScale;
+	if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		const tcu::TextureFormat		texFormatStencil	= vk::mapVkFormat(VK_FORMAT_S8_UINT);
+		const tcu::TextureFormatInfo	fmtInfoStencil		= tcu::getTextureFormatInfo(texFormatStencil);
+		cBias												= fmtInfoStencil.valueMin;
+		cScale												= fmtInfoStencil.valueMax - fmtInfoStencil.valueMin;
+	}
+	else
+	{
+		cBias												= fmtInfo.valueMin;
+		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
+	}
 
-	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
-		testParameters.wrapT == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
-		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
+	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 	// Create textures.
 	m_textures.reserve(2);
@@ -563,13 +618,14 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance (Contex
 	{
 		for (int layerNdx = 0; layerNdx < m_testParameters.numLayers; layerNdx++)
 		{
-			const tcu::PixelBufferAccess levelBuf = m_textures[0]->getLevel(levelNdx, layerNdx);
-
 			const tcu::IVec4	swz		= levelSwz[layerNdx%DE_LENGTH_OF_ARRAY(levelSwz)];
 			const tcu::Vec4		gMin	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f).swizzle(swz[0],swz[1],swz[2],swz[3])*cScale + cBias;
 			const tcu::Vec4		gMax	= tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f).swizzle(swz[0],swz[1],swz[2],swz[3])*cScale + cBias;
 
-			tcu::fillWithComponentGradients(levelBuf, gMin, gMax);
+			if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+				tcu::fillWithComponentGradients(getEffectiveDepthStencilAccess(m_textures[0]->getLevel(levelNdx, layerNdx), tcu::Sampler::MODE_STENCIL), gMin, gMax);
+			else
+				tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, layerNdx), gMin, gMax);
 		}
 	}
 
@@ -578,21 +634,22 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance (Contex
 	{
 		for (int layerNdx = 0; layerNdx < m_testParameters.numLayers; layerNdx++)
 		{
-			const tcu::PixelBufferAccess levelBuf = m_textures[1]->getLevel(levelNdx, layerNdx);
-
 			const deUint32	step	= 0x00ffffff / (numLevels*m_testParameters.numLayers - 1);
 			const deUint32	rgb		= step * (levelNdx + layerNdx*numLevels);
 			const deUint32	colorA	= 0xff000000 | rgb;
 			const deUint32	colorB	= 0xff000000 | ~rgb;
 
-			tcu::fillWithGrid(levelBuf, 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+			if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+				tcu::fillWithGrid(getEffectiveDepthStencilAccess(m_textures[1]->getLevel(levelNdx, layerNdx), tcu::Sampler::MODE_STENCIL), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+			else
+				tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, layerNdx), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
 		}
 	}
 
 	// Upload.
 	for (vector<TestTexture2DArraySp>::const_iterator i = m_textures.begin(); i != m_textures.end(); i++)
 	{
-		m_renderer.add2DArrayTexture(*i);
+		m_renderer.add2DArrayTexture(*i, testParameters.aspectMask);
 	}
 
 	// Test cases
@@ -622,7 +679,13 @@ tcu::TestStatus Texture2DArrayFilteringTestInstance::iterate (void)
 	// Params for reference computation.
 
 	refParams.sampler		= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
-	refParams.samplerType	= getSamplerType(texFmt);
+	if (texFmt.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		refParams.sampler.depthStencilMode	= tcu::Sampler::MODE_STENCIL;
+		refParams.samplerType				= SAMPLERTYPE_UINT;
+	}
+	else
+		refParams.samplerType				= getSamplerType(texFmt);
 	refParams.lodMode		= LODMODE_EXACT;
 	refParams.colorBias		= fmtInfo.lookupBias;
 	refParams.colorScale	= fmtInfo.lookupScale;
@@ -738,16 +801,25 @@ Texture3DFilteringTestInstance::Texture3DFilteringTestInstance (Context& context
 	, m_renderer			(context, testParameters.sampleCount, TEX3D_VIEWPORT_WIDTH, TEX3D_VIEWPORT_HEIGHT)
 	, m_caseNdx				(0)
 {
-	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
-	const tcu::Vec4					cScale		= fmtInfo.valueMax-fmtInfo.valueMin;
-	const tcu::Vec4					cBias		= fmtInfo.valueMin;
 	const int						numLevels	= deLog2Floor32(de::max(de::max(m_testParameters.width, m_testParameters.height), m_testParameters.depth)) + 1;
+	const tcu::TextureFormat		texFormat	= vk::mapVkFormat(m_testParameters.format);
+	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFormat);
+	tcu::Vec4						cBias, cScale;
+	if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		const tcu::TextureFormat		texFormatStencil	= vk::mapVkFormat(VK_FORMAT_S8_UINT);
+		const tcu::TextureFormatInfo	fmtInfoStencil		= tcu::getTextureFormatInfo(texFormatStencil);
+		cBias												= fmtInfoStencil.valueMin;
+		cScale												= fmtInfoStencil.valueMax - fmtInfoStencil.valueMin;
+	}
+	else
+	{
+		cBias												= fmtInfo.valueMin;
+		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
+	}
 
-	if ((testParameters.wrapS == Sampler::MIRRORED_ONCE ||
-		testParameters.wrapT == Sampler::MIRRORED_ONCE ||
-		testParameters.wrapR == Sampler::MIRRORED_ONCE) &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_mirror_clamp_to_edge"))
-		TCU_THROW(NotSupportedError, "VK_KHR_sampler_mirror_clamp_to_edge not supported");
+	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE || testParameters.wrapR == Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 	// Create textures.
 	m_textures.reserve(2);
@@ -760,7 +832,11 @@ Texture3DFilteringTestInstance::Texture3DFilteringTestInstance (Context& context
 		const tcu::Vec4 gMin = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)*cScale + cBias;
 		const tcu::Vec4 gMax = tcu::Vec4(1.0f, 1.0f, 1.0f, 0.0f)*cScale + cBias;
 
-		tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), gMin, gMax);
+		if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+			tcu::fillWithComponentGradients(getEffectiveDepthStencilAccess(m_textures[0]->getLevel(levelNdx, 0), tcu::Sampler::MODE_STENCIL), gMin, gMax);
+		else
+			tcu::fillWithComponentGradients(m_textures[0]->getLevel(levelNdx, 0), gMin, gMax);
+
 	}
 
 	// Fill second with grid texture.
@@ -771,13 +847,17 @@ Texture3DFilteringTestInstance::Texture3DFilteringTestInstance (Context& context
 		const deUint32	colorA	= 0xff000000 | rgb;
 		const deUint32	colorB	= 0xff000000 | ~rgb;
 
-		tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+		if (texFormat.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+			tcu::fillWithGrid(getEffectiveDepthStencilAccess(m_textures[1]->getLevel(levelNdx, 0), tcu::Sampler::MODE_STENCIL), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+		else
+			tcu::fillWithGrid(m_textures[1]->getLevel(levelNdx, 0), 4, tcu::RGBA(colorA).toVec()*cScale + cBias, tcu::RGBA(colorB).toVec()*cScale + cBias);
+
 	}
 
 	// Upload.
 	for (vector<TestTexture3DSp>::const_iterator i = m_textures.begin(); i != m_textures.end(); i++)
 	{
-		m_renderer.add3DTexture(*i);
+		m_renderer.add3DTexture(*i, testParameters.aspectMask);
 	}
 
 	// Test cases
@@ -806,7 +886,13 @@ tcu::TestStatus Texture3DFilteringTestInstance::iterate (void)
 
 	// Params for reference computation.
 	refParams.sampler		= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.wrapR, m_testParameters.minFilter, m_testParameters.magFilter);
-	refParams.samplerType	= getSamplerType(texFmt);
+	if (texFmt.order == tcu::TextureFormat::DS && m_testParameters.aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+	{
+		refParams.sampler.depthStencilMode	= tcu::Sampler::MODE_STENCIL;
+		refParams.samplerType				= SAMPLERTYPE_UINT;
+	}
+	else
+		refParams.samplerType				= getSamplerType(texFmt);
 	refParams.lodMode		= LODMODE_EXACT;
 	refParams.colorBias		= fmtInfo.lookupBias;
 	refParams.colorScale	= fmtInfo.lookupScale;
@@ -982,20 +1068,28 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 
 	static const struct
 	{
-		const char* const	name;
-		const VkFormat		format;
+		const char* const			name;
+		const VkFormat				format;
+		const VkImageAspectFlags	aspectMask;
+		const Program				program2D;
+		const Program				programCube;
+		const Program				program2DArray;
+		const Program				program3D;
 	} filterableFormatsByType[] =
 	{
-		{ "r16g16b16a16_sfloat",	VK_FORMAT_R16G16B16A16_SFLOAT		},
-		{ "b10g11r11_ufloat",		VK_FORMAT_B10G11R11_UFLOAT_PACK32	},
-		{ "e5b9g9r9_ufloat",		VK_FORMAT_E5B9G9R9_UFLOAT_PACK32	},
-		{ "r8g8b8a8_unorm",			VK_FORMAT_R8G8B8A8_UNORM			},
-		{ "r8g8b8a8_snorm",			VK_FORMAT_R8G8B8A8_SNORM			},
-		{ "r5g6b5_unorm",			VK_FORMAT_R5G6B5_UNORM_PACK16		},
-		{ "r4g4b4a4_unorm",			VK_FORMAT_R4G4B4A4_UNORM_PACK16		},
-		{ "r5g5b5a1_unorm",			VK_FORMAT_R5G5B5A1_UNORM_PACK16		},
-		{ "a8b8g8r8_srgb",			VK_FORMAT_A8B8G8R8_SRGB_PACK32		},
-		{ "a1r5g5b5_unorm",			VK_FORMAT_A1R5G5B5_UNORM_PACK16		}
+		{ "r16g16b16a16_sfloat",			VK_FORMAT_R16G16B16A16_SFLOAT,		VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "b10g11r11_ufloat",				VK_FORMAT_B10G11R11_UFLOAT_PACK32,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "e5b9g9r9_ufloat",				VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "r8g8b8a8_unorm",					VK_FORMAT_R8G8B8A8_UNORM,			VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "r8g8b8a8_snorm",					VK_FORMAT_R8G8B8A8_SNORM,			VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "r5g6b5_unorm",					VK_FORMAT_R5G6B5_UNORM_PACK16,		VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "r4g4b4a4_unorm",					VK_FORMAT_R4G4B4A4_UNORM_PACK16,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "r5g5b5a1_unorm",					VK_FORMAT_R5G5B5A1_UNORM_PACK16,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "a8b8g8r8_srgb",					VK_FORMAT_A8B8G8R8_SRGB_PACK32,		VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "a1r5g5b5_unorm",					VK_FORMAT_A1R5G5B5_UNORM_PACK16,	VK_IMAGE_ASPECT_COLOR_BIT,		PROGRAM_2D_FLOAT,	PROGRAM_CUBE_FLOAT,	PROGRAM_2D_ARRAY_FLOAT,	PROGRAM_3D_FLOAT	},
+		{ "s8_uint",						VK_FORMAT_S8_UINT,					VK_IMAGE_ASPECT_STENCIL_BIT,	PROGRAM_2D_UINT,	PROGRAM_CUBE_UINT,	PROGRAM_2D_ARRAY_UINT,	PROGRAM_3D_UINT		},
+		{ "d24_unorm_s8_uint_stencil",		VK_FORMAT_D24_UNORM_S8_UINT,		VK_IMAGE_ASPECT_STENCIL_BIT,	PROGRAM_2D_UINT,	PROGRAM_CUBE_UINT,	PROGRAM_2D_ARRAY_UINT,	PROGRAM_3D_UINT		},
+		{ "d32_sfloat_s8_uint_stencil",		VK_FORMAT_D32_SFLOAT_S8_UINT,		VK_IMAGE_ASPECT_STENCIL_BIT,	PROGRAM_2D_UINT,	PROGRAM_CUBE_UINT,	PROGRAM_2D_ARRAY_UINT,	PROGRAM_3D_UINT		}
 	};
 
 	// 2D texture filtering.
@@ -1029,7 +1123,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.width		= 64;
 				testParameters.height		= 64;
 
-				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+				testParameters.aspectMask	= filterableFormatsByType[fmtNdx].aspectMask;
+				testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program2D);
 
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1063,6 +1158,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.width		= sizes2D[sizeNdx].width;
 				testParameters.height		= sizes2D[sizeNdx].height;
 
+				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
 				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1098,6 +1194,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.width		= 63;
 						testParameters.height		= 57;
 
+						testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 						testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
 						wrapSGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1147,7 +1244,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.width		= 64;
 				testParameters.height		= 64;
 
-				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+				testParameters.aspectMask	= filterableFormatsByType[fmtNdx].aspectMask;
+				testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program2D);
 
 				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1181,6 +1279,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.width		= sizes2D[sizeNdx].width;
 				testParameters.height		= sizes2D[sizeNdx].height;
 
+				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
 				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1225,7 +1324,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.onlySampleFaceInterior	= false;
 				testParameters.size						= 64;
 
-				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
+				testParameters.aspectMask				= filterableFormatsByType[fmtNdx].aspectMask;
+				testParameters.programs.push_back(filterableFormatsByType[fmtNdx].programCube);
 
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1257,6 +1357,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.onlySampleFaceInterior	= false;
 				testParameters.size						= sizesCube[sizeNdx].size;
 
+				testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
 				filterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1291,6 +1392,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.onlySampleFaceInterior	= false;
 						testParameters.size						= 63;
 
+						testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 						testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
 						wrapSGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1317,6 +1419,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 			testParameters.onlySampleFaceInterior	= true;
 			testParameters.size						= 63;
 
+			testParameters.aspectMask				= VK_IMAGE_ASPECT_COLOR_BIT;
 			testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
 
 			onlyFaceInteriorGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1363,7 +1466,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.height		= 128;
 				testParameters.numLayers	= 8;
 
-				testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
+				testParameters.aspectMask	= filterableFormatsByType[fmtNdx].aspectMask;
+				testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program2DArray);
 
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1397,6 +1501,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.height		= sizes2DArray[sizeNdx].height;
 				testParameters.numLayers	= sizes2DArray[sizeNdx].numLayers;
 
+				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
 
 				filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1431,6 +1536,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.height		= 107;
 						testParameters.numLayers	= 7;
 
+						testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 						testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
 
 						wrapSGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1483,7 +1589,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.height		= 64;
 				testParameters.depth		= 64;
 
-				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+				testParameters.aspectMask	= filterableFormatsByType[fmtNdx].aspectMask;
+				testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program3D);
 
 				// Some tests have to be skipped due to the restrictions of the verifiers.
 				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
@@ -1518,6 +1625,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.height		= sizes3D[sizeNdx].height;
 				testParameters.depth		= sizes3D[sizeNdx].depth;
 
+				testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 				testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
 				filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -1557,6 +1665,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 							testParameters.height		= 57;
 							testParameters.depth		= 67;
 
+							testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 							testParameters.programs.push_back(PROGRAM_3D_FLOAT);
 
 							wrapTGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
