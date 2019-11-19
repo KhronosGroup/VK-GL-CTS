@@ -862,6 +862,10 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 	}
 	else
 	{
+		// Make sure VK_KHR_create_renderpass2 is supported. Due to InstanceFactory1 being used and the render pass being created in
+		// the instance constructor and not every time, this is the best moment to check.
+		m_context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
 		VkImageLayout								initialLayout			= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		VkImageLayout								finalLayout				= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		VkAttachmentDescriptionStencilLayoutKHR		stencilLayouts			=

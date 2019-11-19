@@ -4113,6 +4113,12 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceConditionalRenderingFeaturesEXT");
 	}
+	if ( khr_performance_counter &&
+		(	performanceQueryFeatures[0].performanceCounterQueryPools			!= performanceQueryFeatures[1].performanceCounterQueryPools ||
+			performanceQueryFeatures[0].performanceCounterMultipleQueryPools	!= performanceQueryFeatures[1].performanceCounterMultipleQueryPools ))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePerformancQueryFeaturesKHR");
+	}
 
 	if ( ext_scalar_block_layout &&
 		(	scalarBlockLayoutFeatures[0].scalarBlockLayout != scalarBlockLayoutFeatures[1].scalarBlockLayout ))
@@ -4588,7 +4594,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		    pciBusInfoProperties[0].pciDevice   == DEUINT32_MAX ||
 		    pciBusInfoProperties[0].pciFunction == DEUINT32_MAX)
 		{
-		    TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
+			TCU_FAIL("Invalid information in VkPhysicalDevicePCIBusInfoPropertiesEXT");
 		}
 	}
 
