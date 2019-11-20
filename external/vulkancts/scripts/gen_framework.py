@@ -1581,6 +1581,9 @@ def generateDevicePropertiesDefs(src):
 	# construct final list
 	defs = []
 	for sType, sSuffix in matches:
+		# skip VkPhysicalDeviceGroupProperties
+		if sType == "GROUP":
+			continue
 		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
 		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Properties' + sSuffix[1:] + ')'
 		matchStructName		= re.search(ptrnStructName, src, re.M)
