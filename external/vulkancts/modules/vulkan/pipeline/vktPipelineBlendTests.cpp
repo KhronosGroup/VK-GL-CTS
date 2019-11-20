@@ -30,6 +30,8 @@
 #include "vktPipelineReferenceRenderer.hpp"
 #include "vktTestCase.hpp"
 #include "vkImageUtil.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
@@ -50,6 +52,8 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include <algorithm>
+#include <iterator>
 
 namespace vkt
 {
@@ -127,8 +131,6 @@ public:
 	virtual tcu::TestStatus				iterate					(void);
 
 private:
-	static float						getNormChannelThreshold	(const tcu::TextureFormat& format, int numBits);
-	static tcu::Vec4					getFormatThreshold		(const tcu::TextureFormat& format);
 	tcu::TestStatus						verifyImage				(void);
 
 	VkPipelineColorBlendAttachmentState	m_blendStates[BlendTest::QUAD_COUNT];
@@ -581,7 +583,7 @@ tcu::TestStatus BlendTestInstance::iterate (void)
 	return verifyImage();
 }
 
-float BlendTestInstance::getNormChannelThreshold (const tcu::TextureFormat& format, int numBits)
+float getNormChannelThreshold (const tcu::TextureFormat& format, int numBits)
 {
 	switch (tcu::getTextureChannelClass(format.type))
 	{
@@ -595,7 +597,7 @@ float BlendTestInstance::getNormChannelThreshold (const tcu::TextureFormat& form
 	return 0.0f;
 }
 
-tcu::Vec4 BlendTestInstance::getFormatThreshold (const tcu::TextureFormat& format)
+tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 {
 	using tcu::Vec4;
 	using tcu::TextureFormat;
@@ -883,6 +885,373 @@ tcu::TestStatus BlendTestInstance::verifyImage (void)
 		return tcu::TestStatus::fail("Image mismatch");
 }
 
+// Clamping tests for colors and constants.
+
+struct ClampTestParams
+{
+	vk::VkFormat	colorFormat;
+	tcu::Vec4		quadColor;
+	tcu::Vec4		blendConstants;
+};
+
+class ClampTest : public vkt::TestCase
+{
+public:
+										ClampTest				(tcu::TestContext&							testContext,
+																 const std::string&							name,
+																 const std::string&							description,
+																 const ClampTestParams&						testParams);
+	virtual								~ClampTest				(void) {}
+	virtual void						initPrograms			(SourceCollections& sourceCollections) const;
+	virtual void						checkSupport			(Context& context) const;
+	virtual TestInstance*				createInstance			(Context& context) const;
+
+private:
+	const ClampTestParams				m_params;
+};
+
+class ClampTestInstance : public vkt::TestInstance
+{
+public:
+								ClampTestInstance		(Context& context, const ClampTestParams& testParams)
+									: vkt::TestInstance(context), m_params(testParams)
+									{}
+	virtual						~ClampTestInstance		(void) {}
+	virtual tcu::TestStatus		iterate					(void);
+
+private:
+	const ClampTestParams		m_params;
+};
+
+ClampTest::ClampTest (tcu::TestContext&			testContext,
+					  const std::string&		name,
+					  const std::string&		description,
+					  const ClampTestParams&	testParams)
+	: vkt::TestCase (testContext, name, description)
+	, m_params(testParams)
+{
+	// As per the spec:
+	//
+	//  If the color attachment is fixed-point, the components of the source and destination values and blend factors are each
+	//  clamped to [0,1] or [-1,1] respectively for an unsigned normalized or signed normalized color attachment prior to evaluating
+	//  the blend operations. If the color attachment is floating-point, no clamping occurs.
+	//
+	// We will only test signed and unsigned normalized formats, and avoid precision problems by having all channels have the same
+	// bit depth.
+	//
+	DE_ASSERT(isSnormFormat(m_params.colorFormat) || isUnormFormat(m_params.colorFormat));
+
+	const auto bitDepth = tcu::getTextureFormatBitDepth(mapVkFormat(m_params.colorFormat));
+	DE_UNREF(bitDepth); // For release builds.
+	DE_ASSERT(bitDepth[0] == bitDepth[1] && bitDepth[0] == bitDepth[2] && bitDepth[0] == bitDepth[3]);
+}
+
+void ClampTest::initPrograms (SourceCollections& sourceCollections) const
+{
+	std::ostringstream fragmentSource;
+
+	sourceCollections.glslSources.add("color_vert") << glu::VertexSource(
+		"#version 310 es\n"
+		"layout(location = 0) in highp vec4 position;\n"
+		"layout(location = 1) in highp vec4 color;\n"
+		"layout(location = 0) out highp vec4 vtxColor;\n"
+		"void main (void)\n"
+		"{\n"
+		"	gl_Position = position;\n"
+		"	vtxColor = color;\n"
+		"}\n");
+
+	fragmentSource << "#version 310 es\n"
+		"layout(location = 0) in highp vec4 vtxColor;\n"
+		"layout(location = 0) out highp vec4 fragColor;\n"
+		"void main (void)\n"
+		"{\n"
+		"	fragColor = vtxColor;\n"
+		"}\n";
+
+	sourceCollections.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
+}
+
+void ClampTest::checkSupport (Context& context) const
+{
+	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.colorFormat))
+		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_params.colorFormat));
+}
+
+TestInstance* ClampTest::createInstance(Context& context) const
+{
+	return new ClampTestInstance(context, m_params);
+}
+
+tcu::TestStatus ClampTestInstance::iterate (void)
+{
+	const vk::DeviceInterface&	vkd					= m_context.getDeviceInterface();
+	const vk::VkDevice			device				= m_context.getDevice();
+	vk::Allocator&				allocator			= m_context.getDefaultAllocator();
+	const vk::VkQueue			queue				= m_context.getUniversalQueue();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const vk::VkExtent3D		renderSize			= { 32u, 32u, 1u };
+
+	// Image.
+	const vk::VkImageCreateInfo	imageCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;
+		nullptr,																		// const void*				pNext;
+		0u,																				// VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
+		m_params.colorFormat,															// VkFormat					format;
+		renderSize,																		// VkExtent3D				extent;
+		1u,																				// deUint32					mipLevels;
+		1u,																				// deUint32					arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,														// VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
+		vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
+		1u,																				// deUint32					queueFamilyIndexCount;
+		&queueFamilyIndex,																// const deUint32*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
+	};
+
+	vk::ImageWithMemory colorImage (vkd, device, allocator, imageCreateInfo, MemoryRequirement::Any);
+
+	// Image view.
+	const vk::VkImageViewCreateInfo imageViewCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
+		nullptr,											// const void*				pNext;
+		0u,													// VkImageViewCreateFlags	flags;
+		colorImage.get(),									// VkImage					image;
+		vk::VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
+		m_params.colorFormat,								// VkFormat					format;
+		{													// VkComponentMapping		components;
+			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
+			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
+			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
+			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
+		},
+		{ vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
+	};
+
+	auto colorImageView = createImageView(vkd, device, &imageViewCreateInfo);
+
+	// Render pass.
+	auto renderPass = makeRenderPass(vkd, device, m_params.colorFormat);
+
+	// Frame buffer.
+	const vk::VkFramebufferCreateInfo framebufferParams =
+	{
+		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType			sType;
+		nullptr,											// const void*				pNext;
+		0u,													// VkFramebufferCreateFlags	flags;
+		renderPass.get(),									// VkRenderPass				renderPass;
+		1u,													// deUint32					attachmentCount;
+		&colorImageView.get(),								// const VkImageView*		pAttachments;
+		renderSize.width,									// deUint32					width;
+		renderSize.height,									// deUint32					height;
+		1u,													// deUint32					layers;
+	};
+
+	auto framebuffer = createFramebuffer(vkd, device, &framebufferParams);
+
+	// Pipeline layout.
+	const vk::VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType					sType;
+		nullptr,											// const void*						pNext;
+		0u,													// VkPipelineLayoutCreateFlags		flags;
+		0u,													// deUint32							setLayoutCount;
+		nullptr,											// const VkDescriptorSetLayout*		pSetLayouts;
+		0u,													// deUint32							pushConstantRangeCount;
+		nullptr,											// const VkPushConstantRange*		pPushConstantRanges;
+	};
+
+	auto pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
+
+	// Shader modules.
+	auto vertexShaderModule		= createShaderModule(vkd, device, m_context.getBinaryCollection().get("color_vert"), 0);
+	auto fragmentShaderModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("color_frag"), 0);
+
+	// Graphics pipeline.
+	const vk::VkVertexInputBindingDescription vertexInputBindingDescription =
+	{
+		0u,									// deUint32					binding;
+		sizeof(Vertex4RGBA),				// deUint32					strideInBytes;
+		vk::VK_VERTEX_INPUT_RATE_VERTEX		// VkVertexInputStepRate	inputRate;
+	};
+
+	const vk::VkVertexInputAttributeDescription	vertexInputAttributeDescriptions[2]	=
+	{
+		{
+			0u,									// deUint32	location;
+			0u,									// deUint32	binding;
+			vk::VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat	format;
+			0u									// deUint32	offset;
+		},
+		{
+			1u,														// deUint32	location;
+			0u,														// deUint32	binding;
+			vk::VK_FORMAT_R32G32B32A32_SFLOAT,						// VkFormat	format;
+			static_cast<deUint32>(offsetof(Vertex4RGBA, color)),	// deUint32	offset;
+		},
+	};
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,					// VkStructureType							sType;
+		nullptr,																		// const void*								pNext;
+		0u,																				// VkPipelineVertexInputStateCreateFlags	flags;
+		1u,																				// deUint32									vertexBindingDescriptionCount;
+		&vertexInputBindingDescription,													// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		static_cast<deUint32>(DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions)),	// deUint32									vertexAttributeDescriptionCount;
+		vertexInputAttributeDescriptions,												// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	const std::vector<vk::VkViewport>	viewports	(1, makeViewport(renderSize));
+	const std::vector<vk::VkRect2D>		scissors	(1, makeRect2D(renderSize));
+
+	const vk::VkColorComponentFlags colorComponentFlags = (0u
+		| vk::VK_COLOR_COMPONENT_R_BIT
+		| vk::VK_COLOR_COMPONENT_G_BIT
+		| vk::VK_COLOR_COMPONENT_B_BIT
+		| vk::VK_COLOR_COMPONENT_A_BIT
+	);
+
+	// Color blend attachment state. Central aspect of the test.
+	const vk::VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+	{
+		VK_TRUE,							// VkBool32					blendEnable;
+		vk::VK_BLEND_FACTOR_CONSTANT_COLOR,	// VkBlendFactor			srcColorBlendFactor;
+		vk::VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstColorBlendFactor;
+		vk::VK_BLEND_OP_ADD,				// VkBlendOp				colorBlendOp;
+		vk::VK_BLEND_FACTOR_CONSTANT_ALPHA,	// VkBlendFactor			srcAlphaBlendFactor;
+		vk::VK_BLEND_FACTOR_ZERO,			// VkBlendFactor			dstAlphaBlendFactor;
+		vk::VK_BLEND_OP_ADD,				// VkBlendOp				alphaBlendOp;
+		colorComponentFlags,				// VkColorComponentFlags	colorWriteMask;
+	};
+
+	const vk::VkPipelineColorBlendStateCreateInfo colorBlendStateParams =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
+		nullptr,														// const void*									pNext;
+		0u,																// VkPipelineColorBlendStateCreateFlags			flags;
+		false,															// VkBool32										logicOpEnable;
+		vk::VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
+		1u,																// deUint32										attachmentCount;
+		&colorBlendAttachmentState,										// const VkPipelineColorBlendAttachmentState*	pAttachments;
+		{																// float										blendConstants[4];
+			m_params.blendConstants[0],
+			m_params.blendConstants[1],
+			m_params.blendConstants[2],
+			m_params.blendConstants[3],
+		},
+	};
+
+	auto graphicsPipeline = makeGraphicsPipeline(
+		vkd,										// const DeviceInterface&                        vk
+		device,										// const VkDevice                                device
+		pipelineLayout.get(),						// const VkPipelineLayout                        pipelineLayout
+		vertexShaderModule.get(),					// const VkShaderModule                          vertexShaderModule
+		DE_NULL,									// const VkShaderModule                          tessellationControlModule
+		DE_NULL,									// const VkShaderModule                          tessellationEvalModule
+		DE_NULL,									// const VkShaderModule                          geometryShaderModule
+		fragmentShaderModule.get(),					// const VkShaderModule                          fragmentShaderModule
+		renderPass.get(),							// const VkRenderPass                            renderPass
+		viewports,									// const std::vector<VkViewport>&                viewports
+		scissors,									// const std::vector<VkRect2D>&                  scissors
+		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
+		0u,											// const deUint32                                subpass
+		0u,											// const deUint32                                patchControlPoints
+		&vertexInputStateParams,					// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		nullptr,									// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+		nullptr,									// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+		nullptr,									// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+		&colorBlendStateParams);					// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+
+	// Vertex buffer
+	auto						quadTexture = createFullscreenQuad();
+	std::vector<Vertex4RGBA>	vertices;
+
+	// Keep position but replace texture coordinates with our own color.
+	vertices.reserve(quadTexture.size());
+	std::transform(begin(quadTexture), end(quadTexture), std::back_inserter(vertices),
+		[this](const decltype(quadTexture)::value_type& v) { return Vertex4RGBA{ v.position, this->m_params.quadColor }; });
+
+	const vk::VkDeviceSize			vtxBufferSize		= static_cast<vk::VkDeviceSize>(vertices.size() * sizeof(decltype(vertices)::value_type));
+	const vk::VkBufferCreateInfo	bufferCreateInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
+		nullptr,									// const void*			pNext;
+		0u,											// VkBufferCreateFlags	flags;
+		vtxBufferSize,								// VkDeviceSize			size;
+		vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,		// VkBufferUsageFlags	usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		1u,											// deUint32				queueFamilyIndexCount;
+		&queueFamilyIndex,							// const deUint32*		pQueueFamilyIndices;
+	};
+
+	vk::BufferWithMemory vertexBuffer(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+	// Upload vertex data
+	deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), static_cast<size_t>(vtxBufferSize));
+	flushAlloc(vkd, device, vertexBuffer.getAllocation());
+
+	// Create command pool
+	auto cmdPool = createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+
+	// Create and record command buffer
+	auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	auto cmdBuffer		= cmdBufferPtr.get();
+
+	vk::VkClearValue clearValue;
+	clearValue.color.float32[0] = 0.0f;
+	clearValue.color.float32[1] = 0.0f;
+	clearValue.color.float32[2] = 0.0f;
+	clearValue.color.float32[3] = 1.0f;
+
+	const vk::VkDeviceSize vertexOffets[] = { 0u };
+
+	beginCommandBuffer(vkd, cmdBuffer, 0u);
+		beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), makeRect2D(renderSize), clearValue);
+			vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+			vkd.cmdBindVertexBuffers(cmdBuffer, 0, 1u, &vertexBuffer.get(), vertexOffets);
+			vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1, 0, 0);
+		endRenderPass(vkd, cmdBuffer);
+	endCommandBuffer(vkd, cmdBuffer);
+
+	// Submit commands.
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Calculate reference final color.
+	const tcu::TextureFormat	tcuColorFormat	= mapVkFormat(m_params.colorFormat);
+	const auto					formatInfo		= tcu::getTextureFormatInfo(tcuColorFormat);
+
+	tcu::Vec4 clampedBlendConstants	= m_params.blendConstants;
+	tcu::Vec4 clampedQuadColor		= m_params.quadColor;
+
+	for (int i = 0; i < tcu::Vec4::SIZE; ++i)
+	{
+		clampedBlendConstants[i]	= de::clamp(clampedBlendConstants[i],	formatInfo.valueMin[i], formatInfo.valueMax[i]);
+		clampedQuadColor[i]			= de::clamp(clampedQuadColor[i],		formatInfo.valueMin[i], formatInfo.valueMax[i]);
+	}
+
+	tcu::Vec4 referenceColor;
+	for (int i = 0; i < tcu::Vec4::SIZE; ++i)
+		referenceColor[i] = clampedBlendConstants[i] * clampedQuadColor[i];
+
+	// Compare result with reference color
+	const tcu::UVec2					renderSizeUV2		(renderSize.width, renderSize.height);
+	de::UniquePtr<tcu::TextureLevel>	result				(readColorAttachment(vkd, device, queue, queueFamilyIndex, allocator, colorImage.get(), m_params.colorFormat, renderSizeUV2).release());
+	const tcu::Vec4						threshold			(getFormatThreshold(tcuColorFormat));
+	const tcu::ConstPixelBufferAccess	pixelBufferAccess	= result->getAccess();
+
+	const bool compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "BlendClampCompare", "Blend clamping pixel comparison", referenceColor, pixelBufferAccess, threshold, tcu::COMPARE_LOG_ON_ERROR);
+
+	if (compareOk)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Pixel mismatch");
+}
+
 } // anonymous
 
 std::string getBlendStateName (const VkPipelineColorBlendAttachmentState& blendState)
@@ -1009,6 +1378,7 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 
 	de::MovePtr<tcu::TestCaseGroup>		blendTests		(new tcu::TestCaseGroup(testCtx, "blend", "Blend tests"));
 	de::MovePtr<tcu::TestCaseGroup>		formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Uses different blend formats"));
+	de::MovePtr<tcu::TestCaseGroup>		clampTests		(new tcu::TestCaseGroup(testCtx, "clamp", "Verifies clamping for normalized formats"));
 	BlendStateUniqueRandomIterator		blendStateItr	(blendStatesPerFormat, 123);
 
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(blendFormats); formatNdx++)
@@ -1045,7 +1415,55 @@ tcu::TestCaseGroup* createBlendTests (tcu::TestContext& testCtx)
 		formatTest->addChild(blendStateTests.release());
 		formatTests->addChild(formatTest.release());
 	}
+
+	// Subselection of formats that are easy to test for clamping.
+	const vk::VkFormat clampFormats[] =
+	{
+		vk::VK_FORMAT_R8G8B8A8_UNORM,
+		vk::VK_FORMAT_R8G8B8A8_SNORM,
+		vk::VK_FORMAT_B8G8R8A8_UNORM,
+		vk::VK_FORMAT_B8G8R8A8_SNORM,
+		vk::VK_FORMAT_R16G16B16A16_UNORM,
+		vk::VK_FORMAT_R16G16B16A16_SNORM,
+	};
+
+	for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(clampFormats); ++formatIdx)
+	{
+		const auto& format = clampFormats[formatIdx];
+		ClampTestParams testParams;
+
+		testParams.colorFormat = format;
+
+		if (isUnormFormat(format))
+		{
+			testParams.quadColor[0] = 2.0f;
+			testParams.quadColor[1] = 0.5f;
+			testParams.quadColor[2] = 1.0f;
+			testParams.quadColor[3] = -1.0f;
+
+			testParams.blendConstants[0] = 0.5f;
+			testParams.blendConstants[1] = 2.0f;
+			testParams.blendConstants[2] = -1.0f;
+			testParams.blendConstants[3] = 1.0f;
+		}
+		else
+		{
+			testParams.quadColor[0] = 2.0f;
+			testParams.quadColor[1] = 0.5f;
+			testParams.quadColor[2] = 1.0f;
+			testParams.quadColor[3] = -2.0f;
+
+			testParams.blendConstants[0] = 0.5f;
+			testParams.blendConstants[1] = 2.0f;
+			testParams.blendConstants[2] = -2.0f;
+			testParams.blendConstants[3] = 1.0f;
+		}
+
+		clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), std::string("Using format ") + getFormatName(format), testParams));
+	}
+
 	blendTests->addChild(formatTests.release());
+	blendTests->addChild(clampTests.release());
 
 	return blendTests.release();
 }
