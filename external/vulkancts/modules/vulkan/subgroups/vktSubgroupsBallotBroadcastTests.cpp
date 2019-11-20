@@ -147,9 +147,9 @@ std::string getTestSrc(const CaseDefinition &caseDef)
 	else if (caseDef.opType == OPTYPE_BROADCAST_NONCONST)
 	{
 		const std::string validate =	"    if (subgroupBallotBitExtract(mask, id) && op != data[id])\n"
-										"        tempResult = 0;\n";
+										"        tempRes = 0;\n";
 
-		bdy	<< "  uint tempResult = 0x3;\n"
+		bdy	<< "  tempRes= 0x3;\n"
 			<< "  for (uint id = 0; id < sgSize; id++)\n"
 			<< "  {\n"
 			<< "    " << fmt << " op = " << broadcast << "(data[sgInvocation], id);\n"
