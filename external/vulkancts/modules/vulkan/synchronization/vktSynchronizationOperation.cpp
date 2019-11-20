@@ -386,41 +386,6 @@ void clearPixelBuffer (tcu::PixelBufferAccess& pixels, const VkClearValue& clear
 	}
 }
 
-//! Storage image format that requires StorageImageExtendedFormats SPIR-V capability (listed only Vulkan-defined formats).
-bool isStorageImageExtendedFormat (const VkFormat format)
-{
-	switch (format)
-	{
-		case VK_FORMAT_R32G32_SFLOAT:
-		case VK_FORMAT_R32G32_SINT:
-		case VK_FORMAT_R32G32_UINT:
-		case VK_FORMAT_R16G16B16A16_UNORM:
-		case VK_FORMAT_R16G16B16A16_SNORM:
-		case VK_FORMAT_R16G16_SFLOAT:
-		case VK_FORMAT_R16G16_UNORM:
-		case VK_FORMAT_R16G16_SNORM:
-		case VK_FORMAT_R16G16_SINT:
-		case VK_FORMAT_R16G16_UINT:
-		case VK_FORMAT_R16_SFLOAT:
-		case VK_FORMAT_R16_UNORM:
-		case VK_FORMAT_R16_SNORM:
-		case VK_FORMAT_R16_SINT:
-		case VK_FORMAT_R16_UINT:
-		case VK_FORMAT_R8G8_UNORM:
-		case VK_FORMAT_R8G8_SNORM:
-		case VK_FORMAT_R8G8_SINT:
-		case VK_FORMAT_R8G8_UINT:
-		case VK_FORMAT_R8_UNORM:
-		case VK_FORMAT_R8_SNORM:
-		case VK_FORMAT_R8_SINT:
-		case VK_FORMAT_R8_UINT:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 VkImageViewType getImageViewType (const VkImageType imageType)
 {
 	switch (imageType)
@@ -1723,9 +1688,8 @@ public:
 		// Image stores are always required, in either access mode.
 		requireFeaturesForSSBOAccess(m_context, m_stage);
 
-		// Some storage image formats require additional capability.
-		if (isStorageImageExtendedFormat(m_resource.getImage().format))
-			requireFeatures(vki, physDevice, FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS);
+		// Some storage image formats may not be supported
+		requireStorageImageSupport(vki, physDevice, m_resource.getImage().format);
 
 		m_hostBuffer = de::MovePtr<Buffer>(new Buffer(
 			vk, device, allocator, makeBufferCreateInfo(m_hostBufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
@@ -2468,9 +2432,8 @@ public:
 		// Image stores are always required, in either access mode.
 		requireFeaturesForSSBOAccess(m_context, m_stage);
 
-		// Some storage image formats require additional capability.
-		if (isStorageImageExtendedFormat(m_inResource.getImage().format))
-			requireFeatures(vki, physDevice, FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS);
+		// Some storage image formats may not be supported
+		requireStorageImageSupport(vki, physDevice, m_inResource.getImage().format);
 
 		// Image resources
 		{

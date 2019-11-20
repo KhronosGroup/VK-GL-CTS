@@ -395,9 +395,13 @@ void requireFeatures (const InstanceInterface& vki, const VkPhysicalDevice physD
 
 	if (((flags & FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE) != 0) && !features.shaderTessellationAndGeometryPointSize)
 		throw tcu::NotSupportedError("Tessellation and geometry shaders don't support PointSize built-in");
+}
 
-	if (((flags & FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS) != 0) && !features.shaderStorageImageExtendedFormats)
-		throw tcu::NotSupportedError("Storage image extended formats not supported");
+void requireStorageImageSupport(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat fmt)
+{
+	const VkFormatProperties p = getPhysicalDeviceFormatProperties(vki, physDevice, fmt);
+	if ((p.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+		throw tcu::NotSupportedError("Storage image format not supported");
 }
 
 std::string getResourceName (const ResourceDescription& resource)

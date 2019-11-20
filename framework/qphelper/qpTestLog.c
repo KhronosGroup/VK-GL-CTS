@@ -242,6 +242,12 @@ static const qpKeyStringMap s_qpShaderTypeMap[] =
 	{ QP_SHADER_TYPE_TESS_CONTROL,		"TessControlShader"		},
 	{ QP_SHADER_TYPE_TESS_EVALUATION,	"TessEvaluationShader"	},
 	{ QP_SHADER_TYPE_COMPUTE,			"ComputeShader"			},
+	{ QP_SHADER_TYPE_RAYGEN,			"RaygenShader"			},
+	{ QP_SHADER_TYPE_ANY_HIT,			"AnyHitShader"			},
+	{ QP_SHADER_TYPE_CLOSEST_HIT,		"ClosestHitShader"		},
+	{ QP_SHADER_TYPE_MISS,				"MissShader"			},
+	{ QP_SHADER_TYPE_INTERSECTION,		"IntersectionShader"	},
+	{ QP_SHADER_TYPE_CALLABLE,			"CallableShader"		},
 
 	{ QP_SHADER_TYPE_LAST,				DE_NULL					}
 };

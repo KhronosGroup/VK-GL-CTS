@@ -72,7 +72,6 @@ float					computeStoreColorScale				(const vk::VkFormat format, const tcu::IVec3
 ImageType				getImageTypeForSingleLayer			(const ImageType imageType);
 vk::VkImageCreateInfo	makeImageCreateInfo					(const Texture& texture, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkImageCreateFlags flags);
 vk::VkDeviceSize		getOptimalUniformBufferChunkSize	(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, vk::VkDeviceSize minimumRequiredChunkSizeBytes);
-bool					isStorageImageExtendedFormat		(const vk::VkFormat format);
 bool					isRepresentableIntegerValue			(const tcu::Vector<deInt64, 4> value, tcu::TextureFormat format);
 
 } // image
