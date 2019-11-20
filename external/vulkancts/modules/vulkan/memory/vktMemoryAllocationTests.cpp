@@ -129,15 +129,19 @@ public:
 	{
 		if (m_useDeviceGroups)
 			createDeviceGroup();
+		else
+			createDevice();
+
 		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 		m_allocFlagsInfo.pNext		= DE_NULL;
 		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
 		m_allocFlagsInfo.deviceMask	= 0;
 	}
 
+	void						createDevice		(void);
 	void						createDeviceGroup	(void);
 	const vk::DeviceInterface&	getDeviceInterface	(void) { return m_useDeviceGroups ? *m_deviceDriver : m_context.getDeviceInterface(); }
-	vk::VkDevice				getDevice			(void) { return m_useDeviceGroups ? m_logicalDevice.get() : m_context.getDevice(); }
+	vk::VkDevice				getDevice			(void) { return m_logicalDevice.get();}
 
 protected:
 	bool									m_useDeviceGroups;
@@ -151,6 +155,65 @@ private:
 	vk::Move<vk::VkDevice>			m_logicalDevice;
 	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
 };
+
+void BaseAllocateTestInstance::createDevice (void)
+{
+	VkInstance										instance				(m_context.getInstance());
+	InstanceDriver									instanceDriver			(m_context.getPlatformInterface(), instance);
+	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instanceDriver, m_context.getPhysicalDevice());
+	const float										queuePriority			= 1.0f;
+	deUint32										queueFamilyIndex		= 0;
+	bool											protMemSupported		= false;
+
+	VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeature =
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,// VkStructureType					sType
+		DE_NULL,													// const void*						pNext
+		VK_FALSE													// VkBool32							protectedMemory;
+	};
+
+	VkPhysicalDeviceFeatures				features;
+	deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
+
+	VkPhysicalDeviceFeatures2				features2		=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,				// VkStructureType					sType
+		&protectedMemoryFeature,									// const void*						pNext
+		features													// VkPhysicalDeviceFeatures			features
+	};
+
+	// Check if the physical device supports the protected memory feature
+	instanceDriver.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &features2);
+	protMemSupported = ((VkPhysicalDeviceProtectedMemoryFeatures*)(features2.pNext))->protectedMemory;
+
+	VkDeviceQueueCreateFlags queueCreateFlags = protMemSupported ? (vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT : 0u;
+
+	VkDeviceQueueCreateInfo							queueInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					// VkStructureType					sType;
+		DE_NULL,													// const void*						pNext;
+		queueCreateFlags,											// VkDeviceQueueCreateFlags			flags;
+		queueFamilyIndex,											// deUint32							queueFamilyIndex;
+		1u,															// deUint32							queueCount;
+		&queuePriority												// const float*						pQueuePriorities;
+	};
+
+	const VkDeviceCreateInfo						deviceInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
+		protMemSupported ? &features2 : DE_NULL,					// const void*						pNext;
+		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
+		1u,															// uint32_t							queueCreateInfoCount;
+		&queueInfo,													// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,															// uint32_t							enabledLayerCount;
+		DE_NULL,													// const char* const*				ppEnabledLayerNames;
+		0u,															// uint32_t							enabledExtensionCount;
+		DE_NULL,													// const char* const*				ppEnabledExtensionNames;
+		protMemSupported ? DE_NULL : &deviceFeatures				// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+
+	m_logicalDevice		= createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(), instance, instanceDriver, m_context.getPhysicalDevice(), &deviceInfo);
+}
 
 void BaseAllocateTestInstance::createDeviceGroup (void)
 {
