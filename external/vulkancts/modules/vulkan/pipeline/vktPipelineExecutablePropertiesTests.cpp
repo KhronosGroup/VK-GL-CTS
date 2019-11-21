@@ -619,15 +619,6 @@ checkString(const char *string, size_t size)
 		return false;
 	}
 
-	// The rest of the string should be zero
-	for (; i < size; i++)
-	{
-		if (string[i] != 0)
-		{
-			return false;
-		}
-	}
-
 	return true;
 }
 
