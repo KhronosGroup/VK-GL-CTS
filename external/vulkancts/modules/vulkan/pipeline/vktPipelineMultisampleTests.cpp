@@ -26,6 +26,8 @@
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineMultisampleImageTests.hpp"
 #include "vktPipelineMultisampleSampleLocationsExtTests.hpp"
+#include "vktPipelineMultisampleMixedAttachmentSamplesTests.hpp"
+#include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -3884,6 +3886,12 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 	// VK_EXT_sample_locations
 	{
 		multisampleTests->addChild(createMultisampleSampleLocationsExtTests(testCtx));
+	}
+
+	// VK_AMD_mixed_attachment samples and VK_AMD_shader_fragment_mask
+	{
+		multisampleTests->addChild(createMultisampleMixedAttachmentSamplesTests(testCtx));
+		multisampleTests->addChild(createMultisampleShaderFragmentMaskTests(testCtx));
 	}
 
 	// Sample mask with and without vk_ext_post_depth_coverage

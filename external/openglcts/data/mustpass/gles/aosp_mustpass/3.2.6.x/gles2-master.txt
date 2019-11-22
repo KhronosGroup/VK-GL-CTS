@@ -2233,9 +2233,6 @@ dEQP-GLES2.functional.shaders.functions.invalid.attribute_local_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_local_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.uniform_argument_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.uniform_argument_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.varying_argument_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.varying_argument_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.attribute_argument_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_argument_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_return_type_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_return_type_fragment

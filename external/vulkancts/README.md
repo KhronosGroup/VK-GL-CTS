@@ -140,6 +140,11 @@ platform requires a different path, it can be specified with:
 
 	--deqp-log-filename=<path>
 
+By default, the CTS will expect to find its test resource files in the current
+working directory. This can be overridden with:
+
+	--deqp-archive-dir=<path>
+
 By default, the shader cache will be written into the path "shadercache.bin". If the
 platform requires a different path, it can be specified with:
 

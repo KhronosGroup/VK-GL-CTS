@@ -42,6 +42,8 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemWorkgroupStorageTests.hpp
 	vktProtectedMemTests.cpp
 	vktProtectedMemTests.hpp
+	vktProtectedMemStackTests.cpp
+	vktProtectedMemStackTests.hpp
 	)
 
 set(DEQP_VK_PROTECTED_MEMORY_LIBS

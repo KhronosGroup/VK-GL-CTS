@@ -177,6 +177,9 @@ void								fillWithRandomColorTiles			(const tcu::PixelBufferAccess&		dst,
 																		 const tcu::Vec4&					maxVal,
 																		 deUint32							seed);
 
+void								fillWithUniqueColors				(const tcu::PixelBufferAccess&		dst,
+																		 deUint32							seed);
+
 } // ProtectedMem
 } // vkt
 

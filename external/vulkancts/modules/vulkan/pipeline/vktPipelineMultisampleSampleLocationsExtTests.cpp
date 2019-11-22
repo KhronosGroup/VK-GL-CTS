@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineMultisampleSampleLocationsExtTests.hpp"
+#include "vktPipelineSampleLocationsUtil.hpp"
 #include "vktPipelineMakeUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -211,70 +212,9 @@ VkPhysicalDeviceSampleLocationsPropertiesEXT getSampleLocationsPropertiesEXT (Co
 	return sampleLocationsProperties;
 }
 
-//! Specify sample locations in a pixel grid
-class MultisamplePixelGrid
-{
-public:
-	MultisamplePixelGrid (const tcu::UVec2& gridSize, const VkSampleCountFlagBits numSamples)
-		: m_gridSize		(gridSize)
-		, m_numSamples		(numSamples)
-		, m_sampleLocations	(gridSize.x() * gridSize.y() * numSamples)
-	{
-		DE_ASSERT(gridSize.x() > 0 && gridSize.y() > 0);
-		DE_ASSERT(numSamples   > 1);
-	}
-
-	//! If grid x,y is larger than gridSize, then each coordinate is wrapped, x' = x % size_x
-	const VkSampleLocationEXT& getSample (deUint32 gridX, deUint32 gridY, const deUint32 sampleNdx) const
-	{
-		return m_sampleLocations[getSampleIndex(gridX, gridY, sampleNdx)];
-	}
-
-	void setSample (const deUint32 gridX, const deUint32 gridY, const deUint32 sampleNdx, const VkSampleLocationEXT& location)
-	{
-		DE_ASSERT(gridX < m_gridSize.x());
-		DE_ASSERT(gridY < m_gridSize.y());
-
-		m_sampleLocations[getSampleIndex(gridX, gridY, sampleNdx)] = location;
-	}
-
-	const tcu::UVec2&			size				(void) const	{ return m_gridSize; }
-	VkSampleCountFlagBits		samplesPerPixel		(void) const	{ return m_numSamples; }
-	const VkSampleLocationEXT*	sampleLocations		(void) const	{ return dataOrNullPtr(m_sampleLocations); }
-	VkSampleLocationEXT*		sampleLocations		(void)			{ return dataOrNullPtr(m_sampleLocations); }
-	deUint32					sampleLocationCount	(void) const	{ return static_cast<deUint32>(m_sampleLocations.size()); }
-
-private:
-	deUint32 getSampleIndex (deUint32 gridX, deUint32 gridY, const deUint32 sampleNdx) const
-	{
-		gridX %= m_gridSize.x();
-		gridY %= m_gridSize.y();
-		return (gridY * m_gridSize.x() + gridX) * static_cast<deUint32>(m_numSamples) + sampleNdx;
-	}
-
-	tcu::UVec2							m_gridSize;
-	VkSampleCountFlagBits				m_numSamples;
-	std::vector<VkSampleLocationEXT>	m_sampleLocations;
-};
-
 inline deUint32 numSamplesPerPixel (const MultisamplePixelGrid& pixelGrid)
 {
 	return static_cast<deUint32>(pixelGrid.samplesPerPixel());
-}
-
-//! References the data inside MultisamplePixelGrid
-inline VkSampleLocationsInfoEXT makeSampleLocationsInfo (const MultisamplePixelGrid& pixelGrid)
-{
-	const VkSampleLocationsInfoEXT info =
-	{
-		VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT,				// VkStructureType               sType;
-		DE_NULL,													// const void*                   pNext;
-		pixelGrid.samplesPerPixel(),								// VkSampleCountFlagBits         sampleLocationsPerPixel;
-		makeExtent2D(pixelGrid.size().x(), pixelGrid.size().y()),	// VkExtent2D                    sampleLocationGridSize;
-		pixelGrid.sampleLocationCount(),							// uint32_t                      sampleLocationsCount;
-		pixelGrid.sampleLocations(),								// const VkSampleLocationEXT*    pSampleLocations;
-	};
-	return info;
 }
 
 inline VkSampleLocationsInfoEXT makeEmptySampleLocationsInfo ()
@@ -346,38 +286,6 @@ void logPixelGrid (tcu::TestLog& log, const VkPhysicalDeviceSampleLocationsPrope
 	}
 
 	log << tcu::TestLog::EndSection;
-}
-
-//! Fill each grid pixel with a distinct samples pattern, rounding locations based on subPixelBits
-void fillSampleLocationsRandom (MultisamplePixelGrid& grid, const deUint32 subPixelBits, const deUint32 seed = 142u)
-{
-	const deUint32	numLocations	= 1u << subPixelBits;
-	de::Random		rng				(seed);
-
-	for (deUint32 gridY = 0; gridY < grid.size().y(); ++gridY)
-	for (deUint32 gridX = 0; gridX < grid.size().x(); ++gridX)
-	{
-		std::set<UVec2, LessThan<UVec2> >	takenLocationIndices;
-		for (deUint32 sampleNdx = 0; sampleNdx < numSamplesPerPixel(grid); /* no increment */)
-		{
-			const UVec2 locationNdx (rng.getUint32() % numLocations,
-									 rng.getUint32() % numLocations);
-
-			if (takenLocationIndices.find(locationNdx) == takenLocationIndices.end())
-			{
-				const VkSampleLocationEXT location =
-				{
-					static_cast<float>(locationNdx.x()) / static_cast<float>(numLocations),	// float x;
-					static_cast<float>(locationNdx.y()) / static_cast<float>(numLocations),	// float y;
-				};
-
-				grid.setSample(gridX, gridY, sampleNdx, location);
-				takenLocationIndices.insert(locationNdx);
-
-				++sampleNdx;	// next sample
-			}
-		}
-	}
 }
 
 //! Place samples very close to each other

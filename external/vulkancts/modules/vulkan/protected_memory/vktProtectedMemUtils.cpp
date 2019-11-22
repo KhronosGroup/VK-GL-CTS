@@ -913,5 +913,40 @@ void fillWithRandomColorTiles (const tcu::PixelBufferAccess& dst, const tcu::Vec
 	}
 }
 
+void fillWithUniqueColors (const tcu::PixelBufferAccess& dst, deUint32 seed)
+{
+	// This is an implementation of linear congruential generator.
+	// The A and M are prime numbers, thus allowing to generate unique number sequence of length genM-1.
+	// The generator uses C constant as 0, thus value of 0 is not allowed as a seed.
+	const deUint64	genA	= 1573051ull;
+	const deUint64	genM	= 2097023ull;
+	deUint64		genX	= seed % genM;
+
+	DE_ASSERT(deUint64(dst.getWidth()) * deUint64(dst.getHeight()) * deUint64(dst.getDepth()) < genM - 1);
+
+	if (genX == 0)
+		genX = 1;
+
+	const int	numCols		= dst.getWidth();
+	const int	numRows		= dst.getHeight();
+	const int	numSlices	= dst.getDepth();
+
+	for (int z = 0; z < numSlices; z++)
+	for (int y = 0; y < numRows; y++)
+	for (int x = 0; x < numCols; x++)
+	{
+		genX = (genA * genX) % genM;
+
+		DE_ASSERT(genX != seed);
+
+		const float		r		= float(deUint32((genX >> 0)  & 0x7F)) / 127.0f;
+		const float		g		= float(deUint32((genX >> 7)  & 0x7F)) / 127.0f;
+		const float		b		= float(deUint32((genX >> 14) & 0x7F)) / 127.0f;
+		const tcu::Vec4	color	= tcu::Vec4(r, g, b, 1.0f);
+
+		dst.setPixel(color, x, y, z);
+	}
+}
+
 } // ProtectedMem
 } // vkt

@@ -28,6 +28,7 @@
 #include "vktApiDeviceInitializationTests.hpp"
 #include "vktApiDriverPropertiesTests.hpp"
 #include "vktApiObjectManagementTests.hpp"
+#include "vktApiBufferMarkerTests.hpp"
 #include "vktApiBufferTests.hpp"
 #include "vktApiBufferViewCreateTests.hpp"
 #include "vktApiBufferViewAccessTests.hpp"
@@ -74,6 +75,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createDeviceInitializationTests			(testCtx));
 	apiTests->addChild(createObjectManagementTests				(testCtx));
 	apiTests->addChild(createBufferTests						(testCtx));
+	apiTests->addChild(createBufferMarkerTests					(testCtx));
 	apiTests->addChild(createTestGroup							(testCtx, "buffer_view",	"BufferView tests",		createBufferViewTests));
 	apiTests->addChild(createCommandBuffersTests				(testCtx));
 	apiTests->addChild(createCopiesAndBlittingTests				(testCtx));
