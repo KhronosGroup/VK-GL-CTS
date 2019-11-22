@@ -127,18 +127,9 @@ void ShaderMacroTests::init(void)
 	else if (glu::contextSupports(contextType, glu::ApiType::es(3, 1)))
 	{
 		shaderSpec.version = glu::GLSL_VERSION_310_ES;
-		if (m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") ||
-			m_context.getContextInfo().isExtensionSupported("GL_OES_geometry_shader"))
-		{
-			shaderTypes.push_back(glu::SHADERTYPE_GEOMETRY);
-		}
-
-		if (m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-			m_context.getContextInfo().isExtensionSupported("GL_OES_tessellation_shader"))
-		{
-			shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_CONTROL);
-			shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_EVALUATION);
-		}
+		shaderTypes.push_back(glu::SHADERTYPE_GEOMETRY);
+		shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_CONTROL);
+		shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_EVALUATION);
 	}
 
 	for (std::size_t typeIndex = 0; typeIndex < shaderTypes.size(); ++typeIndex)

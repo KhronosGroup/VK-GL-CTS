@@ -210,19 +210,9 @@ void createTestCasesForAllShaderTypes(const ShaderExecutorParams& params, std::v
 	{
 		shaderSpec.version = glu::GLSL_VERSION_310_ES;
 		shaderTypes.push_back(glu::SHADERTYPE_COMPUTE);
-
-		if (context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") ||
-			context.getContextInfo().isExtensionSupported("GL_OES_geometry_shader"))
-		{
-			shaderTypes.push_back(glu::SHADERTYPE_GEOMETRY);
-		}
-
-		if (context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
-			context.getContextInfo().isExtensionSupported("GL_OES_tessellation_shader"))
-		{
-			shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_CONTROL);
-			shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_EVALUATION);
-		}
+		shaderTypes.push_back(glu::SHADERTYPE_GEOMETRY);
+		shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_CONTROL);
+		shaderTypes.push_back(glu::SHADERTYPE_TESSELLATION_EVALUATION);
 	}
 	else
 	{

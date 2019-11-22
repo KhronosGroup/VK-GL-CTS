@@ -145,8 +145,6 @@ dEQP-GLES2.functional.shaders.preprocessor.basic.empty_function_vertex
 dEQP-GLES2.functional.shaders.preprocessor.basic.empty_function_fragment
 dEQP-GLES2.functional.shaders.preprocessor.basic.empty_directive_vertex
 dEQP-GLES2.functional.shaders.preprocessor.basic.empty_directive_fragment
-dEQP-GLES2.functional.shaders.preprocessor.basic.identifier_with_double_underscore_vertex
-dEQP-GLES2.functional.shaders.preprocessor.basic.identifier_with_double_underscore_fragment
 dEQP-GLES2.functional.shaders.preprocessor.definitions.define_value_and_function_vertex
 dEQP-GLES2.functional.shaders.preprocessor.definitions.define_value_and_function_fragment
 dEQP-GLES2.functional.shaders.preprocessor.definitions.undefine_object_invalid_syntax_vertex
@@ -2264,9 +2262,6 @@ dEQP-GLES2.functional.shaders.functions.invalid.attribute_local_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_local_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.uniform_argument_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.uniform_argument_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.varying_argument_vertex
-dEQP-GLES2.functional.shaders.functions.invalid.varying_argument_fragment
-dEQP-GLES2.functional.shaders.functions.invalid.attribute_argument_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.attribute_argument_fragment
 dEQP-GLES2.functional.shaders.functions.invalid.uniform_return_type_vertex
 dEQP-GLES2.functional.shaders.functions.invalid.uniform_return_type_fragment
