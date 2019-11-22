@@ -209,15 +209,20 @@ tcu::TestStatus HlslTest::iterate(void)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void checkSupport(Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createHlslComputeGroup (tcu::TestContext& testCtx)
 {
-	typedef InstanceFactory1<HlslTest, TestConfig, Programs> HlslTestInstance;
+	typedef InstanceFactory1WithSupport<HlslTest, TestConfig, FunctionSupport0, Programs> HlslTestInstance;
 	de::MovePtr<tcu::TestCaseGroup> hlslCasesGroup(new tcu::TestCaseGroup(testCtx, "hlsl_cases", ""));
 
 	TestConfig testConfig = { TT_CBUFFER_PACKING };
-	hlslCasesGroup->addChild(new HlslTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, "cbuffer_packing", "", testConfig));
+	hlslCasesGroup->addChild(new HlslTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, "cbuffer_packing", "", testConfig, checkSupport));
 
 	return hlslCasesGroup.release();
 }
