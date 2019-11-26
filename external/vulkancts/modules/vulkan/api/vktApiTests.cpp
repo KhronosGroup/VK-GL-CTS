@@ -47,6 +47,7 @@
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktApiPipelineTests.hpp"
 #include "vktApiMemoryRequirementInvarianceTests.hpp"
+#include "vktApiToolingInfoTests.hpp"
 
 namespace vkt
 {
@@ -90,6 +91,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createDescriptorSetTests					(testCtx));
 	apiTests->addChild(createPipelineTests						(testCtx));
 	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
+	apiTests->addChild(createToolingInfoTests					(testCtx));
 }
 
 } // anonymous

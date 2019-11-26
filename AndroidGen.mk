@@ -91,6 +91,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiPipelineTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiToolingInfoTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiVersionCheck.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingBufferDeviceAddressTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCopyTests.cpp \
