@@ -131,22 +131,28 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 									const InstanceInterface&		vki,
 									VkPhysicalDevice				physicalDevice,
 									const Extensions&				supportedExtensions,
-									const deUint32					queueFamilyIndex,
+									const vector<deUint32>&			queueFamilyIndices,
 									bool							validationEnabled,
 									const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
 	const float						queuePriorities[]	= { 1.0f };
-	const VkDeviceQueueCreateInfo	queueInfos[]		=
+
+	vector<VkDeviceQueueCreateInfo>	queueInfos;
+	for (const auto familyIndex : queueFamilyIndices)
 	{
+		const VkDeviceQueueCreateInfo info =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			DE_NULL,
+			nullptr,
 			(VkDeviceQueueCreateFlags)0,
-			queueFamilyIndex,
+			familyIndex,
 			DE_LENGTH_OF_ARRAY(queuePriorities),
-			&queuePriorities[0]
-		}
-	};
+			&queuePriorities[0],
+		};
+
+		queueInfos.push_back(info);
+	}
+
 	const VkPhysicalDeviceFeatures	features		= getDeviceFeaturesForWsi();
 	const char* const				extensions[]	= { "VK_KHR_swapchain" };
 
@@ -155,8 +161,8 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		DE_NULL,
 		(VkDeviceCreateFlags)0,
-		DE_LENGTH_OF_ARRAY(queueInfos),
-		&queueInfos[0],
+		static_cast<deUint32>(queueInfos.size()),
+		queueInfos.data(),
 		0u,									// enabledLayerCount
 		DE_NULL,							// ppEnabledLayerNames
 		DE_LENGTH_OF_ARRAY(extensions),		// enabledExtensionCount
@@ -171,6 +177,18 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 	}
 
 	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
+}
+
+Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
+									VkInstance						instance,
+									const InstanceInterface&		vki,
+									VkPhysicalDevice				physicalDevice,
+									const Extensions&				supportedExtensions,
+									const deUint32					queueFamilyIndex,
+									bool							validationEnabled,
+									const VkAllocationCallbacks*	pAllocator = DE_NULL)
+{
+	return createDeviceWithWsi(vkp, instance, vki, physicalDevice, supportedExtensions, vector<deUint32>(1u, queueFamilyIndex), validationEnabled, pAllocator);
 }
 
 struct InstanceHelper
@@ -237,6 +255,44 @@ struct DeviceHelper
 				  VkSurfaceKHR					surface,
 				  const VkAllocationCallbacks*	pAllocator = DE_NULL)
 		: DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), pAllocator)
+	{
+	}
+};
+
+// Similar to the one above with no queues and multiple queue families.
+struct MultiQueueDeviceHelper
+{
+	const VkPhysicalDevice	physicalDevice;
+	const vector<deUint32>	queueFamilyIndices;
+	const Unique<VkDevice>	device;
+	const DeviceDriver		vkd;
+
+	MultiQueueDeviceHelper (Context&						context,
+							const InstanceInterface&		vki,
+							VkInstance						instance,
+							const vector<VkSurfaceKHR>&		surface,
+							const VkAllocationCallbacks*	pAllocator = DE_NULL)
+		: physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
+		, queueFamilyIndices(getCompatibleQueueFamilyIndices(vki, physicalDevice, surface))
+		, device			(createDeviceWithWsi(context.getPlatformInterface(),
+												 context.getInstance(),
+												 vki,
+												 physicalDevice,
+												 enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
+												 queueFamilyIndices,
+												 context.getTestContext().getCommandLine().isValidationEnabled(),
+												 pAllocator))
+		, vkd				(context.getPlatformInterface(), context.getInstance(), *device)
+	{
+	}
+
+	// Single-surface shortcut.
+	MultiQueueDeviceHelper (Context&						context,
+							const InstanceInterface&		vki,
+							VkInstance						instance,
+							VkSurfaceKHR					surface,
+							const VkAllocationCallbacks*	pAllocator = DE_NULL)
+		: MultiQueueDeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), pAllocator)
 	{
 	}
 };
@@ -493,8 +549,11 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 
 		case TEST_DIMENSION_IMAGE_SHARING_MODE:
 		{
+#if 0
+			// Skipping since this matches the base parameters.
 			cases.push_back(baseParameters);
 			cases.back().imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+#endif
 
 			cases.push_back(baseParameters);
 			cases.back().imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -589,7 +648,7 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 	const InstanceHelper					instHelper	(context, params.wsiType);
 	const NativeObjects						native		(context, instHelper.supportedExtensions, params.wsiType);
 	const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow()));
-	const DeviceHelper						devHelper	(context, instHelper.vki, instHelper.instance, *surface);
+	const MultiQueueDeviceHelper			devHelper	(context, instHelper.vki, instHelper.instance, *surface);
 	const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
 	const VkSurfaceCapabilitiesKHR			capabilities(getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface));
 
@@ -600,9 +659,22 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 
 		VkSwapchainCreateInfoKHR	curParams	= cases[caseNdx];
 
+		if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
+		{
+			const deUint32 numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
+			if (numFamilies < 2u)
+				TCU_THROW(NotSupportedError, "Only " + de::toString(numFamilies) + " queue families available for VK_SHARING_MODE_CONCURRENT");
+			curParams.queueFamilyIndexCount	= numFamilies;
+		}
+		else
+		{
+			// Take only the first queue.
+			if (devHelper.queueFamilyIndices.empty())
+				TCU_THROW(NotSupportedError, "No queue families compatible with the given surface");
+			curParams.queueFamilyIndexCount	= 1u;
+		}
+		curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
 		curParams.surface				= *surface;
-		curParams.queueFamilyIndexCount	= 1u;
-		curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
 
 		log << TestLog::Message << subcase.str() << curParams << TestLog::EndMessage;
 

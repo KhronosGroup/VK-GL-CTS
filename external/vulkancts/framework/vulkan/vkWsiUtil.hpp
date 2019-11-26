@@ -121,6 +121,10 @@ deUint32						chooseQueueFamilyIndex					(const InstanceInterface&		vki,
 																		 VkPhysicalDevice				physicalDevice,
 																		 VkSurfaceKHR					surface);
 
+std::vector<deUint32>			getCompatibleQueueFamilyIndices			(const InstanceInterface&			vki,
+																		 VkPhysicalDevice					physicalDevice,
+																		 const std::vector<VkSurfaceKHR>&	surface);
+
 class WsiTriangleRenderer
 {
 public:

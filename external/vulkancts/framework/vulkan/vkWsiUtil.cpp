@@ -459,6 +459,21 @@ std::vector<deUint32> getSortedSupportedQueueFamilyIndices (const vk::InstanceIn
 
 deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, const std::vector<vk::VkSurfaceKHR>& surfaces)
 {
+	auto indices = getCompatibleQueueFamilyIndices(vki, physicalDevice, surfaces);
+
+	if (indices.empty())
+		TCU_THROW(NotSupportedError, "Device does not support presentation to the given surfaces");
+
+	return indices[0];
+}
+
+deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface)
+{
+	return chooseQueueFamilyIndex(vki, physicalDevice, std::vector<vk::VkSurfaceKHR>(1u, surface));
+}
+
+std::vector<deUint32> getCompatibleQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const std::vector<VkSurfaceKHR>& surfaces)
+{
 	DE_ASSERT(!surfaces.empty());
 
 	auto indices = getSortedSupportedQueueFamilyIndices(vki, physicalDevice, surfaces[0]);
@@ -473,15 +488,7 @@ deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysica
 		indices = std::move(intersection);
 	}
 
-	if (indices.empty())
-		TCU_THROW(NotSupportedError, "Device does not support presentation to the given surfaces");
-
-	return indices[0];
-}
-
-deUint32 chooseQueueFamilyIndex (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-	return chooseQueueFamilyIndex(vki, physicalDevice, vector<vk::VkSurfaceKHR>(1u, surface));
+	return indices;
 }
 
 Move<VkRenderPass> WsiTriangleRenderer::createRenderPass (const DeviceInterface&	vkd,
