@@ -114,7 +114,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 252
+; Bound: 255
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -191,15 +191,15 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %249 = OpPhi %9 %250 %112 %245 %175
         %238 = OpPhi %6 %39 %112 %141 %175
         %129 = OpSLessThan %46 %238 %128
-               OpLoopMerge %124 %175 None
-               OpBranchConditional %129 %123 %124
+               OpLoopMerge %252 %175 None
+               OpBranchConditional %129 %123 %252
         %123 = OpLabel
         %134 = OpAccessChain %42 %38 %39 %41
         %135 = OpLoad %8 %134
         %136 = OpConvertFToS %6 %135
                OpBranch %174
         %174 = OpLabel
-               OpLoopMerge %175 %176 None
+               OpLoopMerge %254 %176 None
                OpBranch %178
         %178 = OpLabel
         %240 = OpPhi %6 %27 %174 %194 %198
@@ -220,10 +220,12 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %190 = OpLabel
         %194 = OpIAdd %6 %240 %27
         %197 = OpFOrdLessThan %46 %135 %62
-               OpSelectionMerge %198 None
+               OpSelectionMerge %253 None
                OpBranchConditional %197 %199 %198
         %199 = OpLabel
                OpBranch %179
+        %253 = OpLabel
+               OpBranch %198
         %198 = OpLabel
                OpBranch %178
         %179 = OpLabel
@@ -231,7 +233,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %244 = OpPhi %6 %240 %186 %194 %199
         %241 = OpPhi %46 %159 %186 %162 %199
                OpSelectionMerge %204 None
-               OpBranchConditional %241 %175 %204
+               OpBranchConditional %241 %254 %204
         %204 = OpLabel
         %207 = OpFOrdGreaterThan %46 %135 %45
                OpSelectionMerge %208 None
@@ -260,19 +262,23 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
                OpLoopMerge %223 %222 None
                OpBranchConditional %212 %222 %223
         %223 = OpLabel
-               OpBranch %175
+               OpBranch %254
         %208 = OpLabel
         %235 = OpConvertSToF %8 %244
         %236 = OpCompositeConstruct %9 %235 %19 %19
-               OpBranch %175
+               OpBranch %254
         %176 = OpLabel
                OpBranch %174
-        %175 = OpLabel
+        %254 = OpLabel
         %245 = OpPhi %9 %246 %179 %67 %223 %236 %208
+               OpBranch %175
+        %175 = OpLabel
         %139 = OpAccessChain %138 %133 %136
                OpStore %139 %245
         %141 = OpIAdd %6 %238 %27
                OpBranch %122
+        %252 = OpLabel
+	       OpBranch %124
         %124 = OpLabel
         %143 = OpIAdd %6 %237 %27
                OpBranch %111

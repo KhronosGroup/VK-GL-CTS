@@ -98,7 +98,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 53
+; Bound: 54
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -162,10 +162,12 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
          %31 = OpAccessChain %30 %25 %27 %29
          %32 = OpLoad %6 %31
          %34 = OpFOrdLessThan %33 %32 %17
-               OpSelectionMerge %36 None
+               OpSelectionMerge %53 None
                OpBranchConditional %34 %35 %36
          %35 = OpLabel
                OpReturnValue %37
+         %53 = OpLabel
+               OpBranch %36
          %36 = OpLabel
          %40 = OpAccessChain %39 %10 %29
          %41 = OpLoad %6 %40
