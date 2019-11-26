@@ -49,13 +49,15 @@
          %42 = OpLabel
                OpLoopMerge %47 %45 None
                OpBranchConditional %false %49 %47
-            %49 = OpLabel
-                  OpLoopMerge %45 %52 None
-                  OpBranchConditional %false %45 %45
-                %52 = OpLabel
-                      OpBranch %49
-            %45 = OpLabel
-                  OpBranch %42
+         %49 = OpLabel
+               OpLoopMerge %50 %52 None
+               OpBranchConditional %false %50 %50
+         %52 = OpLabel
+               OpBranch %49
+         %50 = OpLabel
+               OpBranch %45
+         %45 = OpLabel
+               OpBranch %42
          %47 = OpLabel
                OpStore %_GLF_color %red
                OpReturn

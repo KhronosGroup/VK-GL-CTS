@@ -55,7 +55,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 98
+; Bound: 100
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -134,14 +134,14 @@
          %97 = OpPhi %int %int_0 %42 %66 %81
          %96 = OpPhi %int %int_0 %42 %84 %81
          %57 = OpSLessThan %bool %96 %int_4
-               OpLoopMerge %53 %81 None
-               OpBranchConditional %57 %52 %53
+               OpLoopMerge %98 %81 None
+               OpBranchConditional %57 %52 %98
          %52 = OpLabel
          %60 = OpSGreaterThanEqual %bool %97 %int_2
                OpSelectionMerge %62 None
                OpBranchConditional %60 %61 %62
          %61 = OpLabel
-               OpBranch %53
+               OpBranch %98
          %62 = OpLabel
          %66 = OpIAdd %int %97 %int_1
          %73 = OpAccessChain %_ptr_Function_v4float %m %96 %95
@@ -149,14 +149,18 @@
          %75 = OpVectorShuffle %v2float %74 %74 0 1
          %78 = OpExtInst %float %1 Distance %76 %75
          %79 = OpFOrdLessThan %bool %78 %float_1
-               OpSelectionMerge %81 None
+               OpSelectionMerge %99 None
                OpBranchConditional %79 %80 %81
          %80 = OpLabel
                OpStore %_GLF_color %82
                OpBranch %81
+         %99 = OpLabel
+               OpBranch %81
          %81 = OpLabel
          %84 = OpIAdd %int %96 %int_1
                OpBranch %51
+         %98 = OpLabel
+               OpBranch %53
          %53 = OpLabel
          %86 = OpIAdd %int %95 %int_1
                OpBranch %41
