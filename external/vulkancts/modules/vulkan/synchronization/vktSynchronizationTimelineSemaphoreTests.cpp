@@ -398,10 +398,10 @@ public:
 	}
 };
 
-class MonoticallyIncrementChecker : public de::Thread
+class MonotonicallyIncrementChecker : public de::Thread
 {
 public:
-	MonoticallyIncrementChecker						(const DeviceInterface& vkd, VkDevice device, VkSemaphore semaphore)
+	MonotonicallyIncrementChecker					(const DeviceInterface& vkd, VkDevice device, VkSemaphore semaphore)
 		: de::Thread()
 		, m_vkd(vkd)
 		, m_device(device)
@@ -410,7 +410,7 @@ public:
 		, m_status(tcu::TestStatus::incomplete())
 	{}
 
-	virtual			~MonoticallyIncrementChecker	(void)	{}
+	virtual			~MonotonicallyIncrementChecker	(void)	{}
 
 	tcu::TestStatus	getStatus						() { return m_status; }
 	void			stop							() { m_running = false; }
@@ -425,14 +425,15 @@ public:
 			VK_CHECK(m_vkd.getSemaphoreCounterValueKHR(m_device, m_semaphore, &value));
 
 			if (value < lastValue) {
-				m_status = tcu::TestStatus::fail("Value not monotically increasing");
+				m_status = tcu::TestStatus::fail("Value not monotonically increasing");
 				return;
 			}
 
 			lastValue = value;
+			deYield();
 		}
 
-		m_status = tcu::TestStatus::pass("Value monotically increasing");
+		m_status = tcu::TestStatus::pass("Value monotonically increasing");
 	}
 
 private:
@@ -462,7 +463,7 @@ tcu::TestStatus maxDifferenceValueCase (Context& context)
 	const Unique<VkSemaphore>						semaphore					(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
 	const Unique<VkFence>							fence						(createFence(vk, device));
 	tcu::TestLog&									log							= context.getTestContext().getLog();
-	MonoticallyIncrementChecker						checkerThread				(vk, device, *semaphore);
+	MonotonicallyIncrementChecker					checkerThread				(vk, device, *semaphore);
 	deUint64										iterations;
 	deUint64										timelineBackValue;
 	deUint64										timelineFrontValue;
