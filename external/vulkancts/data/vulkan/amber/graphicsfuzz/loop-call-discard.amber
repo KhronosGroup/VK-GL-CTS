@@ -113,7 +113,7 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 267
+; Bound: 270
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -209,8 +209,8 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %246 = OpPhi %6 %247 %117 %264 %139
         %241 = OpPhi %11 %14 %117 %142 %139
         %126 = OpSLessThan %24 %241 %111
-               OpLoopMerge %122 %139 None
-               OpBranchConditional %126 %121 %122
+               OpLoopMerge %267 %139 None
+               OpBranchConditional %126 %121 %267
         %121 = OpLabel
         %128 = OpIMul %11 %111 %241
         %130 = OpIAdd %11 %128 %240
@@ -258,10 +258,12 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %217 = OpAccessChain %20 %17 %58
         %218 = OpLoad %6 %217
         %219 = OpFOrdLessThan %24 %218 %23
-               OpSelectionMerge %220 None
+               OpSelectionMerge %269 None
                OpBranchConditional %219 %221 %220
         %221 = OpLabel
                OpKill
+        %269 = OpLabel
+               OpBranch %220
         %220 = OpLabel
         %224 = OpFMul %6 %78 %249
         %225 = OpFAdd %6 %224 %28
@@ -283,13 +285,17 @@ SHADER fragment variant_fragment_shader SPIRV-ASM
         %135 = OpAccessChain %59 %57 %14 %19
         %136 = OpLoad %6 %135
         %137 = OpFOrdGreaterThan %24 %114 %136
-               OpSelectionMerge %139 None
+               OpSelectionMerge %268 None
                OpBranchConditional %137 %138 %139
         %138 = OpLabel
                OpKill
+        %268 = OpLabel
+               OpBranch %139
         %139 = OpLabel
         %142 = OpIAdd %11 %241 %84
                OpBranch %120
+        %267 = OpLabel
+               OpBranch %122
         %122 = OpLabel
         %144 = OpIAdd %11 %240 %84
                OpBranch %105

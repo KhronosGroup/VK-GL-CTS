@@ -71,7 +71,7 @@ fbsize 256 256
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 58
+; Bound: 59
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -154,10 +154,12 @@ fbsize 256 256
          %23 = OpLoad %10 %12
          %24 = OpConvertSToF %6 %23
          %26 = OpFOrdGreaterThanEqual %21 %24 %25
-               OpSelectionMerge %28 None
+               OpSelectionMerge %58 None
                OpBranchConditional %26 %27 %28
          %27 = OpLabel
                OpReturnValue %25
+         %58 = OpLabel
+               OpBranch %28
          %28 = OpLabel
          %30 = OpLoad %10 %12
          %31 = OpIAdd %10 %30 %13
