@@ -487,6 +487,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
 		}
 
+		// Vulkan Memory Model features
+		{
+			if (!isVulkanMemoryModelFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extVulkanMemoryModel))
+				TCU_THROW(NotSupportedError, "Requested Vulkan Memory Model feature not supported");
+		}
+
 		// FloatControls features
 		if (!isFloatControlsFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
 			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
