@@ -251,6 +251,14 @@ enum ExtensionFloat16Int8FeaturesBits
 typedef deUint32 ExtensionFloat16Int8Features;
 typedef vk::VkPhysicalDeviceFloatControlsPropertiesKHR ExtensionFloatControlsFeatures;
 
+enum ExtensionVulkanMemoryModelFeaturesBits
+{
+	EXTVULKANMEMORYMODELFEATURES_ENABLE							= (1u << 1),
+	EXTVULKANMEMORYMODELFEATURES_DEVICESCOPE					= (1u << 2),
+	EXTVULKANMEMORYMODELFEATURES_AVAILABILITYVISIBILITYCHAINS	= (1u << 3),
+};
+typedef deUint32 ExtensionVulkanMemoryModelFeatures;
+
 struct VulkanFeatures
 {
 	vk::VkPhysicalDeviceFeatures		coreFeatures;
@@ -258,13 +266,16 @@ struct VulkanFeatures
 	Extension8BitStorageFeatures		ext8BitStorage;
 	Extension16BitStorageFeatures		ext16BitStorage;
 	ExtensionVariablePointersFeatures	extVariablePointers;
+	ExtensionVulkanMemoryModelFeatures	extVulkanMemoryModel;
 	ExtensionFloatControlsFeatures		floatControlsProperties;
+
 
 	VulkanFeatures				(void)
 		: extFloat16Int8		(0)
 		, ext8BitStorage		(0)
 		, ext16BitStorage		(0)
 		, extVariablePointers	(0)
+		, extVulkanMemoryModel	(0)
 	{
 		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
 		deMemset(&floatControlsProperties, 0, sizeof(ExtensionFloatControlsFeatures));
@@ -310,6 +321,10 @@ bool isVariablePointersFeaturesSupported (const Context&					context,
 // Returns true if the given 16bit float/8bit int extension features in `toCheck` are all supported.
 bool isFloat16Int8FeaturesSupported (const Context&					context,
 									 ExtensionFloat16Int8Features	toCheck);
+
+// Returns true if the given Vulkan Memory Model extension features in `toCheck` are all supported.
+bool isVulkanMemoryModelFeaturesSupported (const Context&						context,
+										   ExtensionVulkanMemoryModelFeatures	toCheck);
 
 // Returns true if the given float controls features in `toCheck` are all supported.
 bool isFloatControlsFeaturesSupported (const Context&							context,

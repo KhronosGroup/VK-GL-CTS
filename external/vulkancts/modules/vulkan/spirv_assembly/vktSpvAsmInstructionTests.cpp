@@ -1435,6 +1435,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		if (volatileAtomic)
 		{
 			spec.extensions.push_back("VK_KHR_vulkan_memory_model");
+			spec.requestedVulkanFeatures.extVulkanMemoryModel = EXTVULKANMEMORYMODELFEATURES_ENABLE;
+
 			// volatile, queuefamily scope
 			specializations["SEMANTICS"] = "%volbit";
 			specializations["SCOPE"] = "%five";

@@ -177,6 +177,22 @@ bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int
 	return true;
 }
 
+bool isVulkanMemoryModelFeaturesSupported (const Context& context, ExtensionVulkanMemoryModelFeatures toCheck)
+{
+	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR& extensionFeatures = context.getVulkanMemoryModelFeatures();
+
+	if ((toCheck & EXTVULKANMEMORYMODELFEATURES_ENABLE) != 0 && extensionFeatures.vulkanMemoryModel == VK_FALSE)
+		return false;
+
+	if ((toCheck & EXTVULKANMEMORYMODELFEATURES_DEVICESCOPE) != 0 && extensionFeatures.vulkanMemoryModelDeviceScope == VK_FALSE)
+		return false;
+
+	if ((toCheck & EXTVULKANMEMORYMODELFEATURES_AVAILABILITYVISIBILITYCHAINS) != 0 && extensionFeatures.vulkanMemoryModelAvailabilityVisibilityChains == VK_FALSE)
+		return false;
+
+	return true;
+}
+
 bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFloatControlsFeatures& toCheck)
 {
 	// if all flags are set to false then no float control features are actualy requested by the test
