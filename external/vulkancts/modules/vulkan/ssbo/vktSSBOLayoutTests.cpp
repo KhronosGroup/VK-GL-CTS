@@ -75,6 +75,7 @@ enum FeatureBits
 	FEATURE_16BIT_STORAGE		= (1<<14),
 	FEATURE_8BIT_STORAGE		= (1<<15),
 	FEATURE_SCALAR_LAYOUT		= (1<<16),
+	FEATURE_DESCRIPTOR_INDEXING	= (1<<17),
 };
 
 class RandomSSBOLayoutCase : public SSBOLayoutCase
@@ -105,10 +106,10 @@ private:
 RandomSSBOLayoutCase::RandomSSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, deUint32 features, deUint32 seed, bool usePhysStorageBuffer)
 	: SSBOLayoutCase		(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX, usePhysStorageBuffer)
 	, m_features			(features)
-	, m_maxBlocks			(4)
-	, m_maxInstances		((features & FEATURE_INSTANCE_ARRAYS)	? 3 : 0)
-	, m_maxArrayLength		((features & FEATURE_ARRAYS)			? 8 : 1)
-	, m_maxStructDepth		((features & FEATURE_STRUCTS)			? 2 : 0)
+	, m_maxBlocks			((features & FEATURE_DESCRIPTOR_INDEXING)	? 1 : 4)
+	, m_maxInstances		((features & FEATURE_INSTANCE_ARRAYS)		? 3 : 0)
+	, m_maxArrayLength		((features & FEATURE_ARRAYS)				? 8 : 1)
+	, m_maxStructDepth		((features & FEATURE_STRUCTS)				? 2 : 0)
 	, m_maxBlockMembers		(5)
 	, m_maxStructMembers	(4)
 	, m_seed				(seed)
@@ -135,6 +136,9 @@ void RandomSSBOLayoutCase::generateBlock (de::Random& rnd, deUint32 layoutFlags)
 	int				numInstances		= (m_maxInstances > 0 && rnd.getFloat() < instanceArrayWeight) ? rnd.getInt(0, m_maxInstances) : 0;
 	int				numVars				= rnd.getInt(1, m_maxBlockMembers);
 
+	if (m_features & FEATURE_DESCRIPTOR_INDEXING)
+		numInstances = rnd.getInt(2, 4);
+
 	if (numInstances > 0)
 		block.setArraySize(numInstances);
 
@@ -153,14 +157,17 @@ void RandomSSBOLayoutCase::generateBlock (de::Random& rnd, deUint32 layoutFlags)
 	if (m_features & FEATURE_RELAXED_LAYOUT)
 		layoutFlagCandidates.push_back(LAYOUT_RELAXED);
 
+	if (m_features & FEATURE_SCALAR_LAYOUT)
+		layoutFlagCandidates.push_back(LAYOUT_SCALAR);
+
 	if (m_features & FEATURE_16BIT_STORAGE)
 		layoutFlags |= LAYOUT_16BIT_STORAGE;
 
 	if (m_features & FEATURE_8BIT_STORAGE)
 		layoutFlags |= LAYOUT_8BIT_STORAGE;
 
-	if (m_features & FEATURE_SCALAR_LAYOUT)
-		layoutFlagCandidates.push_back(LAYOUT_SCALAR);
+	if (m_features & FEATURE_DESCRIPTOR_INDEXING)
+		layoutFlags |= LAYOUT_DESCRIPTOR_INDEXING;
 
 	DE_ASSERT(!layoutFlagCandidates.empty());
 
@@ -1688,14 +1695,15 @@ void SSBOLayoutTests::init (void)
 
 	// ssbo.random
 	{
-		const deUint32	allStdLayouts	= FEATURE_STD140_LAYOUT|FEATURE_STD430_LAYOUT;
-		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
-		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_VARS;
-		const deUint32	unsized			= FEATURE_UNSIZED_ARRAYS;
-		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
-		const deUint32	allButRelaxed	= ~FEATURE_RELAXED_LAYOUT & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE & ~FEATURE_SCALAR_LAYOUT;
-		const deUint32	allRelaxed		= FEATURE_VECTORS|FEATURE_RELAXED_LAYOUT|FEATURE_INSTANCE_ARRAYS;
-		const deUint32	allScalar		= ~FEATURE_RELAXED_LAYOUT & ~allStdLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;
+		const deUint32	allStdLayouts		= FEATURE_STD140_LAYOUT|FEATURE_STD430_LAYOUT;
+		const deUint32	allBasicTypes		= FEATURE_VECTORS|FEATURE_MATRICES;
+		const deUint32	unused				= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_VARS;
+		const deUint32	unsized				= FEATURE_UNSIZED_ARRAYS;
+		const deUint32	matFlags			= FEATURE_MATRIX_LAYOUT;
+		const deUint32	allButRelaxed		= ~FEATURE_RELAXED_LAYOUT & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE & ~FEATURE_SCALAR_LAYOUT & ~FEATURE_DESCRIPTOR_INDEXING;
+		const deUint32	allRelaxed			= FEATURE_VECTORS|FEATURE_RELAXED_LAYOUT|FEATURE_INSTANCE_ARRAYS;
+		const deUint32	allScalar			= ~FEATURE_RELAXED_LAYOUT & ~allStdLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE & ~FEATURE_DESCRIPTOR_INDEXING;
+		const deUint32	descriptorIndexing	= allStdLayouts|FEATURE_RELAXED_LAYOUT|FEATURE_SCALAR_LAYOUT|FEATURE_DESCRIPTOR_INDEXING|allBasicTypes|unused|matFlags;
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
 		addChild(randomGroup);
@@ -1711,7 +1719,7 @@ void SSBOLayoutTests::init (void)
 			}
 			else if (i == 2)
 			{
-				group = new tcu::TestCaseGroup(m_testCtx, "8bit", "18bit storage");
+				group = new tcu::TestCaseGroup(m_testCtx, "8bit", "8bit storage");
 				randomGroup->addChild(group);
 			}
 			const deUint32 use16BitStorage = i == 1 ? FEATURE_16BIT_STORAGE : 0;
@@ -1722,7 +1730,7 @@ void SSBOLayoutTests::init (void)
 			createRandomCaseGroup(group, m_testCtx, "vector_types",		"Scalar and vector types only, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|FEATURE_VECTORS,															25, 25, m_usePhysStorageBuffer);
 			createRandomCaseGroup(group, m_testCtx, "basic_types",		"All basic types, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|allBasicTypes|matFlags,													25, 50, m_usePhysStorageBuffer);
 			createRandomCaseGroup(group, m_testCtx, "basic_arrays",		"Arrays, per-block buffers",						SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|allBasicTypes|matFlags|FEATURE_ARRAYS,									25, 50, m_usePhysStorageBuffer);
-			createRandomCaseGroup(group, m_testCtx, "unsized_arrays",		"Unsized arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS,							25, 50, m_usePhysStorageBuffer);
+			createRandomCaseGroup(group, m_testCtx, "unsized_arrays",	"Unsized arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS,							25, 50, m_usePhysStorageBuffer);
 			createRandomCaseGroup(group, m_testCtx, "arrays_of_arrays",	"Arrays of arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_ARRAYS|FEATURE_ARRAYS_OF_ARRAYS,	25, 950, m_usePhysStorageBuffer);
 
 			createRandomCaseGroup(group, m_testCtx, "basic_instance_arrays",					"Basic instance arrays, per-block buffers",				SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allStdLayouts|unused|allBasicTypes|matFlags|unsized|FEATURE_INSTANCE_ARRAYS,															25, 75, m_usePhysStorageBuffer);
@@ -1733,8 +1741,9 @@ void SSBOLayoutTests::init (void)
 			createRandomCaseGroup(group, m_testCtx, "all_per_block_buffers",	"All random features, per-block buffers",	SSBOLayoutCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allButRelaxed,	50, 200, m_usePhysStorageBuffer);
 			createRandomCaseGroup(group, m_testCtx, "all_shared_buffer",		"All random features, shared buffer",		SSBOLayoutCase::BUFFERMODE_SINGLE,		use8BitStorage|use16BitStorage|allButRelaxed,	50, 250, m_usePhysStorageBuffer);
 
-			createRandomCaseGroup(group, m_testCtx, "relaxed",			"VK_KHR_relaxed_block_layout",				SSBOLayoutCase::BUFFERMODE_SINGLE,		use8BitStorage|use16BitStorage|allRelaxed, 100, deInt32Hash(313), m_usePhysStorageBuffer);
-			createRandomCaseGroup(group, m_testCtx, "scalar",			"VK_EXT_scalar_block_layout",				SSBOLayoutCase::BUFFERMODE_SINGLE,		use8BitStorage|use16BitStorage|allScalar, 100, deInt32Hash(313), m_usePhysStorageBuffer);
+			createRandomCaseGroup(group, m_testCtx, "relaxed",				"VK_KHR_relaxed_block_layout",		SSBOLayoutCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|allRelaxed, 100, deInt32Hash(313), m_usePhysStorageBuffer);
+			createRandomCaseGroup(group, m_testCtx, "scalar",				"VK_EXT_scalar_block_layout",		SSBOLayoutCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|allScalar, 100, deInt32Hash(313), m_usePhysStorageBuffer);
+			createRandomCaseGroup(group, m_testCtx, "descriptor_indexing",	"VK_EXT_descriptor_indexing",		SSBOLayoutCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|descriptorIndexing, 50, 123, m_usePhysStorageBuffer);
 		}
 	}
 }

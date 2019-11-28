@@ -65,6 +65,8 @@ enum UniformFlags
 
 	LAYOUT_16BIT_STORAGE= (1<<15),  //!< Support VK_KHR_16bit_storage extension
 	LAYOUT_8BIT_STORAGE	= (1<<16),  //!< Support VK_KHR_8bit_storage extension
+
+	LAYOUT_DESCRIPTOR_INDEXING = (1 << 17),  //!< Support VK_KHR_descriptor_indexing extension
 };
 
 enum MatrixLoadFlags

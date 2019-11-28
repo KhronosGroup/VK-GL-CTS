@@ -1028,6 +1028,17 @@ bool usesScalarLayout (const ShaderInterface& interface)
 	return false;
 }
 
+bool usesDescriptorIndexing(const ShaderInterface& interface)
+{
+	// If any of blocks has DESCRIPTOR_INDEXING flag
+	for (int ndx = 0; ndx < interface.getNumBlocks(); ++ndx)
+	{
+		if (interface.getBlock(ndx).getFlags() & LAYOUT_DESCRIPTOR_INDEXING)
+			return true;
+	}
+	return false;
+}
+
 struct Indent
 {
 	int level;
@@ -1111,7 +1122,9 @@ void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindi
 		if (block.getInstanceName() != DE_NULL)
 		{
 			src << " " << block.getInstanceName();
-			if (block.isArray())
+			if (block.getFlags() & LAYOUT_DESCRIPTOR_INDEXING)
+				src << "[]";
+			else if (block.isArray())
 				src << "[" << block.getArraySize() << "]";
 		}
 		else
@@ -1275,7 +1288,9 @@ string getShaderName (const BufferBlock& block, int instanceNdx, const BufferVar
 	{
 		name << block.getInstanceName();
 
-		if (block.isArray())
+		if (block.getFlags() & LAYOUT_DESCRIPTOR_INDEXING)
+			name << "[nonuniformEXT(" << instanceNdx << ")]";
+		else if (block.isArray())
 			name << "[" << instanceNdx << "]";
 
 		name << ".";
@@ -1502,15 +1517,21 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 {
 	std::ostringstream src;
 
-	if (uses16BitStorage(interface) || uses8BitStorage(interface) || usesRelaxedLayout(interface) || usesScalarLayout(interface))
+	if (uses16BitStorage(interface) || uses8BitStorage(interface) ||
+		usesRelaxedLayout(interface) || usesScalarLayout(interface) ||
+		usesDescriptorIndexing(interface))
+	{
 		src << "#version 450\n";
+	}
 	else
 		src << "#version 310 es\n";
+
 
 	src << "#extension GL_EXT_shader_16bit_storage : enable\n";
 	src << "#extension GL_EXT_shader_8bit_storage : enable\n";
 	src << "#extension GL_EXT_scalar_block_layout : enable\n";
 	src << "#extension GL_EXT_buffer_reference : enable\n";
+	src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
 	src << "layout(local_size_x = 1) in;\n";
 	src << "\n";
 
@@ -2558,6 +2579,8 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
 	if (m_usePhysStorageBuffer && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
+	if (!context.getDescriptorIndexingFeatures().shaderStorageBufferArrayNonUniformIndexing && usesDescriptorIndexing(m_interface))
+		TCU_THROW(NotSupportedError, "Descriptor indexing over storage buffer not supported");
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
 }
 

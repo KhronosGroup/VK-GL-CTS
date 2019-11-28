@@ -59,6 +59,7 @@ enum FeatureBits
 	FEATURE_8BIT_STORAGE			= (1<<19),
 	FEATURE_STD430_LAYOUT			= (1<<20),
 	FEATURE_SCALAR_LAYOUT			= (1<<21),
+	FEATURE_DESCRIPTOR_INDEXING		= (1<<22),
 };
 
 class RandomUniformBlockCase : public UniformBlockCase
@@ -90,6 +91,7 @@ private:
 	int						m_blockNdx;
 	int						m_uniformNdx;
 	int						m_structNdx;
+	int						m_availableDescriptorUniformBuffers;
 };
 
 } // ubo

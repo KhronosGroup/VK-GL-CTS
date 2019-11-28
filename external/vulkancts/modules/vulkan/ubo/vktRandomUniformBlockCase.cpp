@@ -58,26 +58,33 @@ RandomUniformBlockCase::RandomUniformBlockCase (tcu::TestContext&	testCtx,
 												BufferMode			bufferMode,
 												deUint32			features,
 												deUint32			seed)
-	: UniformBlockCase		(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX, (features & FEATURE_OUT_OF_ORDER_OFFSETS) != 0u)
-	, m_features			(features)
-	, m_maxVertexBlocks		((features & FEATURE_VERTEX_BLOCKS)		? 4 : 0)
-	, m_maxFragmentBlocks	((features & FEATURE_FRAGMENT_BLOCKS)	? 4 : 0)
-	, m_maxSharedBlocks		((features & FEATURE_SHARED_BLOCKS)		? 4 : 0)
-	, m_maxInstances		((features & FEATURE_INSTANCE_ARRAYS)	? 3 : 0)
-	, m_maxArrayLength		((features & FEATURE_ARRAYS)			? 8 : 0)
-	, m_maxStructDepth		((features & FEATURE_STRUCTS)			? 2 : 0)
-	, m_maxBlockMembers		(5)
-	, m_maxStructMembers	(4)
-	, m_seed				(seed)
-	, m_blockNdx			(1)
-	, m_uniformNdx			(1)
-	, m_structNdx			(1)
+	: UniformBlockCase						(testCtx, name, description, bufferMode, LOAD_FULL_MATRIX, (features & FEATURE_OUT_OF_ORDER_OFFSETS) != 0u)
+	, m_features							(features)
+	, m_maxVertexBlocks						((features & FEATURE_VERTEX_BLOCKS)		? 4 : 0)
+	, m_maxFragmentBlocks					((features & FEATURE_FRAGMENT_BLOCKS)	? 4 : 0)
+	, m_maxSharedBlocks						((features & FEATURE_SHARED_BLOCKS)		? 4 : 0)
+	, m_maxInstances						((features & FEATURE_INSTANCE_ARRAYS)	? 3 : 0)
+	, m_maxArrayLength						((features & FEATURE_ARRAYS)			? 8 : 0)
+	, m_maxStructDepth						((features & FEATURE_STRUCTS)			? 2 : 0)
+	, m_maxBlockMembers						(5)
+	, m_maxStructMembers					(4)
+	, m_seed								(seed)
+	, m_blockNdx							(1)
+	, m_uniformNdx							(1)
+	, m_structNdx							(1)
+	, m_availableDescriptorUniformBuffers	(12)
 {
 	de::Random rnd(m_seed);
 
 	int numShared		= m_maxSharedBlocks				> 0	? rnd.getInt(1, m_maxSharedBlocks)				: 0;
 	int numVtxBlocks	= m_maxVertexBlocks-numShared	> 0	? rnd.getInt(1, m_maxVertexBlocks - numShared)	: 0;
 	int	numFragBlocks	= m_maxFragmentBlocks-numShared	> 0 ? rnd.getInt(1, m_maxFragmentBlocks - numShared): 0;
+
+	// calculate how many additional descriptors we can use for arrays
+	// this is needed for descriptor_indexing testing as we need to take in to account
+	// maxPerStageDescriptorUniformBuffers limit and we can't query it as we need to
+	// generate shaders before Context is created; minimal value of this limit is 12
+	m_availableDescriptorUniformBuffers -= numVtxBlocks + numFragBlocks;
 
 	for (int ndx = 0; ndx < numShared; ndx++)
 		generateBlock(rnd, DECLARE_VERTEX | DECLARE_FRAGMENT);
@@ -99,6 +106,18 @@ void RandomUniformBlockCase::generateBlock (de::Random& rnd, deUint32 layoutFlag
 	UniformBlock&	block				= m_interface.allocBlock(std::string("Block") + (char)('A' + m_blockNdx));
 	int				numInstances		= (m_maxInstances > 0 && rnd.getFloat() < instanceArrayWeight) ? rnd.getInt(0, m_maxInstances) : 0;
 	int				numUniforms			= rnd.getInt(1, m_maxBlockMembers);
+
+	if (m_features & FEATURE_DESCRIPTOR_INDEXING)
+	{
+		// generate arrays only when we are within the limit
+		if (m_availableDescriptorUniformBuffers > 3)
+			numInstances = rnd.getInt(2, 4);
+		else if (m_availableDescriptorUniformBuffers > 1)
+			numInstances = m_availableDescriptorUniformBuffers;
+		else
+			numInstances = 0;
+		m_availableDescriptorUniformBuffers -= numInstances;
+	}
 
 	if (numInstances > 0)
 		block.setArraySize(numInstances);
@@ -124,6 +143,9 @@ void RandomUniformBlockCase::generateBlock (de::Random& rnd, deUint32 layoutFlag
 
 	if (m_features & FEATURE_8BIT_STORAGE)
 		layoutFlags |= LAYOUT_8BIT_STORAGE;
+
+	if (m_features & FEATURE_DESCRIPTOR_INDEXING)
+		layoutFlags |= LAYOUT_DESCRIPTOR_INDEXING;
 
 	layoutFlags |= rnd.choose<deUint32>(layoutFlagCandidates.begin(), layoutFlagCandidates.end());
 

@@ -1187,7 +1187,12 @@ void generateDeclaration (std::ostringstream& src, int blockNdx, const UniformBl
 	{
 		src << " " << block.getInstanceName();
 		if (block.isArray())
-			src << "[" << block.getArraySize() << "]";
+		{
+			if (block.getFlags() & LAYOUT_DESCRIPTOR_INDEXING)
+				src << "[]";
+			else
+				src << "[" << block.getArraySize() << "]";
+		}
 	}
 	else
 		DE_ASSERT(!block.isArray());
@@ -1547,7 +1552,15 @@ void generateCompareSrc (std::ostringstream& src,
 
 		for (int instanceNdx = 0; instanceNdx < numInstances; instanceNdx++)
 		{
-			std::string		instancePostfix		= isArray ? std::string("[") + de::toString(instanceNdx) + "]" : std::string("");
+			std::string instancePostfix = "";
+			if (isArray)
+			{
+				std::string indexStr = de::toString(instanceNdx);
+				if (interface.usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING))
+					indexStr = std::string("nonuniformEXT(") + indexStr + ")";
+				instancePostfix = std::string("[") + indexStr + "]";
+			}
+
 			std::string		blockInstanceName	= block.getBlockName() + instancePostfix;
 			std::string		srcPrefix			= hasInstanceName ? block.getInstanceName() + instancePostfix + "." : std::string("");
 			int				blockLayoutNdx		= layout.getBlockLayoutIndex(blockNdx, instanceNdx);
@@ -1575,6 +1588,7 @@ std::string generateVertexShader (const ShaderInterface& interface, const Unifor
 	src << "#extension GL_EXT_shader_16bit_storage : enable\n";
 	src << "#extension GL_EXT_shader_8bit_storage : enable\n";
 	src << "#extension GL_EXT_scalar_block_layout : enable\n";
+	src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
 
 	src << "layout(location = 0) in highp vec4 a_position;\n";
 	src << "layout(location = 0) out mediump float v_vtxResult;\n";
@@ -1618,6 +1632,7 @@ std::string generateFragmentShader (const ShaderInterface& interface, const Unif
 	src << "#extension GL_EXT_shader_16bit_storage : enable\n";
 	src << "#extension GL_EXT_shader_8bit_storage : enable\n";
 	src << "#extension GL_EXT_scalar_block_layout : enable\n";
+	src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
 
 	src << "layout(location = 0) in mediump float v_vtxResult;\n";
 	src << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
@@ -2222,6 +2237,8 @@ TestInstance* UniformBlockCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "std430 not supported");
 	if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesBlockLayout(LAYOUT_SCALAR))
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
+	if (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing && usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING))
+		TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
 
 	return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
 }
