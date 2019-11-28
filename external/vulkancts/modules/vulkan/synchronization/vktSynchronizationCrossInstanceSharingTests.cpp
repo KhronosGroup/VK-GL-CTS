@@ -120,6 +120,11 @@ public:
 			requireDeviceExtension("VK_KHR_external_memory_fd");
 		}
 
+		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
+		{
+			requireDeviceExtension("VK_EXT_external_memory_dma_buf");
+		}
+
 		if (config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
 			|| config.memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR
 			|| config.semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
@@ -348,6 +353,9 @@ vk::Move<vk::VkDevice> createTestDevice (const Context&					context,
 		extensions.push_back("VK_KHR_external_semaphore_fd");
 	if (context.isDeviceFunctionalitySupported("VK_KHR_external_memory_fd"))
 		extensions.push_back("VK_KHR_external_memory_fd");
+
+	if (context.isDeviceFunctionalitySupported("VK_EXT_external_memory_dma_buf"))
+		extensions.push_back("VK_EXT_external_memory_dma_buf");
 
 	if (context.isDeviceFunctionalitySupported("VK_KHR_external_semaphore_win32"))
 		extensions.push_back("VK_KHR_external_semaphore_win32");
@@ -1317,6 +1325,11 @@ static void createTests (tcu::TestCaseGroup* group)
 			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
 			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
 			"_win32"
+		},
+		{
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT,
+			vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
+			"_dma_buf"
 		},
 	};
 
