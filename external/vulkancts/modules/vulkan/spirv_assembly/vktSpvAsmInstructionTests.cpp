@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSpvAsmInstructionTests.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuFormatUtil.hpp"
@@ -3134,6 +3135,28 @@ tcu::TestCaseGroup* createOpCopyObjectGroup (tcu::TestContext& testCtx)
 //   }
 // }
 
+void addOpUnreachableAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& testCtx)
+{
+	static const char dataDir[] = "spirv_assembly/instruction/compute/unreachable";
+
+	struct Case
+	{
+		string	name;
+		string	desc;
+	};
+
+	static const Case cases[] =
+	{
+		{ "unreachable-switch-merge-in-loop",	"Test containing an unreachable switch merge block inside an infinite loop"	},
+	};
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+	{
+		const string fileName = cases[i].name + ".amber";
+		group.addChild(cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName));
+	}
+}
+
 tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opunreachable", "Test the OpUnreachable instruction"));
@@ -3242,6 +3265,8 @@ tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpUnreachable appearing at different places", spec));
+
+	addOpUnreachableAmberTests(*group, testCtx);
 
 	return group.release();
 }
