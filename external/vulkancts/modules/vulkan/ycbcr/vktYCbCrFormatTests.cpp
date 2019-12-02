@@ -54,10 +54,6 @@ namespace ycbcr
 namespace
 {
 
-// \todo [2017-05-24 pyry] Extend:
-// * VK_IMAGE_TILING_LINEAR
-// * Other shader types
-
 using namespace vk;
 using namespace shaderexecutor;
 
