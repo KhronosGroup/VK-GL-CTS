@@ -669,7 +669,6 @@ void populateViewGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createViewTests (tcu::TestContext& testCtx)
 {
-	// \todo [2017-05-24 pyry] Extend with memory alias views
 	return createTestGroup(testCtx, "plane_view", "YCbCr Plane View Tests", populateViewGroup);
 }
 
