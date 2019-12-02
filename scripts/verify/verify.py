@@ -38,7 +38,7 @@ ALLOWED_STATUS_CODES = set([
 	])
 
 def readMustpass (filename):
-	f = open(filename, 'rb')
+	f = open(filename, 'rt')
 	cases = []
 	for line in f:
 		s = line.strip()
@@ -63,7 +63,7 @@ def verifyTestLog (filename, mustpass):
 		messages.append(error(filename, "Wrong number of test results, expected %d, found %d" % (len(mustpass), len(results))))
 
 	caseNameToResultNdx = {}
-	for ndx in xrange(len(results)):
+	for ndx in range(len(results)):
 		result = results[ndx]
 		if not result in caseNameToResultNdx:
 			caseNameToResultNdx[result.name] = ndx
@@ -71,7 +71,7 @@ def verifyTestLog (filename, mustpass):
 			messages.append(error(filename, "Multiple results for " + result.name))
 
 	# Verify that all results are present and valid
-	for ndx in xrange(len(mustpass)):
+	for ndx in range(len(mustpass)):
 		caseName = mustpass[ndx]
 
 		if caseName in caseNameToResultNdx:

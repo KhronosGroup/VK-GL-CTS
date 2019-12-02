@@ -131,7 +131,8 @@ class BatchResultParser:
 		self.filename			= filename
 
 	def parseLine (self, line):
-		if len(line) > 0 and line[0] == '#':
+		text = line.decode('utf-8')
+		if len(text) > 0 and text[0] == '#':
 			return self.parseContainerLine(line)
 		elif self.curResultText != None:
 			self.curResultText += line
@@ -140,7 +141,8 @@ class BatchResultParser:
 
 	def parseContainerLine (self, line):
 		isTestCaseResult = False
-		args = splitContainerLine(line)
+		text = line.decode('utf-8')
+		args = splitContainerLine(text)
 		if args[0] == "#sessionInfo":
 			if len(args) < 3:
 				print(args)
@@ -152,7 +154,7 @@ class BatchResultParser:
 			if len(args) != 2 or self.curCaseName != None:
 				self.parseError("Invalid #beginTestCaseResult")
 			self.curCaseName	= args[1]
-			self.curResultText	= ""
+			self.curResultText	= b""
 		elif args[0] == "#endTestCaseResult":
 			if len(args) != 1 or self.curCaseName == None:
 				self.parseError("Invalid #endTestCaseResult")
