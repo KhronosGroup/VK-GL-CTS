@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMemoryModelTests.hpp"
+#include "vktMemoryModelPadding.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -1917,6 +1918,9 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		transGroup->addChild(cohGroup.release());
 	}
 	group->addChild(transGroup.release());
+
+	// Padding tests.
+	group->addChild(createPaddingTests(testCtx));
 
 	return group.release();
 }
