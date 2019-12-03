@@ -42,6 +42,7 @@
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -946,7 +947,9 @@ public:
 														 const VkDevice				device,
 														 Allocator&					allocator,
 														 const BinaryCollection&	binaryRegistry,
+														 bool						explicitLayoutTransitions,
 														 const vector<VkImage>		swapchainImages,
+														 const vector<VkImage>		aliasImages,
 														 const VkFormat				framebufferFormat,
 														 const UVec2&				renderSize);
 									~TriangleRenderer	(void);
@@ -967,7 +970,8 @@ public:
 private:
 	static Move<VkRenderPass>		createRenderPass	(const DeviceInterface&		vkd,
 														 const VkDevice				device,
-														 const VkFormat				colorAttachmentFormat);
+														 const VkFormat				colorAttachmentFormat,
+														 const bool					explicitLayoutTransitions);
 	static Move<VkPipelineLayout>	createPipelineLayout(const DeviceInterface&		vkd,
 														 VkDevice					device);
 	static Move<VkPipeline>			createPipeline		(const DeviceInterface&		vkd,
@@ -994,7 +998,9 @@ private:
 
 	const DeviceInterface&			m_vkd;
 
+	const bool						m_explicitLayoutTransitions;
 	const vector<VkImage>			m_swapchainImages;
+	const vector<VkImage>			m_aliasImages;
 	const tcu::UVec2				m_renderSize;
 
 	const Unique<VkRenderPass>		m_renderPass;
@@ -1005,12 +1011,14 @@ private:
 	const UniquePtr<Allocation>		m_vertexBufferMemory;
 
 	vector<ImageViewSp>				m_attachmentViews;
+	mutable vector<VkImageLayout>	m_attachmentLayouts;
 	vector<FramebufferSp>			m_framebuffers;
 };
 
 Move<VkRenderPass> TriangleRenderer::createRenderPass (const DeviceInterface&	vkd,
 													   const VkDevice			device,
-													   const VkFormat			colorAttachmentFormat)
+													   const VkFormat			colorAttachmentFormat,
+													   const bool				explicitLayoutTransitions)
 {
 	const VkAttachmentDescription	colorAttDesc		=
 	{
@@ -1021,8 +1029,8 @@ Move<VkRenderPass> TriangleRenderer::createRenderPass (const DeviceInterface&	vk
 		VK_ATTACHMENT_STORE_OP_STORE,
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 	};
 	const VkAttachmentReference		colorAttRef			=
 	{
@@ -1203,26 +1211,32 @@ TriangleRenderer::TriangleRenderer (const DeviceInterface&	vkd,
 									const VkDevice			device,
 									Allocator&				allocator,
 									const BinaryCollection&	binaryRegistry,
+									bool					explicitLayoutTransitions,
 									const vector<VkImage>	swapchainImages,
+									const vector<VkImage>	aliasImages,
 									const VkFormat			framebufferFormat,
 									const UVec2&			renderSize)
-	: m_vkd					(vkd)
-	, m_swapchainImages		(swapchainImages)
-	, m_renderSize			(renderSize)
-	, m_renderPass			(createRenderPass(vkd, device, framebufferFormat))
-	, m_pipelineLayout		(createPipelineLayout(vkd, device))
-	, m_pipeline			(createPipeline(vkd, device, *m_renderPass, *m_pipelineLayout, binaryRegistry, renderSize))
-	, m_vertexBuffer		(createBuffer(vkd, device, (VkDeviceSize)(sizeof(float)*4*3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
-	, m_vertexBufferMemory	(allocator.allocate(getBufferMemoryRequirements(vkd, device, *m_vertexBuffer),
-							 MemoryRequirement::HostVisible))
+	: m_vkd							(vkd)
+	, m_explicitLayoutTransitions	(explicitLayoutTransitions)
+	, m_swapchainImages				(swapchainImages)
+	, m_aliasImages					(aliasImages)
+	, m_renderSize					(renderSize)
+	, m_renderPass					(createRenderPass(vkd, device, framebufferFormat, m_explicitLayoutTransitions))
+	, m_pipelineLayout				(createPipelineLayout(vkd, device))
+	, m_pipeline					(createPipeline(vkd, device, *m_renderPass, *m_pipelineLayout, binaryRegistry, renderSize))
+	, m_vertexBuffer				(createBuffer(vkd, device, (VkDeviceSize)(sizeof(float)*4*3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
+	, m_vertexBufferMemory			(allocator.allocate(getBufferMemoryRequirements(vkd, device, *m_vertexBuffer),
+									 MemoryRequirement::HostVisible))
 {
 	m_attachmentViews.resize(swapchainImages.size());
+	m_attachmentLayouts.resize(swapchainImages.size());
 	m_framebuffers.resize(swapchainImages.size());
 
 	for (size_t imageNdx = 0; imageNdx < swapchainImages.size(); ++imageNdx)
 	{
-		m_attachmentViews[imageNdx]	= ImageViewSp(new Unique<VkImageView>(createAttachmentView(vkd, device, swapchainImages[imageNdx], framebufferFormat)));
-		m_framebuffers[imageNdx]	= FramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vkd, device, *m_renderPass, **m_attachmentViews[imageNdx], renderSize)));
+		m_attachmentViews[imageNdx]		= ImageViewSp(new Unique<VkImageView>(createAttachmentView(vkd, device, swapchainImages[imageNdx], framebufferFormat)));
+		m_attachmentLayouts[imageNdx]	= VK_IMAGE_LAYOUT_UNDEFINED;
+		m_framebuffers[imageNdx]		= FramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vkd, device, *m_renderPass, **m_attachmentViews[imageNdx], renderSize)));
 	}
 
 	VK_CHECK(vkd.bindBufferMemory(device, *m_vertexBuffer, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset()));
@@ -1261,6 +1275,16 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 
 	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
 
+	if (m_explicitLayoutTransitions || m_attachmentLayouts[imageNdx] == VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	}
+
 	beginRenderPass(m_vkd, cmdBuffer, *m_renderPass, curFramebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
 
 	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -1273,6 +1297,16 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
 	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 	endRenderPass(m_vkd, cmdBuffer);
+
+	if (m_explicitLayoutTransitions)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
 
 	endCommandBuffer(m_vkd, cmdBuffer);
 }
@@ -1287,6 +1321,16 @@ void TriangleRenderer::recordDeviceGroupFrame (VkCommandBuffer	cmdBuffer,
 	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
 
 	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
+
+	if (m_explicitLayoutTransitions || m_attachmentLayouts[imageNdx] == VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	}
 
 	// begin renderpass
 	{
@@ -1347,6 +1391,16 @@ void TriangleRenderer::recordDeviceGroupFrame (VkCommandBuffer	cmdBuffer,
 	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
 	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 	endRenderPass(m_vkd, cmdBuffer);
+
+	if (m_explicitLayoutTransitions)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
 
 	endCommandBuffer(m_vkd, cmdBuffer);
 }
@@ -1525,6 +1579,8 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 																 device,
 																 allocator,
 																 context.getBinaryCollection(),
+																 false,
+																 swapchainImages,
 																 swapchainImages,
 																 swapchainInfo.imageFormat,
 																 tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
@@ -1711,6 +1767,8 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 																 *groupDevice,
 																 allocator,
 																 context.getBinaryCollection(),
+																 false,
+																 swapchainImages,
 																 swapchainImages,
 																 swapchainInfo.imageFormat,
 																 tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
@@ -1976,7 +2034,8 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		&imageSwapchainCreateInfo,
-		VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,		// flags
+		VK_IMAGE_CREATE_ALIAS_BIT |
+			VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,	// flags
 		VK_IMAGE_TYPE_2D,											// imageType
 		formats[0].format,											// format
 		{															// extent
@@ -1999,71 +2058,111 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	typedef de::SharedPtr<UniqueImage>	ImageSp;
 
 	vector<ImageSp>								images							(numImages);
-	vector<VkImage>								rawSwapchainImages				(numImages);
-	vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
-	vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
-	vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
+	vector<VkImage>								rawImages						(numImages);
+	vector<ImageSp>								imagesSfr						(numImages);
+	vector<VkImage>								rawImagesSfr					(numImages);
 
-	for (deUint32 idx = 0; idx < numImages; ++idx)
+	// Create non-SFR image aliases for image layout transition
 	{
-		// Create image
-		images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
+		vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
+		vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
+		vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
 
-		VkBindImageMemorySwapchainInfoKHR bimsInfo =
+		for (deUint32 idx = 0; idx < numImages; ++idx)
 		{
-			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
-			DE_NULL,
-			*swapchain,
-			idx
-		};
-		bindImageMemorySwapchainInfo[idx] = bimsInfo;
+			// Create image
+			images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
 
-		// Split into 2 vertical halves
-		// NOTE: the same split has to be done also in TriangleRenderer::recordDeviceGroupFrame
-		const deUint32	halfWidth			= desiredSize.x() / 2;
-		const deUint32	height				= desiredSize.y();
-		const VkRect2D	sfrRects[] =
-		{
-			{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
-			{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	}		// offset, extent
-		};
+			VkBindImageMemoryInfo bimInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
+				DE_NULL,
+				**images[idx],
+				DE_NULL,				// If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+				0u						// If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
+			};
+			bindImageMemoryInfos[idx]	= bimInfo;
+			rawImages[idx]				= **images[idx];
+		}
 
-		VkBindImageMemoryDeviceGroupInfo bimdgInfo =
-		{
-			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO,
-			&bindImageMemorySwapchainInfo[idx],
-			DE_LENGTH_OF_ARRAY(deviceIndices),
-			deviceIndices,
-			DE_LENGTH_OF_ARRAY(sfrRects),
-			sfrRects
-		};
-		bindImageMemoryDeviceGroupInfo[idx] = bimdgInfo;
-
-		VkBindImageMemoryInfo bimInfo =
-		{
-			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
-			&bindImageMemoryDeviceGroupInfo[idx],
-			**images[idx],
-			DE_NULL,				// If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
-			0u						// If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
-		};
-		bindImageMemoryInfos[idx]	= bimInfo;
-		rawSwapchainImages[idx]		= **images[idx];
+		VK_CHECK(vkd.bindImageMemory2(*groupDevice, numImages, &bindImageMemoryInfos[0]));
 	}
 
-	VK_CHECK(vkd.bindImageMemory2(*groupDevice, numImages, &bindImageMemoryInfos[0]));
+	// Create the SFR images
+	{
+		vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
+		vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
+		vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
+		for (deUint32 idx = 0; idx < numImages; ++idx)
+		{
+			// Create image
+			imagesSfr[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
+
+			VkBindImageMemorySwapchainInfoKHR bimsInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
+				DE_NULL,
+				*swapchain,
+				idx
+			};
+			bindImageMemorySwapchainInfo[idx] = bimsInfo;
+
+			// Split into 2 vertical halves
+			// NOTE: the same split has to be done also in TriangleRenderer::recordDeviceGroupFrame
+			const deUint32	halfWidth			= desiredSize.x() / 2;
+			const deUint32	height				= desiredSize.y();
+			const VkRect2D	sfrRects[] =
+			{
+				{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
+				{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	},		// offset, extent
+				{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
+				{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	}		// offset, extent
+			};
+
+			VkBindImageMemoryDeviceGroupInfo bimdgInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO,
+				&bindImageMemorySwapchainInfo[idx],
+				DE_LENGTH_OF_ARRAY(deviceIndices),
+				deviceIndices,
+				DE_LENGTH_OF_ARRAY(sfrRects),
+				sfrRects
+			};
+			bindImageMemoryDeviceGroupInfo[idx] = bimdgInfo;
+
+			VkBindImageMemoryInfo bimInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
+				&bindImageMemoryDeviceGroupInfo[idx],
+				**imagesSfr[idx],
+				DE_NULL,				// If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+				0u						// If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
+			};
+			bindImageMemoryInfos[idx]	= bimInfo;
+			rawImagesSfr[idx]			= **imagesSfr[idx];
+		}
+
+		VK_CHECK(vkd.bindImageMemory2(*groupDevice, numImages, &bindImageMemoryInfos[0]));
+	}
+
+	VkPeerMemoryFeatureFlags peerMemoryFeatures = 0u;
+	vkd.getDeviceGroupPeerMemoryFeatures(*groupDevice, 0, firstDeviceID, secondDeviceID, &peerMemoryFeatures);
+	bool explicitLayoutTransitions = !(peerMemoryFeatures & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) ||
+									 !(peerMemoryFeatures & VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT);
 
 	const TriangleRenderer			renderer					(vkd,
 																 *groupDevice,
 																 allocator,
 																 context.getBinaryCollection(),
-																 rawSwapchainImages,
+																 explicitLayoutTransitions,
+																 rawImagesSfr,
+																 rawImages,
 																 swapchainInfo.imageFormat,
 																 tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
 
 	const Unique<VkCommandPool>		commandPool					(createCommandPool(vkd, *groupDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 
-	const size_t					maxQueuedFrames				= rawSwapchainImages.size()*2;
+	const size_t					maxQueuedFrames				= rawImagesSfr.size()*2;
 
 	// We need to keep hold of fences from vkAcquireNextImage2KHR
 	// to actually limit number of frames we allow to be queued.
@@ -2113,7 +2212,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 					VK_CHECK(acquireResult);
 			}
 
-			TCU_CHECK((size_t)imageNdx < rawSwapchainImages.size());
+			TCU_CHECK((size_t)imageNdx < rawImagesSfr.size());
 
 			{
 				const VkSemaphore			renderingCompleteSemaphore	= **renderingCompleteSemaphores[frameNdx%renderingCompleteSemaphores.size()];
@@ -2239,6 +2338,8 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 																	device,
 																	allocator,
 																	context.getBinaryCollection(),
+																	false,
+																	swapchainImages,
 																	swapchainImages,
 																	swapchainInfo.imageFormat,
 																	tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
