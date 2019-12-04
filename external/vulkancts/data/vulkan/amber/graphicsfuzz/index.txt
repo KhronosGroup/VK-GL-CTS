@@ -57,6 +57,7 @@
 {	"switch-with-empty-if-false.amber",				"switch-with-empty-if-false",			"A fragment shader with always false if in switch statement"							},
 {	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
 {	"transpose-rectangular-matrix.amber",			"transpose-rectangular-matrix",			"Fragment shader that uses 'transpose'"													},
+{	"two-2-iteration-loops.amber",					"two-2-iteration-loops",				"Fragment shader with pair of outer loops"												},
 {	"two-for-loops-with-barrier-function.amber",	"two-for-loops-with-barrier-function",	"A compute shader with two barrier functions"											},
 {	"two-loops-matrix.amber",						"two-loops-matrix",						"A fragment shader with two loops and some matrices"									},
 {	"two-loops-set-struct.amber",					"two-loops-set-struct",					"A fragment shader with two loops that write to a struct"								},
