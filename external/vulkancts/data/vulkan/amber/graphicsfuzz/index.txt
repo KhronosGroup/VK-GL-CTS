@@ -35,6 +35,7 @@
 {	"loops-ifs-continues-call.amber",				"loops-ifs-continues-call",				"A fragment shader with nested control flow and a call"									},
 {	"mat-array-deep-control-flow.amber",			"mat-array-deep-control-flow",			"A fragment shader that uses an array of matrices and has deep control flow"			},
 {	"mat-array-distance.amber",						"mat-array-distance",					"A fragment shader that uses an array of matrices and distance"							},
+{	"mat-mul-in-loop.amber",						"mat-mul-in-loop",						"Shader with matrix multiplication in loop"												},
 {	"matrices-and-return-in-loop.amber",			"matrices-and-return-in-loop",			"A fragment shader with matrices and a return in a loop"								},
 {	"max-mix-conditional-discard.amber",			"max-mix-conditional-discard",			"A fragment shader with an expression used in two discard guards"						},
 {	"mix-floor-add.amber",							"mix-floor-add",						"A fragment shader with mix, uintBitsToFloat, and floor"								},

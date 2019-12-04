@@ -1,0 +1,175 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: Shader with matrix multiplication in loop
+
+# The test passes because 'm1' is the identity matrix, so that 'm2' is also the identity matrix, meaning that 'v' gets set to '(1.0, 0.0)'.  As a result, the colour that is written is guaranteed to be red
+
+# Optimized using spirv-opt with the following arguments:
+# '--simplify-instructions'
+# '--combine-access-chains'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--combine-access-chains'
+# '--eliminate-dead-code-aggressive'
+# '--reduce-load-size'
+# '--eliminate-local-single-block'
+# '--private-to-local'
+# '--inline-entry-points-exhaustive'
+# '--copy-propagate-arrays'
+# '--eliminate-local-multi-store'
+# '--scalar-replacement=100'
+# '--eliminate-dead-branches'
+# '--eliminate-local-single-store'
+# spirv-opt commit hash: f1e5cd73f658abcc23ee96d78f2dc27c4b7028c1
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main(void)
+# {
+#  vec2 v;
+#  mat2 m1 = mat2(1.0, 0.0, 0.0, 1.0);
+#  for(
+#      int i = 0;
+#      i < 1;
+#      i++
+#  )
+#   {
+#    do
+#     {
+#      mat2 m2;
+#      m2 = m1 * m1;
+#      v = m2 * vec2(1.0, 0.0);
+#     }
+#    while(false);
+#   }
+#   _GLF_color = vec4(v, 0.0, 1.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 56
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %46
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "m1"
+               OpName %18 "i"
+               OpName %33 "m2"
+               OpName %38 "v"
+               OpName %46 "_GLF_color"
+               OpDecorate %46 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeMatrix %7 2
+          %9 = OpTypePointer Function %8
+         %11 = OpConstant %6 1
+         %12 = OpConstant %6 0
+         %13 = OpConstantComposite %7 %11 %12
+         %14 = OpConstantComposite %7 %12 %11
+         %15 = OpConstantComposite %8 %13 %14
+         %16 = OpTypeInt 32 1
+         %17 = OpTypePointer Function %16
+         %19 = OpConstant %16 0
+         %26 = OpConstant %16 1
+         %27 = OpTypeBool
+         %37 = OpTypePointer Function %7
+         %41 = OpConstantFalse %27
+         %44 = OpTypeVector %6 4
+         %45 = OpTypePointer Output %44
+         %46 = OpVariable %45 Output
+         %53 = OpUndef %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %10 = OpVariable %9 Function
+         %18 = OpVariable %17 Function
+         %33 = OpVariable %9 Function
+         %38 = OpVariable %37 Function
+               OpStore %10 %15
+               OpStore %18 %19
+               OpBranch %20
+         %20 = OpLabel
+         %55 = OpPhi %8 %15 %5 %55 %23
+         %52 = OpPhi %7 %53 %5 %40 %23
+         %51 = OpPhi %16 %19 %5 %43 %23
+               OpLoopMerge %22 %23 None
+               OpBranch %24
+         %24 = OpLabel
+         %28 = OpSLessThan %27 %51 %26
+               OpBranchConditional %28 %21 %22
+         %21 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+               OpLoopMerge %31 %32 None
+               OpBranch %30
+         %30 = OpLabel
+         %36 = OpMatrixTimesMatrix %8 %55 %55
+               OpStore %33 %36
+         %40 = OpMatrixTimesVector %7 %36 %13
+               OpStore %38 %40
+               OpBranch %32
+         %32 = OpLabel
+               OpBranchConditional %41 %29 %31
+         %31 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+         %43 = OpIAdd %16 %51 %26
+               OpStore %18 %43
+               OpBranch %20
+         %22 = OpLabel
+         %48 = OpCompositeExtract %6 %52 0
+         %49 = OpCompositeExtract %6 %52 1
+         %50 = OpCompositeConstruct %44 %48 %49 %12 %11
+               OpStore %46 %50
+               OpReturn
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
