@@ -28,6 +28,8 @@
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkImageUtil.hpp"
+#include "tcuTextureUtil.hpp"
 #include <sstream>
 #include <functional>
 #include <vector>
@@ -45,6 +47,7 @@ namespace
 constexpr size_t	COLOR_ATTACHMENTS_NUMBER	= 4; // maxColorAttachments is guaranteed to be at least 4.
 constexpr VkFormat	FORMAT_COLOR				= VK_FORMAT_R8G8B8A8_UNORM;
 constexpr VkFormat	FORMAT_DEPTH				= VK_FORMAT_D32_SFLOAT;
+constexpr VkFormat	FORMAT_STENCIL				= VK_FORMAT_S8_UINT;
 constexpr VkFormat	FORMAT_DEPTH_STENCIL		= VK_FORMAT_D32_SFLOAT_S8_UINT;
 const deBool		DE_BOOL_VALUES[]			= { DE_FALSE, DE_TRUE };
 
@@ -52,56 +55,99 @@ enum DepthStencilType
 {
 	DEPTH_STENCIL_NONE			= 0,
 	DEPTH_STENCIL_DEPTH_ONLY	= 1,
-	DEPTH_STENCIL_BOTH			= 2,
-	DEPTH_STENCIL_MAX_ENUM		= 3
+	DEPTH_STENCIL_STENCIL_ONLY	= 2,
+	DEPTH_STENCIL_BOTH			= 3,
+	DEPTH_STENCIL_MAX_ENUM		= 4
 };
 
-std::string depthStencilTypeName(DepthStencilType type)
+std::string getFormatBriefName (VkFormat format)
+{
+	switch (format)
+	{
+	case VK_FORMAT_D32_SFLOAT:			return "d32";
+	case VK_FORMAT_S8_UINT:				return "s8";
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:	return "d32s8";
+	default:								break;
+	}
+
+	return "";
+}
+
+std::string depthStencilTypeName (DepthStencilType type, VkFormat format)
 {
 	DE_ASSERT(type >= DEPTH_STENCIL_NONE && type < DEPTH_STENCIL_MAX_ENUM);
 
+	const std::string formatName = getFormatBriefName(format);
+
 	switch (type)
 	{
-	case DEPTH_STENCIL_NONE:		return "nods";
-	case DEPTH_STENCIL_DEPTH_ONLY:	return "depthonly";
-	case DEPTH_STENCIL_BOTH:		return "depthstencil";
-	default:						return "UNKNOWN";		// Unreachable.
+	case DEPTH_STENCIL_NONE:			return "nods";
+	case DEPTH_STENCIL_DEPTH_ONLY:		return "depthonly_" + formatName;
+	case DEPTH_STENCIL_STENCIL_ONLY:	return "stencilonly_" + formatName;
+	case DEPTH_STENCIL_BOTH:			return "depthstencil_" + formatName;
+	default:							return "UNKNOWN";		// Unreachable.
 	}
 
-	return "UNKNOWN";										// Unreachable.
+	return "UNKNOWN";											// Unreachable.
 }
 
-VkImageAspectFlags getAspectMask(DepthStencilType type)
+VkImageAspectFlags getClearAspectMask (DepthStencilType type)
 {
 	VkImageAspectFlags aspectMask = 0u;
 
-	switch (type)
-	{
-	case DEPTH_STENCIL_BOTH:
-		aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		// Fallthrough.
-	case DEPTH_STENCIL_DEPTH_ONLY:
+	if (type == DEPTH_STENCIL_DEPTH_ONLY || type == DEPTH_STENCIL_BOTH)
 		aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
-		break;
-	default:
-		break;
-	}
+
+	if (type == DEPTH_STENCIL_STENCIL_ONLY || type == DEPTH_STENCIL_BOTH)
+		aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 
 	return aspectMask;
 }
 
-VkFormat getFormat(DepthStencilType type)
+VkImageAspectFlags getFormatAspectMask (VkFormat format)
 {
-	if (type == DEPTH_STENCIL_BOTH)
-		return FORMAT_DEPTH_STENCIL;
+	const auto			order		= mapVkFormat(format).order;
+	VkImageAspectFlags	aspectMask	= 0u;
+
+	if (tcu::hasDepthComponent(order))
+		aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+
+	if (tcu::hasStencilComponent(order))
+		aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+	if (!aspectMask)
+		aspectMask |= VK_IMAGE_ASPECT_COLOR_BIT;
+
+	return aspectMask;
+}
+
+std::vector<VkFormat> getFormats (DepthStencilType type)
+{
+	DE_ASSERT(type >= DEPTH_STENCIL_NONE && type < DEPTH_STENCIL_MAX_ENUM);
+
+	std::vector<VkFormat> formats;
+
+	if (type != DEPTH_STENCIL_NONE)
+		formats.push_back(FORMAT_DEPTH_STENCIL);
+	else
+		formats.push_back(VK_FORMAT_UNDEFINED);
+
 	if (type == DEPTH_STENCIL_DEPTH_ONLY)
-		return FORMAT_DEPTH;
-	return VK_FORMAT_UNDEFINED;
+		formats.push_back(FORMAT_DEPTH);
+	else if (type == DEPTH_STENCIL_STENCIL_ONLY)
+		formats.push_back(FORMAT_STENCIL);
+
+	return formats;
 }
 
 bool isDepthOnly(DepthStencilType type)
 {
 	return (type == DEPTH_STENCIL_DEPTH_ONLY);
+}
+
+bool isStencilOnly(DepthStencilType type)
+{
+	return (type == DEPTH_STENCIL_STENCIL_ONLY);
 }
 
 bool hasDepthStencil(DepthStencilType type)
@@ -111,16 +157,18 @@ bool hasDepthStencil(DepthStencilType type)
 
 struct TestParams
 {
-	TestParams(size_t numColorAttachments, DepthStencilType depthStencilType_, deBool depthStencilUsed_, RenderPassType renderPassType_)
+	TestParams(size_t numColorAttachments, DepthStencilType depthStencilType_, deBool depthStencilUsed_, VkFormat depthStencilFormat_, RenderPassType renderPassType_)
 		: colorUsed(numColorAttachments, DE_FALSE)
 		, depthStencilType(depthStencilType_)
 		, depthStencilUsed(depthStencilUsed_)
+		, depthStencilFormat(depthStencilFormat_)
 		, renderPassType(renderPassType_)
 		{}
 
 	std::vector<deBool>	colorUsed;
 	DepthStencilType	depthStencilType;
 	deBool				depthStencilUsed;
+	VkFormat		depthStencilFormat;
 	RenderPassType		renderPassType;
 };
 
@@ -212,7 +260,7 @@ void UnusedClearAttachmentTest::checkSupport (Context& context) const
 		checkFormatSupported(context, FORMAT_COLOR, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 	if (hasDepthStencil(m_testParams.depthStencilType))
-		checkFormatSupported(context, getFormat(m_testParams.depthStencilType), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		checkFormatSupported(context, m_testParams.depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 TestInstance* UnusedClearAttachmentTest::createInstance (Context& context) const
@@ -269,7 +317,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 									 const TestParams		testParams)
 {
 	const VkImageAspectFlags	colorAspectMask					= VK_IMAGE_ASPECT_COLOR_BIT;
-	const VkImageAspectFlags	dsAspectMask					= getAspectMask(testParams.depthStencilType);
+	const VkImageAspectFlags	dsClearAspectMask				= getClearAspectMask(testParams.depthStencilType);
 	const bool					isDepthStencil					= hasDepthStencil(testParams.depthStencilType);
 
 	// Create attachment descriptions.
@@ -290,17 +338,19 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 	if (isDepthStencil)
 	{
 		const bool					depthOnly		= isDepthOnly(testParams.depthStencilType);
-		const VkFormat				attachFormat	= getFormat(testParams.depthStencilType);
+		const bool					stencilOnly		= isStencilOnly(testParams.depthStencilType);
+		const VkAttachmentLoadOp	depthLoadOp		= (stencilOnly ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD);
+		const VkAttachmentStoreOp	depthStoreOp	= (stencilOnly ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE);
 		const VkAttachmentLoadOp	stencilLoadOp	= (depthOnly ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD);
 		const VkAttachmentStoreOp	stencilStoreOp	= (depthOnly ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE);
 
 		attachmentDescriptions.emplace_back(
 			nullptr,											// const void*						pNext
 			(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags
-			attachFormat,										// VkFormat							format
+			testParams.depthStencilFormat,						// VkFormat							format
 			VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples
-			VK_ATTACHMENT_LOAD_OP_LOAD,							// VkAttachmentLoadOp				loadOp
-			VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp
+			depthLoadOp,										// VkAttachmentLoadOp				loadOp
+			depthStoreOp,										// VkAttachmentStoreOp				storeOp
 			stencilLoadOp,										// VkAttachmentLoadOp				stencilLoadOp
 			stencilStoreOp,										// VkAttachmentStoreOp				stencilStoreOp
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout					initialLayout
@@ -327,7 +377,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 			DE_NULL,
 			(testParams.depthStencilUsed ? static_cast<deUint32>(testParams.colorUsed.size()) : VK_ATTACHMENT_UNUSED),
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			dsAspectMask
+			dsClearAspectMask
 		));
 	}
 
@@ -420,7 +470,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 			DE_NULL,																		// const void*				pNext;
 			0u,																				// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,																// VkImageType				imageType;
-			getFormat(m_testParams.depthStencilType),										// VkFormat					format;
+			m_testParams.depthStencilFormat,												// VkFormat					format;
 			{ kImageWidth, kImageHeight, 1u },												// VkExtent3D				extent;
 			1u,																				// deUint32					mipLevels;
 			1u,																				// deUint32					arrayLayers;
@@ -532,8 +582,8 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 
 		if (hasDepthStencil(m_testParams.depthStencilType))
 		{
-			const VkFormat				format		= getFormat(m_testParams.depthStencilType);
-			const VkImageAspectFlags	aspectMask	= getAspectMask(m_testParams.depthStencilType);
+			const VkImageAspectFlags clearAspectMask	= getClearAspectMask(m_testParams.depthStencilType);
+			const VkImageAspectFlags formatAspectMask	= getFormatAspectMask(m_testParams.depthStencilFormat);
 
 			// Create, allocate and bind image memory.
 			m_depthImage = createImage(vk, vkDevice, &depthImageParams);
@@ -549,9 +599,9 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 					0u,											// VkImageViewCreateFlags	flags;
 					*m_depthImage,								// VkImage					image;
 					VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType			viewType;
-					format,										// VkFormat					format;
+					m_testParams.depthStencilFormat,			// VkFormat					format;
 					componentMapping,							// VkChannelMapping			channels;
-					{ aspectMask, 0u, 1u, 0u, 1u }				// VkImageSubresourceRange	subresourceRange;
+					{ clearAspectMask, 0u, 1u, 0u, 1u }			// VkImageSubresourceRange	subresourceRange;
 				};
 
 				m_depthAttachmentView = createImageView(vk, vkDevice, &depthAttachmentViewParams);
@@ -579,7 +629,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 					VK_QUEUE_FAMILY_IGNORED,				// deUint32					dstQueueFamilyIndex;
 					*m_depthImage,							// VkImage					image;
 					{										// VkImageSubresourceRange	subresourceRange;
-						aspectMask,							// VkImageAspect			aspect;
+						formatAspectMask,					// VkImageAspect			aspect;
 						0u,									// deUint32					baseMipLevel;
 						1u,									// deUint32					mipLevels;
 						0u,									// deUint32					baseArraySlice;
@@ -600,7 +650,7 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 					VK_QUEUE_FAMILY_IGNORED,							// deUint32					dstQueueFamilyIndex;
 					*m_depthImage,										// VkImage					image;
 					{													// VkImageSubresourceRange	subresourceRange;
-						aspectMask,										// VkImageAspect			aspect;
+						formatAspectMask,								// VkImageAspect			aspect;
 						0u,												// deUint32					baseMipLevel;
 						1u,												// deUint32					mipLevels;
 						0u,												// deUint32					baseArraySlice;
@@ -610,11 +660,11 @@ UnusedClearAttachmentTestInstance::UnusedClearAttachmentTestInstance(Context&			
 
 				const VkImageSubresourceRange	clearRange	=
 				{
-					aspectMask,	// VkImageAspectFlags	aspectMask;
-					0u,			// deUint32				baseMipLevel;
-					1u,			// deUint32				levelCount;
-					0u,			// deUint32				baseArrayLayer;
-					1u			// deUint32				layerCount;
+					clearAspectMask,	// VkImageAspectFlags	aspectMask;
+					0u,					// deUint32				baseMipLevel;
+					1u,					// deUint32				levelCount;
+					0u,					// deUint32				baseArrayLayer;
+					1u					// deUint32				layerCount;
 				};
 
 				// Clear image and transfer layout.
@@ -801,9 +851,9 @@ void UnusedClearAttachmentTestInstance::createCommandBuffer (const DeviceInterfa
 	if (hasDepthStencil(m_testParams.depthStencilType))
 	{
 		const VkClearAttachment clearAttachment = {
-			getAspectMask(m_testParams.depthStencilType),	// VkImageAspectFlags	aspectMask;
-			0u,												// uint32_t				colorAttachment;
-			m_clearColorDepth								// VkClearValue			clearValue;
+			getClearAspectMask(m_testParams.depthStencilType),	// VkImageAspectFlags	aspectMask;
+			0u,													// uint32_t				colorAttachment;
+			m_clearColorDepth									// VkClearValue			clearValue;
 		};
 		clearAttachments.push_back(clearAttachment);
 	}
@@ -862,29 +912,36 @@ tcu::TestStatus	UnusedClearAttachmentTestInstance::iterate (void)
 
 	if (hasDepthStencil(m_testParams.depthStencilType))
 	{
-		const bool							depthOnly	= isDepthOnly(m_testParams.depthStencilType);
-		const VkFormat						format		= getFormat(m_testParams.depthStencilType);
-		de::MovePtr<tcu::TextureLevel>		depthPixels	= pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, format, m_renderSize);
-		const tcu::ConstPixelBufferAccess&	depthAccess	= depthPixels->getAccess();
-		const float							refDepth	= (m_testParams.depthStencilUsed ? m_clearColorDepth.depthStencil.depth : m_initialColorDepth.depthStencil.depth);
+		const bool depthOnly	= isDepthOnly(m_testParams.depthStencilType);
+		const bool stencilOnly	= isStencilOnly(m_testParams.depthStencilType);
 
-		for (int y = 0; y < depthAccess.getHeight(); ++y)
-		for (int x = 0; x < depthAccess.getWidth(); ++x)
+		if (!stencilOnly)
 		{
-			const float value = depthAccess.getPixDepth(x, y);
-			if (de::abs(value - refDepth) > 0.001f)
-			{
-				std::ostringstream msg;
+			de::MovePtr<tcu::TextureLevel>		depthPixels	= pipeline::readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, m_testParams.depthStencilFormat, m_renderSize);
+			const tcu::ConstPixelBufferAccess&	depthAccess	= depthPixels->getAccess();
+			const float							refDepth	= (m_testParams.depthStencilUsed ? m_clearColorDepth.depthStencil.depth : m_initialColorDepth.depthStencil.depth);
 
-				msg << "Depth/stencil attachment with mismatched depth value at pixel ("
-					<< x << ", " << y << "): expected value " << refDepth << " and found " << value;
-				return tcu::TestStatus::fail(msg.str());
+			for (int y = 0; y < depthAccess.getHeight(); ++y)
+			for (int x = 0; x < depthAccess.getWidth(); ++x)
+			{
+				const float value = depthAccess.getPixDepth(x, y);
+				if (de::abs(value - refDepth) > 0.001f)
+				{
+					std::ostringstream msg;
+
+					msg << "Depth/stencil attachment with mismatched depth value at pixel ("
+						<< x << ", " << y << "): expected value " << refDepth << " and found " << value;
+					return tcu::TestStatus::fail(msg.str());
+				}
 			}
 		}
 
 		if (!depthOnly)
 		{
-			de::MovePtr<tcu::TextureLevel>		stencilPixels	= pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, format, m_renderSize, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			// Note read*Attachment leaves the attachment in the VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL layout, so the current layout
+			// depends on if we have previously read the depth aspect or not.
+			const VkImageLayout					currentLayout	= (stencilOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			de::MovePtr<tcu::TextureLevel>		stencilPixels	= pipeline::readStencilAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, m_testParams.depthStencilFormat, m_renderSize, currentLayout);
 			const tcu::ConstPixelBufferAccess&	stencilAccess	= stencilPixels->getAccess();
 			const deUint32						refStencil		= (m_testParams.depthStencilUsed ? m_clearColorDepth.depthStencil.stencil : m_initialColorDepth.depthStencil.stencil);
 
@@ -932,6 +989,7 @@ std::string getUsed(deBool value)
 {
 	return (value ? "used" : "unused");
 }
+
 std::string getCombName(const std::vector<deBool>& array)
 {
 	std::ostringstream name;
@@ -949,39 +1007,44 @@ tcu::TestCaseGroup* createRenderPassUnusedClearAttachmentTests (tcu::TestContext
 
 	for (int depthStencilType = 0; depthStencilType < DEPTH_STENCIL_MAX_ENUM; ++depthStencilType)
 	{
-		for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(DE_BOOL_VALUES); ++i)
+		const DepthStencilType	dsType		= static_cast<DepthStencilType>(depthStencilType);
+		const auto				dsFormats	= getFormats(dsType);
+
+		for (const auto dsFormat : dsFormats)
 		{
-			deBool							depthStencilUse	= DE_BOOL_VALUES[i];
-			DepthStencilType				dsType			= static_cast<DepthStencilType>(depthStencilType);
-			std::string						dsCase			= depthStencilTypeName(dsType);
-			std::vector<TestParams>			testTypes;
-
-			if (hasDepthStencil(dsType))
-				testTypes.emplace_back(0, dsType, depthStencilUse, renderPassType);						// No color attachments.
-			testTypes.emplace_back(1, dsType, depthStencilUse, renderPassType);							// Single color attachment.
-			testTypes.emplace_back(COLOR_ATTACHMENTS_NUMBER, dsType, depthStencilUse, renderPassType);	// Multiple color attachments.
-
-			for (auto& params : testTypes)
+			for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(DE_BOOL_VALUES); ++i)
 			{
-				if (!params.colorUsed.empty())
+				const deBool			depthStencilUse	= DE_BOOL_VALUES[i];
+				const std::string		dsCase			= depthStencilTypeName(dsType, dsFormat);
+				std::vector<TestParams>	testTypes;
+
+				if (hasDepthStencil(dsType))
+					testTypes.emplace_back(0, dsType, depthStencilUse, dsFormat, renderPassType);						// No color attachments.
+				testTypes.emplace_back(1, dsType, depthStencilUse, dsFormat, renderPassType);							// Single color attachment.
+				testTypes.emplace_back(COLOR_ATTACHMENTS_NUMBER, dsType, depthStencilUse, dsFormat, renderPassType);	// Multiple color attachments.
+
+				for (auto& params : testTypes)
 				{
-					runCallbackOnCombination(params.colorUsed, [&](const std::vector<deBool>& array) {
-						std::string name = getCombName(array) + "_" + dsCase;
-						if (hasDepthStencil(dsType))
-							name += std::string("_") + getUsed(depthStencilUse);
+					if (!params.colorUsed.empty())
+					{
+						runCallbackOnCombination(params.colorUsed, [&](const std::vector<deBool>& array) {
+							std::string name = getCombName(array) + "_" + dsCase;
+							if (hasDepthStencil(dsType))
+								name += std::string("_") + getUsed(depthStencilUse);
+							testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
+						});
+					}
+					else
+					{
+						std::string name = dsCase + "_" + getUsed(depthStencilUse);
 						testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
-					});
-				}
-				else
-				{
-					std::string name = dsCase + "_" + getUsed(depthStencilUse);
-					testGroup->addChild(new UnusedClearAttachmentTest(testCtx, name, "", params));
+					}
+
 				}
 
+				if (!hasDepthStencil(dsType))
+					break;
 			}
-
-			if (!hasDepthStencil(dsType))
-				break;
 		}
 	}
 

@@ -264,7 +264,7 @@ Texture2DShadowTestInstance::Texture2DShadowTestInstance (Context& context, cons
 	// Upload.
 	for (std::vector<TestTexture2DSp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
 	{
-		m_renderer.add2DTexture(*i, m_testParameters.backingMode);
+		m_renderer.add2DTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
 	}
 
 	// Compute cases.
@@ -898,7 +898,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.wrapT		= Sampler::REPEAT_GL;
 						testParameters.width		= 32;
 						testParameters.height		= 64;
-
+						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
 						testParameters.programs.push_back(PROGRAM_2D_SHADOW);
 
 						filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
@@ -937,6 +937,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.wrapS		= Sampler::REPEAT_GL;
 						testParameters.wrapT		= Sampler::REPEAT_GL;
 						testParameters.size			= 32;
+						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
 
 						testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
 
@@ -978,6 +979,7 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 						testParameters.width		= 32;
 						testParameters.height		= 64;
 						testParameters.numLayers	= 8;
+						testParameters.aspectMask	= VK_IMAGE_ASPECT_DEPTH_BIT;
 
 						testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
 

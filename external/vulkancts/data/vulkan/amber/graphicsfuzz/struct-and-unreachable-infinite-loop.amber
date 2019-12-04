@@ -1,0 +1,207 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: Fragment shader with struct and unreachable infinite loop
+
+# The test passes because 'tree[0].rightIndex' is set to 1, so that the infinite loop is not reached and the output colour red is written
+
+# Optimized using spirv-opt with the following arguments:
+# '--redundancy-elimination'
+# '--eliminate-dead-inserts'
+# '--combine-access-chains'
+# '--vector-dce'
+# '--vector-dce'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--private-to-local'
+# '--simplify-instructions'
+# '--simplify-instructions'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--eliminate-local-multi-store'
+# '--eliminate-local-single-store'
+# '--eliminate-local-single-block'
+# '--simplify-instructions'
+# '--copy-propagate-arrays'
+# '--vector-dce'
+# '--simplify-instructions'
+# '--reduce-load-size'
+# '--vector-dce'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--redundancy-elimination'
+# '--simplify-instructions'
+# '--eliminate-dead-branches'
+# '--private-to-local'
+# '--vector-dce'
+# '--convert-local-access-chains'
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--private-to-local'
+# '--private-to-local'
+# spirv-opt commit hash: 6b072126595dd8c2448eb1fda616251c5e6d7079
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# struct BST {
+#  int data;
+#  int leftIndex;
+#  int rightIndex;
+# } ;
+#
+# BST tree[10];
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void makeTreeNode(inout BST tree)
+# {
+#  tree.rightIndex = 1;
+# }
+# void main()
+# {
+#  makeTreeNode(tree[0]);
+#  if (tree[0].rightIndex == 0) {
+#    while(true)
+#     {
+#     }
+#  }
+#
+#  _GLF_color = vec4(float(tree[0].rightIndex), 0.0, 0.0, 1.0);
+#
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 59
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %46
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %7 "BST"
+               OpMemberName %7 0 "data"
+               OpMemberName %7 1 "leftIndex"
+               OpMemberName %7 2 "rightIndex"
+               OpName %11 "makeTreeNode(struct-BST-i1-i1-i11;"
+               OpName %10 "tree"
+               OpName %21 "tree"
+               OpName %23 "param"
+               OpName %46 "_GLF_color"
+               OpMemberDecorate %7 0 RelaxedPrecision
+               OpMemberDecorate %7 1 RelaxedPrecision
+               OpMemberDecorate %7 2 RelaxedPrecision
+               OpDecorate %32 RelaxedPrecision
+               OpDecorate %46 Location 0
+               OpDecorate %48 RelaxedPrecision
+               OpDecorate %57 RelaxedPrecision
+               OpDecorate %58 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeStruct %6 %6 %6
+          %8 = OpTypePointer Function %7
+          %9 = OpTypeFunction %2 %8
+         %13 = OpConstant %6 2
+         %14 = OpConstant %6 1
+         %15 = OpTypePointer Function %6
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 10
+         %19 = OpTypeArray %7 %18
+         %20 = OpTypePointer Private %19
+         %22 = OpConstant %6 0
+         %24 = OpTypePointer Private %7
+         %30 = OpTypePointer Private %6
+         %33 = OpTypeBool
+         %42 = OpConstantTrue %33
+         %43 = OpTypeFloat 32
+         %44 = OpTypeVector %43 4
+         %45 = OpTypePointer Output %44
+         %46 = OpVariable %45 Output
+         %50 = OpConstant %43 0
+         %51 = OpConstant %43 1
+         %53 = OpTypePointer Function %19
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpVariable %53 Function
+         %23 = OpVariable %8 Function
+         %54 = OpLoad %19 %21
+         %26 = OpCompositeExtract %7 %54 0
+               OpStore %23 %26
+         %27 = OpFunctionCall %2 %11 %23
+         %28 = OpLoad %7 %23
+         %55 = OpLoad %19 %21
+         %56 = OpCompositeInsert %19 %28 %55 0
+               OpStore %21 %56
+         %31 = OpAccessChain %15 %21 %22 %13
+         %57 = OpLoad %19 %21
+         %32 = OpCompositeExtract %6 %57 0 2
+         %34 = OpIEqual %33 %32 %22
+               OpSelectionMerge %36 None
+               OpBranchConditional %34 %35 %36
+         %35 = OpLabel
+               OpBranch %37
+         %37 = OpLabel
+               OpLoopMerge %39 %37 None
+               OpBranch %37
+         %39 = OpLabel
+               OpUnreachable
+         %36 = OpLabel
+         %58 = OpLoad %19 %21
+         %48 = OpCompositeExtract %6 %58 0 2
+         %49 = OpConvertSToF %43 %48
+         %52 = OpCompositeConstruct %44 %49 %50 %50 %51
+               OpStore %46 %52
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %2 None %9
+         %10 = OpFunctionParameter %8
+         %12 = OpLabel
+         %16 = OpAccessChain %15 %10 %13
+               OpStore %16 %14
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

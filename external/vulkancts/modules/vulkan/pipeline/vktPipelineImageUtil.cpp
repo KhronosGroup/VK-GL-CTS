@@ -1179,7 +1179,7 @@ de::MovePtr<TestTexture> TestTexture2D::copy(const tcu::TextureFormat format) co
 {
 	DE_ASSERT(!isCompressed());
 
-	de::MovePtr<TestTexture>	texture	(new TestTexture2D(format, m_texture.getWidth(), m_texture.getHeight()));
+	de::MovePtr<TestTexture>	texture	(new TestTexture2D(format, m_texture.getWidth(), m_texture.getHeight(), m_texture.getNumLevels()));
 
 	copyToTexture(*texture);
 

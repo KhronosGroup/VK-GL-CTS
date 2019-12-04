@@ -36,6 +36,7 @@ set(DEQP_GL_SUBGROUPS_SRCS
 set(DEQP_GL_SUBGROUPS_LIBS
   glutil
   tcutil
+  glcts-common
   )
 
 PCH(DEQP_GL_SUBGROUPS_SRCS ../../pch.cpp)

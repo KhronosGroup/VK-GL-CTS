@@ -21,6 +21,9 @@
 
 #include "vktAmberTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktTestCaseUtil.hpp"
+#include "tcuResource.hpp"
+
 
 namespace vkt
 {
@@ -29,7 +32,7 @@ namespace cts_amber
 
 class AmberIndexFileParser
 {
-	char*				m_buf;
+	std::string			m_str;
 	size_t				m_idx;
 	size_t				m_len;
 	static const int	m_fieldLen = 256;
@@ -52,19 +55,19 @@ class AmberIndexFileParser
 
 	void skipWhitespace (void)
 	{
-		while (m_idx < m_len && isWhitespace(m_buf[m_idx]))
+		while (m_idx < m_len && isWhitespace(m_str[m_idx]))
 			m_idx++;
 	}
 
 	void accept (char c)
 	{
-		if (m_buf[m_idx] == c)
+		if (m_str[m_idx] == c)
 			m_idx++;
 	}
 
 	void expect (char c)
 	{
-		if (m_buf[m_idx] != c || m_idx >= m_len)
+		if (m_str[m_idx] != c || m_idx >= m_len)
 			TCU_THROW(ResourceError, "Error parsing amber index file");
 
 		m_idx++;
@@ -74,9 +77,9 @@ class AmberIndexFileParser
 	{
 		int i = 0;
 
-		while (m_idx < m_len && i < m_fieldLen && m_buf[m_idx] != '"')
+		while (m_idx < m_len && i < m_fieldLen && m_str[m_idx] != '"')
 		{
-			field[i] = m_buf[m_idx];
+			field[i] = m_str[m_idx];
 			i++;
 			m_idx++;
 		}
@@ -85,52 +88,21 @@ class AmberIndexFileParser
 		m_idx++;
 	}
 
-	char* loadFile (const char* filename, size_t& len)
-	{
-		FILE* f = fopen(filename, "rb");
-
-		if (f == 0)
-		{
-			std::string error("Unable to open index file ");
-			error.append(filename);
-			TCU_THROW(ResourceError, error.c_str());
-		}
-
-		fseek(f, 0, SEEK_END);
-		len = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		char* buf = new char[len + 1];
-
-		if (fread(buf, 1, len, f) != len)
-		{
-			delete[] buf;
-			fclose(f);
-			std::string error("File i/o error reading index file ");
-			error.append(filename);
-			TCU_THROW(ResourceError, error.c_str());
-		}
-
-		buf[len] = 0;
-		fclose(f);
-		return buf;
-	}
 
 public:
-	AmberIndexFileParser (const char* filename, const char* category)
+	AmberIndexFileParser (tcu::TestContext& testCtx, const char* filename, const char* category)
 	{
 		std::string	indexFilename("vulkan/amber/");
 		indexFilename.append(category);
 		indexFilename.append("/");
 		indexFilename.append(filename);
 
-		m_buf = loadFile(indexFilename.c_str(), m_len);
+		m_str = ShaderSourceProvider::getSource(testCtx.getArchive(), indexFilename.c_str());
+		m_len = m_str.length();
 		m_idx = 0;
 	}
 
-	~AmberIndexFileParser (void)
-	{
-		delete[] m_buf;
-	}
+	~AmberIndexFileParser (void) { }
 
 	AmberTestCase* parse (const char* category, tcu::TestContext& testCtx)
 	{
@@ -166,7 +138,7 @@ public:
 			testFilename.append(m_filenameField);
 			AmberTestCase *testCase = new AmberTestCase(testCtx, m_testnameField, m_descField, testFilename);
 
-			while (m_idx < m_len && m_buf[m_idx] == ',')
+			while (m_idx < m_len && m_str[m_idx] == ',')
 			{
 				accept(',');
 				skipWhitespace();
@@ -189,7 +161,7 @@ public:
 void createAmberTestsFromIndexFile (tcu::TestContext& testCtx, tcu::TestCaseGroup* group, const std::string filename, const char* category)
 {
 	AmberTestCase*			testCase = 0;
-	AmberIndexFileParser	parser(filename.c_str(), category);
+	AmberIndexFileParser	parser(testCtx, filename.c_str(), category);
 
 	do
 	{

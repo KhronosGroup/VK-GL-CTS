@@ -91,7 +91,7 @@ Compressed2DTestInstance::Compressed2DTestInstance (Context&				context,
 	, m_texture				(TestTexture2DSp(new pipeline::TestTexture2D(m_compressedFormat, testParameters.width, testParameters.height)))
 	, m_renderer			(context, testParameters.sampleCount, testParameters.width, testParameters.height)
 {
-	m_renderer.add2DTexture(m_texture, testParameters.backingMode);
+	m_renderer.add2DTexture(m_texture, testParameters.aspectMask, testParameters.backingMode);
 }
 
 tcu::TestStatus Compressed2DTestInstance::iterate (void)
@@ -262,6 +262,7 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		testParameters.height		= sizes[sizeNdx].height;
 		testParameters.minFilter	= tcu::Sampler::NEAREST;
 		testParameters.magFilter	= tcu::Sampler::NEAREST;
+		testParameters.aspectMask	= VK_IMAGE_ASPECT_COLOR_BIT;
 		testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
 		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));

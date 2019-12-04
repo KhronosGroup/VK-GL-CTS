@@ -144,8 +144,9 @@ public:
 	};
 													TextureBinding				(Context& context);
 													TextureBinding				(Context& context, const TestTextureSp& textureData, const Type type,
-																				 const ImageBackingMode backingMode = IMAGE_BACKING_MODE_REGULAR,
-																				 const vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA());
+																				 const vk::VkImageAspectFlags aspectMask,
+																				 const ImageBackingMode backingMode				= IMAGE_BACKING_MODE_REGULAR,
+																				 const vk::VkComponentMapping componentMapping	= vk::makeComponentMappingRGBA());
 	vk::VkImage										getImage					(void) { return *m_textureImage; }
 	vk::VkImageView									getImageView				(void) { return *m_textureImageView; }
 	Type											getType						(void) { return m_type; }
@@ -166,6 +167,7 @@ private:
 	de::MovePtr<vk::Allocation>						m_textureImageMemory;
 	vk::Move<vk::VkImageView>						m_textureImageView;
 	std::vector<de::SharedPtr<vk::Allocation> >		m_allocations;
+	vk::VkImageAspectFlags							m_aspectMask;
 	vk::VkComponentMapping							m_componentMapping;
 };
 
@@ -188,18 +190,22 @@ public:
 
 	void								clearImage					(vk::VkImage image);
 	void								add2DTexture				(const TestTexture2DSp& texture,
+																	 const vk::VkImageAspectFlags& aspectMask,
 																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTexture2D&		get2DTexture				(int textureIndex) const;
 
 	void								addCubeTexture				(const TestTextureCubeSp& texture,
+																	 const vk::VkImageAspectFlags& aspectMask,
 																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTextureCube&	getCubeTexture				(int textureIndex) const;
 
 	void								add2DArrayTexture			(const TestTexture2DArraySp& texture,
+																	 const vk::VkImageAspectFlags& aspectMask,
 																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTexture2DArray&	get2DArrayTexture			(int textureIndex) const;
 
 	void								add3DTexture				(const TestTexture3DSp& texture,
+																	 const vk::VkImageAspectFlags& aspectMask,
 																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTexture3D&		get3DTexture				(int textureIndex) const;
 
@@ -314,6 +320,7 @@ struct TextureCommonTestCaseParameters
 	std::vector<util::Program>	programs;
 
 	deBool						unnormal;
+	vk::VkImageAspectFlags		aspectMask;
 };
 
 struct Texture2DTestCaseParameters : public TextureCommonTestCaseParameters
