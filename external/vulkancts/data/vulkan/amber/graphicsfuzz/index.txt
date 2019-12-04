@@ -49,6 +49,7 @@
 {	"similar-nested-ifs.amber",						"similar-nested-ifs",					"A fragment shader with similar nested ifs and loops"									},
 {	"smoothstep-after-loop.amber",					"smoothstep-after-loop",				"Fragment shader with 1-iteration loop and smoothstep"									},
 {	"struct-and-unreachable-infinite-loop.amber",	"struct-and-unreachable-infinite-loop",	"Fragment shader with struct and unreachable infinite loop"								},
+{	"struct-controlled-loop.amber",					"struct-controlled-loop",				"Shader with loop controlled by struct"													},
 {	"struct-used-as-temporary.amber",				"struct-used-as-temporary",				"A fragment shader that uses a temporary struct variable"								},
 {	"switch-if-discard.amber",						"switch-if-discard",					"A fragment shader with a switch, if, and discard"										},
 {	"switch-with-empty-if-false.amber",				"switch-with-empty-if-false",			"A fragment shader with always false if in switch statement"							},
