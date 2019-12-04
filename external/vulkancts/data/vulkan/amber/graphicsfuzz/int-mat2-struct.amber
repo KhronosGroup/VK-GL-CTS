@@ -1,0 +1,196 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: Fragment shader using (int, mat2) struct
+
+# The test passes because the struct instance is created and used in a way that guarantees writing red to the output buffer
+
+# Optimized using spirv-opt with the following arguments:
+# '--eliminate-local-single-block'
+# '--eliminate-dead-branches'
+# '--vector-dce'
+# '--simplify-instructions'
+# '--reduce-load-size'
+# '--eliminate-local-multi-store'
+# '--private-to-local'
+# '--eliminate-dead-branches'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--ccp'
+# '--reduce-load-size'
+# '--eliminate-local-single-block'
+# '--scalar-replacement=100'
+# '--combine-access-chains'
+# '--if-conversion'
+# '--ccp'
+# '--eliminate-dead-branches'
+# '--vector-dce'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--eliminate-local-single-block'
+# '--inline-entry-points-exhaustive'
+# '--eliminate-dead-inserts'
+# '--eliminate-local-multi-store'
+# '--convert-local-access-chains'
+# '--eliminate-dead-branches'
+# '--vector-dce'
+# '--eliminate-dead-inserts'
+# '--private-to-local'
+# '--eliminate-local-multi-store'
+# spirv-opt commit hash: f1e5cd73f658abcc23ee96d78f2dc27c4b7028c1
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# struct S {
+#  int f1;
+#  mat2 f2;
+# } ;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#  S myS = S(1, transpose(gl_FragCoord.x < 0.0 ? mat2(1.0, 2.0, 3.0, 4.0) : mat2(0.5, -0.5, -0.5, 0.5)));
+#  _GLF_color = vec4(float(myS.f1), myS.f2[0][0] + myS.f2[1][0], myS.f2[0][1] + myS.f2[1][1], float(myS.f1));
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 81
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %16 %46
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "S"
+               OpMemberName %10 0 "f1"
+               OpMemberName %10 1 "f2"
+               OpName %16 "gl_FragCoord"
+               OpName %46 "_GLF_color"
+               OpMemberDecorate %10 0 RelaxedPrecision
+               OpDecorate %16 BuiltIn FragCoord
+               OpDecorate %46 Location 0
+               OpDecorate %69 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFloat 32
+          %8 = OpTypeVector %7 2
+          %9 = OpTypeMatrix %8 2
+         %10 = OpTypeStruct %6 %9
+         %11 = OpTypePointer Function %10
+         %13 = OpConstant %6 1
+         %14 = OpTypeVector %7 4
+         %15 = OpTypePointer Input %14
+         %16 = OpVariable %15 Input
+         %17 = OpTypeInt 32 0
+         %18 = OpConstant %17 0
+         %19 = OpTypePointer Input %7
+         %22 = OpConstant %7 0
+         %23 = OpTypeBool
+         %25 = OpTypePointer Function %9
+         %29 = OpConstant %7 1
+         %30 = OpConstant %7 2
+         %31 = OpConstantComposite %8 %29 %30
+         %32 = OpConstant %7 3
+         %33 = OpConstant %7 4
+         %34 = OpConstantComposite %8 %32 %33
+         %35 = OpConstantComposite %9 %31 %34
+         %37 = OpConstant %7 0.5
+         %38 = OpConstant %7 -0.5
+         %39 = OpConstantComposite %8 %37 %38
+         %40 = OpConstantComposite %8 %38 %37
+         %41 = OpConstantComposite %9 %39 %40
+         %45 = OpTypePointer Output %14
+         %46 = OpVariable %45 Output
+         %47 = OpConstant %6 0
+         %48 = OpTypePointer Function %6
+         %52 = OpTypePointer Function %7
+         %58 = OpConstant %17 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %70 = OpVariable %25 Function
+         %69 = OpVariable %48 Function
+         %26 = OpVariable %25 Function
+         %20 = OpAccessChain %19 %16 %18
+         %21 = OpLoad %7 %20
+         %24 = OpFOrdLessThan %23 %21 %22
+               OpSelectionMerge %28 None
+               OpBranchConditional %24 %27 %36
+         %27 = OpLabel
+               OpStore %26 %35
+               OpBranch %28
+         %36 = OpLabel
+               OpStore %26 %41
+               OpBranch %28
+         %28 = OpLabel
+         %68 = OpPhi %9 %35 %27 %41 %36
+         %43 = OpTranspose %9 %68
+         %44 = OpCompositeConstruct %10 %13 %43
+         %71 = OpCompositeExtract %6 %44 0
+               OpStore %69 %71
+         %72 = OpCompositeExtract %9 %44 1
+               OpStore %70 %72
+         %51 = OpConvertSToF %7 %71
+         %73 = OpAccessChain %52 %70 %47 %18
+         %77 = OpLoad %9 %70
+         %54 = OpCompositeExtract %7 %77 0 0
+         %74 = OpAccessChain %52 %70 %13 %18
+         %78 = OpLoad %9 %70
+         %56 = OpCompositeExtract %7 %78 1 0
+         %57 = OpFAdd %7 %54 %56
+         %75 = OpAccessChain %52 %70 %47 %58
+         %79 = OpLoad %9 %70
+         %60 = OpCompositeExtract %7 %79 0 1
+         %76 = OpAccessChain %52 %70 %13 %58
+         %80 = OpLoad %9 %70
+         %62 = OpCompositeExtract %7 %80 1 1
+         %63 = OpFAdd %7 %60 %62
+         %66 = OpConvertSToF %7 %71
+         %67 = OpCompositeConstruct %14 %51 %57 %63 %66
+               OpStore %46 %67
+               OpReturn
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
