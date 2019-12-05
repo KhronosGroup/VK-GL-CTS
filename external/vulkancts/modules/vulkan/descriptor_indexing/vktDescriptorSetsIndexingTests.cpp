@@ -1234,63 +1234,65 @@ void CommonDescriptorInstance::iterateCommandBegin					(IterateCommonVariables&	
 	// Clear color attachment, and transition it to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 	if ((m_testParams.stageFlags & VK_SHADER_STAGE_VERTEX_BIT) || (m_testParams.stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT))
 	{
-		const VkImageMemoryBarrier preImageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-			DE_NULL,											// const void*			pNext
-			0u,													// VkAccessFlags		srcAccessMask
-			VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
-			VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout		oldLayout
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		newLayout
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-			*variables.frameBuffer->image->image,				// VkImage				image
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-				0u,										// uint32_t				baseMipLevel
-				VK_REMAINING_MIP_LEVELS,				// uint32_t				mipLevels,
-				0u,										// uint32_t				baseArray
-				VK_REMAINING_ARRAY_LAYERS,				// uint32_t				arraySize
-			}
-		};
-
-		m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-								(VkDependencyFlags)0,
-								0, (const VkMemoryBarrier*)DE_NULL,
-								0, (const VkBufferMemoryBarrier*)DE_NULL,
-								1, &preImageBarrier);
-
-		const VkClearColorValue	clearColorValue		= makeClearValueColor(m_clearColor).color;
-
 		if (firstPass)
+		{
+			const VkImageMemoryBarrier preImageBarrier =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
+				DE_NULL,											// const void*			pNext
+				0u,													// VkAccessFlags		srcAccessMask
+				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		dstAccessMask
+				VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout		oldLayout
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		newLayout
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
+				*variables.frameBuffer->image->image,				// VkImage				image
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
+					0u,										// uint32_t				baseMipLevel
+					VK_REMAINING_MIP_LEVELS,				// uint32_t				mipLevels,
+					0u,										// uint32_t				baseArray
+					VK_REMAINING_ARRAY_LAYERS,				// uint32_t				arraySize
+				}
+			};
+
+			m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+									(VkDependencyFlags)0,
+									0, (const VkMemoryBarrier*)DE_NULL,
+									0, (const VkBufferMemoryBarrier*)DE_NULL,
+									1, &preImageBarrier);
+
+			const VkClearColorValue	clearColorValue		= makeClearValueColor(m_clearColor).color;
+
 			m_vki.cmdClearColorImage(*variables.commandBuffer, *variables.frameBuffer->image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColorValue, 1, &preImageBarrier.subresourceRange);
 
-		const VkImageMemoryBarrier postImageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-			DE_NULL,											// const void*			pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags		dstAccessMask
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		oldLayout
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout		newLayout
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-			*variables.frameBuffer->image->image,				// VkImage				image
+			const VkImageMemoryBarrier postImageBarrier =
 			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-				0u,										// uint32_t				baseMipLevel
-				VK_REMAINING_MIP_LEVELS,				// uint32_t				mipLevels,
-				0u,										// uint32_t				baseArray
-				VK_REMAINING_ARRAY_LAYERS,				// uint32_t				arraySize
-			}
-		};
+				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
+				DE_NULL,											// const void*			pNext
+				VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags		dstAccessMask
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout		oldLayout
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout		newLayout
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
+				VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
+				*variables.frameBuffer->image->image,				// VkImage				image
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
+					0u,										// uint32_t				baseMipLevel
+					VK_REMAINING_MIP_LEVELS,				// uint32_t				mipLevels,
+					0u,										// uint32_t				baseArray
+					VK_REMAINING_ARRAY_LAYERS,				// uint32_t				arraySize
+				}
+			};
 
-		m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-								(VkDependencyFlags)0,
-								0, (const VkMemoryBarrier*)DE_NULL,
-								0, (const VkBufferMemoryBarrier*)DE_NULL,
-								1, &postImageBarrier);
+			m_vki.cmdPipelineBarrier(*variables.commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+									(VkDependencyFlags)0,
+									0, (const VkMemoryBarrier*)DE_NULL,
+									0, (const VkBufferMemoryBarrier*)DE_NULL,
+									1, &postImageBarrier);
 
+		}
 	}
 
 	if (m_testParams.calculateInLoop)

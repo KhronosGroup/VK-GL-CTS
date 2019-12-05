@@ -657,7 +657,7 @@ vkt::TestInstance* CrossStageBasicTestsCase::createInstance (vkt::Context& conte
 void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollection) const
 {
 	vector<Decorations> decorations;
-	string epsilon = "6e-8";
+	string epsilon = "3e-7";
 	switch(m_parameters.qualifier)
 	{
 	case TEST_TYPE_FLAT:
@@ -757,6 +757,7 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 								"OpDecorate %rg_float_in RelaxedPrecision\n"
 								"OpDecorate %rgb_float_in RelaxedPrecision\n"
 								"OpDecorate %rgba_float_in RelaxedPrecision\n"));
+		epsilon = "2e-3";
 		break;
 	default:
 		DE_ASSERT(0);
@@ -875,24 +876,28 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"OpFunctionEnd\n";
 
 		/* #version 450
-		layout(location = 0) out vec4  out_color;
-		layout(location = 0) in vec4   in_color;
+		layout(location = 0) out vec4  color_out;
+		layout(location = 0) in vec4   color_in;
 		layout(location = 1) in float  r_float_in;
 		layout(location = 2) in vec2   rg_float_in;
 		layout(location = 3) in vec3   rgb_float_in;
 		layout(location = 4) in vec4   rgba_float_in;
 		void main()
 		{
-			float epsilon = 6e-8; // or 0.0 for flat
-			out_color = in_color;
-		if(abs(r_float_in - in_color.r) > epsilon)
-			out_color.r = 1.0f;
-		if(any(greaterThan(abs(rg_float_in - in_color.rg), vec2(epsilon))))
-			out_color.rg = vec2(1.0f);
-		if(any(greaterThan(abs(rgb_float_in - in_color.rgb), vec3(epsilon))))
-			out_color.rgb = vec3(1.0f);
-		if(any(greaterThan(abs(rgba_float_in - in_color.rgba), vec4(epsilon))))
-			out_color.rgba = vec4(1.0f);
+			float epsilon = 3e-7; // or 0.0 for flat, or 2e-3 for RelaxedPrecision (mediump)
+			color_out = color_in;
+			float epsilon_float = max(abs(r_float_in), abs(color_in.r)) * epsilon;
+			if(abs(r_float_in - color_in.r) > epsilon_float)
+				color_out.r = 1.0f;
+			vec2 epsilon_vec2 = max(abs(rg_float_in), abs(color_in.rg)) * epsilon;
+			if(any(greaterThan(abs(rg_float_in - color_in.rg), epsilon_vec2)))
+				color_out.rg = vec2(1.0f);
+			vec3 epsilon_vec3 = max(abs(rgb_float_in), abs(color_in.rgb)) * epsilon;
+			if(any(greaterThan(abs(rgb_float_in - color_in.rgb), epsilon_vec3)))
+				color_out.rgb = vec3(1.0f);
+			vec4 epsilon_vec4 = max(abs(rgba_float_in), abs(color_in.rgba)) * epsilon;
+			if(any(greaterThan(abs(rgba_float_in - color_in.rgba), epsilon_vec4)))
+				color_out.rgba = vec4(1.0f);
 		}
 		*/
 
@@ -955,7 +960,12 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%19 = OpLoad %6 %18\n"
 		"%sub = OpFSub %6 %15 %19\n"
 		"%abs = OpExtInst %6 %1 FAbs %sub\n"
-		"%cmp = OpFOrdGreaterThan %20 %abs %ep\n"
+		"%ep1abs0 = OpExtInst %6 %1 FAbs %15\n"
+		"%ep1abs1 = OpExtInst %6 %1 FAbs %19\n"
+		"%ep1gt = OpFOrdGreaterThan %20 %ep1abs0 %ep1abs1\n"
+		"%ep1max = OpSelect %6 %ep1gt %ep1abs0 %ep1abs1\n"
+		"%ep1rel = OpFMul %6 %ep1max %ep\n"
+		"%cmp = OpFOrdGreaterThan %20 %abs %ep1rel\n"
 		"OpSelectionMerge %23 None\n"
 		"OpBranchConditional %cmp %22 %23\n"
 		"%22 = OpLabel\n"
@@ -968,7 +978,12 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%32 = OpVectorShuffle %27 %31 %31 0 1\n"
 		"%sub2 = OpFSub %27 %30 %32\n"
 		"%abs2 = OpExtInst %27 %1 FAbs %sub2\n"
-		"%cmp2 = OpFOrdGreaterThan %33 %abs2 %ep2\n"
+		"%ep2abs0 = OpExtInst %27 %1 FAbs %30\n"
+		"%ep2abs1 = OpExtInst %27 %1 FAbs %32\n"
+		"%ep2gt = OpFOrdGreaterThan %33 %ep2abs0 %ep2abs1\n"
+		"%ep2max = OpSelect %27 %ep2gt %ep2abs0 %ep2abs1\n"
+		"%ep2rel = OpFMul %27 %ep2max %ep2\n"
+		"%cmp2 = OpFOrdGreaterThan %33 %abs2 %ep2rel\n"
 		"%35 = OpAny %20 %cmp2\n"
 		"OpSelectionMerge %37 None\n"
 		"OpBranchConditional %35 %36 %37\n"
@@ -983,7 +998,12 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%46 = OpVectorShuffle %41 %45 %45 0 1 2\n"
 		"%sub3 = OpFSub %41 %44 %46\n"
 		"%abs3 = OpExtInst %41 %1 FAbs %sub3\n"
-		"%cmp3 = OpFOrdGreaterThan %47 %abs3 %ep3\n"
+		"%ep3abs0 = OpExtInst %41 %1 FAbs %44\n"
+		"%ep3abs1 = OpExtInst %41 %1 FAbs %46\n"
+		"%ep3gt = OpFOrdGreaterThan %47 %ep3abs0 %ep3abs1\n"
+		"%ep3max = OpSelect %41 %ep3gt %ep3abs0 %ep3abs1\n"
+		"%ep3rel = OpFMul %41 %ep3max %ep3\n"
+		"%cmp3 = OpFOrdGreaterThan %47 %abs3 %ep3rel\n"
 		"%49 = OpAny %20 %cmp3\n"
 		"OpSelectionMerge %51 None\n"
 		"OpBranchConditional %49 %50 %51\n"
@@ -997,7 +1017,12 @@ void CrossStageBasicTestsCase::initPrograms (SourceCollections& programCollectio
 		"%57 = OpLoad %7 %color_in\n"
 		"%sub4 = OpFSub %7 %56 %57\n"
 		"%abs4 = OpExtInst %7 %1 FAbs %sub4\n"
-		"%cmp4 = OpFOrdGreaterThan %58 %abs4 %ep4\n"
+		"%ep4abs0 = OpExtInst %7 %1 FAbs %56\n"
+		"%ep4abs1 = OpExtInst %7 %1 FAbs %57\n"
+		"%ep4gt = OpFOrdGreaterThan %58 %ep4abs0 %ep4abs1\n"
+		"%ep4max = OpSelect %7 %ep4gt %ep4abs0 %ep4abs1\n"
+		"%ep4rel = OpFMul %7 %ep4max %ep4\n"
+		"%cmp4 = OpFOrdGreaterThan %58 %abs4 %ep4rel\n"
 		"%60 = OpAny %20 %cmp4\n"
 		"OpSelectionMerge %62 None\n"
 		"OpBranchConditional %60 %61 %62\n"
