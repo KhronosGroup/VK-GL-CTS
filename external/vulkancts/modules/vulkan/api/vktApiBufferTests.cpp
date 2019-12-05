@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 #include "tcuPlatform.hpp"
 
 #include <algorithm>
@@ -656,6 +657,49 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 	}
 }
 
+tcu::TestStatus testOverlyLargeBuffer(Context& context, deUint64 bufferSize)
+{
+	const DeviceInterface&	vk					= context.getDeviceInterface();
+	const VkDevice			vkDevice			= context.getDevice();
+	const deUint32			queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	VkBuffer				rawBuffer			= DE_NULL;
+
+	VkBufferCreateInfo bufferParams =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType			sType;
+		DE_NULL,								// const void*				pNext;
+		0u,										// VkBufferCreateFlags		flags;
+		bufferSize,								// VkDeviceSize				size;
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// VkBufferUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		1u,										// uint32_t					queueFamilyIndexCount;
+		&queueFamilyIndex,						// const uint32_t*			pQueueFamilyIndices;
+	};
+
+	VkResult result = vk.createBuffer(vkDevice, &bufferParams, (vk::VkAllocationCallbacks*)DE_NULL, &rawBuffer);
+
+	// if buffer creation succeeds verify that the correct amount of memory was bound to it
+	if (result == VK_SUCCESS)
+	{
+		VkMemoryRequirements memoryRequirements;
+		vk.getBufferMemoryRequirements(vkDevice, rawBuffer, &memoryRequirements);
+		vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
+
+		if (memoryRequirements.size >= bufferSize)
+			return tcu::TestStatus::pass("Pass");
+		return tcu::TestStatus::fail("Fail");
+	}
+
+	vk.destroyBuffer(vkDevice, rawBuffer, DE_NULL);
+
+	// check if one of the allowed errors was returned
+	if ((result == VK_ERROR_OUT_OF_DEVICE_MEMORY) ||
+		(result == VK_ERROR_OUT_OF_HOST_MEMORY))
+		return tcu::TestStatus::pass("Pass");
+
+	return tcu::TestStatus::fail("Fail");
+}
+
 } // anonymous
 
  tcu::TestCaseGroup* createBufferTests (tcu::TestContext& testCtx)
@@ -672,6 +716,12 @@ void createBufferUsageCases (tcu::TestCaseGroup& testGroup, const deUint32 first
 		de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocation	(new tcu::TestCaseGroup(testCtx, "dedicated_alloc", "Dedicated allocation of memory."));
 		createBufferUsageCases(*dedicatedAllocation, 0u, 0u, ALLOCATION_KIND_DEDICATED);
 		buffersTests->addChild(dedicatedAllocation.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic buffer tests."));
+		addFunctionCase(basicTests.get(), "size_max_uint64", "Creating a ULLONG_MAX buffer and verify that it either succeeds or returns one of the allowed errors.", testOverlyLargeBuffer, std::numeric_limits<deUint64>::max());
+		buffersTests->addChild(basicTests.release());
 	}
 
 	return buffersTests.release();
