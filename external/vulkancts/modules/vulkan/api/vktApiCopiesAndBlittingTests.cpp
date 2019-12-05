@@ -1952,6 +1952,14 @@ tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 		threshold = tcu::Vec4(0.05f, 0.05f, 0.05f, 1.0f);
 		break;
 
+	case tcu::TextureFormat::UNORM_INT_1010102_REV:
+		threshold = tcu::Vec4(0.002f, 0.002f, 0.002f, 0.3f);
+		break;
+
+	case tcu:: TextureFormat::UNORM_INT8:
+		threshold = tcu::Vec4(0.008f, 0.008f, 0.008f, 0.008f);
+		break;
+
 	default:
 		const tcu::IVec4 bits = tcu::getTextureFormatMantissaBitDepth(format);
 		threshold = tcu::Vec4(calculateFloatConversionError(bits.x()),
