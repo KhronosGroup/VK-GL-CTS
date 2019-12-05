@@ -486,7 +486,7 @@ void draw_elements (NegativeTestContext& ctx)
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1]	= {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -495,19 +495,19 @@ void draw_elements (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElements(GL_POINTS, 1, -1, vertices);
+	ctx.glDrawElements(GL_POINTS, 1, -1, indices);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElements(GL_POINTS, 1, GL_FLOAT, vertices);
+	ctx.glDrawElements(GL_POINTS, 1, GL_FLOAT, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawElements(GL_POINTS, -1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(GL_POINTS, -1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -515,7 +515,7 @@ void draw_elements (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -539,11 +539,11 @@ void draw_elements (NegativeTestContext& ctx)
 		ctx.glBeginTransformFeedback(GL_POINTS);
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_INVALID_OPERATION);
 
 		ctx.glPauseTransformFeedback();
-		ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_NO_ERROR);
 
 		ctx.glEndTransformFeedback();
@@ -559,23 +559,23 @@ void draw_elements (NegativeTestContext& ctx)
 void draw_elements_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
-	GLuint	fbo = 0;
-	GLfloat	vertices[1];
+	GLuint	fbo			= 0;
+	GLbyte indices[1]	= {0};
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElements(GL_POINTS, 1, -1, vertices);
+	ctx.glDrawElements(GL_POINTS, 1, -1, indices);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElements(GL_POINTS, 1, GL_FLOAT, vertices);
+	ctx.glDrawElements(GL_POINTS, 1, GL_FLOAT, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawElements(GL_POINTS, -1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(GL_POINTS, -1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -583,7 +583,7 @@ void draw_elements_invalid_program (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -596,7 +596,7 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -605,19 +605,19 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(-1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElements(GL_TRIANGLES, 1, -1, vertices);
+	ctx.glDrawElements(GL_TRIANGLES, 1, -1, indices);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElements(GL_TRIANGLES, 1, GL_FLOAT, vertices);
+	ctx.glDrawElements(GL_TRIANGLES, 1, GL_FLOAT, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawElements(GL_TRIANGLES, -1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(GL_TRIANGLES, -1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -625,7 +625,7 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -649,11 +649,11 @@ void draw_elements_incomplete_primitive (NegativeTestContext& ctx)
 		ctx.glBeginTransformFeedback(GL_TRIANGLES);
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_INVALID_OPERATION);
 
 		ctx.glPauseTransformFeedback();
-		ctx.glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_NO_ERROR);
 
 		ctx.glEndTransformFeedback();
@@ -671,22 +671,22 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
 	GLuint				fbo = 0;
-	GLfloat				vertices[1];
+	GLuint				indices[1] = {0};
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElementsBaseVertex(-1, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.glDrawElementsBaseVertex(-1, 1, GL_UNSIGNED_INT, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, -1, vertices, 1);
+	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, -1, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_FLOAT, vertices, 1);
+	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_FLOAT, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawElementsBaseVertex(GL_POINTS, -1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.glDrawElementsBaseVertex(GL_POINTS, -1, GL_UNSIGNED_INT, indices, 1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -694,7 +694,7 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, indices, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -705,7 +705,7 @@ void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
-	GLfloat						vertices[1];
+	GLuint						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"] = getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 
@@ -713,7 +713,7 @@ void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
 	ctx.glUseProgram(program.getProgram());
-	ctx.glDrawElementsBaseVertex(GL_TRIANGLES, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.glDrawElementsBaseVertex(GL_TRIANGLES, 1, GL_UNSIGNED_INT, indices, 1);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
@@ -830,7 +830,7 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -840,21 +840,21 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElementsInstanced(-1, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(-1, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElementsInstanced(GL_POINTS, 1, -1, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 1, -1, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_FLOAT, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_FLOAT, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count or primcount are negative.");
-	ctx.glDrawElementsInstanced(GL_POINTS, -1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, -1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glDrawElementsInstanced(GL_POINTS, 11, GL_UNSIGNED_BYTE, vertices, -1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 11, GL_UNSIGNED_BYTE, indices, -1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -862,7 +862,7 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -886,11 +886,11 @@ void draw_elements_instanced (NegativeTestContext& ctx)
 		ctx.glBeginTransformFeedback(GL_POINTS);
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices, 1);
 		ctx.expectError(GL_INVALID_OPERATION);
 
 		ctx.glPauseTransformFeedback();
-		ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices, 1);
 		ctx.expectError(GL_NO_ERROR);
 
 		ctx.glEndTransformFeedback();
@@ -907,26 +907,26 @@ void draw_elements_instanced_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
 	GLuint fbo = 0;
-	GLfloat vertices[1];
+	GLbyte indices[1] = {0};
 	ctx.glVertexAttribDivisor(0, 1);
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElementsInstanced(-1, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(-1, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElementsInstanced(GL_POINTS, 1, -1, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 1, -1, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_FLOAT, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_FLOAT, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count or primcount are negative.");
-	ctx.glDrawElementsInstanced(GL_POINTS, -1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, -1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glDrawElementsInstanced(GL_POINTS, 11, GL_UNSIGNED_BYTE, vertices, -1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 11, GL_UNSIGNED_BYTE, indices, -1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -934,7 +934,7 @@ void draw_elements_instanced_invalid_program (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -947,7 +947,7 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -957,21 +957,21 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElementsInstanced(-1, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(-1, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, -1, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, -1, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, GL_FLOAT, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, GL_FLOAT, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count or primcount are negative.");
-	ctx.glDrawElementsInstanced(GL_TRIANGLES, -1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_TRIANGLES, -1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glDrawElementsInstanced(GL_TRIANGLES, 11, GL_UNSIGNED_BYTE, vertices, -1);
+	ctx.glDrawElementsInstanced(GL_TRIANGLES, 11, GL_UNSIGNED_BYTE, indices, -1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -979,7 +979,7 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -1003,11 +1003,11 @@ void draw_elements_instanced_incomplete_primitive (NegativeTestContext& ctx)
 		ctx.glBeginTransformFeedback(GL_TRIANGLES);
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.glDrawElementsInstanced(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, indices, 1);
 		ctx.expectError(GL_INVALID_OPERATION);
 
 		ctx.glPauseTransformFeedback();
-		ctx.glDrawElementsInstanced	(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, vertices, 1);
+		ctx.glDrawElementsInstanced	(GL_TRIANGLES, 1, GL_UNSIGNED_BYTE, indices, 1);
 		ctx.expectError(GL_NO_ERROR);
 
 		ctx.glEndTransformFeedback();
@@ -1026,7 +1026,7 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 
 	const bool					isES32	= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	GLuint						fbo		= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program			(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -1036,21 +1036,21 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawElementsInstancedBaseVertex(-1, 1, GL_UNSIGNED_BYTE, vertices, 1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(-1, 1, GL_UNSIGNED_BYTE, indices, 1, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, -1, vertices, 1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, -1, indices, 1, 1);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, GL_FLOAT, vertices, 1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, GL_FLOAT, indices, 1, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count or primcount are negative.");
-	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, -1, GL_UNSIGNED_BYTE, vertices, 1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, -1, GL_UNSIGNED_BYTE, indices, 1, 1);
 	ctx.expectError(GL_INVALID_VALUE);
-	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 11, GL_UNSIGNED_BYTE, vertices, -1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 11, GL_UNSIGNED_BYTE, indices, -1, 1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -1058,7 +1058,7 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, GL_UNSIGNED_BYTE, vertices, 1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, GL_UNSIGNED_BYTE, indices, 1, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -1071,14 +1071,14 @@ void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestCo
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
-	GLfloat						vertices[1];
+	GLuint						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"] = getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 	glu::ShaderProgram			geometryProgram(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
 	ctx.glUseProgram(geometryProgram.getProgram());
-	ctx.glDrawElementsInstancedBaseVertex(GL_TRIANGLES, 1, GL_UNSIGNED_INT, vertices, 1, 1);
+	ctx.glDrawElementsInstancedBaseVertex(GL_TRIANGLES, 1, GL_UNSIGNED_INT, indices, 1, 1);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 
@@ -1091,7 +1091,7 @@ void draw_range_elements (NegativeTestContext& ctx)
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1]	= {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -1100,24 +1100,24 @@ void draw_range_elements (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, -1, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, -1, indices);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_FLOAT, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_FLOAT, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, -1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, -1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if end < start.");
-	ctx.glDrawRangeElements(GL_POINTS, 1, 0, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 1, 0, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -1125,7 +1125,7 @@ void draw_range_elements (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -1149,11 +1149,11 @@ void draw_range_elements (NegativeTestContext& ctx)
 		ctx.glBeginTransformFeedback(GL_POINTS);
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_INVALID_OPERATION);
 
 		ctx.glPauseTransformFeedback();
-		ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_NO_ERROR);
 
 		ctx.glEndTransformFeedback();
@@ -1170,27 +1170,27 @@ void draw_range_elements_invalid_program (NegativeTestContext& ctx)
 {
 	ctx.glUseProgram(0);
 	GLuint fbo = 0;
-	GLfloat vertices[1];
+	GLbyte indices[1] = {0};
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, -1, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, -1, indices);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_FLOAT, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_FLOAT, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, -1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, -1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if end < start.");
-	ctx.glDrawRangeElements(GL_POINTS, 1, 0, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 1, 0, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -1198,7 +1198,7 @@ void draw_range_elements_invalid_program (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -1211,7 +1211,7 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	GLuint						fbo		= 0;
 	GLuint						buf		= 0;
 	GLuint						tfID	= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -1220,24 +1220,24 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(-1, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, -1, vertices);
+	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, -1, indices);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_FLOAT, vertices);
+	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_FLOAT, indices);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, -1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, -1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if end < start.");
-	ctx.glDrawRangeElements(GL_TRIANGLES, 1, 0, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_TRIANGLES, 1, 0, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -1245,7 +1245,7 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+	ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -1269,11 +1269,11 @@ void draw_range_elements_incomplete_primitive (NegativeTestContext& ctx)
 		ctx.glBeginTransformFeedback(GL_TRIANGLES);
 		ctx.expectError(GL_NO_ERROR);
 
-		ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_INVALID_OPERATION);
 
 		ctx.glPauseTransformFeedback();
-		ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, vertices);
+		ctx.glDrawRangeElements(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_BYTE, indices);
 		ctx.expectError(GL_NO_ERROR);
 
 		ctx.glEndTransformFeedback();
@@ -1291,7 +1291,7 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
 	GLuint						fbo		= 0;
-	GLfloat						vertices[1];
+	GLbyte						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"]			= getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 	glu::ShaderProgram			program	(ctx.getRenderContext(), glu::makeVtxFragSources(tcu::StringTemplate(vertexShaderSource).specialize(args), tcu::StringTemplate(fragmentShaderSource).specialize(args)));
@@ -1300,24 +1300,24 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if mode is not an accepted value.");
-	ctx.glDrawRangeElementsBaseVertex(-1, 0, 1, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(-1, 0, 1, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_ENUM is generated if type is not one of the accepted values.");
-	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, -1, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, -1, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
-	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, GL_FLOAT, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, GL_FLOAT, indices, 1);
 	ctx.expectError(GL_INVALID_ENUM);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if count is negative.");
-	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, -1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, -1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
 	ctx.beginSection("GL_INVALID_VALUE is generated if end < start.");
-	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 1, 0, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 1, 0, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();
 
@@ -1325,7 +1325,7 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.glGenFramebuffers(1, &fbo);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, GL_UNSIGNED_BYTE, indices, 1);
 	ctx.expectError(GL_INVALID_FRAMEBUFFER_OPERATION);
 	ctx.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ctx.glDeleteFramebuffers(1, &fbo);
@@ -1338,14 +1338,14 @@ void draw_range_elements_base_vertex_primitive_mode_mismatch (NegativeTestContex
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
 
-	GLfloat						vertices[1];
+	GLuint						indices[1] = {0};
 	map<string, string>			args;
 	args["GLSL_VERSION_STRING"] = getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES);
 	glu::ShaderProgram			geometryProgram(ctx.getRenderContext(), glu::ProgramSources() << glu::ProgramSeparable(true) << glu::VertexSource(tcu::StringTemplate(vertexShaderSource).specialize(args)) << glu::GeometrySource(geometryShaderSource));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.");
 	ctx.glUseProgram(geometryProgram.getProgram());
-	ctx.glDrawRangeElementsBaseVertex(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_INT, vertices, 1);
+	ctx.glDrawRangeElementsBaseVertex(GL_TRIANGLES, 0, 1, 1, GL_UNSIGNED_INT, indices, 1);
 	ctx.expectError(GL_INVALID_OPERATION);
 	ctx.endSection();
 

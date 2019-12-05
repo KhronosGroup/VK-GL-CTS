@@ -112,6 +112,7 @@ static void printHelp(const char* binName)
 int main(int argc, char** argv)
 {
 	CommandLine cmdLine;
+	int exitStatus = EXIT_SUCCESS;
 
 	if (!parseCommandLine(cmdLine, argc, argv))
 	{
@@ -129,7 +130,14 @@ int main(int argc, char** argv)
 		for (;;)
 		{
 			if (!runner.iterate())
+			{
+				if (!runner.isConformant())
+				{
+					exitStatus = EXIT_FAILURE;
+				}
+
 				break;
+			}
 		}
 	}
 	catch (const std::exception& e)
@@ -138,5 +146,5 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	return 0;
+	return exitStatus;
 }
