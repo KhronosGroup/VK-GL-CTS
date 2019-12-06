@@ -117,6 +117,7 @@
 {	"discard-in-loop.amber",						"discard-in-loop",						"A shader with a discard in a loop"														},
 {	"discard-in-loop-in-function.amber",			"discard-in-loop-in-function",			"A shader with a discard nested in a loop in a function"								},
 {	"discards-in-control-flow.amber",				"discards-in-control-flow",				"A fragment shader with discards in loops and conditionals"								},
+{	"do-while-false-loops.amber",					"do-while-false-loops",					"Code wrapped in nested single iteration loops"											},
 {	"do-while-loop-in-conditionals.amber",			"do-while-loop-in-conditionals",		"A fragment shader with do-while loop in conditional nest"								},
 {	"do-while-with-always-true-if.amber",			"do-while-with-always-true-if",			"A fragment shader with a do while that always returns"									},
 {	"do-while-with-if-condition.amber",															"do-while-with-if-condition",														"A fragment shader that has nested if condition in do while"						},
