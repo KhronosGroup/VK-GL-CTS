@@ -260,7 +260,7 @@ bool AmberTestCase::parse (const std::string& readFilename)
 	amber::Amber am (&delegate);
 	amber::Result r = am.Parse(script, m_recipe);
 
-	m_recipe->SetFenceTimeout(1000 * 60 * 10); // 10 minutes
+	m_recipe->SetFenceTimeout(~0u); // infinity of miliseconds
 
 	if (!r.IsSuccess())
 	{
