@@ -906,6 +906,31 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandar
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceBufferDeviceAddressFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBufferOpaqueCaptureAddressCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryOpaqueCaptureAddressAllocateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceMemoryOpaqueCaptureAddressInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
@@ -1654,11 +1679,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDedicatedAllocationI
 template<> VkStructureType getStructureType<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
-}
-
-template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkBufferDeviceAddressCreateInfoEXT> (void)

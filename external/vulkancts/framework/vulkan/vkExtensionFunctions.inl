@@ -281,6 +281,12 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkWaitSemaphoresKHR");
 		functions.push_back("vkSignalSemaphoreKHR");
 	}
+	else if (extName == "VK_KHR_buffer_device_address")
+	{
+		functions.push_back("vkGetBufferDeviceAddressKHR");
+		functions.push_back("vkGetBufferOpaqueCaptureAddressKHR");
+		functions.push_back("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
+	}
 	else if (extName == "VK_KHR_pipeline_executable_properties")
 	{
 		functions.push_back("vkGetPipelineExecutablePropertiesKHR");
@@ -547,6 +553,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_maintenance3",
 	"VK_KHR_draw_indirect_count",
 	"VK_KHR_timeline_semaphore",
+	"VK_KHR_buffer_device_address",
 	"VK_KHR_pipeline_executable_properties",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",

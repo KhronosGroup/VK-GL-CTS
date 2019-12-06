@@ -5,7 +5,8 @@ const vk::VkPhysicalDevice16BitStorageFeatures&							Context::get16BitStorageFe
 const vk::VkPhysicalDevice8BitStorageFeaturesKHR&						Context::get8BitStorageFeatures							(void) const { return m_device->get8BitStorageFeatures();						}
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						Context::getASTCDecodeFeatures							(void) const { return m_device->getASTCDecodeFeatures();						}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlendOperationAdvancedFeatures				(void) const { return m_device->getBlendOperationAdvancedFeatures();			}
-const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}
+const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				Context::getBufferDeviceAddressFeaturesEXT				(void) const { return m_device->getBufferDeviceAddressFeaturesEXT();			}
+const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesKHR&				Context::getBufferDeviceAddressFeatures					(void) const { return m_device->getBufferDeviceAddressFeatures();				}
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&					Context::getCoherentMemoryFeaturesAMD					(void) const { return m_device->getCoherentMemoryFeaturesAMD();					}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&			Context::getComputeShaderDerivativesFeatures			(void) const { return m_device->getComputeShaderDerivativesFeatures();			}
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				Context::getConditionalRenderingFeatures				(void) const { return m_device->getConditionalRenderingFeatures();				}

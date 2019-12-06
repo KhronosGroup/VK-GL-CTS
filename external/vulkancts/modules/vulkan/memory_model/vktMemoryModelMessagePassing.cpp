@@ -234,8 +234,7 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 		!context.getVulkanMemoryModelFeatures().vulkanMemoryModelAvailabilityVisibilityChains)
 		TCU_THROW(NotSupportedError, "vulkanMemoryModelAvailabilityVisibilityChains not supported");
 
-	if ((m_data.payloadSC == SC_PHYSBUFFER || m_data.guardSC == SC_PHYSBUFFER) &&
-		!context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
+	if ((m_data.payloadSC == SC_PHYSBUFFER || m_data.guardSC == SC_PHYSBUFFER) && !context.isBufferDeviceAddressSupported())
 		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
 
 	if (m_data.stage == STAGE_VERTEX)
@@ -975,6 +974,8 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		vk::VkFlags usageFlags = vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
+		bool memoryDeviceAddress = false;
+
 		bool local;
 		switch (i)
 		{
@@ -984,14 +985,22 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 				continue;
 			local = m_data.payloadMemLocal;
 			if (m_data.payloadSC == SC_PHYSBUFFER)
-				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
+			{
+				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+				if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+					memoryDeviceAddress = true;
+			}
 			break;
 		case 1:
 			if (m_data.guardSC != SC_BUFFER && m_data.guardSC != SC_PHYSBUFFER)
 				continue;
 			local = m_data.guardMemLocal;
 			if (m_data.guardSC == SC_PHYSBUFFER)
-				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
+			{
+				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+				if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+					memoryDeviceAddress = true;
+			}
 			break;
 		case 2: local = true; break;
 		}
@@ -1000,7 +1009,8 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		{
 			buffers[i] = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 				vk, device, allocator, makeBufferCreateInfo(bufferSizes[i], usageFlags),
-				local ? MemoryRequirement::Local : MemoryRequirement::NonLocal));
+				(memoryDeviceAddress ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any) |
+				(local ? MemoryRequirement::Local : MemoryRequirement::NonLocal)));
 		}
 		catch (const tcu::NotSupportedError&)
 		{
@@ -1419,15 +1429,15 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
 	}
 
-	const VkQueue				queue				= m_context.getUniversalQueue();
+	const VkQueue					queue					= m_context.getUniversalQueue();
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	VkBufferDeviceAddressInfoEXT addrInfo =
+	VkBufferDeviceAddressInfoKHR addrInfo =
 		{
-			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
-			DE_NULL,											// const void*		 pNext;
-			0,													// VkBuffer			buffer
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,// VkStructureType	sType;
+			DE_NULL,										// const void*		 pNext;
+			0,												// VkBuffer			buffer
 		};
 
 	VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
@@ -1448,7 +1458,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			bufferSizes[2]							// size
 		};
 
-    deUint32 NUM_SUBMITS = 2;
+	deUint32 NUM_SUBMITS = 2;
 
 	for (deUint32 x = 0; x < NUM_SUBMITS; ++x)
 	{
@@ -1494,15 +1504,25 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 
 		if (m_data.payloadSC == SC_PHYSBUFFER)
 		{
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[0];
-			VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+			VkDeviceAddress addr;
+			if (useKHR)
+				addr = vk.getBufferDeviceAddressKHR(device, &addrInfo);
+			else
+				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								0, sizeof(VkDeviceSize), &addr);
 		}
 		if (m_data.guardSC == SC_PHYSBUFFER)
 		{
+			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 			addrInfo.buffer = **buffers[1];
-			VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
+			VkDeviceAddress addr;
+			if (useKHR)
+				addr = vk.getBufferDeviceAddressKHR(device, &addrInfo);
+			else
+				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
 								8, sizeof(VkDeviceSize), &addr);
 		}

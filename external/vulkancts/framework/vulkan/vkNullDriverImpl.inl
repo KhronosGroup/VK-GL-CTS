@@ -1585,6 +1585,27 @@ VKAPI_ATTR VkResult VKAPI_CALL signalSemaphoreKHR (VkDevice device, const VkSema
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressKHR (VkDevice device, const VkBufferDeviceAddressInfoKHR* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR uint64_t VKAPI_CALL getBufferOpaqueCaptureAddressKHR (VkDevice device, const VkBufferDeviceAddressInfoKHR* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR uint64_t VKAPI_CALL getDeviceMemoryOpaqueCaptureAddressKHR (VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfoKHR* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
 {
 	DE_UNREF(device);
@@ -2271,7 +2292,7 @@ VKAPI_ATTR void VKAPI_CALL setLocalDimmingAMD (VkDevice device, VkSwapchainKHR s
 	DE_UNREF(localDimmingEnable);
 }
 
-VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo)
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoKHR* pInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
@@ -2738,6 +2759,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSemaphoreCounterValueKHR,						getSemaphoreCounterValueKHR),
 	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphoresKHR),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphoreKHR),
+	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddressKHR),
+	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddressKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddressKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,				getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,				getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,	getPipelineExecutableInternalRepresentationsKHR),

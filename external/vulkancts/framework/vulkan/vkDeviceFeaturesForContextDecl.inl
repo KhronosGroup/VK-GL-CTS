@@ -5,7 +5,8 @@ const vk::VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures			
 const vk::VkPhysicalDevice8BitStorageFeaturesKHR&						get8BitStorageFeatures						(void) const;
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeatures						(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeatures			(void) const;
-const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				getBufferDeviceAddressFeatures				(void) const;
+const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&				getBufferDeviceAddressFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesKHR&				getBufferDeviceAddressFeatures				(void) const;
 const vk::VkPhysicalDeviceCoherentMemoryFeaturesAMD&					getCoherentMemoryFeaturesAMD				(void) const;
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&			getComputeShaderDerivativesFeatures			(void) const;
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				getConditionalRenderingFeatures				(void) const;
