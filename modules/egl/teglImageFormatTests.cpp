@@ -1007,6 +1007,8 @@ void ImageFormatCase::deinit (void)
 {
 	const Library& egl = m_eglTestCtx.getLibrary();
 
+	m_img.clear();
+
 	for (int contexNdx = 0 ; contexNdx < (int)m_apiContexts.size(); contexNdx++)
 		delete m_apiContexts[contexNdx];
 
