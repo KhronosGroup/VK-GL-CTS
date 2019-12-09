@@ -3,6 +3,7 @@
 include_directories(
 	..
 	../shaderexecutor
+	../amber
 	)
 
 set(DEQP_VK_TEXTURE_SRCS
@@ -22,6 +23,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureMipmapTests.hpp
 	vktTextureShadowTests.cpp
 	vktTextureShadowTests.hpp
+	vktTextureSubgroupLodTests.cpp
+	vktTextureSubgroupLodTests.hpp
 	vktTextureFilteringAnisotropyTests.cpp
 	vktTextureFilteringAnisotropyTests.hpp
 	vktTextureCompressedFormatTests.cpp
