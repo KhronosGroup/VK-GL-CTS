@@ -1,14 +1,3 @@
-# Issue 218: Excluded built-in function precision tests
-dEQP-VK.glsl.builtin.precision.clamp.highp.*
-dEQP-VK.glsl.builtin.precision.cos.mediump.*
-dEQP-VK.glsl.builtin.precision.div.highp.*
-dEQP-VK.glsl.builtin.precision.max.highp.*
-dEQP-VK.glsl.builtin.precision.min.highp.*
-dEQP-VK.glsl.builtin.precision.mod.highp.*
-dEQP-VK.glsl.builtin.precision.reflect.highp.vec4
-dEQP-VK.glsl.builtin.precision.sin.mediump.*
-dEQP-VK.glsl.builtin.precision.tan.mediump.*
-
 # Issue 242: Excluded blend tests where propagated errors may be large
 dEQP-VK.pipeline.blend.format.a2r10g10b10_unorm_pack32.states.color_dc_dc_add_alpha_o_1msc_add-color_sas_1mdc_max_alpha_sa_1msc_min-color_dc_sas_min_alpha_1mcc_cc_sub-color_z_1mda_add_alpha_o_1mdc_add
 dEQP-VK.pipeline.blend.format.a2r10g10b10_unorm_pack32.states.color_sa_z_sub_alpha_ca_cc_sub-color_sas_1msa_rsub_alpha_ca_da_sub-color_1mca_ca_min_alpha_1msc_1mcc_rsub-color_dc_da_sub_alpha_1mcc_1mda_add
@@ -47,17 +36,11 @@ dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
 # Issue 431: Excluded copies and blitting tests
 dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
 
-# CTS issue 426, spec issue 403
-dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
-
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
 
 #VK-GL-CTS 110: Excluded wsi android tests as they require android loader support
 dEQP-VK.wsi.android.surface.query_devgroup_*
-
-#VK-GL-CTS 749
-dEQP-VK.glsl.builtin.precision.atan2.mediump.*
 
 # Issue: b/66464066
 dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
