@@ -3449,6 +3449,81 @@ struct SpecConstantTwoIntCase
 						{}
 };
 
+std::string getSpecConstantOpStructConstantsAndTypes ()
+{
+	return
+		"%zero        = OpConstant %i32 0\n"
+		"%one         = OpConstant %i32 1\n"
+		"%two         = OpConstant %i32 2\n"
+		"%three       = OpConstant %i32 3\n"
+		"%iarr3       = OpTypeArray %i32 %three\n"
+		"%imat3       = OpTypeArray %iarr3 %three\n"
+		"%struct      = OpTypeStruct %imat3\n"
+		;
+}
+
+std::string getSpecConstantOpStructComposites ()
+{
+	return
+		"%iarr3_0     = OpConstantComposite %iarr3 %zero %zero %zero\n"
+		"%imat3_0     = OpConstantComposite %imat3 %iarr3_0 %iarr3_0 %iarr3_0\n"
+		"%struct_0    = OpConstantComposite %struct %imat3_0\n"
+		;
+}
+
+std::string getSpecConstantOpStructConstBlock ()
+{
+	return
+		"%iarr3_a     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_0        %iarr3_0     0\n"                        // Compose (sc_0, sc_1, sc_2)
+		"%iarr3_b     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_1        %iarr3_a     1\n"
+		"%iarr3_c     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_2        %iarr3_b     2\n"
+
+		"%iarr3_d     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_1        %iarr3_0     0\n"                        // Compose (sc_1, sc_2, sc_0)
+		"%iarr3_e     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_2        %iarr3_d     1\n"
+		"%iarr3_f     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_0        %iarr3_e     2\n"
+
+		"%iarr3_g     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_2        %iarr3_0     0\n"                        // Compose (sc_2, sc_0, sc_1)
+		"%iarr3_h     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_0        %iarr3_g     1\n"
+		"%iarr3_i     = OpSpecConstantOp %iarr3  CompositeInsert  %sc_1        %iarr3_h     2\n"
+
+		"%imat3_a     = OpSpecConstantOp %imat3  CompositeInsert  %iarr3_c     %imat3_0     0\n"						// Matrix with the 3 previous arrays.
+		"%imat3_b     = OpSpecConstantOp %imat3  CompositeInsert  %iarr3_f     %imat3_a     1\n"
+		"%imat3_c     = OpSpecConstantOp %imat3  CompositeInsert  %iarr3_i     %imat3_b     2\n"
+
+		"%struct_a    = OpSpecConstantOp %struct CompositeInsert  %imat3_c     %struct_0    0\n"						// Save it in the struct.
+
+		"%comp_0_0    = OpSpecConstantOp %i32    CompositeExtract %struct_a    0 0 0\n"									// Extract some component pairs to compare them.
+		"%comp_1_0    = OpSpecConstantOp %i32    CompositeExtract %struct_a    0 1 0\n"
+
+		"%comp_0_1    = OpSpecConstantOp %i32    CompositeExtract %struct_a    0 0 1\n"
+		"%comp_2_2    = OpSpecConstantOp %i32    CompositeExtract %struct_a    0 2 2\n"
+
+		"%comp_2_0    = OpSpecConstantOp %i32    CompositeExtract %struct_a    0 2 0\n"
+		"%comp_1_1    = OpSpecConstantOp %i32    CompositeExtract %struct_a    0 1 1\n"
+
+		"%cmpres_0    = OpSpecConstantOp %bool   IEqual %comp_0_0 %comp_1_0\n"											// Must be false.
+		"%cmpres_1    = OpSpecConstantOp %bool   IEqual %comp_0_1 %comp_2_2\n"											// Must be true.
+		"%cmpres_2    = OpSpecConstantOp %bool   IEqual %comp_2_0 %comp_1_1\n"											// Must be true.
+
+		"%mustbe_0    = OpSpecConstantOp %i32    Select %cmpres_0 %one %zero\n"											// Must select 0
+		"%mustbe_1    = OpSpecConstantOp %i32    Select %cmpres_1 %one %zero\n"											// Must select 1
+		"%mustbe_2    = OpSpecConstantOp %i32    Select %cmpres_2 %two %one\n"											// Must select 2
+		;
+}
+
+std::string getSpecConstantOpStructInstructions ()
+{
+	return
+		// Multiply final result with (1-mustbezero)*(mustbeone)*(mustbetwo-1). If everything goes right, the factor should be 1 and
+		// the final result should not be altered.
+		"%subf_a      = OpISub %i32 %one %mustbe_0\n"
+		"%subf_b      = OpIMul %i32 %subf_a %mustbe_1\n"
+		"%subf_c      = OpISub %i32 %mustbe_2 %one\n"
+		"%factor      = OpIMul %i32 %subf_b %subf_c\n"
+		"%sc_final    = OpIMul %i32 %factor %sc_factor\n"
+		;
+}
+
 tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
@@ -3619,19 +3694,26 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
 		"%ivec3       = OpTypeVector %i32 3\n"
+
+		+ getSpecConstantOpStructConstantsAndTypes() +
+
 		"%buf         = OpTypeStruct %i32arr\n"
 		"%bufptr      = OpTypePointer Uniform %buf\n"
 		"%indata      = OpVariable %bufptr Uniform\n"
 		"%outdata     = OpVariable %bufptr Uniform\n"
 
 		"%id          = OpVariable %uvec3ptr Input\n"
-		"%zero        = OpConstant %i32 0\n"
 		"%ivec3_0     = OpConstantComposite %ivec3 %zero %zero %zero\n"
 		"%vec3_undef  = OpUndef %ivec3\n"
+
+		+ getSpecConstantOpStructComposites () +
 
 		"%sc_0        = OpSpecConstant %i32 0\n"
 		"%sc_1        = OpSpecConstant %i32 0\n"
 		"%sc_2        = OpSpecConstant %i32 0\n"
+
+		+ getSpecConstantOpStructConstBlock () +
+
 		"%sc_vec3_0   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_0        %ivec3_0     0\n"							// (sc_0, 0, 0)
 		"%sc_vec3_1   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_1        %ivec3_0     1\n"							// (0, sc_1, 0)
 		"%sc_vec3_2   = OpSpecConstantOp %ivec3 CompositeInsert  %sc_2        %ivec3_0     2\n"							// (0, 0, sc_2)
@@ -3644,10 +3726,13 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              1\n"							// sc_0
 		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              2\n"							// sc_1
 		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"								// (sc_2 - sc_0)
-		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n"								// (sc_2 - sc_0) * sc_1
+		"%sc_factor   = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n"								// (sc_2 - sc_0) * sc_1
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
+
+		+ getSpecConstantOpStructInstructions() +
+
 		"%idval     = OpLoad %uvec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc     = OpAccessChain %i32ptr %indata %zero %x\n"
@@ -7942,18 +8027,23 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 			noPushConstants, noResources, noInterfaces, extensions, requiredFeatures, group.get());
 	}
 
-	const char	decorations2[]			=
+	const char			decorations2[]		=
 		"OpDecorate %sc_0  SpecId 0\n"
 		"OpDecorate %sc_1  SpecId 1\n"
 		"OpDecorate %sc_2  SpecId 2\n";
 
-	const char	typesAndConstants2[]	=
+	const std::string	typesAndConstants2	=
 		"%vec3_0      = OpConstantComposite %v3i32 %c_i32_0 %c_i32_0 %c_i32_0\n"
 		"%vec3_undef  = OpUndef %v3i32\n"
+
+		+ getSpecConstantOpStructConstantsAndTypes() + getSpecConstantOpStructComposites() +
 
 		"%sc_0        = OpSpecConstant %i32 0\n"
 		"%sc_1        = OpSpecConstant %i32 0\n"
 		"%sc_2        = OpSpecConstant %i32 0\n"
+
+		+ getSpecConstantOpStructConstBlock() +
+
 		"%sc_vec3_0   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_0        %vec3_0      0\n"							// (sc_0, 0,    0)
 		"%sc_vec3_1   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_1        %vec3_0      1\n"							// (0,    sc_1, 0)
 		"%sc_vec3_2   = OpSpecConstantOp %v3i32 CompositeInsert  %sc_2        %vec3_0      2\n"							// (0,    0,    sc_2)
@@ -7966,13 +8056,16 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%sc_ext_1    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              1\n"							// sc_0
 		"%sc_ext_2    = OpSpecConstantOp %i32   CompositeExtract %sc_vec3_012              2\n"							// sc_1
 		"%sc_sub      = OpSpecConstantOp %i32   ISub             %sc_ext_0    %sc_ext_1\n"								// (sc_2 - sc_0)
-		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";								// (sc_2 - sc_0) * sc_1
+		"%sc_factor   = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";								// (sc_2 - sc_0) * sc_1
 
-	const char	function2[]				=
+	const std::string	function2			=
 		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
+
+		+ getSpecConstantOpStructInstructions() +
+
 		"             OpStore %result %param\n"
 		"%loc       = OpAccessChain %fp_f32 %result %sc_final\n"
 		"%val       = OpLoad %f32 %loc\n"
