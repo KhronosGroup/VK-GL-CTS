@@ -27,6 +27,7 @@
 #include "vktAmberTestCase.hpp"
 #include "vktRasterizationTests.hpp"
 #include "vktRasterizationFragShaderSideEffectsTests.hpp"
+#include "vktRasterizationProvokingVertexTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
@@ -7234,36 +7235,7 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 	// .provoking_vertex
 	{
-		tcu::TestCaseGroup* const	provokingVertex		= new tcu::TestCaseGroup(testCtx, "provoking_vertex", "Test provoking vertex");
-
-		struct Params { const char *type; bool requireGeometryShader; };
-		Params	primitiveTypes[]	=
-		{
-			{ "triangle_list", false },
-			{ "triangle_list_with_adjacency", true },
-			{ "triangle_strip", false },
-			{ "triangle_strip_with_adjacency", true },
-			{ "triangle_fan", false },
-			{ "line_list", false },
-			{ "line_list_with_adjacency", true },
-			{ "line_strip", false },
-			{ "line_strip_with_adjacency", true },
-		};
-
-		rasterizationTests->addChild(provokingVertex);
-
-		for (deUint32 primitiveTypeIdx = 0; primitiveTypeIdx < DE_LENGTH_OF_ARRAY(primitiveTypes); primitiveTypeIdx++)
-		{
-			Params &					params		= primitiveTypes[primitiveTypeIdx];
-			const std::string			file		= std::string(params.type) + ".amber";
-
-			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, params.type, "", "provoking_vertex", file);
-			if (params.requireGeometryShader)
-			{
-				testCase->addRequirement("Features.geometryShader");
-			}
-			provokingVertex->addChild(testCase);
-		}
+		rasterizationTests->addChild(createProvokingVertexTests(testCtx));
 	}
 
 	// .line_continuity
