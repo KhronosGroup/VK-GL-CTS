@@ -27,6 +27,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassUnusedClearAttachmentTests.hpp
 	vktRenderPassFragmentDensityMapTests.cpp
 	vktRenderPassFragmentDensityMapTests.hpp
+	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp
+	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS
