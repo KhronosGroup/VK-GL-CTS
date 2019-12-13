@@ -103,12 +103,12 @@ std::string getBodySource(CaseDefinition caseDef)
 		<< "i >= 32 ? 0 : (0xFFFFFFFF << i), "
 		<< "i >= 64 ? 0 : (0xFFFFFFFF << ((i < 32) ? 0 : (i - 32))), "
 		<< "i >= 96 ? 0 : (0xFFFFFFFF << ((i < 64) ? 0 : (i - 64))), "
-		<< " 0xFFFFFFFF << ((i < 96) ? 0 : (i - 96)))\n"
+		<< "i >= 128 ? 0 : (0xFFFFFFFF << ((i < 96) ? 0 : (i - 96))))\n"
 		<< "#define MAKE_SINGLE_BIT_BALLOT_RESULT(i) uvec4("
 		<< "i >= 32 ? 0 : 0x1 << i, "
 		<< "i < 32 || i >= 64 ? 0 : 0x1 << (i - 32), "
 		<< "i < 64 || i >= 96 ? 0 : 0x1 << (i - 64), "
-		<< "i < 96 ? 0 : 0x1 << (i - 96))\n";
+		<< "i < 96 || i >= 128 ? 0 : 0x1 << (i - 96))\n";
 
 	switch (caseDef.opType)
 	{
