@@ -24,6 +24,7 @@
 #include "vktRayTracingTests.hpp"
 #include "vktRayTracingBuiltinTests.hpp"
 #include "vktRayTracingBuildLargeTests.hpp"
+#include "vktRayTracingBuildTests.hpp"
 #include "vktRayTracingCallableShadersTests.hpp"
 #include "vktRayTracingTraceRaysIndirectTests.hpp"
 #include "vktRayTracingShaderBindingTableTests.hpp"
@@ -49,6 +50,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createBuildLargeShaderSetTests(testCtx));
+	group->addChild(createBuildTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysIndirectTests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
@@ -63,5 +65,4 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 }
 
 }	// RayTracing
-
 }	// vkt

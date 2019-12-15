@@ -264,6 +264,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingAccelerationStructuresTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildIndirectTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildLargeTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuiltinTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingCallableShadersTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMemGuaranteeTests.cpp \

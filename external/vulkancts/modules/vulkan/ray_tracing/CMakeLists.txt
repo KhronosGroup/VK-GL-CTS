@@ -7,6 +7,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingBuiltinTests.hpp
 	vktRayTracingBuildLargeTests.cpp
 	vktRayTracingBuildLargeTests.hpp
+	vktRayTracingBuildTests.cpp
+	vktRayTracingBuildTests.hpp
 	vktRayTracingCallableShadersTests.cpp
 	vktRayTracingCallableShadersTests.hpp
 	vktRayTracingTraceRaysIndirectTests.cpp
