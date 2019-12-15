@@ -260,6 +260,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
+	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassDepthStencilResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassFragmentDensityMapTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp \
@@ -1159,6 +1160,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/protected_memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ray_tracing \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \

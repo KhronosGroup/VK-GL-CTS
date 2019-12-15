@@ -99,7 +99,7 @@
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktFragmentShaderInterlockTests.hpp"
 #include "vktShaderClockTests.hpp"
-#include "vktShaderClockTests.hpp"
+#include "vktRayTracingTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -525,6 +525,7 @@ void TestPackage::init (void)
 	addChild(TransformFeedback::createTests		(m_testCtx));
 	addChild(DescriptorIndexing::createTests	(m_testCtx));
 	addChild(FragmentShaderInterlock::createTests(m_testCtx));
+	addChild(RayTracing::createTests			(m_testCtx));
 }
 
 } // vkt

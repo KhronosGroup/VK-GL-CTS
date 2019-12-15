@@ -38,6 +38,7 @@ add_subdirectory(amber)
 add_subdirectory(imageless_framebuffer)
 add_subdirectory(descriptor_indexing)
 add_subdirectory(fragment_shader_interlock)
+add_subdirectory(ray_tracing)
 
 include_directories(
 	api
@@ -78,6 +79,7 @@ include_directories(
 	imageless_framebuffer
 	descriptor_indexing
 	fragment_shader_interlock
+	ray_tracing
 	)
 
 set(DEQP_VK_SRCS
@@ -139,6 +141,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-transform-feedback
 	deqp-vk-descriptor-indexing
 	deqp-vk-fragment-shader-interlock
+	deqp-vk-ray-tracing
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

@@ -1,0 +1,16 @@
+include_directories(..)
+
+set(DEQP_VK_RAY_TRACING_SRCS
+	vktRayTracingTests.cpp
+	vktRayTracingTests.hpp
+	)
+
+set(DEQP_VK_RAY_TRACING_LIBS
+	tcutil
+	vkutil
+	)
+
+PCH(DEQP_VK_RAY_TRACING_SRCS ../pch.cpp)
+
+add_library(deqp-vk-ray-tracing STATIC ${DEQP_VK_RAY_TRACING_SRCS})
+target_link_libraries(deqp-vk-ray-tracing ${DEQP_VK_RAY_TRACING_LIBS})
