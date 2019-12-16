@@ -30,6 +30,7 @@
 {	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
 {	"global-array-loops.amber",						"global-array-loops",					"A loop that writes then reads a global array"											},
 {	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
+{	"injection-switch-as-comparison.amber",			"injection-switch-as-comparison",		"A fragment shader with uniform comparison in loop"										},
 {	"int-mat2-struct.amber",						"int-mat2-struct",						"Fragment shader using (int, mat2) struct"												},
 {	"loop-call-discard.amber",						"loop-call-discard",					"A fragment shader with nested loops and a function call"								},
 {	"loop-dead-if-loop.amber",						"loop-dead-if-loop",					"A fragment shader with a loop, dead if, and a loop"									},
