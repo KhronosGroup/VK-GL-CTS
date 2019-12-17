@@ -101,14 +101,14 @@ BufferAllocator::~BufferAllocator ()
 
 void BufferAllocator::allocate (Context& context)
 {
-	Allocator&			memAlloc	= context.getDefaultAllocator();
-	IBufferAllocator*	allocator	= 0;
-	MemoryRequirement	requirement	= legalMemoryTypes[m_memoryType];
+	Allocator&						memAlloc	= context.getDefaultAllocator();
+	de::MovePtr<IBufferAllocator>	allocator;
+	MemoryRequirement				requirement	= legalMemoryTypes[m_memoryType];
 
 	if (m_dedicated)
-		allocator = new BufferDedicatedAllocation;
+		allocator = de::MovePtr<IBufferAllocator>(new BufferDedicatedAllocation);
 	else
-		allocator = new BufferSuballocation;
+		allocator = de::MovePtr<IBufferAllocator>(new BufferSuballocation);
 
 	allocator->createTestBuffer(
 		m_size,
@@ -118,8 +118,6 @@ void BufferAllocator::allocate (Context& context)
 		m_buffer,
 		requirement,
 		m_bufferAlloc);
-
-	delete allocator;
 }
 
 void BufferAllocator::deallocate (Context& context)
@@ -128,8 +126,7 @@ void BufferAllocator::deallocate (Context& context)
 	const vk::VkDevice&		device	= context.getDevice();
 
 	vk.destroyBuffer(device, m_buffer.disown(), DE_NULL);
-	vk.freeMemory(device, m_bufferAlloc.get()->getMemory(), (const VkAllocationCallbacks*)DE_NULL);
-	m_bufferAlloc.release();
+	m_bufferAlloc.clear();
 }
 
 size_t BufferAllocator::getSize (Context &context)
@@ -189,14 +186,14 @@ ImageAllocator::~ImageAllocator ()
 
 void ImageAllocator::allocate (Context& context)
 {
-	Allocator&			memAlloc	= context.getDefaultAllocator();
-	IImageAllocator*	allocator	= 0;
-	MemoryRequirement	requirement	= legalMemoryTypes[m_memoryType];
+	Allocator&						memAlloc	= context.getDefaultAllocator();
+	de::MovePtr<IImageAllocator>	allocator;
+	MemoryRequirement				requirement	= legalMemoryTypes[m_memoryType];
 
 	if (m_dedicated)
-		allocator = new ImageDedicatedAllocation;
+		allocator = de::MovePtr<IImageAllocator>(new ImageDedicatedAllocation);
 	else
-		allocator = new ImageSuballocation;
+		allocator = de::MovePtr<IImageAllocator>(new ImageSuballocation);
 
 	allocator->createTestImage(
 		m_size,
@@ -207,8 +204,6 @@ void ImageAllocator::allocate (Context& context)
 		requirement,
 		m_imageAlloc,
 		m_linear ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL);
-
-	delete allocator;
 }
 
 void ImageAllocator::deallocate (Context& context)
@@ -217,8 +212,7 @@ void ImageAllocator::deallocate (Context& context)
 	const VkDevice&			device	= context.getDevice();
 
 	vk.destroyImage(device, m_image.disown(), DE_NULL);
-	vk.freeMemory(device, m_imageAlloc.get()->getMemory(), (const VkAllocationCallbacks*)DE_NULL);
-	m_imageAlloc.release();
+	m_imageAlloc.clear();
 }
 
 size_t ImageAllocator::getSize (Context &context)
@@ -256,7 +250,7 @@ InvarianceInstance::~InvarianceInstance (void)
 
 tcu::TestStatus InvarianceInstance::iterate (void)
 {
-	IObjectAllocator*						objs[testCycles];
+	de::MovePtr<IObjectAllocator>			objs[testCycles];
 	size_t									refSizes[testCycles];
 	unsigned int							order[testCycles];
 	bool									success							= true;
@@ -577,9 +571,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	for (unsigned int i = 0; i < testCycles; i++)
 	{
 		if (deRandom_getBool(&m_random))
-			objs[i] = new BufferAllocator(m_random, isDedicatedAllocationSupported, memoryTypes);
+			objs[i] = de::MovePtr<IObjectAllocator>(new BufferAllocator(m_random, isDedicatedAllocationSupported, memoryTypes));
 		else
-			objs[i] = new ImageAllocator(m_random, isDedicatedAllocationSupported, linearFormats, optimalFormats, memoryTypes);
+			objs[i] = de::MovePtr<IObjectAllocator>(new ImageAllocator(m_random, isDedicatedAllocationSupported, linearFormats, optimalFormats, memoryTypes));
 		order[i] = i;
 	}
 
