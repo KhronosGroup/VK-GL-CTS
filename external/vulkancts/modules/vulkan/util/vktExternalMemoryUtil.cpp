@@ -1629,12 +1629,10 @@ vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT getPhysicalDeviceExternalMem
 		0u,
 	};
 
-	vk::VkPhysicalDeviceProperties2 props2 =
-	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-		&externalProps,
-		{}
-	};
+	vk::VkPhysicalDeviceProperties2 props2;
+	deMemset(&props2, 0, sizeof(props2));
+	props2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	props2.pNext = &externalProps;
 
 	vki.getPhysicalDeviceProperties2(physicalDevice, &props2);
 

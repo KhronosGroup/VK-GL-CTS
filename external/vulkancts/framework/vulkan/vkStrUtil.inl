@@ -349,6 +349,7 @@ tcu::Format::Bitfield<32>	getBuildAccelerationStructureFlagsNVStr						(VkBuildA
 tcu::Format::Bitfield<32>	getPipelineCompilerControlFlagsAMDStr						(VkPipelineCompilerControlFlagsAMD value);
 tcu::Format::Bitfield<32>	getPipelineCreationFeedbackFlagsEXTStr						(VkPipelineCreationFeedbackFlagsEXT value);
 tcu::Format::Bitfield<32>	getShaderCorePropertiesFlagsAMDStr							(VkShaderCorePropertiesFlagsAMD value);
+tcu::Format::Bitfield<32>	getToolPurposeFlagsEXTStr									(VkToolPurposeFlagsEXT value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr									(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr										(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr										(VkMemoryMapFlags value);
@@ -846,6 +847,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryPriorityAllocateInfoEXT
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceToolPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesNV& value);

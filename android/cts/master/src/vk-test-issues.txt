@@ -1,22 +1,5 @@
-# Issue 217: Built-in function precision test issues
-dEQP-VK.glsl.builtin.precision.dot.highp.*
-dEQP-VK.glsl.builtin.precision.atan2.highp.*
-dEQP-VK.glsl.builtin.precision.acosh.highp.*
-dEQP-VK.glsl.builtin.precision.atanh.highp.*
-dEQP-VK.glsl.builtin.precision.atanh.mediump.*
-dEQP-VK.glsl.builtin.precision.reflect.mediump.scalar
-dEQP-VK.glsl.builtin.precision.reflect.highp.scalar
-dEQP-VK.glsl.builtin.precision.acos.mediump.*
-dEQP-VK.glsl.builtin.precision.atan.mediump.*
-dEQP-VK.glsl.builtin.precision.inverse.highp.mat2
-dEQP-VK.glsl.builtin.precision.refract.*
-
 # Issue 340: Cube map corner texel selection
 dEQP-VK.pipeline.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
-
-# Issue 702: Tests use invalid conversion operations
-dEQP-VK.spirv_assembly.instruction.*.indexing.*u32*
-dEQP-VK.spirv_assembly.instruction.*.indexing.*s32*
 
 # b/112540895: Compile time is still unreasonable on low-end parts, revisit for Q
 dEQP-VK.ubo.random.all_shared_buffer.48

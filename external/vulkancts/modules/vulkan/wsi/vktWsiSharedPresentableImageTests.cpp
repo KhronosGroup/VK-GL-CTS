@@ -108,39 +108,6 @@ vk::VkPhysicalDeviceFeatures getDeviceNullFeatures (void)
 	return features;
 }
 
-deUint32 getNumQueueFamilyIndices (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice)
-{
-	deUint32	numFamilies		= 0;
-
-	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, DE_NULL);
-
-	return numFamilies;
-}
-
-vector<deUint32> getSupportedQueueFamilyIndices (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface)
-{
-	const deUint32		numTotalFamilyIndices	= getNumQueueFamilyIndices(vki, physicalDevice);
-	vector<deUint32>	supportedFamilyIndices;
-
-	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < numTotalFamilyIndices; ++queueFamilyNdx)
-	{
-		if (vk::wsi::getPhysicalDeviceSurfaceSupport(vki, physicalDevice, queueFamilyNdx, surface) != VK_FALSE)
-			supportedFamilyIndices.push_back(queueFamilyNdx);
-	}
-
-	return supportedFamilyIndices;
-}
-
-deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface)
-{
-	const vector<deUint32>	supportedFamilyIndices	= getSupportedQueueFamilyIndices(vki, physicalDevice, surface);
-
-	if (supportedFamilyIndices.empty())
-		TCU_THROW(NotSupportedError, "Device doesn't support presentation");
-
-	return supportedFamilyIndices[0];
-}
-
 vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
 											vk::VkInstance						instance,
 											const vk::InstanceInterface&		vki,
@@ -751,7 +718,7 @@ SharedPresentableImageTestInstance::SharedPresentableImageTestInstance (Context&
 	, m_nativeWindow			(createWindow(*m_nativeDisplay, tcu::nothing<UVec2>()))
 	, m_surface					(vk::wsi::createSurface(m_vki, m_instance, testConfig.wsiType, *m_nativeDisplay, *m_nativeWindow))
 
-	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
+	, m_queueFamilyIndex		(vk::wsi::chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
 	, m_device					(createDeviceWithWsi(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useSharedPresentableImage, context.getTestContext().getCommandLine().isValidationEnabled()))
 	, m_vkd						(m_vkp, m_instance, *m_device)

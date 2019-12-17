@@ -11,6 +11,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiSwapchainTests.hpp
 	vktWsiIncrementalPresentTests.cpp
 	vktWsiIncrementalPresentTests.hpp
+	vktWsiDisplayControlTests.cpp
+	vktWsiDisplayControlTests.hpp
 	vktWsiDisplayTimingTests.cpp
 	vktWsiDisplayTimingTests.hpp
 	vktWsiSharedPresentableImageTests.cpp

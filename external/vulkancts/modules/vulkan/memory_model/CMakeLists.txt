@@ -3,6 +3,8 @@ include_directories(..)
 set(DEQP_VK_DEVICE_GROUP_SRCS
 	vktMemoryModelTests.hpp
 	vktMemoryModelMessagePassing.cpp
+	vktMemoryModelPadding.hpp
+	vktMemoryModelPadding.cpp
 )
 
 set(DEQP_VK_DEVICE_GROUP_LIBS

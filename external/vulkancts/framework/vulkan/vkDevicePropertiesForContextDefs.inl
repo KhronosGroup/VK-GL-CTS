@@ -32,5 +32,6 @@ const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupPropertie
 const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlPropertiesEXT		(void) const { return m_device->getSubgroupSizeControlPropertiesEXT();			}
 const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentPropertiesEXT		(void) const { return m_device->getTexelBufferAlignmentPropertiesEXT();			}
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				Context::getTimelineSemaphoreProperties				(void) const { return m_device->getTimelineSemaphoreProperties();				}
+const vk::VkPhysicalDeviceToolPropertiesEXT&						Context::getToolPropertiesEXT						(void) const { return m_device->getToolPropertiesEXT();							}
 const vk::VkPhysicalDeviceTransformFeedbackPropertiesEXT&			Context::getTransformFeedbackPropertiesEXT			(void) const { return m_device->getTransformFeedbackPropertiesEXT();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		Context::getVertexAttributeDivisorPropertiesEXT		(void) const { return m_device->getVertexAttributeDivisorPropertiesEXT();		}

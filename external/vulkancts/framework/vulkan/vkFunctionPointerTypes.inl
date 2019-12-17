@@ -356,6 +356,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueueSetPerformanceConfigurationINTE
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPerformanceParameterINTELFunc)										(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue);
 typedef VKAPI_ATTR void					(VKAPI_CALL* SetLocalDimmingAMDFunc)												(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable);
 typedef VKAPI_ATTR VkDeviceAddress		(VKAPI_CALL* GetBufferDeviceAddressEXTFunc)											(VkDevice device, const VkBufferDeviceAddressInfo* pInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceToolPropertiesEXTFunc)								(VkPhysicalDevice physicalDevice, deUint32* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)					(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc)	(VkPhysicalDevice physicalDevice, deUint32* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateHeadlessSurfaceEXTFunc)											(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);

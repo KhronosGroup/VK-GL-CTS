@@ -1716,6 +1716,11 @@ template<> VkStructureType getStructureType<VkBufferDeviceAddressCreateInfoEXT> 
 	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceToolPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkValidationFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;

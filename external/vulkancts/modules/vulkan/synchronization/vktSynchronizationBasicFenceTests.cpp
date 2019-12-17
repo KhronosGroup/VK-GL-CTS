@@ -38,8 +38,8 @@ namespace
 {
 using namespace vk;
 
-static const deUint64	SHORT_FENCE_WAIT	= 1000ull;
-static const deUint64	LONG_FENCE_WAIT		= 10000000ull;
+static const deUint64	SHORT_FENCE_WAIT	= 1000ull;			// 1us
+static const deUint64	LONG_FENCE_WAIT		= 1000000000ull;	// 1s
 
 tcu::TestStatus basicOneFenceCase (Context& context)
 {

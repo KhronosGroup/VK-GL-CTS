@@ -192,6 +192,45 @@ private:
 	const void*	m_next;
 };
 
+struct getPhysicalDeviceExtensionProperties
+{
+	getPhysicalDeviceExtensionProperties (const InstanceInterface&	vki, VkPhysicalDevice physicalDevice) : m_vki(vki), m_physicalDevice(physicalDevice) {};
+
+	template<class ExtensionProperties>
+	operator ExtensionProperties ()
+	{
+		VkPhysicalDeviceProperties2	properties2;
+		ExtensionProperties			extensionProperties;
+
+		deMemset(&extensionProperties, 0x00, sizeof(ExtensionProperties));
+		extensionProperties.sType = getStructureType<ExtensionProperties>();
+
+		deMemset(&properties2, 0x00, sizeof(properties2));
+		properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		properties2.pNext = &extensionProperties;
+
+		m_vki.getPhysicalDeviceProperties2(m_physicalDevice, &properties2);
+
+		return extensionProperties;
+	}
+
+	operator VkPhysicalDeviceProperties2 ()
+	{
+		VkPhysicalDeviceProperties2	properties2;
+
+		deMemset(&properties2, 0x00, sizeof(properties2));
+		properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+		m_vki.getPhysicalDeviceProperties2(m_physicalDevice, &properties2);
+
+		return properties2;
+	}
+
+private:
+	const InstanceInterface&	m_vki;
+	const VkPhysicalDevice		m_physicalDevice;
+};
+
 namespace ValidateQueryBits
 {
 

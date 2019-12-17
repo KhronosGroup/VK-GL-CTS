@@ -42,7 +42,6 @@
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vkBarrierUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -132,22 +131,28 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 									const InstanceInterface&		vki,
 									VkPhysicalDevice				physicalDevice,
 									const Extensions&				supportedExtensions,
-									const deUint32					queueFamilyIndex,
+									const vector<deUint32>&			queueFamilyIndices,
 									bool							validationEnabled,
 									const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
 	const float						queuePriorities[]	= { 1.0f };
-	const VkDeviceQueueCreateInfo	queueInfos[]		=
+
+	vector<VkDeviceQueueCreateInfo>	queueInfos;
+	for (const auto familyIndex : queueFamilyIndices)
 	{
+		const VkDeviceQueueCreateInfo info =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			DE_NULL,
+			nullptr,
 			(VkDeviceQueueCreateFlags)0,
-			queueFamilyIndex,
+			familyIndex,
 			DE_LENGTH_OF_ARRAY(queuePriorities),
-			&queuePriorities[0]
-		}
-	};
+			&queuePriorities[0],
+		};
+
+		queueInfos.push_back(info);
+	}
+
 	const VkPhysicalDeviceFeatures	features		= getDeviceFeaturesForWsi();
 	const char* const				extensions[]	= { "VK_KHR_swapchain" };
 
@@ -156,8 +161,8 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		DE_NULL,
 		(VkDeviceCreateFlags)0,
-		DE_LENGTH_OF_ARRAY(queueInfos),
-		&queueInfos[0],
+		static_cast<deUint32>(queueInfos.size()),
+		queueInfos.data(),
 		0u,									// enabledLayerCount
 		DE_NULL,							// ppEnabledLayerNames
 		DE_LENGTH_OF_ARRAY(extensions),		// enabledExtensionCount
@@ -174,32 +179,16 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
-vector<deUint32> getSupportedQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
+									VkInstance						instance,
+									const InstanceInterface&		vki,
+									VkPhysicalDevice				physicalDevice,
+									const Extensions&				supportedExtensions,
+									const deUint32					queueFamilyIndex,
+									bool							validationEnabled,
+									const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
-	deUint32 numTotalFamilyIndices;
-	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, DE_NULL);
-
-	vector<VkQueueFamilyProperties> queueFamilyProperties(numTotalFamilyIndices);
-	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, &queueFamilyProperties[0]);
-
-	vector<deUint32>	supportedFamilyIndices;
-	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < numTotalFamilyIndices; ++queueFamilyNdx)
-	{
-		if (getPhysicalDeviceSurfaceSupport(vki, physicalDevice, queueFamilyNdx, surface) != VK_FALSE)
-			supportedFamilyIndices.push_back(queueFamilyNdx);
-	}
-
-	return supportedFamilyIndices;
-}
-
-deUint32 chooseQueueFamilyIndex (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-	const vector<deUint32>	supportedFamilyIndices	= getSupportedQueueFamilyIndices(vki, physicalDevice, surface);
-
-	if (supportedFamilyIndices.empty())
-		TCU_THROW(NotSupportedError, "Device doesn't support presentation");
-
-	return supportedFamilyIndices[0];
+	return createDeviceWithWsi(vkp, instance, vki, physicalDevice, supportedExtensions, vector<deUint32>(1u, queueFamilyIndex), validationEnabled, pAllocator);
 }
 
 struct InstanceHelper
@@ -242,7 +231,7 @@ struct DeviceHelper
 	DeviceHelper (Context&						context,
 				  const InstanceInterface&		vki,
 				  VkInstance					instance,
-				  VkSurfaceKHR					surface,
+				  const vector<VkSurfaceKHR>&	surface,
 				  const VkAllocationCallbacks*	pAllocator = DE_NULL)
 		: physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
 		, queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, surface))
@@ -256,6 +245,54 @@ struct DeviceHelper
 												 pAllocator))
 		, vkd				(context.getPlatformInterface(), context.getInstance(), *device)
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
+	{
+	}
+
+	// Single-surface shortcut.
+	DeviceHelper (Context&						context,
+				  const InstanceInterface&		vki,
+				  VkInstance					instance,
+				  VkSurfaceKHR					surface,
+				  const VkAllocationCallbacks*	pAllocator = DE_NULL)
+		: DeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), pAllocator)
+	{
+	}
+};
+
+// Similar to the one above with no queues and multiple queue families.
+struct MultiQueueDeviceHelper
+{
+	const VkPhysicalDevice	physicalDevice;
+	const vector<deUint32>	queueFamilyIndices;
+	const Unique<VkDevice>	device;
+	const DeviceDriver		vkd;
+
+	MultiQueueDeviceHelper (Context&						context,
+							const InstanceInterface&		vki,
+							VkInstance						instance,
+							const vector<VkSurfaceKHR>&		surface,
+							const VkAllocationCallbacks*	pAllocator = DE_NULL)
+		: physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
+		, queueFamilyIndices(getCompatibleQueueFamilyIndices(vki, physicalDevice, surface))
+		, device			(createDeviceWithWsi(context.getPlatformInterface(),
+												 context.getInstance(),
+												 vki,
+												 physicalDevice,
+												 enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
+												 queueFamilyIndices,
+												 context.getTestContext().getCommandLine().isValidationEnabled(),
+												 pAllocator))
+		, vkd				(context.getPlatformInterface(), context.getInstance(), *device)
+	{
+	}
+
+	// Single-surface shortcut.
+	MultiQueueDeviceHelper (Context&						context,
+							const InstanceInterface&		vki,
+							VkInstance						instance,
+							VkSurfaceKHR					surface,
+							const VkAllocationCallbacks*	pAllocator = DE_NULL)
+		: MultiQueueDeviceHelper(context, vki, instance, vector<VkSurfaceKHR>(1u, surface), pAllocator)
 	{
 	}
 };
@@ -296,18 +333,42 @@ MovePtr<Window> createWindow (const Display& display, const Maybe<UVec2>& initia
 	}
 }
 
-struct NativeObjects
+class NativeObjects
 {
-	const UniquePtr<Display>	display;
-	const UniquePtr<Window>		window;
+private:
+	UniquePtr<Display>		display;
+	vector<MovePtr<Window>>	windows;
 
+public:
 	NativeObjects (Context&				context,
 				   const Extensions&	supportedExtensions,
 				   Type					wsiType,
+				   size_t				windowCount = 1u,
 				   const Maybe<UVec2>&	initialWindowSize = tcu::nothing<UVec2>())
 		: display	(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), supportedExtensions, wsiType))
-		, window	(createWindow(*display, initialWindowSize))
-	{}
+	{
+		DE_ASSERT(windowCount > 0u);
+		for (size_t i = 0; i < windowCount; ++i)
+			windows.emplace_back(createWindow(*display, initialWindowSize));
+	}
+
+	NativeObjects (NativeObjects&& other)
+		: display	(other.display.move())
+		, windows	()
+	{
+		windows.swap(other.windows);
+	}
+
+	Display&	getDisplay	() const
+	{
+		return *display;
+	}
+
+	Window&		getWindow	(size_t index = 0u) const
+	{
+		DE_ASSERT(index < windows.size());
+		return *windows[index];
+	}
 };
 
 enum TestDimension
@@ -488,8 +549,11 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 
 		case TEST_DIMENSION_IMAGE_SHARING_MODE:
 		{
+#if 0
+			// Skipping since this matches the base parameters.
 			cases.push_back(baseParameters);
 			cases.back().imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+#endif
 
 			cases.push_back(baseParameters);
 			cases.back().imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -583,8 +647,8 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 	tcu::TestLog&							log			= context.getTestContext().getLog();
 	const InstanceHelper					instHelper	(context, params.wsiType);
 	const NativeObjects						native		(context, instHelper.supportedExtensions, params.wsiType);
-	const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki, instHelper.instance, params.wsiType, *native.display, *native.window));
-	const DeviceHelper						devHelper	(context, instHelper.vki, instHelper.instance, *surface);
+	const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow()));
+	const MultiQueueDeviceHelper			devHelper	(context, instHelper.vki, instHelper.instance, *surface);
 	const vector<VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
 	const VkSurfaceCapabilitiesKHR			capabilities(getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface));
 
@@ -595,9 +659,22 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 
 		VkSwapchainCreateInfoKHR	curParams	= cases[caseNdx];
 
+		if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
+		{
+			const deUint32 numFamilies = static_cast<deUint32>(devHelper.queueFamilyIndices.size());
+			if (numFamilies < 2u)
+				TCU_THROW(NotSupportedError, "Only " + de::toString(numFamilies) + " queue families available for VK_SHARING_MODE_CONCURRENT");
+			curParams.queueFamilyIndexCount	= numFamilies;
+		}
+		else
+		{
+			// Take only the first queue.
+			if (devHelper.queueFamilyIndices.empty())
+				TCU_THROW(NotSupportedError, "No queue families compatible with the given surface");
+			curParams.queueFamilyIndexCount	= 1u;
+		}
+		curParams.pQueueFamilyIndices	= devHelper.queueFamilyIndices.data();
 		curParams.surface				= *surface;
-		curParams.queueFamilyIndexCount	= 1u;
-		curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
 
 		log << TestLog::Message << subcase.str() << curParams << TestLog::EndMessage;
 
@@ -681,8 +758,8 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 		const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki,
 																			instHelper.instance,
 																			params.wsiType,
-																			*native.display,
-																			*native.window,
+																			native.getDisplay(),
+																			native.getWindow(),
 																			failingAllocator.getCallbacks()));
 		const DeviceHelper						devHelper	(context, instHelper.vki, instHelper.instance, *surface, failingAllocator.getCallbacks());
 		const vector<VkSwapchainCreateInfoKHR>	allCases	(generateSwapchainParameterCases(params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -747,12 +824,12 @@ tcu::TestStatus testImageSwapchainCreateInfo (Context& context, Type wsiType)
 {
 	const tcu::UVec2			desiredSize			(256, 256);
 	const InstanceHelper		instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-	const NativeObjects			native				(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
+	const NativeObjects			native				(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
 	const Unique<VkSurfaceKHR>	surface				(createSurface(instHelper.vki,
 																   instHelper.instance,
 																   wsiType,
-																   *native.display,
-																   *native.window));
+																   native.getDisplay(),
+																   native.getWindow()));
 	const DeviceHelper			devHelper			(context, instHelper.vki, instHelper.instance, *surface);
 	const Extensions&			deviceExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, DE_NULL);
 
@@ -937,500 +1014,6 @@ VkSwapchainCreateInfoKHR getBasicSwapchainParameters (Type						wsiType,
 	return parameters;
 }
 
-typedef de::SharedPtr<Unique<VkImageView> >		ImageViewSp;
-typedef de::SharedPtr<Unique<VkFramebuffer> >	FramebufferSp;
-
-class TriangleRenderer
-{
-public:
-									TriangleRenderer	(const DeviceInterface&		vkd,
-														 const VkDevice				device,
-														 Allocator&					allocator,
-														 const BinaryCollection&	binaryRegistry,
-														 bool						explicitLayoutTransitions,
-														 const vector<VkImage>		swapchainImages,
-														 const vector<VkImage>		aliasImages,
-														 const VkFormat				framebufferFormat,
-														 const UVec2&				renderSize);
-									~TriangleRenderer	(void);
-
-	void							recordFrame			(VkCommandBuffer			cmdBuffer,
-														 deUint32					imageNdx,
-														 deUint32					frameNdx) const;
-
-	void							recordDeviceGroupFrame (VkCommandBuffer			cmdBuffer,
-															deUint32				imageNdx,
-															deUint32				firstDeviceID,
-															deUint32				secondDeviceID,
-															deUint32				devicesCount,
-															deUint32				frameNdx) const;
-
-	static void						getPrograms			(SourceCollections& dst);
-
-private:
-	static Move<VkRenderPass>		createRenderPass	(const DeviceInterface&		vkd,
-														 const VkDevice				device,
-														 const VkFormat				colorAttachmentFormat,
-														 const bool					explicitLayoutTransitions);
-	static Move<VkPipelineLayout>	createPipelineLayout(const DeviceInterface&		vkd,
-														 VkDevice					device);
-	static Move<VkPipeline>			createPipeline		(const DeviceInterface&		vkd,
-														 const VkDevice				device,
-														 const VkRenderPass			renderPass,
-														 const VkPipelineLayout		pipelineLayout,
-														 const BinaryCollection&	binaryCollection,
-														 const UVec2&				renderSize);
-
-	static Move<VkImageView>		createAttachmentView(const DeviceInterface&		vkd,
-														 const VkDevice				device,
-														 const VkImage				image,
-														 const VkFormat				format);
-	static Move<VkFramebuffer>		createFramebuffer	(const DeviceInterface&		vkd,
-														 const VkDevice				device,
-														 const VkRenderPass			renderPass,
-														 const VkImageView			colorAttachment,
-														 const UVec2&				renderSize);
-
-	static Move<VkBuffer>			createBuffer		(const DeviceInterface&		vkd,
-														 VkDevice					device,
-														 VkDeviceSize				size,
-														 VkBufferUsageFlags			usage);
-
-	const DeviceInterface&			m_vkd;
-
-	const bool						m_explicitLayoutTransitions;
-	const vector<VkImage>			m_swapchainImages;
-	const vector<VkImage>			m_aliasImages;
-	const tcu::UVec2				m_renderSize;
-
-	const Unique<VkRenderPass>		m_renderPass;
-	const Unique<VkPipelineLayout>	m_pipelineLayout;
-	const Unique<VkPipeline>		m_pipeline;
-
-	const Unique<VkBuffer>			m_vertexBuffer;
-	const UniquePtr<Allocation>		m_vertexBufferMemory;
-
-	vector<ImageViewSp>				m_attachmentViews;
-	mutable vector<VkImageLayout>	m_attachmentLayouts;
-	vector<FramebufferSp>			m_framebuffers;
-};
-
-Move<VkRenderPass> TriangleRenderer::createRenderPass (const DeviceInterface&	vkd,
-													   const VkDevice			device,
-													   const VkFormat			colorAttachmentFormat,
-													   const bool				explicitLayoutTransitions)
-{
-	const VkAttachmentDescription	colorAttDesc		=
-	{
-		(VkAttachmentDescriptionFlags)0,
-		colorAttachmentFormat,
-		VK_SAMPLE_COUNT_1_BIT,
-		VK_ATTACHMENT_LOAD_OP_CLEAR,
-		VK_ATTACHMENT_STORE_OP_STORE,
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-	};
-	const VkAttachmentReference		colorAttRef			=
-	{
-		0u,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	};
-	const VkSubpassDescription		subpassDesc			=
-	{
-		(VkSubpassDescriptionFlags)0u,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		0u,							// inputAttachmentCount
-		DE_NULL,					// pInputAttachments
-		1u,							// colorAttachmentCount
-		&colorAttRef,				// pColorAttachments
-		DE_NULL,					// pResolveAttachments
-		DE_NULL,					// depthStencilAttachment
-		0u,							// preserveAttachmentCount
-		DE_NULL,					// pPreserveAttachments
-	};
-	const VkSubpassDependency		dependencies[]		=
-	{
-		{
-			VK_SUBPASS_EXTERNAL,	// srcSubpass
-			0u,						// dstSubpass
-			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			VK_ACCESS_MEMORY_READ_BIT,
-			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
-			VK_DEPENDENCY_BY_REGION_BIT
-		},
-		{
-			0u,						// srcSubpass
-			VK_SUBPASS_EXTERNAL,	// dstSubpass
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
-			VK_ACCESS_MEMORY_READ_BIT,
-			VK_DEPENDENCY_BY_REGION_BIT
-		},
-	};
-	const VkRenderPassCreateInfo	renderPassParams	=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		DE_NULL,
-		(VkRenderPassCreateFlags)0,
-		1u,
-		&colorAttDesc,
-		1u,
-		&subpassDesc,
-		DE_LENGTH_OF_ARRAY(dependencies),
-		dependencies,
-	};
-
-	return vk::createRenderPass(vkd, device, &renderPassParams);
-}
-
-Move<VkPipelineLayout> TriangleRenderer::createPipelineLayout (const DeviceInterface&	vkd,
-															   const VkDevice			device)
-{
-	const VkPushConstantRange						pushConstantRange		=
-	{
-		VK_SHADER_STAGE_VERTEX_BIT,
-		0u,											// offset
-		(deUint32)sizeof(deUint32),					// size
-	};
-	const VkPipelineLayoutCreateInfo				pipelineLayoutParams	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineLayoutCreateFlags)0,
-		0u,											// setLayoutCount
-		DE_NULL,									// pSetLayouts
-		1u,
-		&pushConstantRange,
-	};
-
-	return vk::createPipelineLayout(vkd, device, &pipelineLayoutParams);
-}
-
-Move<VkPipeline> TriangleRenderer::createPipeline (const DeviceInterface&	vkd,
-												   const VkDevice			device,
-												   const VkRenderPass		renderPass,
-												   const VkPipelineLayout	pipelineLayout,
-												   const BinaryCollection&	binaryCollection,
-												   const UVec2&				renderSize)
-{
-	// \note VkShaderModules are fully consumed by vkCreateGraphicsPipelines()
-	//		 and can be deleted immediately following that call.
-	const Unique<VkShaderModule>					vertShaderModule		(createShaderModule(vkd, device, binaryCollection.get("tri-vert"), 0));
-	const Unique<VkShaderModule>					fragShaderModule		(createShaderModule(vkd, device, binaryCollection.get("tri-frag"), 0));
-	const std::vector<VkViewport>					viewports				(1, makeViewport(renderSize));
-	const std::vector<VkRect2D>						scissors				(1, makeRect2D(renderSize));
-
-	return vk::makeGraphicsPipeline(vkd,				// const DeviceInterface&            vk
-									device,				// const VkDevice                    device
-									pipelineLayout,		// const VkPipelineLayout            pipelineLayout
-									*vertShaderModule,	// const VkShaderModule              vertexShaderModule
-									DE_NULL,			// const VkShaderModule              tessellationControlShaderModule
-									DE_NULL,			// const VkShaderModule              tessellationEvalShaderModule
-									DE_NULL,			// const VkShaderModule              geometryShaderModule
-									*fragShaderModule,	// const VkShaderModule              fragmentShaderModule
-									renderPass,			// const VkRenderPass                renderPass
-									viewports,			// const std::vector<VkViewport>&    viewports
-									scissors);			// const std::vector<VkRect2D>&      scissors
-}
-
-Move<VkImageView> TriangleRenderer::createAttachmentView (const DeviceInterface&	vkd,
-														  const VkDevice			device,
-														  const VkImage				image,
-														  const VkFormat			format)
-{
-	const VkImageViewCreateInfo		viewParams	=
-	{
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		DE_NULL,
-		(VkImageViewCreateFlags)0,
-		image,
-		VK_IMAGE_VIEW_TYPE_2D,
-		format,
-		vk::makeComponentMappingRGBA(),
-		{
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			0u,						// baseMipLevel
-			1u,						// levelCount
-			0u,						// baseArrayLayer
-			1u,						// layerCount
-		},
-	};
-
-	return vk::createImageView(vkd, device, &viewParams);
-}
-
-Move<VkFramebuffer> TriangleRenderer::createFramebuffer	(const DeviceInterface&		vkd,
-														 const VkDevice				device,
-														 const VkRenderPass			renderPass,
-														 const VkImageView			colorAttachment,
-														 const UVec2&				renderSize)
-{
-	const VkFramebufferCreateInfo	framebufferParams	=
-	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		DE_NULL,
-		(VkFramebufferCreateFlags)0,
-		renderPass,
-		1u,
-		&colorAttachment,
-		renderSize.x(),
-		renderSize.y(),
-		1u,							// layers
-	};
-
-	return vk::createFramebuffer(vkd, device, &framebufferParams);
-}
-
-Move<VkBuffer> TriangleRenderer::createBuffer (const DeviceInterface&	vkd,
-											   VkDevice					device,
-											   VkDeviceSize				size,
-											   VkBufferUsageFlags		usage)
-{
-	const VkBufferCreateInfo	bufferParams	=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		DE_NULL,
-		(VkBufferCreateFlags)0,
-		size,
-		usage,
-		VK_SHARING_MODE_EXCLUSIVE,
-		0,
-		DE_NULL
-	};
-
-	return vk::createBuffer(vkd, device, &bufferParams);
-}
-
-TriangleRenderer::TriangleRenderer (const DeviceInterface&	vkd,
-									const VkDevice			device,
-									Allocator&				allocator,
-									const BinaryCollection&	binaryRegistry,
-									bool					explicitLayoutTransitions,
-									const vector<VkImage>	swapchainImages,
-									const vector<VkImage>	aliasImages,
-									const VkFormat			framebufferFormat,
-									const UVec2&			renderSize)
-	: m_vkd							(vkd)
-	, m_explicitLayoutTransitions	(explicitLayoutTransitions)
-	, m_swapchainImages				(swapchainImages)
-	, m_aliasImages					(aliasImages)
-	, m_renderSize					(renderSize)
-	, m_renderPass					(createRenderPass(vkd, device, framebufferFormat, m_explicitLayoutTransitions))
-	, m_pipelineLayout				(createPipelineLayout(vkd, device))
-	, m_pipeline					(createPipeline(vkd, device, *m_renderPass, *m_pipelineLayout, binaryRegistry, renderSize))
-	, m_vertexBuffer				(createBuffer(vkd, device, (VkDeviceSize)(sizeof(float)*4*3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
-	, m_vertexBufferMemory			(allocator.allocate(getBufferMemoryRequirements(vkd, device, *m_vertexBuffer),
-									 MemoryRequirement::HostVisible))
-{
-	m_attachmentViews.resize(swapchainImages.size());
-	m_attachmentLayouts.resize(swapchainImages.size());
-	m_framebuffers.resize(swapchainImages.size());
-
-	for (size_t imageNdx = 0; imageNdx < swapchainImages.size(); ++imageNdx)
-	{
-		m_attachmentViews[imageNdx]		= ImageViewSp(new Unique<VkImageView>(createAttachmentView(vkd, device, swapchainImages[imageNdx], framebufferFormat)));
-		m_attachmentLayouts[imageNdx]	= VK_IMAGE_LAYOUT_UNDEFINED;
-		m_framebuffers[imageNdx]		= FramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vkd, device, *m_renderPass, **m_attachmentViews[imageNdx], renderSize)));
-	}
-
-	VK_CHECK(vkd.bindBufferMemory(device, *m_vertexBuffer, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset()));
-
-	{
-		const VkMappedMemoryRange	memRange	=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-			DE_NULL,
-			m_vertexBufferMemory->getMemory(),
-			m_vertexBufferMemory->getOffset(),
-			VK_WHOLE_SIZE
-		};
-		const tcu::Vec4				vertices[]	=
-		{
-			tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f),
-			tcu::Vec4(+0.5f, -0.5f, 0.0f, 1.0f),
-			tcu::Vec4( 0.0f, +0.5f, 0.0f, 1.0f)
-		};
-		DE_STATIC_ASSERT(sizeof(vertices) == sizeof(float)*4*3);
-
-		deMemcpy(m_vertexBufferMemory->getHostPtr(), &vertices[0], sizeof(vertices));
-		VK_CHECK(vkd.flushMappedMemoryRanges(device, 1u, &memRange));
-	}
-}
-
-TriangleRenderer::~TriangleRenderer (void)
-{
-}
-
-void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
-									deUint32		imageNdx,
-									deUint32		frameNdx) const
-{
-	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
-
-	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
-
-	if (m_explicitLayoutTransitions || m_attachmentLayouts[imageNdx] == VK_IMAGE_LAYOUT_UNDEFINED)
-	{
-		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-																		 m_aliasImages[imageNdx], range);
-		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
-		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	}
-
-	beginRenderPass(m_vkd, cmdBuffer, *m_renderPass, curFramebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
-
-	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	{
-		const VkDeviceSize bindingOffset = 0;
-		m_vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
-	}
-
-	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
-	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-	endRenderPass(m_vkd, cmdBuffer);
-
-	if (m_explicitLayoutTransitions)
-	{
-		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
-																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-																		 m_aliasImages[imageNdx], range);
-		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
-		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	}
-
-	endCommandBuffer(m_vkd, cmdBuffer);
-}
-
-void TriangleRenderer::recordDeviceGroupFrame (VkCommandBuffer	cmdBuffer,
-											   deUint32			firstDeviceID,
-											   deUint32			secondDeviceID,
-											   deUint32			devicesCount,
-											   deUint32			imageNdx,
-											   deUint32			frameNdx) const
-{
-	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
-
-	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
-
-	if (m_explicitLayoutTransitions || m_attachmentLayouts[imageNdx] == VK_IMAGE_LAYOUT_UNDEFINED)
-	{
-		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-																		 m_aliasImages[imageNdx], range);
-		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
-		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	}
-
-	// begin renderpass
-	{
-		const VkClearValue clearValue = makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
-
-		VkRect2D zeroRect = { { 0, 0, },{ 0, 0, } };
-		vector<VkRect2D> renderAreas;
-		for (deUint32 i = 0; i < devicesCount; i++)
-			renderAreas.push_back(zeroRect);
-
-		// Render completely if there is only 1 device
-		if (devicesCount == 1u)
-		{
-			renderAreas[0].extent.width = (deInt32)m_renderSize.x();
-			renderAreas[0].extent.height = (deInt32)m_renderSize.y();
-		}
-		else
-		{
-			// Split into 2 vertical halves
-			renderAreas[firstDeviceID].extent.width		= (deInt32)m_renderSize.x() / 2;
-			renderAreas[firstDeviceID].extent.height	= (deInt32)m_renderSize.y();
-			renderAreas[secondDeviceID]					= renderAreas[firstDeviceID];
-			renderAreas[secondDeviceID].offset.x		= (deInt32)m_renderSize.x() / 2;
-		}
-
-		const VkDeviceGroupRenderPassBeginInfo deviceGroupRPBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-			(deUint32)((1 << devicesCount) - 1),
-			devicesCount,
-			&renderAreas[0]
-		};
-
-		const VkRenderPassBeginInfo passBeginParams =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,						// sType
-			&deviceGroupRPBeginInfo,										// pNext
-			*m_renderPass,													// renderPass
-			curFramebuffer,													// framebuffer
-			{
-				{ 0, 0 },
-				{ m_renderSize.x(), m_renderSize.y() }
-			},																// renderArea
-			1u,																// clearValueCount
-			&clearValue,													// pClearValues
-		};
-		m_vkd.cmdBeginRenderPass(cmdBuffer, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
-	}
-
-	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-
-	{
-		const VkDeviceSize bindingOffset = 0;
-		m_vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
-	}
-
-	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
-	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-	endRenderPass(m_vkd, cmdBuffer);
-
-	if (m_explicitLayoutTransitions)
-	{
-		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
-																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-																		 m_aliasImages[imageNdx], range);
-		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
-		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	}
-
-	endCommandBuffer(m_vkd, cmdBuffer);
-}
-
-void TriangleRenderer::getPrograms (SourceCollections& dst)
-{
-	dst.glslSources.add("tri-vert") << glu::VertexSource(
-		"#version 310 es\n"
-		"layout(location = 0) in highp vec4 a_position;\n"
-		"layout(push_constant) uniform FrameData\n"
-		"{\n"
-		"    highp uint frameNdx;\n"
-		"} frameData;\n"
-		"void main (void)\n"
-		"{\n"
-		"    highp float angle = float(frameData.frameNdx) / 100.0;\n"
-		"    highp float c     = cos(angle);\n"
-		"    highp float s     = sin(angle);\n"
-		"    highp mat4  t     = mat4( c, -s,  0,  0,\n"
-		"                              s,  c,  0,  0,\n"
-		"                              0,  0,  1,  0,\n"
-		"                              0,  0,  0,  1);\n"
-		"    gl_Position = t * a_position;\n"
-		"}\n");
-	dst.glslSources.add("tri-frag") << glu::FragmentSource(
-		"#version 310 es\n"
-		"layout(location = 0) out lowp vec4 o_color;\n"
-		"void main (void) { o_color = vec4(1.0, 0.0, 1.0, 1.0); }\n");
-}
-
 typedef de::SharedPtr<Unique<VkCommandBuffer> >	CommandBufferSp;
 typedef de::SharedPtr<Unique<VkFence> >			FenceSp;
 typedef de::SharedPtr<Unique<VkSemaphore> >		SemaphoreSp;
@@ -1442,7 +1025,7 @@ vector<FenceSp> createFences (const DeviceInterface&	vkd,
 	vector<FenceSp> fences(numFences);
 
 	for (size_t ndx = 0; ndx < numFences; ++ndx)
-		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
+		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device, vk::VK_FENCE_CREATE_SIGNALED_BIT)));
 
 	return fences;
 }
@@ -1561,8 +1144,8 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2				desiredSize					(256, 256);
 	const InstanceHelper			instHelper					(context, wsiType);
-	const NativeObjects				native						(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface						(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const NativeObjects				native						(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>		surface						(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 	const DeviceHelper				devHelper					(context, instHelper.vki, instHelper.instance, *surface);
 	const DeviceInterface&			vkd							= devHelper.vkd;
 	const VkDevice					device						= *devHelper.device;
@@ -1575,7 +1158,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	if (!acquireImageWrapper.featureAvailable(context))
 		TCU_THROW(NotSupportedError, "Required extension is not supported");
 
-	const TriangleRenderer			renderer					(vkd,
+	const WsiTriangleRenderer		renderer					(vkd,
 																 device,
 																 allocator,
 																 context.getBinaryCollection(),
@@ -1613,9 +1196,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 			const VkSemaphore	imageReadySemaphore	= **imageReadySemaphores[frameNdx%imageReadySemaphores.size()];
 			deUint32			imageNdx			= ~0u;
 
-			if (frameNdx >= maxQueuedFrames)
-				VK_CHECK(vkd.waitForFences(device, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
-
+			VK_CHECK(vkd.waitForFences(device, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
 			VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
 			{
@@ -1675,6 +1256,254 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
 
+class FrameStreamObjects
+{
+public:
+	struct FrameObjects
+	{
+		const vk::VkFence&			renderCompleteFence;
+		const vk::VkSemaphore&		renderCompleteSemaphore;
+		const vk::VkSemaphore&		imageAvailableSemaphore;
+		const vk::VkCommandBuffer&	commandBuffer;
+	};
+
+	FrameStreamObjects (const vk::DeviceInterface& vkd, vk::VkDevice device, vk::VkCommandPool cmdPool, size_t maxQueuedFrames)
+		: renderingCompleteFences(createFences(vkd, device, maxQueuedFrames))
+		, renderingCompleteSemaphores(createSemaphores(vkd, device, maxQueuedFrames))
+		, imageAvailableSemaphores(createSemaphores(vkd, device, maxQueuedFrames))
+		, commandBuffers(allocateCommandBuffers(vkd, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, maxQueuedFrames))
+		, m_maxQueuedFrames(maxQueuedFrames)
+		, m_nextFrame(0u)
+	{}
+
+	size_t frameNumber (void) const { DE_ASSERT(m_nextFrame > 0u); return m_nextFrame - 1u; }
+
+	FrameObjects newFrame ()
+	{
+		const size_t mod = m_nextFrame % m_maxQueuedFrames;
+		FrameObjects ret =
+		{
+			**renderingCompleteFences[mod],
+			**renderingCompleteSemaphores[mod],
+			**imageAvailableSemaphores[mod],
+			**commandBuffers[mod],
+		};
+		++m_nextFrame;
+		return ret;
+	}
+
+private:
+	const vector<FenceSp>			renderingCompleteFences;
+	const vector<SemaphoreSp>		renderingCompleteSemaphores;
+	const vector<SemaphoreSp>		imageAvailableSemaphores;
+	const vector<CommandBufferSp>	commandBuffers;
+
+	const size_t	m_maxQueuedFrames;
+	size_t			m_nextFrame;
+};
+
+struct MultiSwapchainParams
+{
+	Type	wsiType;
+	size_t	swapchainCount;
+};
+
+struct AccumulatedPresentInfo
+{
+	vector<VkSemaphore>		semaphores;
+	vector<VkSwapchainKHR>	swapchains;
+	vector<deUint32>		imageIndices;
+
+	AccumulatedPresentInfo ()
+		: semaphores(), swapchains(), imageIndices()
+	{
+	}
+
+	void push_back (VkSemaphore sem, VkSwapchainKHR sc, deUint32 index)
+	{
+		semaphores.push_back(sem);
+		swapchains.push_back(sc);
+		imageIndices.push_back(index);
+	}
+
+	void reset ()
+	{
+		semaphores.resize(0);
+		swapchains.resize(0);
+		imageIndices.resize(0);
+	}
+
+	size_t size () const
+	{
+		// Any of the vectors would do.
+		return semaphores.size();
+	}
+};
+
+template <typename AcquireWrapperType>
+tcu::TestStatus multiSwapchainRenderTest (Context& context, MultiSwapchainParams params)
+{
+	DE_ASSERT(params.swapchainCount > 0);
+
+	const tcu::UVec2		desiredSize	(256, 256);
+	const InstanceHelper	instHelper	(context, params.wsiType);
+
+	// Create native window system objects, surfaces and helper surface vector.
+	std::unique_ptr<NativeObjects> native;
+	try
+	{
+		native.reset(new NativeObjects(context, instHelper.supportedExtensions, params.wsiType, params.swapchainCount, tcu::just(desiredSize)));
+	}
+	catch(tcu::ResourceError& err)
+	{
+		std::ostringstream msg;
+		msg << "Unable to create " << params.swapchainCount << " windows";
+		TCU_THROW(NotSupportedError, msg.str());
+	}
+
+	vector<Move<VkSurfaceKHR>>	surface;
+	vector<VkSurfaceKHR>		surfaceKHR;	// The plain Vulkan objects from the vector above.
+
+	for (size_t i = 0; i < params.swapchainCount; ++i)
+	{
+		surface.emplace_back(createSurface(instHelper.vki, instHelper.instance, params.wsiType, native->getDisplay(), native->getWindow(i)));
+		surfaceKHR.push_back(surface.back().get());
+	}
+
+	// Create a device compatible with all surfaces.
+	const DeviceHelper		devHelper	(context, instHelper.vki, instHelper.instance, surfaceKHR);
+	const DeviceInterface&	vkd			= devHelper.vkd;
+	const VkDevice			device		= *devHelper.device;
+	SimpleAllocator			allocator	(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
+
+	// Create several swapchains and images.
+	vector<VkSwapchainCreateInfoKHR>	swapchainInfo;
+	vector<Move<VkSwapchainKHR>>		swapchain;
+	vector<vector<VkImage>>				swapchainImages;
+	vector<AcquireWrapperType>			acquireImageWrapper;
+	for (size_t i = 0; i < params.swapchainCount; ++i)
+	{
+		swapchainInfo.emplace_back(getBasicSwapchainParameters(params.wsiType, instHelper.vki, devHelper.physicalDevice, *surface[i], desiredSize, 2));
+		swapchain.emplace_back(createSwapchainKHR(vkd, device, &swapchainInfo.back()));
+		swapchainImages.emplace_back(getSwapchainImages(vkd, device, swapchain.back().get()));
+		acquireImageWrapper.emplace_back(vkd, device, 1u, swapchain.back().get(), std::numeric_limits<deUint64>::max());
+	}
+
+	// Every acquire wrapper requires the same features, so we only check the first one.
+	if (!acquireImageWrapper.front().featureAvailable(context))
+		TCU_THROW(NotSupportedError, "Required extension is not supported");
+
+	// Renderer per swapchain.
+	vector<WsiTriangleRenderer> renderer;
+	for (size_t i = 0; i < params.swapchainCount; ++i)
+	{
+		renderer.emplace_back(vkd,
+							  device,
+							  allocator,
+							  context.getBinaryCollection(),
+							  false,
+							  swapchainImages[i],
+							  swapchainImages[i],
+							  swapchainInfo[i].imageFormat,
+							  tcu::UVec2(swapchainInfo[i].imageExtent.width, swapchainInfo[i].imageExtent.height));
+	}
+
+	const Unique<VkCommandPool>	commandPool			(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
+	const size_t				maxQueuedFrames		= swapchainImages.front().size()*2;	// Limit in-flight frames.
+
+	vector<FrameStreamObjects>	frameStreamObjects;
+	for (size_t i = 0; i < params.swapchainCount; ++i)
+		frameStreamObjects.emplace_back(vkd, device, commandPool.get(), maxQueuedFrames);
+
+	try
+	{
+		// 3 seconds for 60 Hz screens.
+		const deUint32			kNumFramesToRender		= 60*3*static_cast<deUint32>(params.swapchainCount);
+		AccumulatedPresentInfo	accumulatedPresentInfo;
+
+		for (size_t frameNdx = 0; frameNdx < kNumFramesToRender; ++frameNdx)
+		{
+			size_t		swapchainIndex	= frameNdx % params.swapchainCount;
+			auto&		fsObjects		= frameStreamObjects[swapchainIndex];
+			auto		frameObjects	= fsObjects.newFrame();
+			deUint32	imageNdx		= std::numeric_limits<deUint32>::max();
+
+			VK_CHECK(vkd.waitForFences(device, 1u, &frameObjects.renderCompleteFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
+			VK_CHECK(vkd.resetFences(device, 1u, &frameObjects.renderCompleteFence));
+
+			{
+				const VkResult acquireResult = acquireImageWrapper[swapchainIndex].call(frameObjects.imageAvailableSemaphore, (VkFence)DE_NULL, &imageNdx);
+				if (acquireResult == VK_SUBOPTIMAL_KHR)
+					context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame " << frameNdx << TestLog::EndMessage;
+				else
+					VK_CHECK(acquireResult);
+			}
+
+			TCU_CHECK(static_cast<size_t>(imageNdx) < swapchainImages[swapchainIndex].size());
+
+			{
+				const VkPipelineStageFlags	waitDstStage	= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				const VkSubmitInfo			submitInfo		=
+				{
+					VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					DE_NULL,
+					1u,
+					&frameObjects.imageAvailableSemaphore,
+					&waitDstStage,
+					1u,
+					&frameObjects.commandBuffer,
+					1u,
+					&frameObjects.renderCompleteSemaphore,
+				};
+
+				renderer[swapchainIndex].recordFrame(frameObjects.commandBuffer, imageNdx, static_cast<deUint32>(frameNdx));
+				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, frameObjects.renderCompleteFence));
+
+				// Save present information for the current frame.
+				accumulatedPresentInfo.push_back(frameObjects.renderCompleteSemaphore, swapchain[swapchainIndex].get(), imageNdx);
+
+				// Present frames when we have accumulated one frame per swapchain.
+				if (accumulatedPresentInfo.size() == params.swapchainCount)
+				{
+					DE_ASSERT(	accumulatedPresentInfo.semaphores.size() == accumulatedPresentInfo.swapchains.size()	&&
+								accumulatedPresentInfo.semaphores.size() == accumulatedPresentInfo.imageIndices.size()	);
+
+					vector<VkResult> results(params.swapchainCount, VK_ERROR_DEVICE_LOST);
+
+					const VkPresentInfoKHR presentInfo =
+					{
+						VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+						DE_NULL,
+						static_cast<deUint32>(accumulatedPresentInfo.semaphores.size()),
+						accumulatedPresentInfo.semaphores.data(),
+						static_cast<deUint32>(accumulatedPresentInfo.swapchains.size()),
+						accumulatedPresentInfo.swapchains.data(),
+						accumulatedPresentInfo.imageIndices.data(),
+						results.data(),
+					};
+
+					// Check both the global result and the individual results.
+					VK_CHECK_WSI(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
+					for (const auto& result : results)
+						VK_CHECK_WSI(result);
+
+					accumulatedPresentInfo.reset();
+				}
+			}
+		}
+
+		VK_CHECK(vkd.deviceWaitIdle(device));
+	}
+	catch (...)
+	{
+		// Make sure device is idle before destroying resources
+		vkd.deviceWaitIdle(device);
+		throw;
+	}
+
+	return tcu::TestStatus::pass("Rendering tests succeeded");
+}
+
 tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 {
 	const InstanceHelper		instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
@@ -1694,8 +1523,8 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 	}
 
 	const tcu::UVec2								desiredSize					(256, 256);
-	const NativeObjects								native						(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>						surface						(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const NativeObjects								native						(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>						surface						(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 
 	const deUint32									devGroupIdx					= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32									deviceIdx					= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
@@ -1763,7 +1592,7 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 	const Unique<VkSwapchainKHR>	swapchain					(createSwapchainKHR(vkd, *groupDevice, &swapchainInfo));
 	const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, *groupDevice, *swapchain);
 
-	const TriangleRenderer			renderer					(vkd,
+	const WsiTriangleRenderer		renderer					(vkd,
 																 *groupDevice,
 																 allocator,
 																 context.getBinaryCollection(),
@@ -1800,9 +1629,7 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 			const VkSemaphore	imageReadySemaphore	= **imageReadySemaphores[frameNdx%imageReadySemaphores.size()];
 			deUint32			imageNdx			= ~0u;
 
-			if (frameNdx >= maxQueuedFrames)
-				VK_CHECK(vkd.waitForFences(*groupDevice, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
-
+			VK_CHECK(vkd.waitForFences(*groupDevice, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
 			VK_CHECK(vkd.resetFences(*groupDevice, 1, &imageReadyFence));
 
 			{
@@ -1926,8 +1753,8 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	}
 
 	const tcu::UVec2								desiredSize					(256, 256);
-	const NativeObjects								native						(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>						surface						(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const NativeObjects								native						(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>						surface						(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 
 	const deUint32									devGroupIdx					= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32									deviceIdx					= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
@@ -2035,7 +1862,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		&imageSwapchainCreateInfo,
 		VK_IMAGE_CREATE_ALIAS_BIT |
-			VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,	// flags
+		VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,		// flags
 		VK_IMAGE_TYPE_2D,											// imageType
 		formats[0].format,											// format
 		{															// extent
@@ -2064,14 +1891,14 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 
 	// Create non-SFR image aliases for image layout transition
 	{
-		vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
-		vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
-		vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
+	vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
+	vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
+	vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
 
-		for (deUint32 idx = 0; idx < numImages; ++idx)
-		{
-			// Create image
-			images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
+	for (deUint32 idx = 0; idx < numImages; ++idx)
+	{
+		// Create image
+		images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
 
 			VkBindImageMemoryInfo bimInfo =
 			{
@@ -2098,51 +1925,51 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 			// Create image
 			imagesSfr[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
 
-			VkBindImageMemorySwapchainInfoKHR bimsInfo =
-			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
-				DE_NULL,
-				*swapchain,
-				idx
-			};
-			bindImageMemorySwapchainInfo[idx] = bimsInfo;
+		VkBindImageMemorySwapchainInfoKHR bimsInfo =
+		{
+			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
+			DE_NULL,
+			*swapchain,
+			idx
+		};
+		bindImageMemorySwapchainInfo[idx] = bimsInfo;
 
-			// Split into 2 vertical halves
-			// NOTE: the same split has to be done also in TriangleRenderer::recordDeviceGroupFrame
-			const deUint32	halfWidth			= desiredSize.x() / 2;
-			const deUint32	height				= desiredSize.y();
-			const VkRect2D	sfrRects[] =
-			{
-				{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
-				{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	},		// offset, extent
-				{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
-				{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	}		// offset, extent
-			};
+		// Split into 2 vertical halves
+		// NOTE: the same split has to be done also in WsiTriangleRenderer::recordDeviceGroupFrame
+		const deUint32	halfWidth			= desiredSize.x() / 2;
+		const deUint32	height				= desiredSize.y();
+		const VkRect2D	sfrRects[] =
+		{
+			{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
+			{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	},		// offset, extent
+			{	{ 0, 0 },					{ halfWidth, height }	},		// offset, extent
+			{	{ (deInt32)halfWidth, 0 },	{ halfWidth, height }	}		// offset, extent
+		};
 
-			VkBindImageMemoryDeviceGroupInfo bimdgInfo =
-			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO,
-				&bindImageMemorySwapchainInfo[idx],
-				DE_LENGTH_OF_ARRAY(deviceIndices),
-				deviceIndices,
-				DE_LENGTH_OF_ARRAY(sfrRects),
-				sfrRects
-			};
-			bindImageMemoryDeviceGroupInfo[idx] = bimdgInfo;
+		VkBindImageMemoryDeviceGroupInfo bimdgInfo =
+		{
+			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO,
+			&bindImageMemorySwapchainInfo[idx],
+			DE_LENGTH_OF_ARRAY(deviceIndices),
+			deviceIndices,
+			DE_LENGTH_OF_ARRAY(sfrRects),
+			sfrRects
+		};
+		bindImageMemoryDeviceGroupInfo[idx] = bimdgInfo;
 
-			VkBindImageMemoryInfo bimInfo =
-			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
-				&bindImageMemoryDeviceGroupInfo[idx],
+		VkBindImageMemoryInfo bimInfo =
+		{
+			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
+			&bindImageMemoryDeviceGroupInfo[idx],
 				**imagesSfr[idx],
-				DE_NULL,				// If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
-				0u						// If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
-			};
-			bindImageMemoryInfos[idx]	= bimInfo;
+			DE_NULL,				// If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
+			0u						// If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
+		};
+		bindImageMemoryInfos[idx]	= bimInfo;
 			rawImagesSfr[idx]			= **imagesSfr[idx];
-		}
+	}
 
-		VK_CHECK(vkd.bindImageMemory2(*groupDevice, numImages, &bindImageMemoryInfos[0]));
+	VK_CHECK(vkd.bindImageMemory2(*groupDevice, numImages, &bindImageMemoryInfos[0]));
 	}
 
 	VkPeerMemoryFeatureFlags peerMemoryFeatures = 0u;
@@ -2150,7 +1977,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	bool explicitLayoutTransitions = !(peerMemoryFeatures & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) ||
 									 !(peerMemoryFeatures & VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT);
 
-	const TriangleRenderer			renderer					(vkd,
+	const WsiTriangleRenderer			renderer					(vkd,
 																 *groupDevice,
 																 allocator,
 																 context.getBinaryCollection(),
@@ -2187,9 +2014,7 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 			const VkSemaphore	imageReadySemaphore	= **imageReadySemaphores[frameNdx%imageReadySemaphores.size()];
 			deUint32			imageNdx			= ~0u;
 
-			if (frameNdx >= maxQueuedFrames)
-				VK_CHECK(vkd.waitForFences(*groupDevice, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
-
+			VK_CHECK(vkd.waitForFences(*groupDevice, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
 			VK_CHECK(vkd.resetFences(*groupDevice, 1, &imageReadyFence));
 
 			{
@@ -2306,8 +2131,8 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2				desiredSize			(256, 256);
 	const InstanceHelper			instHelper			(context, wsiType);
-	const NativeObjects				native				(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface				(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const NativeObjects				native				(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>		surface				(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 	const DeviceHelper				devHelper			(context, instHelper.vki, instHelper.instance, *surface);
 	const PlatformProperties&		platformProperties	= getPlatformProperties(wsiType);
 	const VkSurfaceCapabilitiesKHR	capabilities		= getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -2334,7 +2159,7 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 
 		Move<VkSwapchainKHR>			swapchain					(createSwapchainKHR(vkd, device, &swapchainInfo));
 		const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
-		const TriangleRenderer			renderer					(vkd,
+		const WsiTriangleRenderer		renderer					(vkd,
 																	device,
 																	allocator,
 																	context.getBinaryCollection(),
@@ -2370,9 +2195,7 @@ tcu::TestStatus resizeSwapchainTest (Context& context, Type wsiType)
 				const VkSemaphore	imageReadySemaphore	= **imageReadySemaphores[frameNdx%imageReadySemaphores.size()];
 				deUint32			imageNdx			= ~0u;
 
-				if (frameNdx >= maxQueuedFrames)
-					VK_CHECK(vkd.waitForFences(device, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
-
+				VK_CHECK(vkd.waitForFences(device, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
 				VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
 				{
@@ -2444,8 +2267,8 @@ tcu::TestStatus getImagesIncompleteResultTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2				desiredSize		(256, 256);
 	const InstanceHelper			instHelper		(context, wsiType);
-	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const NativeObjects				native			(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>		surface			(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 	const DeviceHelper				devHelper		(context, instHelper.vki, instHelper.instance, *surface);
 	const VkSwapchainCreateInfoKHR	swapchainInfo	= getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
 	const Unique<VkSwapchainKHR>	swapchain		(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
@@ -2468,8 +2291,8 @@ tcu::TestStatus getImagesResultsCountTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2				desiredSize(256, 256);
 	const InstanceHelper			instHelper(context, wsiType);
-	const NativeObjects				native(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
-	const Unique<VkSurfaceKHR>		surface(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const NativeObjects				native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>		surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 	const DeviceHelper				devHelper(context, instHelper.vki, instHelper.instance, *surface);
 	const VkSwapchainCreateInfoKHR	swapchainInfo = getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
 	const Unique<VkSwapchainKHR>	swapchain(createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
@@ -2498,7 +2321,7 @@ tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
 {
 	const InstanceHelper		instHelper	(context, wsiType);
 	const NativeObjects			native		(context, instHelper.supportedExtensions, wsiType);
-	const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki, instHelper.instance, wsiType, *native.display, *native.window));
+	const Unique<VkSurfaceKHR>	surface		(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
 	const DeviceHelper			devHelper	(context, instHelper.vki, instHelper.instance, *surface);
 	const VkSwapchainKHR		nullHandle	= DE_NULL;
 
@@ -2520,7 +2343,12 @@ tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
 
 void getBasicRenderPrograms (SourceCollections& dst, Type)
 {
-	TriangleRenderer::getPrograms(dst);
+	WsiTriangleRenderer::getPrograms(dst);
+}
+
+void getBasicRenderPrograms (SourceCollections& dst, MultiSwapchainParams)
+{
+	WsiTriangleRenderer::getPrograms(dst);
 }
 
 void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
@@ -2529,6 +2357,14 @@ void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 	addFunctionCaseWithPrograms(testGroup, "basic2", "Basic Rendering Test using AcquireNextImage2", getBasicRenderPrograms, basicRenderTest<AcquireNextImage2Wrapper>, wsiType);
 	addFunctionCaseWithPrograms(testGroup, "device_group", "Basic Rendering Test using device_group", getBasicRenderPrograms, deviceGroupRenderTest, wsiType);
 	addFunctionCaseWithPrograms(testGroup, "device_group2", "Rendering Test using device_group and VkImageSwapchainCreateInfo", getBasicRenderPrograms, deviceGroupRenderTest2, wsiType);
+
+	const MultiSwapchainParams kTwoSwapchains	{ wsiType, 2u	};
+	const MultiSwapchainParams kTenSwapchains	{ wsiType, 10u	};
+
+	addFunctionCaseWithPrograms(testGroup, "2swapchains", "2 Swapchains Rendering Test", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImageWrapper>, kTwoSwapchains);
+	addFunctionCaseWithPrograms(testGroup, "2swapchains2", "2 Swapchains Rendering Test using AcquireNextImage2", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTwoSwapchains);
+	addFunctionCaseWithPrograms(testGroup, "10swapchains", "10 Swapchains Rendering Test", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImageWrapper>, kTenSwapchains);
+	addFunctionCaseWithPrograms(testGroup, "10swapchains2", "10 Swapchains Rendering Test using AcquireNextImage2", getBasicRenderPrograms, multiSwapchainRenderTest<AcquireNextImage2Wrapper>, kTenSwapchains);
 }
 
 void populateGetImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)

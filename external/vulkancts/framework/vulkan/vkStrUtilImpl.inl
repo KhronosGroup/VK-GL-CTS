@@ -99,6 +99,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_TOO_MANY_OBJECTS:								return "VK_ERROR_TOO_MANY_OBJECTS";
 		case VK_ERROR_FORMAT_NOT_SUPPORTED:							return "VK_ERROR_FORMAT_NOT_SUPPORTED";
 		case VK_ERROR_FRAGMENTED_POOL:								return "VK_ERROR_FRAGMENTED_POOL";
+		case VK_ERROR_UNKNOWN:										return "VK_ERROR_UNKNOWN";
 		case VK_ERROR_OUT_OF_POOL_MEMORY:							return "VK_ERROR_OUT_OF_POOL_MEMORY";
 		case VK_ERROR_INVALID_EXTERNAL_HANDLE:						return "VK_ERROR_INVALID_EXTERNAL_HANDLE";
 		case VK_ERROR_FRAGMENTATION:								return "VK_ERROR_FRAGMENTATION";
@@ -495,6 +496,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT:											return "VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV:								return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV";
@@ -1545,11 +1547,11 @@ const char* getPerformanceCounterScopeKHRName (VkPerformanceCounterScopeKHR valu
 {
 	switch (value)
 	{
-		case VK_QUERY_SCOPE_COMMAND_BUFFER_KHR:			return "VK_QUERY_SCOPE_COMMAND_BUFFER_KHR";
-		case VK_QUERY_SCOPE_RENDER_PASS_KHR:			return "VK_QUERY_SCOPE_RENDER_PASS_KHR";
-		case VK_QUERY_SCOPE_COMMAND_KHR:				return "VK_QUERY_SCOPE_COMMAND_KHR";
-		case VK_PERFORMANCE_COUNTER_SCOPE_MAX_ENUM_KHR:	return "VK_PERFORMANCE_COUNTER_SCOPE_MAX_ENUM_KHR";
-		default:										return DE_NULL;
+		case VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR:	return "VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR";
+		case VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR:		return "VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR";
+		case VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR:			return "VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR";
+		case VK_PERFORMANCE_COUNTER_SCOPE_MAX_ENUM_KHR:			return "VK_PERFORMANCE_COUNTER_SCOPE_MAX_ENUM_KHR";
+		default:												return DE_NULL;
 	}
 }
 
@@ -2436,10 +2438,11 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,						"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,								"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,			"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,								"VK_PIPELINE_CREATE_DISPATCH_BASE"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,							"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV,						"VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR,					"VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR,	"VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,								"VK_PIPELINE_CREATE_DISPATCH_BASE"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,		"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,							"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,							"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
@@ -3187,6 +3190,22 @@ tcu::Format::Bitfield<32> getShaderCorePropertiesFlagsAMDStr (VkShaderCoreProper
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_SHADER_CORE_PROPERTIES_FLAG_BITS_MAX_ENUM_AMD,	"VK_SHADER_CORE_PROPERTIES_FLAG_BITS_MAX_ENUM_AMD"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getToolPurposeFlagsEXTStr (VkToolPurposeFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_VALIDATION_BIT_EXT,			"VK_TOOL_PURPOSE_VALIDATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_PROFILING_BIT_EXT,				"VK_TOOL_PURPOSE_PROFILING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_TRACING_BIT_EXT,				"VK_TOOL_PURPOSE_TRACING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_ADDITIONAL_FEATURES_BIT_EXT,	"VK_TOOL_PURPOSE_ADDITIONAL_FEATURES_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_MODIFYING_FEATURES_BIT_EXT,	"VK_TOOL_PURPOSE_MODIFYING_FEATURES_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_DEBUG_REPORTING_BIT_EXT,		"VK_TOOL_PURPOSE_DEBUG_REPORTING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_DEBUG_MARKERS_BIT_EXT,			"VK_TOOL_PURPOSE_DEBUG_MARKERS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_TOOL_PURPOSE_FLAG_BITS_MAX_ENUM_EXT,		"VK_TOOL_PURPOSE_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -9018,6 +9037,20 @@ std::ostream& operator<< (std::ostream& s, const VkBufferDeviceAddressCreateInfo
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceToolPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceToolPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tname = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.name)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.name))) << '\n';
+	s << "\tversion = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.version)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.version))) << '\n';
+	s << "\tpurposes = " << getToolPurposeFlagsEXTStr(value.purposes) << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tlayer = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.layer)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.layer))) << '\n';
 	s << '}';
 	return s;
 }

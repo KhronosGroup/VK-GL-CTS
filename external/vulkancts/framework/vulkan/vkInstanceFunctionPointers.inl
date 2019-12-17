@@ -67,6 +67,7 @@ DestroyDebugUtilsMessengerEXTFunc									destroyDebugUtilsMessengerEXT;
 SubmitDebugUtilsMessageEXTFunc										submitDebugUtilsMessageEXT;
 GetPhysicalDeviceMultisamplePropertiesEXTFunc						getPhysicalDeviceMultisamplePropertiesEXT;
 GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc					getPhysicalDeviceCalibrateableTimeDomainsEXT;
+GetPhysicalDeviceToolPropertiesEXTFunc								getPhysicalDeviceToolPropertiesEXT;
 GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc					getPhysicalDeviceCooperativeMatrixPropertiesNV;
 GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV;
 CreateHeadlessSurfaceEXTFunc										createHeadlessSurfaceEXT;

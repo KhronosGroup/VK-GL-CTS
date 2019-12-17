@@ -32,5 +32,6 @@ const VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(void)
 const VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceSubgroupSizeControlPropertiesEXT>();			}
 const VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		getTexelBufferAlignmentPropertiesEXT		(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>();			}
 const VkPhysicalDeviceTimelineSemaphoreProperties&				getTimelineSemaphoreProperties				(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceTimelineSemaphoreProperties>();				}
+const VkPhysicalDeviceToolPropertiesEXT&						getToolPropertiesEXT						(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceToolPropertiesEXT>();							}
 const VkPhysicalDeviceTransformFeedbackPropertiesEXT&			getTransformFeedbackPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceTransformFeedbackPropertiesEXT>();				}
 const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDivisorPropertiesEXT		(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT>();		}

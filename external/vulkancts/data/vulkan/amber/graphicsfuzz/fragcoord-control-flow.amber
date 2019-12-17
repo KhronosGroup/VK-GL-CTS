@@ -85,7 +85,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 201
+; Bound: 206
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -146,10 +146,12 @@
                OpBranch %19
          %35 = OpLabel
          %39 = OpFOrdLessThan %bool %32 %float_0
-               OpSelectionMerge %41 None
+               OpSelectionMerge %201 None
                OpBranchConditional %39 %40 %41
          %40 = OpLabel
                OpBranch %19
+        %201 = OpLabel
+               OpBranch %41
          %41 = OpLabel
          %44 = OpIAdd %int %167 %int_1
                OpBranch %17
@@ -166,8 +168,10 @@
          %49 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_0
          %50 = OpLoad %float %49
          %52 = OpFOrdLessThan %bool %50 %float_40
-               OpSelectionMerge %53 None
+               OpSelectionMerge %202 None
                OpBranchConditional %52 %53 %55
+        %202 = OpLabel
+               OpBranch %53
          %53 = OpLabel
                OpStore %_GLF_color %12
                OpBranchConditional %false %45 %47
@@ -187,7 +191,7 @@
                OpBranchConditional %70 %65 %66
          %65 = OpLabel
          %74 = OpFOrdLessThan %bool %50 %float_160
-               OpSelectionMerge %76 None
+               OpSelectionMerge %203 None
                OpBranchConditional %74 %75 %94
          %75 = OpLabel
                OpBranch %78
@@ -200,12 +204,14 @@
          %86 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_1
          %87 = OpLoad %float %86
          %88 = OpFOrdLessThan %bool %87 %float_0
-               OpSelectionMerge %90 None
+               OpSelectionMerge %204 None
                OpBranchConditional %88 %89 %91
          %89 = OpLabel
                OpBranch %90
          %91 = OpLabel
                OpStore %_GLF_color %12
+               OpBranch %90
+        %204 = OpLabel
                OpBranch %90
          %90 = OpLabel
          %93 = OpISub %int %185 %int_1
@@ -244,12 +250,14 @@
         %126 = OpLabel
         %182 = OpPhi %int %int_0 %119 %134 %127
         %132 = OpSLessThan %bool %182 %int_1
-               OpLoopMerge %128 %127 None
-               OpBranchConditional %132 %127 %128
+               OpLoopMerge %205 %127 None
+               OpBranchConditional %132 %127 %205
         %127 = OpLabel
                OpStore %_GLF_color %12
         %134 = OpIAdd %int %182 %int_1
                OpBranch %126
+        %205 = OpLabel
+               OpBranch %128
         %128 = OpLabel
         %136 = OpIAdd %int %172 %int_1
                OpBranch %118
@@ -274,8 +282,10 @@
         %100 = OpLabel
         %200 = OpPhi %v4float %176 %104 %174 %116
                OpBranch %76
+        %203 = OpLabel
+               OpBranch %76
          %76 = OpLabel
-        %197 = OpPhi %v4float %176 %80 %200 %100
+        %197 = OpPhi %v4float %176 %80 %200 %100 %181 %203
         %153 = OpISub %int %171 %int_1
                OpBranch %64
          %66 = OpLabel

@@ -21,11 +21,28 @@
  * \brief Windowing System Integration (WSI) Utilities.
  *//*--------------------------------------------------------------------*/
 
+#include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkWsiUtil.hpp"
+#include "vkBarrierUtil.hpp"
+
 #include "deArrayUtil.hpp"
 #include "deMemory.h"
 
 #include <limits>
+#include <vector>
+
+using std::vector;
+
+#if defined (DEQP_SUPPORT_X11)
+#	include <X11/Xlib.h>
+#	if defined (DEQP_SUPPORT_XCB)
+#		include <xcb/xcb.h>
+#	endif // DEQP_SUPPORT_XCB
+#endif // DEQP_SUPPORT_X11
 
 namespace vk
 {
@@ -255,6 +272,56 @@ VkBool32 getPhysicalDeviceSurfaceSupport (const InstanceInterface&	vki,
 	return result;
 }
 
+VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
+											   VkPhysicalDevice			physicalDevice,
+											   deUint32					queueFamilyIndex,
+											   Type						wsiType,
+											   const Display&			nativeDisplay)
+{
+	switch (wsiType)
+	{
+		case TYPE_XLIB:
+		{
+			const XlibDisplayInterface&		xlibDisplay	= dynamic_cast<const XlibDisplayInterface&>(nativeDisplay);
+			pt::XlibVisualID				visualID	(0U);
+#if defined (DEQP_SUPPORT_X11)
+			::Display*						displayPtr	= (::Display*)(xlibDisplay.getNative().internal);
+			visualID.internal							= (deUint32)(::XDefaultVisual(displayPtr,0)->visualid);
+#endif
+			return vki.getPhysicalDeviceXlibPresentationSupportKHR(physicalDevice, queueFamilyIndex, xlibDisplay.getNative(), visualID);
+		}
+		case TYPE_XCB:
+		{
+			const XcbDisplayInterface&		xcbDisplay	= dynamic_cast<const XcbDisplayInterface&>(nativeDisplay);
+			pt::XcbVisualid					visualID	(0U);
+#if defined (DEQP_SUPPORT_XCB)
+			xcb_connection_t*				connPtr		= (xcb_connection_t*)(xcbDisplay.getNative().internal);
+			xcb_screen_t*					screen		= xcb_setup_roots_iterator(xcb_get_setup(connPtr)).data;
+			visualID.internal							= (deUint32)(screen->root_visual);
+#endif
+			return vki.getPhysicalDeviceXcbPresentationSupportKHR(physicalDevice, queueFamilyIndex, xcbDisplay.getNative(), visualID);
+		}
+		case TYPE_WAYLAND:
+		{
+			const WaylandDisplayInterface&	waylandDisplay	= dynamic_cast<const WaylandDisplayInterface&>(nativeDisplay);
+			return vki.getPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, queueFamilyIndex, waylandDisplay.getNative());
+		}
+		case TYPE_WIN32:
+		{
+			return vki.getPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
+		}
+		case TYPE_ANDROID:
+		case TYPE_MACOS:
+		{
+			return 1;
+		}
+		default:
+			DE_FATAL("Unknown WSI type");
+			return 0;
+	}
+	return 1;
+}
+
 VkSurfaceCapabilitiesKHR getPhysicalDeviceSurfaceCapabilities (const InstanceInterface&		vki,
 															   VkPhysicalDevice				physicalDevice,
 															   VkSurfaceKHR					surface)
@@ -358,6 +425,503 @@ std::vector<VkImage> getSwapchainImages (const DeviceInterface&			vkd,
 	}
 	else
 		return std::vector<VkImage>();
+}
+
+namespace
+{
+
+std::vector<deUint32> getSupportedQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+	deUint32 numTotalFamilyIndices;
+	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, DE_NULL);
+
+	std::vector<VkQueueFamilyProperties> queueFamilyProperties(numTotalFamilyIndices);
+	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, &queueFamilyProperties[0]);
+
+	std::vector<deUint32> supportedFamilyIndices;
+	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < numTotalFamilyIndices; ++queueFamilyNdx)
+	{
+		if (getPhysicalDeviceSurfaceSupport(vki, physicalDevice, queueFamilyNdx, surface) != VK_FALSE)
+			supportedFamilyIndices.push_back(queueFamilyNdx);
+	}
+
+	return supportedFamilyIndices;
+}
+
+std::vector<deUint32> getSortedSupportedQueueFamilyIndices (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface)
+{
+	std::vector<deUint32> indices = getSupportedQueueFamilyIndices(vki, physicalDevice, surface);
+	std::sort(begin(indices), end(indices));
+	return indices;
+}
+
+} // anonymous
+
+deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, const std::vector<vk::VkSurfaceKHR>& surfaces)
+{
+	auto indices = getCompatibleQueueFamilyIndices(vki, physicalDevice, surfaces);
+
+	if (indices.empty())
+		TCU_THROW(NotSupportedError, "Device does not support presentation to the given surfaces");
+
+	return indices[0];
+}
+
+deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface)
+{
+	return chooseQueueFamilyIndex(vki, physicalDevice, std::vector<vk::VkSurfaceKHR>(1u, surface));
+}
+
+std::vector<deUint32> getCompatibleQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const std::vector<VkSurfaceKHR>& surfaces)
+{
+	DE_ASSERT(!surfaces.empty());
+
+	auto indices = getSortedSupportedQueueFamilyIndices(vki, physicalDevice, surfaces[0]);
+
+	for (size_t i = 1; i < surfaces.size(); ++i)
+	{
+		auto newIndices = getSortedSupportedQueueFamilyIndices(vki, physicalDevice, surfaces[i]);
+
+		// Set intersection and overwrite.
+		decltype(indices) intersection;
+		std::set_intersection(begin(indices), end(indices), begin(newIndices), end(newIndices), std::back_inserter(intersection));
+		indices = std::move(intersection);
+	}
+
+	return indices;
+}
+
+Move<VkRenderPass> WsiTriangleRenderer::createRenderPass (const DeviceInterface&	vkd,
+														  const VkDevice			device,
+														  const VkFormat			colorAttachmentFormat,
+														  const bool				explicitLayoutTransitions)
+{
+	const VkAttachmentDescription	colorAttDesc		=
+	{
+		(VkAttachmentDescriptionFlags)0,
+		colorAttachmentFormat,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_ATTACHMENT_LOAD_OP_CLEAR,
+		VK_ATTACHMENT_STORE_OP_STORE,
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		(explicitLayoutTransitions) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+	};
+	const VkAttachmentReference		colorAttRef			=
+	{
+		0u,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	};
+	const VkSubpassDescription		subpassDesc			=
+	{
+		(VkSubpassDescriptionFlags)0u,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		0u,							// inputAttachmentCount
+		DE_NULL,					// pInputAttachments
+		1u,							// colorAttachmentCount
+		&colorAttRef,				// pColorAttachments
+		DE_NULL,					// pResolveAttachments
+		DE_NULL,					// depthStencilAttachment
+		0u,							// preserveAttachmentCount
+		DE_NULL,					// pPreserveAttachments
+	};
+	const VkSubpassDependency		dependencies[]		=
+	{
+		{
+			VK_SUBPASS_EXTERNAL,	// srcSubpass
+			0u,						// dstSubpass
+			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_ACCESS_MEMORY_READ_BIT,
+			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
+			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+			VK_DEPENDENCY_BY_REGION_BIT
+		},
+		{
+			0u,						// srcSubpass
+			VK_SUBPASS_EXTERNAL,	// dstSubpass
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
+			 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+			VK_ACCESS_MEMORY_READ_BIT,
+			VK_DEPENDENCY_BY_REGION_BIT
+		},
+	};
+	const VkRenderPassCreateInfo	renderPassParams	=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		DE_NULL,
+		(VkRenderPassCreateFlags)0,
+		1u,
+		&colorAttDesc,
+		1u,
+		&subpassDesc,
+		DE_LENGTH_OF_ARRAY(dependencies),
+		dependencies,
+	};
+
+	return vk::createRenderPass(vkd, device, &renderPassParams);
+}
+
+Move<VkPipelineLayout> WsiTriangleRenderer::createPipelineLayout (const DeviceInterface&	vkd,
+																  const VkDevice			device)
+{
+	const VkPushConstantRange						pushConstantRange		=
+	{
+		VK_SHADER_STAGE_VERTEX_BIT,
+		0u,											// offset
+		(deUint32)sizeof(deUint32),					// size
+	};
+	const VkPipelineLayoutCreateInfo				pipelineLayoutParams	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		DE_NULL,
+		(vk::VkPipelineLayoutCreateFlags)0,
+		0u,											// setLayoutCount
+		DE_NULL,									// pSetLayouts
+		1u,
+		&pushConstantRange,
+	};
+
+	return vk::createPipelineLayout(vkd, device, &pipelineLayoutParams);
+}
+
+Move<VkPipeline> WsiTriangleRenderer::createPipeline (const DeviceInterface&	vkd,
+													  const VkDevice			device,
+													  const VkRenderPass		renderPass,
+													  const VkPipelineLayout	pipelineLayout,
+													  const BinaryCollection&	binaryCollection,
+													  const tcu::UVec2&			renderSize)
+{
+	// \note VkShaderModules are fully consumed by vkCreateGraphicsPipelines()
+	//		 and can be deleted immediately following that call.
+	const Unique<VkShaderModule>					vertShaderModule		(createShaderModule(vkd, device, binaryCollection.get("tri-vert"), 0));
+	const Unique<VkShaderModule>					fragShaderModule		(createShaderModule(vkd, device, binaryCollection.get("tri-frag"), 0));
+	const std::vector<VkViewport>					viewports				(1, makeViewport(renderSize));
+	const std::vector<VkRect2D>						scissors				(1, makeRect2D(renderSize));
+
+	return vk::makeGraphicsPipeline(vkd,				// const DeviceInterface&            vk
+									device,				// const VkDevice                    device
+									pipelineLayout,		// const VkPipelineLayout            pipelineLayout
+									*vertShaderModule,	// const VkShaderModule              vertexShaderModule
+									DE_NULL,			// const VkShaderModule              tessellationControlShaderModule
+									DE_NULL,			// const VkShaderModule              tessellationEvalShaderModule
+									DE_NULL,			// const VkShaderModule              geometryShaderModule
+									*fragShaderModule,	// const VkShaderModule              fragmentShaderModule
+									renderPass,			// const VkRenderPass                renderPass
+									viewports,			// const std::vector<VkViewport>&    viewports
+									scissors);			// const std::vector<VkRect2D>&      scissors
+}
+
+Move<VkImageView> WsiTriangleRenderer::createAttachmentView (const DeviceInterface&	vkd,
+															 const VkDevice			device,
+															 const VkImage			image,
+															 const VkFormat			format)
+{
+	const VkImageViewCreateInfo		viewParams	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		DE_NULL,
+		(VkImageViewCreateFlags)0,
+		image,
+		VK_IMAGE_VIEW_TYPE_2D,
+		format,
+		vk::makeComponentMappingRGBA(),
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			0u,						// baseMipLevel
+			1u,						// levelCount
+			0u,						// baseArrayLayer
+			1u,						// layerCount
+		},
+	};
+
+	return vk::createImageView(vkd, device, &viewParams);
+}
+
+Move<VkFramebuffer> WsiTriangleRenderer::createFramebuffer	(const DeviceInterface&		vkd,
+															 const VkDevice				device,
+															 const VkRenderPass			renderPass,
+															 const VkImageView			colorAttachment,
+															 const tcu::UVec2&			renderSize)
+{
+	const VkFramebufferCreateInfo	framebufferParams	=
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		DE_NULL,
+		(VkFramebufferCreateFlags)0,
+		renderPass,
+		1u,
+		&colorAttachment,
+		renderSize.x(),
+		renderSize.y(),
+		1u,							// layers
+	};
+
+	return vk::createFramebuffer(vkd, device, &framebufferParams);
+}
+
+Move<VkBuffer> WsiTriangleRenderer::createBuffer (const DeviceInterface&	vkd,
+												  VkDevice					device,
+												  VkDeviceSize				size,
+												  VkBufferUsageFlags		usage)
+{
+	const VkBufferCreateInfo	bufferParams	=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		DE_NULL,
+		(VkBufferCreateFlags)0,
+		size,
+		usage,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0,
+		DE_NULL
+	};
+
+	return vk::createBuffer(vkd, device, &bufferParams);
+}
+
+WsiTriangleRenderer::WsiTriangleRenderer (const DeviceInterface&	vkd,
+										  const VkDevice			device,
+										  Allocator&				allocator,
+										  const BinaryCollection&	binaryRegistry,
+										  bool						explicitLayoutTransitions,
+										  const vector<VkImage>		swapchainImages,
+										  const vector<VkImage>		aliasImages,
+										  const VkFormat			framebufferFormat,
+										  const tcu::UVec2&			renderSize)
+	: m_vkd							(vkd)
+	, m_explicitLayoutTransitions	(explicitLayoutTransitions)
+	, m_swapchainImages				(swapchainImages)
+	, m_aliasImages					(aliasImages)
+	, m_renderSize					(renderSize)
+	, m_renderPass					(createRenderPass(vkd, device, framebufferFormat, m_explicitLayoutTransitions))
+	, m_pipelineLayout				(createPipelineLayout(vkd, device))
+	, m_pipeline					(createPipeline(vkd, device, *m_renderPass, *m_pipelineLayout, binaryRegistry, renderSize))
+	, m_vertexBuffer				(createBuffer(vkd, device, (VkDeviceSize)(sizeof(float)*4*3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT))
+	, m_vertexBufferMemory			(allocator.allocate(getBufferMemoryRequirements(vkd, device, *m_vertexBuffer),
+									 MemoryRequirement::HostVisible))
+{
+	m_attachmentViews.resize(swapchainImages.size());
+	m_attachmentLayouts.resize(swapchainImages.size());
+	m_framebuffers.resize(swapchainImages.size());
+
+	for (size_t imageNdx = 0; imageNdx < swapchainImages.size(); ++imageNdx)
+	{
+		m_attachmentViews[imageNdx]		= ImageViewSp(new Unique<VkImageView>(createAttachmentView(vkd, device, swapchainImages[imageNdx], framebufferFormat)));
+		m_attachmentLayouts[imageNdx]	= VK_IMAGE_LAYOUT_UNDEFINED;
+		m_framebuffers[imageNdx]		= FramebufferSp(new Unique<VkFramebuffer>(createFramebuffer(vkd, device, *m_renderPass, **m_attachmentViews[imageNdx], renderSize)));
+	}
+
+	VK_CHECK(vkd.bindBufferMemory(device, *m_vertexBuffer, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset()));
+
+	{
+		const VkMappedMemoryRange	memRange	=
+		{
+			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+			DE_NULL,
+			m_vertexBufferMemory->getMemory(),
+			m_vertexBufferMemory->getOffset(),
+			VK_WHOLE_SIZE
+		};
+		const tcu::Vec4				vertices[]	=
+		{
+			tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f),
+			tcu::Vec4(+0.5f, -0.5f, 0.0f, 1.0f),
+			tcu::Vec4( 0.0f, +0.5f, 0.0f, 1.0f)
+		};
+		DE_STATIC_ASSERT(sizeof(vertices) == sizeof(float)*4*3);
+
+		deMemcpy(m_vertexBufferMemory->getHostPtr(), &vertices[0], sizeof(vertices));
+		VK_CHECK(vkd.flushMappedMemoryRanges(device, 1u, &memRange));
+	}
+}
+
+WsiTriangleRenderer::WsiTriangleRenderer (WsiTriangleRenderer&& other)
+	: m_vkd					(other.m_vkd)
+	, m_explicitLayoutTransitions	(other.m_explicitLayoutTransitions)
+	, m_swapchainImages		(other.m_swapchainImages)
+	, m_aliasImages			(other.m_aliasImages)
+	, m_renderSize			(other.m_renderSize)
+	, m_renderPass			(other.m_renderPass)
+	, m_pipelineLayout		(other.m_pipelineLayout)
+	, m_pipeline			(other.m_pipeline)
+	, m_vertexBuffer		(other.m_vertexBuffer)
+	, m_vertexBufferMemory	(other.m_vertexBufferMemory)
+	, m_attachmentViews		(other.m_attachmentViews)
+	, m_attachmentLayouts	(other.m_attachmentLayouts)
+	, m_framebuffers		(other.m_framebuffers)
+{
+}
+
+WsiTriangleRenderer::~WsiTriangleRenderer (void)
+{
+}
+
+void WsiTriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
+									   deUint32			imageNdx,
+									   deUint32			frameNdx) const
+{
+	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
+
+	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
+
+	if (m_explicitLayoutTransitions || m_attachmentLayouts[imageNdx] == VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	}
+
+	beginRenderPass(m_vkd, cmdBuffer, *m_renderPass, curFramebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
+
+	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	{
+		const VkDeviceSize bindingOffset = 0;
+		m_vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
+	}
+
+	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
+	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(m_vkd, cmdBuffer);
+
+	if (m_explicitLayoutTransitions)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
+
+	endCommandBuffer(m_vkd, cmdBuffer);
+}
+
+void WsiTriangleRenderer::recordDeviceGroupFrame (VkCommandBuffer	cmdBuffer,
+												  deUint32			firstDeviceID,
+												  deUint32			secondDeviceID,
+												  deUint32			devicesCount,
+												  deUint32			imageNdx,
+												  deUint32			frameNdx) const
+{
+	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
+
+	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
+
+	if (m_explicitLayoutTransitions || m_attachmentLayouts[imageNdx] == VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	}
+
+	// begin renderpass
+	{
+		const VkClearValue clearValue = makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
+
+		VkRect2D zeroRect = { { 0, 0, },{ 0, 0, } };
+		vector<VkRect2D> renderAreas;
+		for (deUint32 i = 0; i < devicesCount; i++)
+			renderAreas.push_back(zeroRect);
+
+		// Render completely if there is only 1 device
+		if (devicesCount == 1u)
+		{
+			renderAreas[0].extent.width = (deInt32)m_renderSize.x();
+			renderAreas[0].extent.height = (deInt32)m_renderSize.y();
+		}
+		else
+		{
+			// Split into 2 vertical halves
+			renderAreas[firstDeviceID].extent.width		= (deInt32)m_renderSize.x() / 2;
+			renderAreas[firstDeviceID].extent.height	= (deInt32)m_renderSize.y();
+			renderAreas[secondDeviceID]					= renderAreas[firstDeviceID];
+			renderAreas[secondDeviceID].offset.x		= (deInt32)m_renderSize.x() / 2;
+		}
+
+		const VkDeviceGroupRenderPassBeginInfo deviceGroupRPBeginInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO,
+			DE_NULL,
+			(deUint32)((1 << devicesCount) - 1),
+			devicesCount,
+			&renderAreas[0]
+		};
+
+		const VkRenderPassBeginInfo passBeginParams =
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,						// sType
+			&deviceGroupRPBeginInfo,										// pNext
+			*m_renderPass,													// renderPass
+			curFramebuffer,													// framebuffer
+			{
+				{ 0, 0 },
+				{ m_renderSize.x(), m_renderSize.y() }
+			},																// renderArea
+			1u,																// clearValueCount
+			&clearValue,													// pClearValues
+		};
+		m_vkd.cmdBeginRenderPass(cmdBuffer, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	{
+		const VkDeviceSize bindingOffset = 0;
+		m_vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
+	}
+
+	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
+	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(m_vkd, cmdBuffer);
+
+	if (m_explicitLayoutTransitions)
+	{
+		VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		const VkImageMemoryBarrier	barrier	= makeImageMemoryBarrier	(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, 0,
+																		 m_attachmentLayouts[imageNdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+																		 m_aliasImages[imageNdx], range);
+		m_vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+		m_attachmentLayouts[imageNdx] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
+
+	endCommandBuffer(m_vkd, cmdBuffer);
+}
+
+void WsiTriangleRenderer::getPrograms (SourceCollections& dst)
+{
+	dst.glslSources.add("tri-vert") << glu::VertexSource(
+		"#version 310 es\n"
+		"layout(location = 0) in highp vec4 a_position;\n"
+		"layout(push_constant) uniform FrameData\n"
+		"{\n"
+		"    highp uint frameNdx;\n"
+		"} frameData;\n"
+		"void main (void)\n"
+		"{\n"
+		"    highp float angle = float(frameData.frameNdx) / 100.0;\n"
+		"    highp float c     = cos(angle);\n"
+		"    highp float s     = sin(angle);\n"
+		"    highp mat4  t     = mat4( c, -s,  0,  0,\n"
+		"                              s,  c,  0,  0,\n"
+		"                              0,  0,  1,  0,\n"
+		"                              0,  0,  0,  1);\n"
+		"    gl_Position = t * a_position;\n"
+		"}\n");
+	dst.glslSources.add("tri-frag") << glu::FragmentSource(
+		"#version 310 es\n"
+		"layout(location = 0) out lowp vec4 o_color;\n"
+		"void main (void) { o_color = vec4(1.0, 0.0, 1.0, 1.0); }\n");
 }
 
 } // wsi

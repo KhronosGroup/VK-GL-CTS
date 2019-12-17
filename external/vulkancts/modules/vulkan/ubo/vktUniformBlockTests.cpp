@@ -881,14 +881,15 @@ void UniformBlockTests::init (void)
 
 	// ubo.random
 	{
-		const deUint32	allShaders		= FEATURE_VERTEX_BLOCKS|FEATURE_FRAGMENT_BLOCKS|FEATURE_SHARED_BLOCKS;
-		const deUint32	allLayouts		= FEATURE_STD140_LAYOUT;
-		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
-		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_UNIFORMS;
-		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
-		const deUint32	allFeatures		= ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE
-										  & ~FEATURE_STD430_LAYOUT & ~FEATURE_SCALAR_LAYOUT;  // OOO offsets handled in a dedicated case group
-		const deUint32	allScalar		= ~allLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;
+		const deUint32	allShaders			= FEATURE_VERTEX_BLOCKS|FEATURE_FRAGMENT_BLOCKS|FEATURE_SHARED_BLOCKS;
+		const deUint32	allLayouts			= FEATURE_STD140_LAYOUT;
+		const deUint32	allBasicTypes		= FEATURE_VECTORS|FEATURE_MATRICES;
+		const deUint32	unused				= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_UNIFORMS;
+		const deUint32	matFlags			= FEATURE_MATRIX_LAYOUT;
+		const deUint32	allFeatures			= ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE
+											  & ~FEATURE_STD430_LAYOUT & ~FEATURE_SCALAR_LAYOUT & ~FEATURE_DESCRIPTOR_INDEXING;  // OOO offsets handled in a dedicated case group
+		const deUint32	allScalar			= ~allLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE & ~FEATURE_DESCRIPTOR_INDEXING;
+		const deUint32	descriptorIndexing	= FEATURE_STD140_LAYOUT | FEATURE_STD430_LAYOUT | FEATURE_SCALAR_LAYOUT | FEATURE_DESCRIPTOR_INDEXING | allShaders | allBasicTypes | unused | matFlags;
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
 		addChild(randomGroup);
@@ -927,6 +928,7 @@ void UniformBlockTests::init (void)
 
 			createRandomCaseGroup(group, m_testCtx, "all_out_of_order_offsets",	"All random features, out of order member offsets",		UniformBlockCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allFeatures | FEATURE_OUT_OF_ORDER_OFFSETS,	50, 300);
 			createRandomCaseGroup(group, m_testCtx, "scalar",					"VK_EXT_scalar_block_layout",				UniformBlockCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|allScalar, 100, deInt32Hash(313));
+			createRandomCaseGroup(group, m_testCtx, "descriptor_indexing",		"VK_EXT_descriptor_indexing",				UniformBlockCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|descriptorIndexing, 50, 123);
 		}
 	}
 }

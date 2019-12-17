@@ -32,5 +32,6 @@ const vk::VkPhysicalDeviceSubgroupProperties&						getSubgroupProperties						(v
 const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			getSubgroupSizeControlPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		getTexelBufferAlignmentPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				getTimelineSemaphoreProperties				(void) const;
+const vk::VkPhysicalDeviceToolPropertiesEXT&						getToolPropertiesEXT						(void) const;
 const vk::VkPhysicalDeviceTransformFeedbackPropertiesEXT&			getTransformFeedbackPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		getVertexAttributeDivisorPropertiesEXT		(void) const;

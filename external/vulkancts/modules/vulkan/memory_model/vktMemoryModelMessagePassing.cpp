@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktMemoryModelTests.hpp"
+#include "vktMemoryModelPadding.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -1429,7 +1430,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		pipeline = createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo);
 	}
 
-	const VkQueue				queue				= m_context.getUniversalQueue();
+	const VkQueue					queue					= m_context.getUniversalQueue();
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -1917,6 +1918,9 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		transGroup->addChild(cohGroup.release());
 	}
 	group->addChild(transGroup.release());
+
+	// Padding tests.
+	group->addChild(createPaddingTests(testCtx));
 
 	return group.release();
 }

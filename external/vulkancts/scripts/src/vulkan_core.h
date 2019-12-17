@@ -44,7 +44,7 @@ extern "C" {
 #define VK_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((uint32_t)(version) & 0xfff)
 // Version of this file
-#define VK_HEADER_VERSION 124
+#define VK_HEADER_VERSION 130
 
 
 #define VK_NULL_HANDLE 0
@@ -133,6 +133,7 @@ typedef enum VkResult {
     VK_ERROR_TOO_MANY_OBJECTS = -10,
     VK_ERROR_FORMAT_NOT_SUPPORTED = -11,
     VK_ERROR_FRAGMENTED_POOL = -12,
+    VK_ERROR_UNKNOWN = -13,
     VK_ERROR_OUT_OF_POOL_MEMORY = -1000069000,
     VK_ERROR_INVALID_EXTERNAL_HANDLE = -1000072003,
     VK_ERROR_FRAGMENTATION = -1000161000,
@@ -152,9 +153,9 @@ typedef enum VkResult {
     VK_ERROR_FRAGMENTATION_EXT = VK_ERROR_FRAGMENTATION,
     VK_ERROR_INVALID_DEVICE_ADDRESS_EXT = VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS,
     VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS_KHR = VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS,
-    VK_RESULT_BEGIN_RANGE = VK_ERROR_FRAGMENTED_POOL,
+    VK_RESULT_BEGIN_RANGE = VK_ERROR_UNKNOWN,
     VK_RESULT_END_RANGE = VK_INCOMPLETE,
-    VK_RESULT_RANGE_SIZE = (VK_INCOMPLETE - VK_ERROR_FRAGMENTED_POOL + 1),
+    VK_RESULT_RANGE_SIZE = (VK_INCOMPLETE - VK_ERROR_UNKNOWN + 1),
     VK_RESULT_MAX_ENUM = 0x7FFFFFFF
 } VkResult;
 
@@ -532,6 +533,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV = 1000240000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT = 1000244000,
     VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT = 1000244002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TOOL_PROPERTIES_EXT = 1000245000,
     VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT = 1000247000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV = 1000249000,
     VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV = 1000249001,
@@ -1766,10 +1768,11 @@ typedef enum VkPipelineCreateFlagBits {
     VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT = 0x00000002,
     VK_PIPELINE_CREATE_DERIVATIVE_BIT = 0x00000004,
     VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT = 0x00000008,
-    VK_PIPELINE_CREATE_DISPATCH_BASE = 0x00000010,
+    VK_PIPELINE_CREATE_DISPATCH_BASE_BIT = 0x00000010,
     VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV = 0x00000020,
     VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR = 0x00000040,
     VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR = 0x00000080,
+    VK_PIPELINE_CREATE_DISPATCH_BASE = VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,
     VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR = VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,
     VK_PIPELINE_CREATE_DISPATCH_BASE_KHR = VK_PIPELINE_CREATE_DISPATCH_BASE,
     VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -6659,6 +6662,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceFdKHR(
     int*                                        pFd);
 #endif
 
+
 #define VK_KHR_performance_query 1
 #define VK_KHR_PERFORMANCE_QUERY_SPEC_VERSION 1
 #define VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME "VK_KHR_performance_query"
@@ -6682,12 +6686,15 @@ typedef enum VkPerformanceCounterUnitKHR {
 } VkPerformanceCounterUnitKHR;
 
 typedef enum VkPerformanceCounterScopeKHR {
-    VK_QUERY_SCOPE_COMMAND_BUFFER_KHR = 0,
-    VK_QUERY_SCOPE_RENDER_PASS_KHR = 1,
-    VK_QUERY_SCOPE_COMMAND_KHR = 2,
-    VK_PERFORMANCE_COUNTER_SCOPE_BEGIN_RANGE_KHR = VK_QUERY_SCOPE_COMMAND_BUFFER_KHR,
-    VK_PERFORMANCE_COUNTER_SCOPE_END_RANGE_KHR = VK_QUERY_SCOPE_COMMAND_KHR,
-    VK_PERFORMANCE_COUNTER_SCOPE_RANGE_SIZE_KHR = (VK_QUERY_SCOPE_COMMAND_KHR - VK_QUERY_SCOPE_COMMAND_BUFFER_KHR + 1),
+    VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR = 0,
+    VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR = 1,
+    VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR = 2,
+    VK_QUERY_SCOPE_COMMAND_BUFFER_KHR = VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR,
+    VK_QUERY_SCOPE_RENDER_PASS_KHR = VK_PERFORMANCE_COUNTER_SCOPE_RENDER_PASS_KHR,
+    VK_QUERY_SCOPE_COMMAND_KHR = VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR,
+    VK_PERFORMANCE_COUNTER_SCOPE_BEGIN_RANGE_KHR = VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR,
+    VK_PERFORMANCE_COUNTER_SCOPE_END_RANGE_KHR = VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR,
+    VK_PERFORMANCE_COUNTER_SCOPE_RANGE_SIZE_KHR = (VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR - VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR + 1),
     VK_PERFORMANCE_COUNTER_SCOPE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkPerformanceCounterScopeKHR;
 
@@ -7220,6 +7227,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkSignalSemaphoreKHR(
 typedef VkPhysicalDeviceVulkanMemoryModelFeatures VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 
+
 #define VK_KHR_spirv_1_4 1
 #define VK_KHR_SPIRV_1_4_SPEC_VERSION     1
 #define VK_KHR_SPIRV_1_4_EXTENSION_NAME   "VK_KHR_spirv_1_4"
@@ -7377,6 +7385,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR
     uint32_t*                                   pInternalRepresentationCount,
     VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
 #endif
+
 
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
@@ -7936,7 +7945,7 @@ typedef struct VkValidationFlagsEXT {
 #define VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME "VK_EXT_texture_compression_astc_hdr"
 typedef struct VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkBool32           textureCompressionASTC_HDR;
 } VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT;
 
@@ -9000,6 +9009,7 @@ typedef struct VkPipelineCoverageModulationStateCreateInfoNV {
 #define VK_NV_FILL_RECTANGLE_SPEC_VERSION 1
 #define VK_NV_FILL_RECTANGLE_EXTENSION_NAME "VK_NV_fill_rectangle"
 
+
 #define VK_NV_shader_sm_builtins 1
 #define VK_NV_SHADER_SM_BUILTINS_SPEC_VERSION 1
 #define VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME "VK_NV_shader_sm_builtins"
@@ -9015,6 +9025,8 @@ typedef struct VkPhysicalDeviceShaderSMBuiltinsFeaturesNV {
     void*              pNext;
     VkBool32           shaderSMBuiltins;
 } VkPhysicalDeviceShaderSMBuiltinsFeaturesNV;
+
+
 
 #define VK_EXT_post_depth_coverage 1
 #define VK_EXT_POST_DEPTH_COVERAGE_SPEC_VERSION 1
@@ -9583,7 +9595,7 @@ typedef struct VkPipelineRepresentativeFragmentTestStateCreateInfoNV {
 
 
 #define VK_EXT_filter_cubic 1
-#define VK_EXT_FILTER_CUBIC_SPEC_VERSION  2
+#define VK_EXT_FILTER_CUBIC_SPEC_VERSION  3
 #define VK_EXT_FILTER_CUBIC_EXTENSION_NAME "VK_EXT_filter_cubic"
 typedef struct VkPhysicalDeviceImageViewImageFormatInfoEXT {
     VkStructureType    sType;
@@ -10350,6 +10362,41 @@ typedef VkDeviceAddress (VKAPI_PTR *PFN_vkGetBufferDeviceAddressEXT)(VkDevice de
 VKAPI_ATTR VkDeviceAddress VKAPI_CALL vkGetBufferDeviceAddressEXT(
     VkDevice                                    device,
     const VkBufferDeviceAddressInfo*            pInfo);
+#endif
+
+
+#define VK_EXT_tooling_info 1
+#define VK_EXT_TOOLING_INFO_SPEC_VERSION  1
+#define VK_EXT_TOOLING_INFO_EXTENSION_NAME "VK_EXT_tooling_info"
+
+typedef enum VkToolPurposeFlagBitsEXT {
+    VK_TOOL_PURPOSE_VALIDATION_BIT_EXT = 0x00000001,
+    VK_TOOL_PURPOSE_PROFILING_BIT_EXT = 0x00000002,
+    VK_TOOL_PURPOSE_TRACING_BIT_EXT = 0x00000004,
+    VK_TOOL_PURPOSE_ADDITIONAL_FEATURES_BIT_EXT = 0x00000008,
+    VK_TOOL_PURPOSE_MODIFYING_FEATURES_BIT_EXT = 0x00000010,
+    VK_TOOL_PURPOSE_DEBUG_REPORTING_BIT_EXT = 0x00000020,
+    VK_TOOL_PURPOSE_DEBUG_MARKERS_BIT_EXT = 0x00000040,
+    VK_TOOL_PURPOSE_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+} VkToolPurposeFlagBitsEXT;
+typedef VkFlags VkToolPurposeFlagsEXT;
+typedef struct VkPhysicalDeviceToolPropertiesEXT {
+    VkStructureType          sType;
+    void*                    pNext;
+    char                     name[VK_MAX_EXTENSION_NAME_SIZE];
+    char                     version[VK_MAX_EXTENSION_NAME_SIZE];
+    VkToolPurposeFlagsEXT    purposes;
+    char                     description[VK_MAX_DESCRIPTION_SIZE];
+    char                     layer[VK_MAX_EXTENSION_NAME_SIZE];
+} VkPhysicalDeviceToolPropertiesEXT;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceToolPropertiesEXT)(VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceToolPropertiesEXT(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t*                                   pToolCount,
+    VkPhysicalDeviceToolPropertiesEXT*          pToolProperties);
 #endif
 
 

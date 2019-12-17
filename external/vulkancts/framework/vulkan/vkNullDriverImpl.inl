@@ -2307,6 +2307,14 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceToolPropertiesEXT (VkPhysicalDevice physicalDevice, deUint32* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pToolCount);
+	DE_UNREF(pToolProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
 {
 	DE_UNREF(physicalDevice);
@@ -2553,6 +2561,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,										submitDebugUtilsMessageEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,							getPhysicalDeviceMultisamplePropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT,						getPhysicalDeviceCalibrateableTimeDomainsEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceToolPropertiesEXT,								getPhysicalDeviceToolPropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,					getPhysicalDeviceCooperativeMatrixPropertiesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV,	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV),
 	VK_NULL_FUNC_ENTRY(vkCreateHeadlessSurfaceEXT,											createHeadlessSurfaceEXT),

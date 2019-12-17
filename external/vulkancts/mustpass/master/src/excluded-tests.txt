@@ -39,3 +39,11 @@ dEQP-VK.pipeline.multisample.*.primitive_point_1px_sparse
 # VK-GL-CTS 1829
 # Test shader length is excessive, excluding until such time as the test case can be re-visited.
 dEQP-VK.ssbo.layout.random.scalar.75
+
+# VK-GL-CTS TBD
+dEQP-VK.rasterization.primitives.no_stipple.smooth_lines_wide
+dEQP-VK.rasterization.primitives_multisample_2_bit.no_stipple.smooth_lines_wide
+dEQP-VK.rasterization.primitives_multisample_4_bit.no_stipple.smooth_lines_wide
+dEQP-VK.rasterization.primitives_multisample_8_bit.no_stipple.rectangular_line_strip_wide
+dEQP-VK.rasterization.primitives_multisample_8_bit.no_stipple.smooth_lines_wide
+dEQP-VK.rasterization.primitives_multisample_16_bit.no_stipple.smooth_lines_wide

@@ -1226,7 +1226,7 @@ void framebuffer_texture2d (NegativeTestContext& ctx)
 	maxSize = deLog2Floor32(maxTexSize) + 1;
 	ctx.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2D, maxSize);
 	ctx.expectError(GL_INVALID_VALUE);
-	maxSize = deLog2Floor32(maxTexSize) + 1;
+	maxSize = deLog2Floor32(maxTexCubeSize) + 1;
 	ctx.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, texCube, maxSize);
 	ctx.expectError(GL_INVALID_VALUE);
 	ctx.endSection();

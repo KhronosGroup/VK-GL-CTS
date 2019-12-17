@@ -765,12 +765,12 @@ void TestRunner::init(void)
 void TestRunner::deinit(void)
 {
 	// Print out totals.
-	bool isConformant = m_sessionsExecuted == m_sessionsPassed;
+	bool isConformant_ = m_sessionsExecuted == m_sessionsPassed;
 	DE_ASSERT(m_sessionsExecuted == m_sessionsPassed + m_sessionsFailed);
 	tcu::print("\n%d/%d sessions passed, conformance test %s\n", m_sessionsPassed, m_sessionsExecuted,
-			   isConformant ? "PASSED" : "FAILED");
+			   isConformant_ ? "PASSED" : "FAILED");
 
-	m_summary.isConformant = isConformant;
+	m_summary.isConformant = isConformant_;
 
 	// Write out summary.
 	writeRunSummary(m_summary, de::FilePath::join(m_logDirPath, "cts-run-summary.xml").getPath());

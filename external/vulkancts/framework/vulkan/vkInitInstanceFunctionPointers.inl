@@ -89,6 +89,7 @@ m_vk.destroyDebugUtilsMessengerEXT										= (DestroyDebugUtilsMessengerEXTFunc
 m_vk.submitDebugUtilsMessageEXT											= (SubmitDebugUtilsMessageEXTFunc)										GET_PROC_ADDR("vkSubmitDebugUtilsMessageEXT");
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT							= (GetPhysicalDeviceMultisamplePropertiesEXTFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
 m_vk.getPhysicalDeviceCalibrateableTimeDomainsEXT						= (GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+m_vk.getPhysicalDeviceToolPropertiesEXT									= (GetPhysicalDeviceToolPropertiesEXTFunc)								GET_PROC_ADDR("vkGetPhysicalDeviceToolPropertiesEXT");
 m_vk.getPhysicalDeviceCooperativeMatrixPropertiesNV						= (GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
 m_vk.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV	= (GetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNVFunc)	GET_PROC_ADDR("vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV");
 m_vk.createHeadlessSurfaceEXT											= (CreateHeadlessSurfaceEXTFunc)										GET_PROC_ADDR("vkCreateHeadlessSurfaceEXT");

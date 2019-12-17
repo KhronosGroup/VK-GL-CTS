@@ -3002,7 +3002,7 @@ struct VkValidationFlagsEXT
 struct VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		textureCompressionASTC_HDR;
 };
 
@@ -4250,6 +4250,17 @@ struct VkBufferDeviceAddressCreateInfoEXT
 	VkStructureType	sType;
 	const void*		pNext;
 	VkDeviceAddress	deviceAddress;
+};
+
+struct VkPhysicalDeviceToolPropertiesEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	char					name[VK_MAX_EXTENSION_NAME_SIZE];
+	char					version[VK_MAX_EXTENSION_NAME_SIZE];
+	VkToolPurposeFlagsEXT	purposes;
+	char					description[VK_MAX_DESCRIPTION_SIZE];
+	char					layer[VK_MAX_EXTENSION_NAME_SIZE];
 };
 
 struct VkValidationFeaturesEXT

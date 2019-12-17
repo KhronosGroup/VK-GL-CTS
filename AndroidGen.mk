@@ -180,6 +180,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/memory/vktMemoryRequirementsTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelMessagePassing.cpp \
+	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelPadding.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderPassUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderUtil.cpp \
@@ -421,6 +422,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiColorSpaceTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayControlTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
