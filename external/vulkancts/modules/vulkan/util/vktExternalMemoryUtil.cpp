@@ -1345,7 +1345,7 @@ bool AndroidHardwareBufferExternalApi::loadAhbDynamicApis(deInt32 sdkVersion)
 	{
 		if (!ahbFunctionsLoaded(&ahbFunctions))
 		{
-			de::DynamicLibrary libnativewindow("libnativewindow.so");
+			static de::DynamicLibrary libnativewindow("libnativewindow.so");
 			ahbFunctions.allocate = reinterpret_cast<pfnAHardwareBuffer_allocate>(libnativewindow.getFunction("AHardwareBuffer_allocate"));
 			ahbFunctions.describe = reinterpret_cast<pfnAHardwareBuffer_describe>(libnativewindow.getFunction("AHardwareBuffer_describe"));
 			ahbFunctions.acquire  = reinterpret_cast<pfnAHardwareBuffer_acquire>(libnativewindow.getFunction("AHardwareBuffer_acquire"));
