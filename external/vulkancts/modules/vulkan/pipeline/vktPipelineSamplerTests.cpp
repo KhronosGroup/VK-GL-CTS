@@ -65,20 +65,45 @@ using de::MovePtr;
 namespace
 {
 
+class SamplerViewType
+{
+public:
+	SamplerViewType (vk::VkImageViewType type, bool normalized = true)
+		: m_viewType(type), m_normalized(normalized)
+	{
+		if (!normalized)
+			DE_ASSERT(type == vk::VK_IMAGE_VIEW_TYPE_2D || type == vk::VK_IMAGE_VIEW_TYPE_1D);
+	}
+
+	operator vk::VkImageViewType () const
+	{
+		return m_viewType;
+	}
+
+	bool isNormalized () const
+	{
+		return m_normalized;
+	}
+
+private:
+	vk::VkImageViewType m_viewType;
+	bool				m_normalized;
+};
+
 class SamplerTest : public vkt::TestCase
 {
 public:
 										SamplerTest						(tcu::TestContext&	testContext,
 																		 const char*		name,
 																		 const char*		description,
-																		 VkImageViewType	imageViewType,
+																		 SamplerViewType	imageViewType,
 																		 VkFormat			imageFormat,
 																		 int				imageSize,
 																		 float				samplerLod,
 																		 bool				separateStencilUsage);
 	virtual								~SamplerTest					(void) {}
 
-	virtual ImageSamplingInstanceParams	getImageSamplingInstanceParams	(VkImageViewType	imageViewType,
+	virtual ImageSamplingInstanceParams	getImageSamplingInstanceParams	(SamplerViewType	imageViewType,
 																		 VkFormat			imageFormat,
 																		 int				imageSize,
 																		 float				samplerLod,
@@ -88,17 +113,17 @@ public:
 	virtual void						initPrograms					(SourceCollections& sourceCollections) const;
 	virtual void						checkSupport					(Context& context) const;
 	virtual TestInstance*				createInstance					(Context& context) const;
-	virtual tcu::UVec2					getRenderSize					(VkImageViewType viewType) const;
+	virtual tcu::UVec2					getRenderSize					(SamplerViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices					(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo			(void) const;
 	virtual VkComponentMapping			getComponentMapping				(void) const;
 
-	static std::string					getGlslSamplerType				(const tcu::TextureFormat& format, VkImageViewType type);
-	static tcu::IVec3					getImageSize					(VkImageViewType viewType, int size);
-	static int							getArraySize					(VkImageViewType viewType);
+	static std::string					getGlslSamplerType				(const tcu::TextureFormat& format, SamplerViewType type);
+	static tcu::IVec3					getImageSize					(SamplerViewType viewType, int size);
+	static int							getArraySize					(SamplerViewType viewType);
 
 protected:
-	VkImageViewType						m_imageViewType;
+	SamplerViewType						m_imageViewType;
 	VkFormat							m_imageFormat;
 	int									m_imageSize;
 	float								m_samplerLod;
@@ -111,7 +136,7 @@ public:
 									SamplerMagFilterTest	(tcu::TestContext&	testContext,
 															 const char*		name,
 															 const char*		description,
-															 VkImageViewType	imageViewType,
+															 SamplerViewType	imageViewType,
 															 VkFormat			imageFormat,
 															 VkFilter			magFilter,
 															 bool				separateStencilUsage);
@@ -128,7 +153,7 @@ public:
 									SamplerMinFilterTest	(tcu::TestContext&	testContext,
 															 const char*		name,
 															 const char*		description,
-															 VkImageViewType	imageViewType,
+															 SamplerViewType	imageViewType,
 															 VkFormat			imageFormat,
 															 VkFilter			minFilter,
 															 bool				separateStencilUsage);
@@ -145,7 +170,7 @@ public:
 												SamplerMagReduceFilterTest	(tcu::TestContext&			testContext,
 																			const char*					name,
 																			const char*					description,
-																			VkImageViewType				imageViewType,
+																			SamplerViewType				imageViewType,
 																			VkFormat					imageFormat,
 																			VkComponentMapping			componentMapping,
 																			VkSamplerReductionMode		reductionMode,
@@ -166,7 +191,7 @@ public:
 												SamplerMinReduceFilterTest	(tcu::TestContext&			testContext,
 																			 const char*				name,
 																			 const char*				description,
-																			 VkImageViewType			imageViewType,
+																			 SamplerViewType			imageViewType,
 																			 VkFormat					imageFormat,
 																			 VkComponentMapping			componentMapping,
 																			 VkSamplerReductionMode		reductionMode,
@@ -187,7 +212,7 @@ public:
 									SamplerLodTest			(tcu::TestContext&		testContext,
 															 const char*			name,
 															 const char*			description,
-															 VkImageViewType		imageViewType,
+															 SamplerViewType		imageViewType,
 															 VkFormat				imageFormat,
 															 VkSamplerMipmapMode	mipmapMode,
 															 float					minLod,
@@ -211,7 +236,7 @@ public:
 										SamplerAddressModesTest		(tcu::TestContext&		testContext,
 																	 const char*			name,
 																	 const char*			description,
-																	 VkImageViewType		imageViewType,
+																	 SamplerViewType		imageViewType,
 																	 VkFormat				imageFormat,
 																	 VkSamplerAddressMode	addressU,
 																	 VkSamplerAddressMode	addressV,
@@ -219,7 +244,7 @@ public:
 																	 VkBorderColor			borderColor,
 																	 bool					separateStencilUsage);
 	virtual								~SamplerAddressModesTest	(void) {}
-	virtual tcu::UVec2					getRenderSize				(VkImageViewType viewType) const;
+	virtual tcu::UVec2					getRenderSize				(SamplerViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices				(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo		(void) const;
 
@@ -236,7 +261,7 @@ private:
 SamplerTest::SamplerTest	(tcu::TestContext&	testContext,
 							 const char*		name,
 							 const char*		description,
-							 VkImageViewType	imageViewType,
+							 SamplerViewType	imageViewType,
 							 VkFormat			imageFormat,
 							 int				imageSize,
 							 float				samplerLod,
@@ -250,7 +275,7 @@ SamplerTest::SamplerTest	(tcu::TestContext&	testContext,
 {
 }
 
-ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (VkImageViewType	imageViewType,
+ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (SamplerViewType	imageViewType,
 																		 VkFormat			imageFormat,
 																		 int				imageSize,
 																		 float				samplerLod,
@@ -262,12 +287,13 @@ ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams (VkImage
 	const VkComponentMapping		componentMapping	= getComponentMapping();
 
 	const VkImageAspectFlags		imageAspect			= (!isCompressedFormat(imageFormat) && hasDepthComponent(mapVkFormat(imageFormat).order)) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	const deUint32					mipLevels			= (imageViewType.isNormalized() ? static_cast<deUint32>(deLog2Floor32(imageSize)) + 1u : 1u);
 
 	const VkImageSubresourceRange	subresourceRange	=
 	{
 		imageAspect,										// VkImageAspectFlags	aspectMask;
 		0u,													// deUint32				baseMipLevel;
-		(deUint32)deLog2Floor32(imageSize) + 1,				// deUint32				mipLevels;
+		mipLevels,											// deUint32				mipLevels;
 		0u,													// deUint32				baseArrayLayer;
 		(deUint32)SamplerTest::getArraySize(imageViewType)	// deUint32				arraySize;
 	};
@@ -373,9 +399,14 @@ void SamplerTest::initPrograms (SourceCollections& sourceCollections) const
 				<< "	fragColor = ";
 
 	if (m_samplerLod > 0.0f)
+	{
+		DE_ASSERT(m_imageViewType.isNormalized());
 		fragmentSrc << "textureLod(texSampler, vtxTexCoords." << texCoordSwizzle << ", " << std::fixed <<  m_samplerLod << ")";
+	}
 	else
+	{
 		fragmentSrc << "texture(texSampler, vtxTexCoords." << texCoordSwizzle << ")" << std::fixed;
+	}
 
 	fragmentSrc << " * vec4" << std::scientific << swizzledScale << " + vec4" << swizzledBias << ";\n"
 				<< "}\n";
@@ -389,7 +420,7 @@ TestInstance* SamplerTest::createInstance (Context& context) const
 	return new ImageSamplingInstance(context, getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_samplerLod, m_separateStencilUsage));
 }
 
-tcu::UVec2 SamplerTest::getRenderSize (VkImageViewType viewType) const
+tcu::UVec2 SamplerTest::getRenderSize (SamplerViewType viewType) const
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_2D)
 	{
@@ -409,6 +440,11 @@ std::vector<Vertex4Tex4> SamplerTest::createVertices (void) const
 	// seems to work.
 	for (unsigned int i = 0; i < vertices.size(); ++i) {
 		vertices[i].texCoord += tcu::Vec4(0.002f, 0.002f, 0.002f, 0.0f);
+		if (!m_imageViewType.isNormalized()) {
+			const float imageSize = static_cast<float>(m_imageSize);
+			for (int j = 0; j < tcu::Vec4::SIZE; ++j)
+				vertices[i].texCoord[j] *= imageSize;
+		}
 	}
 	return vertices;
 }
@@ -432,9 +468,9 @@ VkSamplerCreateInfo SamplerTest::getSamplerCreateInfo (void) const
 		false,																	// VkBool32					compareEnable;
 		VK_COMPARE_OP_NEVER,													// VkCompareOp				compareOp;
 		0.0f,																	// float					minLod;
-		0.25f,																	// float					maxLod;
+		(m_imageViewType.isNormalized() ? 0.25f : 0.0f),						// float					maxLod;
 		getFormatBorderColor(BORDER_COLOR_TRANSPARENT_BLACK, m_imageFormat),	// VkBorderColor			borderColor;
-		false																	// VkBool32					unnormalizedCoordinates;
+		!m_imageViewType.isNormalized(),										// VkBool32					unnormalizedCoordinates;
 	};
 
 	return defaultSamplerParams;
@@ -446,7 +482,7 @@ VkComponentMapping SamplerTest::getComponentMapping (void) const
 	return componentMapping;
 }
 
-std::string SamplerTest::getGlslSamplerType (const tcu::TextureFormat& format, VkImageViewType type)
+std::string SamplerTest::getGlslSamplerType (const tcu::TextureFormat& format, SamplerViewType type)
 {
 	std::ostringstream samplerType;
 
@@ -493,7 +529,7 @@ std::string SamplerTest::getGlslSamplerType (const tcu::TextureFormat& format, V
 	return samplerType.str();
 }
 
-tcu::IVec3 SamplerTest::getImageSize (VkImageViewType viewType, int size)
+tcu::IVec3 SamplerTest::getImageSize (SamplerViewType viewType, int size)
 {
 	switch (viewType)
 	{
@@ -511,7 +547,7 @@ tcu::IVec3 SamplerTest::getImageSize (VkImageViewType viewType, int size)
 	return tcu::IVec3(size, size, 1);
 }
 
-int SamplerTest::getArraySize (VkImageViewType viewType)
+int SamplerTest::getArraySize (SamplerViewType viewType)
 {
 	switch (viewType)
 	{
@@ -536,7 +572,7 @@ int SamplerTest::getArraySize (VkImageViewType viewType)
 SamplerMagFilterTest::SamplerMagFilterTest (tcu::TestContext&	testContext,
 											const char*			name,
 											const char*			description,
-											VkImageViewType		imageViewType,
+											SamplerViewType		imageViewType,
 											VkFormat			imageFormat,
 											VkFilter			magFilter,
 											bool				separateStencilUsage)
@@ -559,7 +595,7 @@ VkSamplerCreateInfo SamplerMagFilterTest::getSamplerCreateInfo (void) const
 SamplerMinFilterTest::SamplerMinFilterTest (tcu::TestContext&	testContext,
 											const char*			name,
 											const char*			description,
-											VkImageViewType		imageViewType,
+											SamplerViewType		imageViewType,
 											VkFormat			imageFormat,
 											VkFilter			minFilter,
 											bool				separateStencilUsage)
@@ -601,7 +637,7 @@ VkSamplerReductionModeCreateInfo getSamplerReductionCreateInfo (VkSamplerReducti
 SamplerMagReduceFilterTest::SamplerMagReduceFilterTest (tcu::TestContext&			testContext,
 														const char*					name,
 														const char*					description,
-														VkImageViewType				imageViewType,
+														SamplerViewType				imageViewType,
 														VkFormat					imageFormat,
 														VkComponentMapping			componentMapping,
 														VkSamplerReductionMode		reductionMode,
@@ -631,7 +667,7 @@ VkComponentMapping SamplerMagReduceFilterTest::getComponentMapping (void) const
 SamplerMinReduceFilterTest::SamplerMinReduceFilterTest (tcu::TestContext&			testContext,
 														const char*					name,
 														const char*					description,
-														VkImageViewType				imageViewType,
+														SamplerViewType				imageViewType,
 														VkFormat					imageFormat,
 														VkComponentMapping			componentMapping,
 														VkSamplerReductionMode		reductionMode,
@@ -661,7 +697,7 @@ VkComponentMapping SamplerMinReduceFilterTest::getComponentMapping (void) const
 SamplerLodTest::SamplerLodTest (tcu::TestContext&	testContext,
 								const char*			name,
 								const char*			description,
-								VkImageViewType		imageViewType,
+								SamplerViewType		imageViewType,
 								VkFormat			imageFormat,
 								VkSamplerMipmapMode	mipmapMode,
 								float				minLod,
@@ -695,7 +731,7 @@ VkSamplerCreateInfo SamplerLodTest::getSamplerCreateInfo (void) const
 SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&		testContext,
 												  const char*			name,
 												  const char*			description,
-												  VkImageViewType		imageViewType,
+												  SamplerViewType		imageViewType,
 												  VkFormat				imageFormat,
 												  VkSamplerAddressMode	addressU,
 												  VkSamplerAddressMode	addressV,
@@ -710,7 +746,7 @@ SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&		testContext
 {
 }
 
-tcu::UVec2 SamplerAddressModesTest::getRenderSize (VkImageViewType viewType) const
+tcu::UVec2 SamplerAddressModesTest::getRenderSize (SamplerViewType viewType) const
 {
 	return 4u * SamplerTest::getRenderSize(viewType);
 }
@@ -774,22 +810,22 @@ std::string getFormatCaseName (const VkFormat format)
 	return de::toLower(fullName.substr(10));
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerMagFilterTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerMagFilterTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
 	MovePtr<tcu::TestCaseGroup> samplerMagFilterTests (new tcu::TestCaseGroup(testCtx, "mag_filter", "Tests for magnification filter"));
 
-	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+	if (imageViewType.isNormalized() && (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat))))
 		samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "linear", "Magnifies image using VK_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage));
 	samplerMagFilterTests->addChild(new SamplerMagFilterTest(testCtx, "nearest", "Magnifies image using VK_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST, separateStencilUsage));
 
 	return samplerMagFilterTests;
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
 	MovePtr<tcu::TestCaseGroup> samplerMinFilterTests (new tcu::TestCaseGroup(testCtx, "min_filter", "Tests for minification filter"));
 
-	if (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat)))
+	if (imageViewType.isNormalized() && (isCompressedFormat(imageFormat) || (!isIntFormat(imageFormat) && !isUintFormat(imageFormat))))
 		samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "linear", "Minifies image using VK_FILTER_LINEAR", imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage));
 	samplerMinFilterTests->addChild(new SamplerMinFilterTest(testCtx, "nearest", "Minifies image using VK_FILTER_NEAREST", imageViewType, imageFormat, VK_FILTER_NEAREST, separateStencilUsage));
 
@@ -831,7 +867,7 @@ static std::string getComponentMappingGroupName (const VkComponentMapping& compo
 	return name.str();
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
 	MovePtr<tcu::TestCaseGroup> samplerMagReduceFilterTests (new tcu::TestCaseGroup(testCtx, "mag_reduce", "Tests for magnification reduce filter"));
 
@@ -852,7 +888,7 @@ MovePtr<tcu::TestCaseGroup> createSamplerMagReduceFilterTests (tcu::TestContext&
 	return samplerMagReduceFilterTests;
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerMinReduceFilterTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerMinReduceFilterTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
 	MovePtr<tcu::TestCaseGroup> samplerMinReduceFilterTests (new tcu::TestCaseGroup(testCtx, "min_reduce", "Tests for minification reduce filter"));
 
@@ -873,7 +909,7 @@ MovePtr<tcu::TestCaseGroup> createSamplerMinReduceFilterTests (tcu::TestContext&
 	return samplerMinReduceFilterTests;
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, VkSamplerMipmapMode mipmapMode, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, VkSamplerMipmapMode mipmapMode, bool separateStencilUsage)
 {
 	struct TestCaseConfig
 	{
@@ -908,7 +944,7 @@ MovePtr<tcu::TestCaseGroup> createSamplerLodTests (tcu::TestContext& testCtx, Vk
 	return samplerLodTests;
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
 	MovePtr<tcu::TestCaseGroup> samplerMipmapTests (new tcu::TestCaseGroup(testCtx, "mipmap", "Tests for mipmap modes"));
 
@@ -971,7 +1007,7 @@ std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMod
 	return caseName.str();
 }
 
-MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& testCtx, VkImageViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
+MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& testCtx, SamplerViewType imageViewType, VkFormat imageFormat, bool separateStencilUsage)
 {
 	struct TestCaseConfig
 	{
@@ -1024,6 +1060,11 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 	for (int configNdx = 0; configNdx < DE_LENGTH_OF_ARRAY(testCaseConfigs); configNdx++)
 	{
 		const TestCaseConfig& config = testCaseConfigs[configNdx];
+
+		if (!imageViewType.isNormalized() &&
+			((config.u != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE && config.u != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER) ||
+			 (config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE && config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)))
+			 continue;
 
 		samplerAddressModesTests->addChild(new SamplerAddressModesTest(testCtx,
 																	   getAddressModesCaseName(config.u, config.v, config.w, config.border).c_str(),
@@ -1588,14 +1629,16 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, boo
 {
 	const struct
 	{
-		VkImageViewType		type;
+		SamplerViewType		type;
 		const char*			name;
 	}
 	imageViewTypes[] =
 	{
 		{ VK_IMAGE_VIEW_TYPE_1D,			"1d" },
+		{ { VK_IMAGE_VIEW_TYPE_1D, false },	"1d_unnormalized" },
 		{ VK_IMAGE_VIEW_TYPE_1D_ARRAY,		"1d_array" },
 		{ VK_IMAGE_VIEW_TYPE_2D,			"2d" },
+		{ { VK_IMAGE_VIEW_TYPE_2D, false },	"2d_unnormalized" },
 		{ VK_IMAGE_VIEW_TYPE_2D_ARRAY,		"2d_array" },
 		{ VK_IMAGE_VIEW_TYPE_3D,			"3d" },
 		{ VK_IMAGE_VIEW_TYPE_CUBE,			"cube" },
@@ -1695,7 +1738,7 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, boo
 
 	for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
 	{
-		const VkImageViewType			viewType		= imageViewTypes[viewTypeNdx].type;
+		const SamplerViewType			viewType		= imageViewTypes[viewTypeNdx].type;
 		de::MovePtr<tcu::TestCaseGroup>	viewTypeGroup	(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name, (std::string("Uses a ") + imageViewTypes[viewTypeNdx].name + " view").c_str()));
 		de::MovePtr<tcu::TestCaseGroup>	formatTests		(new tcu::TestCaseGroup(testCtx, "format", "Tests samplable formats"));
 
@@ -1719,7 +1762,7 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, boo
 																				getFormatCaseName(format).c_str(),
 																				(std::string("Samples a texture of format ") + getFormatName(format)).c_str()));
 
-			if (!isCompressed)
+			if (!isCompressed && viewType.isNormalized())
 			{
 				// Do not include minFilter tests with compressed formats.
 				// Randomly generated compressed textures are too noisy and will derive in false positives.
@@ -1729,13 +1772,17 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, boo
 				formatGroup->addChild(minReduceFilterTests.release());
 			}
 
-			de::MovePtr<tcu::TestCaseGroup>	magFilterTests			= createSamplerMagFilterTests(testCtx, viewType, format, separateStencilUsage);
-			de::MovePtr<tcu::TestCaseGroup>	magReduceFilterTests	= createSamplerMagReduceFilterTests(testCtx, viewType, format, separateStencilUsage);
-			de::MovePtr<tcu::TestCaseGroup>	mipmapTests				= createSamplerMipmapTests(testCtx, viewType, format, separateStencilUsage);
-
+			de::MovePtr<tcu::TestCaseGroup>	magFilterTests = createSamplerMagFilterTests(testCtx, viewType, format, separateStencilUsage);
 			formatGroup->addChild(magFilterTests.release());
-			formatGroup->addChild(magReduceFilterTests.release());
-			formatGroup->addChild(mipmapTests.release());
+
+			if (viewType.isNormalized())
+			{
+				de::MovePtr<tcu::TestCaseGroup> magReduceFilterTests	= createSamplerMagReduceFilterTests(testCtx, viewType, format, separateStencilUsage);
+				de::MovePtr<tcu::TestCaseGroup> mipmapTests				= createSamplerMipmapTests(testCtx, viewType, format, separateStencilUsage);
+
+				formatGroup->addChild(magReduceFilterTests.release());
+				formatGroup->addChild(mipmapTests.release());
+			}
 
 			if (viewType != VK_IMAGE_VIEW_TYPE_CUBE && viewType != VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 			{
