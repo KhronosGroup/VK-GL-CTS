@@ -101,21 +101,24 @@ OpBranch %body
 %body = OpLabel
 %i_mod_3 = OpSMod %int %i %int_3
 %cmp_vs_0 = OpIEqual %bool %i_mod_3 %int_0
-OpSelectionMerge %continue None
+OpSelectionMerge %if_merge None
 OpBranchConditional %cmp_vs_0 %then %else
 
 %then = OpLabel
 %then_0_next = OpPtrAccessChain %ptr_ssbo_int %gep_0 %int_n1
 %then_1_next = OpPtrAccessChain %ptr_ssbo_int %gep_1 %int_1
-OpBranch %continue
+OpBranch %if_merge
 %else = OpLabel
 %else_0_next = OpPtrAccessChain %ptr_ssbo_int %gep_0 %int_1
 %else_1_next = OpPtrAccessChain %ptr_ssbo_int %gep_1 %int_n1
+OpBranch %if_merge
+
+%if_merge = OpLabel
+%next_0 = OpPhi %ptr_ssbo_int %then_0_next %then %else_0_next %else
+%next_1 = OpPhi %ptr_ssbo_int %then_1_next %then %else_1_next %else
 OpBranch %continue
 
 %continue = OpLabel
-%next_0 = OpPhi %ptr_ssbo_int %then_0_next %then %else_0_next %else
-%next_1 = OpPhi %ptr_ssbo_int %then_1_next %then %else_1_next %else
 OpStore %func_gep_0 %next_0
 OpStore %func_gep_1 %next_1
 %cmp = OpSGreaterThanEqual %bool %i %n

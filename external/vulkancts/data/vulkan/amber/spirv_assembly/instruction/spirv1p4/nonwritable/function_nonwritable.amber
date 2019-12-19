@@ -86,8 +86,11 @@ OpBranch %inner_loop
 %out_gep = OpAccessChain %ptr_ssbo_uint %out_var %uint_0 %out_idx
 OpStore %out_gep %add
 %inner_eq = OpIEqual %bool %inc_j %uint_4
-OpLoopMerge %outer_latch %inner_loop None
-OpBranchConditional %inner_eq %outer_latch %inner_loop
+OpLoopMerge %inner_merge %inner_loop None
+OpBranchConditional %inner_eq %inner_merge %inner_loop
+
+%inner_merge = OpLabel
+OpBranch %outer_latch
 
 %outer_latch = OpLabel
 OpBranchConditional %outer_eq %outer_merge %outer_loop
