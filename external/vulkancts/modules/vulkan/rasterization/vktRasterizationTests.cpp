@@ -2216,13 +2216,13 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 		case 0:
 			// \note: these values are chosen arbitrarily
 			outData[0] = tcu::Vec4( 0.01f,  0.0f, 0.0f, 1.0f);
-			outData[1] = tcu::Vec4( 0.5f,   0.2f, 0.0f, 1.0f);
+			outData[1] = tcu::Vec4(  0.5f,  0.2f, 0.0f, 1.0f);
 			outData[2] = tcu::Vec4( 0.46f,  0.3f, 0.0f, 1.0f);
-			outData[3] = tcu::Vec4(-0.3f,   0.2f, 0.0f, 1.0f);
-			outData[4] = tcu::Vec4(-1.5f,  -0.4f, 0.0f, 1.0f);
-			outData[5] = tcu::Vec4( 0.1f,   0.5f, 0.0f, 1.0f);
+			outData[3] = tcu::Vec4( -0.3f,  0.2f, 0.0f, 1.0f);
+			outData[4] = tcu::Vec4( -1.5f, -0.4f, 0.0f, 1.0f);
+			outData[5] = tcu::Vec4(  0.1f,  0.5f, 0.0f, 1.0f);
 			outData[6] = tcu::Vec4( 0.75f, -0.4f, 0.0f, 1.0f);
-			outData[7] = tcu::Vec4( 0.3f,   0.8f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4(  0.3f,  0.8f, 0.0f, 1.0f);
 			break;
 
 		case 1:
@@ -2232,8 +2232,8 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 			outData[3] = tcu::Vec4(  0.11f,   0.2f, 0.0f, 1.0f);
 			outData[4] = tcu::Vec4(  0.88f,   0.9f, 0.0f, 1.0f);
 			outData[5] = tcu::Vec4(  0.18f,  -0.2f, 0.0f, 1.0f);
-			outData[6] = tcu::Vec4(  0.0f,   1.0f, 0.0f, 1.0f);
-			outData[7] = tcu::Vec4(  0.0f,  -1.0f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(   0.0f,   1.0f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4(   0.0f,  -1.0f, 0.0f, 1.0f);
 			break;
 
 		case 2:
@@ -2243,8 +2243,8 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 			outData[3] = tcu::Vec4( 0.11f,  0.2f, 0.0f, 1.0f);
 			outData[4] = tcu::Vec4( 0.88f,  0.7f, 0.0f, 1.0f);
 			outData[5] = tcu::Vec4(  0.8f, -0.7f, 0.0f, 1.0f);
-			outData[6] = tcu::Vec4(  1.0f,   0.0f, 0.0f, 1.0f);
-			outData[7] = tcu::Vec4(  -1.0f,  0.0f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(  1.0f,  0.7f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4( -1.0f,  0.7f, 0.0f, 1.0f);
 			break;
 	}
 

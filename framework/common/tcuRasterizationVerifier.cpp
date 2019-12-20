@@ -1060,7 +1060,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const
 		}
 	}
 
-	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, VERIFICATIONMODE_STRICT, logStash, vulkanLinesTest);
+	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, scene.verificationMode, logStash, vulkanLinesTest);
 }
 
 bool verifyMultisampleLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log)
@@ -2502,10 +2502,10 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 								}
 							}
 					}
-				// anything goes
+					// anything goes
 					if (foundFragment == false)
 					{
-				errorMask.setPixel(x, y, partialPixelColor);
+						errorMask.setPixel(x, y, partialPixelColor);
 						if (vulkanLinesTest == true)
 							++missingPixels;
 					}
