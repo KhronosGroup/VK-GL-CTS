@@ -35,11 +35,12 @@
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
+#include "deInt32.h"
 #include "deRandom.hpp"
-#include "deStringUtil.hpp"
+#include "deMath.h"
 #include "deMemory.h"
 #include "deString.h"
-#include "deMath.h"
+#include "deStringUtil.hpp"
 
 #include <algorithm>
 #include <map>
@@ -360,12 +361,6 @@ int getDataTypeByteAlignment (glu::DataType type)
 			DE_ASSERT(false);
 			return 0;
 	}
-}
-
-static inline int deRoundUp32 (int a, int b)
-{
-	int d = a/b;
-	return d*b == a ? a : (d+1)*b;
 }
 
 int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)

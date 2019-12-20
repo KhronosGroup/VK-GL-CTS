@@ -33,10 +33,11 @@
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
-#include "deRandom.hpp"
-#include "deStringUtil.hpp"
+#include "deInt32.h"
 #include "deMemory.h"
+#include "deRandom.hpp"
 #include "deString.h"
+#include "deStringUtil.hpp"
 
 #include <algorithm>
 #include <map>
@@ -403,12 +404,6 @@ int getDataTypeArrayStride (glu::DataType type)
 
 	DE_ASSERT(baseStride <= vec4Alignment);
 	return de::max(baseStride, vec4Alignment); // Really? See rule 4.
-}
-
-static inline int deRoundUp32 (int a, int b)
-{
-	int d = a/b;
-	return d*b == a ? a : (d+1)*b;
 }
 
 int computeStd140BaseAlignment (const VarType& type)
