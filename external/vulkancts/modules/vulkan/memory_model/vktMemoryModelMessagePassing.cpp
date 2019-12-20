@@ -205,6 +205,25 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 		{
 			TCU_THROW(NotSupportedError, "Subgroup features not supported");
 		}
+
+		VkShaderStageFlags stage= VK_SHADER_STAGE_COMPUTE_BIT;
+		if (m_data.stage == STAGE_VERTEX)
+		{
+			stage = VK_SHADER_STAGE_VERTEX_BIT;
+		}
+		else if (m_data.stage == STAGE_COMPUTE)
+		{
+			stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		}
+		else if (m_data.stage == STAGE_FRAGMENT)
+		{
+			stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+
+		if((subgroupProperties.supportedStages & stage)==0)
+		{
+			TCU_THROW(NotSupportedError, "Device does not support subgroup operations for this stage");
+		}
 	}
 	if (m_data.dataType == DATA_TYPE_UINT64)
 	{
