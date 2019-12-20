@@ -10,6 +10,7 @@
 {	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
 {	"control-flow-in-function.amber",				"control-flow-in-function",				"A fragment shader with a lot of control flow"											},
 {	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
+{	"cov-const-folding-clamp.amber",				"cov-const-folding-clamp",				"A fragment shader that covers a specific const folding rule path."						},
 {	"cov-const-folding-clamp-max.amber",			"cov-const-folding-clamp-max",			"A fragment shader that covers a specific const folding rule path."						},
 {	"cov-const-folding-clamp-min.amber",			"cov-const-folding-clamp-min",			"A fragment shader that covers a specific const folding rule path."						},
 {	"cov-const-folding-dot-condition-true.amber",	"cov-const-folding-dot-condition-true",	"A fragment shader that covers a specific const folding rule path."						},
