@@ -30,6 +30,7 @@
 #include "gluVarType.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
+#include "deInt32.h"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 
@@ -398,12 +399,6 @@ deInt32 getminUniformBufferOffsetAlignment (Context &ctx)
 	VkDeviceSize align = properties.limits.minUniformBufferOffsetAlignment;
 	DE_ASSERT(align == (VkDeviceSize)(deInt32)align);
 	return (deInt32)align;
-}
-
-static inline int deRoundUp32 (int a, int b)
-{
-	int d = a/b;
-	return d*b == a ? a : (d+1)*b;
 }
 
 

@@ -23,20 +23,21 @@
  * \brief SSBO layout case.
  *//*--------------------------------------------------------------------*/
 
-#include "vktSSBOLayoutCase.hpp"
-#include "gluShaderProgram.hpp"
+#include "deFloat16.h"
+#include "deInt32.h"
+#include "deMath.h"
+#include "deMemory.h"
+#include "deRandom.hpp"
+#include "deSharedPtr.hpp"
+#include "deString.h"
+#include "deStringUtil.hpp"
 #include "gluContextInfo.hpp"
+#include "gluShaderProgram.hpp"
 #include "gluShaderUtil.hpp"
 #include "gluVarType.hpp"
 #include "gluVarTypeUtil.hpp"
 #include "tcuTestLog.hpp"
-#include "deRandom.hpp"
-#include "deStringUtil.hpp"
-#include "deMemory.h"
-#include "deString.h"
-#include "deMath.h"
-#include "deSharedPtr.hpp"
-#include "deFloat16.h"
+#include "vktSSBOLayoutCase.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -314,12 +315,6 @@ int getDataTypeByteAlignment (glu::DataType type)
 			DE_ASSERT(false);
 			return 0;
 	}
-}
-
-static inline int deRoundUp32 (int a, int b)
-{
-	int d = a/b;
-	return d*b == a ? a : (d+1)*b;
 }
 
 int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)

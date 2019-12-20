@@ -535,6 +535,18 @@ DE_INLINE deInt32 deDivRoundUp32 (deInt32 a, deInt32 b)
 	return a/b + ((a%b) ? 1 : 0);
 }
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Return value a rounded up to nearest multiple of b.
+ * \param a		Input value.
+ * \param b		Alignment to use.
+ * \return a if already aligned to b, otherwise next largest aligned value
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deInt32 deRoundUp32(deInt32 a, deInt32 b)
+{
+	deInt32 d = a / b;
+	return d * b == a ? a : (d + 1) * b;
+}
+
 /* \todo [petri] Move to deInt64.h? */
 
 DE_INLINE deInt32 deMulAsr32 (deInt32 a, deInt32 b, int shift)
