@@ -486,7 +486,7 @@ TextureCubeShadowTestInstance::TextureCubeShadowTestInstance (Context& context, 
 	// Upload.
 	for (vector<TestTextureCubeSp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
 	{
-		m_renderer.addCubeTexture(*i, m_testParameters.backingMode);
+		m_renderer.addCubeTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
 	}
 
 	// Compute cases
@@ -691,7 +691,7 @@ Texture2DArrayShadowTestInstance::Texture2DArrayShadowTestInstance (Context& con
 	// Upload.
 	for (std::vector<TestTexture2DArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
 	{
-		m_renderer.add2DArrayTexture(*i, m_testParameters.backingMode);
+		m_renderer.add2DArrayTexture(*i, m_testParameters.aspectMask, m_testParameters.backingMode);
 	}
 
 	// Compute cases.
