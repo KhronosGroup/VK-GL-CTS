@@ -4137,14 +4137,15 @@ public:
 protected:
 	Interval	doApply			(const EvalContext& ctx, const IArgs& iargs) const
 	{
-		Interval	ret = call<Exp2<Signature<float, float> > >(ctx, iargs.b);
-		// Khronos bug 11180 consensus: if exp2(exponent) cannot be represented,
-		// the result is undefined.
-
-		if (ret.contains(TCU_INFINITY) | ret.contains(-TCU_INFINITY))
-			ret |= TCU_NAN;
-
-		return call<Mul< Signature<float, float, float> > >(ctx, iargs.a, ret);
+		const int minExp = ctx.format.getMinExp();
+		const int maxExp = ctx.format.getMaxExp();
+		// Restrictions from the GLSL.std.450 instruction set.
+		// See Khronos bugzilla 11180 for rationale.
+		bool any = iargs.a.hasNaN() || iargs.b.hi() > (maxExp + 1);
+		Interval ret(any, ldexp(iargs.a.lo(), (int)iargs.b.lo()), ldexp(iargs.a.hi(), (int)iargs.b.hi()));
+		if (iargs.b.lo() < minExp) ret |= 0.0;
+		if (!ret.isFinite()) ret |= TCU_NAN;
+		return ctx.format.convert(ret);
 	}
 };
 

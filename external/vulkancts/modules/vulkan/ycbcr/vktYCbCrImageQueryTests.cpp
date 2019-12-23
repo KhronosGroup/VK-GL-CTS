@@ -600,13 +600,6 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 		struct LocalUtil
 		{
-			static DrawState getDrawState (UVec2 renderSize, const int subpixelBits)
-			{
-				DrawState state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderSize.x(), renderSize.y(), subpixelBits);
-				state.colorFormat = VK_FORMAT_R32G32_SFLOAT;
-				return state;
-			}
-
 			static vector<Vec4> getVertices (void)
 			{
 				vector<Vec4> vertices;
@@ -624,11 +617,10 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 			static VulkanProgram getProgram (Context& ctx, VkDescriptorSetLayout descriptorLayout, VkDescriptorSet descriptorSet)
 			{
-				VulkanProgram	prog;
-
-				prog.shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		ctx.getBinaryCollection().get("vert")));
-				prog.shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	ctx.getBinaryCollection().get("frag")));
-
+				VulkanProgram	prog(std::vector<VulkanShader>{
+					VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, ctx.getBinaryCollection().get("vert")),
+					VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, ctx.getBinaryCollection().get("frag"))
+				});
 				prog.descriptorSet			= descriptorSet;
 				prog.descriptorSetLayout	= descriptorLayout;
 
@@ -636,11 +628,13 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 			}
 		};
 
-		const UVec2					renderSize	(128, 256);
-		const vector<Vec4>			vertices	(LocalUtil::getVertices());
-		const DrawState				drawState	(LocalUtil::getDrawState(renderSize, context.getDeviceProperties().limits.subPixelPrecisionBits));
-		const DrawCallData			drawCallData(vertices);
-		const VulkanProgram			program		(LocalUtil::getProgram(context, *descLayout, *descSet));
+		const UVec2						renderSize(128, 256);
+		FrameBufferState				frameBufferState(renderSize.x(), renderSize.y());
+		frameBufferState.colorFormat	= VK_FORMAT_R32G32_SFLOAT;
+		const vector<Vec4>				vertices	(LocalUtil::getVertices());
+		PipelineState					pipelineState(context.getDeviceProperties().limits.subPixelPrecisionBits);
+		const DrawCallData				drawCallData(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, vertices);
+		const VulkanProgram				program		(LocalUtil::getProgram(context, *descLayout, *descSet));
 
 		bool						allOk		= true;
 
@@ -654,7 +648,8 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 			bindImage(vkd, device, *descSet, testImages[imageNdx]->getImageView(), *sampler);
 
-			VulkanDrawContext	renderer	(context, drawState, drawCallData, program);
+			VulkanDrawContext	renderer(context, frameBufferState);
+			renderer.registerDrawObject(pipelineState, program, drawCallData);
 			renderer.draw();
 
 			{
