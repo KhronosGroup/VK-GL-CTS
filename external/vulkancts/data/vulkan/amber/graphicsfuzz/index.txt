@@ -13,6 +13,7 @@
 {	"cov-const-folding-clamp-max.amber",			"cov-const-folding-clamp-max",			"A fragment shader that covers a specific const folding rule path."						},
 {	"cov-const-folding-clamp-min.amber",			"cov-const-folding-clamp-min",			"A fragment shader that covers a specific const folding rule path."						},
 {	"cov-const-folding-dot-condition-true.amber",	"cov-const-folding-dot-condition-true",	"A fragment shader that covers a specific const folding rule path."						},
+{	"cov-constants-mix-uniform.amber",				"cov-constants-mix-uniform",			"A fragment shader that covers a specific constant handling path."						},
 {	"cov-copy-prop-arrays-func-argument.amber",		"cov-copy-prop-arrays-func-argument",	"A fragment shader that covers a specific propagate array copy path."					},
 {	"cov-copy-prop-arrays-no-stores.amber",			"cov-copy-prop-arrays-no-stores",		"A fragment shader that covers a specific propagate array copy path."					},
 {	"cov-copy-prop-arrays-param-uniform.amber",		"cov-copy-prop-arrays-param-uniform",	"A fragment shader that covers a specific propagate array copy path."					},
