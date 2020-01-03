@@ -18,6 +18,7 @@
 {	"cov-copy-prop-arrays-param-uniform.amber",		"cov-copy-prop-arrays-param-uniform",	"A fragment shader that covers a specific propagate array copy path."					},
 {	"cov-dead-code-unreachable-merge.amber",		"cov-dead-code-unreachable-merge",		"A fragment shader that covers a specific dead code elimination path."					},
 {	"cov-fold-bitwise-and-zero.amber",				"cov-fold-bitwise-and-zero",			"A fragment shader that covers a specific instruction folding path."					},
+{	"cov-fold-bitwise-xor.amber",					"cov-fold-bitwise-xor",					"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-logical-or-constant.amber",			"cov-fold-logical-or-constant",			"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-negate-variable.amber",				"cov-fold-negate-variable",				"A fragment shader that covers a specific instruction folding path."					},
 {	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
