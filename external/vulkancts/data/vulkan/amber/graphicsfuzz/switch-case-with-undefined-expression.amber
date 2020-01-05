@@ -1,0 +1,248 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with undefined expression
+
+# The test passes because main always writes the color red
+
+# Optimized using spirv-opt with the following arguments:
+# '--redundancy-elimination'
+# '--eliminate-local-multi-store'
+# '--private-to-local'
+# '--ccp'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--scalar-replacement=100'
+# '--redundancy-elimination'
+# '--redundancy-elimination'
+# '--inline-entry-points-exhaustive'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--vector-dce'
+# '--simplify-instructions'
+# '--private-to-local'
+# '--inline-entry-points-exhaustive'
+# '--vector-dce'
+# '--ccp'
+# '--eliminate-local-single-store'
+# '--copy-propagate-arrays'
+# '--eliminate-local-multi-store'
+# spirv-opt commit hash: 6b072126595dd8c2448eb1fda616251c5e6d7079
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# int search(int target)
+# {
+#   if (1 == target)
+#   {
+#     return 1;
+#   }
+#   return 1;
+# }
+#
+# void main()
+# {
+#   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0); // Writes the color red
+#
+#   for (int i = 0; i < 1; i++)
+#   {
+#     int result;
+#     search(1);
+#     switch (result)
+#     {
+#     case 0:
+#       return;
+#     }
+#   }
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 86
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %24
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %10 "search(i1;"
+               OpName %9 "target"
+               OpName %24 "_GLF_color"
+               OpName %28 "i"
+               OpName %37 "param"
+               OpName %39 "result"
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %9 RelaxedPrecision
+               OpDecorate %13 RelaxedPrecision
+               OpDecorate %24 Location 0
+               OpDecorate %28 RelaxedPrecision
+               OpDecorate %39 RelaxedPrecision
+               OpDecorate %46 RelaxedPrecision
+               OpDecorate %47 RelaxedPrecision
+               OpDecorate %61 RelaxedPrecision
+               OpDecorate %68 RelaxedPrecision
+               OpDecorate %69 RelaxedPrecision
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %6 %7
+         %12 = OpConstant %6 1
+         %14 = OpTypeBool
+         %21 = OpTypeFloat 32
+         %22 = OpTypeVector %21 4
+         %23 = OpTypePointer Output %22
+         %24 = OpVariable %23 Output
+         %25 = OpConstant %21 1
+         %26 = OpConstant %21 0
+         %27 = OpConstantComposite %22 %25 %26 %26 %25
+         %29 = OpConstant %6 0
+         %49 = OpUndef %6
+         %50 = OpConstantTrue %14
+         %55 = OpConstantFalse %14
+         %56 = OpTypePointer Function %14
+         %83 = OpUndef %14
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %67 = OpVariable %56 Function %55
+         %68 = OpVariable %7 Function
+         %69 = OpVariable %7 Function
+         %57 = OpVariable %56 Function %55
+         %28 = OpVariable %7 Function
+         %37 = OpVariable %7 Function
+         %39 = OpVariable %7 Function
+               OpBranch %52
+         %52 = OpLabel
+         %82 = OpPhi %14 %55 %5 %83 %54
+               OpLoopMerge %51 %54 None
+               OpBranch %53
+         %53 = OpLabel
+               OpStore %24 %27
+               OpStore %28 %29
+               OpBranch %30
+         %30 = OpLabel
+         %81 = OpPhi %14 %82 %53 %85 %33
+         %47 = OpPhi %6 %29 %53 %46 %33
+               OpLoopMerge %32 %33 None
+               OpBranch %34
+         %34 = OpLabel
+         %36 = OpSLessThan %14 %47 %12
+               OpBranchConditional %36 %31 %32
+         %31 = OpLabel
+               OpStore %37 %12
+               OpStore %67 %55
+               OpBranch %70
+         %70 = OpLabel
+         %85 = OpPhi %14 %81 %31 %83 %72
+               OpLoopMerge %71 %72 None
+               OpBranch %73
+         %73 = OpLabel
+         %75 = OpIEqual %14 %12 %12
+               OpSelectionMerge %76 None
+               OpBranchConditional %75 %77 %76
+         %77 = OpLabel
+               OpStore %67 %50
+               OpStore %68 %12
+               OpBranch %71
+         %76 = OpLabel
+               OpStore %67 %50
+               OpStore %68 %12
+               OpBranch %71
+         %72 = OpLabel
+               OpBranch %70
+         %71 = OpLabel
+               OpStore %69 %12
+               OpSelectionMerge %42 None
+               OpSwitch %49 %42 0 %41
+         %41 = OpLabel
+               OpStore %57 %50
+               OpBranch %32
+         %42 = OpLabel
+               OpBranch %33
+         %33 = OpLabel
+         %46 = OpIAdd %6 %47 %12
+               OpStore %28 %46
+               OpBranch %30
+         %32 = OpLabel
+         %80 = OpPhi %14 %81 %34 %50 %41
+               OpSelectionMerge %58 None
+               OpBranchConditional %80 %51 %58
+         %58 = OpLabel
+               OpStore %57 %50
+               OpBranch %51
+         %54 = OpLabel
+               OpBranch %52
+         %51 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %66 = OpVariable %56 Function %55
+         %61 = OpVariable %7 Function
+               OpBranch %63
+         %63 = OpLabel
+               OpLoopMerge %60 %65 None
+               OpBranch %64
+         %64 = OpLabel
+         %13 = OpLoad %6 %9
+         %15 = OpIEqual %14 %12 %13
+               OpSelectionMerge %17 None
+               OpBranchConditional %15 %16 %17
+         %16 = OpLabel
+               OpStore %66 %50
+               OpStore %61 %12
+               OpBranch %60
+         %17 = OpLabel
+               OpStore %66 %50
+               OpStore %61 %12
+               OpBranch %60
+         %65 = OpLabel
+               OpBranch %63
+         %60 = OpLabel
+               OpReturnValue %12
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
