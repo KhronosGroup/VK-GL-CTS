@@ -211,7 +211,7 @@ void InputAttachmentSparseFillingTest::initPrograms (SourceCollections& sourceCo
 	std::ostringstream str;
 	str	<< "#version 450\n"
 		<< "layout(location = 0) in vec4 inUV;\n"
-		<< "layout(binding = 0, rg16ui) uniform uimage2D resultImage;\n";
+		<< "layout(binding = 0, rg32ui) uniform uimage2D resultImage;\n";
 
 	std::vector<deUint32> attachmentIndices, descriptorBindings;
 	generateInputAttachmentParams(m_testParams.activeInputAttachmentCount, 2u * m_testParams.activeInputAttachmentCount, attachmentIndices, descriptorBindings);
@@ -323,7 +323,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 			DE_NULL,																// const void*				pNext;
 			0u,																		// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,														// VkImageType				imageType;
-			VK_FORMAT_R16G16_UINT,													// VkFormat					format;
+			VK_FORMAT_R32G32_UINT,													// VkFormat					format;
 			{ m_renderSize.x(), m_renderSize.y(), 1u },								// VkExtent3D				extent;
 			1u,																		// deUint32					mipLevels;
 			1u,																		// deUint32					arrayLayers;
@@ -348,7 +348,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 			0u,																		// VkImageViewCreateFlags	flags;
 			**m_outputImage,														// VkImage					image;
 			VK_IMAGE_VIEW_TYPE_2D,													// VkImageViewType			viewType;
-			VK_FORMAT_R16G16_UINT,													// VkFormat					format;
+			VK_FORMAT_R32G32_UINT,													// VkFormat					format;
 			componentMappingRGBA,													// VkChannelMapping			channels;
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }							// VkImageSubresourceRange	subresourceRange;
 		};
@@ -356,7 +356,7 @@ InputAttachmentSparseFillingTestInstance::InputAttachmentSparseFillingTestInstan
 	}
 
 	{
-		const VkDeviceSize			outputBufferSizeBytes	= m_renderSize.x() * m_renderSize.y() * tcu::getPixelSize(mapVkFormat(VK_FORMAT_R16G16_UINT));
+		const VkDeviceSize			outputBufferSizeBytes	= m_renderSize.x() * m_renderSize.y() * tcu::getPixelSize(mapVkFormat(VK_FORMAT_R32G32_UINT));
 		const VkBufferCreateInfo	outputBufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// sType
@@ -751,7 +751,7 @@ tcu::TestStatus InputAttachmentSparseFillingTestInstance::verifyImage (void)
 	const VkDevice						vkDevice				= m_context.getDevice();
 
 	invalidateAlloc(vk, vkDevice, *m_outputBufferMemory);
-	const tcu::ConstPixelBufferAccess resultAccess(mapVkFormat(VK_FORMAT_R16G16_UINT), m_renderSize.x(), m_renderSize.y(), 1u, m_outputBufferMemory->getHostPtr());
+	const tcu::ConstPixelBufferAccess resultAccess(mapVkFormat(VK_FORMAT_R32G32_UINT), m_renderSize.x(), m_renderSize.y(), 1u, m_outputBufferMemory->getHostPtr());
 
 	// Log result image
 	m_context.getTestContext().getLog() << tcu::TestLog::ImageSet("Result", "Result images")
