@@ -17028,6 +17028,8 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 					{
 						tcu::Float16 expected	(iterationCalculatedFP16[componentNdx]);
 						tcu::Float16 outputted	(iterationOutputFP16[componentNdx]);
+						tcu::Float64 edgeMin    (iterationEdgeMin[componentNdx]);
+						tcu::Float64 edgeMax    (iterationEdgeMax[componentNdx]);
 
 						if (reportError && expected.isNaN())
 							reportError = false;
@@ -17044,9 +17046,9 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 							if (reportError && expected.isInf())
 							{
 								// RTZ rounding mode returns +/-65504 instead of Inf on overflow
-								if (expected.sign() == 1 && outputted.bits() == 0x7bff && iterationEdgeMin[componentNdx] <= std::numeric_limits<double>::max())
+								if (expected.sign() == 1 && outputted.bits() == 0x7bff && edgeMin.asDouble() <= std::numeric_limits<double>::max())
 									reportError = false;
-								else if (expected.sign() == -1 && outputted.bits() == 0xfbff && iterationEdgeMax[componentNdx] >= -std::numeric_limits<double>::max())
+								else if (expected.sign() == -1 && outputted.bits() == 0xfbff && edgeMax.asDouble() >= -std::numeric_limits<double>::max())
 									reportError = false;
 							}
 
@@ -17054,9 +17056,9 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 							{
 								const double	outputtedDouble	= outputted.asDouble();
 
-								DE_ASSERT(iterationEdgeMin[componentNdx] <= iterationEdgeMax[componentNdx]);
+							    DE_ASSERT(edgeMin.isNaN() || edgeMax.isNaN() || (edgeMin.asDouble() <= edgeMax.asDouble()));
 
-								if (de::inRange(outputtedDouble, iterationEdgeMin[componentNdx], iterationEdgeMax[componentNdx]))
+								if (de::inRange(outputtedDouble, edgeMin.asDouble(), edgeMax.asDouble()))
 									reportError = false;
 							}
 						}
