@@ -1711,11 +1711,12 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 	}
 
 	{
-		tcu::TestLog&					log				= m_context.getTestContext().getLog();
-		tcu::TestStatus					testResult		= tcu::TestStatus::pass("Pass");
-		std::vector<int>				numHits			(numCounters, 0);	// Number of hits per counter.
-		std::vector<deUint32>			counterValues	(numCounters);
-		std::vector<std::vector<bool> >	counterMasks	(numCounters);
+		tcu::TestLog&						  log						= m_context.getTestContext().getLog();
+		tcu::TestStatus						  testResult					= tcu::TestStatus::pass("Pass");
+		std::vector<int>					  numHits					(numCounters, 0);	// Number of hits per counter.
+		std::vector<deUint32>				  counterValues				(numCounters);
+		std::vector<std::map<deUint32, int> > resultValueHitCountMaps	(numCounters);
+
 
 		for (int opNdx = 0; opNdx < numOps; opNdx++)
 			numHits[m_opIndices[opNdx]] += 1;
@@ -1734,22 +1735,30 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 			const deUint32		refCount	= (deUint32)(numHits[counterNdx]*numInvocations);
 			const deUint32		resCount	= counterValues[counterNdx];
 
-			if (refCount != resCount)
+			bool foundInvalidCtrValue = false;
+
+			if(resCount < refCount)
+			{
+				log << tcu::TestLog::Message << "ERROR: atomic counter " << counterNdx << " has value " << resCount
+					<< ", expected value greater than or equal to " << refCount
+					<< tcu::TestLog::EndMessage;
+
+				foundInvalidCtrValue = true;
+			}
+			else if (refCount == 0 && resCount != 0)
 			{
 				log << tcu::TestLog::Message << "ERROR: atomic counter " << counterNdx << " has value " << resCount
 					<< ", expected " << refCount
 					<< tcu::TestLog::EndMessage;
 
+				foundInvalidCtrValue = true;
+			}
+
+			if (foundInvalidCtrValue == true)
+			{
 				if (testResult.getCode() == QP_TEST_RESULT_PASS)
 					testResult = tcu::TestStatus::fail("Invalid atomic counter value");
 			}
-		}
-
-		// Allocate bitmasks - one bit per each valid result value
-		for (int counterNdx = 0; counterNdx < numCounters; counterNdx++)
-		{
-			const int	counterValue	= numHits[counterNdx]*numInvocations;
-			counterMasks[counterNdx].resize(counterValue, false);
 		}
 
 		// Verify result values from shaders
@@ -1759,11 +1768,14 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 			{
 				const int		counterNdx	= m_opIndices[opNdx];
 				const deUint32	resValue	= outValues[opNdx*numInvocations + invocationNdx];
-				const bool		rangeOk		= de::inBounds(resValue, 0u, (deUint32)counterMasks[counterNdx].size());
-				const bool		notSeen		= rangeOk && !counterMasks[counterNdx][resValue];
-				const bool		isOk		= rangeOk && notSeen;
+				const bool		rangeOk		= de::inBounds(resValue, 0u, counterValues[counterNdx]);
 
-				if (!isOk)
+				if (resultValueHitCountMaps[counterNdx].count(resValue) == 0)
+					resultValueHitCountMaps[counterNdx][resValue] = 1;
+				else
+					resultValueHitCountMaps[counterNdx][resValue] += 1;
+
+				if (!rangeOk)
 				{
 					log << tcu::TestLog::Message << "ERROR: at invocation " << invocationNdx
 						<< ", op " << opNdx << ": got invalid result value "
@@ -1773,21 +1785,23 @@ tcu::TestStatus AtomicCounterIndexingCaseInstance::iterate (void)
 					if (testResult.getCode() == QP_TEST_RESULT_PASS)
 						testResult = tcu::TestStatus::fail("Invalid result value");
 				}
-				else
-				{
-					// Mark as used - no other invocation should see this value from same counter.
-					counterMasks[counterNdx][resValue] = true;
-				}
 			}
 		}
 
-		if (testResult.getCode() == QP_TEST_RESULT_PASS)
+		for (int ctrIdx = 0; ctrIdx < numCounters; ctrIdx++)
 		{
-			// Consistency check - all masks should be 1 now
-			for (int counterNdx = 0; counterNdx < numCounters; counterNdx++)
+			std::map<deUint32, int>::iterator hitCountItr;
+			for (hitCountItr = resultValueHitCountMaps[ctrIdx].begin(); hitCountItr != resultValueHitCountMaps[ctrIdx].end(); hitCountItr++)
 			{
-				for (std::vector<bool>::const_iterator i = counterMasks[counterNdx].begin(); i != counterMasks[counterNdx].end(); i++)
-					TCU_CHECK_INTERNAL(*i);
+				if(hitCountItr->second > 1)
+				{
+					log << tcu::TestLog::Message << "ERROR: Duplicate result value from counter " << ctrIdx << "."
+						<<" Value " << hitCountItr->first << " found " << hitCountItr->second << " times."
+						<< tcu::TestLog::EndMessage;
+
+					if (testResult.getCode() == QP_TEST_RESULT_PASS)
+						testResult = tcu::TestStatus::fail("Invalid result value");
+				}
 			}
 		}
 
