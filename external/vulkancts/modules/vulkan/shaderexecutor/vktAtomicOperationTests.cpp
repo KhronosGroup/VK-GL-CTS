@@ -216,6 +216,7 @@ public:
 		T			input[NUM_ELEMENTS];
 		T			compare[NUM_ELEMENTS];
 		T			output[NUM_ELEMENTS];
+		T			invocationHitCount[NUM_ELEMENTS];
 		deInt32		index;
 	};
 
@@ -247,6 +248,7 @@ public:
 		{
 			m_ptr->input[i] = static_cast<dataTypeT>(rnd.getUint64());
 			m_ptr->output[i] = pattern;
+			m_ptr->invocationHitCount[i] = 0;
 		}
 		m_ptr->index = 0;
 
@@ -675,6 +677,7 @@ void AtomicOperationCase::createShaderSpec (void)
 		"    ${DATATYPE} inputValues[${N}];\n"
 		"    ${DATATYPE} compareValues[${N}];\n"
 		"    ${DATATYPE} outputValues[${N}];\n"
+		"    ${DATATYPE} invocationHitCount[${N}];\n"
 		"    int index;\n"
 		"} buf;\n");
 
@@ -694,14 +697,22 @@ void AtomicOperationCase::createShaderSpec (void)
 	specializations["N"] = de::toString((int)NUM_ELEMENTS);
 	specializations["COMPARE_ARG"] = m_atomicOp == ATOMIC_OP_COMP_SWAP ? "buf.compareValues[idx], " : "";
 
-	const tcu::StringTemplate shaderTemplateSrc(
+	const tcu::StringTemplate nonVertexShaderTemplateSrc(
 		"int idx = atomicAdd(buf.index, 1);\n"
 		"buf.outputValues[idx] = ${ATOMICOP}(buf.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.inputValues[idx]);\n");
 
+	const tcu::StringTemplate vertexShaderTemplateSrc(
+		"int idx = gl_VertexIndex;\n"
+		"if (atomicAdd(buf.invocationHitCount[idx], 1) == 0)\n"
+		"{\n"
+		"    buf.outputValues[idx] = ${ATOMICOP}(buf.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.inputValues[idx]);\n"
+		"}\n");
+
 	m_shaderSpec.outputs.push_back(Symbol("outData", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 	m_shaderSpec.globalDeclarations = shaderTemplateGlobal.specialize(specializations);
-	m_shaderSpec.source = shaderTemplateSrc.specialize(specializations);
 	m_shaderSpec.glslVersion = glu::GLSL_VERSION_450;
+	m_shaderSpec.source = m_shaderType == glu::SHADERTYPE_VERTEX ?
+		vertexShaderTemplateSrc.specialize(specializations) : nonVertexShaderTemplateSrc.specialize(specializations);
 }
 
 void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
