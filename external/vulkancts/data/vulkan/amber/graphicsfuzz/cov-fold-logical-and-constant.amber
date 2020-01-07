@@ -1,0 +1,148 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by GraphicsFuzz.
+
+# Short description: A fragment shader that covers a specific instruction folding path.
+
+# The test passes because shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main(void)
+# {
+#     int i = 2;
+#
+#     do
+#     {
+#         i++;
+#     }
+#     while(gl_FragCoord.x >= 0.0 && false);
+#
+#     // If condition is always true.
+#     if (i == 3)
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 42
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %20 %37
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "i"
+               OpName %20 "gl_FragCoord"
+               OpName %37 "_GLF_color"
+               OpDecorate %8 RelaxedPrecision
+               OpDecorate %14 RelaxedPrecision
+               OpDecorate %16 RelaxedPrecision
+               OpDecorate %20 BuiltIn FragCoord
+               OpDecorate %31 RelaxedPrecision
+               OpDecorate %37 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %15 = OpConstant %6 1
+         %17 = OpTypeFloat 32
+         %18 = OpTypeVector %17 4
+         %19 = OpTypePointer Input %18
+         %20 = OpVariable %19 Input
+         %21 = OpTypeInt 32 0
+         %22 = OpConstant %21 0
+         %23 = OpTypePointer Input %17
+         %26 = OpConstant %17 0
+         %27 = OpTypeBool
+         %29 = OpConstantFalse %27
+         %32 = OpConstant %6 3
+         %36 = OpTypePointer Output %18
+         %37 = OpVariable %36 Output
+         %38 = OpConstant %17 1
+         %39 = OpConstantComposite %18 %38 %26 %26 %38
+         %41 = OpConstantComposite %18 %26 %26 %26 %26
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %11
+         %11 = OpLabel
+         %14 = OpLoad %6 %8
+         %16 = OpIAdd %6 %14 %15
+               OpStore %8 %16
+               OpBranch %13
+         %13 = OpLabel
+         %24 = OpAccessChain %23 %20 %22
+         %25 = OpLoad %17 %24
+         %28 = OpFOrdGreaterThanEqual %27 %25 %26
+         %30 = OpLogicalAnd %27 %28 %29
+               OpBranchConditional %30 %10 %12
+         %12 = OpLabel
+         %31 = OpLoad %6 %8
+         %33 = OpIEqual %27 %31 %32
+               OpSelectionMerge %35 None
+               OpBranchConditional %33 %34 %40
+         %34 = OpLabel
+               OpStore %37 %39
+               OpBranch %35
+         %40 = OpLabel
+               OpStore %37 %41
+               OpBranch %35
+         %35 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# resolution
+BUFFER variant_resolution DATA_TYPE vec2<float> DATA
+ 256.0 256.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_resolution AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
