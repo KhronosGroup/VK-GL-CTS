@@ -142,6 +142,7 @@
 {	"unreachable-return-in-loop.amber",				"unreachable-return-in-loop",			"A fragment shader with an unreachable return in a loop"								},
 {	"unreachable-switch-case-with-discards.amber",	"unreachable-switch-case-with-discards","A shader with a switch statement containing unreachable discards"						},
 {	"uv-value-comparison-as-boolean.amber",			"uv-value-comparison-as-boolean",		"A fragment shader with uv value comparison as boolean"									},
+{	"vectors-and-discard-in-function.amber",		"vectors-and-discard-in-function",		"A fragment shader that assigns vector values"											},
 {	"while-function-always-false.amber",			"while-function-always-false",			"A fragment shader with an always false while function"									},
 {	"while-inside-switch.amber",					"while-inside-switch",					"A fragment shader that uses a while loop inside a switch"								},
 {	"write-before-break.amber",						"write-before-break",					"Fragment shader that writes red before loop break"										},
