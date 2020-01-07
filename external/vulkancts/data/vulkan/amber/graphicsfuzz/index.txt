@@ -20,6 +20,7 @@
 {	"cov-fold-bitwise-and-zero.amber",				"cov-fold-bitwise-and-zero",			"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-bitwise-xor.amber",					"cov-fold-bitwise-xor",					"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-div-uniform-by-zero.amber",			"cov-fold-div-uniform-by-zero",			"A fragment shader that covers a specific instruction folding path."					},
+{	"cov-fold-div-variable-by-zero.amber",			"cov-fold-div-variable-by-zero",		"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-logical-or-constant.amber",			"cov-fold-logical-or-constant",			"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-negate-variable.amber",				"cov-fold-negate-variable",				"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-shift-right-arithmetic.amber",		"cov-fold-shift-right-arithmetic",		"A fragment shader that covers a specific instruction folding path."					},
