@@ -28,7 +28,7 @@ def checkFileWhitespace (file):
     if (sys.version_info < (3, 0)):
         f = open(file, 'rt')
     else:
-        f = open(file, 'rt', encoding="ascii", errors='replace')
+        f = open(file, 'rt', encoding="ascii", errors='replace', newline='')
     error = False
     for lineNum, line in enumerate(f):
         if line.endswith(" \n") or line.endswith("\t\n"):
