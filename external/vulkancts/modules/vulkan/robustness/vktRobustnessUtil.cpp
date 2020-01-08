@@ -37,6 +37,7 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <set>
 
 namespace vkt
 {
@@ -44,8 +45,26 @@ namespace robustness
 {
 
 using namespace vk;
+using std::vector;
+using std::string;
+using std::set;
 
-Move<VkDevice> createRobustBufferAccessDevice (Context& context)
+static
+vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
+{
+	vector<string>	res;
+	set<string>		removeExts	(b.begin(), b.end());
+
+	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
+
+Move<VkDevice> createRobustBufferAccessDevice (Context& context, const VkPhysicalDeviceFeatures2* enabledFeatures2)
 {
 	const float queuePriority = 1.0f;
 
@@ -63,18 +82,30 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context)
 	VkPhysicalDeviceFeatures enabledFeatures = context.getDeviceFeatures();
 	enabledFeatures.robustBufferAccess = true;
 
+	// \note Extensions in core are not explicitly enabled even though
+	//		 they are in the extension list advertised to tests.
+    std::vector<const char*>	extensionPtrs;
+	std::vector<const char*>	coreExtensions;
+	getCoreDeviceExtensions(context.getUsedApiVersion(), coreExtensions);
+    std::vector<std::string>	nonCoreExtensions(removeExtensions(context.getDeviceExtensions(), coreExtensions));
+
+	extensionPtrs.resize(nonCoreExtensions.size());
+
+	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
+		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
+
 	const VkDeviceCreateInfo		deviceParams =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,								// const void*						pNext;
+		enabledFeatures2,						// const void*						pNext;
 		0u,										// VkDeviceCreateFlags				flags;
 		1u,										// deUint32							queueCreateInfoCount;
 		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,										// deUint32							enabledLayerCount;
 		DE_NULL,								// const char* const*				ppEnabledLayerNames;
-		0u,										// deUint32							enabledExtensionCount;
-		DE_NULL,								// const char* const*				ppEnabledExtensionNames;
-		&enabledFeatures						// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		(deUint32)extensionPtrs.size(),			// deUint32							enabledExtensionCount;
+		(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	// const char* const*				ppEnabledExtensionNames;
+        enabledFeatures2 ? NULL : &enabledFeatures	// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
 	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
