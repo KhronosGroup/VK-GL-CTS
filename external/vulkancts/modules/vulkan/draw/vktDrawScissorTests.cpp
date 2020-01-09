@@ -66,7 +66,7 @@ struct ColorQuad
 	Vec4		m_color;
 };
 
-ColorQuad scissorQuad (ColorQuad quad, VkRect2D scissor)
+ColorQuad scissorQuad (ColorQuad quad, VkRect2D scissor, VkExtent2D framebufferSize)
 {
 	int	left	= quad.m_x;
 	int	right	= quad.m_x + quad.m_width;
@@ -76,11 +76,11 @@ ColorQuad scissorQuad (ColorQuad quad, VkRect2D scissor)
 	left	= de::max(left, scissor.offset.x);
 	left	= de::max(left, 0);
 	right	= de::min(right, scissor.offset.x + (int)scissor.extent.width);
-	right	= de::min(right, (int)WIDTH);
+	right	= de::min(right, (int)framebufferSize.width);
 	top		= de::max(top, scissor.offset.y);
 	top		= de::max(top, 0);
 	bottom	= de::min(bottom, scissor.offset.y + (int)scissor.extent.height);
-	bottom	= de::min(bottom, (int)HEIGHT);
+	bottom	= de::min(bottom, (int)framebufferSize.height);
 
 	return ColorQuad(left, top, de::max(right - left, 0), de::max(bottom - top, 0), quad.m_color);
 }
@@ -227,10 +227,13 @@ vector<VkRect2D> DynamicScissorTestCommand::updateScissors (vector<VkRect2D> sci
 
 struct TestParams
 {
+	TestParams() : framebufferSize({WIDTH,HEIGHT}) {};
+
 	bool					dynamicScissor;
 	vector<VkRect2D>		staticScissors;
 	vector<TestCommandSp>	commands;
 	bool					usesMultipleScissors;
+	VkExtent2D				framebufferSize;
 };
 
 deUint32 countScissors (TestParams params)
@@ -377,6 +380,7 @@ TestStatus ScissorTestInstance::iterate (void)
 	Move<VkFramebuffer>				framebuffer;
 	Move<VkPipeline>				pipeline;
 	TextureLevel					refImage;
+	VkExtent2D						framebufferSize			= m_params.framebufferSize;
 
 	if (m_params.usesMultipleScissors)
 		gs = createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0);
@@ -385,8 +389,7 @@ TestStatus ScissorTestInstance::iterate (void)
 	{
 		const VkExtent3D		targetImageExtent		= { WIDTH, HEIGHT, 1 };
 		const ImageCreateInfo	targetImageCreateInfo	(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, targetImageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT,
-														 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
+														 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 		colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 	}
 
@@ -402,7 +405,7 @@ TestStatus ScissorTestInstance::iterate (void)
 																 VK_ATTACHMENT_STORE_OP_STORE,
 																 VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 																 VK_ATTACHMENT_STORE_OP_STORE,
-																 VK_IMAGE_LAYOUT_UNDEFINED,
+																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 																 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 
 		const VkAttachmentReference	colorAttachmentRef		= { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
@@ -412,7 +415,7 @@ TestStatus ScissorTestInstance::iterate (void)
 
 		renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
 
-		const FramebufferCreateInfo	framebufferCreateInfo	(*renderPass, colorAttachment, WIDTH, HEIGHT, 1);
+		const FramebufferCreateInfo	framebufferCreateInfo(*renderPass, colorAttachment, framebufferSize.width, framebufferSize.height, 1);
 
 		framebuffer	= createFramebuffer(vk, device, &framebufferCreateInfo);
 	}
@@ -490,10 +493,15 @@ TestStatus ScissorTestInstance::iterate (void)
 	// Queue commands and read results.
 	{
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
-		const VkRect2D				renderArea			= makeRect2D(WIDTH, HEIGHT);
+		const VkRect2D				renderArea			= makeRect2D(framebufferSize);
 		const VkDeviceSize			vertexBufferOffset	= 0;
 		const VkOffset3D			zeroOffset			= { 0, 0, 0 };
 		const Vec4					clearColor			(0.0f, 0.0f, 0.0f, 1.0f);
+
+		clearColorImage(vk, device, m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), colorTargetImage->object(), clearColor,
+						VK_IMAGE_LAYOUT_UNDEFINED,
+						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+						VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 		beginCommandBuffer(vk, *cmdBuffer, 0u);
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
@@ -537,7 +545,7 @@ TestStatus ScissorTestInstance::iterate (void)
 
 			for (size_t scissorIdx = 0; scissorIdx < scissors.size(); scissorIdx++)
 			{
-				ColorQuad scissoredQuad = m_params.commands[commandIdx]->isScissored() ? scissorQuad(quad[0], scissors[scissorIdx]) : quad[0];
+				ColorQuad scissoredQuad = m_params.commands[commandIdx]->isScissored() ? scissorQuad(quad[0], scissors[scissorIdx], framebufferSize) : quad[0];
 
 				if (scissoredQuad.m_width == 0 || scissoredQuad.m_height == 0)
 					continue;
@@ -827,6 +835,125 @@ void createTests (TestCaseGroup* testGroup)
 		params.commands.push_back(TestCommandSp(new RectClearTestCommand(75, 77, 50, 50, yellow)));
 
 		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_mix", "", params));
+	}
+
+	// Static scissor off by one, inside frame buffer border
+	{
+		VkExtent2D size =
+		{
+			WIDTH / 2 - 1,
+			HEIGHT / 2 - 1
+		};
+
+		TestParams params;
+
+		params.framebufferSize = size;
+		params.dynamicScissor = false;
+		params.staticScissors.push_back(makeRect2D(1, 1, size.width - 2, size.height - 2));
+		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
+
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_framebuffer_border_in", "", params));
+	}
+
+	// Dynamic scissor off by one, inside frame buffer border
+	{
+		VkExtent2D size =
+		{
+			WIDTH / 2 - 1,
+			HEIGHT / 2 - 1
+		};
+
+		TestParams			params;
+		vector<VkRect2D>	scissors;
+
+		params.framebufferSize = size;
+		params.dynamicScissor = true;
+
+		scissors.push_back(makeRect2D(1, 1, size.width - 2, size.height - 2));
+		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
+		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
+
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_framebuffer_border_in", "", params));
+	}
+
+	// Static scissor off by one, outside frame buffer border
+	{
+		VkExtent2D size =
+		{
+			WIDTH / 2 - 1,
+			HEIGHT / 2 - 1
+		};
+
+		TestParams params;
+
+		params.framebufferSize = size;
+		params.dynamicScissor = false;
+
+		params.staticScissors.push_back(makeRect2D(0, 0, size.width + 1, size.height + 1));
+		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
+
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_framebuffer_border_out", "", params));
+	}
+
+	// Dynamic scissor off by one, outside frame buffer border
+	{
+		VkExtent2D size =
+		{
+			WIDTH / 2 - 1,
+			HEIGHT / 2 - 1
+		};
+
+		TestParams			params;
+		vector<VkRect2D>	scissors;
+
+		params.framebufferSize = size;
+		params.dynamicScissor = true;
+
+		scissors.push_back(makeRect2D(0, 0, size.width + 1, size.height + 1));
+		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
+		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
+
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_framebuffer_border_out", "", params));
+	}
+
+	// Static oversized scissor, exceeds frame buffer and image attachment sizes
+	{
+		VkExtent2D size =
+		{
+			WIDTH / 2 - 1,
+			HEIGHT / 2 - 1
+		};
+
+		TestParams params;
+
+		params.framebufferSize = size;
+		params.dynamicScissor = false;
+
+		params.staticScissors.push_back(makeRect2D(0, 0, WIDTH * 2, HEIGHT * 2));
+		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
+
+		testGroup->addChild(new ScissorTestCase(testCtx, "static_scissor_oversized", "", params));
+	}
+
+	// Dynamic oversized scissor, exceeds frame buffer and image attachment sizes
+	{
+		VkExtent2D size =
+		{
+			WIDTH / 2 - 1,
+			HEIGHT / 2 - 1
+		};
+
+		TestParams			params;
+		vector<VkRect2D>	scissors;
+
+		params.framebufferSize = size;
+		params.dynamicScissor = true;
+
+		scissors.push_back(makeRect2D(0, 0, WIDTH * 2, HEIGHT * 2));
+		params.commands.push_back(TestCommandSp(new DynamicScissorTestCommand(0, scissors)));
+		params.commands.push_back(TestCommandSp(new QuadDrawTestCommand(0, 0, WIDTH * 4, HEIGHT * 4, red)));
+
+		testGroup->addChild(new ScissorTestCase(testCtx, "dynamic_scissor_oversized", "", params));
 	}
 }
 
