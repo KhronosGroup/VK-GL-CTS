@@ -29,6 +29,7 @@
 {	"cov-fold-switch-udiv.amber",					"cov-fold-switch-udiv",					"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-folding-rules-construct-extract.amber",	"cov-folding-rules-construct-extract",	"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-folding-rules-merge-add-sub.amber",		"cov-folding-rules-merge-add-sub",		"A fragment shader that covers a specific instruction folding path."					},
+{	"cov-folding-rules-merge-sub-add.amber",		"cov-folding-rules-merge-sub-add",		"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-folding-rules-merge-sub-sub.amber",		"cov-folding-rules-merge-sub-sub",		"A fragment shader that covers a specific instruction folding path."					},
 {	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
 {	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
