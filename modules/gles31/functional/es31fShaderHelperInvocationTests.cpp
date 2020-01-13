@@ -235,7 +235,11 @@ FboHelper::FboHelper (const glu::RenderContext& renderCtx, int width, int height
 	gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, *m_colorbuffer);
 
 	if (m_numSamples > maxSamples && gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		// Clear GL_INVALID_VALUE error from glRenderbufferStorageMultisample() w/ invalid m_numSamples
+		gl.getError();
 		throw tcu::NotSupportedError("Sample count exceeds GL_MAX_SAMPLES");
+	}
 
 	TCU_CHECK(gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
