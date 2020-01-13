@@ -26,8 +26,9 @@
 namespace rr
 {
 
-FragmentShadingContext::FragmentShadingContext (const GenericVec4* varying0, const GenericVec4* varying1, const GenericVec4* varying2, GenericVec4* outputArray_, float* fragmentDepths_, int primitiveID_, int numFragmentOutputs_, int numSamples_, FaceType visibleFace_)
+FragmentShadingContext::FragmentShadingContext (const GenericVec4* varying0, const GenericVec4* varying1, const GenericVec4* varying2, GenericVec4* outputArray_, GenericVec4* outputArraySrc1_, float* fragmentDepths_, int primitiveID_, int numFragmentOutputs_, int numSamples_, FaceType visibleFace_)
 	: outputArray			(outputArray_)
+	, outputArraySrc1		(outputArraySrc1_)
 	, primitiveID			(primitiveID_)
 	, numFragmentOutputs	(numFragmentOutputs_)
 	, numSamples			(numSamples_)

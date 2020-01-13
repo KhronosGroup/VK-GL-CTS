@@ -945,6 +945,77 @@ std::vector<Vertex4RGBA> createOverlappingQuads (void)
 	return vertices;
 }
 
+std::vector<Vertex4RGBARGBA> createOverlappingQuadsDualSource (void)
+{
+	using tcu::Vec2;
+	using tcu::Vec4;
+
+	std::vector<Vertex4RGBARGBA> vertices;
+
+	const Vec2 translations[4] =
+	{
+		Vec2(-0.25f, -0.25f),
+		Vec2(-1.0f, -0.25f),
+		Vec2(-1.0f, -1.0f),
+		Vec2(-0.25f, -1.0f)
+	};
+
+	const Vec4 quadColors[4] =
+	{
+		Vec4(1.0f, 0.0f, 0.0f, 1.0),
+		Vec4(0.0f, 1.0f, 0.0f, 1.0),
+		Vec4(0.0f, 0.0f, 1.0f, 1.0),
+		Vec4(1.0f, 0.0f, 1.0f, 1.0)
+	};
+
+	const Vec4 color1 = Vec4(0.0f, 0.5f, 0.5f, 1.0f);
+
+	const float quadSize = 1.25f;
+
+	for (int quadNdx = 0; quadNdx < 4; quadNdx++)
+	{
+		const Vec2&	translation	= translations[quadNdx];
+		const Vec4&	color0		= quadColors[quadNdx];
+
+		const Vertex4RGBARGBA lowerLeftVertex =
+		{
+			Vec4(translation.x(), translation.y(), 0.0f, 1.0f),
+			color0,
+			color1
+		};
+		const Vertex4RGBARGBA upperLeftVertex =
+		{
+			Vec4(translation.x(), translation.y() + quadSize, 0.0f, 1.0f),
+			color0,
+			color1
+		};
+		const Vertex4RGBARGBA lowerRightVertex =
+		{
+			Vec4(translation.x() + quadSize, translation.y(), 0.0f, 1.0f),
+			color0,
+			color1
+		};
+		const Vertex4RGBARGBA upperRightVertex =
+		{
+			Vec4(translation.x() + quadSize, translation.y() + quadSize, 0.0f, 1.0f),
+			color0,
+			color1
+		};
+
+		// Triangle 1, CCW
+		vertices.push_back(lowerLeftVertex);
+		vertices.push_back(lowerRightVertex);
+		vertices.push_back(upperLeftVertex);
+
+		// Triangle 2, CW
+		vertices.push_back(lowerRightVertex);
+		vertices.push_back(upperLeftVertex);
+		vertices.push_back(upperRightVertex);
+	}
+
+	return vertices;
+}
+
 std::vector<Vertex4Tex4> createFullscreenQuad (void)
 {
 	using tcu::Vec4;

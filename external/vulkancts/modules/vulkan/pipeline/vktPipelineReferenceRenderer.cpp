@@ -291,6 +291,43 @@ void ReferenceRenderer::draw (const rr::RenderState&			renderState,
 
 	m_renderer.draw(drawQuadCommand);
 }
+void ReferenceRenderer::draw (const rr::RenderState&				renderState,
+							  const rr::PrimitiveType				primitive,
+							  const std::vector<Vertex4RGBARGBA>&	vertexBuffer)
+{
+	const rr::PrimitiveList primitives(primitive, (int)vertexBuffer.size(), 0);
+
+	std::vector<tcu::Vec4> positions;
+	std::vector<tcu::Vec4> color0s;
+	std::vector<tcu::Vec4> color1s;
+
+	for (size_t vertexNdx = 0; vertexNdx < vertexBuffer.size(); vertexNdx++)
+	{
+		const Vertex4RGBARGBA& v = vertexBuffer[vertexNdx];
+		positions.push_back(v.position);
+		color0s.push_back(v.color0);
+		color1s.push_back(v.color1);
+	}
+
+	rr::VertexAttrib vertexAttribs[3];
+
+	// Position attribute
+	vertexAttribs[0].type		= rr::VERTEXATTRIBTYPE_FLOAT;
+	vertexAttribs[0].size		= 4;
+	vertexAttribs[0].pointer	= positions.data();
+	// Color0 attribute
+	vertexAttribs[1].type		= rr::VERTEXATTRIBTYPE_FLOAT;
+	vertexAttribs[1].size		= 4;
+	vertexAttribs[1].pointer	= color0s.data();
+	// Color1 attribute
+	vertexAttribs[2].type		= rr::VERTEXATTRIBTYPE_FLOAT;
+	vertexAttribs[2].size		= 4;
+	vertexAttribs[2].pointer	= color1s.data();
+
+	rr::DrawCommand drawQuadCommand(renderState, *m_renderTarget, *m_program, 3, vertexAttribs, primitives);
+
+	m_renderer.draw(drawQuadCommand);
+}
 
 void ReferenceRenderer::draw (const rr::RenderState&			renderState,
 							  const rr::PrimitiveType			primitive,

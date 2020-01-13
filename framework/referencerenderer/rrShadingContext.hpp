@@ -37,10 +37,11 @@ namespace rr
  *//*--------------------------------------------------------------------*/
 struct FragmentShadingContext
 {
-								FragmentShadingContext (const GenericVec4* varying0, const GenericVec4* varying1, const GenericVec4* varying2, GenericVec4* outputArray, float* fragmentDepths, int primitiveID, int numFragmentOutputs, int numSamples, FaceType visibleFace_);
+								FragmentShadingContext (const GenericVec4* varying0, const GenericVec4* varying1, const GenericVec4* varying2, GenericVec4* outputArray, GenericVec4* outputArraySrc1, float* fragmentDepths, int primitiveID, int numFragmentOutputs, int numSamples, FaceType visibleFace_);
 
 	const GenericVec4*			varyings[3];		//!< Vertex shader outputs. Pointer will be NULL if there is no such vertex.
 	GenericVec4* const			outputArray;		//!< Fragment output array
+	GenericVec4* const			outputArraySrc1;	//!< Fragment output array for source 1.
 	const int					primitiveID;		//!< Geometry shader output
 	const int					numFragmentOutputs;	//!< Fragment output count
 	const int					numSamples;			//!< Number of samples
@@ -58,6 +59,17 @@ void writeFragmentOutput (const FragmentShadingContext& context, int packetNdx, 
 	DE_ASSERT(outputNdx >= 0 && outputNdx < context.numFragmentOutputs);
 
 	context.outputArray[outputNdx + context.numFragmentOutputs*(fragNdx + packetNdx*4)] = value;
+}
+
+template <typename T>
+void writeFragmentOutputDualSource (const FragmentShadingContext& context, int packetNdx, int fragNdx, int outputNdx, const T& value, const T& value1)
+{
+	DE_ASSERT(packetNdx >= 0);
+	DE_ASSERT(fragNdx >= 0 && fragNdx < 4);
+	DE_ASSERT(outputNdx >= 0 && outputNdx < context.numFragmentOutputs);
+
+	context.outputArray[outputNdx + context.numFragmentOutputs*(fragNdx + packetNdx*4)] = value;
+	context.outputArraySrc1[outputNdx + context.numFragmentOutputs*(fragNdx + packetNdx*4)] = value1;
 }
 
 // Read Varying

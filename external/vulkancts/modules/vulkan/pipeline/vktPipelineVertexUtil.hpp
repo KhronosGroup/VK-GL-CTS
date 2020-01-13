@@ -41,6 +41,13 @@ struct Vertex4RGBA
 	tcu::Vec4 color;
 };
 
+struct Vertex4RGBARGBA
+{
+	tcu::Vec4 position;
+	tcu::Vec4 color0;
+	tcu::Vec4 color1;
+};
+
 struct Vertex4Tex4
 {
 	tcu::Vec4 position;
@@ -72,7 +79,8 @@ bool						isVertexFormatPacked				(vk::VkFormat format);
  *  Each quad covers one of the quadrants of the scene and partially extends to the other 3 quadrants.
  *  The triangles of each quad have different winding orders (CW/CCW).
  */
-std::vector<Vertex4RGBA>	createOverlappingQuads		(void);
+std::vector<Vertex4RGBA>		createOverlappingQuads				(void);
+std::vector<Vertex4RGBARGBA>	createOverlappingQuadsDualSource	(void);
 
 std::vector<Vertex4Tex4>	createFullscreenQuad		(void);
 std::vector<Vertex4Tex4>	createQuadMosaic			(int rows, int columns);

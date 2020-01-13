@@ -77,6 +77,46 @@ public:
 	}
 };
 
+class ColorVertexShaderDualSource : public rr::VertexShader
+{
+public:
+	ColorVertexShaderDualSource (void) : rr::VertexShader(3, 3)
+	{
+		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+		m_inputs[2].type	= rr::GENERICVECTYPE_FLOAT;
+
+		m_outputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+		m_outputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+		m_outputs[2].type	= rr::GENERICVECTYPE_FLOAT;
+	}
+
+	virtual ~ColorVertexShaderDualSource (void) {}
+
+	virtual void shadeVertices (const rr::VertexAttrib*		inputs,
+								rr::VertexPacket* const*	packets,
+								const int					numPackets) const
+	{
+		tcu::Vec4 position;
+		tcu::Vec4 color0;
+		tcu::Vec4 color1;
+
+		for (int packetNdx = 0; packetNdx < numPackets; packetNdx++)
+		{
+			rr::VertexPacket* const packet	= packets[packetNdx];
+
+			readVertexAttrib(position, inputs[0], packet->instanceNdx, packet->vertexNdx);
+			readVertexAttrib(color0, inputs[1], packet->instanceNdx, packet->vertexNdx);
+			readVertexAttrib(color1, inputs[2], packet->instanceNdx, packet->vertexNdx);
+
+			packet->outputs[0]	= position;
+			packet->outputs[1]	= color0;
+			packet->outputs[2]	= color1;
+			packet->position	= position;
+		}
+	}
+};
+
 class TexCoordVertexShader : public rr::VertexShader
 {
 public:
@@ -162,6 +202,60 @@ public:
 	}
 };
 
+class ColorFragmentShaderDualSource : public rr::FragmentShader
+{
+private:
+	const tcu::TextureFormat		m_colorFormat;
+	const tcu::TextureFormat		m_depthStencilFormat;
+
+public:
+	ColorFragmentShaderDualSource (const tcu::TextureFormat& colorFormat,
+								   const tcu::TextureFormat& depthStencilFormat)
+		: rr::FragmentShader	(3, 1)
+		, m_colorFormat			(colorFormat)
+		, m_depthStencilFormat	(depthStencilFormat)
+	{
+		const tcu::TextureChannelClass channelClass = tcu::getTextureChannelClass(m_colorFormat.type);
+
+		m_inputs[0].type	= rr::GENERICVECTYPE_FLOAT;
+		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
+		m_inputs[2].type	= rr::GENERICVECTYPE_FLOAT;
+
+		// XXX: Should m_outputs[1] need to be added?
+		m_outputs[0].type	= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)? rr::GENERICVECTYPE_INT32 :
+							  (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)? rr::GENERICVECTYPE_UINT32
+							  : rr::GENERICVECTYPE_FLOAT;
+	}
+
+	virtual ~ColorFragmentShaderDualSource (void) {}
+
+	virtual void shadeFragments (rr::FragmentPacket*				packets,
+								 const int							numPackets,
+								 const rr::FragmentShadingContext&	context) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; packetNdx++)
+		{
+			const rr::FragmentPacket& packet = packets[packetNdx];
+
+			if (m_depthStencilFormat.order == tcu::TextureFormat::D || m_depthStencilFormat.order == tcu::TextureFormat::DS)
+			{
+				for (int fragNdx = 0; fragNdx < 4; fragNdx++)
+				{
+					const tcu::Vec4 vtxPosition = rr::readVarying<float>(packet, context, 0, fragNdx);
+					rr::writeFragmentDepth(context, packetNdx, fragNdx, 0, vtxPosition.z());
+				}
+			}
+
+			for (int fragNdx = 0; fragNdx < 4; fragNdx++)
+			{
+				const tcu::Vec4 vtxColor0 = rr::readVarying<float>(packet, context, 1, fragNdx);
+				const tcu::Vec4 vtxColor1 = rr::readVarying<float>(packet, context, 2, fragNdx);
+				rr::writeFragmentOutputDualSource(context, packetNdx, fragNdx, 0, vtxColor0, vtxColor1);
+			}
+		}
+	}
+};
+
 class CoordinateCaptureFragmentShader : public rr::FragmentShader
 {
 public:
@@ -237,6 +331,10 @@ public:
 	void						draw					(const rr::RenderState&				renderState,
 														 const rr::PrimitiveType			primitive,
 														 const std::vector<Vertex4RGBA>&	vertexBuffer);
+
+	void						draw					(const rr::RenderState&					renderState,
+														 const rr::PrimitiveType				primitive,
+														 const std::vector<Vertex4RGBARGBA>&	vertexBuffer);
 
 	void						draw					(const rr::RenderState&				renderState,
 														 const rr::PrimitiveType			primitive,

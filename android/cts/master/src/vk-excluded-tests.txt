@@ -53,3 +53,8 @@ dEQP-VK.amber-example.*
 
 # Exclude conformance version from android test, issue 1839
 dEQP-VK.api.driver_properties.conformance_version
+
+# VK-GL-CTS 2157, CL 5278
+# Excluded them as Intel HW is failing these tests.
+dEQP-VK.pipeline.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mca_sub-color_1msc_da_max_alpha_o_da_add-color_s1c_s1a_max_alpha_dc_1ms1a_sub-color_s1a_z_sub_alpha_1msa_1msc_max
+dEQP-VK.pipeline.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mdc_sub-color_1mda_sas_add_alpha_o_ca_add-color_sa_1mdc_sub_alpha_o_1mca_rsub-color_s1c_1msa_rsub_alpha_1msa_1mca_add
