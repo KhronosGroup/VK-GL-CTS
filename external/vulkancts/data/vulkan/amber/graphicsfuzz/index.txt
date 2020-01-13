@@ -24,6 +24,7 @@
 {	"cov-fold-logical-or-constant.amber",			"cov-fold-logical-or-constant",			"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-negate-variable.amber",				"cov-fold-negate-variable",				"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-shift-right-arithmetic.amber",		"cov-fold-shift-right-arithmetic",		"A fragment shader that covers a specific instruction folding path."					},
+{	"cov-folding-rules-merge-add-sub.amber",		"cov-folding-rules-merge-add-sub",		"A fragment shader that covers a specific instruction folding path."					},
 {	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
 {	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
 {	"disc-and-add-in-func-in-loop.amber",			"disc-and-add-in-func-in-loop",			"A fragment shader with discard and add in function in loop"							},
