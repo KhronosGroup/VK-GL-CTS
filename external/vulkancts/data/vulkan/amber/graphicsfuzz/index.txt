@@ -25,6 +25,7 @@
 {	"cov-fold-logical-and-constant.amber",			"cov-fold-logical-and-constant",		"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-logical-or-constant.amber",			"cov-fold-logical-or-constant",			"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-negate-variable.amber",				"cov-fold-negate-variable",				"A fragment shader that covers a specific instruction folding path."					},
+{	"cov-fold-shift-gte32.amber",					"cov-fold-shift-gte32",					"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-shift-right-arithmetic.amber",		"cov-fold-shift-right-arithmetic",		"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-fold-switch-udiv.amber",					"cov-fold-switch-udiv",					"A fragment shader that covers a specific instruction folding path."					},
 {	"cov-folding-rules-construct-extract.amber",	"cov-folding-rules-construct-extract",	"A fragment shader that covers a specific instruction folding path."					},
