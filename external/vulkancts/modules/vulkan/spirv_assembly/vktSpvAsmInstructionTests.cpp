@@ -6785,7 +6785,7 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 		"%loop      = OpLabel\n"
 		"%ival      = OpLoad %i32 %iptr\n"
 		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
-		"             OpLoopMerge %exit %switch_exit None\n"
+		"             OpLoopMerge %exit %cont None\n"
 		"             OpBranchConditional %lt_4 %switch_entry %exit\n"
 
 		// Merge block for loop.
@@ -6822,6 +6822,8 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 		"%switch_exit    = OpLabel\n"
 		"%ival_next      = OpIAdd %i32 %ival %c_i32_1\n"
 		"                  OpStore %iptr %ival_next\n"
+		"                  OpBranch %cont\n"
+		"%cont           = OpLabel\n"
 		"                  OpBranch %loop\n"
 
 		"%case1          = OpLabel\n"
@@ -7269,7 +7271,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 		"%loop      = OpLabel\n"
 		"%ival      = OpLoad %i32 %iptr\n"
 		"%lt_4      = OpSLessThan %bool %ival %c_i32_4\n"
-		"             OpLoopMerge %exit %phi None\n"
+		"             OpLoopMerge %exit %cont None\n"
 		"             OpBranchConditional %lt_4 %entry %exit\n"
 
 		"%entry     = OpLabel\n"
@@ -7292,6 +7294,8 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 		"%phi       = OpLabel\n"
 		"%operand   = OpPhi %f32 %c_f32_p4 %case2 %c_f32_p5 %case1 %c_f32_p2 %case0 %c_f32_0 %case3\n" // not in the order of blocks
+		"             OpBranch %cont\n"
+		"%cont      = OpLabel\n"
 		"%add       = OpFAdd %f32 %val %operand\n"
 		"             OpStore %loc %add\n"
 		"%ival_next = OpIAdd %i32 %ival %c_i32_1\n"
@@ -8245,9 +8249,9 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 		";adds and subtracts 1.0 to %val in alternate iterations\n"
 		"%loop = OpLabel\n"
-		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %gather\n"
-		"%delta = OpPhi %f32 %c_f32_1 %entry %delta_next %gather\n"
-		"%val1 = OpPhi %f32 %val0 %entry %val %gather\n"
+		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %cont\n"
+		"%delta = OpPhi %f32 %c_f32_1 %entry %delta_next %cont\n"
+		"%val1 = OpPhi %f32 %val0 %entry %val %cont\n"
 		// There are several possibilities for the Continue Target below.  Each
 		// will be specialized into a separate test case.
 		"OpLoopMerge %exit ${continue_target} None\n"
@@ -8269,6 +8273,9 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%delta_next = OpPhi %f32 %c_f32_n1 %even %c_f32_1 %odd\n"
 		"%val = OpFAdd %f32 %val1 %delta\n"
 		"%count__ = OpISub %i32 %count %c_i32_1\n"
+		"OpBranch %cont\n"
+
+		"%cont = OpLabel\n"
 		"%again = OpSGreaterThan %bool %count__ %c_i32_0\n"
 		"OpBranchConditional %again %loop %exit\n"
 
@@ -8286,7 +8293,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("multi_block_continue_construct", defaultColors, defaultColors, fragments, testGroup.get());
 
 	// The Continue Target is at the end of the loop.
-	continue_target["continue_target"] = "%gather";
+	continue_target["continue_target"] = "%cont";
 	fragments["testfun"] = multiBlock.specialize(continue_target);
 	createTestsForAllStages("multi_block_loop_construct", defaultColors, defaultColors, fragments, testGroup.get());
 
@@ -8309,7 +8316,6 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%if = OpLabel\n"
 		";skip if %count==2\n"
 		"%eq2 = OpIEqual %bool %count %c_i32_2\n"
-		"OpSelectionMerge %continue DontFlatten\n"
 		"OpBranchConditional %eq2 %continue %body\n"
 
 		"%body = OpLabel\n"
@@ -8354,7 +8360,6 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%if = OpLabel\n"
 		";end loop if %count==%two\n"
 		"%above2 = OpSGreaterThan %bool %count %two\n"
-		"OpSelectionMerge %continue DontFlatten\n"
 		"OpBranchConditional %above2 %body %exit\n"
 
 		"%body = OpLabel\n"
@@ -8399,7 +8404,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%if = OpLabel\n"
 		";return if %count==%two\n"
 		"%above2 = OpSGreaterThan %bool %count %two\n"
-		"OpSelectionMerge %continue DontFlatten\n"
+		"OpSelectionMerge %body DontFlatten\n"
 		"OpBranchConditional %above2 %body %early_exit\n"
 
 		"%early_exit = OpLabel\n"
