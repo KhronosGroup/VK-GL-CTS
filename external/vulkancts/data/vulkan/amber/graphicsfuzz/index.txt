@@ -161,6 +161,7 @@
 {	"transpose-rectangular-matrix.amber",			"transpose-rectangular-matrix",			"Fragment shader that uses 'transpose'"													},
 {	"two-2-iteration-loops.amber",					"two-2-iteration-loops",				"Fragment shader with pair of outer loops"												},
 {	"two-for-loops-with-barrier-function.amber",	"two-for-loops-with-barrier-function",	"A compute shader with two barrier functions"											},
+{	"two-loops-mat-add.amber",						"two-loops-mat-add",					"A fragment shader with two for loops over a global matrix"								},
 {	"two-loops-matrix.amber",						"two-loops-matrix",						"A fragment shader with two loops and some matrices"									},
 {	"two-loops-set-struct.amber",					"two-loops-set-struct",					"A fragment shader with two loops that write to a struct"								},
 {	"two-loops-with-break.amber",					"two-loops-with-break",					"A fragment shader with two loops with breaks"											},
