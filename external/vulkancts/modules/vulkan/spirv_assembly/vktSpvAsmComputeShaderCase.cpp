@@ -326,7 +326,7 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
 
 		specInfo.mapEntryCount		= numSpecConstants;
 		specInfo.pMapEntries		= &entries[0];
-		specInfo.dataSize			= numSpecConstants * sizeof(deUint32);
+		specInfo.dataSize			= offset;
 		specInfo.pData				= specConstants.getValuesBuffer();
 	}
 

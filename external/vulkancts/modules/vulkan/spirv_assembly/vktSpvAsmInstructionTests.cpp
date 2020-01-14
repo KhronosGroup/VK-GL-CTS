@@ -3414,40 +3414,129 @@ tcu::TestCaseGroup* createDecorationGroupGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-struct SpecConstantTwoIntCase
+enum SpecConstantType
 {
-	const char*		caseName;
-	const char*		scDefinition0;
-	const char*		scDefinition1;
-	const char*		scResultType;
-	const char*		scOperation;
-	deInt32			scActualValue0;
-	deInt32			scActualValue1;
-	const char*		resultOperation;
-	vector<deInt32>	expectedOutput;
-	deInt32			scActualValueLength;
+	SC_INT8,
+	SC_UINT8,
+	SC_INT16,
+	SC_UINT16,
+	SC_INT32,
+	SC_UINT32,
+	SC_INT64,
+	SC_UINT64,
+	SC_FLOAT16,
+	SC_FLOAT32,
+	SC_FLOAT64,
+};
 
-					SpecConstantTwoIntCase (const char* name,
-											const char* definition0,
-											const char* definition1,
-											const char* resultType,
-											const char* operation,
-											deInt32 value0,
-											deInt32 value1,
-											const char* resultOp,
-											const vector<deInt32>& output,
-											const deInt32	valueLength = sizeof(deInt32))
-						: caseName				(name)
-						, scDefinition0			(definition0)
-						, scDefinition1			(definition1)
-						, scResultType			(resultType)
-						, scOperation			(operation)
-						, scActualValue0		(value0)
-						, scActualValue1		(value1)
-						, resultOperation		(resultOp)
-						, expectedOutput		(output)
-						, scActualValueLength	(valueLength)
-						{}
+struct SpecConstantValue
+{
+	SpecConstantType type;
+	union ValueUnion {
+		deInt8			i8;
+		deUint8			u8;
+		deInt16			i16;
+		deUint16		u16;
+		deInt32			i32;
+		deUint32		u32;
+		deInt64			i64;
+		deUint64		u64;
+		tcu::Float16	f16;
+		tcu::Float32	f32;
+		tcu::Float64	f64;
+
+		ValueUnion (deInt8			v) : i8(v)	{}
+		ValueUnion (deUint8			v) : u8(v)	{}
+		ValueUnion (deInt16			v) : i16(v)	{}
+		ValueUnion (deUint16		v) : u16(v)	{}
+		ValueUnion (deInt32			v) : i32(v)	{}
+		ValueUnion (deUint32		v) : u32(v)	{}
+		ValueUnion (deInt64			v) : i64(v)	{}
+		ValueUnion (deUint64		v) : u64(v)	{}
+		ValueUnion (tcu::Float16	v) : f16(v)	{}
+		ValueUnion (tcu::Float32	v) : f32(v)	{}
+		ValueUnion (tcu::Float64	v) : f64(v)	{}
+	} value;
+
+	SpecConstantValue (deInt8			v) : type(SC_INT8)		, value(v) {}
+	SpecConstantValue (deUint8			v) : type(SC_UINT8)		, value(v) {}
+	SpecConstantValue (deInt16			v) : type(SC_INT16)		, value(v) {}
+	SpecConstantValue (deUint16			v) : type(SC_UINT16)	, value(v) {}
+	SpecConstantValue (deInt32			v) : type(SC_INT32)		, value(v) {}
+	SpecConstantValue (deUint32			v) : type(SC_UINT32)	, value(v) {}
+	SpecConstantValue (deInt64			v) : type(SC_INT64)		, value(v) {}
+	SpecConstantValue (deUint64			v) : type(SC_UINT64)	, value(v) {}
+	SpecConstantValue (tcu::Float16		v) : type(SC_FLOAT16)	, value(v) {}
+	SpecConstantValue (tcu::Float32		v) : type(SC_FLOAT32)	, value(v) {}
+	SpecConstantValue (tcu::Float64		v) : type(SC_FLOAT64)	, value(v) {}
+
+	void appendTo(vkt::SpirVAssembly::SpecConstants& specConstants)
+	{
+		switch (type)
+		{
+		case SC_INT8:		specConstants.append(value.i8);		break;
+		case SC_UINT8:		specConstants.append(value.u8);		break;
+		case SC_INT16:		specConstants.append(value.i16);	break;
+		case SC_UINT16:		specConstants.append(value.u16);	break;
+		case SC_INT32:		specConstants.append(value.i32);	break;
+		case SC_UINT32:		specConstants.append(value.u32);	break;
+		case SC_INT64:		specConstants.append(value.i64);	break;
+		case SC_UINT64:		specConstants.append(value.u64);	break;
+		case SC_FLOAT16:	specConstants.append(value.f16);	break;
+		case SC_FLOAT32:	specConstants.append(value.f32);	break;
+		case SC_FLOAT64:	specConstants.append(value.f64);	break;
+		default:
+			DE_ASSERT(false);
+		}
+	}
+};
+
+enum CaseFlagBits
+{
+	FLAG_NONE		= 0,
+	FLAG_CONVERT	= 1,
+	FLAG_I8			= (1<<1),
+	FLAG_I16		= (1<<2),
+	FLAG_I64		= (1<<3),
+	FLAG_F16		= (1<<4),
+	FLAG_F64		= (1<<5),
+};
+using CaseFlags = deUint32;
+
+struct SpecConstantTwoValCase
+{
+	const std::string	caseName;
+	const std::string	scDefinition0;
+	const std::string	scDefinition1;
+	const std::string	scResultType;
+	const std::string	scOperation;
+	SpecConstantValue	scActualValue0;
+	SpecConstantValue	scActualValue1;
+	const std::string	resultOperation;
+	vector<deInt32>		expectedOutput;
+	CaseFlags			caseFlags;
+
+						SpecConstantTwoValCase (const std::string& name,
+												const std::string& definition0,
+												const std::string& definition1,
+												const std::string& resultType,
+												const std::string& operation,
+												SpecConstantValue value0,
+												SpecConstantValue value1,
+												const std::string& resultOp,
+												const vector<deInt32>& output,
+												CaseFlags flags = FLAG_NONE)
+							: caseName				(name)
+							, scDefinition0			(definition0)
+							, scDefinition1			(definition1)
+							, scResultType			(resultType)
+							, scOperation			(operation)
+							, scActualValue0		(value0)
+							, scActualValue1		(value1)
+							, resultOperation		(resultOp)
+							, expectedOutput		(output)
+							, caseFlags				(flags)
+							{}
 };
 
 std::string getSpecConstantOpStructConstantsAndTypes ()
@@ -3528,15 +3617,15 @@ std::string getSpecConstantOpStructInstructions ()
 tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
-	vector<SpecConstantTwoIntCase>	cases;
+	vector<SpecConstantTwoValCase>	cases;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
-	const deInt32					p1AsFloat16		= 0x3c00; // +1(fp16) == 0 01111 0000000000 == 0011 1100 0000 0000
 	vector<deInt32>					inputInts		(numElements, 0);
 	vector<deInt32>					outputInts1		(numElements, 0);
 	vector<deInt32>					outputInts2		(numElements, 0);
 	vector<deInt32>					outputInts3		(numElements, 0);
 	vector<deInt32>					outputInts4		(numElements, 0);
+	vector<deInt32>					outputInts5		(numElements, 0);
 	const StringTemplate			shaderTemplate	(
 		"${CAPABILITIES:opt}"
 		+ string(getComputeAsmShaderPreamble()) +
@@ -3585,6 +3674,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		outputInts2[ndx] = inputInts[ndx];
 		outputInts3[ndx] = inputInts[ndx] - 11200;
 		outputInts4[ndx] = inputInts[ndx] + 1;
+		outputInts5[ndx] = inputInts[ndx] - 42;
 	}
 
 	const char addScToInput[]		= "OpIAdd %i32 %inval %sc_final";
@@ -3592,42 +3682,64 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_final %inval %zero";
 	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_final %zero %inval";
 
-	cases.push_back(SpecConstantTwoIntCase("iadd",					" %i32 0",		" %i32 0",		"%i32",		"IAdd                 %sc_0 %sc_1",			62,		-20,	addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("isub",					" %i32 0",		" %i32 0",		"%i32",		"ISub                 %sc_0 %sc_1",			100,	58,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("imul",					" %i32 0",		" %i32 0",		"%i32",		"IMul                 %sc_0 %sc_1",			-2,		-21,	addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("sdiv",					" %i32 0",		" %i32 0",		"%i32",		"SDiv                 %sc_0 %sc_1",			-126,	-3,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("udiv",					" %i32 0",		" %i32 0",		"%i32",		"UDiv                 %sc_0 %sc_1",			126,	3,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("srem",					" %i32 0",		" %i32 0",		"%i32",		"SRem                 %sc_0 %sc_1",			7,		3,		addScToInput,		outputInts4));
-	cases.push_back(SpecConstantTwoIntCase("smod",					" %i32 0",		" %i32 0",		"%i32",		"SMod                 %sc_0 %sc_1",			7,		3,		addScToInput,		outputInts4));
-	cases.push_back(SpecConstantTwoIntCase("umod",					" %i32 0",		" %i32 0",		"%i32",		"UMod                 %sc_0 %sc_1",			342,	50,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("bitwiseand",			" %i32 0",		" %i32 0",		"%i32",		"BitwiseAnd           %sc_0 %sc_1",			42,		63,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("bitwiseor",				" %i32 0",		" %i32 0",		"%i32",		"BitwiseOr            %sc_0 %sc_1",			34,		8,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("bitwisexor",			" %i32 0",		" %i32 0",		"%i32",		"BitwiseXor           %sc_0 %sc_1",			18,		56,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("shiftrightlogical",		" %i32 0",		" %i32 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",			168,	2,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("shiftrightarithmetic",	" %i32 0",		" %i32 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",			168,	2,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("shiftleftlogical",		" %i32 0",		" %i32 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",			21,		1,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("slessthan",				" %i32 0",		" %i32 0",		"%bool",	"SLessThan            %sc_0 %sc_1",			-20,	-10,	selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("ulessthan",				" %i32 0",		" %i32 0",		"%bool",	"ULessThan            %sc_0 %sc_1",			10,		20,		selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("sgreaterthan",			" %i32 0",		" %i32 0",		"%bool",	"SGreaterThan         %sc_0 %sc_1",			-1000,	50,		selectFalseUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("ugreaterthan",			" %i32 0",		" %i32 0",		"%bool",	"UGreaterThan         %sc_0 %sc_1",			10,		5,		selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("slessthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SLessThanEqual       %sc_0 %sc_1",			-10,	-10,	selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("ulessthanequal",		" %i32 0",		" %i32 0",		"%bool",	"ULessThanEqual       %sc_0 %sc_1",			50,		100,	selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",			-1000,	50,		selectFalseUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",			10,		10,		selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",			42,		24,		selectFalseUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("inotequal",				" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",			42,		24,		selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",			0,		1,		selectFalseUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",			1,		0,		selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",			0,		1,		selectFalseUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("logicalnotequal",		"False %bool",	"False %bool",	"%bool",	"LogicalNotEqual      %sc_0 %sc_1",			1,		0,		selectTrueUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("snegate",				" %i32 0",		" %i32 0",		"%i32",		"SNegate              %sc_0",				-42,	0,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",				-43,	0,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",				1,		0,		selectFalseUsingSc,	outputInts2));
-	cases.push_back(SpecConstantTwoIntCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %zero",	1,		42,		addScToInput,		outputInts1));
-	cases.push_back(SpecConstantTwoIntCase("sconvert",				" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",				-11200,	0,		addSc32ToInput,		outputInts3));
-	// -969998336 stored as 32-bit two's complement is the binary representation of -11200 as IEEE-754 Float
-	cases.push_back(SpecConstantTwoIntCase("fconvert",				" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",				-969998336, 0,	addSc32ToInput,		outputInts3));
-	cases.push_back(SpecConstantTwoIntCase("fconvert16",			" %f16 0",		" %f16 0",		"%f32",		"FConvert             %sc_0",				p1AsFloat16, 0,	addSc32ToInput,		outputInts4, sizeof(deFloat16)));
+	cases.push_back(SpecConstantTwoValCase("iadd",						" %i32 0",		" %i32 0",		"%i32",		"IAdd                 %sc_0 %sc_1",			62,						-20,				addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("isub",						" %i32 0",		" %i32 0",		"%i32",		"ISub                 %sc_0 %sc_1",			100,					58,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("imul",						" %i32 0",		" %i32 0",		"%i32",		"IMul                 %sc_0 %sc_1",			-2,						-21,				addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("sdiv",						" %i32 0",		" %i32 0",		"%i32",		"SDiv                 %sc_0 %sc_1",			-126,					-3,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("udiv",						" %i32 0",		" %i32 0",		"%i32",		"UDiv                 %sc_0 %sc_1",			126,					3,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("srem",						" %i32 0",		" %i32 0",		"%i32",		"SRem                 %sc_0 %sc_1",			7,						3,					addScToInput,		outputInts4));
+	cases.push_back(SpecConstantTwoValCase("smod",						" %i32 0",		" %i32 0",		"%i32",		"SMod                 %sc_0 %sc_1",			7,						3,					addScToInput,		outputInts4));
+	cases.push_back(SpecConstantTwoValCase("umod",						" %i32 0",		" %i32 0",		"%i32",		"UMod                 %sc_0 %sc_1",			342,					50,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("bitwiseand",				" %i32 0",		" %i32 0",		"%i32",		"BitwiseAnd           %sc_0 %sc_1",			42,						63,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("bitwiseor",					" %i32 0",		" %i32 0",		"%i32",		"BitwiseOr            %sc_0 %sc_1",			34,						8,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("bitwisexor",				" %i32 0",		" %i32 0",		"%i32",		"BitwiseXor           %sc_0 %sc_1",			18,						56,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical",			" %i32 0",		" %i32 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",			168,					2,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic",		" %i32 0",		" %i32 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",			-168,					2,					addScToInput,		outputInts5));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical",			" %i32 0",		" %i32 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",			21,						1,					addScToInput,		outputInts1));
+
+	// Shifts for other integer sizes.
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical_i64",		" %i64 0",		" %i64 0",		"%i64",		"ShiftRightLogical    %sc_0 %sc_1",			deInt64{168},			deInt64{2},			addSc32ToInput,		outputInts1, (FLAG_I64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic_i64",	" %i64 0",		" %i64 0",		"%i64",		"ShiftRightArithmetic %sc_0 %sc_1",			deInt64{-168},			deInt64{2},			addSc32ToInput,		outputInts5, (FLAG_I64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical_i64",		" %i64 0",		" %i64 0",		"%i64",		"ShiftLeftLogical     %sc_0 %sc_1",			deInt64{21},			deInt64{1},			addSc32ToInput,		outputInts1, (FLAG_I64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical_i16",		" %i16 0",		" %i16 0",		"%i16",		"ShiftRightLogical    %sc_0 %sc_1",			deInt16{168},			deInt16{2},			addSc32ToInput,		outputInts1, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic_i16",	" %i16 0",		" %i16 0",		"%i16",		"ShiftRightArithmetic %sc_0 %sc_1",			deInt16{-168},			deInt16{2},			addSc32ToInput,		outputInts5, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical_i16",		" %i16 0",		" %i16 0",		"%i16",		"ShiftLeftLogical     %sc_0 %sc_1",			deInt16{21},			deInt16{1},			addSc32ToInput,		outputInts1, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical_i8",		" %i8 0",		" %i8 0",		"%i8",		"ShiftRightLogical    %sc_0 %sc_1",			deInt8{84},				deInt8{1},			addSc32ToInput,		outputInts1, (FLAG_I8 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic_i8",	" %i8 0",		" %i8 0",		"%i8",		"ShiftRightArithmetic %sc_0 %sc_1",			deInt8{-84},			deInt8{1},			addSc32ToInput,		outputInts5, (FLAG_I8 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical_i8",		" %i8 0",		" %i8 0",		"%i8",		"ShiftLeftLogical     %sc_0 %sc_1",			deInt8{21},				deInt8{1},			addSc32ToInput,		outputInts1, (FLAG_I8 | FLAG_CONVERT)));
+
+	// Shifts for other integer sizes but only in the shift amount.
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical_s_i64",	" %i32 0",		" %i64 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",			168,					deInt64{2},			addScToInput,		outputInts1, (FLAG_I64)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic_s_i64"," %i32 0",		" %i64 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",			-168,					deInt64{2},			addScToInput,		outputInts5, (FLAG_I64)));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical_s_i64",	" %i32 0",		" %i64 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",			21,						deInt64{1},			addScToInput,		outputInts1, (FLAG_I64)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical_s_i16",	" %i32 0",		" %i16 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",			168,					deInt16{2},			addScToInput,		outputInts1, (FLAG_I16)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic_s_i16"," %i32 0",		" %i16 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",			-168,					deInt16{2},			addScToInput,		outputInts5, (FLAG_I16)));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical_s_i16",	" %i32 0",		" %i16 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",			21,						deInt16{1},			addScToInput,		outputInts1, (FLAG_I16)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightlogical_s_i8",	" %i32 0",		" %i8 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",			84,						deInt8{1},			addScToInput,		outputInts1, (FLAG_I8)));
+	cases.push_back(SpecConstantTwoValCase("shiftrightarithmetic_s_i8",	" %i32 0",		" %i8 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",			-84,					deInt8{1},			addScToInput,		outputInts5, (FLAG_I8)));
+	cases.push_back(SpecConstantTwoValCase("shiftleftlogical_s_i8",		" %i32 0",		" %i8 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",			21,						deInt8{1},			addScToInput,		outputInts1, (FLAG_I8)));
+
+	cases.push_back(SpecConstantTwoValCase("slessthan",					" %i32 0",		" %i32 0",		"%bool",	"SLessThan            %sc_0 %sc_1",			-20,					-10,				selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("ulessthan",					" %i32 0",		" %i32 0",		"%bool",	"ULessThan            %sc_0 %sc_1",			10,						20,					selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("sgreaterthan",				" %i32 0",		" %i32 0",		"%bool",	"SGreaterThan         %sc_0 %sc_1",			-1000,					50,					selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("ugreaterthan",				" %i32 0",		" %i32 0",		"%bool",	"UGreaterThan         %sc_0 %sc_1",			10,						5,					selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("slessthanequal",			" %i32 0",		" %i32 0",		"%bool",	"SLessThanEqual       %sc_0 %sc_1",			-10,					-10,				selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("ulessthanequal",			" %i32 0",		" %i32 0",		"%bool",	"ULessThanEqual       %sc_0 %sc_1",			50,						100,				selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("sgreaterthanequal",			" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",			-1000,					50,					selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("ugreaterthanequal",			" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",			10,						10,					selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("iequal",					" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",			42,						24,					selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("inotequal",					" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",			42,						24,					selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("logicaland",				"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",			0,						1,					selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("logicalor",					"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",			1,						0,					selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("logicalequal",				"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",			0,						1,					selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("logicalnotequal",			"False %bool",	"False %bool",	"%bool",	"LogicalNotEqual      %sc_0 %sc_1",			1,						0,					selectTrueUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("snegate",					" %i32 0",		" %i32 0",		"%i32",		"SNegate              %sc_0",				-42,					0,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("not",						" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",				-43,					0,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("logicalnot",				"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",				1,						0,					selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoValCase("select",					"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %zero",	1,						42,					addScToInput,		outputInts1));
+	cases.push_back(SpecConstantTwoValCase("sconvert",					" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",				-11200,					0,					addSc32ToInput,		outputInts3, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("fconvert",					" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",				tcu::Float32{-11200.0},	tcu::Float32{0.0},	addSc32ToInput,		outputInts3, (FLAG_F64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValCase("fconvert16",				" %f16 0",		" %f16 0",		"%f32",		"FConvert             %sc_0",				tcu::Float16{1.0},		tcu::Float16{0.0},	addSc32ToInput,		outputInts4, (FLAG_F16 | FLAG_CONVERT)));
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
@@ -3640,42 +3752,68 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		specializations["SC_OP"]			= cases[caseNdx].scOperation;
 		specializations["GEN_RESULT"]		= cases[caseNdx].resultOperation;
 
-		// Special SPIR-V code for SConvert-case
-		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
+		// Special SPIR-V code when using 16-bit integers.
+		if (cases[caseNdx].caseFlags & FLAG_I16)
 		{
 			spec.requestedVulkanFeatures.coreFeatures.shaderInt16	= VK_TRUE;
-			specializations["CAPABILITIES"]							= "OpCapability Int16\n";							// Adds 16-bit integer capability
-			specializations["OPTYPE_DEFINITIONS"]					= "%i16 = OpTypeInt 16 1\n";						// Adds 16-bit integer type
-			specializations["TYPE_CONVERT"]							= "%sc_final32 = OpSConvert %i32 %sc_final\n";		// Converts 16-bit integer to 32-bit integer
+			specializations["CAPABILITIES"]							+= "OpCapability Int16\n";							// Adds 16-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]					+= "%i16 = OpTypeInt 16 1\n";						// Adds 16-bit integer type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]						+= "%sc_final32 = OpSConvert %i32 %sc_final\n";		// Converts 16-bit integer to 32-bit integer
 		}
 
-		// Special SPIR-V code for FConvert-case
-		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
+		// Special SPIR-V code when using 64-bit integers.
+		if (cases[caseNdx].caseFlags & FLAG_I64)
+		{
+			spec.requestedVulkanFeatures.coreFeatures.shaderInt64	= VK_TRUE;
+			specializations["CAPABILITIES"]							+= "OpCapability Int64\n";							// Adds 64-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]					+= "%i64 = OpTypeInt 64 1\n";						// Adds 64-bit integer type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]						+= "%sc_final32 = OpSConvert %i32 %sc_final\n";		// Converts 64-bit integer to 32-bit integer
+		}
+
+		// Special SPIR-V code when using 64-bit floats.
+		if (cases[caseNdx].caseFlags & FLAG_F64)
 		{
 			spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
-			specializations["CAPABILITIES"]							= "OpCapability Float64\n";							// Adds 64-bit float capability
-			specializations["OPTYPE_DEFINITIONS"]					= "%f64 = OpTypeFloat 64\n";						// Adds 64-bit float type
-			specializations["TYPE_CONVERT"]							= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 64-bit float to 32-bit integer
+			specializations["CAPABILITIES"]							+= "OpCapability Float64\n";						// Adds 64-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]					+= "%f64 = OpTypeFloat 64\n";						// Adds 64-bit float type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]						+= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 64-bit float to 32-bit integer
 		}
 
-		// Special SPIR-V code for FConvert-case for 16-bit floats
-		if (strcmp(cases[caseNdx].caseName, "fconvert16") == 0)
-		{
+		// Extension needed for float16 and int8.
+		if (cases[caseNdx].caseFlags & (FLAG_F16 | FLAG_I8))
 			spec.extensions.push_back("VK_KHR_shader_float16_int8");
-			spec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
-			specializations["CAPABILITIES"]			= "OpCapability Float16\n";							// Adds 16-bit float capability
-			specializations["OPTYPE_DEFINITIONS"]	= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
-			specializations["TYPE_CONVERT"]			= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 16-bit float to 32-bit integer
+
+		// Special SPIR-V code when using 16-bit floats.
+		if (cases[caseNdx].caseFlags & FLAG_F16)
+		{
+			spec.requestedVulkanFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_FLOAT16;
+			specializations["CAPABILITIES"]				+= "OpCapability Float16\n";						// Adds 16-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]		+= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]			+= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 16-bit float to 32-bit integer
+		}
+
+		// Special SPIR-V code when using 8-bit integers.
+		if (cases[caseNdx].caseFlags & FLAG_I8)
+		{
+			spec.requestedVulkanFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+			specializations["CAPABILITIES"]				+= "OpCapability Int8\n";						// Adds 8-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]		+= "%i8 = OpTypeInt 8 1\n";						// Adds 8-bit integer type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]			+= "%sc_final32 = OpSConvert %i32 %sc_final\n";	// Converts 8-bit integer to 32-bit integer
 		}
 
 		spec.assembly = shaderTemplate.specialize(specializations);
 		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
 		spec.outputs.push_back(BufferSp(new Int32Buffer(cases[caseNdx].expectedOutput)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.specConstants.append(&cases[caseNdx].scActualValue0, cases[caseNdx].scActualValueLength);
-		spec.specConstants.append(&cases[caseNdx].scActualValue1, cases[caseNdx].scActualValueLength);
+		cases[caseNdx].scActualValue0.appendTo(spec.specConstants);
+		cases[caseNdx].scActualValue1.appendTo(spec.specConstants);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].caseName, cases[caseNdx].caseName, spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].caseName.c_str(), cases[caseNdx].caseName.c_str(), spec));
 	}
 
 	ComputeShaderSpec				spec;
@@ -7827,38 +7965,38 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 	return group.release();
 }
 
-struct SpecConstantTwoIntGraphicsCase
+struct SpecConstantTwoValGraphicsCase
 {
-	const char*		caseName;
-	const char*		scDefinition0;
-	const char*		scDefinition1;
-	const char*		scResultType;
-	const char*		scOperation;
-	deInt32			scActualValue0;
-	deInt32			scActualValue1;
-	const char*		resultOperation;
-	RGBA			expectedColors[4];
-	deInt32			scActualValueLength;
+	const std::string	caseName;
+	const std::string	scDefinition0;
+	const std::string	scDefinition1;
+	const std::string	scResultType;
+	const std::string	scOperation;
+	SpecConstantValue	scActualValue0;
+	SpecConstantValue	scActualValue1;
+	const std::string	resultOperation;
+	RGBA				expectedColors[4];
+	CaseFlags			caseFlags;
 
-					SpecConstantTwoIntGraphicsCase (const char*		name,
-													const char*		definition0,
-													const char*		definition1,
-													const char*		resultType,
-													const char*		operation,
-													const deInt32	value0,
-													const deInt32	value1,
-													const char*		resultOp,
-													const RGBA		(&output)[4],
-													const deInt32	valueLength = sizeof(deInt32))
-						: caseName				(name)
-						, scDefinition0			(definition0)
-						, scDefinition1			(definition1)
-						, scResultType			(resultType)
-						, scOperation			(operation)
-						, scActualValue0		(value0)
-						, scActualValue1		(value1)
-						, resultOperation		(resultOp)
-						, scActualValueLength	(valueLength)
+						SpecConstantTwoValGraphicsCase (const std::string&			name,
+														const std::string&			definition0,
+														const std::string&			definition1,
+														const std::string&			resultType,
+														const std::string&			operation,
+														const SpecConstantValue&	value0,
+														const SpecConstantValue&	value1,
+														const std::string&			resultOp,
+														const RGBA					(&output)[4],
+														CaseFlags					flags = FLAG_NONE)
+							: caseName				(name)
+							, scDefinition0			(definition0)
+							, scDefinition1			(definition1)
+							, scResultType			(resultType)
+							, scOperation			(operation)
+							, scActualValue0		(value0)
+							, scActualValue1		(value1)
+							, resultOperation		(resultOp)
+							, caseFlags				(flags)
 	{
 		expectedColors[0] = output[0];
 		expectedColors[1] = output[1];
@@ -7869,14 +8007,12 @@ struct SpecConstantTwoIntGraphicsCase
 
 tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group				(new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
-	vector<SpecConstantTwoIntGraphicsCase>	cases;
-	RGBA							inputColors[4];
-	RGBA							outputColors0[4];
-	RGBA							outputColors1[4];
-	RGBA							outputColors2[4];
-
-	const deInt32					m1AsFloat16			= 0xbc00; // -1(fp16) == 1 01111 0000000000 == 1011 1100 0000 0000
+	de::MovePtr<tcu::TestCaseGroup>			group (new tcu::TestCaseGroup(testCtx, "opspecconstantop", "Test the OpSpecConstantOp instruction"));
+	vector<SpecConstantTwoValGraphicsCase>	cases;
+	RGBA									inputColors[4];
+	RGBA									outputColors0[4];
+	RGBA									outputColors1[4];
+	RGBA									outputColors2[4];
 
 	const char	decorations1[]			=
 		"OpDecorate %sc_0  SpecId 0\n"
@@ -7933,42 +8069,64 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_1 %c_i32_0";
 	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_0 %c_i32_1";
 
-	cases.push_back(SpecConstantTwoIntGraphicsCase("iadd",					" %i32 0",		" %i32 0",		"%i32",		"IAdd                 %sc_0 %sc_1",				19,		-20,	addZeroToSc,		outputColors0));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("isub",					" %i32 0",		" %i32 0",		"%i32",		"ISub                 %sc_0 %sc_1",				19,		20,		addZeroToSc,		outputColors0));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("imul",					" %i32 0",		" %i32 0",		"%i32",		"IMul                 %sc_0 %sc_1",				-1,		-1,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("sdiv",					" %i32 0",		" %i32 0",		"%i32",		"SDiv                 %sc_0 %sc_1",				-126,	126,	addZeroToSc,		outputColors0));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("udiv",					" %i32 0",		" %i32 0",		"%i32",		"UDiv                 %sc_0 %sc_1",				126,	126,	addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("srem",					" %i32 0",		" %i32 0",		"%i32",		"SRem                 %sc_0 %sc_1",				3,		2,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("smod",					" %i32 0",		" %i32 0",		"%i32",		"SMod                 %sc_0 %sc_1",				3,		2,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("umod",					" %i32 0",		" %i32 0",		"%i32",		"UMod                 %sc_0 %sc_1",				1001,	500,	addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("bitwiseand",			" %i32 0",		" %i32 0",		"%i32",		"BitwiseAnd           %sc_0 %sc_1",				0x33,	0x0d,	addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("bitwiseor",				" %i32 0",		" %i32 0",		"%i32",		"BitwiseOr            %sc_0 %sc_1",				0,		1,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("bitwisexor",			" %i32 0",		" %i32 0",		"%i32",		"BitwiseXor           %sc_0 %sc_1",				0x2e,	0x2f,	addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("shiftrightlogical",		" %i32 0",		" %i32 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",				2,		1,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("shiftrightarithmetic",	" %i32 0",		" %i32 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",				-4,		2,		addZeroToSc,		outputColors0));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("shiftleftlogical",		" %i32 0",		" %i32 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",				1,		0,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("slessthan",				" %i32 0",		" %i32 0",		"%bool",	"SLessThan            %sc_0 %sc_1",				-20,	-10,	selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("ulessthan",				" %i32 0",		" %i32 0",		"%bool",	"ULessThan            %sc_0 %sc_1",				10,		20,		selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("sgreaterthan",			" %i32 0",		" %i32 0",		"%bool",	"SGreaterThan         %sc_0 %sc_1",				-1000,	50,		selectFalseUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("ugreaterthan",			" %i32 0",		" %i32 0",		"%bool",	"UGreaterThan         %sc_0 %sc_1",				10,		5,		selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("slessthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SLessThanEqual       %sc_0 %sc_1",				-10,	-10,	selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("ulessthanequal",		" %i32 0",		" %i32 0",		"%bool",	"ULessThanEqual       %sc_0 %sc_1",				50,		100,	selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",				-1000,	50,		selectFalseUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",				10,		10,		selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",				42,		24,		selectFalseUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("inotequal",				" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",				42,		24,		selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",				1,		0,		selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalnotequal",		"False %bool",	"False %bool",	"%bool",	"LogicalNotEqual      %sc_0 %sc_1",				1,		0,		selectTrueUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("snegate",				" %i32 0",		" %i32 0",		"%i32",		"SNegate              %sc_0",					-1,		0,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",					-2,		0,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",					1,		0,		selectFalseUsingSc,	outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %c_i32_0",	1,		1,		addZeroToSc,		outputColors2));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("sconvert",				" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",					-1,		0,		addZeroToSc32,		outputColors0));
-	// -1082130432 stored as 32-bit two's complement is the binary representation of -1 as IEEE-754 Float
-	cases.push_back(SpecConstantTwoIntGraphicsCase("fconvert",				" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",					-1082130432, 0,	addZeroToSc32,		outputColors0));
-	cases.push_back(SpecConstantTwoIntGraphicsCase("fconvert16",			" %f16 0",		" %f16 0",		"%f32",		"FConvert             %sc_0",					m1AsFloat16, 0,	addZeroToSc32,		outputColors0, sizeof(deFloat16)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("iadd",							" %i32 0",		" %i32 0",		"%i32",		"IAdd                 %sc_0 %sc_1",				19,					-20,				addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoValGraphicsCase("isub",							" %i32 0",		" %i32 0",		"%i32",		"ISub                 %sc_0 %sc_1",				19,					20,					addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoValGraphicsCase("imul",							" %i32 0",		" %i32 0",		"%i32",		"IMul                 %sc_0 %sc_1",				-1,					-1,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("sdiv",							" %i32 0",		" %i32 0",		"%i32",		"SDiv                 %sc_0 %sc_1",				-126,				126,				addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoValGraphicsCase("udiv",							" %i32 0",		" %i32 0",		"%i32",		"UDiv                 %sc_0 %sc_1",				126,				126,				addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("srem",							" %i32 0",		" %i32 0",		"%i32",		"SRem                 %sc_0 %sc_1",				3,					2,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("smod",							" %i32 0",		" %i32 0",		"%i32",		"SMod                 %sc_0 %sc_1",				3,					2,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("umod",							" %i32 0",		" %i32 0",		"%i32",		"UMod                 %sc_0 %sc_1",				1001,				500,				addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("bitwiseand",					" %i32 0",		" %i32 0",		"%i32",		"BitwiseAnd           %sc_0 %sc_1",				0x33,				0x0d,				addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("bitwiseor",						" %i32 0",		" %i32 0",		"%i32",		"BitwiseOr            %sc_0 %sc_1",				0,					1,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("bitwisexor",					" %i32 0",		" %i32 0",		"%i32",		"BitwiseXor           %sc_0 %sc_1",				0x2e,				0x2f,				addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical",				" %i32 0",		" %i32 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",				2,					1,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic",			" %i32 0",		" %i32 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",				-4,					2,					addZeroToSc,		outputColors0));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical",				" %i32 0",		" %i32 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",				1,					0,					addZeroToSc,		outputColors2));
+
+	// Shifts for other integer sizes.
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical_i64",			" %i64 0",		" %i64 0",		"%i64",		"ShiftRightLogical    %sc_0 %sc_1",				deInt64{2},			deInt64{1},			addZeroToSc32,		outputColors2, (FLAG_I64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic_i64",		" %i64 0",		" %i64 0",		"%i64",		"ShiftRightArithmetic %sc_0 %sc_1",				deInt64{-4},		deInt64{2},			addZeroToSc32,		outputColors0, (FLAG_I64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical_i64",			" %i64 0",		" %i64 0",		"%i64",		"ShiftLeftLogical     %sc_0 %sc_1",				deInt64{1},			deInt64{0},			addZeroToSc32,		outputColors2, (FLAG_I64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical_i16",			" %i16 0",		" %i16 0",		"%i16",		"ShiftRightLogical    %sc_0 %sc_1",				deInt16{2},			deInt16{1},			addZeroToSc32,		outputColors2, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic_i16",		" %i16 0",		" %i16 0",		"%i16",		"ShiftRightArithmetic %sc_0 %sc_1",				deInt16{-4},		deInt16{2},			addZeroToSc32,		outputColors0, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical_i16",			" %i16 0",		" %i16 0",		"%i16",		"ShiftLeftLogical     %sc_0 %sc_1",				deInt16{1},			deInt16{0},			addZeroToSc32,		outputColors2, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical_i8",			" %i8 0",		" %i8 0",		"%i8",		"ShiftRightLogical    %sc_0 %sc_1",				deInt8{2},			deInt8{1},			addZeroToSc32,		outputColors2, (FLAG_I8 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic_i8",		" %i8 0",		" %i8 0",		"%i8",		"ShiftRightArithmetic %sc_0 %sc_1",				deInt8{-4},			deInt8{2},			addZeroToSc32,		outputColors0, (FLAG_I8 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical_i8",			" %i8 0",		" %i8 0",		"%i8",		"ShiftLeftLogical     %sc_0 %sc_1",				deInt8{1},			deInt8{0},			addZeroToSc32,		outputColors2, (FLAG_I8 | FLAG_CONVERT)));
+
+	// Shifts for other integer sizes but only in the shift amount.
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical_s_i64",		" %i32 0",		" %i64 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",				2,					deInt64{1},			addZeroToSc,		outputColors2, (FLAG_I64)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic_s_i64",	" %i32 0",		" %i64 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",				-4,					deInt64{2},			addZeroToSc,		outputColors0, (FLAG_I64)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical_s_i64",		" %i32 0",		" %i64 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",				1,					deInt64{0},			addZeroToSc,		outputColors2, (FLAG_I64)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical_s_i16",		" %i32 0",		" %i16 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",				2,					deInt16{1},			addZeroToSc,		outputColors2, (FLAG_I16)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic_s_i16",	" %i32 0",		" %i16 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",				-4,					deInt16{2},			addZeroToSc,		outputColors0, (FLAG_I16)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical_s_i16",		" %i32 0",		" %i16 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",				1,					deInt16{0},			addZeroToSc,		outputColors2, (FLAG_I16)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightlogical_s_i8",		" %i32 0",		" %i8 0",		"%i32",		"ShiftRightLogical    %sc_0 %sc_1",				2,					deInt8{1},			addZeroToSc,		outputColors2, (FLAG_I8)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftrightarithmetic_s_i8",		" %i32 0",		" %i8 0",		"%i32",		"ShiftRightArithmetic %sc_0 %sc_1",				-4,					deInt8{2},			addZeroToSc,		outputColors0, (FLAG_I8)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("shiftleftlogical_s_i8",			" %i32 0",		" %i8 0",		"%i32",		"ShiftLeftLogical     %sc_0 %sc_1",				1,					deInt8{0},			addZeroToSc,		outputColors2, (FLAG_I8)));
+
+	cases.push_back(SpecConstantTwoValGraphicsCase("slessthan",						" %i32 0",		" %i32 0",		"%bool",	"SLessThan            %sc_0 %sc_1",				-20,				-10,				selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("ulessthan",						" %i32 0",		" %i32 0",		"%bool",	"ULessThan            %sc_0 %sc_1",				10,					20,					selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("sgreaterthan",					" %i32 0",		" %i32 0",		"%bool",	"SGreaterThan         %sc_0 %sc_1",				-1000,				50,					selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("ugreaterthan",					" %i32 0",		" %i32 0",		"%bool",	"UGreaterThan         %sc_0 %sc_1",				10,					5,					selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("slessthanequal",				" %i32 0",		" %i32 0",		"%bool",	"SLessThanEqual       %sc_0 %sc_1",				-10,				-10,				selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("ulessthanequal",				" %i32 0",		" %i32 0",		"%bool",	"ULessThanEqual       %sc_0 %sc_1",				50,					100,				selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("sgreaterthanequal",				" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",				-1000,				50,					selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("ugreaterthanequal",				" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",				10,					10,					selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("iequal",						" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",				42,					24,					selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("inotequal",						" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",				42,					24,					selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("logicaland",					"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",				0,					1,					selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("logicalor",						"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",				1,					0,					selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("logicalequal",					"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",				0,					1,					selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("logicalnotequal",				"False %bool",	"False %bool",	"%bool",	"LogicalNotEqual      %sc_0 %sc_1",				1,					0,					selectTrueUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("snegate",						" %i32 0",		" %i32 0",		"%i32",		"SNegate              %sc_0",					-1,					0,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("not",							" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",					-2,					0,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("logicalnot",					"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",					1,					0,					selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("select",						"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %c_i32_0",	1,					1,					addZeroToSc,		outputColors2));
+	cases.push_back(SpecConstantTwoValGraphicsCase("sconvert",						" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",					-1,					0,					addZeroToSc32,		outputColors0, (FLAG_I16 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("fconvert",						" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",					tcu::Float32(-1.0),	tcu::Float32(0.0),	addZeroToSc32,		outputColors0, (FLAG_F64 | FLAG_CONVERT)));
+	cases.push_back(SpecConstantTwoValGraphicsCase("fconvert16",					" %f16 0",		" %f16 0",		"%f32",		"FConvert             %sc_0",					tcu::Float16(-1.0),	tcu::Float16(0.0),	addZeroToSc32,		outputColors0, (FLAG_F16 | FLAG_CONVERT)));
 	// \todo[2015-12-1 antiagainst] OpQuantizeToF16
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
@@ -7982,32 +8140,58 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		vector<string>				extensions;
 		VulkanFeatures				requiredFeatures;
 
-		// Special SPIR-V code for SConvert-case
-		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
+		// Special SPIR-V code when using 16-bit integers.
+		if (cases[caseNdx].caseFlags & FLAG_I16)
 		{
-			requiredFeatures.coreFeatures.shaderInt16 = VK_TRUE;
-			fragments["capability"]					= "OpCapability Int16\n";					// Adds 16-bit integer capability
-			specializations["OPTYPE_DEFINITIONS"]	= "%i16 = OpTypeInt 16 1\n";				// Adds 16-bit integer type
-			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpSConvert %i32 %sc_op\n";	// Converts 16-bit integer to 32-bit integer
+			requiredFeatures.coreFeatures.shaderInt16		= VK_TRUE;
+			fragments["capability"]							+= "OpCapability Int16\n";							// Adds 16-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]			+= "%i16 = OpTypeInt 16 1\n";						// Adds 16-bit integer type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]				+= "%sc_op32 = OpSConvert %i32 %sc_op\n";			// Converts 16-bit integer to 32-bit integer
 		}
 
-		// Special SPIR-V code for FConvert-case
-		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
+		// Special SPIR-V code when using 64-bit integers.
+		if (cases[caseNdx].caseFlags & FLAG_I64)
 		{
-			requiredFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
-			fragments["capability"]					= "OpCapability Float64\n";					// Adds 64-bit float capability
-			specializations["OPTYPE_DEFINITIONS"]	= "%f64 = OpTypeFloat 64\n";				// Adds 64-bit float type
-			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";	// Converts 64-bit float to 32-bit integer
+			requiredFeatures.coreFeatures.shaderInt64		= VK_TRUE;
+			fragments["capability"]							+= "OpCapability Int64\n";							// Adds 64-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]			+= "%i64 = OpTypeInt 64 1\n";						// Adds 64-bit integer type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]				+= "%sc_op32 = OpSConvert %i32 %sc_op\n";			// Converts 64-bit integer to 32-bit integer
 		}
 
-		// Special SPIR-V code for FConvert-case for 16-bit floats
-		if (strcmp(cases[caseNdx].caseName, "fconvert16") == 0)
+		// Special SPIR-V code when using 64-bit floats.
+		if (cases[caseNdx].caseFlags & FLAG_F64)
 		{
+			requiredFeatures.coreFeatures.shaderFloat64		= VK_TRUE;
+			fragments["capability"]							+= "OpCapability Float64\n";						// Adds 64-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]			+= "%f64 = OpTypeFloat 64\n";						// Adds 64-bit float type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]				+= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";		// Converts 64-bit float to 32-bit integer
+		}
+
+		// Extension needed for float16 and int8.
+		if (cases[caseNdx].caseFlags & (FLAG_F16 | FLAG_I8))
 			extensions.push_back("VK_KHR_shader_float16_int8");
-			requiredFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
-			fragments["capability"]					= "OpCapability Float16\n";					// Adds 16-bit float capability
-			specializations["OPTYPE_DEFINITIONS"]	= "%f16 = OpTypeFloat 16\n";				// Adds 16-bit float type
-			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";	// Converts 16-bit float to 32-bit integer
+
+		// Special SPIR-V code when using 16-bit floats.
+		if (cases[caseNdx].caseFlags & FLAG_F16)
+		{
+			requiredFeatures.extFloat16Int8				|= EXTFLOAT16INT8FEATURES_FLOAT16;
+			fragments["capability"]						+= "OpCapability Float16\n";						// Adds 16-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]		+= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]			+= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";		// Converts 16-bit float to 32-bit integer
+		}
+
+		// Special SPIR-V code when using 8-bit integers.
+		if (cases[caseNdx].caseFlags & FLAG_I8)
+		{
+			requiredFeatures.extFloat16Int8				|= EXTFLOAT16INT8FEATURES_INT8;
+			fragments["capability"]						+= "OpCapability Int8\n";						// Adds 8-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]		+= "%i8 = OpTypeInt 8 1\n";						// Adds 8-bit integer type
+			if (cases[caseNdx].caseFlags & FLAG_CONVERT)
+				specializations["TYPE_CONVERT"]			+= "%sc_op32 = OpSConvert %i32 %sc_op\n";		// Converts 8-bit integer to 32-bit integer
 		}
 
 		specializations["SC_DEF0"]			= cases[caseNdx].scDefinition0;
@@ -8020,8 +8204,8 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		fragments["pre_main"]				= tcu::StringTemplate(typesAndConstants1).specialize(specializations);
 		fragments["testfun"]				= tcu::StringTemplate(function1).specialize(specializations);
 
-		specConstants.append(&cases[caseNdx].scActualValue0, cases[caseNdx].scActualValueLength);
-		specConstants.append(&cases[caseNdx].scActualValue1, cases[caseNdx].scActualValueLength);
+		cases[caseNdx].scActualValue0.appendTo(specConstants);
+		cases[caseNdx].scActualValue1.appendTo(specConstants);
 
 		createTestsForAllStages(
 			cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants,
