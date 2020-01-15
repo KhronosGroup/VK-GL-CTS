@@ -2333,7 +2333,7 @@ protected:
 									 TCU_SET_INTERVAL(ret, point,
 													  point = this->applyPoint(ctx, x, y)));
 		reti |= innerExtrema(ctx, xi, yi);
-		reti &= (this->getCodomain() | TCU_NAN);
+		reti &= (this->getCodomain(ctx) | TCU_NAN);
 
 		return ctx.format.convert(reti);
 	}
@@ -2360,7 +2360,7 @@ protected:
 		TCU_THROW(InternalError, "Cannot apply");
 	}
 
-	virtual Interval	getCodomain		(void) const
+	virtual Interval	getCodomain		(const EvalContext&) const
 	{
 		return Interval::unbounded(true);
 	}
@@ -3266,7 +3266,10 @@ protected:
 			return ctx.format.ulp(ret, 5.0);
 	}
 
-	// Codomain could be [-pi, pi], but that would probably be too strict.
+	Interval getCodomain(const EvalContext& ctx) const
+	{
+		return ctx.format.roundOut(Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE), true);
+	}
 };
 
 ExprP<float> atan2	(const ExprP<float>& x, const ExprP<float>& y)	{ return app<ATan2<Signature<float, float, float> > >(x, y); }
