@@ -764,6 +764,11 @@ tcu::TestStatus FSITestInstance::iterate (void)
 		vk.cmdCopyBuffer(*cmdBuffer, **buffer, **copyBuffer, 1, &copyRegion);
 	}
 
+	memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	memBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
