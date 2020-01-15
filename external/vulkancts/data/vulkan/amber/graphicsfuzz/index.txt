@@ -42,6 +42,7 @@
 {	"mix-floor-add.amber",							"mix-floor-add",						"A fragment shader with mix, uintBitsToFloat, and floor"								},
 {	"modf-gl-color.amber",							"modf-gl-color",						"A fragment shader with modf of gl color"												},
 {	"modf-temp-modf-color.amber",					"modf-temp-modf-color",					"A fragment shader that calls modf twice, once with color"								},
+{	"nested-for-break-mat-color.amber",				"nested-for-break-mat-color",			"Two nested for loops modify a mat4 then writes red"									},
 {	"nested-for-loops-with-return.amber",			"nested-for-loops-with-return",			"A fragment shader with two nested for loops with return"								},
 {	"nested-ifs-and-return-in-for-loop.amber",		"nested-ifs-and-return-in-for-loop",	"A fragment shader with return in nest of ifs, inside loop"								},
 {	"nested-loops-switch.amber",					"nested-loops-switch",					"A fragment shader with nested loops and a switch"										},
