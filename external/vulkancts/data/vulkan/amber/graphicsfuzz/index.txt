@@ -26,6 +26,7 @@
 {	"for-with-ifs-and-return.amber",				"for-with-ifs-and-return",				"A fragment shader with two ifs and return/continue inside a for loop"					},
 {	"fragcoord-control-flow.amber",					"fragcoord-control-flow",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
 {	"fragcoord-control-flow-2.amber",				"fragcoord-control-flow-2",				"A fragment shader that uses FragCoord and somewhat complex control flow"				},
+{	"global-array-loops.amber",						"global-array-loops",					"A loop that writes then reads a global array"											},
 {	"if-and-switch.amber",							"if-and-switch",						"A fragment shader with a switch and some data flow"									},
 {	"int-mat2-struct.amber",						"int-mat2-struct",						"Fragment shader using (int, mat2) struct"												},
 {	"loop-call-discard.amber",						"loop-call-discard",					"A fragment shader with nested loops and a function call"								},
