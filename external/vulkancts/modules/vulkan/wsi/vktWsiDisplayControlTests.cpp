@@ -543,12 +543,24 @@ Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
+VkSwapchainCounterCreateInfoEXT createSwapchainCounterConfig()
+{
+	const VkSwapchainCounterCreateInfoEXT swapchainCounterConfig =
+	{
+		VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT,
+		DE_NULL,
+		VK_SURFACE_COUNTER_VBLANK_EXT
+	};
+	return swapchainCounterConfig;
+}
+
 VkSwapchainCreateInfoKHR createSwapchainConfig (VkSurfaceKHR						surface,
 												deUint32							queueFamilyIndex,
 												const VkSurfaceCapabilities2EXT&	properties,
 												const vector<VkSurfaceFormatKHR>&	formats,
 												const vector<VkPresentModeKHR>&		presentModes,
-												VkPresentModeKHR					presentMode)
+												VkPresentModeKHR					presentMode,
+												VkSwapchainCounterCreateInfoEXT *swapchainCounterInfo)
 {
 	if ((properties.supportedSurfaceCounters & VK_SURFACE_COUNTER_VBLANK_EXT) == 0)
 		TCU_THROW(NotSupportedError, "vblank counter not supported");
@@ -584,13 +596,6 @@ VkSwapchainCreateInfoKHR createSwapchainConfig (VkSurfaceKHR						surface,
 	}
 
 	{
-		VkSwapchainCounterCreateInfoEXT swapchainCounterInfo =
-		{
-			VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT,
-			DE_NULL,
-			VK_SURFACE_COUNTER_VBLANK_EXT
-		};
-
 		const VkSurfaceTransformFlagBitsKHR	preTransform	= (VkSurfaceTransformFlagBitsKHR)transform;
 		const VkCompositeAlphaFlagBitsKHR	compositeAlpha	= (VkCompositeAlphaFlagBitsKHR)alpha;
 		const VkFormat						imageFormat		= formats[0].format;
@@ -598,7 +603,7 @@ VkSwapchainCreateInfoKHR createSwapchainConfig (VkSurfaceKHR						surface,
 		const VkSwapchainCreateInfoKHR		createInfo		=
 		{
 			VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-			&swapchainCounterInfo,
+			swapchainCounterInfo,
 			0u,
 			surface,
 			properties.minImageCount,
@@ -673,6 +678,7 @@ private:
 	std::vector<VkSemaphore>			m_renderSemaphores;
 	std::vector<VkFence>				m_fences;
 
+	VkSwapchainCounterCreateInfoEXT		m_swapchainCounterConfig;
 	VkSwapchainCreateInfoKHR			m_swapchainConfig;
 
 	const size_t						m_frameCount;
@@ -707,7 +713,8 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance (Context& context)
 	, m_surfaceFormats			(wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, m_surface))
 	, m_presentModes			(wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, m_surface))
 
-	, m_swapchainConfig			(createSwapchainConfig(m_surface, m_queueFamilyIndex, m_surfaceProperties, m_surfaceFormats, m_presentModes, VK_PRESENT_MODE_FIFO_KHR))
+	, m_swapchainCounterConfig	(createSwapchainCounterConfig())
+	, m_swapchainConfig			(createSwapchainConfig(m_surface, m_queueFamilyIndex, m_surfaceProperties, m_surfaceFormats, m_presentModes, VK_PRESENT_MODE_FIFO_KHR, &m_swapchainCounterConfig))
 
 	, m_frameCount				(20u)
 	, m_frameNdx				(0u)
