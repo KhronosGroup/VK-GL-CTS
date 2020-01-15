@@ -10,6 +10,7 @@
 {	"continue-and-merge.amber",						"continue-and-merge",					"A fragment shader with two nested loops"												},
 {	"control-flow-in-function.amber",				"control-flow-in-function",				"A fragment shader with a lot of control flow"											},
 {	"control-flow-switch.amber",					"control-flow-switch",					"A fragment shader with somewhat complex control flow and a switch"						},
+{	"cov-fold-bitwise-and-zero.amber",				"cov-fold-bitwise-and-zero",			"A fragment shader that covers a specific instruction folding path."					},
 {	"dead-barriers-in-loops.amber",					"dead-barriers-in-loops",				"A compute shader with dead barriers"													},
 {	"dead-struct-init.amber",						"dead-struct-init",						"A fragment shader that uses struct initializers"										},
 {	"disc-and-add-in-func-in-loop.amber",			"disc-and-add-in-func-in-loop",			"A fragment shader with discard and add in function in loop"							},
