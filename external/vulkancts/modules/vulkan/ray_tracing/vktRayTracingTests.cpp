@@ -23,6 +23,7 @@
 
 #include "vktRayTracingTests.hpp"
 #include "vktRayTracingBuiltinTests.hpp"
+#include "vktRayTracingBuildLargeTests.hpp"
 #include "vktRayTracingCallableShadersTests.hpp"
 #include "vktRayTracingTraceRaysIndirectTests.hpp"
 #include "vktRayTracingShaderBindingTableTests.hpp"
@@ -44,6 +45,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing", "Ray tracing tests"));
 
 	group->addChild(createBuiltinTests(testCtx));
+	group->addChild(createBuildLargeShaderSetTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysIndirectTests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
