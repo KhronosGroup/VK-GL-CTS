@@ -156,6 +156,7 @@
 {	"switch-case-with-undefined-expression.amber",	"switch-case-with-undefined-expression","A fragment shader with undefined expression"											},
 {	"switch-if-discard.amber",						"switch-if-discard",					"A fragment shader with a switch, if, and discard"										},
 {	"switch-inside-while-always-return.amber",		"switch-inside-while-always-return",	"A fragment shader with a switch inside while always return"							},
+{	"switch-loop-switch-if.amber",					"switch-loop-switch-if",				"A nested switch-loop-switch"															},
 {	"switch-with-empty-if-false.amber",				"switch-with-empty-if-false",			"A fragment shader with always false if in switch statement"							},
 {	"swizzle-struct-init-min.amber",				"swizzle-struct-init-min",				"A fragment shader that uses vector swizzles, struct initializers, and min"				},
 {	"transpose-rectangular-matrix.amber",			"transpose-rectangular-matrix",			"Fragment shader that uses 'transpose'"													},
