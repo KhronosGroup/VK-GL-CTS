@@ -2868,58 +2868,59 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 		CABL = VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT,
 		STIM = VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
 		STIA = VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT,
-		DSAT = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+		DSAT = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		TRSR = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT,
+		TRDS = VK_FORMAT_FEATURE_TRANSFER_DST_BIT
 	};
 
 	static const Formatpair formatflags[] =
 	{
-		{ VK_FORMAT_B4G4R4A4_UNORM_PACK16,		SAIM | BLSR |               SIFL },
-		{ VK_FORMAT_R5G6B5_UNORM_PACK16,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_A1R5G5B5_UNORM_PACK16,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_R8_UNORM,					SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_R8_SNORM,					SAIM | BLSR |               SIFL },
-		{ VK_FORMAT_R8_UINT,					SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R8_SINT,					SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R8G8_UNORM,					SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_R8G8_SNORM,					SAIM | BLSR |               SIFL },
-		{ VK_FORMAT_R8G8_UINT,					SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R8G8_SINT,					SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R8G8B8A8_UNORM,				SAIM | BLSR | COAT | BLDS | SIFL | STIM | CABL },
-		{ VK_FORMAT_R8G8B8A8_SNORM,				SAIM | BLSR |               SIFL | STIM },
-		{ VK_FORMAT_R8G8B8A8_UINT,				SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R8G8B8A8_SINT,				SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R8G8B8A8_SRGB,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_B8G8R8A8_UNORM,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_B8G8R8A8_SRGB,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_A8B8G8R8_UNORM_PACK32,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_A8B8G8R8_SNORM_PACK32,		SAIM | BLSR |               SIFL },
-		{ VK_FORMAT_A8B8G8R8_UINT_PACK32,		SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_A8B8G8R8_SINT_PACK32,		SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_A8B8G8R8_SRGB_PACK32,		SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R16_UINT,					SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R16_SINT,					SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R16_SFLOAT,					SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_R16G16_UINT,				SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R16G16_SINT,				SAIM | BLSR | COAT | BLDS },
-		{ VK_FORMAT_R16G16_SFLOAT,				SAIM | BLSR | COAT | BLDS | SIFL |        CABL },
-		{ VK_FORMAT_R16G16B16A16_UINT,			SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R16G16B16A16_SINT,			SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R16G16B16A16_SFLOAT,		SAIM | BLSR | COAT | BLDS | SIFL | STIM | CABL },
-		{ VK_FORMAT_R32_UINT,					SAIM | BLSR | COAT | BLDS |        STIM |        STIA },
-		{ VK_FORMAT_R32_SINT,					SAIM | BLSR | COAT | BLDS |        STIM |        STIA },
-		{ VK_FORMAT_R32_SFLOAT,					SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R32G32_UINT,				SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R32G32_SINT,				SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R32G32_SFLOAT,				SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R32G32B32A32_UINT,			SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R32G32B32A32_SINT,			SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_R32G32B32A32_SFLOAT,		SAIM | BLSR | COAT | BLDS |        STIM },
-		{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	SAIM | BLSR |               SIFL },
-		{ VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,		SAIM | BLSR |               SIFL },
-		{ VK_FORMAT_D16_UNORM,					SAIM | BLSR |                                           DSAT },
-		{ VK_FORMAT_D32_SFLOAT,					SAIM | BLSR }
+		{ VK_FORMAT_B4G4R4A4_UNORM_PACK16,		SAIM | BLSR | TRSR | TRDS |               SIFL },
+		{ VK_FORMAT_R5G6B5_UNORM_PACK16,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A1R5G5B5_UNORM_PACK16,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R8_UNORM,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R8_SNORM,					SAIM | BLSR | TRSR | TRDS |               SIFL },
+		{ VK_FORMAT_R8_UINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R8_SINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R8G8_UNORM,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R8G8_SNORM,					SAIM | BLSR | TRSR | TRDS |               SIFL },
+		{ VK_FORMAT_R8G8_UINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R8G8_SINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R8G8B8A8_UNORM,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL | STIM | CABL },
+		{ VK_FORMAT_R8G8B8A8_SNORM,				SAIM | BLSR | TRSR | TRDS |               SIFL | STIM },
+		{ VK_FORMAT_R8G8B8A8_UINT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R8G8B8A8_SINT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R8G8B8A8_SRGB,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_B8G8R8A8_UNORM,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_B8G8R8A8_SRGB,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A8B8G8R8_UNORM_PACK32,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A8B8G8R8_SNORM_PACK32,		SAIM | BLSR | TRSR | TRDS |               SIFL },
+		{ VK_FORMAT_A8B8G8R8_UINT_PACK32,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_A8B8G8R8_SINT_PACK32,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_A8B8G8R8_SRGB_PACK32,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A2B10G10R10_UNORM_PACK32,	SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_A2B10G10R10_UINT_PACK32,	SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R16_UINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R16_SINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R16_SFLOAT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R16G16_UINT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R16G16_SINT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS },
+		{ VK_FORMAT_R16G16_SFLOAT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL |        CABL },
+		{ VK_FORMAT_R16G16B16A16_UINT,			SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R16G16B16A16_SINT,			SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R16G16B16A16_SFLOAT,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS | SIFL | STIM | CABL },
+		{ VK_FORMAT_R32_UINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM |        STIA },
+		{ VK_FORMAT_R32_SINT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM |        STIA },
+		{ VK_FORMAT_R32_SFLOAT,					SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32_UINT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32_SINT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32_SFLOAT,				SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32B32A32_UINT,			SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32B32A32_SINT,			SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_R32G32B32A32_SFLOAT,		SAIM | BLSR | TRSR | TRDS | COAT | BLDS |        STIM },
+		{ VK_FORMAT_B10G11R11_UFLOAT_PACK32,	SAIM | BLSR | TRSR | TRDS |               SIFL },
+		{ VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,		SAIM | BLSR | TRSR | TRDS |               SIFL },
+		{ VK_FORMAT_D16_UNORM,					SAIM | BLSR | TRSR | TRDS |                                           DSAT },
 	};
 
 	size_t formatpairs = sizeof(formatflags) / sizeof(Formatpair);
@@ -3164,6 +3165,20 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
 				<< TestLog::EndMessage;
 			allOk = false;
+		}
+
+		// Compressed formats have optional support for some features
+		if (isCompressedFormat(format) && supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
+		{
+			const VkFormatFeatureFlags		required2	= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |  VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+			if ((supported & required2) != required2)
+			{
+				log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+					<< "  required: " << getFormatFeatureFlagsStr(required2) << "\n  "
+					<< "  missing: " << getFormatFeatureFlagsStr(~supported & required2)
+					<< TestLog::EndMessage;
+				allOk = false;
+			}
 		}
 
 		if ((supported & notAllowedFeatures) != 0)
@@ -3450,13 +3465,16 @@ tcu::TestStatus testCompressedFormatsSupported (Context& context)
 
 	for (int setNdx = 0; setNdx < DE_LENGTH_OF_ARRAY(s_compressedFormatSets); ++setNdx)
 	{
-		const char* const	setName			= s_compressedFormatSets[setNdx].setName;
-		const char* const	featureName		= s_compressedFormatSets[setNdx].featureName;
-		const bool			featureBitSet	= features.*s_compressedFormatSets[setNdx].feature == VK_TRUE;
+		const char* const			setName				= s_compressedFormatSets[setNdx].setName;
+		const char* const			featureName			= s_compressedFormatSets[setNdx].featureName;
+		const bool					featureBitSet		= features.*s_compressedFormatSets[setNdx].feature == VK_TRUE;
+		const VkFormatFeatureFlags	requiredFeatures	=
+			VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
+			VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 		const bool			allSupported	= optimalTilingFeaturesSupportedForAll(context,
 																				   s_compressedFormatSets[setNdx].formatsBegin,
 																				   s_compressedFormatSets[setNdx].formatsEnd,
-																				   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+																				   requiredFeatures);
 
 		if (featureBitSet && !allSupported)
 		{
