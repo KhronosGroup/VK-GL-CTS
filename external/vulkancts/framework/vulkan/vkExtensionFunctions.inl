@@ -105,6 +105,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		functions.push_back("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
 	}
+	else if (extName == "VK_EXT_tooling_info")
+	{
+		functions.push_back("vkGetPhysicalDeviceToolPropertiesEXT");
+	}
 	else if (extName == "VK_NV_cooperative_matrix")
 	{
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
@@ -516,6 +520,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_direct_mode_display",
 	"VK_EXT_display_surface_counter",
 	"VK_EXT_calibrated_timestamps",
+	"VK_EXT_tooling_info",
 	"VK_NV_cooperative_matrix",
 	"VK_NV_coverage_reduction_mode",
 	"VK_EXT_headless_surface",

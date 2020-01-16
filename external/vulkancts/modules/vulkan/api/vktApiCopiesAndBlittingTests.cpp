@@ -5359,6 +5359,9 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
+		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
+
 		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
 		const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
 
@@ -5369,7 +5372,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 			const VkOffset3D	dstOffset	= {i, 0, 0};
 			const VkExtent3D	extent		= {defaultFourthSize, 1, 1};
 
-			if (tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order))
+			if (hasDepth)
 			{
 				const VkImageCopy				testCopy	=
 				{
@@ -5383,7 +5386,7 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 				copyRegion.imageCopy	= testCopy;
 				params.regions.push_back(copyRegion);
 			}
-			if (tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order))
+			if (hasStencil)
 			{
 				const VkImageCopy				testCopy	=
 				{
@@ -5418,11 +5421,11 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
-		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
-		const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
-
 		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
 		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
+
+		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
+		const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
 
 		for (deInt32 i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
 		{

@@ -57,6 +57,7 @@ virtual void		destroyDebugUtilsMessengerEXT									(VkInstance instance, VkDebu
 virtual void		submitDebugUtilsMessageEXT										(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData) const = 0;
 virtual void		getPhysicalDeviceMultisamplePropertiesEXT						(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const = 0;
 virtual VkResult	getPhysicalDeviceCalibrateableTimeDomainsEXT					(VkPhysicalDevice physicalDevice, deUint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains) const = 0;
+virtual VkResult	getPhysicalDeviceToolPropertiesEXT								(VkPhysicalDevice physicalDevice, deUint32* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties) const = 0;
 virtual VkResult	getPhysicalDeviceCooperativeMatrixPropertiesNV					(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties) const = 0;
 virtual VkResult	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV	(VkPhysicalDevice physicalDevice, deUint32* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations) const = 0;
 virtual VkResult	createHeadlessSurfaceEXT										(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;

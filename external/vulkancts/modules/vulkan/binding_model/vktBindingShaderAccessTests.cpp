@@ -7634,7 +7634,7 @@ deUint32 TexelBufferInstanceBuffers::getViewOffset(vkt::Context&		context,
 	if (!hasViewOffset)
 		return 0u;
 
-	if (!context.getTexelBufferAlignmentFeatures().texelBufferAlignment)
+	if (!context.getTexelBufferAlignmentFeaturesEXT().texelBufferAlignment)
 		return (deUint32)context.getDeviceProperties().limits.minTexelBufferOffsetAlignment;
 
 	vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT alignmentProperties;

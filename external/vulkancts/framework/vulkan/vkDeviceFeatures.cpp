@@ -32,33 +32,71 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 								 const std::vector<std::string>&	instanceExtensions,
 								 const std::vector<std::string>&	deviceExtensions)
 {
-	deMemset(&m_coreFeatures2, 0, sizeof(m_coreFeatures2));
-	m_coreFeatures2.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	m_coreFeatures2		= initVulkanStructure();
+	m_vulkan11Features	= initVulkanStructure();
+	m_vulkan12Features	= initVulkanStructure();
 
 	if (isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
 	{
 		const std::vector<VkExtensionProperties>	deviceExtensionProperties	= enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		void**										nextPtr						= &m_coreFeatures2.pNext;
+		std::vector<FeatureStructWrapperBase*>		featuresToFillFromBlob;
+		bool										vk12Supported				= (apiVersion >= VK_MAKE_VERSION(1, 2, 0));
 
-		for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(featureStructCreatorMap); ++i)
+		// in vk12 we have blob structures combining features of couple previously
+		// available feature structures, that now in vk12 must be removed from chain
+		if (vk12Supported)
 		{
-			const char* featureName = featureStructCreatorMap[i].name;
+			addToChainVulkanStructure(&nextPtr, m_vulkan11Features);
+			addToChainVulkanStructure(&nextPtr, m_vulkan12Features);
+		}
 
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), featureName)
-				&& verifyFeatureAddCriteria(featureStructCreatorMap[i], deviceExtensionProperties))
+		// iterate over data for all feature that are defined in specification
+		for (const auto& featureStructCreationData : featureStructCreationArray)
+		{
+			const char* featureName = featureStructCreationData.name;
+
+			// check if this feature is available on current device
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), featureName) &&
+				verifyFeatureAddCriteria(featureStructCreationData, deviceExtensionProperties))
 			{
-				FeatureStruct* p = createFeatureStructWrapper(featureName);
+				FeatureStructWrapperBase* p = (*featureStructCreationData.creatorFunction)();
+				if (p == DE_NULL)
+					continue;
 
-				if (p)
+				// if feature struct is part of VkPhysicalDeviceVulkan1{1,2}Features
+				// we dont add it to the chain but store and fill later from blob data
+				bool featureFilledFromBlob = false;
+				if (vk12Supported)
+					featureFilledFromBlob = isPartOfBlobFeatures(p->getFeatureDesc().sType);
+
+				if (featureFilledFromBlob)
+					featuresToFillFromBlob.push_back(p);
+				else
 				{
+					// add to chain
 					*nextPtr = p->getFeatureTypeRaw();
 					nextPtr = p->getFeatureTypeNext();
-					m_features.push_back(p);
 				}
+				m_features.push_back(p);
 			}
 		}
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &m_coreFeatures2);
+
+		// fill data from VkPhysicalDeviceVulkan1{1,2}Features
+		if (vk12Supported)
+		{
+			AllBlobs allBlobs =
+			{
+				m_vulkan11Features,
+				m_vulkan12Features,
+				// add blobs from future vulkan versions here
+			};
+
+			for (auto feature : featuresToFillFromBlob)
+				feature->initializeFromBlob(allBlobs);
+		}
 	}
 	else
 		m_coreFeatures2.features = getPhysicalDeviceFeatures(vki, physicalDevice);
@@ -67,66 +105,50 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 	m_coreFeatures2.features.robustBufferAccess = false;
 }
 
-bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructMapItem& item, const std::vector<VkExtensionProperties>& properties)
+bool DeviceFeatures::verifyFeatureAddCriteria (const FeatureStructCreationData& item, const std::vector<VkExtensionProperties>& properties)
 {
-	bool criteriaOK = true;
-
 	if (deStringEqual(item.name, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME))
 	{
-		const size_t propSize = properties.size();
-
-		for (size_t propIdx = 0; propIdx < propSize; ++propIdx)
+		for (const auto& property : properties)
 		{
-			if (deStringEqual(properties[propIdx].extensionName, item.name))
-			{
-				criteriaOK = properties[propIdx].specVersion == item.specVersion;
-				break;
-			}
+			if (deStringEqual(property.extensionName, item.name))
+				return (property.specVersion == item.specVersion);
 		}
 	}
 
-	return criteriaOK;
+	return true;
 }
 
 bool DeviceFeatures::contains (const std::string& feature, bool throwIfNotExists) const
 {
-	const size_t typesSize	= m_features.size();
-
-	for (size_t typeIdx = 0; typeIdx < typesSize; ++typeIdx)
+	for (const auto f : m_features)
 	{
-		if (deStringEqual(m_features[typeIdx]->getFeatureDesc().name, feature.c_str()))
-		{
+		if (deStringEqual(f->getFeatureDesc().name, feature.c_str()))
 			return true;
-		}
 	}
 
 	if (throwIfNotExists)
+		TCU_THROW(NotSupportedError, "Feature " + feature + " is not supported");
+
+	return false;
+}
+
+bool DeviceFeatures::isDeviceFeatureInitialized (VkStructureType sType) const
+{
+	for (const auto f : m_features)
 	{
-		std::string msg("Feature " + feature + " is not supported");
-
-		TCU_THROW(NotSupportedError, msg);
+		if (f->getFeatureDesc().sType == sType)
+			return true;
 	}
-
 	return false;
 }
 
 DeviceFeatures::~DeviceFeatures (void)
 {
-	for (size_t i = 0; i < m_features.size(); ++i)
-		delete m_features[i];
+	for (auto p : m_features)
+		delete p;
 
 	m_features.clear();
-}
-
-FeatureStruct* DeviceFeatures::createFeatureStructWrapper (const std::string& s)
-{
-	for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(featureStructCreatorMap); ++i)
-	{
-		if (deStringEqual(featureStructCreatorMap[i].name, s.c_str()))
-			return (*featureStructCreatorMap[i].creator)();
-	}
-
-	return DE_NULL;
 }
 
 } // vk

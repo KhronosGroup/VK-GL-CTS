@@ -977,7 +977,7 @@ void IncrementalPresentTestInstance::render (void)
 			(deUint32)rects.size(),
 			rects.empty() ? DE_NULL : &rects[0]
 		};
-		const vk::VkPresentRegionsKHR	regionInfo	=
+		const vk::VkPresentRegionsKHR regionInfo =
 		{
 			vk::VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR,
 			DE_NULL,

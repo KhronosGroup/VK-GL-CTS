@@ -390,7 +390,7 @@ TransformFeedbackTestInstance::TransformFeedbackTestInstance (Context& context, 
 	, m_parameters		(parameters)
 	, m_rnd				(0)
 {
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	VkPhysicalDeviceProperties2								deviceProperties2;
 
 	if (transformFeedbackFeatures.transformFeedback == DE_FALSE)
@@ -911,7 +911,7 @@ TransformFeedbackMultistreamTestInstance::TransformFeedbackMultistreamTestInstan
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
 	const deUint32											tfBuffersSupported			= m_transformFeedbackProperties.maxTransformFeedbackBuffers;
@@ -1045,7 +1045,7 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance (Cont
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
 	const bool												geomPointSizeRequired		= m_parameters.testType == TEST_TYPE_STREAMS_POINTSIZE;
@@ -1467,7 +1467,7 @@ TransformFeedbackQueryTestInstance::TransformFeedbackQueryTestInstance (Context&
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
 	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const deUint32											streamsSupported			= m_transformFeedbackProperties.maxTransformFeedbackStreams;
 	const deUint32											streamsRequired				= m_parameters.streamId + 1;
 
@@ -1607,7 +1607,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
-		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
+		vk.resetQueryPool(device, *queryPool, queryIndex, queryCountersNumber);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	{
@@ -1666,7 +1666,7 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 			queryResults->elements32[2] = 1u;	// Availability bit
 		}
 
-		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
+		vk.resetQueryPool(device, *queryPool, queryIndex, queryCountersNumber);
 
 		vk::VkResult	res						= vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataAvailSize, queryData.data(), queryDataAvailSize, (vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | queryExtraFlags));
 		const deUint64	numPrimitivesWritten	= (m_parameters.query64bits ? queryResults->elements64[0] : queryResults->elements32[0]);

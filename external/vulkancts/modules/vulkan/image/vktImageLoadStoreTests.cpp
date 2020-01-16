@@ -652,7 +652,7 @@ deUint32 BaseTestInstance::getViewOffset(Context&			context,
 {
 	if (m_minalign)
 	{
-		if (!context.getTexelBufferAlignmentFeatures().texelBufferAlignment)
+		if (!context.getTexelBufferAlignmentFeaturesEXT().texelBufferAlignment)
 			return (deUint32)context.getDeviceProperties().limits.minTexelBufferOffsetAlignment;
 
 		VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT alignmentProperties;

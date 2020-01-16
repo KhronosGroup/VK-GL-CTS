@@ -249,7 +249,7 @@ enum ExtensionFloat16Int8FeaturesBits
 	EXTFLOAT16INT8FEATURES_INT8		= (1u << 2),
 };
 typedef deUint32 ExtensionFloat16Int8Features;
-typedef vk::VkPhysicalDeviceFloatControlsPropertiesKHR ExtensionFloatControlsFeatures;
+typedef vk::VkPhysicalDeviceFloatControlsProperties ExtensionFloatControlsFeatures;
 
 enum ExtensionVulkanMemoryModelFeaturesBits
 {
@@ -299,11 +299,6 @@ struct VariableLocation
 // Returns true if the given 8bit storage extension features in `toCheck` are all supported.
 bool is8BitStorageFeaturesSupported (const Context&						context,
 									  Extension8BitStorageFeatures		toCheck);
-
-// Returns true if the given 16bit storage extension features in `toCheck` are all supported.
-bool isCoreFeaturesSupported (const Context&						context,
-							  const vk::VkPhysicalDeviceFeatures&	toCheck,
-							  const char**							missingFeature);
 
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.
 bool isCoreFeaturesSupported (const Context&						context,

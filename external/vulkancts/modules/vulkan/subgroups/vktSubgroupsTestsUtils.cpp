@@ -1333,14 +1333,14 @@ bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& conte
 
 bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat format)
 {
-	VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR subgroupExtendedTypesFeatures;
+	VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures subgroupExtendedTypesFeatures;
 	deMemset(&subgroupExtendedTypesFeatures, 0, sizeof(subgroupExtendedTypesFeatures));
-	subgroupExtendedTypesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR;
+	subgroupExtendedTypesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES;
 	subgroupExtendedTypesFeatures.pNext = DE_NULL;
 
-	VkPhysicalDeviceShaderFloat16Int8FeaturesKHR float16Int8Features;
+	VkPhysicalDeviceShaderFloat16Int8Features float16Int8Features;
 	deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
-	float16Int8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR;
+	float16Int8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
 	float16Int8Features.pNext = DE_NULL;
 
 	VkPhysicalDeviceFeatures2 features2;
@@ -1414,6 +1414,12 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 		case VK_FORMAT_R64G64B64A64_UINT:
 			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & features2.features.shaderInt64 ? true : false;
 	}
+}
+
+bool vkt::subgroups::isSubgroupBroadcastDynamicIdSupported (Context& context)
+{
+	return context.contextSupports(vk::ApiVersion(1, 2, 0)) &&
+		vk::getPhysicalDeviceVulkan12Features(context.getInstanceInterface(), context.getPhysicalDevice()).subgroupBroadcastDynamicId;
 }
 
 std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)

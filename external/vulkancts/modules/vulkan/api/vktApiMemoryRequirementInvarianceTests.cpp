@@ -254,10 +254,8 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 	size_t									refSizes[testCycles];
 	unsigned int							order[testCycles];
 	bool									success							= true;
-	const deBool							isDedicatedAllocationSupported	=
-		m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
-	const deBool							isYcbcrSupported =
-		m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
+	const deBool							isDedicatedAllocationSupported	= m_context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation");
+	const deBool							isYcbcrSupported				= m_context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion");
 	std::vector<int>						optimalFormats;
 	std::vector<int>						linearFormats;
 	std::vector<int>						memoryTypes;

@@ -525,7 +525,7 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 		viewFormat
 	};
 
-	const VkImageFormatListCreateInfoKHR formatListInfo =
+	const VkImageFormatListCreateInfo formatListInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
@@ -1983,7 +1983,7 @@ Move<VkSwapchainKHR> makeSwapchain(const DeviceInterface&		vk,
 		viewFormat
 	};
 
-	const VkImageFormatListCreateInfoKHR formatListInfo =
+	const VkImageFormatListCreateInfo formatListInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
@@ -2064,8 +2064,8 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 	// Check support for requested formats by swapchain surface
 	const vector<VkSurfaceFormatKHR>surfaceFormats = getPhysicalDeviceSurfaceFormats(vki,
-																						 physDevice,
-																						 *surface);
+																					 physDevice,
+																					 *surface);
 
 	const VkSurfaceFormatKHR*		surfaceFormat = DE_NULL;
 	const VkFormat*					viewFormat = DE_NULL;

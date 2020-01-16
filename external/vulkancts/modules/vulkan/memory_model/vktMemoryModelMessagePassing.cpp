@@ -1006,7 +1006,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			local = m_data.payloadMemLocal;
 			if (m_data.payloadSC == SC_PHYSBUFFER)
 			{
-				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 				if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 					memoryDeviceAddress = true;
 			}
@@ -1017,7 +1017,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			local = m_data.guardMemLocal;
 			if (m_data.guardSC == SC_PHYSBUFFER)
 			{
-				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+				usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 				if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 					memoryDeviceAddress = true;
 			}
@@ -1453,9 +1453,9 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_context.getUniversalQueueFamilyIndex());
 	Move<VkCommandBuffer>			cmdBuffer				= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	VkBufferDeviceAddressInfoKHR addrInfo =
+	VkBufferDeviceAddressInfo addrInfo =
 		{
-			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,	// VkStructureType	sType;
 			DE_NULL,										// const void*		 pNext;
 			0,												// VkBuffer			buffer
 		};
@@ -1528,7 +1528,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			addrInfo.buffer = **buffers[0];
 			VkDeviceAddress addr;
 			if (useKHR)
-				addr = vk.getBufferDeviceAddressKHR(device, &addrInfo);
+				addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,
@@ -1540,7 +1540,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 			addrInfo.buffer = **buffers[1];
 			VkDeviceAddress addr;
 			if (useKHR)
-				addr = vk.getBufferDeviceAddressKHR(device, &addrInfo);
+				addr = vk.getBufferDeviceAddress(device, &addrInfo);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &addrInfo);
 			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, allShaderStages,

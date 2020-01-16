@@ -109,6 +109,8 @@ set(DEQP_VK_PIPELINE_LIBS
 	)
 
 PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
+include_directories("../../../../amber/src/include")
+include_directories("../amber")
 
 add_library(deqp-vk-pipeline STATIC ${DEQP_VK_PIPELINE_SRCS})
 target_link_libraries(deqp-vk-pipeline ${DEQP_VK_PIPELINE_LIBS})

@@ -2258,7 +2258,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	bool memoryDeviceAddress = false;
 	if (m_usePhysStorageBuffer)
 	{
-		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 		if (m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
 			memoryDeviceAddress = true;
 	}
@@ -2364,9 +2364,9 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	{
 		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-		vk::VkBufferDeviceAddressInfoKHR info =
+		vk::VkBufferDeviceAddressInfo info =
 		{
-			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	sType;
+			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
 			DE_NULL,												// const void*		pNext;
 			0,														// VkBuffer			buffer
 		};
@@ -2376,7 +2376,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			info.buffer = descriptors[i].buffer;
 			vk::VkDeviceAddress addr;
 			if (useKHR)
-				addr = vk.getBufferDeviceAddressKHR(device, &info);
+				addr = vk.getBufferDeviceAddress(device, &info);
 			else
 				addr = vk.getBufferDeviceAddressEXT(device, &info);
 			addr += descriptors[i].offset;

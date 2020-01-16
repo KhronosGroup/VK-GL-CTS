@@ -667,7 +667,7 @@ DeviceProperties::DeviceProperties (const vkt::Context& testContext)
 	const InstanceInterface& interface = testContext.getInstanceInterface();
 
 	deMemset(&m_descriptorIndexingFeatures, 0, sizeof(m_descriptorIndexingFeatures));
-	m_descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	m_descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 	m_descriptorIndexingFeatures.pNext = DE_NULL;
 
 	deMemset(&m_features2, 0, sizeof(m_features2));
@@ -677,7 +677,7 @@ DeviceProperties::DeviceProperties (const vkt::Context& testContext)
 	interface.getPhysicalDeviceFeatures2(device, &m_features2);
 
 	deMemset(&m_descriptorIndexingProperties, 0, sizeof(m_descriptorIndexingProperties));
-	m_descriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
+	m_descriptorIndexingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
 	m_descriptorIndexingProperties.pNext = DE_NULL;
 
 	deMemset(&m_properties2, 0, sizeof(m_properties2));
@@ -690,8 +690,8 @@ DeviceProperties::DeviceProperties (const vkt::Context& testContext)
 deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	descriptorType,
 																 bool				enableUpdateAfterBind) const
 {
-	const VkPhysicalDeviceDescriptorIndexingPropertiesEXT&		descriptorProps = descriptorIndexingProperties();
-	const VkPhysicalDeviceProperties&							deviceProps = physicalDeviceProperties();
+	const VkPhysicalDeviceDescriptorIndexingProperties&		descriptorProps = descriptorIndexingProperties();
+	const VkPhysicalDeviceProperties&						deviceProps = physicalDeviceProperties();
 
 	deUint32		result					= 0;
 	deUint32		samplers				= 0;

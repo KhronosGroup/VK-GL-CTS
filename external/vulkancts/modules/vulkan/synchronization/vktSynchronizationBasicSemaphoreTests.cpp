@@ -47,8 +47,8 @@ using namespace vk;
 
 struct TestConfig
 {
-	bool				useTypeCreate;
-	VkSemaphoreTypeKHR	semaphoreType;
+	bool			useTypeCreate;
+	VkSemaphoreType	semaphoreType;
 };
 
 static const int basicChainLength	= 32768;
@@ -83,18 +83,18 @@ tcu::TestStatus basicOneQueueCase (Context& context, const TestConfig config)
 																};
 	const VkPipelineStageFlags				stageBits[]			= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 	const deUint64							timelineValue		= 1u;
-	const VkTimelineSemaphoreSubmitInfoKHR	timelineWaitInfo	=
+	const VkTimelineSemaphoreSubmitInfo		timelineWaitInfo	=
 																{
-																	VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+																	VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 																	DE_NULL,												// const void*		pNext;
 																	1u,														// deUint32			waitSemaphoreValueCount
 																	&timelineValue,											// const deUint64*	pWaitSemaphoreValues
 																	0u,														// deUint32			signalSemaphoreValueCount
 																	DE_NULL,												// const deUint64*	pSignalSemaphoreValues
 																};
-	const VkTimelineSemaphoreSubmitInfoKHR	timelineSignalInfo	=
+	const VkTimelineSemaphoreSubmitInfo		timelineSignalInfo	=
 																{
-																	VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+																	VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 																	DE_NULL,												// const void*		pNext;
 																	0u,														// deUint32			waitSemaphoreValueCount
 																	DE_NULL,												// const deUint64*	pWaitSemaphoreValues
@@ -196,7 +196,7 @@ tcu::TestStatus basicChainTimelineCase (Context& context)
 	const VkDevice&					device		= context.getDevice();
 	const VkQueue					queue		= context.getUniversalQueue();
 	VkPipelineStageFlags			flags		= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-	VkSemaphoreTypeCreateInfoKHR	scti		= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0 };
+	VkSemaphoreTypeCreateInfo		scti		= { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR, DE_NULL, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0 };
 	VkSemaphoreCreateInfo			sci			= { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0 };
 	VkFenceCreateInfo				fci			= { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0 };
 	VkSemaphore						semaphore;
@@ -209,11 +209,11 @@ tcu::TestStatus basicChainTimelineCase (Context& context)
 
 	for (int i = 0; err == VK_SUCCESS && i < basicChainLength; i++)
 	{
-		deUint64							waitValue = i;
-		deUint64							signalValue = i + 1;
-		VkTimelineSemaphoreSubmitInfoKHR	tsi =
+		deUint64						waitValue = i;
+		deUint64						signalValue = i + 1;
+		VkTimelineSemaphoreSubmitInfo	tsi =
 		{
-			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 			DE_NULL,												// const void*		pNext;
 			i == 0 ? 0u : 1u,										// deUint32			waitSemaphoreValueCount
 			&waitValue,												// const deUint64*	pWaitSemaphoreValues
@@ -237,10 +237,10 @@ tcu::TestStatus basicChainTimelineCase (Context& context)
 
 	VK_CHECK(vk.createFence(device, &fci, DE_NULL, &fence));
 
-	deUint64							waitValue = basicChainLength;
-	VkTimelineSemaphoreSubmitInfoKHR	tsi =
+	deUint64						waitValue = basicChainLength;
+	VkTimelineSemaphoreSubmitInfo	tsi =
 	{
-		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 		DE_NULL,												// const void*		pNext;
 		1u,														// deUint32			waitSemaphoreValueCount
 		&waitValue,												// const deUint64*	pWaitSemaphoreValues
@@ -310,7 +310,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 	Move<VkCommandBuffer>					cmdBuffer[COUNT];
 	const VkPipelineStageFlags				stageBits[]					= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 	VkSubmitInfo							submitInfo[COUNT];
-	VkTimelineSemaphoreSubmitInfoKHR		timelineSubmitInfo[COUNT];
+	VkTimelineSemaphoreSubmitInfo			timelineSubmitInfo[COUNT];
 	deUint64								timelineValues[COUNT];
 	Move<VkFence>							fence[COUNT];
 
@@ -380,7 +380,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 
 	timelineValues[FIRST]									= 1ull;
 
-	timelineSubmitInfo[FIRST].sType							= VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+	timelineSubmitInfo[FIRST].sType							= VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 	timelineSubmitInfo[FIRST].pNext							= DE_NULL;
 	timelineSubmitInfo[FIRST].waitSemaphoreValueCount		= 0;
 	timelineSubmitInfo[FIRST].pWaitSemaphoreValues			= DE_NULL;
@@ -399,7 +399,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context, TestConfig config)
 
 	timelineValues[SECOND]									= 2ull;
 
-	timelineSubmitInfo[SECOND].sType						= VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+	timelineSubmitInfo[SECOND].sType						= VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 	timelineSubmitInfo[SECOND].pNext						= DE_NULL;
 	timelineSubmitInfo[SECOND].waitSemaphoreValueCount		= 1;
 	timelineSubmitInfo[SECOND].pWaitSemaphoreValues			= &timelineValues[FIRST];

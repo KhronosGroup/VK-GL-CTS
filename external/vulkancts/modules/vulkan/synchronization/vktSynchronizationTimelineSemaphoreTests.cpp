@@ -84,11 +84,11 @@ inline SharedPtr<T> makeSharedPtr (T* ptr)
 deUint64 getMaxTimelineSemaphoreValueDifference(const InstanceInterface& vk,
 												const VkPhysicalDevice physicalDevice)
 {
-	VkPhysicalDeviceTimelineSemaphorePropertiesKHR	timelineSemaphoreProperties;
+	VkPhysicalDeviceTimelineSemaphoreProperties		timelineSemaphoreProperties;
 	VkPhysicalDeviceProperties2						properties;
 
 	deMemset(&timelineSemaphoreProperties, 0, sizeof(timelineSemaphoreProperties));
-	timelineSemaphoreProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;
+	timelineSemaphoreProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES;
 
 	deMemset(&properties, 0, sizeof(properties));
 	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -106,9 +106,9 @@ void deviceSignal (const DeviceInterface&	vk,
 				   const VkSemaphore		semaphore,
 				   const deUint64			timelineValue)
 {
-	VkTimelineSemaphoreSubmitInfoKHR	tsi			=
+	VkTimelineSemaphoreSubmitInfo		tsi			=
 	{
-		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType				sType;
+		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType				sType;
 		DE_NULL,												// const void*					pNext;
 		0u,														// deUint32						waitSemaphoreValueCount
 		DE_NULL,												// const deUint64*				pWaitSemaphoreValues
@@ -152,13 +152,13 @@ void hostSignal (const DeviceInterface& vk, const VkDevice& device, VkSemaphore 
 {
 	VkSemaphoreSignalInfoKHR	ssi	=
 	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR,// VkStructureType				sType;
+		VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO,	// VkStructureType				sType;
 		DE_NULL,									// const void*					pNext;
 		semaphore,									// VkSemaphore					semaphore;
 		timelineValue,								// deUint64						value;
 	};
 
-	VK_CHECK(vk.signalSemaphoreKHR(device, &ssi));
+	VK_CHECK(vk.signalSemaphore(device, &ssi));
 }
 
 class WaitTestInstance : public TestInstance
@@ -169,8 +169,6 @@ public:
 		, m_waitAll				(waitAll)
 		, m_signalFromDevice	(signalFromDevice)
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	tcu::TestStatus iterate (void)
@@ -215,18 +213,18 @@ public:
 		}
 
 		{
-			const VkSemaphoreWaitInfoKHR	waitInfo	=
+			const VkSemaphoreWaitInfo		waitInfo	=
 			{
-				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,									// VkStructureType			sType;
-				DE_NULL,																	// const void*				pNext;
-				m_waitAll ? 0u : (VkSemaphoreWaitFlagsKHR) VK_SEMAPHORE_WAIT_ANY_BIT_KHR,	// VkSemaphoreWaitFlagsKHR	flags;
-				(deUint32) semaphores.size(),												// deUint32					semaphoreCount;
-				&semaphores[0],																// const VkSemaphore*		pSemaphores;
-				&timelineValues[0],															// const deUint64*			pValues;
+				VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,									// VkStructureType			sType;
+				DE_NULL,																// const void*				pNext;
+				m_waitAll ? 0u : (VkSemaphoreWaitFlags) VK_SEMAPHORE_WAIT_ANY_BIT_KHR,	// VkSemaphoreWaitFlagsKHR	flags;
+				(deUint32) semaphores.size(),											// deUint32					semaphoreCount;
+				&semaphores[0],															// const VkSemaphore*		pSemaphores;
+				&timelineValues[0],														// const deUint64*			pValues;
 			};
 			VkResult						result;
 
-			result = vk.waitSemaphoresKHR(device, &waitInfo, 0ull);
+			result = vk.waitSemaphores(device, &waitInfo, 0ull);
 
 			if (result != VK_SUCCESS)
 				return tcu::TestStatus::fail("Wait failed");
@@ -263,6 +261,11 @@ public:
 	{
 	}
 
+	virtual void checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+	}
+
 	TestInstance* createInstance (Context& context) const
 	{
 		return new WaitTestInstance(context, m_waitAll, m_signalFromDevice);
@@ -281,8 +284,6 @@ public:
 	HostWaitBeforeSignalTestInstance (Context& context)
 		: TestInstance			(context)
 	{
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 	}
 
 	tcu::TestStatus iterate (void)
@@ -300,9 +301,9 @@ public:
 		for (deUint32 i = 0; i < 12; i++)
 		{
 			const deUint64							newTimelineValue	= (timelineValues.back() + rng.getInt(1, 10000));
-			const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 				DE_NULL,												// const void*		pNext;
 				1u,														// deUint32			waitSemaphoreValueCount
 				&timelineValues.back(),									// const deUint64*	pWaitSemaphoreValues
@@ -340,7 +341,7 @@ public:
 			};
 			VkResult						result;
 
-			result = vk.waitSemaphoresKHR(device, &waitInfo, 0ull);
+			result = vk.waitSemaphores(device, &waitInfo, 0ull);
 
 			if (result != VK_TIMEOUT)
 				return tcu::TestStatus::fail("Wait failed");
@@ -360,7 +361,7 @@ public:
 			};
 			VkResult						result;
 
-			result = vk.waitSemaphoresKHR(device, &waitInfo, ~(0ull));
+			result = vk.waitSemaphores(device, &waitInfo, ~(0ull));
 
 			if (result != VK_SUCCESS)
 				return tcu::TestStatus::fail("Wait failed");
@@ -390,6 +391,11 @@ public:
 	HostWaitBeforeSignalTestCase (tcu::TestContext& testCtx, const std::string& name)
 		: TestCase				(testCtx, name.c_str(), "")
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	TestInstance* createInstance (Context& context) const
@@ -422,7 +428,7 @@ public:
 		{
 			deUint64 value;
 
-			VK_CHECK(m_vkd.getSemaphoreCounterValueKHR(m_device, m_semaphore, &value));
+			VK_CHECK(m_vkd.getSemaphoreCounterValue(m_device, m_semaphore, &value));
 
 			if (value < lastValue) {
 				m_status = tcu::TestStatus::fail("Value not monotonically increasing");
@@ -498,7 +504,7 @@ tcu::TestStatus maxDifferenceValueCase (Context& context)
 			deviceSignal(vk, device, queue, DE_NULL, *semaphore, ++timelineFrontValue);
 
 		deUint64 value;
-		VK_CHECK(vk.getSemaphoreCounterValueKHR(device, *semaphore, &value));
+		VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphore, &value));
 
 		VK_CHECK(vk.waitForFences(device, 1, &fence.get(), VK_TRUE, ~(0ull)));
 		VK_CHECK(vk.resetFences(device, 1, &fence.get()));
@@ -524,9 +530,9 @@ tcu::TestStatus initialValueCase (Context& context)
 	const Unique<VkSemaphore>						semaphoreDefaultValue		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR));
 	const Unique<VkSemaphore>						semaphoreInitialValue		(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR, 0, nonZeroValue));
 	deUint64										initialValue;
-	VkSemaphoreWaitInfoKHR							waitInfo					=
+	VkSemaphoreWaitInfo								waitInfo					=
 	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR,	// VkStructureType			sType;
+		VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
 		0u,											// VkSemaphoreWaitFlagsKHR	flags;
 		1u,											// deUint32					semaphoreCount;
@@ -538,21 +544,21 @@ tcu::TestStatus initialValueCase (Context& context)
 
 	waitInfo.pSemaphores = &semaphoreDefaultValue.get();
 	initialValue = 0;
-	result = vk.waitSemaphoresKHR(device, &waitInfo, 0ull);
+	result = vk.waitSemaphores(device, &waitInfo, 0ull);
 	if (result != VK_SUCCESS)
 		return tcu::TestStatus::fail("Wait zero initial value failed");
 
-	VK_CHECK(vk.getSemaphoreCounterValueKHR(device, *semaphoreDefaultValue, &value));
+	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreDefaultValue, &value));
 	if (value != initialValue)
 		return tcu::TestStatus::fail("Invalid zero initial value");
 
 	waitInfo.pSemaphores = &semaphoreInitialValue.get();
 	initialValue = nonZeroValue;
-	result = vk.waitSemaphoresKHR(device, &waitInfo, 0ull);
+	result = vk.waitSemaphores(device, &waitInfo, 0ull);
 	if (result != VK_SUCCESS)
 		return tcu::TestStatus::fail("Wait non zero initial value failed");
 
-	VK_CHECK(vk.getSemaphoreCounterValueKHR(device, *semaphoreInitialValue, &value));
+	VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreInitialValue, &value));
 	if (value != nonZeroValue)
 		return tcu::TestStatus::fail("Invalid non zero initial value");
 
@@ -563,11 +569,11 @@ tcu::TestStatus initialValueCase (Context& context)
 
 		waitInfo.pSemaphores = &semaphoreMaxValue.get();
 		initialValue = nonZeroMaxValue;
-		result = vk.waitSemaphoresKHR(device, &waitInfo, 0ull);
+		result = vk.waitSemaphores(device, &waitInfo, 0ull);
 		if (result != VK_SUCCESS)
 			return tcu::TestStatus::fail("Wait max value failed");
 
-		VK_CHECK(vk.getSemaphoreCounterValueKHR(device, *semaphoreMaxValue, &value));
+		VK_CHECK(vk.getSemaphoreCounterValue(device, *semaphoreMaxValue, &value));
 		if (value != nonZeroMaxValue)
 			return tcu::TestStatus::fail("Invalid max value initial value");
 	}
@@ -660,7 +666,7 @@ public:
 				};
 				VkResult						result;
 
-				result = m_vkd.waitSemaphoresKHR(m_device, &waitInfo, ~(deUint64)0u);
+				result = m_vkd.waitSemaphores(m_device, &waitInfo, ~(deUint64)0u);
 				if (result != VK_SUCCESS)
 					return;
 			}
@@ -680,7 +686,7 @@ public:
 				};
 				VkResult						result;
 
-				result = m_vkd.signalSemaphoreKHR(m_device, &signalInfo);
+				result = m_vkd.signalSemaphore(m_device, &signalInfo);
 				if (result != VK_SUCCESS)
 					return;
 			}
@@ -746,9 +752,6 @@ public:
 	{
 		de::Random	rng		(1234);
 
-		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
 		// Create a dozen couple of operations and their associated
 		// resource.
 		for (deUint32 i = 0; i < 12; i++)
@@ -770,7 +773,7 @@ public:
 		HostCopyThread										hostCopyThread			(vk, device, *semaphore, m_iterations);
 		std::vector<SharedPtr<Move<VkCommandBuffer> > >		ptrCmdBuffers;
 		std::vector<VkCommandBuffer>						cmdBuffers;
-		std::vector<VkTimelineSemaphoreSubmitInfoKHR>		timelineSubmitInfos;
+		std::vector<VkTimelineSemaphoreSubmitInfo>			timelineSubmitInfos;
 		std::vector<VkSubmitInfo>							submitInfos;
 
 		hostCopyThread.start();
@@ -801,9 +804,9 @@ public:
 		{
 			// Write operation
 			{
-				const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+				const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 				{
-					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,			// VkStructureType	sType;
+					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,				// VkStructureType	sType;
 					DE_NULL,														// const void*		pNext;
 					iterIdx == 0 ? 0u : 1u,											// deUint32			waitSemaphoreValueCount
 					iterIdx == 0 ? DE_NULL : &m_iterations[iterIdx - 1]->cpuValue,	// const deUint64*	pWaitSemaphoreValues
@@ -859,9 +862,9 @@ public:
 
 			// Read operation
 			{
-				const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+				const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 				{
-					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+					VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 					DE_NULL,												// const void*		pNext;
 					1u,														// deUint32			waitSemaphoreValueCount
 					&m_iterations[iterIdx]->writeValue,						// const deUint64*	pWaitSemaphoreValues
@@ -929,6 +932,11 @@ public:
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1096,7 +1104,7 @@ std::vector<VkDeviceQueueCreateInfo> getQueueCreateInfo(const std::vector<VkQueu
 	return infos;
 }
 
-Move<VkDevice> createDevice(Context& context)
+Move<VkDevice> createDevice(const Context& context)
 {
 	const std::vector<VkQueueFamilyProperties>		queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
 	std::vector<VkDeviceQueueCreateInfo>			queueCreateInfos		= getQueueCreateInfo(queueFamilyProperties);
@@ -1130,11 +1138,46 @@ Move<VkDevice> createDevice(Context& context)
 		queueCreateInfo.pQueuePriorities = &(*queuePriorities.back().get())[0];
 	}
 
-	if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
-		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
-
 	return createDevice(context.getPlatformInterface(), context.getInstance(),
 						context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo);
+}
+
+
+// Class to wrap a singleton instance and device
+class SingletonDevice
+{
+	SingletonDevice	(const Context& context)
+		: m_logicalDevice	(createDevice(context))
+	{
+	}
+
+public:
+
+	static const Unique<vk::VkDevice>& getDevice(const Context& context)
+	{
+		if (!m_singletonDevice)
+			m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+
+		DE_ASSERT(m_singletonDevice);
+		return m_singletonDevice->m_logicalDevice;
+	}
+
+	static void destroy()
+	{
+		m_singletonDevice.clear();
+	}
+
+private:
+	const Unique<vk::VkDevice>					m_logicalDevice;
+
+	static SharedPtr<SingletonDevice>	m_singletonDevice;
+};
+SharedPtr<SingletonDevice>		SingletonDevice::m_singletonDevice;
+
+static void cleanupGroup ()
+{
+	// Destroy singleton object
+	SingletonDevice::destroy();
 }
 
 // Create a chain of operations with data copied across queues & host
@@ -1150,7 +1193,7 @@ public:
 								  PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
 		, m_resourceDesc	(resourceDesc)
-		, m_device			(createDevice(context))
+		, m_device			(SingletonDevice::getDevice(context))
 		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
@@ -1266,9 +1309,9 @@ public:
 			// exercise the wait-before-submit behavior.
 			deUint32 iterIdx = (deUint32)(m_iterations.size() - 2 - _iterIdx);
 
-			const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,								// VkStructureType	sType;
+				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,									// VkStructureType	sType;
 				DE_NULL,																			// const void*		pNext;
 				1u,																					// deUint32			waitSemaphoreValueCount
 				iterIdx == 0 ? &m_hostTimelineValue : &m_iterations[iterIdx - 1]->timelineValue,	// const deUint64*	pWaitSemaphoreValues
@@ -1328,9 +1371,9 @@ public:
 		// Submit the last read operation in order.
 		{
 			const deUint32							iterIdx				= (deUint32) (m_iterations.size() - 1);
-			const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,				// VkStructureType	sType;
+				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,					// VkStructureType	sType;
 				DE_NULL,															// const void*		pNext;
 				1u,																	// deUint32			waitSemaphoreValueCount
 				&m_iterations[iterIdx - 1]->timelineValue,							// const deUint64*	pWaitSemaphoreValues
@@ -1376,7 +1419,7 @@ public:
 
 protected:
 	const ResourceDescription						m_resourceDesc;
-	Move<VkDevice>									m_device;
+	const Unique<VkDevice>&							m_device;
 	MovePtr<DeviceDriver>							m_deviceDriver;
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
@@ -1401,6 +1444,11 @@ public:
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1519,6 +1567,11 @@ public:
 		}
 	}
 
+	void deinit (void)
+	{
+		cleanupGroup();
+	}
+
 private:
 	// synchronization.op tests share pipeline cache data to speed up test
 	// execution.
@@ -1542,7 +1595,7 @@ public:
 						PipelineCacheData&					pipelineCacheData)
 		: TestInstance		(context)
 		, m_resourceDesc	(resourceDesc)
-		, m_device			(createDevice(context))
+		, m_device			(SingletonDevice::getDevice(context))
 		, m_deviceDriver	(MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_device)))
 		, m_allocator		(new SimpleAllocator(*m_deviceDriver, *m_device,
 												 getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
@@ -1681,9 +1734,9 @@ public:
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 		};
-		const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+		const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 		{
-			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,			// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,				// VkStructureType	sType;
 			DE_NULL,														// const void*		pNext;
 			waitValuesCount,												// deUint32			waitSemaphoreValueCount
 			waitValues,														// const deUint64*	pWaitSemaphoreValues
@@ -1819,7 +1872,7 @@ public:
 
 protected:
 	ResourceDescription								m_resourceDesc;
-	Move<VkDevice>									m_device;
+	const Unique<VkDevice>&							m_device;
 	MovePtr<DeviceDriver>							m_deviceDriver;
 	MovePtr<Allocator>								m_allocator;
 	OperationContext								m_opContext;
@@ -1847,6 +1900,11 @@ public:
 		, m_readOp				(makeOperationSupport(readOp, resourceDesc).release())
 		, m_pipelineCacheData	(pipelineCacheData)
 	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
 	}
 
 	void initPrograms (SourceCollections& programCollection) const
@@ -1963,6 +2021,11 @@ public:
 			if (!empty)
 				addChild(opGroup.release());
 		}
+	}
+
+	void deinit (void)
+	{
+		cleanupGroup();
 	}
 
 private:

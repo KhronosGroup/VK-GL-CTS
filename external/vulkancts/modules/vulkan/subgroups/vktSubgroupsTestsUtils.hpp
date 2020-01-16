@@ -140,6 +140,8 @@ bool isInt64SupportedForDevice(Context& context);
 
 bool isTessellationAndGeometryPointSizeSupported(Context& context);
 
+bool isSubgroupBroadcastDynamicIdSupported(Context& context);
+
 std::string getFormatNameForGLSL (vk::VkFormat format);
 
 std::string getAdditionalExtensionForFormat (vk::VkFormat format);

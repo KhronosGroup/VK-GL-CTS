@@ -473,9 +473,9 @@ AtomicOperationCaseInstance::AtomicOperationCaseInstance (Context&				context,
 		if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_atomic_int64"))
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_atomic_int64");
 
-		VkPhysicalDeviceShaderAtomicInt64FeaturesKHR shaderAtomicInt64Features;
-		deMemset(&shaderAtomicInt64Features, 0x0, sizeof(VkPhysicalDeviceShaderAtomicInt64FeaturesKHR));
-		shaderAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
+		VkPhysicalDeviceShaderAtomicInt64Features shaderAtomicInt64Features;
+		deMemset(&shaderAtomicInt64Features, 0x0, sizeof(VkPhysicalDeviceShaderAtomicInt64Features));
+		shaderAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
 		shaderAtomicInt64Features.pNext = DE_NULL;
 
 		VkPhysicalDeviceFeatures2 features;

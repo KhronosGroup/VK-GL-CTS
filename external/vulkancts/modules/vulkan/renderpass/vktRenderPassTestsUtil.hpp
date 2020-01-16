@@ -59,7 +59,7 @@ public:
 							 VkImageLayout					finalLayout);
 };
 
-class AttachmentDescription2 : public vk::VkAttachmentDescription2KHR
+class AttachmentDescription2 : public vk::VkAttachmentDescription2
 {
 public:
 	AttachmentDescription2	(const void*					pNext,
@@ -83,7 +83,7 @@ public:
 							 VkImageAspectFlags	aspectMask);
 };
 
-class AttachmentReference2 : public vk::VkAttachmentReference2KHR
+class AttachmentReference2 : public vk::VkAttachmentReference2
 {
 public:
 	AttachmentReference2	(const void*		pNext,
@@ -109,7 +109,7 @@ public:
 						 const deUint32*					pPreserveAttachments);
 };
 
-class SubpassDescription2 : public vk::VkSubpassDescription2KHR
+class SubpassDescription2 : public vk::VkSubpassDescription2
 {
 public:
 	SubpassDescription2	(const void*						pNext,
@@ -117,11 +117,11 @@ public:
 						 VkPipelineBindPoint				pipelineBindPoint,
 						 deUint32							viewMask,
 						 deUint32							inputAttachmentCount,
-						 const VkAttachmentReference2KHR*	pInputAttachments,
+						 const VkAttachmentReference2*		pInputAttachments,
 						 deUint32							colorAttachmentCount,
-						 const VkAttachmentReference2KHR*	pColorAttachments,
-						 const VkAttachmentReference2KHR*	pResolveAttachments,
-						 const VkAttachmentReference2KHR*	pDepthStencilAttachment,
+						 const VkAttachmentReference2*		pColorAttachments,
+						 const VkAttachmentReference2*		pResolveAttachments,
+						 const VkAttachmentReference2*		pDepthStencilAttachment,
 						 deUint32							preserveAttachmentCount,
 						 const deUint32*					pPreserveAttachments);
 };
@@ -140,7 +140,7 @@ public:
 						 deInt32				viewOffset);
 };
 
-class SubpassDependency2 : public vk::VkSubpassDependency2KHR
+class SubpassDependency2 : public vk::VkSubpassDependency2
 {
 public:
 	SubpassDependency2	(const void*			pNext,
@@ -172,17 +172,17 @@ public:
 													 VkDevice device) const;
 };
 
-class RenderPassCreateInfo2 : public VkRenderPassCreateInfo2KHR
+class RenderPassCreateInfo2 : public VkRenderPassCreateInfo2
 {
 public:
 							RenderPassCreateInfo2	(const void*						pNext,
 													 VkRenderPassCreateFlags			flags,
 													 deUint32							attachmentCount,
-													 const VkAttachmentDescription2KHR*	pAttachments,
+													 const VkAttachmentDescription2*	pAttachments,
 													 deUint32							subpassCount,
-													 const VkSubpassDescription2KHR*	pSubpasses,
+													 const VkSubpassDescription2*		pSubpasses,
 													 deUint32							dependencyCount,
-													 const VkSubpassDependency2KHR*		pDependencies,
+													 const VkSubpassDependency2*		pDependencies,
 													 deUint32							correlatedViewMaskCount,
 													 const deUint32*					pCorrelatedViewMasks);
 
@@ -199,7 +199,7 @@ public:
 	VkSubpassContents	contents;
 };
 
-class SubpassBeginInfo2 : public VkSubpassBeginInfoKHR
+class SubpassBeginInfo2 : public VkSubpassBeginInfo
 {
 public:
 						SubpassBeginInfo2	(const void*		pNext,
@@ -212,7 +212,7 @@ public:
 						SubpassEndInfo1	(const void*	pNext);
 };
 
-class SubpassEndInfo2 : public VkSubpassEndInfoKHR
+class SubpassEndInfo2 : public VkSubpassEndInfo
 {
 public:
 						SubpassEndInfo2	(const void*	pNext);

@@ -1657,7 +1657,7 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance (Context&							ctx,
 	const deUint32											componentsRequired			= m_locationsRequired * componentsPerLocation;
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
-	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeatures();
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const VkPhysicalDeviceLimits							limits						= getPhysicalDeviceProperties(vki, physDevice).limits;
 	VkPhysicalDeviceTransformFeedbackPropertiesEXT			transformFeedbackProperties;
 	VkPhysicalDeviceProperties2								deviceProperties2;

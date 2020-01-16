@@ -959,7 +959,7 @@ Move<VkRenderPass> ImageClearingTestInstance::createRenderPass (VkFormat format)
 			DE_NULL,											// const deUint32*					pCorrelatedViewMasks;
 		};
 
-		return vk::createRenderPass2KHR(m_vkd, m_device, &renderPassCreateInfo, DE_NULL);
+		return vk::createRenderPass2(m_vkd, m_device, &renderPassCreateInfo, DE_NULL);
 	}
 }
 

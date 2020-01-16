@@ -108,6 +108,7 @@ enum SpirvVersion
 	SPIRV_VERSION_1_2	= 2,	//!< SPIR-V 1.2
 	SPIRV_VERSION_1_3	= 3,	//!< SPIR-V 1.3
 	SPIRV_VERSION_1_4	= 4,	//!< SPIR-V 1.4
+	SPIRV_VERSION_1_5	= 5,	//!< SPIR-V 1.5
 
 	SPIRV_VERSION_LAST
 };

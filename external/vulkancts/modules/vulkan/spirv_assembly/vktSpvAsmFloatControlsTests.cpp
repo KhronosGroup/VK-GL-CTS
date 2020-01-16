@@ -2541,7 +2541,7 @@ protected:
 	{
 		const char*								name;
 		SettingsMode							testedMode;
-		VkShaderFloatControlsIndependenceKHR	independenceSetting;
+		VkShaderFloatControlsIndependence		independenceSetting;
 
 		SettingsOption							fp16Option;
 		SettingsOption							fp32Option;
@@ -3036,7 +3036,7 @@ void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 	TestCaseGroup*	group	= new TestCaseGroup(testCtx, "independence_settings", "");
 	parentGroup->addChild(group);
 
-	using SFCI = VkShaderFloatControlsIndependenceKHR;
+	using SFCI = VkShaderFloatControlsIndependence;
 	const SFCI independence32	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
 	const SFCI independenceAll	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
 

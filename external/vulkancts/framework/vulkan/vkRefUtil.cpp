@@ -95,14 +95,14 @@ Move<VkSemaphore> createSemaphore (const DeviceInterface&		vk,
 
 Move<VkSemaphore> createSemaphoreType (const DeviceInterface&		vk,
 									   VkDevice						device,
-									   VkSemaphoreTypeKHR			type,
+									   VkSemaphoreType				type,
 									   VkSemaphoreCreateFlags		flags,
 									   const deUint64				initialValue,
 									   const VkAllocationCallbacks*	pAllocator)
 {
-	const VkSemaphoreTypeCreateInfoKHR	createTypeInfo =
+	const VkSemaphoreTypeCreateInfo	createTypeInfo =
 	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 		DE_NULL,
 
 		type,

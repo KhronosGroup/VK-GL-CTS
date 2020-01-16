@@ -216,7 +216,7 @@ vk::Move<vk::VkSemaphore>		createExportableSemaphore			(const vk::DeviceInterfac
 
 vk::Move<vk::VkSemaphore>		createExportableSemaphoreType		(const vk::DeviceInterface&					vkd,
 																	 vk::VkDevice								device,
-																	 vk::VkSemaphoreTypeKHR						semaphoreType,
+																	 vk::VkSemaphoreType						semaphoreType,
 																	 vk::VkExternalSemaphoreHandleTypeFlagBits	externalType);
 
 int								getSemaphoreFd						(const vk::DeviceInterface&					vkd,

@@ -182,16 +182,13 @@ CustomInstance createInstanceWithWsi (Context&						context,
 	extensions.push_back(getExtensionName(wsiType));
 
 	vector<string>	instanceExtensions;
-
-	for (vector<string>::const_iterator extensionName = extensions.begin();
-		 extensionName != extensions.end();
-		 ++extensionName)
+	for (const auto& ext : extensions)
 	{
-		if (!context.isInstanceFunctionalitySupported(*extensionName))
-			TCU_THROW(NotSupportedError, (*extensionName + " is not supported").c_str());
+		if (!context.isInstanceFunctionalitySupported(ext))
+			TCU_THROW(NotSupportedError, (ext + " is not supported").c_str());
 
-		if (!isCoreInstanceExtension(version, *extensionName))
-			instanceExtensions.push_back(*extensionName);
+		if (!isCoreInstanceExtension(version, ext))
+			instanceExtensions.push_back(ext);
 	}
 
 	return vkt::createCustomInstanceWithExtensions(context, instanceExtensions, pAllocator);

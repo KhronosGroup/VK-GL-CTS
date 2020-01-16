@@ -2150,31 +2150,31 @@ public:
 												TCU_THROW(NotSupportedError, "Strict rasterization is not supported");
 
 											if (getLineStippleEnable() &&
-												!context.getLineRasterizationFeatures().stippledRectangularLines)
+												!context.getLineRasterizationFeaturesEXT().stippledRectangularLines)
 												TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
 											break;
 										case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT:
-											if (!context.getLineRasterizationFeatures().rectangularLines)
+											if (!context.getLineRasterizationFeaturesEXT().rectangularLines)
 												TCU_THROW(NotSupportedError, "Rectangular lines not supported");
 
 											if (getLineStippleEnable() &&
-												!context.getLineRasterizationFeatures().stippledRectangularLines)
+												!context.getLineRasterizationFeaturesEXT().stippledRectangularLines)
 												TCU_THROW(NotSupportedError, "Stippled rectangular lines not supported");
 											break;
 										case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:
-											if (!context.getLineRasterizationFeatures().bresenhamLines)
+											if (!context.getLineRasterizationFeaturesEXT().bresenhamLines)
 												TCU_THROW(NotSupportedError, "Bresenham lines not supported");
 
 											if (getLineStippleEnable() &&
-												!context.getLineRasterizationFeatures().stippledBresenhamLines)
+												!context.getLineRasterizationFeaturesEXT().stippledBresenhamLines)
 												TCU_THROW(NotSupportedError, "Stippled Bresenham lines not supported");
 											break;
 										case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:
-											if (!context.getLineRasterizationFeatures().smoothLines)
+											if (!context.getLineRasterizationFeaturesEXT().smoothLines)
 												TCU_THROW(NotSupportedError, "Smooth lines not supported");
 
 											if (getLineStippleEnable() &&
-												!context.getLineRasterizationFeatures().stippledSmoothLines)
+												!context.getLineRasterizationFeaturesEXT().stippledSmoothLines)
 												TCU_THROW(NotSupportedError, "Stippled smooth lines not supported");
 											break;
 										}

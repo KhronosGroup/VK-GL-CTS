@@ -127,7 +127,7 @@ public:
 
 	// These three are indexed by [set][binding]
 	vector<vector<VkDescriptorSetLayoutBinding> > layoutBindings;
-	vector<vector<VkDescriptorBindingFlagsEXT> > layoutBindingFlags;
+	vector<vector<VkDescriptorBindingFlags> > layoutBindingFlags;
 	vector<vector<deUint32> > arraySizes;
 	// size of the variable descriptor (last) binding in each set
 	vector<deUint32> variableDescriptorSizes;
@@ -203,7 +203,7 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	// Get needed features.
 	auto features				= context.getDeviceFeatures2();
 	auto indexingFeatures		= context.getDescriptorIndexingFeatures();
-	auto inlineUniformFeatures	= context.getInlineUniformBlockFeatures();
+	auto inlineUniformFeatures	= context.getInlineUniformBlockFeaturesEXT();
 
 	// Check needed properties and features
 	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
@@ -313,7 +313,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 	for (deUint32 s = 0; s < caseDef.numDescriptorSets; ++s)
 	{
 		vector<VkDescriptorSetLayoutBinding> &bindings = randomLayout.layoutBindings[s];
-		vector<VkDescriptorBindingFlagsEXT> &bindingsFlags = randomLayout.layoutBindingFlags[s];
+		vector<VkDescriptorBindingFlags> &bindingsFlags = randomLayout.layoutBindingFlags[s];
 		vector<deUint32> &arraySizes = randomLayout.arraySizes[s];
 		int numBindings = randRange(&rnd, minBindings, maxBindings);
 
@@ -324,7 +324,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 		}
 
 		bindings = vector<VkDescriptorSetLayoutBinding>(numBindings);
-		bindingsFlags = vector<VkDescriptorBindingFlagsEXT>(numBindings);
+		bindingsFlags = vector<VkDescriptorBindingFlags>(numBindings);
 		arraySizes = vector<deUint32>(numBindings);
 	}
 
@@ -480,7 +480,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 	for (deUint32 s = 0; s < caseDef.numDescriptorSets; ++s)
 	{
 		vector<VkDescriptorSetLayoutBinding> &bindings = randomLayout.layoutBindings[s];
-		vector<VkDescriptorBindingFlagsEXT> &bindingsFlags = randomLayout.layoutBindingFlags[s];
+		vector<VkDescriptorBindingFlags> &bindingsFlags = randomLayout.layoutBindingFlags[s];
 		vector<deUint32> &variableDescriptorSizes = randomLayout.variableDescriptorSizes;
 
 		// Choose a variable descriptor count size. If the feature is not supported, we'll just
@@ -493,7 +493,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 			randRange(&rnd, 1,4) == 1) // 1 in 4 chance
 		{
 
-			bindingsFlags[bindings.size()-1] |= VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+			bindingsFlags[bindings.size()-1] |= VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 			variableDescriptorSizes[s] = randRange(&rnd, 0,bindings[bindings.size()-1].descriptorCount);
 			if (bindings[bindings.size()-1].descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 			{
@@ -517,7 +517,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 	for (deUint32 s = 0; s < m_data.numDescriptorSets; ++s)
 	{
 		vector<VkDescriptorSetLayoutBinding> &bindings = randomLayout.layoutBindings[s];
-		vector<VkDescriptorBindingFlagsEXT> bindingsFlags = randomLayout.layoutBindingFlags[s];
+		vector<VkDescriptorBindingFlags> bindingsFlags = randomLayout.layoutBindingFlags[s];
 		vector<deUint32> &arraySizes = randomLayout.arraySizes[s];
 		vector<deUint32> &variableDescriptorSizes = randomLayout.variableDescriptorSizes;
 
@@ -580,7 +580,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					// Don't access descriptors past the end of the allocated range for
 					// variable descriptor count
 					if (b == bindings.size() - 1 &&
-						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT))
+						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT))
 					{
 						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 						{
@@ -822,7 +822,6 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	RandomLayout randomLayout(m_data.numDescriptorSets);
 	generateRandomLayout(randomLayout, m_data);
 
-
 	// Get needed properties.
 	VkPhysicalDeviceProperties2 properties;
 	deMemset(&properties, 0, sizeof(properties));
@@ -842,7 +841,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	// Get needed features.
 	auto descriptorIndexingSupported	= m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
 	auto indexingFeatures				= m_context.getDescriptorIndexingFeatures();
-	auto inlineUniformFeatures			= m_context.getInlineUniformBlockFeatures();
+	auto inlineUniformFeatures			= m_context.getInlineUniformBlockFeaturesEXT();
 
 	deRandom rnd;
 	deRandom_init(&rnd, m_data.seed);
@@ -871,7 +870,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	for (deUint32 s = 0; s < m_data.numDescriptorSets; ++s)
 	{
 		vector<VkDescriptorSetLayoutBinding> &bindings = randomLayout.layoutBindings[s];
-		vector<VkDescriptorBindingFlagsEXT> &bindingsFlags = randomLayout.layoutBindingFlags[s];
+		vector<VkDescriptorBindingFlags> &bindingsFlags = randomLayout.layoutBindingFlags[s];
 		vector<deUint32> &variableDescriptorSizes = randomLayout.variableDescriptorSizes;
 
 		VkDescriptorPoolCreateFlags poolCreateFlags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
@@ -896,25 +895,25 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC))
 			{
-				bindingsFlags[b] |= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
+				bindingsFlags[b] |= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
 				layoutCreateFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
 				poolCreateFlags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
 			}
 
 			if (!indexingFeatures.descriptorBindingVariableDescriptorCount)
 			{
-				bindingsFlags[b] &= ~VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+				bindingsFlags[b] &= ~VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
 			}
 		}
 
 		// Create a layout and allocate a descriptor set for it.
 
-		const VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo =
+		const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo =
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,	// VkStructureType						sType;
 			DE_NULL,																// const void*							pNext;
 			(deUint32)bindings.size(),												// uint32_t								bindingCount;
-			bindings.empty() ? DE_NULL : bindingsFlags.data(),						// const VkDescriptorBindingFlagsEXT*	pBindingFlags;
+			bindings.empty() ? DE_NULL : bindingsFlags.data(),						// const VkDescriptorBindingFlags*	pBindingFlags;
 		};
 
 		const VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo =
@@ -956,9 +955,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		descriptorPools[s] = poolBuilder.build(vk, device, poolCreateFlags, 1u,
 											   m_data.maxInlineUniformBlocks ? &inlineUniformBlockPoolCreateInfo : DE_NULL);
 
-		VkDescriptorSetVariableDescriptorCountAllocateInfoEXT variableCountInfo =
+		VkDescriptorSetVariableDescriptorCountAllocateInfo variableCountInfo =
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,		// VkStructureType	sType;
 			DE_NULL,																		// const void*		pNext;
 			0,																				// uint32_t			descriptorSetCount;
 			DE_NULL,																		// const uint32_t*	pDescriptorCounts;
@@ -966,7 +965,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		const void *pNext = DE_NULL;
 		if (bindings.size() > 0 &&
-			bindingsFlags[bindings.size()-1] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT)
+			bindingsFlags[bindings.size()-1] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT)
 		{
 			variableCountInfo.descriptorSetCount = 1;
 			variableCountInfo.pDescriptorCounts = &variableDescriptorSizes[s];
@@ -1324,7 +1323,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	for (deUint32 s = 0; s < m_data.numDescriptorSets; ++s)
 	{
 		vector<VkDescriptorSetLayoutBinding> &bindings = randomLayout.layoutBindings[s];
-		vector<VkDescriptorBindingFlagsEXT> &bindingsFlags = randomLayout.layoutBindingFlags[s];
+		vector<VkDescriptorBindingFlags> &bindingsFlags = randomLayout.layoutBindingFlags[s];
 		vector<deUint32> &arraySizes = randomLayout.arraySizes[s];
 		vector<deUint32> &variableDescriptorSizes = randomLayout.variableDescriptorSizes;
 
@@ -1351,13 +1350,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			// Construct the declaration for the binding
 			if (binding.descriptorCount > 0)
 			{
-				bool updateAfterBind = !!(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT);
+				bool updateAfterBind = !!(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT);
 				for (deUint32 ai = 0; ai < de::max(1u, arraySizes[b]); ++ai, descriptor += descriptorIncrement)
 				{
 					// Don't access descriptors past the end of the allocated range for
 					// variable descriptor count
 					if (b == bindings.size() - 1 &&
-						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT))
+						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT))
 					{
 						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 						{
@@ -1412,7 +1411,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 					if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
 					{
-						VkWriteDescriptorSetInlineUniformBlockEXT inlineUniformBlock =
+						VkWriteDescriptorSetInlineUniformBlockEXT iuBlock =
 						{
 							VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,	// VkStructureType	sType;
 							DE_NULL,															// const void*		pNext;
@@ -1420,7 +1419,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 							&descriptorNumber[descriptor],										// const void*		pData;
 						};
 
-						inlineInfoVec[vecIndex] = inlineUniformBlock;
+						inlineInfoVec[vecIndex] = iuBlock;
 						w.dstArrayElement = ai*16 + 16; // add 16 to skip "ivec4 dummy"
 						w.pNext = &inlineInfoVec[vecIndex];
 						w.descriptorCount = sizeof(deUint32);

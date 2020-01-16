@@ -353,7 +353,7 @@ public:
 		std::vector<VkCommandBuffer>							cmdBuffers;
 		const VkPipelineStageFlags								stageBits[]				= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 		std::vector<deUint64>									timelineValues;
-		std::vector<VkTimelineSemaphoreSubmitInfoKHR>			timelineSubmitInfos;
+		std::vector<VkTimelineSemaphoreSubmitInfo>				timelineSubmitInfos;
 		std::vector<VkSubmitInfo>								submitInfos;
 
 		for (deUint32 opNdx = 0; opNdx < m_ops.size(); opNdx++)
@@ -371,9 +371,9 @@ public:
 
 		for (deUint32 opNdx = 0; opNdx < m_ops.size(); opNdx++)
 		{
-			const VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo	=
+			const VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo	=
 			{
-				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,	// VkStructureType	sType;
+				VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,		// VkStructureType	sType;
 				DE_NULL,												// const void*		pNext;
 				opNdx == 0 ? 0u : 1u,									// deUint32			waitSemaphoreValueCount
 				opNdx == 0 ? DE_NULL : &timelineValues[opNdx - 1],		// const deUint64*	pWaitSemaphoreValues

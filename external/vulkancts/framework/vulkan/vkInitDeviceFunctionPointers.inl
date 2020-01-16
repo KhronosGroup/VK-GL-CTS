@@ -168,6 +168,45 @@ if (!m_vk.updateDescriptorSetWithTemplate)
 m_vk.getDescriptorSetLayoutSupport						= (GetDescriptorSetLayoutSupportFunc)					GET_PROC_ADDR("vkGetDescriptorSetLayoutSupport");
 if (!m_vk.getDescriptorSetLayoutSupport)
 	m_vk.getDescriptorSetLayoutSupport					= (GetDescriptorSetLayoutSupportFunc)					GET_PROC_ADDR("vkGetDescriptorSetLayoutSupportKHR");
+m_vk.cmdDrawIndirectCount								= (CmdDrawIndirectCountFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCount");
+if (!m_vk.cmdDrawIndirectCount)
+	m_vk.cmdDrawIndirectCount							= (CmdDrawIndirectCountFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCountKHR");
+m_vk.cmdDrawIndexedIndirectCount						= (CmdDrawIndexedIndirectCountFunc)						GET_PROC_ADDR("vkCmdDrawIndexedIndirectCount");
+if (!m_vk.cmdDrawIndexedIndirectCount)
+	m_vk.cmdDrawIndexedIndirectCount					= (CmdDrawIndexedIndirectCountFunc)						GET_PROC_ADDR("vkCmdDrawIndexedIndirectCountKHR");
+m_vk.createRenderPass2									= (CreateRenderPass2Func)								GET_PROC_ADDR("vkCreateRenderPass2");
+if (!m_vk.createRenderPass2)
+	m_vk.createRenderPass2								= (CreateRenderPass2Func)								GET_PROC_ADDR("vkCreateRenderPass2KHR");
+m_vk.cmdBeginRenderPass2								= (CmdBeginRenderPass2Func)								GET_PROC_ADDR("vkCmdBeginRenderPass2");
+if (!m_vk.cmdBeginRenderPass2)
+	m_vk.cmdBeginRenderPass2							= (CmdBeginRenderPass2Func)								GET_PROC_ADDR("vkCmdBeginRenderPass2KHR");
+m_vk.cmdNextSubpass2									= (CmdNextSubpass2Func)									GET_PROC_ADDR("vkCmdNextSubpass2");
+if (!m_vk.cmdNextSubpass2)
+	m_vk.cmdNextSubpass2								= (CmdNextSubpass2Func)									GET_PROC_ADDR("vkCmdNextSubpass2KHR");
+m_vk.cmdEndRenderPass2									= (CmdEndRenderPass2Func)								GET_PROC_ADDR("vkCmdEndRenderPass2");
+if (!m_vk.cmdEndRenderPass2)
+	m_vk.cmdEndRenderPass2								= (CmdEndRenderPass2Func)								GET_PROC_ADDR("vkCmdEndRenderPass2KHR");
+m_vk.resetQueryPool										= (ResetQueryPoolFunc)									GET_PROC_ADDR("vkResetQueryPool");
+if (!m_vk.resetQueryPool)
+	m_vk.resetQueryPool									= (ResetQueryPoolFunc)									GET_PROC_ADDR("vkResetQueryPoolEXT");
+m_vk.getSemaphoreCounterValue							= (GetSemaphoreCounterValueFunc)						GET_PROC_ADDR("vkGetSemaphoreCounterValue");
+if (!m_vk.getSemaphoreCounterValue)
+	m_vk.getSemaphoreCounterValue						= (GetSemaphoreCounterValueFunc)						GET_PROC_ADDR("vkGetSemaphoreCounterValueKHR");
+m_vk.waitSemaphores										= (WaitSemaphoresFunc)									GET_PROC_ADDR("vkWaitSemaphores");
+if (!m_vk.waitSemaphores)
+	m_vk.waitSemaphores									= (WaitSemaphoresFunc)									GET_PROC_ADDR("vkWaitSemaphoresKHR");
+m_vk.signalSemaphore									= (SignalSemaphoreFunc)									GET_PROC_ADDR("vkSignalSemaphore");
+if (!m_vk.signalSemaphore)
+	m_vk.signalSemaphore								= (SignalSemaphoreFunc)									GET_PROC_ADDR("vkSignalSemaphoreKHR");
+m_vk.getBufferDeviceAddress								= (GetBufferDeviceAddressFunc)							GET_PROC_ADDR("vkGetBufferDeviceAddress");
+if (!m_vk.getBufferDeviceAddress)
+	m_vk.getBufferDeviceAddress							= (GetBufferDeviceAddressFunc)							GET_PROC_ADDR("vkGetBufferDeviceAddressKHR");
+m_vk.getBufferOpaqueCaptureAddress						= (GetBufferOpaqueCaptureAddressFunc)					GET_PROC_ADDR("vkGetBufferOpaqueCaptureAddress");
+if (!m_vk.getBufferOpaqueCaptureAddress)
+	m_vk.getBufferOpaqueCaptureAddress					= (GetBufferOpaqueCaptureAddressFunc)					GET_PROC_ADDR("vkGetBufferOpaqueCaptureAddressKHR");
+m_vk.getDeviceMemoryOpaqueCaptureAddress				= (GetDeviceMemoryOpaqueCaptureAddressFunc)				GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddress");
+if (!m_vk.getDeviceMemoryOpaqueCaptureAddress)
+	m_vk.getDeviceMemoryOpaqueCaptureAddress			= (GetDeviceMemoryOpaqueCaptureAddressFunc)				GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
 m_vk.createSwapchainKHR									= (CreateSwapchainKHRFunc)								GET_PROC_ADDR("vkCreateSwapchainKHR");
 m_vk.destroySwapchainKHR								= (DestroySwapchainKHRFunc)								GET_PROC_ADDR("vkDestroySwapchainKHR");
 m_vk.getSwapchainImagesKHR								= (GetSwapchainImagesKHRFunc)							GET_PROC_ADDR("vkGetSwapchainImagesKHR");
@@ -183,23 +222,11 @@ m_vk.importSemaphoreFdKHR								= (ImportSemaphoreFdKHRFunc)							GET_PROC_ADD
 m_vk.getSemaphoreFdKHR									= (GetSemaphoreFdKHRFunc)								GET_PROC_ADDR("vkGetSemaphoreFdKHR");
 m_vk.cmdPushDescriptorSetKHR							= (CmdPushDescriptorSetKHRFunc)							GET_PROC_ADDR("vkCmdPushDescriptorSetKHR");
 m_vk.cmdPushDescriptorSetWithTemplateKHR				= (CmdPushDescriptorSetWithTemplateKHRFunc)				GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplateKHR");
-m_vk.createRenderPass2KHR								= (CreateRenderPass2KHRFunc)							GET_PROC_ADDR("vkCreateRenderPass2KHR");
-m_vk.cmdBeginRenderPass2KHR								= (CmdBeginRenderPass2KHRFunc)							GET_PROC_ADDR("vkCmdBeginRenderPass2KHR");
-m_vk.cmdNextSubpass2KHR									= (CmdNextSubpass2KHRFunc)								GET_PROC_ADDR("vkCmdNextSubpass2KHR");
-m_vk.cmdEndRenderPass2KHR								= (CmdEndRenderPass2KHRFunc)							GET_PROC_ADDR("vkCmdEndRenderPass2KHR");
 m_vk.getSwapchainStatusKHR								= (GetSwapchainStatusKHRFunc)							GET_PROC_ADDR("vkGetSwapchainStatusKHR");
 m_vk.importFenceFdKHR									= (ImportFenceFdKHRFunc)								GET_PROC_ADDR("vkImportFenceFdKHR");
 m_vk.getFenceFdKHR										= (GetFenceFdKHRFunc)									GET_PROC_ADDR("vkGetFenceFdKHR");
 m_vk.acquireProfilingLockKHR							= (AcquireProfilingLockKHRFunc)							GET_PROC_ADDR("vkAcquireProfilingLockKHR");
 m_vk.releaseProfilingLockKHR							= (ReleaseProfilingLockKHRFunc)							GET_PROC_ADDR("vkReleaseProfilingLockKHR");
-m_vk.cmdDrawIndirectCountKHR							= (CmdDrawIndirectCountKHRFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCountKHR");
-m_vk.cmdDrawIndexedIndirectCountKHR						= (CmdDrawIndexedIndirectCountKHRFunc)					GET_PROC_ADDR("vkCmdDrawIndexedIndirectCountKHR");
-m_vk.getSemaphoreCounterValueKHR						= (GetSemaphoreCounterValueKHRFunc)						GET_PROC_ADDR("vkGetSemaphoreCounterValueKHR");
-m_vk.waitSemaphoresKHR									= (WaitSemaphoresKHRFunc)								GET_PROC_ADDR("vkWaitSemaphoresKHR");
-m_vk.signalSemaphoreKHR									= (SignalSemaphoreKHRFunc)								GET_PROC_ADDR("vkSignalSemaphoreKHR");
-m_vk.getBufferDeviceAddressKHR							= (GetBufferDeviceAddressKHRFunc)						GET_PROC_ADDR("vkGetBufferDeviceAddressKHR");
-m_vk.getBufferOpaqueCaptureAddressKHR					= (GetBufferOpaqueCaptureAddressKHRFunc)				GET_PROC_ADDR("vkGetBufferOpaqueCaptureAddressKHR");
-m_vk.getDeviceMemoryOpaqueCaptureAddressKHR				= (GetDeviceMemoryOpaqueCaptureAddressKHRFunc)			GET_PROC_ADDR("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
 m_vk.getPipelineExecutablePropertiesKHR					= (GetPipelineExecutablePropertiesKHRFunc)				GET_PROC_ADDR("vkGetPipelineExecutablePropertiesKHR");
 m_vk.getPipelineExecutableStatisticsKHR					= (GetPipelineExecutableStatisticsKHRFunc)				GET_PROC_ADDR("vkGetPipelineExecutableStatisticsKHR");
 m_vk.getPipelineExecutableInternalRepresentationsKHR	= (GetPipelineExecutableInternalRepresentationsKHRFunc)	GET_PROC_ADDR("vkGetPipelineExecutableInternalRepresentationsKHR");
@@ -287,7 +314,6 @@ m_vk.getPerformanceParameterINTEL						= (GetPerformanceParameterINTELFunc)					
 m_vk.setLocalDimmingAMD									= (SetLocalDimmingAMDFunc)								GET_PROC_ADDR("vkSetLocalDimmingAMD");
 m_vk.getBufferDeviceAddressEXT							= (GetBufferDeviceAddressEXTFunc)						GET_PROC_ADDR("vkGetBufferDeviceAddressEXT");
 m_vk.cmdSetLineStippleEXT								= (CmdSetLineStippleEXTFunc)							GET_PROC_ADDR("vkCmdSetLineStippleEXT");
-m_vk.resetQueryPoolEXT									= (ResetQueryPoolEXTFunc)								GET_PROC_ADDR("vkResetQueryPoolEXT");
 m_vk.getAndroidHardwareBufferPropertiesANDROID			= (GetAndroidHardwareBufferPropertiesANDROIDFunc)		GET_PROC_ADDR("vkGetAndroidHardwareBufferPropertiesANDROID");
 m_vk.getMemoryAndroidHardwareBufferANDROID				= (GetMemoryAndroidHardwareBufferANDROIDFunc)			GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");
 m_vk.getMemoryWin32HandleKHR							= (GetMemoryWin32HandleKHRFunc)							GET_PROC_ADDR("vkGetMemoryWin32HandleKHR");

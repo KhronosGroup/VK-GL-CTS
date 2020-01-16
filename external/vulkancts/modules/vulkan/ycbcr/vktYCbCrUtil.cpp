@@ -203,10 +203,7 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 	}
 
 	for (const string& ext : reqExts)
-	{
-		if (!context.isDeviceFunctionalitySupported(ext))
-			TCU_THROW(NotSupportedError, (ext + " is not supported").c_str());
-	}
+		context.requireDeviceFunctionality(ext);
 
 	if (features.samplerYcbcrConversion == VK_FALSE)
 	{

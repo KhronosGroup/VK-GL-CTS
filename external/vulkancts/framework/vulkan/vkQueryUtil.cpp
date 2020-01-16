@@ -155,6 +155,43 @@ VkPhysicalDeviceFeatures2 getPhysicalDeviceFeatures2 (const InstanceInterface& v
 	return features;
 }
 
+VkPhysicalDeviceVulkan12Features getPhysicalDeviceVulkan12Features (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceFeatures2			features;
+	VkPhysicalDeviceVulkan12Features	vulkan_12_features;
+
+	deMemset(&features, 0, sizeof(features));
+	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+	deMemset(&vulkan_12_features, 0, sizeof(vulkan_12_features));
+	vulkan_12_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+	features.pNext = &vulkan_12_features;
+
+	vk.getPhysicalDeviceFeatures2(physicalDevice, &features);
+	return vulkan_12_features;
+}
+
+VkPhysicalDeviceVulkan11Properties getPhysicalDeviceVulkan11Properties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceVulkan11Properties	vulkan11properties	= initVulkanStructure();
+	VkPhysicalDeviceProperties2			properties			= initVulkanStructure(&vulkan11properties);
+
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties);
+
+	return vulkan11properties;
+}
+
+VkPhysicalDeviceVulkan12Properties getPhysicalDeviceVulkan12Properties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceVulkan12Properties	vulkan12properties	= initVulkanStructure();
+	VkPhysicalDeviceProperties2			properties			= initVulkanStructure(&vulkan12properties);
+
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties);
+
+	return vulkan12properties;
+}
+
 VkPhysicalDeviceProperties getPhysicalDeviceProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
 	VkPhysicalDeviceProperties	properties;

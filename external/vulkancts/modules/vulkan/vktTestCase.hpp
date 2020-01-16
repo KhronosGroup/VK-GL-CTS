@@ -72,6 +72,7 @@ public:
 	const vk::InstanceInterface&				getInstanceInterface				(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice					(void) const;
 	deUint32									getDeviceVersion					(void) const;
+	bool										isDeviceFeatureInitialized			(vk::VkStructureType sType) const;
 	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures					(void) const;
 	const vk::VkPhysicalDeviceFeatures2&		getDeviceFeatures2					(void) const;
 
@@ -80,7 +81,12 @@ public:
 
 #include "vkDeviceFeaturesForContextDecl.inl"
 
+	bool										isDevicePropertyInitialized			(vk::VkStructureType sType) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties					(void) const;
+	const vk::VkPhysicalDeviceProperties2&		getDeviceProperties2				(void) const;
+
+#include "vkDevicePropertiesForContextDecl.inl"
+
 	const std::vector<std::string>&				getDeviceExtensions					(void) const;
 	vk::VkDevice								getDevice							(void) const;
 	const vk::DeviceInterface&					getDeviceInterface					(void) const;
@@ -93,16 +99,16 @@ public:
 	bool										contextSupports						(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports						(const vk::ApiVersion version) const;
 	bool										contextSupports						(const deUint32 requiredApiVersionBits) const;
-	bool										requireDeviceFunctionality			(const std::string& required);
-	bool										requireInstanceFunctionality		(const std::string& required);
+	bool										requireDeviceFunctionality			(const std::string& required) const;
+	bool										requireInstanceFunctionality		(const std::string& required) const;
 	bool										requireDeviceCoreFeature			(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 	void*										getInstanceProcAddr					();
 
+	bool										isBufferDeviceAddressSupported						(void) const;
+
 	bool										resultSetOnValidation			() const		{ return m_resultSetOnValidation;	}
 	void										resultSetOnValidation			(bool value)	{ m_resultSetOnValidation = value;	}
-
-	bool										isBufferDeviceAddressSupported						(void) const;
 
 protected:
 	tcu::TestContext&							m_testCtx;

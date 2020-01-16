@@ -296,6 +296,9 @@ bool compileShaderToSpirV (const std::vector<std::string>* sources, const Shader
 			case SPIRV_VERSION_1_4:
 				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10400);
 				break;
+			case SPIRV_VERSION_1_5:
+				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10500);
+				break;
 			default:
 				TCU_THROW(InternalError, "Unsupported SPIR-V target version");
 			}

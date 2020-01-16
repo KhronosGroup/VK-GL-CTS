@@ -154,19 +154,19 @@ void FSITestCase::checkSupport(Context& context) const
 	context.requireDeviceFunctionality("VK_EXT_fragment_shader_interlock");
 
 	if ((m_data.interlock == INT_SAMPLE_ORDERED || m_data.interlock == INT_SAMPLE_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeatures().fragmentShaderSampleInterlock)
+		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderSampleInterlock)
 	{
 		TCU_THROW(NotSupportedError, "Fragment shader sample interlock not supported");
 	}
 
 	if ((m_data.interlock == INT_PIXEL_ORDERED || m_data.interlock == INT_PIXEL_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeatures().fragmentShaderPixelInterlock)
+		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderPixelInterlock)
 	{
 		TCU_THROW(NotSupportedError, "Fragment shader pixel interlock not supported");
 	}
 
 	if ((m_data.interlock == INT_SHADING_RATE_ORDERED || m_data.interlock == INT_SHADING_RATE_UNORDERED) &&
-		!context.getFragmentShaderInterlockFeatures().fragmentShaderShadingRateInterlock)
+		!context.getFragmentShaderInterlockFeaturesEXT().fragmentShaderShadingRateInterlock)
 	{
 		TCU_THROW(NotSupportedError, "Fragment shader shading rate interlock not supported");
 	}

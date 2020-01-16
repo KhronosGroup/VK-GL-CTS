@@ -636,7 +636,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	const VkDevice			device					= m_context.getDevice();
 	Allocator&				allocator				= m_context.getDefaultAllocator();
 	MemoryRequirement		memoryDeviceAddress		= m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER &&
-														m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
+													  m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address") ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any;
 	qpTestResult			finalres				= QP_TEST_RESULT_PASS;
 	tcu::TestLog&			log						= m_context.getTestContext().getLog();
 
@@ -846,9 +846,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 		{
 			const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-			VkBufferDeviceAddressInfoKHR info =
+			VkBufferDeviceAddressInfo info =
 			{
-				VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	 sType;
+				VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	 sType;
 				DE_NULL,											// const void*		 pNext;
 				0,													// VkBuffer			buffer
 			};
@@ -858,7 +858,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 				info.buffer = **buffers[i];
 				VkDeviceAddress addr;
 				if (useKHR)
-					addr = vk.getBufferDeviceAddressKHR(device, &info);
+					addr = vk.getBufferDeviceAddress(device, &info);
 				else
 					addr = vk.getBufferDeviceAddressEXT(device, &info);
 				addrsInMemory[i] = addr;

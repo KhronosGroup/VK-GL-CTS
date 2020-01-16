@@ -227,9 +227,13 @@ CustomInstance createCustomInstanceWithExtensions (Context& context, const std::
 	const std::vector<vk::VkExtensionProperties>	availableExtensions	= vk::enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	vector<string>									extensionPtrs;
 
+	vector<string> availableExtensionNames;
+	for (const auto& ext : availableExtensions)
+		availableExtensionNames.push_back(ext.extensionName);
+
 	for (const auto& ext : extensions)
 	{
-		if (!context.isInstanceFunctionalitySupported(ext))
+		if (!vk::isInstanceExtensionSupported(apiVersion, availableExtensionNames, ext))
 			TCU_THROW(NotSupportedError, ext + " is not supported");
 
 		if (!vk::isCoreInstanceExtension(apiVersion, ext))

@@ -99,12 +99,14 @@ struct GraphicsResources
 	VerifyIOFunc				verifyIO;
 	GraphicsVerifyBinaryFunc	verifyBinary;
 	SpirvVersion				spirvVersion;
+	bool						spirvVersion14;
 
 							GraphicsResources()
-								: inputFormat	(VK_FORMAT_R32G32B32A32_SFLOAT)
-								, verifyIO		(DE_NULL)
-								, verifyBinary	(DE_NULL)
-								, spirvVersion	(SPIRV_VERSION_1_0)
+								: inputFormat		(VK_FORMAT_R32G32B32A32_SFLOAT)
+								, verifyIO			(DE_NULL)
+								, verifyBinary		(DE_NULL)
+								, spirvVersion		(SPIRV_VERSION_1_0)
+								, spirvVersion14	(false)
 							{}
 };
 

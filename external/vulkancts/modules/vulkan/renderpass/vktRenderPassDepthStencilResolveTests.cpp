@@ -100,8 +100,8 @@ struct TestConfig
 	VkRect2D					renderArea;
 	VkImageAspectFlags			aspectFlag;
 	deUint32					sampleCount;
-	VkResolveModeFlagBitsKHR	depthResolveMode;
-	VkResolveModeFlagBitsKHR	stencilResolveMode;
+	VkResolveModeFlagBits		depthResolveMode;
+	VkResolveModeFlagBits		stencilResolveMode;
 	VerifyBuffer				verifyBuffer;
 	VkClearDepthStencilValue	clearValue;
 	float						depthExpectedValue;
@@ -225,9 +225,9 @@ bool DepthStencilResolveTest::isFeaturesSupported()
 	if (m_config.separateDepthStencilLayouts)
 		m_context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
 
-	VkPhysicalDeviceDepthStencilResolvePropertiesKHR dsResolveProperties;
-	deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR));
-	dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+	VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties;
+	deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
+	dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
 	dsResolveProperties.pNext = DE_NULL;
 
 	VkPhysicalDeviceProperties2 deviceProperties;
@@ -240,23 +240,23 @@ bool DepthStencilResolveTest::isFeaturesSupported()
 	instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
 
 	// check if both modes are supported
-	VkResolveModeFlagBitsKHR depthResolveMode		= m_config.depthResolveMode;
-	VkResolveModeFlagBitsKHR stencilResolveMode		= m_config.stencilResolveMode;
-	if ((depthResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
+	VkResolveModeFlagBits depthResolveMode		= m_config.depthResolveMode;
+	VkResolveModeFlagBits stencilResolveMode		= m_config.stencilResolveMode;
+	if ((depthResolveMode != VK_RESOLVE_MODE_NONE) &&
 		!(depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
 		TCU_THROW(NotSupportedError, "Depth resolve mode not supported");
-	if ((stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
+	if ((stencilResolveMode != VK_RESOLVE_MODE_NONE) &&
 		!(stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
 		TCU_THROW(NotSupportedError, "Stencil resolve mode not supported");
 
 	// check if the implementation supports setting the depth and stencil resolve
-	// modes to different values when one of those modes is VK_RESOLVE_MODE_NONE_KHR
+	// modes to different values when one of those modes is VK_RESOLVE_MODE_NONE
 	if (dsResolveProperties.independentResolveNone)
 	{
 		if ((!dsResolveProperties.independentResolve) &&
 			(depthResolveMode != stencilResolveMode) &&
-			(depthResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
-			(stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR))
+			(depthResolveMode != VK_RESOLVE_MODE_NONE) &&
+			(stencilResolveMode != VK_RESOLVE_MODE_NONE))
 			TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 	}
 	else if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
@@ -486,7 +486,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 		attachmentDescriptionStencil = &stencilFinalLayout;
 	}
 
-	const AttachmentDescription2 multisampleAttachment		// VkAttachmentDescription2KHR
+	const AttachmentDescription2 multisampleAttachment		// VkAttachmentDescription2
 	(
 															// VkStructureType					sType;
 		attachmentDescriptionStencil,						// const void*						pNext;
@@ -500,7 +500,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
 		finalLayout											// VkImageLayout					finalLayout;
 	);
-	const AttachmentReference2 multisampleAttachmentRef		// VkAttachmentReference2KHR
+	const AttachmentReference2 multisampleAttachmentRef		// VkAttachmentReference2
 	(
 															// VkStructureType					sType;
 		attachmentRefStencil,								// const void*						pNext;
@@ -511,7 +511,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 
 	const vk::VkImageLayout		singleSampleInitialLayout = (m_config.unusedResolve ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED);
 
-	const AttachmentDescription2 singlesampleAttachment		// VkAttachmentDescription2KHR
+	const AttachmentDescription2 singlesampleAttachment		// VkAttachmentDescription2
 	(
 															// VkStructureType					sType;
 		attachmentDescriptionStencil,						// const void*						pNext;
@@ -525,7 +525,7 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 		singleSampleInitialLayout,							// VkImageLayout					initialLayout;
 		finalLayout											// VkImageLayout					finalLayout;
 	);
-	AttachmentReference2 singlesampleAttachmentRef			// VkAttachmentReference2KHR
+	AttachmentReference2 singlesampleAttachmentRef			// VkAttachmentReference2
 	(
 																// VkStructureType					sType;
 		DE_NULL,												// const void*						pNext;
@@ -538,16 +538,16 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 	attachments.push_back(multisampleAttachment);
 	attachments.push_back(singlesampleAttachment);
 
-	VkSubpassDescriptionDepthStencilResolveKHR dsResolveDescription =
+	VkSubpassDescriptionDepthStencilResolve dsResolveDescription =
 	{
-		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR,
+		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
 		DE_NULL,																// const void*						pNext;
-		m_config.depthResolveMode,												// VkResolveModeFlagBitsKHR			depthResolveMode;
-		m_config.stencilResolveMode,											// VkResolveModeFlagBitsKHR			stencilResolveMode;
-		&singlesampleAttachmentRef												// VkAttachmentReference2KHR		pDepthStencilResolveAttachment;
+		m_config.depthResolveMode,												// VkResolveModeFlagBits			depthResolveMode;
+		m_config.stencilResolveMode,											// VkResolveModeFlagBits			stencilResolveMode;
+		&singlesampleAttachmentRef												// VkAttachmentReference2			pDepthStencilResolveAttachment;
 	};
 
-	const SubpassDescription2 subpass					// VkSubpassDescription2KHR
+	const SubpassDescription2 subpass					// VkSubpassDescription2
 	(
 														// VkStructureType						sType;
 		&dsResolveDescription,							// const void*							pNext;
@@ -555,26 +555,26 @@ Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 		VK_PIPELINE_BIND_POINT_GRAPHICS,				// VkPipelineBindPoint					pipelineBindPoint;
 		0u,												// deUint32								viewMask;
 		0u,												// deUint32								inputAttachmentCount;
-		DE_NULL,										// const VkAttachmentReference2KHR*		pInputAttachments;
+		DE_NULL,										// const VkAttachmentReference2*		pInputAttachments;
 		0u,												// deUint32								colorAttachmentCount;
-		DE_NULL,										// const VkAttachmentReference2KHR*		pColorAttachments;
-		DE_NULL,										// const VkAttachmentReference2KHR*		pResolveAttachments;
-		&multisampleAttachmentRef,						// const VkAttachmentReference2KHR*		pDepthStencilAttachment;
+		DE_NULL,										// const VkAttachmentReference2*		pColorAttachments;
+		DE_NULL,										// const VkAttachmentReference2*		pResolveAttachments;
+		&multisampleAttachmentRef,						// const VkAttachmentReference2*		pDepthStencilAttachment;
 		0u,												// deUint32								preserveAttachmentCount;
 		DE_NULL											// const deUint32*						pPreserveAttachments;
 	);
 
-	const RenderPassCreateInfo2 renderPassCreator		// VkRenderPassCreateInfo2KHR
+	const RenderPassCreateInfo2 renderPassCreator		// VkRenderPassCreateInfo2
 	(
 														// VkStructureType						sType;
 		DE_NULL,										// const void*							pNext;
 		(VkRenderPassCreateFlags)0u,					// VkRenderPassCreateFlags				flags;
 		(deUint32)attachments.size(),					// deUint32								attachmentCount;
-		&attachments[0],								// const VkAttachmentDescription2KHR*	pAttachments;
+		&attachments[0],								// const VkAttachmentDescription2*		pAttachments;
 		1u,												// deUint32								subpassCount;
-		&subpass,										// const VkSubpassDescription2KHR*		pSubpasses;
+		&subpass,										// const VkSubpassDescription2*			pSubpasses;
 		0u,												// deUint32								dependencyCount;
-		DE_NULL,										// const VkSubpassDependency2KHR*		pDependencies;
+		DE_NULL,										// const VkSubpassDependency2*			pDependencies;
 		0u,												// deUint32								correlatedViewMaskCount;
 		DE_NULL											// const deUint32*						pCorrelatedViewMasks;
 	);
@@ -917,7 +917,7 @@ bool DepthStencilResolveTest::verifyDepth (void)
 	invalidateMappedMemoryRange(vkd, m_context.getDevice(), m_bufferMemory->getMemory(), m_bufferMemory->getOffset(), VK_WHOLE_SIZE);
 
 	float expectedValue = m_config.depthExpectedValue;
-	if (m_config.depthResolveMode == VK_RESOLVE_MODE_NONE_KHR || m_config.unusedResolve)
+	if (m_config.depthResolveMode == VK_RESOLVE_MODE_NONE || m_config.unusedResolve)
 		expectedValue = m_config.clearValue.depth;
 
 	// depth data in buffer is tightly packed, ConstPixelBufferAccess
@@ -1007,7 +1007,7 @@ bool DepthStencilResolveTest::verifyStencil (void)
 	// because of that depth and stencil need to be tested separately
 
 	deUint8 expectedValue = m_config.stencilExpectedValue;
-	if (m_config.stencilResolveMode == VK_RESOLVE_MODE_NONE_KHR || m_config.unusedResolve)
+	if (m_config.stencilResolveMode == VK_RESOLVE_MODE_NONE || m_config.unusedResolve)
 		expectedValue = static_cast<deUint8>(m_config.clearValue.stencil);
 
 	for (deUint32 valueIndex = 0; valueIndex < valuesCount; valueIndex++)
@@ -1240,16 +1240,16 @@ void initTests (tcu::TestCaseGroup* group)
 
 	struct ResolveModeData
 	{
-		VkResolveModeFlagBitsKHR	flag;
-		std::string					name;
+		VkResolveModeFlagBits	flag;
+		std::string				name;
 	};
 	ResolveModeData resolveModes[] =
 	{
-		{ VK_RESOLVE_MODE_NONE_KHR,				"none" },
-		{ VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,	"zero" },
-		{ VK_RESOLVE_MODE_AVERAGE_BIT_KHR,		"average" },
-		{ VK_RESOLVE_MODE_MIN_BIT_KHR,			"min" },
-		{ VK_RESOLVE_MODE_MAX_BIT_KHR,			"max" },
+		{ VK_RESOLVE_MODE_NONE,				"none" },
+		{ VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,	"zero" },
+		{ VK_RESOLVE_MODE_AVERAGE_BIT,		"average" },
+		{ VK_RESOLVE_MODE_MIN_BIT,			"min" },
+		{ VK_RESOLVE_MODE_MAX_BIT,			"max" },
 	};
 
 	struct ImageTestData
@@ -1355,24 +1355,24 @@ void initTests (tcu::TestCaseGroup* group)
 							{
 								// there is no average resolve mode for stencil - go to next iteration
 								ResolveModeData& sResolve = resolveModes[stencilResolveModeNdx];
-								if (sResolve.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
+								if (sResolve.flag == VK_RESOLVE_MODE_AVERAGE_BIT)
 									continue;
 
 								// if pDepthStencilResolveAttachment is not NULL and does not have the value VK_ATTACHMENT_UNUSED,
 								// depthResolveMode and stencilResolveMode must not both be VK_RESOLVE_MODE_NONE_KHR
 								ResolveModeData& dResolve = resolveModes[depthResolveModeNdx];
-								if ((dResolve.flag == VK_RESOLVE_MODE_NONE_KHR) && (sResolve.flag == VK_RESOLVE_MODE_NONE_KHR))
+								if ((dResolve.flag == VK_RESOLVE_MODE_NONE) && (sResolve.flag == VK_RESOLVE_MODE_NONE))
 									continue;
 
 								// If there is no depth, the depth resolve mode should be NONE, or
 								// match the stencil resolve mode.
-								if (!hasDepth && (dResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
+								if (!hasDepth && (dResolve.flag != VK_RESOLVE_MODE_NONE) &&
 									(dResolve.flag != sResolve.flag))
 									continue;
 
 								// If there is no stencil, the stencil resolve mode should be NONE, or
 								// match the depth resolve mode.
-								if (!hasStencil && (sResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
+								if (!hasStencil && (sResolve.flag != VK_RESOLVE_MODE_NONE) &&
 									(dResolve.flag != sResolve.flag))
 									continue;
 
@@ -1517,7 +1517,7 @@ void initTests (tcu::TestCaseGroup* group)
 									aspectFlags,
 									sampleCount,
 									mode.flag,
-									VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+									VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,
 									VB_DEPTH,
 									layeredTextureTestData.clearValue,
 									expectedValue,
@@ -1529,7 +1529,7 @@ void initTests (tcu::TestCaseGroup* group)
 							}
 
 							// there is no average resolve mode for stencil - go to next iteration
-							if (mode.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
+							if (mode.flag == VK_RESOLVE_MODE_AVERAGE_BIT)
 								continue;
 
 							if (hasStencil)
@@ -1548,7 +1548,7 @@ void initTests (tcu::TestCaseGroup* group)
 									layeredTextureTestData.renderArea,
 									aspectFlags,
 									sampleCount,
-									VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+									VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,
 									mode.flag,
 									VB_STENCIL,
 									layeredTextureTestData.clearValue,

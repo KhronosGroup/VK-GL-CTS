@@ -398,6 +398,16 @@ inline VkExternalMemoryProperties makeExternalMemoryProperties (VkExternalMemory
 	return res;
 }
 
+inline VkConformanceVersion makeConformanceVersion (deUint8 major, deUint8 minor, deUint8 subminor, deUint8 patch)
+{
+	VkConformanceVersion res;
+	res.major		= major;
+	res.minor		= minor;
+	res.subminor	= subminor;
+	res.patch		= patch;
+	return res;
+}
+
 inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
 {
 	VkSurfaceFormatKHR res;
@@ -419,16 +429,6 @@ inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const V
 	VkPresentRegionKHR res;
 	res.rectangleCount	= rectangleCount;
 	res.pRectangles		= pRectangles;
-	return res;
-}
-
-inline VkConformanceVersionKHR makeConformanceVersionKHR (deUint8 major, deUint8 minor, deUint8 subminor, deUint8 patch)
-{
-	VkConformanceVersionKHR res;
-	res.major		= major;
-	res.minor		= minor;
-	res.subminor	= subminor;
-	res.patch		= patch;
 	return res;
 }
 

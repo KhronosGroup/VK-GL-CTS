@@ -741,12 +741,12 @@ vk::Move<vk::VkSemaphore> createExportableSemaphore (const vk::DeviceInterface&	
 
 vk::Move<vk::VkSemaphore> createExportableSemaphoreType (const vk::DeviceInterface&					vkd,
 														 vk::VkDevice								device,
-														 vk::VkSemaphoreTypeKHR						semaphoreType,
+														 vk::VkSemaphoreType						semaphoreType,
 														 vk::VkExternalSemaphoreHandleTypeFlagBits	externalType)
 {
-	const vk::VkSemaphoreTypeCreateInfoKHR		semaphoreTypeCreateInfo	=
+	const vk::VkSemaphoreTypeCreateInfo		semaphoreTypeCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 		DE_NULL,
 		semaphoreType,
 		0,

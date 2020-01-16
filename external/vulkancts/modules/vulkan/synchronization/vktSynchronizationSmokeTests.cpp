@@ -973,11 +973,11 @@ static void initSubmitInfo (VkSubmitInfo* submitInfo, deUint32 submitInfoCount)
 	}
 }
 
-static void initTimelineSemaphoreSubmitInfo (VkTimelineSemaphoreSubmitInfoKHR* submitInfo, deUint32 submitInfoCount)
+static void initTimelineSemaphoreSubmitInfo (VkTimelineSemaphoreSubmitInfo* submitInfo, deUint32 submitInfoCount)
 {
 	for (deUint32 ndx = 0; ndx < submitInfoCount; ndx++)
 	{
-		submitInfo[ndx].sType						= VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+		submitInfo[ndx].sType						= VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 		submitInfo[ndx].pNext						= DE_NULL;
 		submitInfo[ndx].waitSemaphoreValueCount		= 0;
 		submitInfo[ndx].pWaitSemaphoreValues		= DE_NULL;
@@ -1090,19 +1090,19 @@ tcu::TestStatus testFences (Context& context)
 	return TestStatus::pass("synchronization-fences passed");
 }
 
-tcu::TestStatus testSemaphores (Context& context, VkSemaphoreTypeKHR semaphoreType)
+tcu::TestStatus testSemaphores (Context& context, VkSemaphoreType semaphoreType)
 {
-	TestLog&							log						= context.getTestContext().getLog();
-	const PlatformInterface&			platformInterface		= context.getPlatformInterface();
-	const InstanceInterface&			instanceInterface		= context.getInstanceInterface();
-	const VkPhysicalDevice				physicalDevice			= context.getPhysicalDevice();
-	deUint32							queueFamilyIdx;
-	vk::Move<VkDevice>					device					= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, context.getTestContext().getCommandLine().isValidationEnabled(), &queueFamilyIdx);
-	const DeviceDriver					deviceInterface			(platformInterface, context.getInstance(), *device);
-	SimpleAllocator						allocator				(deviceInterface,
-																 *device,
-																 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
-	const VkQueue						queue[2]				=
+	TestLog&					log					= context.getTestContext().getLog();
+	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
+	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
+	deUint32					queueFamilyIdx;
+	vk::Move<VkDevice>			device				= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, context.getTestContext().getCommandLine().isValidationEnabled(), &queueFamilyIdx);
+	const DeviceDriver			deviceInterface		(platformInterface, context.getInstance(), *device);
+	SimpleAllocator				allocator			(deviceInterface,
+													 *device,
+													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));
+	const VkQueue				queue[2]			=
 	{
 		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 0),
 		getDeviceQueue(deviceInterface, *device, queueFamilyIdx, 1)
@@ -1112,7 +1112,7 @@ tcu::TestStatus testSemaphores (Context& context, VkSemaphoreTypeKHR semaphoreTy
 	TestContext							testContext2			(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
 	Unique<VkSemaphore>					semaphore				(createSemaphoreType(deviceInterface, *device, semaphoreType));
 	VkSubmitInfo						submitInfo[2];
-	VkTimelineSemaphoreSubmitInfoKHR	timelineSubmitInfo[2];
+	VkTimelineSemaphoreSubmitInfo		timelineSubmitInfo[2];
 	const deUint64						timelineValue			= 1u;
 
 	void*						resultImage;
@@ -1161,12 +1161,12 @@ tcu::TestStatus testSemaphores (Context& context, VkSemaphoreTypeKHR semaphoreTy
 	submitInfo[0].pSignalSemaphores					= &semaphore.get();
 	timelineSubmitInfo[0].pSignalSemaphoreValues	= &timelineValue;
 	timelineSubmitInfo[0].signalSemaphoreValueCount	= 1;
-	submitInfo[0].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR ? &timelineSubmitInfo[0] : DE_NULL);
+	submitInfo[0].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE ? &timelineSubmitInfo[0] : DE_NULL);
 	submitInfo[1].waitSemaphoreCount				= 1;
 	submitInfo[1].pWaitSemaphores					= &semaphore.get();
 	timelineSubmitInfo[1].pWaitSemaphoreValues		= &timelineValue;
 	timelineSubmitInfo[1].waitSemaphoreValueCount	= 1;
-	submitInfo[1].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR ? &timelineSubmitInfo[1] : DE_NULL);
+	submitInfo[1].pNext = (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE ? &timelineSubmitInfo[1] : DE_NULL);
 	submitInfo[1].pWaitDstStageMask					= &waitDstStageMask;
 
 	VK_CHECK(deviceInterface.queueSubmit(queue[0], 1, &submitInfo[0], testContext1.fences[0]));

@@ -953,7 +953,7 @@ public:
 	{
 		ctx.requireDeviceFunctionality("VK_KHR_bind_memory2");
 
-		if (m_params.usePriority && !ctx.getMemoryPriorityFeatures().memoryPriority)
+		if (m_params.usePriority && !ctx.getMemoryPriorityFeaturesEXT().memoryPriority)
 			TCU_THROW(NotSupportedError, "VK_EXT_memory_priority Not supported");
 	}
 

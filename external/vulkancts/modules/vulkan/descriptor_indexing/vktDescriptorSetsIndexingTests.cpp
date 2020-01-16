@@ -560,30 +560,30 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 		}
 	};
 
-	const VkDescriptorBindingFlagsEXT	bindingFlagUpdateAfterBind =
-		m_testParams.updateAfterBind ? VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT : 0;
+	const VkDescriptorBindingFlags	bindingFlagUpdateAfterBind =
+		m_testParams.updateAfterBind ? VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT : 0;
 
-	const VkDescriptorBindingFlagsEXT bindingFlagsExt[] =
+	const VkDescriptorBindingFlags bindingFlags[] =
 	{
-		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | bindingFlagUpdateAfterBind,
-		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | bindingFlagUpdateAfterBind
+		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | bindingFlagUpdateAfterBind,
+		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | bindingFlagUpdateAfterBind
 	};
 
-	const VkDescriptorSetLayoutBindingFlagsCreateInfoEXT	bindingCreateInfoExt =
+	const VkDescriptorSetLayoutBindingFlagsCreateInfo	bindingCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
 		DE_NULL,
 		optional ? 2u : 1u,	// bindingCount
-		bindingFlagsExt,	// pBindingFlags
+		bindingFlags,		// pBindingFlags
 	};
 
 	const VkDescriptorSetLayoutCreateFlags	layoutCreateFlags =
-		m_testParams.updateAfterBind ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT : 0;
+		m_testParams.updateAfterBind ? VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT : 0;
 
 	const VkDescriptorSetLayoutCreateInfo	layoutCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		&bindingCreateInfoExt,	// pNext
+		&bindingCreateInfo,		// pNext
 		layoutCreateFlags,		// flags
 		optional ? 2u : 1u,		// bindingCount
 		bindings,				// pBindings
@@ -594,7 +594,7 @@ Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout 
 
 Move<VkDescriptorPool>	CommonDescriptorInstance::createDescriptorPool (deUint32							descriptorCount) const
 {
-	const VkDescriptorPoolCreateFlags pcf = m_testParams.updateAfterBind ? VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT : 0;
+	const VkDescriptorPoolCreateFlags pcf = m_testParams.updateAfterBind ? VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT : 0;
 
 	DescriptorPoolBuilder builder;
 

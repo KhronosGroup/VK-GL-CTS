@@ -35,8 +35,8 @@ add_subdirectory(memory_model)
 add_subdirectory(transform_feedback)
 add_subdirectory(util)
 add_subdirectory(amber)
-add_subdirectory(descriptor_indexing)
 add_subdirectory(imageless_framebuffer)
+add_subdirectory(descriptor_indexing)
 add_subdirectory(fragment_shader_interlock)
 
 include_directories(
@@ -75,8 +75,8 @@ include_directories(
 	transform_feedback
 	util
 	amber
-	descriptor_indexing
 	imageless_framebuffer
+	descriptor_indexing
 	fragment_shader_interlock
 	)
 
@@ -135,9 +135,9 @@ set(DEQP_VK_LIBS
 	deqp-vk-protected-memory
 	deqp-vk-memory-model
 	deqp-vk-amber
+	deqp-vk-imageless-framebuffer
 	deqp-vk-transform-feedback
 	deqp-vk-descriptor-indexing
-	deqp-vk-imageless-framebuffer
 	deqp-vk-fragment-shader-interlock
 	)
 

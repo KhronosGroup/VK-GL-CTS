@@ -29,6 +29,7 @@
 #include "tcuDefs.hpp"
 
 #include "vkDefs.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktAmberTestCase.hpp"
 #include "vktSpvAsmSpirvVersion1p4Tests.hpp"
 #include "vktTestGroupUtil.hpp"

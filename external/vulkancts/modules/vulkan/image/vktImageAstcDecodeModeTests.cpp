@@ -437,7 +437,7 @@ void AstcDecodeModeCase::checkSupport (Context& context) const
 		TCU_THROW(NotSupportedError, "Operation not supported with this image format");
 
 	if ((m_parameters.testedDecodeMode == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32) &&
-		!context.getASTCDecodeFeatures().decodeModeSharedExponent)
+		!context.getASTCDecodeFeaturesEXT().decodeModeSharedExponent)
 		TCU_THROW(NotSupportedError, "decodeModeSharedExponent not supported");
 
 	VkFormatProperties properties;

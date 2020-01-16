@@ -73,7 +73,7 @@ Move<VkBuffer> createBufferAndBindMemory (vkt::Context&				context,
 	VkBufferUsageFlags			usageFlags			= (VkBufferUsageFlags)0u;
 
 	if (physStorageBuffer)
-		usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
+		usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
 	switch (dtype)
 	{
@@ -423,11 +423,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	vector<VkDescriptorType>			descriptorTypes;
 
 	// Check all required extensions are supported
-	for (std::vector<std::string>::const_iterator i = m_shaderSpec.extensions.begin(); i != m_shaderSpec.extensions.end(); ++i)
-	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), *i))
-			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
-	}
+	for (const auto& ext : m_shaderSpec.extensions)
+		m_context.requireDeviceFunctionality(ext);
 
 	// Core features
 	{
@@ -769,9 +766,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	{
 		const bool useKHR = m_context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address");
 
-		VkBufferDeviceAddressInfoKHR info =
+		VkBufferDeviceAddressInfo info =
 		{
-			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,		// VkStructureType	sType;
 			DE_NULL,											// const void*		pNext;
 			0,													// VkBuffer			buffer
 		};
@@ -781,7 +778,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			info.buffer = **inputBuffers[inputNdx];
 			VkDeviceAddress addr;
 			if (useKHR)
-				addr = vkdi.getBufferDeviceAddressKHR(device, &info);
+				addr = vkdi.getBufferDeviceAddress(device, &info);
 			else
 				addr = vkdi.getBufferDeviceAddressEXT(device, &info);
 			gpuAddrs.push_back(addr);
@@ -791,7 +788,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			info.buffer = **outputBuffers[outputNdx];
 			VkDeviceAddress addr;
 			if (useKHR)
-				addr = vkdi.getBufferDeviceAddressKHR(device, &info);
+				addr = vkdi.getBufferDeviceAddress(device, &info);
 			else
 				addr = vkdi.getBufferDeviceAddressEXT(device, &info);
 			gpuAddrs.push_back(addr);

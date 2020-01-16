@@ -47,6 +47,9 @@ std::vector<VkPhysicalDeviceGroupProperties>	enumeratePhysicalDeviceGroups					(
 std::vector<VkQueueFamilyProperties>			getPhysicalDeviceQueueFamilyProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures						getPhysicalDeviceFeatures						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures2						getPhysicalDeviceFeatures2						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkan12Features				getPhysicalDeviceVulkan12Features				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkan11Properties				getPhysicalDeviceVulkan11Properties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceVulkan12Properties				getPhysicalDeviceVulkan12Properties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkFormatProperties								getPhysicalDeviceFormatProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
@@ -137,6 +140,58 @@ StructType*									findStructure							(void* first)
 	return reinterpret_cast<StructType*>(findStructureInChain(first, getStructureType<StructType>()));
 }
 
+struct initVulkanStructure
+{
+	initVulkanStructure	(void*	pNext = DE_NULL)	: m_next(pNext)	{};
+
+	template<class StructType>
+	operator StructType()
+	{
+		StructType result;
+
+		deMemset(&result, 0x00, sizeof(StructType));
+
+		result.sType	= getStructureType<StructType>();
+		result.pNext	= m_next;
+
+		return result;
+	}
+
+private:
+	void*	m_next;
+};
+
+template<class StructType>
+void addToChainVulkanStructure (void***	chainPNextPtr, StructType&	structType)
+{
+	DE_ASSERT(chainPNextPtr != DE_NULL);
+
+	(**chainPNextPtr) = &structType;
+
+	(*chainPNextPtr) = &structType.pNext;
+}
+
+struct initVulkanStructureConst
+{
+	initVulkanStructureConst	(const void*	pNext = DE_NULL)	: m_next(pNext)	{};
+
+	template<class StructType>
+	operator const StructType()
+	{
+		StructType result;
+
+		deMemset(&result, 0x00, sizeof(StructType));
+
+		result.sType	= getStructureType<StructType>();
+		result.pNext	= const_cast<void*>(m_next);
+
+		return result;
+	}
+
+private:
+	const void*	m_next;
+};
+
 struct getPhysicalDeviceExtensionProperties
 {
 	getPhysicalDeviceExtensionProperties (const InstanceInterface&	vki, VkPhysicalDevice physicalDevice) : m_vki(vki), m_physicalDevice(physicalDevice) {};
@@ -201,6 +256,30 @@ bool validateInitComplete(Context context, void (Interface::*Function)(Context, 
 	{
 		if (deMemCmp(((deUint8*)(&vec[0]))+iterator->offset, ((deUint8*)(&vec[1]))+iterator->offset, iterator->size) != 0)
 			return false;
+	}
+
+	return true;
+}
+
+template <typename Type>
+//!< Return variable initialization validation
+bool validateStructsWithGuard (const QueryMemberTableEntry* queryMemberTableEntry, Type* vec[2], const deUint8 guardValue, const deUint32 guardSize)
+{
+	const QueryMemberTableEntry	*iterator;
+
+	for (iterator = queryMemberTableEntry; iterator->size != 0; iterator++)
+	{
+		if (deMemCmp(((deUint8*)(vec[0]))+iterator->offset, ((deUint8*)(vec[1]))+iterator->offset, iterator->size) != 0)
+			return false;
+	}
+
+	for (deUint32 vecNdx = 0; vecNdx < 2; ++vecNdx)
+	{
+		for (deUint32 ndx = 0; ndx < guardSize; ndx++)
+		{
+			if (((deUint8*)(vec[vecNdx]))[ndx + sizeof(Type)] != guardValue)
+				return false;
+		}
 	}
 
 	return true;

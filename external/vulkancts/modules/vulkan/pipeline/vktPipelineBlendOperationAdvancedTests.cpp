@@ -1690,7 +1690,7 @@ void BlendOperationAdvancedTest::checkSupport(Context& context) const
 		throw tcu::NotSupportedError("Unsupported non-premultiplied destination color");
 	}
 
-	const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT blendFeatures = context.getBlendOperationAdvancedFeatures();
+	const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT blendFeatures = context.getBlendOperationAdvancedFeaturesEXT();
 	if (m_param.coherentOperations && !blendFeatures.advancedBlendCoherentOperations)
 	{
 		throw tcu::NotSupportedError("Unsupported required coherent operations");

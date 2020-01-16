@@ -39,6 +39,7 @@ namespace
 enum OpType
 {
 	OPTYPE_QUAD_BROADCAST = 0,
+	OPTYPE_QUAD_BROADCAST_NONCONST,
 	OPTYPE_QUAD_SWAP_HORIZONTAL,
 	OPTYPE_QUAD_SWAP_VERTICAL,
 	OPTYPE_QUAD_SWAP_DIAGONAL,
@@ -66,6 +67,7 @@ std::string getOpTypeName(int opType)
 			DE_FATAL("Unsupported op type");
 			return "";
 		case OPTYPE_QUAD_BROADCAST:
+		case OPTYPE_QUAD_BROADCAST_NONCONST:
 			return "subgroupQuadBroadcast";
 		case OPTYPE_QUAD_SWAP_HORIZONTAL:
 			return "subgroupQuadSwapHorizontal";
@@ -73,6 +75,26 @@ std::string getOpTypeName(int opType)
 			return "subgroupQuadSwapVertical";
 		case OPTYPE_QUAD_SWAP_DIAGONAL:
 			return "subgroupQuadSwapDiagonal";
+	}
+}
+
+std::string getOpTypeCaseName(int opType)
+{
+	switch (opType)
+	{
+		default:
+			DE_FATAL("Unsupported op type");
+			return "";
+		case OPTYPE_QUAD_BROADCAST:
+			return "subgroupquadbroadcast";
+		case OPTYPE_QUAD_BROADCAST_NONCONST:
+			return "subgroupquadbroadcast_nonconst";
+		case OPTYPE_QUAD_SWAP_HORIZONTAL:
+			return "subgroupquadswaphorizontal";
+		case OPTYPE_QUAD_SWAP_VERTICAL:
+			return "subgroupquadswapvertical";
+		case OPTYPE_QUAD_SWAP_DIAGONAL:
+			return "subgroupquadswapdiagonal";
 	}
 }
 
@@ -94,6 +116,7 @@ std::string getExtHeader(VkFormat format)
 std::string getTestSrc(const CaseDefinition &caseDef)
 {
 	const std::string swapTable[OPTYPE_LAST] = {
+		"",
 		"",
 		"  const uint swapTable[4] = {1, 0, 3, 2};\n",
 		"  const uint swapTable[4] = {2, 3, 0, 1};\n",
@@ -123,6 +146,32 @@ std::string getTestSrc(const CaseDefinition &caseDef)
 					<< "  }\n";
 		}
 	}
+	else if (caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST)
+	{
+		testSrc << "  for (int i=0; i<4; i++)"
+				<< "  {\n"
+				<< "  " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], i);\n"
+				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + i;\n"
+				<< validate
+				<< "  }\n"
+				<< "  uint quadID = gl_SubgroupInvocationID >> 2;\n"
+				<< "  uint quadInvocation = gl_SubgroupInvocationID & 0x3;\n"
+				<< "  // Test lane ID that is only uniform in active lanes\n"
+				<< "  if (quadInvocation >= 2)\n"
+				<< "  {\n"
+				<< "    uint id = quadInvocation & ~1;\n"
+				<< "    " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], id);\n"
+				<< "    uint otherID = 4*quadID + id;\n"
+				<< validate
+				<< "  }\n"
+				<< "  // Test lane ID that is only quad uniform, not subgroup uniform\n"
+				<< "  {\n"
+				<< "    uint id = quadID & 0x3;\n"
+				<< "    " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID], id);\n"
+				<< "    uint otherID = 4*quadID + id;\n"
+				<< validate
+				<< "  }\n";
+	}
 	else
 	{
 		testSrc << "  " << fmt << " op = " << op << "(data[gl_SubgroupInvocationID]);\n"
@@ -135,14 +184,16 @@ std::string getTestSrc(const CaseDefinition &caseDef)
 
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const vk::SpirvVersion			spirvVersion = (caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST) ? vk::SPIRV_VERSION_1_5 : vk::SPIRV_VERSION_1_3;
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, *caseDef.geometryPointSizeSupported, getExtHeader(caseDef.format), getTestSrc(caseDef), "");
 }
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const vk::SpirvVersion			spirvVersion = (caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST) ? vk::SPIRV_VERSION_1_5 : vk::SPIRV_VERSION_1_3;
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
 	std::string extHeader = getExtHeader(caseDef.format);
 	std::string testSrc = getTestSrc(caseDef);
@@ -160,6 +211,9 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
 		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
+
+	if ((caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST) && !subgroups::isSubgroupBroadcastDynamicIdSupported(context))
+		TCU_THROW(NotSupportedError, "Device does not support SubgroupBroadcastDynamicId");
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
@@ -286,9 +340,8 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 
 		for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 		{
-			const std::string op = de::toLower(getOpTypeName(opTypeIndex));
 			std::ostringstream name;
-			name << de::toLower(op);
+			name << getOpTypeCaseName(opTypeIndex);
 
 			name << "_" << subgroups::getFormatNameForGLSL(format);
 

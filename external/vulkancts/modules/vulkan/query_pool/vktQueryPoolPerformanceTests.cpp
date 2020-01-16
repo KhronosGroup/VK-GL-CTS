@@ -258,10 +258,6 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(deUint32 enabledCounterOffset, 
 	// enable every <enabledCounterStride> counter that has command or render pass scope
 	for (deUint32 i = 0; i < counterCount; i++)
 	{
-		// skip counters with command buffer scope
-		if (m_counters[i].scope == VK_QUERY_SCOPE_COMMAND_BUFFER_KHR)
-			continue;
-
 		// handle offset
 		if (enabledCounterOffset)
 		{

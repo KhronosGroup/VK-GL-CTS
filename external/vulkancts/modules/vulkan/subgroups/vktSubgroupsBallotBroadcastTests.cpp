@@ -39,6 +39,7 @@ namespace
 enum OpType
 {
 	OPTYPE_BROADCAST = 0,
+	OPTYPE_BROADCAST_NONCONST,
 	OPTYPE_BROADCAST_FIRST,
 	OPTYPE_LAST
 };
@@ -56,7 +57,7 @@ static bool checkCompute(std::vector<const void*> datas,
 	return vkt::subgroups::checkCompute(datas, numWorkgroups, localSize, 3);
 }
 
-std::string getOpTypeName(int opType)
+std::string getOpTypeCaseName(int opType)
 {
 	switch (opType)
 	{
@@ -64,11 +65,14 @@ std::string getOpTypeName(int opType)
 			DE_FATAL("Unsupported op type");
 			return "";
 		case OPTYPE_BROADCAST:
-			return "subgroupBroadcast";
+			return "subgroupbroadcast";
+		case OPTYPE_BROADCAST_NONCONST:
+			return "subgroupbroadcast_nonconst";
 		case OPTYPE_BROADCAST_FIRST:
-			return "subgroupBroadcastFirst";
+			return "subgroupbroadcastfirst";
 	}
 }
+
 
 struct CaseDefinition
 {
@@ -120,15 +124,16 @@ std::string getTestSrc(const CaseDefinition &caseDef)
 			<< "  uint sgInvocation = gl_SubgroupInvocationID;\n";
 	}
 
-	if (OPTYPE_BROADCAST == caseDef.opType)
+	const std::string fmt = subgroups::getFormatNameForGLSL(caseDef.format);
+
+	if (caseDef.opType == OPTYPE_BROADCAST)
 	{
 		bdy	<< "  tempRes = 0x3;\n";
 		for (int i = 0; i < max; i++)
 		{
 			bdy << "  {\n"
 			<< "    const uint id = "<< i << ";\n"
-			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-				<< broadcast << "(data[sgInvocation], id);\n"
+			<< "    " << fmt << " op = " << broadcast << "(data[sgInvocation], id);\n"
 			<< "    if ((id < sgSize) && subgroupBallotBitExtract(mask, id))\n"
 			<< "    {\n"
 			<< "      if (op != data[id])\n"
@@ -138,6 +143,25 @@ std::string getTestSrc(const CaseDefinition &caseDef)
 			<< "    }\n"
 			<< "  }\n";
 		}
+	}
+	else if (caseDef.opType == OPTYPE_BROADCAST_NONCONST)
+	{
+		const std::string validate =	"    if (subgroupBallotBitExtract(mask, id) && op != data[id])\n"
+										"        tempRes = 0;\n";
+
+		bdy	<< "  tempRes= 0x3;\n"
+			<< "  for (uint id = 0; id < sgSize; id++)\n"
+			<< "  {\n"
+			<< "    " << fmt << " op = " << broadcast << "(data[sgInvocation], id);\n"
+			<< validate
+			<< "  }\n"
+			<< "  // Test lane id that is only uniform across active lanes\n"
+			<< "  if (sgInvocation >= sgSize / 2)\n"
+			<< "  {\n"
+			<< "    uint id = sgInvocation & ~((sgSize / 2) - 1);\n"
+			<< "    " << fmt << " op = " << broadcast << "(data[sgInvocation], id);\n"
+			<< validate
+			<< "  }\n";
 	}
 	else
 	{
@@ -196,7 +220,8 @@ std::string getHelperFunctionARB(const CaseDefinition &caseDef)
 
 void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const vk::SpirvVersion			spirvVersion = (caseDef.opType == OPTYPE_BROADCAST_NONCONST) ? vk::SPIRV_VERSION_1_5 : vk::SPIRV_VERSION_1_3;
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
 	std::string extHeader = getExtHeader(caseDef);
 	std::string testSrc = getTestSrc(caseDef);
@@ -207,7 +232,8 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const vk::SpirvVersion			spirvVersion = (caseDef.opType == OPTYPE_BROADCAST_NONCONST) ? vk::SPIRV_VERSION_1_5 : vk::SPIRV_VERSION_1_3;
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
 	std::string extHeader = getExtHeader(caseDef);
 	std::string testSrc = getTestSrc(caseDef);
@@ -232,6 +258,9 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 
 	if (caseDef.extShaderSubGroupBallotTests && !subgroups::isInt64SupportedForDevice(context))
 		TCU_THROW(NotSupportedError, "Device does not support int64 data types");
+
+	if ((caseDef.opType == OPTYPE_BROADCAST_NONCONST) && !subgroups::isSubgroupBroadcastDynamicIdSupported(context))
+		TCU_THROW(NotSupportedError, "Device does not support SubgroupBroadcastDynamicId");
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
@@ -368,8 +397,7 @@ tcu::TestCaseGroup* createSubgroupsBallotBroadcastTests(tcu::TestContext& testCt
 
 		for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 		{
-			const std::string op = de::toLower(getOpTypeName(opTypeIndex));
-			const std::string name = op + "_" + subgroups::getFormatNameForGLSL(format);
+			const std::string name = getOpTypeCaseName(opTypeIndex) + "_" + subgroups::getFormatNameForGLSL(format);
 
 			{
 				CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, de::SharedPtr<bool>(new bool), DE_FALSE};

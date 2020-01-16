@@ -91,6 +91,7 @@
 #include "vktMemoryModelTests.hpp"
 #include "vktAmberExampleTests.hpp"
 #include "vktAmberGraphicsFuzzTests.hpp"
+#include "vktImagelessFramebufferTests.hpp"
 #include "vktTransformFeedbackTests.hpp"
 #include "vktDescriptorIndexingTests.hpp"
 #include "vktImagelessFramebufferTests.hpp"
@@ -496,9 +497,9 @@ void TestPackage::init (void)
 	addChild(conditional::createTests			(m_testCtx));
 	addChild(cts_amber::createExampleTests		(m_testCtx));
 	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
+	addChild(imageless::createTests				(m_testCtx));
 	addChild(TransformFeedback::createTests		(m_testCtx));
 	addChild(DescriptorIndexing::createTests	(m_testCtx));
-	addChild(imageless::createTests				(m_testCtx));
 	addChild(FragmentShaderInterlock::createTests(m_testCtx));
 }
 

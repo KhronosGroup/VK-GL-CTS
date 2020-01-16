@@ -132,7 +132,7 @@ public:
 																			VkImageViewType				imageViewType,
 																			VkFormat					imageFormat,
 																			VkComponentMapping			componentMapping,
-																			VkSamplerReductionModeEXT	reductionMode,
+																			VkSamplerReductionMode		reductionMode,
 																			bool						separateStencilUsage);
 
 	virtual										~SamplerMagReduceFilterTest	(void) {}
@@ -140,7 +140,7 @@ public:
 	virtual VkComponentMapping					getComponentMapping			(void) const;
 
 private:
-	const VkSamplerReductionModeCreateInfoEXT	m_reductionCreaterInfo;
+	const VkSamplerReductionModeCreateInfo		m_reductionCreaterInfo;
 	VkComponentMapping							m_componentMapping;
 };
 
@@ -153,7 +153,7 @@ public:
 																			 VkImageViewType			imageViewType,
 																			 VkFormat					imageFormat,
 																			 VkComponentMapping			componentMapping,
-																			 VkSamplerReductionModeEXT	reductionMode,
+																			 VkSamplerReductionMode		reductionMode,
 																			 bool						separateStencilUsage);
 
 	virtual										~SamplerMinReduceFilterTest	(void) {}
@@ -161,7 +161,7 @@ public:
 	virtual VkComponentMapping					getComponentMapping			(void) const;
 
 private:
-	const VkSamplerReductionModeCreateInfoEXT	m_reductionCreaterInfo;
+	const VkSamplerReductionModeCreateInfo		m_reductionCreaterInfo;
 	VkComponentMapping							m_componentMapping;
 };
 
@@ -566,13 +566,13 @@ VkSamplerCreateInfo SamplerMinFilterTest::getSamplerCreateInfo (void) const
 namespace
 {
 
-VkSamplerReductionModeCreateInfoEXT getSamplerReductionCreateInfo (VkSamplerReductionModeEXT reductionMode)
+VkSamplerReductionModeCreateInfo getSamplerReductionCreateInfo (VkSamplerReductionMode reductionMode)
 {
-	const VkSamplerReductionModeCreateInfoEXT	 ret =
+	const VkSamplerReductionModeCreateInfo ret =
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,	// VkStructureType				sType
+		VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO,		// VkStructureType				sType
 		DE_NULL,													// const void*					pNext
-		reductionMode												// VkSamplerReductionModeEXT	reductionMode
+		reductionMode												// VkSamplerReductionMode		reductionMode
 	};
 	return ret;
 }
@@ -588,7 +588,7 @@ SamplerMagReduceFilterTest::SamplerMagReduceFilterTest (tcu::TestContext&			test
 														VkImageViewType				imageViewType,
 														VkFormat					imageFormat,
 														VkComponentMapping			componentMapping,
-														VkSamplerReductionModeEXT	reductionMode,
+														VkSamplerReductionMode		reductionMode,
 														bool						separateStencilUsage)
 	: SamplerMagFilterTest		(testContext, name, description, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage)
 	, m_reductionCreaterInfo	(getSamplerReductionCreateInfo(reductionMode))
@@ -618,7 +618,7 @@ SamplerMinReduceFilterTest::SamplerMinReduceFilterTest (tcu::TestContext&			test
 														VkImageViewType				imageViewType,
 														VkFormat					imageFormat,
 														VkComponentMapping			componentMapping,
-														VkSamplerReductionModeEXT	reductionMode,
+														VkSamplerReductionMode		reductionMode,
 														bool						separateStencilUsage)
 	: SamplerMinFilterTest		(testContext, name, description, imageViewType, imageFormat, VK_FILTER_LINEAR, separateStencilUsage)
 	, m_reductionCreaterInfo	(getSamplerReductionCreateInfo(reductionMode))

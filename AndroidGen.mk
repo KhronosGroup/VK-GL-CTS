@@ -36,6 +36,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceFeatures.cpp \
+	external/vulkancts/framework/vulkan/vkDeviceProperties.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
@@ -323,6 +324,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderTestUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmConditionalBranchTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmCrossStageInterfaceTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsExtensionlessTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFromHlslTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmGraphicsShaderTestUtil.cpp \

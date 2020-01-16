@@ -519,7 +519,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Compute shader invocations: " << getComputeExecution(m_parameters[parametersNdx]) << tcu::TestLog::EndMessage;
 
 		if (m_parameters[0].resetType == RESET_TYPE_HOST)
-			vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+			vk.resetQueryPool(device, *queryPool, 0u, 1u);
 
 		// Wait for completion
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -544,7 +544,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 
 			deUint64 temp = data[0].first;
 
-			vk.resetQueryPoolEXT(device, *queryPool, 0, 1u);
+			vk.resetQueryPool(device, *queryPool, 0, 1u);
 			vk::VkResult res = GetQueryPoolResultsVector(data, vk, device, *queryPool, 0u, 1u, (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
 			/* From Vulkan spec:
 			 *
@@ -698,7 +698,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 
 	// Secondary buffer is emitted only once, so it is safe to reset the query pool here.
 	if (m_parameters[0].resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+		vk.resetQueryPool(device, *queryPool, 0u, 1u);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -730,7 +730,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::checkResult (const de::
 
 			deUint64 temp = results[0].first;
 
-			vk.resetQueryPoolEXT(device, queryPool, 0u, 1u);
+			vk.resetQueryPool(device, queryPool, 0u, 1u);
 			vk::VkResult res = GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, 1u, (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
 			/* From Vulkan spec:
 			 *
@@ -906,7 +906,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parameters[0].resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, 1u);
+		vk.resetQueryPool(device, *queryPool, 0u, 1u);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1288,7 +1288,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1376,7 +1376,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 
 		deUint64 temp = results[0].first;
 
-		vk.resetQueryPoolEXT(device, queryPool, 0, queryCount);
+		vk.resetQueryPool(device, queryPool, 0, queryCount);
 		vk::VkResult res = GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
 		/* From Vulkan spec:
 		 *
@@ -1506,7 +1506,7 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1600,7 +1600,7 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1763,7 +1763,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1842,7 +1842,7 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult (VkQueryPool queryPool)
 
 		deUint64 temp = results[0].first;
 
-		vk.resetQueryPoolEXT(device, queryPool, 0, queryCount);
+		vk.resetQueryPool(device, queryPool, 0, queryCount);
 		vk::VkResult res = GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
 		/* From Vulkan spec:
 		 *
@@ -1958,7 +1958,7 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -2052,7 +2052,7 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -2213,7 +2213,7 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 	endCommandBuffer(vk, *cmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -2273,7 +2273,7 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 
 		deUint64 temp = results[0].first;
 
-		vk.resetQueryPoolEXT(device, queryPool, 0, queryCount);
+		vk.resetQueryPool(device, queryPool, 0, queryCount);
 		vk::VkResult res = GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount, (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
 		/* From Vulkan spec:
 		 *
@@ -2378,7 +2378,7 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -2472,7 +2472,7 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
-		vk.resetQueryPoolEXT(device, *queryPool, 0u, queryCount);
+		vk.resetQueryPool(device, *queryPool, 0u, queryCount);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);

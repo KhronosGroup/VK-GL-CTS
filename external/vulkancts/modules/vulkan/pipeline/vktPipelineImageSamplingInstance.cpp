@@ -188,6 +188,7 @@ static MovePtr<TestTexture> createTestTexture (const TcuFormatType format, VkIma
 
 void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceParams params)
 {
+
 	if (de::abs(params.samplerParams.mipLodBias) > context.getDeviceProperties().limits.maxSamplerLodBias)
 		TCU_THROW(NotSupportedError, "Unsupported sampler Lod bias value");
 
@@ -208,9 +209,9 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		context.requireDeviceFunctionality("VK_EXT_separate_stencil_usage");
 		context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-		const VkImageStencilUsageCreateInfoEXT  stencilUsage	=
+		const VkImageStencilUsageCreateInfo  stencilUsage	=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT,
+			VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO,
 			DE_NULL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT
 		};
@@ -339,7 +340,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 		{
 			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
 			{
-				VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT	physicalDeviceSamplerMinMaxProperties =
+				VkPhysicalDeviceSamplerFilterMinmaxProperties	physicalDeviceSamplerMinMaxProperties =
 				{
 					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
 					DE_NULL,

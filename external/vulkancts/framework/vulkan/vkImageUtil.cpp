@@ -3540,9 +3540,9 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 		{
 			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
 			{
-				const VkSamplerReductionModeCreateInfoEXT reductionModeCreateInfo = *reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT*>(pNext);
+				const VkSamplerReductionModeCreateInfo reductionModeCreateInfo = *reinterpret_cast<const VkSamplerReductionModeCreateInfo*>(pNext);
 				reductionMode = mapVkSamplerReductionMode(reductionModeCreateInfo.reductionMode);
-				pNext = reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT*>(pNext)->pNext;
+				pNext = reinterpret_cast<const VkSamplerReductionModeCreateInfo*>(pNext)->pNext;
 				break;
 			}
 			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
@@ -3639,13 +3639,13 @@ tcu::Sampler::WrapMode mapVkSamplerAddressMode (VkSamplerAddressMode addressMode
 	return tcu::Sampler::WRAPMODE_LAST;
 }
 
-tcu::Sampler::ReductionMode mapVkSamplerReductionMode (VkSamplerReductionModeEXT reductionMode)
+tcu::Sampler::ReductionMode mapVkSamplerReductionMode (VkSamplerReductionMode reductionMode)
 {
 	switch (reductionMode)
 	{
-		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT:	return tcu::Sampler::WEIGHTED_AVERAGE;
-		case VK_SAMPLER_REDUCTION_MODE_MIN_EXT:					return tcu::Sampler::MIN;
-		case VK_SAMPLER_REDUCTION_MODE_MAX_EXT:					return tcu::Sampler::MAX;
+		case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:	return tcu::Sampler::WEIGHTED_AVERAGE;
+		case VK_SAMPLER_REDUCTION_MODE_MIN:					return tcu::Sampler::MIN;
+		case VK_SAMPLER_REDUCTION_MODE_MAX:					return tcu::Sampler::MAX;
 		default:
 			break;
 	}

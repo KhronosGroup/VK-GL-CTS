@@ -798,7 +798,7 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 	configCommandBuffer();
 	if (m_hostQueryReset)
 	{
-		vk.resetQueryPoolEXT(vkDevice, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+		vk.resetQueryPool(vkDevice, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 	}
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
@@ -821,7 +821,7 @@ tcu::TestStatus TimestampTestInstance::iterate (void)
 		}
 
 		// Host resets the query pool
-		vk.resetQueryPoolEXT(vkDevice, *m_queryPool, 0u, stageSize);
+		vk.resetQueryPool(vkDevice, *m_queryPool, 0u, stageSize);
 		// Get timestamp value from query pool
 		vk::VkResult res = vk.getQueryPoolResults(vkDevice, *m_queryPool, 0u, stageSize, sizeof(deUint64) * stageSize * 2, (void*)m_timestampValuesHostQueryReset, sizeof(deUint64) * 2, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
 
@@ -2885,7 +2885,7 @@ tcu::TestStatus TwoCmdBuffersTestInstance::iterate (void)
 	if (m_hostQueryReset)
 	{
 		// Only reset the pool for the primary command buffer, the secondary command buffer will reset the pool by itself.
-		vk.resetQueryPoolEXT(m_context.getDevice(), *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+		vk.resetQueryPool(m_context.getDevice(), *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 	}
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));

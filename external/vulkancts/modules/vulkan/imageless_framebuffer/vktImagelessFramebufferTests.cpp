@@ -111,11 +111,11 @@ VkSampleCountFlagBits sampleCountBitFromSampleCount (deUint32 count)
 	}
 }
 
-VkAttachmentReference2KHR convertAttachmentReference (const VkAttachmentReference& attachmentReference, const VkImageAspectFlags aspectMask)
+VkAttachmentReference2 convertAttachmentReference (const VkAttachmentReference& attachmentReference, const VkImageAspectFlags aspectMask)
 {
-	const VkAttachmentReference2KHR	attachmentReference2	=
+	const VkAttachmentReference2	attachmentReference2	=
 	{
-		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,	//  VkStructureType		sType;
+		VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,		//  VkStructureType		sType;
 		DE_NULL,										//  const void*			pNext;
 		attachmentReference.attachment,					//  deUint32			attachment;
 		attachmentReference.layout,						//  VkImageLayout		layout;
@@ -125,18 +125,18 @@ VkAttachmentReference2KHR convertAttachmentReference (const VkAttachmentReferenc
 	return attachmentReference2;
 }
 
-std::vector<VkAttachmentDescription2KHR> convertAttachmentDescriptions (const std::vector<VkAttachmentDescription>& attachmentDescriptions)
+std::vector<VkAttachmentDescription2> convertAttachmentDescriptions (const std::vector<VkAttachmentDescription>& attachmentDescriptions)
 {
-	std::vector<VkAttachmentDescription2KHR>	attachmentDescriptions2;
+	std::vector<VkAttachmentDescription2>	attachmentDescriptions2;
 
 	attachmentDescriptions2.reserve(attachmentDescriptions.size());
 
 	for (size_t adNdx = 0; adNdx < attachmentDescriptions.size(); ++adNdx)
 	{
 		const VkAttachmentDescription&		attachmentDescription	= attachmentDescriptions[adNdx];
-		const VkAttachmentDescription2KHR	attachmentDescription2	=
+		const VkAttachmentDescription2		attachmentDescription2	=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR,	//  VkStructureType					sType;
+			VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,		//  VkStructureType					sType;
 			DE_NULL,										//  const void*						pNext;
 			attachmentDescription.flags,					//  VkAttachmentDescriptionFlags	flags;
 			attachmentDescription.format,					//  VkFormat						format;
@@ -327,58 +327,58 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 	{
 		const VkImageAspectFlags							colorAspectMask							= VK_IMAGE_ASPECT_COLOR_BIT;
 		const VkImageAspectFlags							depthStencilAspectMask					= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-		const VkAttachmentReference2KHR						colorAttachmentRef2						= convertAttachmentReference(colorAttachmentRef, colorAspectMask);
-		const VkAttachmentReference2KHR						depthStencilAttachmentRef2				= convertAttachmentReference(depthStencilAttachmentRef, depthStencilAspectMask);
-		const VkAttachmentReference2KHR						colorResolveAttachmentRef2				= convertAttachmentReference(colorResolveAttachmentRef, colorAspectMask);
-		const VkAttachmentReference2KHR						depthStencilResolveAttachmentRef2		=
+		const VkAttachmentReference2						colorAttachmentRef2						= convertAttachmentReference(colorAttachmentRef, colorAspectMask);
+		const VkAttachmentReference2						depthStencilAttachmentRef2				= convertAttachmentReference(depthStencilAttachmentRef, depthStencilAspectMask);
+		const VkAttachmentReference2						colorResolveAttachmentRef2				= convertAttachmentReference(colorResolveAttachmentRef, colorAspectMask);
+		const VkAttachmentReference2						depthStencilResolveAttachmentRef2		=
 		{
-			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR,			//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,				//  VkStructureType		sType;
 			DE_NULL,												//  const void*			pNext;
 			hasDepthStencilResolve ? attachmentCounter++ : 0u,		//  deUint32			attachment;
 			subpassLayoutDepthStencil,								//  VkImageLayout		layout;
 			depthStencilAspectMask									//  VkImageAspectFlags	aspectMask;
 		};
-		const VkSubpassDescriptionDepthStencilResolveKHR	subpassDescriptionDepthStencilResolve	=
+		const VkSubpassDescriptionDepthStencilResolve		subpassDescriptionDepthStencilResolve	=
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR,	//  VkStructureType						sType;
+			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,		//  VkStructureType						sType;
 			DE_NULL,															//  const void*							pNext;
-			VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,								//  VkResolveModeFlagBitsKHR			depthResolveMode;
-			VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,								//  VkResolveModeFlagBitsKHR			stencilResolveMode;
+			VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,									//  VkResolveModeFlagBitsKHR			depthResolveMode;
+			VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,									//  VkResolveModeFlagBitsKHR			stencilResolveMode;
 			&depthStencilResolveAttachmentRef2									//  const VkAttachmentReference2KHR*	pDepthStencilResolveAttachment;
 		};
-		const VkSubpassDescription2KHR						subpassDescription2						=
+		const VkSubpassDescription2							subpassDescription2						=
 		{
-			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR,				//  VkStructureType						sType;
+			VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,					//  VkStructureType						sType;
 			&subpassDescriptionDepthStencilResolve,						//  const void*							pNext;
 			(VkSubpassDescriptionFlags)0,								//  VkSubpassDescriptionFlags			flags;
 			VK_PIPELINE_BIND_POINT_GRAPHICS,							//  VkPipelineBindPoint					pipelineBindPoint;
 			0u,															//  deUint32							viewMask;
 			0u,															//  deUint32							inputAttachmentCount;
-			DE_NULL,													//  const VkAttachmentReference2KHR*	pInputAttachments;
+			DE_NULL,													//  const VkAttachmentReference2*		pInputAttachments;
 			hasColor ? 1u : 0u,											//  deUint32							colorAttachmentCount;
-			hasColor ? &colorAttachmentRef2 : DE_NULL,					//  const VkAttachmentReference2KHR*	pColorAttachments;
-			hasColorResolve ? &colorResolveAttachmentRef2 : DE_NULL,	//  const VkAttachmentReference2KHR*	pResolveAttachments;
-			hasDepthStencil ? &depthStencilAttachmentRef2 : DE_NULL,	//  const VkAttachmentReference2KHR*	pDepthStencilAttachment;
+			hasColor ? &colorAttachmentRef2 : DE_NULL,					//  const VkAttachmentReference2*		pColorAttachments;
+			hasColorResolve ? &colorResolveAttachmentRef2 : DE_NULL,	//  const VkAttachmentReference2*		pResolveAttachments;
+			hasDepthStencil ? &depthStencilAttachmentRef2 : DE_NULL,	//  const VkAttachmentReference2*		pDepthStencilAttachment;
 			0u,															//  deUint32							preserveAttachmentCount;
 			DE_NULL														//  const deUint32*						pPreserveAttachments;
 		};
-		const std::vector<VkAttachmentDescription2KHR>		attachmentDescriptions2					= convertAttachmentDescriptions(attachmentDescriptions);
-		const VkRenderPassCreateInfo2KHR					renderPassInfo							=
+		const std::vector<VkAttachmentDescription2>			attachmentDescriptions2					= convertAttachmentDescriptions(attachmentDescriptions);
+		const VkRenderPassCreateInfo2						renderPassInfo							=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR,	//  VkStructureType						sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,		//  VkStructureType						sType;
 			DE_NULL,											//  const void*							pNext;
 			(VkRenderPassCreateFlags)0,							//  VkRenderPassCreateFlags				flags;
 			(deUint32)attachmentDescriptions2.size(),			//  deUint32							attachmentCount;
-			&attachmentDescriptions2[0],						//  const VkAttachmentDescription2KHR*	pAttachments;
+			&attachmentDescriptions2[0],						//  const VkAttachmentDescription2*		pAttachments;
 			1u,													//  deUint32							subpassCount;
-			&subpassDescription2,								//  const VkSubpassDescription2KHR*		pSubpasses;
+			&subpassDescription2,								//  const VkSubpassDescription2*		pSubpasses;
 			0u,													//  deUint32							dependencyCount;
-			DE_NULL,											//  const VkSubpassDependency2KHR*		pDependencies;
+			DE_NULL,											//  const VkSubpassDependency2*			pDependencies;
 			0u,													//  deUint32							correlatedViewMaskCount;
 			DE_NULL												//  const deUint32*						pCorrelatedViewMasks;
 		};
 
-		return createRenderPass2KHR(vk, device, &renderPassInfo, allocationCallbacks);
+		return createRenderPass2(vk, device, &renderPassInfo, allocationCallbacks);
 	}
 	else
 	{
@@ -493,7 +493,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			//  VkPipelineStageFlags			dstStageMask;
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			//  VkAccessFlags					srcAccessMask;
 		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			//  VkAccessFlags					dstAccessMask;
-		VK_DEPENDENCY_VIEW_LOCAL_BIT_KHR,				//  VkDependencyFlags				dependencyFlags;
+		VK_DEPENDENCY_VIEW_LOCAL_BIT,					//  VkDependencyFlags				dependencyFlags;
 	};
 	const VkRenderPassCreateInfo	renderPassInfo				=
 	{
@@ -535,26 +535,26 @@ VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const VkExtent2D s
 	return imageParams;
 }
 
-std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageInfos (const VkExtent2D&			renderSize,
-																					  const VkFormat*			colorFormat,
-																					  const VkImageUsageFlags	colorUsage,
-																					  const VkFormat*			dsFormat,
-																					  const VkImageUsageFlags	dsUsage,
-																					  const AspectFlags			resolveAspects,
-																					  const deUint32			inputAttachmentCount)
+std::vector<VkFramebufferAttachmentImageInfo> makeFramebufferAttachmentImageInfos (const VkExtent2D&			renderSize,
+																				   const VkFormat*				colorFormat,
+																				   const VkImageUsageFlags		colorUsage,
+																				   const VkFormat*				dsFormat,
+																				   const VkImageUsageFlags		dsUsage,
+																				   const AspectFlags			resolveAspects,
+																				   const deUint32				inputAttachmentCount)
 {
-	const bool											colorResolve					= (resolveAspects & ASPECT_COLOR) != 0;
-	const bool											depthStencilResolve				= (resolveAspects & ASPECT_DEPTH_STENCIL) != 0;
-	std::vector<VkFramebufferAttachmentImageInfoKHR>	framebufferAttachmentImageInfos;
+	const bool										colorResolve					= (resolveAspects & ASPECT_COLOR) != 0;
+	const bool										depthStencilResolve				= (resolveAspects & ASPECT_DEPTH_STENCIL) != 0;
+	std::vector<VkFramebufferAttachmentImageInfo>	framebufferAttachmentImageInfos;
 
 	DE_ASSERT(colorFormat != DE_NULL);
 	DE_ASSERT(dsFormat != DE_NULL);
 
 	if (*colorFormat != VK_FORMAT_UNDEFINED)
 	{
-		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
+		const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo		=
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
 			colorUsage,													//  VkImageUsageFlags	usage;
@@ -570,9 +570,9 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 
 	if (*dsFormat != VK_FORMAT_UNDEFINED)
 	{
-		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
+		const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo		=
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
 			dsUsage,													//  VkImageUsageFlags	usage;
@@ -588,9 +588,9 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 
 	if (colorResolve)
 	{
-		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
+		const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo		=
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
 			colorUsage,													//  VkImageUsageFlags	usage;
@@ -608,9 +608,9 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 
 	if (depthStencilResolve)
 	{
-		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
+		const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo		=
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
 			dsUsage,													//  VkImageUsageFlags	usage;
@@ -628,9 +628,9 @@ std::vector<VkFramebufferAttachmentImageInfoKHR> makeFramebufferAttachmentImageI
 
 	for (deUint32 inputAttachmentNdx = 0; inputAttachmentNdx < inputAttachmentCount; ++inputAttachmentNdx)
 	{
-		const VkFramebufferAttachmentImageInfoKHR	framebufferAttachmentImageInfo		=
+		const VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo		=
 		{
-			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			(VkImageCreateFlags)0u,										//  VkImageCreateFlags	flags;
 			colorUsage | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,			//  VkImageUsageFlags	usage;
@@ -658,20 +658,20 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&			vk,
 									 const AspectFlags				resolveAspects			= ASPECT_NONE,
 									 const deUint32					inputAttachmentCount	= 0)
 {
-	const std::vector<VkFramebufferAttachmentImageInfoKHR>	framebufferAttachmentImageInfos		= makeFramebufferAttachmentImageInfos(renderSize, colorFormat, colorUsage, dsFormat, dsUsage, resolveAspects, inputAttachmentCount);
+	const std::vector<VkFramebufferAttachmentImageInfo>		framebufferAttachmentImageInfos		= makeFramebufferAttachmentImageInfos(renderSize, colorFormat, colorUsage, dsFormat, dsUsage, resolveAspects, inputAttachmentCount);
 	const deUint32											attachmentCount						= static_cast<deUint32>(framebufferAttachmentImageInfos.size());
-	const VkFramebufferAttachmentsCreateInfoKHR				framebufferAttachmentsCreateInfo	=
+	const VkFramebufferAttachmentsCreateInfo				framebufferAttachmentsCreateInfo	=
 	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR,	//  VkStructureType								sType;
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,		//  VkStructureType								sType;
 		DE_NULL,													//  const void*									pNext;
 		attachmentCount,											//  deUint32									attachmentImageInfoCount;
-		&framebufferAttachmentImageInfos[0]							//  const VkFramebufferAttachmentImageInfoKHR*	pAttachmentImageInfos;
+		&framebufferAttachmentImageInfos[0]							//  const VkFramebufferAttachmentImageInfo*		pAttachmentImageInfos;
 	};
 	const VkFramebufferCreateInfo							framebufferInfo	=
 	{
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,					//  VkStructureType				sType;
 		&framebufferAttachmentsCreateInfo,							//  const void*					pNext;
-		VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR,					//  VkFramebufferCreateFlags	flags;
+		VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,						//  VkFramebufferCreateFlags	flags;
 		renderPass,													//  VkRenderPass				renderPass;
 		attachmentCount,											//  deUint32					attachmentCount;
 		DE_NULL,													//  const VkImageView*			pAttachments;
@@ -960,7 +960,7 @@ ColorImagelessTestInstance::ColorImagelessTestInstance (Context& context, const 
 {
 	const InstanceInterface&								vki								= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice						= m_context.getPhysicalDevice();
-	const VkPhysicalDeviceImagelessFramebufferFeaturesKHR&	imagelessFramebufferFeatures	(context.getImagelessFramebufferFeatures());
+	const VkPhysicalDeviceImagelessFramebufferFeatures&		imagelessFramebufferFeatures	(context.getImagelessFramebufferFeatures());
 
 	if (imagelessFramebufferFeatures.imagelessFramebuffer == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Imageless framebuffer is not supported");
@@ -1229,9 +1229,9 @@ tcu::TestStatus ColorImagelessTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
-		const VkRenderPassAttachmentBeginInfoKHR	renderPassAttachmentBeginInfo	=
+		const VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			1u,															//  deUint32			attachmentCount;
 			&*colorAttachment											//  const VkImageView*	pAttachments;
@@ -1462,9 +1462,9 @@ tcu::TestStatus DepthImagelessTestInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
 		const VkImageView							attachments[]					= { *colorAttachment, *dsAttachment };
-		const VkRenderPassAttachmentBeginInfoKHR	renderPassAttachmentBeginInfo	=
+		const VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			DE_LENGTH_OF_ARRAY(attachments),							//  deUint32			attachmentCount;
 			attachments													//  const VkImageView*	pAttachments;
@@ -1665,9 +1665,9 @@ tcu::TestStatus ColorResolveImagelessTestInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
 		const VkImageView							attachments[]					= { *colorAttachment, *colorResolveAttachment };
-		const VkRenderPassAttachmentBeginInfoKHR	renderPassAttachmentBeginInfo	=
+		const VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			DE_LENGTH_OF_ARRAY(attachments),							//  deUint32			attachmentCount;
 			attachments													//  const VkImageView*	pAttachments;
@@ -1753,7 +1753,7 @@ DepthResolveImagelessTestInstance::DepthResolveImagelessTestInstance (Context& c
 	const InstanceInterface&							vki					= m_context.getInstanceInterface();
 	const VkPhysicalDevice								physDevice			= m_context.getPhysicalDevice();
 	VkPhysicalDeviceProperties2							deviceProperties;
-	VkPhysicalDeviceDepthStencilResolvePropertiesKHR	dsResolveProperties;
+	VkPhysicalDeviceDepthStencilResolveProperties		dsResolveProperties;
 
 	deMemset(&deviceProperties, 0, sizeof(deviceProperties));
 	deMemset(&dsResolveProperties, 0, sizeof(dsResolveProperties));
@@ -1761,7 +1761,7 @@ DepthResolveImagelessTestInstance::DepthResolveImagelessTestInstance (Context& c
 	deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	deviceProperties.pNext = &dsResolveProperties;
 
-	dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+	dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
 	dsResolveProperties.pNext = DE_NULL;
 
 	vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties);
@@ -1965,9 +1965,9 @@ tcu::TestStatus DepthResolveImagelessTestInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
 		const VkImageView							attachments[]					= { *colorAttachment, *dsAttachment, *colorResolveAttachment, *dsResolveAttachment };
-		const VkRenderPassAttachmentBeginInfoKHR	renderPassAttachmentBeginInfo	=
+		const VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			DE_LENGTH_OF_ARRAY(attachments),							//  deUint32			attachmentCount;
 			attachments													//  const VkImageView*	pAttachments;
@@ -2229,9 +2229,9 @@ tcu::TestStatus MultisubpassTestInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
 		const VkImageView							attachments[]					= { *color0Attachment, *color1Attachment };
-		const VkRenderPassAttachmentBeginInfoKHR	renderPassAttachmentBeginInfo	=
+		const VkRenderPassAttachmentBeginInfo		renderPassAttachmentBeginInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR,	//  VkStructureType		sType;
+			VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,		//  VkStructureType		sType;
 			DE_NULL,													//  const void*			pNext;
 			DE_LENGTH_OF_ARRAY(attachments),							//  deUint32			attachmentCount;
 			&attachments[0]												//  const VkImageView*	pAttachments;

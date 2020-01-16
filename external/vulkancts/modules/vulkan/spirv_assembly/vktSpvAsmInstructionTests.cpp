@@ -76,6 +76,7 @@
 #include "vktSpvAsmWorkgroupMemoryTests.hpp"
 #include "vktSpvAsmSignedIntCompareTests.hpp"
 #include "vktSpvAsmPtrAccessChainTests.hpp"
+#include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
 
 #include <cmath>
@@ -19971,6 +19972,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpNMinGroup(testCtx));
 	computeTests->addChild(createOpNMaxGroup(testCtx));
 	computeTests->addChild(createOpNClampGroup(testCtx));
+	computeTests->addChild(createFloatControlsExtensionlessGroup(testCtx));
 	{
 		de::MovePtr<tcu::TestCaseGroup>	computeAndroidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 

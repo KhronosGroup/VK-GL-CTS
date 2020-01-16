@@ -53,7 +53,7 @@ bool is8BitStorageFeaturesSupported (const Context& context, Extension8BitStorag
 	VkPhysicalDevice8BitStorageFeaturesKHR extensionFeatures = context.get8BitStorageFeatures();
 
 	if ((toCheck & EXT8BITSTORAGEFEATURES_STORAGE_BUFFER) != 0 && extensionFeatures.storageBuffer8BitAccess == VK_FALSE)
-		TCU_FAIL("storageBuffer8BitAccess has to be supported");
+		return false;
 
 	if ((toCheck & EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER) != 0 && extensionFeatures.uniformAndStorageBuffer8BitAccess == VK_FALSE)
 		return false;
@@ -166,7 +166,7 @@ bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVaria
 
 bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int8Features toCheck)
 {
-	const VkPhysicalDeviceFloat16Int8FeaturesKHR& extensionFeatures = context.getShaderFloat16Int8Features();
+	const VkPhysicalDeviceShaderFloat16Int8Features& extensionFeatures = context.getShaderFloat16Int8Features();
 
 	if ((toCheck & EXTFLOAT16INT8FEATURES_FLOAT16) != 0 && extensionFeatures.shaderFloat16 == VK_FALSE)
 		return false;
@@ -233,7 +233,7 @@ bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFl
 		instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
 	}
 
-	using FCIndependence = VkShaderFloatControlsIndependenceKHR;
+	using FCIndependence = VkShaderFloatControlsIndependence;
 	FCIndependence fcInd32		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
 	FCIndependence fcIndAll		= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
 	FCIndependence fcIndNone	= VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
@@ -282,6 +282,8 @@ deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 	case SPIRV_VERSION_1_3:
 	case SPIRV_VERSION_1_4:
 		return VK_API_VERSION_1_1;
+	case SPIRV_VERSION_1_5:
+		return VK_API_VERSION_1_2;
 	default:
 		DE_ASSERT(0);
 	}
