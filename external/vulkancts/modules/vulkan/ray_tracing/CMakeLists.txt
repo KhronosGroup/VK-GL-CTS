@@ -9,6 +9,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingShaderBindingTableTests.hpp
 	vktRayTracingTraversalControlTests.cpp
 	vktRayTracingTraversalControlTests.hpp
+	vktRayTracingAccelerationStructuresTests.cpp
+	vktRayTracingAccelerationStructuresTests.hpp
 	vktRayTracingTests.cpp
 	vktRayTracingTests.hpp
 	)
