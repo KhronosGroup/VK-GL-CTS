@@ -2260,7 +2260,7 @@ protected:
 													  point = this->applyPoint(ctx, arg0)));
 
 		ret |= innerExtrema(ctx, iarg0);
-		ret &= (this->getCodomain() | TCU_NAN);
+		ret &= (this->getCodomain(ctx) | TCU_NAN);
 
 		return ctx.format.convert(ret);
 	}
@@ -2283,7 +2283,7 @@ protected:
 		TCU_THROW(InternalError, "Cannot apply");
 	}
 
-	virtual Interval	getCodomain		(void) const
+	virtual Interval	getCodomain		(const EvalContext&) const
 	{
 		return Interval::unbounded(true);
 	}
@@ -2742,7 +2742,7 @@ protected:
 		return x <= 0 ? TCU_NAN : ctx.format.ulp(ret, 2.0);
 	}
 
-	Interval	getCodomain	(void) const
+	Interval	getCodomain	(const EvalContext&) const
 	{
 		return Interval(0.0, TCU_INFINITY);
 	}
@@ -2757,7 +2757,7 @@ public:
 				{}
 protected:
 	double		precision	(const EvalContext& ctx, double ret, double x) const;
-	Interval	getCodomain	(void) const
+	Interval	getCodomain	(const EvalContext&) const
 	{
 		return Interval(0.0, TCU_INFINITY);
 	}
@@ -3074,7 +3074,7 @@ protected:
 		return Interval();
 	}
 
-	Interval	getCodomain				(void) const
+	Interval	getCodomain				(const EvalContext&) const
 	{
 		// Ensure that result is always within [-1, 1], or NaN (for +-inf)
 		return Interval(-1.0, 1.0) | TCU_NAN;
@@ -3216,15 +3216,17 @@ public:
 			ATan		(void) : CFloatFunc1<T>	("atan", deAtanOver) {}
 
 protected:
-	double	precision	(const EvalContext& ctx, double ret, double x) const
+	double	precision	(const EvalContext& ctx, double ret, double) const
 	{
-		if (x < -DE_PI_DOUBLE * 0.5 || x > DE_PI_DOUBLE * 0.5)
-		return TCU_NAN;
-
 		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 			return ctx.format.ulp(ret, 4096.0);
 		else
 			return ctx.format.ulp(ret, 5.0);
+	}
+
+	Interval getCodomain(const EvalContext& ctx) const
+	{
+		return ctx.format.roundOut(Interval(-0.5 * DE_PI_DOUBLE, 0.5 * DE_PI_DOUBLE), true);
 	}
 };
 
