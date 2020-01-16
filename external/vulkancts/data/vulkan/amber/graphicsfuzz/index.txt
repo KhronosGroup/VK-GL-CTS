@@ -74,6 +74,7 @@
 {	"nested-for-loops-with-return.amber",			"nested-for-loops-with-return",			"A fragment shader with two nested for loops with return"								},
 {	"nested-ifs-and-return-in-for-loop.amber",		"nested-ifs-and-return-in-for-loop",	"A fragment shader with return in nest of ifs, inside loop"								},
 {	"nested-loops-switch.amber",					"nested-loops-switch",					"A fragment shader with nested loops and a switch"										},
+{	"nested-switch-break-discard.amber",			"nested-switch-break-discard",			"Nested switches with break and discard"												},
 {	"pow-vec4.amber",								"pow-vec4",								"A fragment shader that uses pow"														},
 {	"return-before-writing-wrong-color.amber",		"return-before-writing-wrong-color",	"A fragment shader with return before writing wrong color"								},
 {	"return-float-from-while-loop.amber",			"return-float-from-while-loop",			"A fragment shader with unreachable while loop"											},
