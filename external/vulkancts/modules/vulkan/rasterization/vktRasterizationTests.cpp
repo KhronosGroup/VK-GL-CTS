@@ -2243,8 +2243,8 @@ void LinesTestInstance::generateLines (int iteration, std::vector<tcu::Vec4>& ou
 			outData[3] = tcu::Vec4( 0.11f,  0.2f, 0.0f, 1.0f);
 			outData[4] = tcu::Vec4( 0.88f,  0.7f, 0.0f, 1.0f);
 			outData[5] = tcu::Vec4(  0.8f, -0.7f, 0.0f, 1.0f);
-			outData[6] = tcu::Vec4(  1.0f,  0.7f, 0.0f, 1.0f);
-			outData[7] = tcu::Vec4( -1.0f,  0.7f, 0.0f, 1.0f);
+			outData[6] = tcu::Vec4(  0.9f,  0.7f, 0.0f, 1.0f);
+			outData[7] = tcu::Vec4( -0.9f,  0.7f, 0.0f, 1.0f);
 			break;
 	}
 
