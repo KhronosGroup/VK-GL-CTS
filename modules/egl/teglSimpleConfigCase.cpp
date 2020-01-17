@@ -148,6 +148,11 @@ static bool notFloat (const eglu::CandidateConfig& c)
 	return c.colorComponentType() != EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT;
 }
 
+static bool notYUV (const eglu::CandidateConfig& c)
+{
+	return c.get(EGL_COLOR_BUFFER_TYPE) != EGL_YUV_BUFFER_EXT;
+}
+
 void getDefaultFilterLists (vector<NamedFilterList>& lists, const FilterList& baseFilters)
 {
 	static const struct
@@ -215,7 +220,8 @@ void getDefaultFilterLists (vector<NamedFilterList>& lists, const FilterList& ba
 				<< notColorBits<5, 5, 5, 1>
 				<< notColorBits<8, 8, 8, 8>
 				<< isConformant
-				<< notFloat;
+				<< notFloat
+				<< notYUV;
 
 		lists.push_back(filters);
 	}
