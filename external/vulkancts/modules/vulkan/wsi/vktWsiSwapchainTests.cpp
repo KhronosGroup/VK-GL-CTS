@@ -55,6 +55,7 @@
 #include "deSharedPtr.hpp"
 
 #include <limits>
+#include <algorithm>
 
 namespace vkt
 {
@@ -2341,6 +2342,82 @@ tcu::TestStatus destroyNullHandleSwapchainTest (Context& context, Type wsiType)
 	return tcu::TestStatus::pass("Destroying a VK_NULL_HANDLE surface has no effect");
 }
 
+tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
+{
+	const tcu::UVec2               desiredSize     (256, 256);
+	const InstanceHelper           instHelper      (context, wsiType);
+	const NativeObjects            native          (context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>     surface         (createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const DeviceHelper             devHelper       (context, instHelper.vki, instHelper.instance, *surface);
+	const VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+	const Unique<VkSwapchainKHR>   swapchain       (createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+
+	deUint32 numImages;
+	VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, DE_NULL));
+	const deUint32 minImageCount = getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface).minImageCount;
+	if (numImages < minImageCount) return tcu::TestStatus::fail("Get swapchain images returned less than minImageCount images");
+	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
+
+	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1);
+	deUint32 dummy;
+	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+	}
+
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, 0, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_NOT_READY ){
+		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with 0 timeout");
+	}
+
+	// cleanup
+	const deUint32 numFences = (result == VK_NOT_READY) ? static_cast<deUint32>(fences.size() - 1) : static_cast<deUint32>(fences.size());
+	vector<vk::VkFence> fencesRaw(numFences);
+	std::transform(fences.begin(), fences.begin() + numFences, fencesRaw.begin(), [](const FenceSp& f) -> vk::VkFence{ return **f; });
+	VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, numFences, fencesRaw.data(), VK_TRUE, std::numeric_limits<deUint64>::max()));
+
+	return tcu::TestStatus::pass("Acquire too many swapchain images test succeeded");
+}
+
+tcu::TestStatus acquireTooManyTimeoutTest (Context& context, Type wsiType)
+{
+	const tcu::UVec2               desiredSize     (256, 256);
+	const InstanceHelper           instHelper      (context, wsiType);
+	const NativeObjects            native          (context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>     surface         (createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(), native.getWindow()));
+	const DeviceHelper             devHelper       (context, instHelper.vki, instHelper.instance, *surface);
+	const VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+	const Unique<VkSwapchainKHR>   swapchain       (createSwapchainKHR(devHelper.vkd, *devHelper.device, &swapchainInfo));
+
+	deUint32 numImages;
+	VK_CHECK(devHelper.vkd.getSwapchainImagesKHR(*devHelper.device, *swapchain, &numImages, DE_NULL));
+	const deUint32 minImageCount = getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface).minImageCount;
+	if (numImages < minImageCount) return tcu::TestStatus::fail("Get swapchain images returned less than minImageCount images");
+	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
+
+	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1);
+	deUint32 dummy;
+	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
+		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
+	}
+
+	const deUint64 millisecond = 1000000;
+	const deUint64 timeout = 50 * millisecond; // arbitrary realistic non-0 non-infinite timeout
+	const auto result = devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, timeout, (VkSemaphore)0, **fences[numAcquirableImages], &dummy);
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_TIMEOUT ){
+		return tcu::TestStatus::fail("Implementation failed to respond well acquiring too many images with timeout");
+	}
+
+	// cleanup
+	const deUint32 numFences = (result == VK_TIMEOUT) ? static_cast<deUint32>(fences.size() - 1) : static_cast<deUint32>(fences.size());
+	vector<vk::VkFence> fencesRaw(numFences);
+	std::transform(fences.begin(), fences.begin() + numFences, fencesRaw.begin(), [](const FenceSp& f) -> vk::VkFence{ return **f; });
+	VK_CHECK(devHelper.vkd.waitForFences(*devHelper.device, numFences, fencesRaw.data(), VK_TRUE, std::numeric_limits<deUint64>::max()));
+
+	return tcu::TestStatus::pass("Acquire too many swapchain images test succeeded");
+}
+
 void getBasicRenderPrograms (SourceCollections& dst, Type)
 {
 	WsiTriangleRenderer::getPrograms(dst);
@@ -2390,6 +2467,12 @@ void populateDestroyGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 	addFunctionCase(testGroup, "null_handle", "Destroying a VK_NULL_HANDLE swapchain", destroyNullHandleSwapchainTest, wsiType);
 }
 
+void populateAcquireGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
+{
+	addFunctionCase(testGroup, "too_many", "Test acquiring too many images with 0 timeout", acquireTooManyTest, wsiType);
+	addFunctionCase(testGroup, "too_many_timeout", "Test acquiring too many images with timeout", acquireTooManyTimeoutTest, wsiType);
+}
+
 } // anonymous
 
 void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
@@ -2400,6 +2483,7 @@ void createSwapchainTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addTestGroup(testGroup, "modify",			"Modify VkSwapchain",											populateModifyGroup,		wsiType);
 	addTestGroup(testGroup, "destroy",			"Destroy VkSwapchain",											populateDestroyGroup,		wsiType);
 	addTestGroup(testGroup, "get_images",		"Get swapchain images",											populateGetImagesGroup,		wsiType);
+	addTestGroup(testGroup, "acquire",			"Ancquire next swapchain image",								populateAcquireGroup,		wsiType);
 }
 
 } // wsi
