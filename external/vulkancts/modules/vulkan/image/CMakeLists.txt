@@ -9,6 +9,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageAstcDecodeModeTests.hpp
 	vktImageAtomicOperationTests.cpp
 	vktImageAtomicOperationTests.hpp
+	vktImageAtomicSpirvShaders.cpp
+	vktImageAtomicSpirvShaders.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
 	vktImageMutableTests.cpp

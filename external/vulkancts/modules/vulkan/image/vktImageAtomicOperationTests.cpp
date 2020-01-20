@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktImageAtomicOperationTests.hpp"
+#include "vktImageAtomicSpirvShaders.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -41,6 +42,7 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuVectorType.hpp"
+#include "tcuStringTemplate.hpp"
 
 namespace vkt
 {
@@ -79,6 +81,9 @@ enum
 enum AtomicOperation
 {
 	ATOMIC_OPERATION_ADD = 0,
+	ATOMIC_OPERATION_SUB,
+	ATOMIC_OPERATION_INC,
+	ATOMIC_OPERATION_DEC,
 	ATOMIC_OPERATION_MIN,
 	ATOMIC_OPERATION_MAX,
 	ATOMIC_OPERATION_AND,
@@ -146,6 +151,9 @@ static string getAtomicOperationCaseName (const AtomicOperation op)
 	switch (op)
 	{
 		case ATOMIC_OPERATION_ADD:				return string("add");
+		case ATOMIC_OPERATION_SUB:				return string("sub");
+		case ATOMIC_OPERATION_INC:				return string("inc");
+		case ATOMIC_OPERATION_DEC:				return string("dec");
 		case ATOMIC_OPERATION_MIN:				return string("min");
 		case ATOMIC_OPERATION_MAX:				return string("max");
 		case ATOMIC_OPERATION_AND:				return string("and");
@@ -183,6 +191,9 @@ static deInt32 getOperationInitialValue (const AtomicOperation op)
 	{
 		// \note 18 is just an arbitrary small nonzero value.
 		case ATOMIC_OPERATION_ADD:				return 18;
+		case ATOMIC_OPERATION_INC:				return 18;
+		case ATOMIC_OPERATION_SUB:				return (1 << 24) - 1;
+		case ATOMIC_OPERATION_DEC:				return (1 << 24) - 1;
 		case ATOMIC_OPERATION_MIN:				return (1 << 15) - 1;
 		case ATOMIC_OPERATION_MAX:				return 18;
 		case ATOMIC_OPERATION_AND:				return (1 << 15) - 1;
@@ -209,10 +220,14 @@ static T getAtomicFuncArgument (const AtomicOperation	op,
 	{
 		// \note Fall-throughs.
 		case ATOMIC_OPERATION_ADD:
+		case ATOMIC_OPERATION_SUB:
 		case ATOMIC_OPERATION_AND:
 		case ATOMIC_OPERATION_OR:
 		case ATOMIC_OPERATION_XOR:
 			return x*x + y*y + z*z;
+		case ATOMIC_OPERATION_INC:
+		case ATOMIC_OPERATION_DEC:
+			return 1;
 		case ATOMIC_OPERATION_MIN:
 		case ATOMIC_OPERATION_MAX:
 			// multiply half of the data by -1
@@ -230,11 +245,52 @@ static T getAtomicFuncArgument (const AtomicOperation	op,
 static bool isOrderIndependentAtomicOperation (const AtomicOperation op)
 {
 	return	op == ATOMIC_OPERATION_ADD ||
+			op == ATOMIC_OPERATION_SUB ||
+			op == ATOMIC_OPERATION_INC ||
+			op == ATOMIC_OPERATION_DEC ||
 			op == ATOMIC_OPERATION_MIN ||
 			op == ATOMIC_OPERATION_MAX ||
 			op == ATOMIC_OPERATION_AND ||
 			op == ATOMIC_OPERATION_OR ||
 			op == ATOMIC_OPERATION_XOR;
+}
+
+//! Checks if the operation needs an SPIR-V shader.
+static bool isSpirvAtomicOperation (const AtomicOperation op)
+{
+	return	op == ATOMIC_OPERATION_SUB ||
+			op == ATOMIC_OPERATION_INC ||
+			op == ATOMIC_OPERATION_DEC;
+}
+
+//! Returns the SPIR-V assembler name of the given operation.
+static std::string getSpirvAtomicOpName (const AtomicOperation op)
+{
+	switch (op)
+	{
+	case ATOMIC_OPERATION_SUB:	return "OpAtomicISub";
+	case ATOMIC_OPERATION_INC:	return "OpAtomicIIncrement";
+	case ATOMIC_OPERATION_DEC:	return "OpAtomicIDecrement";
+	default:					break;
+	}
+
+	DE_ASSERT(false);
+	return "";
+}
+
+//! Returns true if the given SPIR-V operation does not need the last argument, compared to OpAtomicIAdd.
+static bool isSpirvAtomicNoLastArgOp (const AtomicOperation op)
+{
+	switch (op)
+	{
+	case ATOMIC_OPERATION_SUB:	return false;
+	case ATOMIC_OPERATION_INC:	// fallthrough
+	case ATOMIC_OPERATION_DEC:	return true;
+	default:					break;
+	}
+
+	DE_ASSERT(false);
+	return false;
 }
 
 //! Computes the result of an atomic operation where "a" is the data operated on and "b" is the parameter to the atomic function.
@@ -243,7 +299,10 @@ static T computeBinaryAtomicOperationResult (const AtomicOperation op, const T a
 {
 	switch (op)
 	{
+		case ATOMIC_OPERATION_INC:				// fallthrough.
 		case ATOMIC_OPERATION_ADD:				return a + b;
+		case ATOMIC_OPERATION_DEC:				// fallthrough.
+		case ATOMIC_OPERATION_SUB:				return a - b;
 		case ATOMIC_OPERATION_MIN:				return de::min(a, b);
 		case ATOMIC_OPERATION_MAX:				return de::max(a, b);
 		case ATOMIC_OPERATION_AND:				return a & b;
@@ -306,36 +365,51 @@ void BinaryAtomicEndResultCase::checkSupport (Context& context) const
 
 void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollections) const
 {
-	const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
+	if (isSpirvAtomicOperation(m_operation))
+	{
+		const CaseVariant					caseVariant{m_imageType, m_format.order, m_format.type, CaseVariant::CHECK_TYPE_END_RESULTS};
+		const tcu::StringTemplate			shaderTemplate{getSpirvAtomicOpShader(caseVariant)};
+		std::map<std::string, std::string>	specializations;
 
-	const bool		uintFormat				= isUintFormat(mapTextureFormat(m_format));
-	const bool		intFormat				= isIntFormat(mapTextureFormat(m_format));
-	const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
-	const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
+		specializations["OPNAME"] = getSpirvAtomicOpName(m_operation);
+		if (isSpirvAtomicNoLastArgOp(m_operation))
+			specializations["LASTARG"] = "";
 
-	const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
-											+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
+		sourceCollections.spirvAsmSources.add(m_name) << shaderTemplate.specialize(specializations);
+	}
+	else
+	{
+		const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
 
-	const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "") : "";
-	const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
-	const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
-	const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
+		const bool		uintFormat				= isUintFormat(mapTextureFormat(m_format));
+		const bool		intFormat				= isIntFormat(mapTextureFormat(m_format));
+		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
+		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 
-	string source = versionDecl + "\n"
-					"precision highp " + shaderImageTypeStr + ";\n"
-					"\n"
-					"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-					"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
-					"\n"
-					"void main (void)\n"
-					"{\n"
-					"	int gx = int(gl_GlobalInvocationID.x);\n"
-					"	int gy = int(gl_GlobalInvocationID.y);\n"
-					"	int gz = int(gl_GlobalInvocationID.z);\n"
-					"	" + atomicInvocation + ";\n"
-					"}\n";
+		const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
+												+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
-	sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
+		const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "") : "";
+		const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
+		const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
+		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
+
+		string source = versionDecl + "\n"
+						"precision highp " + shaderImageTypeStr + ";\n"
+						"\n"
+						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+						"\n"
+						"void main (void)\n"
+						"{\n"
+						"	int gx = int(gl_GlobalInvocationID.x);\n"
+						"	int gy = int(gl_GlobalInvocationID.y);\n"
+						"	int gz = int(gl_GlobalInvocationID.z);\n"
+						"	" + atomicInvocation + ";\n"
+						"}\n";
+
+		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
+	}
 }
 
 class BinaryAtomicIntermValuesCase : public vkt::TestCase
@@ -387,38 +461,53 @@ void BinaryAtomicIntermValuesCase::checkSupport (Context& context) const
 
 void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollections) const
 {
-	const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
+	if (isSpirvAtomicOperation(m_operation))
+	{
+		const CaseVariant					caseVariant{m_imageType, m_format.order, m_format.type, CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS};
+		const tcu::StringTemplate			shaderTemplate{getSpirvAtomicOpShader(caseVariant)};
+		std::map<std::string, std::string>	specializations;
 
-	const bool		uintFormat				= isUintFormat(mapTextureFormat(m_format));
-	const bool		intFormat				= isIntFormat(mapTextureFormat(m_format));
-	const string	colorVecTypeName		= string(uintFormat ? "u" : intFormat ? "i" : "") + "vec4";
-	const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
-	const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
-	const string	invocationCoord			= getCoordStr(m_imageType, "gx", "gy", "gz");
-	const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
-											+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
+		specializations["OPNAME"] = getSpirvAtomicOpName(m_operation);
+		if (isSpirvAtomicNoLastArgOp(m_operation))
+			specializations["LASTARG"] = "";
 
-	const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "")  : "";
-	const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
-	const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
-	const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
+		sourceCollections.spirvAsmSources.add(m_name) << shaderTemplate.specialize(specializations);
+	}
+	else
+	{
+		const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
 
-	string source = versionDecl + "\n"
-					"precision highp " + shaderImageTypeStr + ";\n"
-					"\n"
-					"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-					"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
-					"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
-					"\n"
-					"void main (void)\n"
-					"{\n"
-					"	int gx = int(gl_GlobalInvocationID.x);\n"
-					"	int gy = int(gl_GlobalInvocationID.y);\n"
-					"	int gz = int(gl_GlobalInvocationID.z);\n"
-					"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
-					"}\n";
+		const bool		uintFormat				= isUintFormat(mapTextureFormat(m_format));
+		const bool		intFormat				= isIntFormat(mapTextureFormat(m_format));
+		const string	colorVecTypeName		= string(uintFormat ? "u" : intFormat ? "i" : "") + "vec4";
+		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
+		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
+		const string	invocationCoord			= getCoordStr(m_imageType, "gx", "gy", "gz");
+		const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
+												+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
-	sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
+		const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "")  : "";
+		const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
+		const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
+		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
+
+		string source = versionDecl + "\n"
+						"precision highp " + shaderImageTypeStr + ";\n"
+						"\n"
+						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+						"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
+						"\n"
+						"void main (void)\n"
+						"{\n"
+						"	int gx = int(gl_GlobalInvocationID.x);\n"
+						"	int gy = int(gl_GlobalInvocationID.y);\n"
+						"	int gz = int(gl_GlobalInvocationID.z);\n"
+						"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
+						"}\n";
+
+		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
+	}
 }
 
 class BinaryAtomicInstanceBase : public vkt::TestInstance

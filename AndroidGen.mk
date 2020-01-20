@@ -159,6 +159,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryVaryingGeometryShaderTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAstcDecodeModeTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageAtomicSpirvShaders.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
