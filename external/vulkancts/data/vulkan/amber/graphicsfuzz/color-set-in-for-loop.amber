@@ -1,0 +1,153 @@
+#!amber
+
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader with color set in for loop
+
+# The test passes because main always writes the color red.
+
+# Optimized using spirv-opt with the following arguments:
+# '--wrap-opkill'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--inline-entry-points-exhaustive'
+# '--eliminate-dead-functions'
+# '--private-to-local'
+# '--scalar-replacement=0'
+# '--ssa-rewrite'
+# '--ccp'
+# spirv-opt commit hash: 18b3b94567a9251a6f8491a6d07c4422abadd22c
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#   vec2 injectionSwitch;
+# };
+#
+# void main()
+# {
+#   if (injectionSwitch.x > 1.0) // Always false
+#   {
+#     for (mat4 tmp1; true;)
+#     {
+#       _GLF_color = vec4(0, 0, 0, 1);
+#     }
+#   }
+#   _GLF_color = vec4(1, 0, 0, 1);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 35
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %31
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "buf0"
+               OpMemberName %8 0 "injectionSwitch"
+               OpName %10 ""
+               OpName %31 "_GLF_color"
+               OpMemberDecorate %8 0 Offset 0
+               OpDecorate %8 Block
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %10 Binding 0
+               OpDecorate %31 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypeStruct %7
+          %9 = OpTypePointer Uniform %8
+         %10 = OpVariable %9 Uniform
+         %11 = OpTypeInt 32 1
+         %12 = OpConstant %11 0
+         %13 = OpTypeInt 32 0
+         %14 = OpConstant %13 0
+         %15 = OpTypePointer Uniform %6
+         %18 = OpConstant %6 1
+         %19 = OpTypeBool
+         %28 = OpConstantTrue %19
+         %29 = OpTypeVector %6 4
+         %30 = OpTypePointer Output %29
+         %31 = OpVariable %30 Output
+         %32 = OpConstant %6 0
+         %33 = OpConstantComposite %29 %32 %32 %32 %18
+         %34 = OpConstantComposite %29 %18 %32 %32 %18
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %15 %10 %12 %14
+         %17 = OpLoad %6 %16
+         %20 = OpFOrdGreaterThan %19 %17 %18
+               OpSelectionMerge %22 None
+               OpBranchConditional %20 %21 %22
+         %21 = OpLabel
+               OpBranch %23
+         %23 = OpLabel
+               OpLoopMerge %25 %26 None
+               OpBranch %27
+         %27 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+               OpStore %31 %33
+               OpBranch %26
+         %26 = OpLabel
+               OpBranch %23
+         %25 = OpLabel
+               OpUnreachable
+         %22 = OpLabel
+               OpStore %31 %34
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
