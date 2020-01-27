@@ -220,12 +220,19 @@ public:
 				for (size_t instanceExtNdx = 0; instanceExtNdx < DE_LENGTH_OF_ARRAY(instanceExtensionNames); instanceExtNdx++)
 				{
 					vector<const char*> instanceExtFunctions;
+					vector<const char*> deviceExtFunctions;
 
 					if (isSupportedInstanceExt(instanceExtensionNames[instanceExtNdx], apiVersion))
+					{
 						getInstanceExtensionFunctions(apiVersion, instanceExtensionNames[instanceExtNdx], instanceExtFunctions);
+						getDeviceExtensionFunctions(apiVersion, instanceExtensionNames[instanceExtNdx], deviceExtFunctions);
+					}
 
 					for (size_t instanceFuncNdx = 0; instanceFuncNdx < instanceExtFunctions.size(); instanceFuncNdx++)
 						extFunctions.push_back(FunctionInfo(instanceExtFunctions[instanceFuncNdx], FUNCTIONORIGIN_INSTANCE));
+
+					for (size_t deviceFuncNdx = 0; deviceFuncNdx < deviceExtFunctions.size(); deviceFuncNdx++)
+						extFunctions.push_back(FunctionInfo(deviceExtFunctions[deviceFuncNdx], FUNCTIONORIGIN_DEVICE));
 				}
 
 				// Add supported device extension functions
@@ -450,9 +457,15 @@ private:
 			if (functionType == FUNCTIONORIGIN_PLATFORM)
 				checkPlatformFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
 			else if (functionType == FUNCTIONORIGIN_INSTANCE)
+			{
 				checkInstanceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
+				checkDeviceFunction(ctx, log, testsArr[ndx].first, DE_FALSE, failsQuantity);
+			}
 			else if (functionType == FUNCTIONORIGIN_DEVICE)
+			{
+				checkInstanceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
 				checkDeviceFunction(ctx, log, testsArr[ndx].first, DE_TRUE, failsQuantity);
+			}
 		}
 		return startingQuantity == failsQuantity;
 	}

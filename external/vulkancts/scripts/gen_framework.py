@@ -1480,10 +1480,9 @@ def writeExtensionFunctions (api, filename):
 				for func in ext.functions:
 					if func.getType() == functionType:
 						funcNames.append(func.name)
-			if (funcNames):
-				yield ('\tif (extName == "%s")' % ext.name) if isFirstWrite else  ('\telse if (extName == "%s")' % ext.name)
-				if (len(funcNames) > 0):
-					yield "\t{"
+			if ext.name:
+				yield '\tif (extName == "%s")' % ext.name
+				yield '\t{'
 				for funcName in funcNames:
 					if funcName in dg_list:
 						yield '\t\tif(apiVersion >= VK_API_VERSION_1_1) functions.push_back("%s");' % funcName
@@ -1492,12 +1491,12 @@ def writeExtensionFunctions (api, filename):
 				if ext.name == "VK_KHR_device_group":
 					for dg_func in dg_list:
 						yield '\t\tif(apiVersion < VK_API_VERSION_1_1) functions.push_back("%s");' % dg_func
-				if (len(funcNames) > 0):
-					yield '\t}'
+				yield '\t\treturn;'
+				yield '\t}'
 				isFirstWrite = False
 		if not isFirstWrite:
-			yield '\telse'
-			yield '\t\tDE_FATAL("Extension name not found");\n}'
+			yield '\tDE_FATAL("Extension name not found");'
+			yield '}'
 
 	lines = ['']
 	for line in writeExtensionFunctions(Function.TYPE_INSTANCE):
