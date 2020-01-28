@@ -35,6 +35,7 @@
 #include "vktRayTracingPipelineLibraryTests.hpp"
 #include "vktRayTracingMemGuaranteeTests.hpp"
 #include "vktRayTracingNullASTests.hpp"
+#include "vktRayTracingCaptureReplayTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -62,6 +63,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createPipelineLibraryTests(testCtx));
 	group->addChild(createMemGuaranteeTests(testCtx));
 	group->addChild(createNullAccelerationStructureTests(testCtx));
+	group->addChild(createCaptureReplayTests(testCtx));
 
 	return group.release();
 }
