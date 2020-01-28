@@ -231,17 +231,23 @@ int								referenceVertexCount						(const TessPrimitiveType primitiveType, con
 int								referencePrimitiveCount						(const TessPrimitiveType primitiveType, const SpacingMode spacingMode, const bool usePointMode, const float* innerLevels, const float* outerLevels);
 int								numVerticesPerPrimitive						(const TessPrimitiveType primitiveType, const bool usePointMode);
 
-static inline const char* getTessPrimitiveTypeShaderName (const TessPrimitiveType type)
+static inline const char* getTessPrimitiveTypeShaderName (const TessPrimitiveType type, bool forSpirv = false)
 {
-	switch (type)
+	static std::string primitiveName[][2] =
 	{
-		case TESSPRIMITIVETYPE_TRIANGLES:	return "triangles";
-		case TESSPRIMITIVETYPE_QUADS:		return "quads";
-		case TESSPRIMITIVETYPE_ISOLINES:	return "isolines";
-		default:
-			DE_FATAL("Unexpected primitive type.");
-			return DE_NULL;
+		// glsl name	spirv name
+		{ "triangles", "Triangles"},
+		{ "quads"	 , "Quads" },
+		{ "isolines" , "Isolines" }
+	};
+
+	if (type >= TESSPRIMITIVETYPE_LAST)
+	{
+		DE_FATAL("Unexpected primitive type.");
+		return DE_NULL;
 	}
+
+	return primitiveName[type][forSpirv].c_str();
 }
 
 static inline const char* getDomainName (const TessPrimitiveType type)
@@ -270,17 +276,23 @@ static inline const char* getOutputTopologyName (const TessPrimitiveType type, c
 	return DE_NULL;
 }
 
-static inline const char* getSpacingModeShaderName (SpacingMode mode)
+static inline const char* getSpacingModeShaderName (SpacingMode mode, bool forSpirv = false)
 {
-	switch (mode)
+	static std::string spacingName[][2] =
 	{
-		case SPACINGMODE_EQUAL:				return "equal_spacing";
-		case SPACINGMODE_FRACTIONAL_ODD:	return "fractional_odd_spacing";
-		case SPACINGMODE_FRACTIONAL_EVEN:	return "fractional_even_spacing";
-		default:
-			DE_FATAL("Unexpected spacing mode.");
-			return DE_NULL;
+		// glsl name					spirv name
+		{ "equal_spacing",				"SpacingEqual"},
+		{ "fractional_odd_spacing",		"SpacingFractionalOdd" },
+		{ "fractional_even_spacing",	"SpacingFractionalEven" }
+	};
+
+	if (mode >= SPACINGMODE_LAST)
+	{
+		DE_FATAL("Unexpected spacing type.");
+		return DE_NULL;
 	}
+
+	return spacingName[mode][forSpirv].c_str();
 }
 
 static inline const char* getPartitioningShaderName (SpacingMode mode)

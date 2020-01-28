@@ -62,10 +62,12 @@ public:
 	bool operator() (const T& a, const T& b) const { return a.size() < b.size(); }
 };
 
-std::string getCaseName (const TessPrimitiveType primitiveType, const SpacingMode spacingMode)
+std::string getCaseName (const TessPrimitiveType primitiveType, const SpacingMode spacingMode, bool executionModeInEvaluationShader)
 {
 	std::ostringstream str;
 	str << getTessPrimitiveTypeShaderName(primitiveType) << "_" << getSpacingModeShaderName(spacingMode);
+	if (!executionModeInEvaluationShader)
+		str << "_execution_mode_in_tesc";
 	return str.str();
 }
 
@@ -365,7 +367,8 @@ class TessCoordTest : public TestCase
 public:
 								TessCoordTest	(tcu::TestContext&			testCtx,
 												 const TessPrimitiveType	primitiveType,
-												 const SpacingMode			spacingMode);
+												 const SpacingMode			spacingMode,
+												 const bool					executionModeInEvaluationShader = true);
 
 	void						initPrograms	(SourceCollections&			programCollection) const;
 	TestInstance*				createInstance	(Context&					context) const;
@@ -373,83 +376,249 @@ public:
 private:
 	const TessPrimitiveType		m_primitiveType;
 	const SpacingMode			m_spacingMode;
+	const bool					m_executionModeInEvaluationShader;
 };
 
 TessCoordTest::TessCoordTest (tcu::TestContext&			testCtx,
 							  const TessPrimitiveType	primitiveType,
-							  const SpacingMode			spacingMode)
-	: TestCase			(testCtx, getCaseName(primitiveType, spacingMode), "")
-	, m_primitiveType	(primitiveType)
-	, m_spacingMode		(spacingMode)
+							  const SpacingMode			spacingMode,
+							  const bool				executionModeInEvaluationShader)
+	: TestCase							(testCtx, getCaseName(primitiveType, spacingMode, executionModeInEvaluationShader), "")
+	, m_primitiveType					(primitiveType)
+	, m_spacingMode						(spacingMode)
+	, m_executionModeInEvaluationShader	(executionModeInEvaluationShader)
 {
 }
 
 void TessCoordTest::initPrograms (SourceCollections& programCollection) const
 {
-	// Vertex shader - no inputs
+	if (m_executionModeInEvaluationShader)
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "}\n";
+		// Vertex shader - no inputs
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		// Tessellation control shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "\n"
+				<< "layout(vertices = 1) out;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0, std430) readonly restrict buffer TessLevels {\n"
+				<< "    float inner0;\n"
+				<< "    float inner1;\n"
+				<< "    float outer0;\n"
+				<< "    float outer1;\n"
+				<< "    float outer2;\n"
+				<< "    float outer3;\n"
+				<< "} sb_levels;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    gl_TessLevelInner[0] = sb_levels.inner0;\n"
+				<< "    gl_TessLevelInner[1] = sb_levels.inner1;\n"
+				<< "\n"
+				<< "    gl_TessLevelOuter[0] = sb_levels.outer0;\n"
+				<< "    gl_TessLevelOuter[1] = sb_levels.outer1;\n"
+				<< "    gl_TessLevelOuter[2] = sb_levels.outer2;\n"
+				<< "    gl_TessLevelOuter[3] = sb_levels.outer3;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		}
+
+		// Tessellation evaluation shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(m_primitiveType) << ", "
+				<< getSpacingModeShaderName(m_spacingMode) << ", point_mode) in;\n" << "\n"
+				<< "layout(set = 0, binding = 1, std430) coherent restrict buffer Output {\n"
+				<< "    int  numInvocations;\n"
+				<< "    vec3 tessCoord[];\n"		// alignment is 16 bytes, same as vec4
+				<< "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
+				<< "    sb_out.tessCoord[index] = gl_TessCoord;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		}
 	}
-
-	// Tessellation control shader
+	else
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(vertices = 1) out;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0, std430) readonly restrict buffer TessLevels {\n"
-			<< "    float inner0;\n"
-			<< "    float inner1;\n"
-			<< "    float outer0;\n"
-			<< "    float outer1;\n"
-			<< "    float outer2;\n"
-			<< "    float outer3;\n"
-			<< "} sb_levels;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    gl_TessLevelInner[0] = sb_levels.inner0;\n"
-			<< "    gl_TessLevelInner[1] = sb_levels.inner1;\n"
-			<< "\n"
-			<< "    gl_TessLevelOuter[0] = sb_levels.outer0;\n"
-			<< "    gl_TessLevelOuter[1] = sb_levels.outer1;\n"
-			<< "    gl_TessLevelOuter[2] = sb_levels.outer2;\n"
-			<< "    gl_TessLevelOuter[3] = sb_levels.outer3;\n"
-			<< "}\n";
+		// note: spirv code for all stages coresponds to glsl version above
 
-		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
-	}
+		programCollection.spirvAsmSources.add("vert")
+			<< "OpCapability Shader\n"
+			   "%glsl_ext_inst = OpExtInstImport \"GLSL.std.450\"\n"
+			   "OpMemoryModel Logical GLSL450\n"
+			   "OpEntryPoint Vertex %main_fun \"main\"\n"
+			   "%type_void       = OpTypeVoid\n"
+			   "%type_void_f     = OpTypeFunction %type_void\n"
+			   "%main_fun        = OpFunction %type_void None %type_void_f\n"
+			   "%main_label      = OpLabel\n"
+			   "OpReturn\n"
+			   "OpFunctionEnd\n";
 
-	// Tessellation evaluation shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(m_primitiveType) << ", "
-						 << getSpacingModeShaderName(m_spacingMode) << ", point_mode) in;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 1, std430) coherent restrict buffer Output {\n"
-			<< "    int  numInvocations;\n"
-			<< "    vec3 tessCoord[];\n"		// alignment is 16 bytes, same as vec4
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-			<< "    sb_out.tessCoord[index] = gl_TessCoord;\n"
-			<< "}\n";
+		// glsl requires primitive_mode, vertex_spacing, ordering and point_mode layout qualifiers to be defined in
+		// tessellation evaluation shader while spirv allows corresponding execution modes to be defined in TES and/or
+		// TCS; here we test using execution modes only in TCS as TES is tested with glsl version of tests
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		const std::string executionMode =
+			std::string("OpExecutionMode %main_fun ") + getTessPrimitiveTypeShaderName(m_primitiveType, true) + "\n"
+			"OpExecutionMode %main_fun " + getSpacingModeShaderName(m_spacingMode, true) + "\n" +
+			"OpExecutionMode %main_fun PointMode\n"
+			"OpExecutionMode %main_fun VertexOrderCcw\n";
+
+		std::string tescSrc =
+			   "OpCapability Tessellation\n"
+			   "%glsl_ext_inst = OpExtInstImport \"GLSL.std.450\"\n"
+			   "OpMemoryModel Logical GLSL450\n"
+			   "OpEntryPoint TessellationControl %main_fun \"main\" %var_tess_level_inner %var_tess_level_outer\n"
+			   "OpExecutionMode %main_fun OutputVertices 1\n";
+		tescSrc += executionMode +
+			   "OpDecorate %var_tess_level_inner Patch\n"
+			   "OpDecorate %var_tess_level_inner BuiltIn TessLevelInner\n"
+			   "OpMemberDecorate %type_struct_sb_levels 0 Restrict\n"
+			   "OpMemberDecorate %type_struct_sb_levels 0 NonWritable\n"
+			   "OpMemberDecorate %type_struct_sb_levels 0 Offset 0\n"
+			   "OpMemberDecorate %type_struct_sb_levels 1 Restrict\n"
+			   "OpMemberDecorate %type_struct_sb_levels 1 NonWritable\n"
+			   "OpMemberDecorate %type_struct_sb_levels 1 Offset 4\n"
+			   "OpMemberDecorate %type_struct_sb_levels 2 Restrict\n"
+			   "OpMemberDecorate %type_struct_sb_levels 2 NonWritable\n"
+			   "OpMemberDecorate %type_struct_sb_levels 2 Offset 8\n"
+			   "OpMemberDecorate %type_struct_sb_levels 3 Restrict\n"
+			   "OpMemberDecorate %type_struct_sb_levels 3 NonWritable\n"
+			   "OpMemberDecorate %type_struct_sb_levels 3 Offset 12\n"
+			   "OpMemberDecorate %type_struct_sb_levels 4 Restrict\n"
+			   "OpMemberDecorate %type_struct_sb_levels 4 NonWritable\n"
+			   "OpMemberDecorate %type_struct_sb_levels 4 Offset 16\n"
+			   "OpMemberDecorate %type_struct_sb_levels 5 Restrict\n"
+			   "OpMemberDecorate %type_struct_sb_levels 5 NonWritable\n"
+			   "OpMemberDecorate %type_struct_sb_levels 5 Offset 20\n"
+			   "OpDecorate %type_struct_sb_levels BufferBlock\n"
+			   "OpDecorate %var_struct_sb_levels DescriptorSet 0\n"
+			   "OpDecorate %var_struct_sb_levels Binding 0\n"
+			   "OpDecorate %var_tess_level_outer Patch\n"
+			   "OpDecorate %var_tess_level_outer BuiltIn TessLevelOuter\n"
+			   "%type_void                 = OpTypeVoid\n"
+			   "%type_void_f               = OpTypeFunction %type_void\n"
+			   "%type_f32                  = OpTypeFloat 32\n"
+			   "%type_u32                  = OpTypeInt 32 0\n"
+			   "%c_u32_2                   = OpConstant %type_u32 2\n"
+			   "%type_arr_f32_2            = OpTypeArray %type_f32 %c_u32_2\n"
+			   "%type_arr_f32_2_ptr        = OpTypePointer Output %type_arr_f32_2\n"
+			   "%type_i32                  = OpTypeInt 32 1\n"
+			   "%type_struct_sb_levels     = OpTypeStruct %type_f32 %type_f32 %type_f32 %type_f32 %type_f32 %type_f32\n"
+			   "%type_struct_sb_levels_ptr = OpTypePointer Uniform %type_struct_sb_levels\n"
+			   "%var_struct_sb_levels      = OpVariable %type_struct_sb_levels_ptr Uniform\n"
+			   "%type_uni_f32_ptr          = OpTypePointer Uniform %type_f32\n"
+			   "%type_out_f32_ptr          = OpTypePointer Output %type_f32\n"
+			   "%c_i32_0                   = OpConstant %type_i32 0\n"
+			   "%c_i32_1                   = OpConstant %type_i32 1\n"
+			   "%c_u32_4                   = OpConstant %type_u32 4\n"
+			   "%c_i32_2                   = OpConstant %type_i32 2\n"
+			   "%c_i32_3                   = OpConstant %type_i32 3\n"
+			   "%c_i32_4                   = OpConstant %type_i32 4\n"
+			   "%c_i32_5                   = OpConstant %type_i32 5\n"
+			   "%type_arr_f32_4            = OpTypeArray %type_f32 %c_u32_4\n"
+			   "%type_arr_f32_4_ptr        = OpTypePointer Output %type_arr_f32_4\n"
+			   "%var_tess_level_inner      = OpVariable %type_arr_f32_2_ptr Output\n"
+			   "%var_tess_level_outer      = OpVariable %type_arr_f32_4_ptr Output\n"
+			   "%main_fun                  = OpFunction %type_void None %type_void_f\n"
+			   "%main_label                = OpLabel\n"
+			   "%tess_inner_0_ptr          = OpAccessChain %type_uni_f32_ptr %var_struct_sb_levels %c_i32_0\n"
+			   "%tess_inner_0              = OpLoad %type_f32 %tess_inner_0_ptr\n"
+			   "%gl_tess_inner_0           = OpAccessChain %type_out_f32_ptr %var_tess_level_inner %c_i32_0\n"
+			   "                             OpStore %gl_tess_inner_0 %tess_inner_0\n"
+			   "%tess_inner_1_ptr          = OpAccessChain %type_uni_f32_ptr %var_struct_sb_levels %c_i32_1\n"
+			   "%tess_inner_1              = OpLoad %type_f32 %tess_inner_1_ptr\n"
+			   "%gl_tess_inner_1           = OpAccessChain %type_out_f32_ptr %var_tess_level_inner %c_i32_1\n"
+			   "                             OpStore %gl_tess_inner_1 %tess_inner_1\n"
+			   "%tess_outer_0_ptr          = OpAccessChain %type_uni_f32_ptr %var_struct_sb_levels %c_i32_2\n"
+			   "%tess_outer_0              = OpLoad %type_f32 %tess_outer_0_ptr\n"
+			   "%gl_tess_outer_0           = OpAccessChain %type_out_f32_ptr %var_tess_level_outer %c_i32_0\n"
+			   "                             OpStore %gl_tess_outer_0 %tess_outer_0\n"
+			   "%tess_outer_1_ptr          = OpAccessChain %type_uni_f32_ptr %var_struct_sb_levels %c_i32_3\n"
+			   "%tess_outer_1              = OpLoad %type_f32 %tess_outer_1_ptr\n"
+			   "%gl_tess_outer_1           = OpAccessChain %type_out_f32_ptr %var_tess_level_outer %c_i32_1\n"
+			   "                             OpStore %gl_tess_outer_1 %tess_outer_1\n"
+			   "%tess_outer_2_ptr          = OpAccessChain %type_uni_f32_ptr %var_struct_sb_levels %c_i32_4\n"
+			   "%tess_outer_2              = OpLoad %type_f32 %tess_outer_2_ptr\n"
+			   "%gl_tess_outer_2           = OpAccessChain %type_out_f32_ptr %var_tess_level_outer %c_i32_2\n"
+			   "                             OpStore %gl_tess_outer_2 %tess_outer_2\n"
+			   "%tess_outer_3_ptr          = OpAccessChain %type_uni_f32_ptr %var_struct_sb_levels %c_i32_5\n"
+			   "%tess_outer_3              = OpLoad %type_f32 %tess_outer_3_ptr\n"
+			   "%gl_tess_outer_3           = OpAccessChain %type_out_f32_ptr %var_tess_level_outer %c_i32_3\n"
+			   "                             OpStore %gl_tess_outer_3 %tess_outer_3\n"
+			   "OpReturn\n"
+			   "OpFunctionEnd\n";
+		programCollection.spirvAsmSources.add("tesc") << tescSrc;
+
+		std::string teseSrc =
+			   "OpCapability Tessellation\n"
+			   "%glsl_ext_inst = OpExtInstImport \"GLSL.std.450\"\n"
+			   "OpMemoryModel Logical GLSL450\n"
+			   "OpEntryPoint TessellationEvaluation %main_fun \"main\" %var_gl_tess_coord\n"
+			   "OpDecorate %type_run_arr_v3_f32 ArrayStride 16\n"
+			   "OpMemberDecorate %type_struct 0 Coherent\n"
+			   "OpMemberDecorate %type_struct 0 Restrict\n"
+			   "OpMemberDecorate %type_struct 0 Offset 0\n"
+			   "OpMemberDecorate %type_struct 1 Coherent\n"
+			   "OpMemberDecorate %type_struct 1 Restrict\n"
+			   "OpMemberDecorate %type_struct 1 Offset 16\n"
+			   "OpDecorate %type_struct BufferBlock\n"
+			   "OpDecorate %var_struct_ptr DescriptorSet 0\n"
+			   "OpDecorate %var_struct_ptr Binding 1\n"
+			   "OpDecorate %var_gl_tess_coord BuiltIn TessCoord\n"
+			   "%type_void             = OpTypeVoid\n"
+			   "%type_void_f           = OpTypeFunction %type_void\n"
+			   "%type_i32              = OpTypeInt 32 1\n"
+			   "%type_u32              = OpTypeInt 32 0\n"
+			   "%type_i32_fp           = OpTypePointer Function %type_i32\n"
+			   "%type_f32              = OpTypeFloat 32\n"
+			   "%type_v3_f32           = OpTypeVector %type_f32 3\n"
+			   "%type_run_arr_v3_f32   = OpTypeRuntimeArray %type_v3_f32\n"
+			   "%type_struct           = OpTypeStruct %type_i32 %type_run_arr_v3_f32\n"
+			   "%type_uni_struct_ptr   = OpTypePointer Uniform %type_struct\n"
+			   "%type_uni_i32_ptr      = OpTypePointer Uniform %type_i32\n"
+			   "%type_uni_v3_f32_ptr   = OpTypePointer Uniform %type_v3_f32\n"
+			   "%type_in_v3_f32_ptr    = OpTypePointer Input %type_v3_f32\n"
+			   "%c_i32_0               = OpConstant %type_i32 0\n"
+			   "%c_i32_1               = OpConstant %type_i32 1\n"
+			   "%c_u32_0               = OpConstant %type_u32 1\n"
+			   "%c_u32_1               = OpConstant %type_u32 0\n"
+			   "%var_struct_ptr        = OpVariable %type_uni_struct_ptr Uniform\n"
+			   "%var_gl_tess_coord     = OpVariable %type_in_v3_f32_ptr Input\n"
+			   "%main_fun              = OpFunction %type_void None %type_void_f\n"
+			   "%main_label            = OpLabel\n"
+			   "%var_i32_ptr           = OpVariable %type_i32_fp Function\n"
+			   "%num_invocations       = OpAccessChain %type_uni_i32_ptr %var_struct_ptr %c_i32_0\n"
+			   "%index_0               = OpAtomicIAdd %type_i32 %num_invocations %c_u32_0 %c_u32_1 %c_i32_1\n"
+			   "                         OpStore %var_i32_ptr %index_0\n"
+			   "%index_1               = OpLoad %type_i32 %var_i32_ptr\n"
+			   "%gl_tess_coord         = OpLoad %type_v3_f32 %var_gl_tess_coord\n"
+			   "%out_tess_coord        = OpAccessChain %type_uni_v3_f32_ptr %var_struct_ptr %c_i32_1 %index_1\n"
+			   "                         OpStore %out_tess_coord %gl_tess_coord\n"
+			   "OpReturn\n"
+			   "OpFunctionEnd\n";
+		programCollection.spirvAsmSources.add("tese") << teseSrc;
 	}
 }
 
@@ -650,8 +819,13 @@ tcu::TestCaseGroup* createCoordinatesTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "tesscoord", "Tessellation coordinates tests"));
 
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < TESSPRIMITIVETYPE_LAST; ++primitiveTypeNdx)
-	for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
-		group->addChild(new TessCoordTest(testCtx, (TessPrimitiveType)primitiveTypeNdx, (SpacingMode)spacingModeNdx));
+		for (int spacingModeNdx = 0; spacingModeNdx < SPACINGMODE_LAST; ++spacingModeNdx)
+		{
+			group->addChild(new TessCoordTest(testCtx, (TessPrimitiveType)primitiveTypeNdx, (SpacingMode)spacingModeNdx));
+
+			// test if TessCoord builtin has correct value in Evaluation shader when execution mode is set only in Control shader
+			group->addChild(new TessCoordTest(testCtx, (TessPrimitiveType)primitiveTypeNdx, (SpacingMode)spacingModeNdx, false));
+		}
 
 	return group.release();
 }
