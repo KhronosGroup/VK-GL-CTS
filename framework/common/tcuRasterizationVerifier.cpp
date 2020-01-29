@@ -670,7 +670,7 @@ bool verifyTriangleGroupInterpolationWithInterpolator (const tcu::Surface& surfa
 	if (args.redBits > 8 || args.greenBits > 8 || args.blueBits > 8)
 		log << tcu::TestLog::Message << "Warning! More than 8 bits in a color channel, this may produce false negatives." << tcu::TestLog::EndMessage;
 
-	// subpixel bits in in a valid range?
+	// subpixel bits in a valid range?
 
 	if (subPixelBits < 0)
 	{
@@ -2393,7 +2393,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 	tcu::Surface		errorMask					(surface.getWidth(), surface.getHeight());
 	bool				result						= false;
 
-	// subpixel bits in in a valid range?
+	// subpixel bits in a valid range?
 
 	if (subPixelBits < 0)
 	{
@@ -2466,6 +2466,10 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 
 	tcu::clear(errorMask.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
+	// Use these to sanity check there is something drawn when a test expects something else than an empty picture.
+	bool referenceEmpty	= true;
+	bool resultEmpty	= true;
+
 	for (int y = 0; y < surface.getHeight(); ++y)
 	for (int x = 0; x < surface.getWidth(); ++x)
 	{
@@ -2473,6 +2477,9 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 		const bool			imageNoCoverage		= compareColors(color, backGroundColor, args.redBits, args.greenBits, args.blueBits);
 		const bool			imageFullCoverage	= compareColors(color, triangleColor, args.redBits, args.greenBits, args.blueBits);
 		CoverageType		referenceCoverage	= (CoverageType)coverageMap.getAccess().getPixelUint(x, y).x();
+
+		if (!imageNoCoverage)
+			resultEmpty = false;
 
 		switch (referenceCoverage)
 		{
@@ -2487,6 +2494,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 
 			case COVERAGE_PARTIAL:
 				{
+					referenceEmpty = false;
 					bool foundFragment = false;
 					if (vulkanLinesTest == true)
 					{
@@ -2513,6 +2521,7 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 				break;
 
 			case COVERAGE_FULL:
+				referenceEmpty = false;
 				if (!imageFullCoverage)
 				{
 					// no coverage where there should be
@@ -2533,7 +2542,8 @@ bool verifyTriangleGroupRasterization (const tcu::Surface& surface, const Triang
 	if (((mode == VERIFICATIONMODE_STRICT) && (missingPixels + unexpectedPixels > 0)) ||
 		((mode == VERIFICATIONMODE_WEAK)   && (missingPixels + unexpectedPixels > weakVerificationThreshold)) ||
 		((mode == VERIFICATIONMODE_WEAKER) && (missingPixels + unexpectedPixels > weakerVerificationThreshold)) ||
-		((mode == VERIFICATIONMODE_SMOOTH) && (missingPixels > weakVerificationThreshold)))
+		((mode == VERIFICATIONMODE_SMOOTH) && (missingPixels > weakVerificationThreshold)) ||
+		referenceEmpty != resultEmpty)
 	{
 		result = false;
 	}
