@@ -27,16 +27,32 @@
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestCase.hpp"
+
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBarrierUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBufferWithMemory.hpp"
+
 #include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
+
 #include "deStringUtil.hpp"
 #include "deMemory.h"
 
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include <string>
+#include <memory>
+#include <utility>
+#include <algorithm>
 
 namespace vkt
 {
@@ -1022,6 +1038,550 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 	return samplerAddressModesTests;
 }
 
+class ExactSamplingCase : public vkt::TestCase
+{
+public:
+	struct Params
+	{
+		vk::VkFormat	format;
+		bool			unnormalizedCoordinates;
+	};
+
+	struct PushConstants
+	{
+		float texWidth;
+		float texHeight;
+	};
+
+	struct VertexData
+	{
+		tcu::Vec2 vtxCoords;
+		tcu::Vec2 texCoords;
+
+		static vk::VkVertexInputBindingDescription					getBindingDescription		(void);
+		static std::vector<vk::VkVertexInputAttributeDescription>	getAttributeDescriptions	(void);
+	};
+
+									ExactSamplingCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params);
+	virtual							~ExactSamplingCase		(void) {}
+
+	virtual void					initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*			createInstance			(Context& context) const;
+	virtual void					checkSupport			(Context& context) const;
+
+private:
+	Params m_params;
+};
+
+class ExactSamplingInstance : public vkt::TestInstance
+{
+public:
+	using Params = ExactSamplingCase::Params;
+
+								ExactSamplingInstance	(Context& context, const Params& params);
+	virtual						~ExactSamplingInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate					(void);
+
+	vk::VkExtent3D				getTextureExtent		(void) const;
+
+private:
+	Params m_params;
+};
+
+vk::VkVertexInputBindingDescription ExactSamplingCase::VertexData::getBindingDescription (void)
+{
+	static const vk::VkVertexInputBindingDescription desc =
+	{
+		0u,																// deUint32				binding;
+		static_cast<deUint32>(sizeof(ExactSamplingCase::VertexData)),	// deUint32				stride;
+		vk::VK_VERTEX_INPUT_RATE_VERTEX,								// VkVertexInputRate	inputRate;
+	};
+
+	return desc;
+}
+
+std::vector<vk::VkVertexInputAttributeDescription> ExactSamplingCase::VertexData::getAttributeDescriptions (void)
+{
+	static const std::vector<vk::VkVertexInputAttributeDescription> desc =
+	{
+		{
+			0u,																			// deUint32	location;
+			0u,																			// deUint32	binding;
+			vk::VK_FORMAT_R32G32_SFLOAT,												// VkFormat	format;
+			static_cast<deUint32>(offsetof(ExactSamplingCase::VertexData, vtxCoords)),	// deUint32	offset;
+		},
+		{
+			1u,																			// deUint32	location;
+			0u,																			// deUint32	binding;
+			vk::VK_FORMAT_R32G32_SFLOAT,												// VkFormat	format;
+			static_cast<deUint32>(offsetof(ExactSamplingCase::VertexData, texCoords)),	// deUint32	offset;
+		},
+	};
+
+	return desc;
+}
+
+
+ExactSamplingCase::ExactSamplingCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
+	: vkt::TestCase{testCtx, name, description}, m_params{params}
+{
+}
+
+void ExactSamplingCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vertexShader;
+
+	std::string texCoordX = "inTexCoord.x";
+	std::string texCoordY = "inTexCoord.y";
+
+	if (m_params.unnormalizedCoordinates)
+	{
+		texCoordX += " * pushc.texWidth";
+		texCoordY += " * pushc.texHeight";
+	}
+
+	vertexShader
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout(push_constant, std430) uniform PushConstants\n"
+		<< "{\n"
+		<< "    float texWidth;\n"
+		<< "    float texHeight;\n"
+		<< "} pushc;\n"
+		<< "\n"
+		<< "layout(location = 0) in vec2 inPosition;\n"
+		<< "layout(location = 1) in vec2 inTexCoord;\n"
+		<< "\n"
+		<< "layout(location = 0) out vec2 fragTexCoord;\n"
+		<< "\n"
+		<< "void main() {\n"
+		<< "    gl_Position = vec4(inPosition, 0.0, 1.0);\n"
+		<< "    fragTexCoord = vec2(" << texCoordX << ", " << texCoordY << ");\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vert") << glu::VertexSource{vertexShader.str()};
+
+	std::ostringstream fragmentShader;
+
+	std::string typePrefix;
+	if (vk::isIntFormat(m_params.format))
+		typePrefix = "i";
+	else if (vk::isUintFormat(m_params.format))
+		typePrefix = "u";
+
+	const std::string samplerType = typePrefix + "sampler2D";
+	const std::string colorType = typePrefix + "vec4";
+
+	fragmentShader
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout(set = 0, binding = 0) uniform " << samplerType << " texSampler;\n"
+		<< "\n"
+		<< "layout(location = 0) in vec2 fragTexCoord;\n"
+		<< "\n"
+		<< "layout(location = 0) out " << colorType << " outColor;\n"
+		<< "\n"
+		<< "void main() {\n"
+		<< "    outColor = texture(texSampler, fragTexCoord);\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("frag") << glu::FragmentSource{fragmentShader.str()};
+}
+
+TestInstance* ExactSamplingCase::createInstance (Context& context) const
+{
+	return new ExactSamplingInstance{context, m_params};
+}
+
+void ExactSamplingCase::checkSupport (Context& context) const
+{
+	const auto&						vki					= context.getInstanceInterface();
+	const auto						physicalDevice		= context.getPhysicalDevice();
+	const auto						props				= vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.format);
+	const vk::VkFormatFeatureFlags	requiredFeatures	=
+		(vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+		|vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+		|vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+		|vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+		);
+
+	if ((props.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+		TCU_THROW(NotSupportedError, "Selected format does not support the required features");
+}
+
+ExactSamplingInstance::ExactSamplingInstance (Context& context, const Params& params)
+	: vkt::TestInstance{context}, m_params{params}
+{
+}
+
+vk::VkExtent3D ExactSamplingInstance::getTextureExtent (void) const
+{
+	return vk::makeExtent3D(256u, 256u, 1u);
+}
+
+tcu::TestStatus ExactSamplingInstance::iterate (void)
+{
+	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	device		= m_context.getDevice();
+	auto&		allocator	= m_context.getDefaultAllocator();
+	const auto	queue		= m_context.getUniversalQueue();
+	const auto	queueIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const auto	tcuFormat	= vk::mapVkFormat(m_params.format);
+	const auto	formatInfo	= tcu::getTextureFormatInfo(tcuFormat);
+	const auto	texExtent	= getTextureExtent();
+	const auto	texUsage	= (vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_SAMPLED_BIT);
+	const auto	fbUsage		= (vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	const auto	descType	= vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	const auto	texLayout	= vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	// Some code below depends on this.
+	DE_ASSERT(texExtent.depth == 1u);
+
+	const vk::VkImageCreateInfo texImgCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,									// const void*				pNext;
+		0u,											// VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		m_params.format,							// VkFormat					format;
+		texExtent,									// VkExtent3D				extent;
+		1u,											// deUint32					mipLevels;
+		1u,											// deUint32					arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		texUsage,									// VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		1u,											// deUint32					queueFamilyIndexCount;
+		&queueIndex,								// const deUint32*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			initialLayout;
+	};
+
+	const vk::VkImageCreateInfo fbImgCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		nullptr,									// const void*				pNext;
+		0u,											// VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		m_params.format,							// VkFormat					format;
+		texExtent,									// VkExtent3D				extent;
+		1u,											// deUint32					mipLevels;
+		1u,											// deUint32					arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		fbUsage,									// VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		1u,											// deUint32					queueFamilyIndexCount;
+		&queueIndex,								// const deUint32*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			initialLayout;
+	};
+
+	// Create main and framebuffer images.
+	const vk::ImageWithMemory texImage	{vkd, device, allocator, texImgCreateInfo,	vk::MemoryRequirement::Any};
+	const vk::ImageWithMemory fbImage	{vkd, device, allocator, fbImgCreateInfo,	vk::MemoryRequirement::Any};
+
+	// Corresponding image views.
+	const auto colorSubresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto texView					= vk::makeImageView(vkd, device, texImage.get(),	vk::VK_IMAGE_VIEW_TYPE_2D, m_params.format, colorSubresourceRange);
+	const auto fbView					= vk::makeImageView(vkd, device, fbImage.get(),		vk::VK_IMAGE_VIEW_TYPE_2D, m_params.format, colorSubresourceRange);
+
+	// Buffers to create the texture and verify results.
+	const vk::VkDeviceSize		texBufferSize		= static_cast<vk::VkDeviceSize>(static_cast<deUint32>(tcu::getPixelSize(tcuFormat)) * texExtent.width * texExtent.height * texExtent.depth);
+	const auto					texBufferInfo		= vk::makeBufferCreateInfo(texBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	const auto					resultsBufferInfo	= vk::makeBufferCreateInfo(texBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const vk::BufferWithMemory	texBuffer			{vkd, device, allocator, texBufferInfo, vk::MemoryRequirement::HostVisible};
+	const vk::BufferWithMemory	resultsBuffer		{vkd, device, allocator, resultsBufferInfo, vk::MemoryRequirement::HostVisible};
+
+	// Create texture.
+	const tcu::IVec2					iImgSize		{static_cast<int>(texExtent.width), static_cast<int>(texExtent.height)};
+	auto&								texBufferAlloc	= texBuffer.getAllocation();
+	auto								texBufferPtr	= reinterpret_cast<char*>(texBufferAlloc.getHostPtr()) + texBufferAlloc.getOffset();
+	const tcu::PixelBufferAccess		texPixels		{tcuFormat, iImgSize[0], iImgSize[1], 1, texBufferPtr};
+
+	const int W = texPixels.getWidth();
+	const int H = texPixels.getHeight();
+	const int D = texPixels.getDepth();
+
+	const float divX = static_cast<float>(W - 1);
+	const float divY = static_cast<float>(H - 1);
+
+	for (int x = 0; x < W; ++x)
+	for (int y = 0; y < H; ++y)
+	for (int z = 0; z < D; ++z)
+	{
+		const float colorX = static_cast<float>(x) / divX;
+		const float colorY = static_cast<float>(y) / divY;
+		const float colorZ = std::min(colorX, colorY);
+
+		tcu::Vec4 color{colorX, colorY, colorZ, 1.0f};
+		tcu::Vec4 finalColor = (color - formatInfo.lookupBias) / formatInfo.lookupScale;
+		texPixels.setPixel(finalColor, x, y, z);
+	}
+
+	vk::flushAlloc(vkd, device, texBufferAlloc);
+
+	const std::vector<ExactSamplingCase::VertexData> fullScreenQuad =
+	{
+		{{  1.f, -1.f }, { 1.f, 0.f }, },
+		{{ -1.f, -1.f }, { 0.f, 0.f }, },
+		{{ -1.f,  1.f }, { 0.f, 1.f }, },
+		{{ -1.f,  1.f }, { 0.f, 1.f }, },
+		{{  1.f, -1.f }, { 1.f, 0.f }, },
+		{{  1.f,  1.f }, { 1.f, 1.f }, },
+	};
+
+	// Vertex buffer.
+	const vk::VkDeviceSize		vertexBufferSize	= static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
+	const auto					vertexBufferInfo	= vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const vk::BufferWithMemory	vertexBuffer		{vkd, device, allocator, vertexBufferInfo, vk::MemoryRequirement::HostVisible};
+
+	// Copy data to vertex buffer.
+	const auto&	vertexAlloc		= vertexBuffer.getAllocation();
+	const auto	vertexDataPtr	= reinterpret_cast<char*>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
+	deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
+	vk::flushAlloc(vkd, device, vertexAlloc);
+
+	// Descriptor set layout.
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(descType, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
+
+	// Descriptor pool.
+	vk::DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(descType);
+	const auto descriptorPool = poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+	// Descriptor set.
+	const auto descriptorSet = vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	// Texture sampler.
+	const vk::VkSamplerCreateInfo samplerCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType		sType;
+		nullptr,										// const void*			pNext;
+		0u,												// VkSamplerCreateFlags	flags;
+		vk::VK_FILTER_NEAREST,							// VkFilter				magFilter;
+		vk::VK_FILTER_NEAREST,							// VkFilter				minFilter;
+		vk::VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode	mipmapMode;
+		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeU;
+		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeV;
+		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeW;
+		0.0f,											// float				mipLodBias;
+		VK_FALSE,										// VkBool32				anisotropyEnable;
+		1.0f,											// float				maxAnisotropy;
+		VK_FALSE,										// VkBool32				compareEnable;
+		vk::VK_COMPARE_OP_NEVER,						// VkCompareOp			compareOp;
+		0.0f,											// float				minLod;
+		0.0f,											// float				maxLod;
+		vk::VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,			// VkBorderColor		borderColor;
+		(m_params.unnormalizedCoordinates ? VK_TRUE : VK_FALSE),// VkBool32				unnormalizedCoordinates;
+	};
+	const auto texSampler = vk::createSampler(vkd, device, &samplerCreateInfo);
+
+	// Update descriptor set with the descriptor.
+	vk::DescriptorSetUpdateBuilder updateBuilder;
+	const auto descriptorImageInfo = vk::makeDescriptorImageInfo(texSampler.get(), texView.get(), texLayout);
+	updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), descType, &descriptorImageInfo);
+	updateBuilder.update(vkd, device);
+
+	// Shader modules.
+	const auto vertexModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+	// Render pass.
+	const vk::VkAttachmentDescription fbAttachment =
+	{
+		0u,												// VkAttachmentDescriptionFlags	flags;
+		m_params.format,								// VkFormat						format;
+		vk::VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples;
+		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp;
+		vk::VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp;
+		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp;
+		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout;
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout				finalLayout;
+	};
+
+	const vk::VkAttachmentReference colorRef =
+	{
+		0u,												// deUint32			attachment;
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout	layout;
+	};
+
+	const vk::VkSubpassDescription subpass =
+	{
+		0u,										// VkSubpassDescriptionFlags		flags;
+		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint;
+		0u,										// deUint32							inputAttachmentCount;
+		nullptr,								// const VkAttachmentReference*		pInputAttachments;
+		1u,										// deUint32							colorAttachmentCount;
+		&colorRef,								// const VkAttachmentReference*		pColorAttachments;
+		0u,										// const VkAttachmentReference*		pResolveAttachments;
+		nullptr,								// const VkAttachmentReference*		pDepthStencilAttachment;
+		0u,										// deUint32							preserveAttachmentCount;
+		nullptr,								// const deUint32*					pPreserveAttachments;
+	};
+
+	const vk::VkRenderPassCreateInfo renderPassInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
+		nullptr,										// const void*						pNext;
+		0u,												// VkRenderPassCreateFlags			flags;
+		1u,												// deUint32							attachmentCount;
+		&fbAttachment,									// const VkAttachmentDescription*	pAttachments;
+		1u,												// deUint32							subpassCount;
+		&subpass,										// const VkSubpassDescription*		pSubpasses;
+		0u,												// deUint32							dependencyCount;
+		nullptr,										// const VkSubpassDependency*		pDependencies;
+	};
+	const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
+
+	// Framebuffer.
+	std::vector<vk::VkImageView> attachments;
+	attachments.push_back(fbView.get());
+	const auto framebuffer = vk::makeFramebuffer(vkd, device, renderPass.get(), 1u, &fbView.get(), texExtent.width, texExtent.height, texExtent.depth);
+
+	// Push constant range.
+	const vk::VkPushConstantRange pcRange =
+	{
+		vk::VK_SHADER_STAGE_VERTEX_BIT,										// VkShaderStageFlags	stageFlags;
+		0u,																	// deUint32				offset;
+		static_cast<deUint32>(sizeof(ExactSamplingCase::PushConstants)),	// deUint32				size;
+	};
+
+	// Pipeline layout.
+	const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType					sType;
+		nullptr,											// const void*						pNext;
+		0u,													// VkPipelineLayoutCreateFlags		flags;
+		1u,													// deUint32							setLayoutCount;
+		&descriptorSetLayout.get(),							// const VkDescriptorSetLayout*		pSetLayouts;
+		1u,													// deUint32							pushConstantRangeCount;
+		&pcRange,											// const VkPushConstantRange*		pPushConstantRanges;
+	};
+	const auto pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutInfo);
+
+	// Graphics pipeline.
+	const std::vector<vk::VkViewport>	viewports	(1u, vk::makeViewport(texExtent));
+	const vk::VkRect2D					renderArea	= vk::makeRect2D(texExtent);
+	const std::vector<vk::VkRect2D>		scissors	(1u, renderArea);
+
+	const auto vtxBindingDescription	= ExactSamplingCase::VertexData::getBindingDescription();
+	const auto vtxAttributeDescriptions	= ExactSamplingCase::VertexData::getAttributeDescriptions();
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType
+		nullptr,														// const void*                                 pNext
+		0u,																// VkPipelineVertexInputStateCreateFlags       flags
+		1u,																// deUint32                                    vertexBindingDescriptionCount
+		&vtxBindingDescription,											// const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+		static_cast<deUint32>(vtxAttributeDescriptions.size()),			// deUint32                                    vertexAttributeDescriptionCount
+		vtxAttributeDescriptions.data(),								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+	};
+
+	const auto pipeline = vk::makeGraphicsPipeline(
+		vkd, device, pipelineLayout.get(),
+		vertexModule.get(), DE_NULL, DE_NULL, DE_NULL, fragModule.get(),
+		renderPass.get(), viewports, scissors,
+		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputInfo);
+
+	// Command pool and command buffer.
+	const auto cmdPool		= vk::createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+	const auto cmdBufferPtr	= vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	// Draw quad.
+	const ExactSamplingCase::PushConstants pushConstants =
+	{
+		static_cast<float>(texExtent.width),
+		static_cast<float>(texExtent.height),
+	};
+
+	const tcu::Vec4			clearFbColor		(0.0f, 0.0f, 0.0f, 1.0f);
+	const vk::VkDeviceSize	vertexBufferOffset	= 0ull;
+
+	const auto vertexBufferBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT, vertexBuffer.get(), 0ull, vertexBufferSize);
+	const auto preBufferCopyBarrier	= vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, texBuffer.get(), 0ull, texBufferSize);
+	const auto preTexCopyBarrier	= vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texImage.get(), colorSubresourceRange);
+	const auto postTexCopyBarrier	= vk::makeImageMemoryBarrier(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texLayout, texImage.get(), colorSubresourceRange);
+	const auto texCopyRange			= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto texImageCopy			= vk::makeBufferImageCopy(texExtent, texCopyRange);
+
+	vk::beginCommandBuffer(vkd, cmdBuffer);
+
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 0u, nullptr, 1u, &vertexBufferBarrier, 0u, nullptr);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 1u, &preBufferCopyBarrier, 0u, nullptr);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preTexCopyBarrier);
+	vkd.cmdCopyBufferToImage(cmdBuffer, texBuffer.get(), texImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &texImageCopy);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &postTexCopyBarrier);
+
+	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
+	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+	vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), vk::VK_SHADER_STAGE_VERTEX_BIT, 0u, static_cast<deUint32>(sizeof(pushConstants)), &pushConstants);
+	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(fullScreenQuad.size()), 1u, 0u, 0u);
+	vk::endRenderPass(vkd, cmdBuffer);
+
+	vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), iImgSize);
+
+	vk::endCommandBuffer(vkd, cmdBuffer);
+	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Check results.
+	const auto& resultsBufferAlloc = resultsBuffer.getAllocation();
+	vk::invalidateAlloc(vkd, device, resultsBufferAlloc);
+
+	const auto							resultsBufferPtr	= reinterpret_cast<const char*>(resultsBufferAlloc.getHostPtr()) + resultsBufferAlloc.getOffset();
+	const tcu::ConstPixelBufferAccess	resultPixels		{tcuFormat, iImgSize[0], iImgSize[1], 1, resultsBufferPtr};
+
+	const tcu::TextureFormat			diffFormat			{tcu::TextureFormat::RGB, tcu::TextureFormat::UNSIGNED_INT8};
+	const auto							diffBytes			= tcu::getPixelSize(diffFormat) * iImgSize[0] * iImgSize[1];
+	std::unique_ptr<deUint8[]>			diffData			{new deUint8[diffBytes]};
+	const tcu::PixelBufferAccess		diffImg				{diffFormat, iImgSize[0], iImgSize[1], 1, diffData.get()};
+
+	const tcu::Vec4						colorRed			{1.0f, 0.0f, 0.0f, 1.0f};
+	const tcu::Vec4						colorGreen			{0.0f, 1.0f, 0.0f, 1.0f};
+
+	// Clear diff image.
+	deMemset(diffData.get(), 0, static_cast<size_t>(diffBytes));
+
+	bool pass = true;
+	for (int x = 0; x < W; ++x)
+	for (int y = 0; y < H; ++y)
+	for (int z = 0; z < D; ++z)
+	{
+		const auto inPix	= texPixels.getPixel(x, y, z);
+		const auto outPix	= resultPixels.getPixel(x, y, z);
+		if (inPix == outPix)
+		{
+			diffImg.setPixel(colorGreen, x, y, z);
+		}
+		else
+		{
+			pass = false;
+			diffImg.setPixel(colorRed, x, y, z);
+		}
+	}
+
+	tcu::TestStatus status = tcu::TestStatus::pass("Pass");
+	if (!pass)
+	{
+		auto& log = m_context.getTestContext().getLog();
+		log << tcu::TestLog::Image("input", "Input texture", texPixels);
+		log << tcu::TestLog::Image("output", "Rendered image", resultPixels);
+		log << tcu::TestLog::Image("diff", "Mismatched pixels in red", diffImg);
+		status = tcu::TestStatus::fail("Pixel mismatch; please check the rendered image");
+	}
+
+	return status;
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, bool separateStencilUsage = false)
@@ -1193,11 +1753,80 @@ tcu::TestCaseGroup* createAllFormatsSamplerTests (tcu::TestContext& testCtx, boo
 	return viewTypeTests.release();
 }
 
+tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> exactSamplingTests(new tcu::TestCaseGroup(testCtx, "exact_sampling", "Exact sampling tests"));
+
+	static const std::vector<vk::VkFormat> formats =
+	{
+		vk::VK_FORMAT_R8_SRGB,
+		vk::VK_FORMAT_R8G8B8_UINT,
+		vk::VK_FORMAT_B8G8R8A8_SINT,
+		vk::VK_FORMAT_R8G8_UNORM,
+		vk::VK_FORMAT_B8G8R8_SNORM,
+		vk::VK_FORMAT_R8G8B8A8_SNORM,
+		vk::VK_FORMAT_R8G8_UINT,
+		vk::VK_FORMAT_R8_SINT,
+		vk::VK_FORMAT_R8G8B8A8_SRGB,
+		vk::VK_FORMAT_R8G8B8A8_UNORM,
+		vk::VK_FORMAT_B8G8R8A8_UNORM,
+		vk::VK_FORMAT_B8G8R8_SRGB,
+		vk::VK_FORMAT_R8G8_SRGB,
+		vk::VK_FORMAT_R8_UINT,
+		vk::VK_FORMAT_R8G8B8A8_UINT,
+		vk::VK_FORMAT_R8G8_SINT,
+		vk::VK_FORMAT_R8_SNORM,
+		vk::VK_FORMAT_B8G8R8_SINT,
+		vk::VK_FORMAT_R8G8_SNORM,
+		vk::VK_FORMAT_B8G8R8_UNORM,
+		vk::VK_FORMAT_R8_UNORM,
+
+		vk::VK_FORMAT_R32G32_SFLOAT,
+		vk::VK_FORMAT_R32G32B32_UINT,
+		vk::VK_FORMAT_R16G16B16A16_SFLOAT,
+		vk::VK_FORMAT_R16G16_UINT,
+		vk::VK_FORMAT_R32G32B32A32_SINT,
+		vk::VK_FORMAT_R16G16B16_SINT,
+		vk::VK_FORMAT_R16_SFLOAT,
+		vk::VK_FORMAT_R32_SINT,
+		vk::VK_FORMAT_R32_UINT,
+		vk::VK_FORMAT_R16G16B16_SFLOAT,
+		vk::VK_FORMAT_R16G16_SINT,
+
+		vk::VK_FORMAT_R16_SNORM,
+		vk::VK_FORMAT_R32_SFLOAT,
+	};
+
+	static const std::vector<std::pair<bool, std::string>> unnormalizedCoordinates =
+	{
+		{ false,	"normalized_coords"		},
+		{ true,		"unnormalized_coords"	},
+	};
+
+	for (const auto format : formats)
+	{
+		const std::string formatName	= getFormatCaseName(format);
+		const std::string description	= std::string("Exact sampling tests with image format ") + getFormatName(format);
+
+		de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), description.c_str()));
+
+		for (const auto unnorm : unnormalizedCoordinates)
+		{
+			const ExactSamplingCase::Params	params = { format, unnorm.first };
+			formatGroup->addChild(new ExactSamplingCase{testCtx, unnorm.second, "", params});
+		}
+		exactSamplingTests->addChild(formatGroup.release());
+	}
+
+	return exactSamplingTests.release();
+}
+
 tcu::TestCaseGroup* createSamplerTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> samplerTests(new tcu::TestCaseGroup(testCtx, "sampler", "Sampler tests"));
 	{
 		samplerTests->addChild(createAllFormatsSamplerTests(testCtx));
+		samplerTests->addChild(createExactSamplingTests(testCtx));
 	}
 
 	// tests for VK_EXT_separate_stencil_usage
