@@ -43,13 +43,13 @@ set(USE_RELEASE_INFO_FILE OFF)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/qpReleaseInfo.inl")
 	set(USE_RELEASE_INFO_FILE ON)
 
-elseif (EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
+elseif (EXISTS "${PROJECT_SOURCE_DIR}/.git" AND GIT_FOUND)
 	find_package(PythonInterp 2.7)
 
 	if (PYTHON_EXECUTABLE)
 		message(STATUS "Using git revision as release identifier")
 
-		execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_SOURCE_DIR}/.git rev-parse --git-dir
+		execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${PROJECT_SOURCE_DIR}/.git rev-parse --git-dir
 						OUTPUT_VARIABLE DE_GIT_DIR
 						OUTPUT_STRIP_TRAILING_WHITESPACE)
 
