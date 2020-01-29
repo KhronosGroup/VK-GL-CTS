@@ -1512,7 +1512,7 @@ TransformFeedbackQueryTestInstance::TransformFeedbackQueryTestInstance (Context&
 	if (!features.geometryShader)
 		TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
 
-	if (transformFeedbackFeatures.geometryStreams == DE_FALSE)
+	if (streamsRequired > 1 && transformFeedbackFeatures.geometryStreams == DE_FALSE)
 		TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
 
 	if (streamsSupported < streamsRequired)
@@ -2079,6 +2079,28 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		}
 
 		// geometry shader
+		if (m_parameters.streamId == 0)
+		{
+			std::ostringstream	src;
+
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout(points) in;\n"
+				<< "layout(location = 0) in vec4 in0[];\n"
+				<< "\n"
+				<< "layout(points, max_vertices = 1) out;\n"
+				<< "layout(xfb_buffer = 0, xfb_offset = 0, xfb_stride = 16, location = 0) out vec4 out0;\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< "    out0 = in0[0];\n"
+				<< "    EmitVertex();\n"
+				<< "    EndPrimitive();\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
+		}
+		else
 		{
 			const deUint32		s	= m_parameters.streamId;
 			std::ostringstream	src;
