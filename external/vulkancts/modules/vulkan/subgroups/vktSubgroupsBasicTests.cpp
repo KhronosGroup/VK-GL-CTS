@@ -114,7 +114,7 @@ static bool checkVertexPipelineStagesSubgroupElectNoSSBO(const void* internalDat
 }
 
 static bool checkVertexPipelineStagesSubgroupElect(const void* internalData, std::vector<const void*> datas,
-		deUint32 width, deUint32)
+		deUint32 width, deUint32, bool multipleCallsPossible)
 {
 	DE_UNREF(internalData);
 	const deUint32* const resultData =
@@ -142,7 +142,7 @@ static bool checkVertexPipelineStagesSubgroupElect(const void* internalData, std
 	const deUint32 numSubgroupsUsed =
 		*reinterpret_cast<const deUint32*>(datas[1]);
 
-	return numSubgroupsUsed == poisonValuesFound;
+	return (multipleCallsPossible ? (numSubgroupsUsed >= poisonValuesFound) : (numSubgroupsUsed == poisonValuesFound));
 }
 
 static bool checkVertexPipelineStagesSubgroupBarriers(const void* internalData, std::vector<const void*> datas,
@@ -1199,7 +1199,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			programCollection.glslSources.add("vert")
 				<< glu::VertexSource(vertex.str()) << buildOptions;
 		}
-	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
+		else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 		{
 			std::ostringstream geometry;
 
@@ -1259,6 +1259,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "    gl_TessLevelOuter[1] = 1.0f;\n"
 				<< "  }\n"
 				<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "" )
 				<< "}\n";
 
 			evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
@@ -1293,6 +1294,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  out_color.g = float(value);\n"
 				<< "  out_color.a = float(tempResult2);\n"
 				<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+				<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
 				<< "}\n";
 
 			programCollection.glslSources.add("tesc")
@@ -1342,6 +1344,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  out_color[gl_InvocationID].g = float(value);\n"
 				<< "  out_color[gl_InvocationID].a = float(tempResult2);\n"
 				<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "" )
 				<< "}\n";
 
 			evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
@@ -1354,6 +1357,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+				<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
 				<< "  out_color = in_color[0];\n"
 				<< "}\n";
 
@@ -1469,6 +1473,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 						<< "    gl_TessLevelOuter[1] = 1.0f;\n"
 						<< "  }\n"
 						<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+						<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
 						<< "}\n";
 				programCollection.glslSources.add("tesc")
 					<< glu::TessellationControlSource(tesc.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
@@ -1494,6 +1499,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 						<< "  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempRes;\n"
 						<< "  float pixelSize = 2.0f/1024.0f;\n"
 						<< "  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+						<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
 						<< "}\n";
 				programCollection.glslSources.add("tese")
 					<< glu::TessellationEvaluationSource(tese.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
@@ -1519,6 +1525,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 							<< testSrc.str()
 							<< "  result[gl_PrimitiveIDIn] = tempRes;\n"
 							<< "  gl_Position = gl_in[0].gl_Position;\n"
+							<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
 							<< "  EmitVertex();\n"
 							<< "  EndPrimitive();\n"
 							<< "}\n";
@@ -1711,7 +1718,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"    gl_TessLevelOuter[1] = 1.0f;\n"
 					"  }\n"
 					"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-					"}\n";
+					+ (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "" )
+					+ "}\n";
 				programCollection.glslSources.add("tesc")
 					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 			}
@@ -1751,8 +1759,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  uint tempResult = 0;\n"
 					+ bdy.str() +
 					"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
-					"  float pixelSize = 2.0f/1024.0f;\n""  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
-					"}\n";
+					"  float pixelSize = 2.0f/1024.0f;\n"
+					"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+					+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" )
+					+ "}\n";
 				programCollection.glslSources.add("tese")
 					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 			}
@@ -1794,6 +1804,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					 + bdy.str() +
 					"  result[gl_PrimitiveIDIn] = tempResult;\n"
 					"  gl_Position = gl_in[0].gl_Position;\n"
+					+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "" ) +
 					"  EmitVertex();\n"
 					"  EndPrimitive();\n"
 					"}\n";
@@ -2121,14 +2132,14 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			subgroups::SSBOData inputData[inputCount];
 
 			inputData[0].format			= VK_FORMAT_R32_UINT;
-			inputData[0].layout			 = subgroups::SSBOData::LayoutStd430;
+			inputData[0].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[0].numElements	= 1;
 			inputData[0].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[0].binding		= 4u;
 			inputData[0].stages			= VK_SHADER_STAGE_VERTEX_BIT;
 
 			inputData[1].format			= VK_FORMAT_R32_UINT;
-			inputData[1].layout			 = subgroups::SSBOData::LayoutStd430;
+			inputData[1].layout			= subgroups::SSBOData::LayoutStd430;
 			inputData[1].numElements	= 1;
 			inputData[1].initializeType	= subgroups::SSBOData::InitializeZero;
 			inputData[1].binding		= 5u;

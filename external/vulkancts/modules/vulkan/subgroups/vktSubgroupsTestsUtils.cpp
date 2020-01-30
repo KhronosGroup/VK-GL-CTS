@@ -3002,7 +3002,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTestRequiredSubgroupSize(
 tcu::TestStatus vkt::subgroups::allStages(
 	Context& context, VkFormat format, SSBOData* extraData,
 	deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const VerificationFunctor& checkResult,
 	const vk::VkShaderStageFlags shaderStage)
 {
 	return vkt::subgroups::allStagesRequiredSubgroupSize(context, format, extraData, extraDataCount, internalData, checkResult, shaderStage,
@@ -3012,7 +3012,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
 	Context& context, VkFormat format, SSBOData* extraDatas,
 	deUint32 extraDatasCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const VerificationFunctor& checkResult,
 	const VkShaderStageFlags shaderStageTested,
 	const deUint32 vertexShaderStageCreateFlags,
 	const deUint32 tessellationControlShaderStageCreateFlags,
@@ -3277,7 +3277,14 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
 					}
 				}
 
-				if (!checkResult(internalData, datas, (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? width * 2 : width , subgroupSize))
+				// Any stage in the vertex pipeline may be called multiple times per vertex, so we may need >= non-strict comparisons.
+				const bool		multiCall	= (	stagesVector[ndx] == VK_SHADER_STAGE_VERTEX_BIT						||
+												stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT		||
+												stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT	||
+												stagesVector[ndx] == VK_SHADER_STAGE_GEOMETRY_BIT					);
+				const deUint32	usedWidth	= ((stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? width * 2 : width);
+
+				if (!checkResult(internalData, datas, usedWidth, subgroupSize, multiCall))
 					failedIterations++;
 			}
 			if (shaderStageTested & VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -3301,7 +3308,7 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
 					}
 				}
 
-				if (!checkResult(internalData, datas, width, subgroupSize))
+				if (!checkResult(internalData, datas, width, subgroupSize, false))
 					failedIterations++;
 			}
 
