@@ -181,9 +181,37 @@ tcu::TestStatus makeGeometryFrameBufferTest(Context& context, vk::VkFormat forma
 	deUint32 extraDataCount, const void* internalData,
 	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
 
+// Allows using verification functions with or without the optional last boolean argument.
+// If using a function that does not need the last argument, it will not be passed down to it.
+class VerificationFunctor
+{
+public:
+	using NoLastArgVariant	= bool(*)(const void*, std::vector<const void*>, deUint32, deUint32);
+	using AllArgsVariant	= bool(*)(const void*, std::vector<const void*>, deUint32, deUint32, bool);
+
+	VerificationFunctor (NoLastArgVariant func)
+		: m_noLastArgFunc{func}, m_allArgsFunc{nullptr}
+		{}
+
+	VerificationFunctor (AllArgsVariant func)
+		: m_noLastArgFunc{nullptr}, m_allArgsFunc{func}
+		{}
+
+	bool operator() (const void* extraData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize, bool multipleCallsPossible) const
+	{
+		if (m_allArgsFunc)
+			return m_allArgsFunc(extraData, datas, width, subgroupSize, multipleCallsPossible);
+		return m_noLastArgFunc(extraData, datas, width, subgroupSize);
+	}
+
+private:
+	NoLastArgVariant	m_noLastArgFunc;
+	AllArgsVariant		m_allArgsFunc;
+};
+
 tcu::TestStatus allStages(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const VerificationFunctor& checkResult,
 	const vk::VkShaderStageFlags shaderStage);
 
 tcu::TestStatus makeVertexFrameBufferTest(Context& context, vk::VkFormat format,
@@ -217,7 +245,7 @@ tcu::TestStatus makeGeometryFrameBufferTestRequiredSubgroupSize(Context& context
 
 tcu::TestStatus allStagesRequiredSubgroupSize(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount, const void* internalData,
-	bool (*checkResult)(const void* internalData, std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const VerificationFunctor& checkResult,
 	const vk::VkShaderStageFlags shaderStage,
 	const deUint32 vertexShaderStageCreateFlags,
 	const deUint32 tessellationControlShaderStageCreateFlags,
