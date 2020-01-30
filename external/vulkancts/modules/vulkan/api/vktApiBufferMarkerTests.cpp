@@ -110,7 +110,8 @@ void createDeviceWithExtension (Context& context, WorkingDevice& wd, VkQueueFlag
 	// Create a device with extension enabled and a queue with a family which supports the buffer marker extension
 	const std::vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 	const float									queuePriority			= 1.0f;
-	VkDeviceQueueCreateInfo						queueCreateInfo			= {};
+	VkDeviceQueueCreateInfo						queueCreateInfo;
+	deMemset(&queueCreateInfo, 0, sizeof(queueCreateInfo));
 
 	for (deUint32 familyIdx = 0; familyIdx < queueFamilyProperties.size(); ++familyIdx)
 	{
@@ -656,7 +657,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			shaderStages.push_back(createInfo);
 		}
 
-		VkViewport viewport = {};
+		VkViewport viewport;
 
 		viewport.x			= 0;
 		viewport.y			= 0;
@@ -665,7 +666,7 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 		viewport.minDepth	= 0.0f;
 		viewport.maxDepth	= 1.0f;
 
-		VkRect2D scissor = {};
+		VkRect2D scissor;
 
 		scissor.offset.x		= 0;
 		scissor.offset.y		= 0;
@@ -714,7 +715,16 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			VK_FALSE,													// VkBool32									alphaToOneEnable;
 		};
 
-		const VkStencilOpState noStencilOp = {};
+		const VkStencilOpState						noStencilOp					=
+		{
+			VK_STENCIL_OP_KEEP,		// VkStencilOp    failOp
+			VK_STENCIL_OP_KEEP,		// VkStencilOp    passOp
+			VK_STENCIL_OP_KEEP,		// VkStencilOp    depthFailOp
+			VK_COMPARE_OP_NEVER,	// VkCompareOp    compareOp
+			0,						// deUint32       compareMask
+			0,						// deUint32       writeMask
+			0						// deUint32       reference
+		};
 
 		VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
 		{
@@ -1017,7 +1027,8 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 	VkQueueFlagBits queues[] = { VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT };
 	const char* queueNames[] = { "graphics", "compute", "transfer" };
 
-	BaseTestParams base = {};
+	BaseTestParams base;
+	deMemset(&base, 0, sizeof(base));
 
 	for (size_t queueNdx = 0; queueNdx < DE_LENGTH_OF_ARRAY(queues); ++queueNdx)
 	{
@@ -1082,7 +1093,8 @@ tcu::TestCaseGroup* createBufferMarkerTestsInGroup(tcu::TestContext& testCtx)
 				{
 					tcu::TestCaseGroup* memoryDepGroup = (new tcu::TestCaseGroup(testCtx, "memory_dep", "Buffer marker tests for memory dependencies between marker writes and other operations"));
 
-					MemoryDepParams params = {};
+					MemoryDepParams params;
+					deMemset(&params, 0, sizeof(params));
 
 					params.base		 = base;
 					params.base.size = 128;
