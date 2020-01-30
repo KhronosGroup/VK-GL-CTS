@@ -1961,6 +1961,20 @@ bool vkt::subgroups::isFormatFloat (VkFormat format)
 	}
 }
 
+bool vkt::subgroups::isFormatBool (VkFormat format)
+{
+	switch (format)
+	{
+		default:
+			return false;
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+			return true;
+	}
+}
+
 void vkt::subgroups::setVertexShaderFrameBuffer (SourceCollections& programCollection)
 {
 	/*
