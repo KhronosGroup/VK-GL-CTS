@@ -521,10 +521,10 @@ public:
 
 	bool CheckMax(GLenum pname, GLint min_value)
 	{
-		GLboolean b;
-		GLint	 i;
-		GLfloat   f;
-		GLint64   i64;
+		GLboolean	b;
+		GLint		i;
+		GLfloat		f;
+		GLint64		i64;
 
 		glGetIntegerv(pname, &i);
 		if (i < min_value)
@@ -535,11 +535,11 @@ public:
 			return false;
 
 		glGetFloatv(pname, &f);
-		if (static_cast<GLint>(f) < min_value)
+		if (f < static_cast<GLfloat>(min_value))
 			return false;
 
 		glGetInteger64v(pname, &i64);
-		if (static_cast<GLint>(i64) < min_value)
+		if (i64 < static_cast<GLint64>(min_value))
 			return false;
 
 		return true;
