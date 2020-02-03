@@ -10,10 +10,6 @@ dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_vertex
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_usamplercube_fragment
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_isampler3d_vertex
 
-# Issue 420: Exclude problematic clipping tests
-dEQP-VK.clipping.clip_volume.clipped.large_points
-dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
-dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
 
 # Issue 419: Failing sparse tests (Image mismatch)
 dEQP-VK.glsl.texture_functions.texture.sparse_isampler2d_bias_fragment
