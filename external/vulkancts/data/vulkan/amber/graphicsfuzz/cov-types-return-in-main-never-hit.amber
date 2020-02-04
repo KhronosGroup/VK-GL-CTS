@@ -1,0 +1,156 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by GraphicsFuzz.
+
+# Short description: A fragment shader that covers a specific types optimization path.
+
+# The test passes because shader always writes red.
+
+# Optimized using spirv-opt with the following arguments:
+# '--eliminate-dead-branches'
+# '--merge-blocks'
+# '--scalar-replacement=100'
+# '--scalar-replacement=100'
+# '--inline-entry-points-exhaustive'
+# '--private-to-local'
+# '--eliminate-local-single-block'
+# '--eliminate-dead-branches'
+# '--if-conversion'
+# '--combine-access-chains'
+# '--eliminate-dead-branches'
+# '--redundancy-elimination'
+# '--simplify-instructions'
+# '--private-to-local'
+# '--private-to-local'
+# spirv-opt commit hash: 9215c1b7df0029f27807e8c8d7ec80532ce90a87
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     int one;
+# };
+#
+# vec4 func()
+# {
+#     return vec4(1, 0, 0, 1);
+# }
+#
+# void main()
+# {
+#     _GLF_color = vec4(0);
+#
+#     if(one == 0) // Always false.
+#         return;
+#
+#     _GLF_color = func();
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 35
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %17
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "func("
+               OpName %17 "_GLF_color"
+               OpName %20 "buf0"
+               OpMemberName %20 0 "one"
+               OpName %22 ""
+               OpDecorate %17 Location 0
+               OpMemberDecorate %20 0 Offset 0
+               OpDecorate %20 Block
+               OpDecorate %22 DescriptorSet 0
+               OpDecorate %22 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeFunction %7
+         %11 = OpConstant %6 1
+         %12 = OpConstant %6 0
+         %13 = OpConstantComposite %7 %11 %12 %12 %11
+         %16 = OpTypePointer Output %7
+         %17 = OpVariable %16 Output
+         %18 = OpConstantComposite %7 %12 %12 %12 %12
+         %19 = OpTypeInt 32 1
+         %20 = OpTypeStruct %19
+         %21 = OpTypePointer Uniform %20
+         %22 = OpVariable %21 Uniform
+         %23 = OpConstant %19 0
+         %24 = OpTypePointer Uniform %19
+         %27 = OpTypeBool
+         %33 = OpTypePointer Function %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %34 = OpVariable %33 Function
+               OpStore %17 %18
+         %25 = OpAccessChain %24 %22 %23
+         %26 = OpLoad %19 %25
+         %28 = OpIEqual %27 %26 %23
+               OpSelectionMerge %30 None
+               OpBranchConditional %28 %29 %30
+         %29 = OpLabel
+               OpReturn
+         %30 = OpLabel
+               OpStore %34 %13
+               OpStore %17 %13
+               OpReturn
+               OpFunctionEnd
+          %9 = OpFunction %7 None %8
+         %10 = OpLabel
+               OpReturnValue %13
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# one
+BUFFER variant_one DATA_TYPE int32 DATA
+ 1
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_one AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

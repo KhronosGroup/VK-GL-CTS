@@ -1,0 +1,169 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a coverage-gap found by GraphicsFuzz.
+
+# Short description: A fragment shader that covers a specific arbitrary precision float usage.
+
+# The test passes because shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#
+#     float det1 = determinant(mat4(0, 1,  0, 1,
+#                                   1, 1,  1, 2,
+#                                   1, 4,  6, 1,
+#                                   5, 35, 7, 63));
+#
+#     float det2 = determinant(mat3(1,  0, 1,
+#                                   4,  6, 1,
+#                                   35, 7, 63));
+#
+#     float det3 = determinant(mat3(1, 0, 1,
+#                                   1, 1, 2,
+#                                   35, 7, 63));
+#
+#     float det4 = determinant(mat3(1, 0, 1,
+#                                   1, 1, 2,
+#                                   4, 6, 1));
+#
+#     float ref = -det2 + det3 - 5.0 * det4;
+#
+#     if (abs(ref - det1) < 0.1) // Always true.
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 63
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %59
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "det1"
+               OpName %26 "det2"
+               OpName %34 "det3"
+               OpName %38 "det4"
+               OpName %41 "ref"
+               OpName %59 "_GLF_color"
+               OpDecorate %59 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypePointer Function %6
+          %9 = OpTypeVector %6 4
+         %10 = OpTypeMatrix %9 4
+         %11 = OpConstant %6 0
+         %12 = OpConstant %6 1
+         %13 = OpConstantComposite %9 %11 %12 %11 %12
+         %14 = OpConstant %6 2
+         %15 = OpConstantComposite %9 %12 %12 %12 %14
+         %16 = OpConstant %6 4
+         %17 = OpConstant %6 6
+         %18 = OpConstantComposite %9 %12 %16 %17 %12
+         %19 = OpConstant %6 5
+         %20 = OpConstant %6 35
+         %21 = OpConstant %6 7
+         %22 = OpConstant %6 63
+         %23 = OpConstantComposite %9 %19 %20 %21 %22
+         %24 = OpConstantComposite %10 %13 %15 %18 %23
+         %27 = OpTypeVector %6 3
+         %28 = OpTypeMatrix %27 3
+         %29 = OpConstantComposite %27 %12 %11 %12
+         %30 = OpConstantComposite %27 %16 %17 %12
+         %31 = OpConstantComposite %27 %20 %21 %22
+         %32 = OpConstantComposite %28 %29 %30 %31
+         %35 = OpConstantComposite %27 %12 %12 %14
+         %36 = OpConstantComposite %28 %29 %35 %31
+         %39 = OpConstantComposite %28 %29 %35 %30
+         %53 = OpConstant %6 0.100000001
+         %54 = OpTypeBool
+         %58 = OpTypePointer Output %9
+         %59 = OpVariable %58 Output
+         %60 = OpConstantComposite %9 %12 %11 %11 %12
+         %62 = OpConstantComposite %9 %11 %11 %11 %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %26 = OpVariable %7 Function
+         %34 = OpVariable %7 Function
+         %38 = OpVariable %7 Function
+         %41 = OpVariable %7 Function
+         %25 = OpExtInst %6 %1 Determinant %24
+               OpStore %8 %25
+         %33 = OpExtInst %6 %1 Determinant %32
+               OpStore %26 %33
+         %37 = OpExtInst %6 %1 Determinant %36
+               OpStore %34 %37
+         %40 = OpExtInst %6 %1 Determinant %39
+               OpStore %38 %40
+         %42 = OpLoad %6 %26
+         %43 = OpFNegate %6 %42
+         %44 = OpLoad %6 %34
+         %45 = OpFAdd %6 %43 %44
+         %46 = OpLoad %6 %38
+         %47 = OpFMul %6 %19 %46
+         %48 = OpFSub %6 %45 %47
+               OpStore %41 %48
+         %49 = OpLoad %6 %41
+         %50 = OpLoad %6 %8
+         %51 = OpFSub %6 %49 %50
+         %52 = OpExtInst %6 %1 FAbs %51
+         %55 = OpFOrdLessThan %54 %52 %53
+               OpSelectionMerge %57 None
+               OpBranchConditional %55 %56 %61
+         %56 = OpLabel
+               OpStore %59 %60
+               OpBranch %57
+         %61 = OpLabel
+               OpStore %59 %62
+               OpBranch %57
+         %57 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
