@@ -51,6 +51,9 @@ struct DrawParams
 	vk::VkFormat				format;
 	tcu::UVec2					size;
 	vk::VkSampleCountFlagBits	samples;
+	// From the SPIR-V point of view, structured test variants will allow us to test interpolation decorations on struct members
+	// instead of plain ids.
+	bool						useStructure;
 };
 
 template<typename T>
@@ -129,80 +132,125 @@ DrawTestCase::~DrawTestCase (void)
 
 void DrawTestCase::initPrograms (vk::SourceCollections& programCollection) const
 {
-	const std::string					vertShader_multi	(
+	const std::string							blockName		= "ifb";
+	const std::map<std::string, std::string>	replacements	=
+	{
+		std::pair<std::string, std::string>{"blockOpeningOut"	, (m_params.useStructure ? "layout(location = 0) out InterfaceBlock {\n" : "")},
+		std::pair<std::string, std::string>{"blockOpeningIn"	, (m_params.useStructure ? "layout(location = 0) in InterfaceBlock {\n" : "")},
+		std::pair<std::string, std::string>{"blockClosure"		, (m_params.useStructure ? "} " + blockName + ";\n" : "")},
+		std::pair<std::string, std::string>{"extensions"		, (m_params.useStructure ? "#extension GL_ARB_enhanced_layouts : require\n" : "")},
+		std::pair<std::string, std::string>{"accessPrefix"		, (m_params.useStructure ? blockName + "." : "")},
+		std::pair<std::string, std::string>{"outQual"			, (m_params.useStructure ? "" : "out ")},
+		std::pair<std::string, std::string>{"inQual"			, (m_params.useStructure ? "" : "in ")},
+		std::pair<std::string, std::string>{"indent"			, (m_params.useStructure ? "    " : "")},
+	};
+
+	const tcu::StringTemplate vertShaderMulti
+	{
 		"#version 430\n"
+		"${extensions}"
+		"\n"
 		"layout(location = 0) in vec4 in_position;\n"
 		"layout(location = 1) in vec4 in_color;\n"
-		"layout(location = 0) out vec4 out_color_smooth;\n"
-		"layout(location = 1) flat out vec4 out_color_flat;\n"
-		"layout(location = 2) noperspective out vec4 out_color_noperspective;\n"
-		"layout(location = 3) centroid out vec4 out_color_centroid;\n"
+		"\n"
+		"${blockOpeningOut}"
+		"${indent}layout(location = 0) ${outQual}vec4 out_color_smooth;\n"
+		"${indent}layout(location = 1) ${outQual}flat vec4 out_color_flat;\n"
+		"${indent}layout(location = 2) ${outQual}noperspective vec4 out_color_noperspective;\n"
+		"${indent}layout(location = 3) ${outQual}centroid vec4 out_color_centroid;\n"
+		"${blockClosure}"
+		"\n"
 		"void main()\n"
 		"{\n"
-		"    out_color_smooth = in_color;\n"
-		"    out_color_flat = in_color;\n"
-		"    out_color_noperspective = in_color;\n"
-		"    out_color_centroid = in_color;\n"
+		"    ${accessPrefix}out_color_smooth = in_color;\n"
+		"    ${accessPrefix}out_color_flat = in_color;\n"
+		"    ${accessPrefix}out_color_noperspective = in_color;\n"
+		"    ${accessPrefix}out_color_centroid = in_color;\n"
 		"    gl_Position = in_position;\n"
-		"}\n");
+		"}\n"
+	};
 
-	const std::string					fragShader_multi	(
+	const tcu::StringTemplate fragShaderMulti
+	{
 		"#version 430\n"
-		"layout(location = 0) in vec4 in_color_smooth;\n"
-		"layout(location = 1) flat in vec4 in_color_flat;\n"
-		"layout(location = 2) noperspective in vec4 in_color_noperspective;\n"
-		"layout(location = 3) centroid in vec4 in_color_centroid;\n"
+		"${extensions}"
+		"\n"
+		"${blockOpeningIn}"
+		"${indent}layout(location = 0) ${inQual}vec4 in_color_smooth;\n"
+		"${indent}layout(location = 1) ${inQual}flat vec4 in_color_flat;\n"
+		"${indent}layout(location = 2) ${inQual}noperspective vec4 in_color_noperspective;\n"
+		"${indent}layout(location = 3) ${inQual}centroid vec4 in_color_centroid;\n"
+		"${blockClosure}"
+		"\n"
 		"layout(location = " + de::toString(SMOOTH) + ") out vec4 out_color_smooth;\n"
 		"layout(location = " + de::toString(FLAT) + ") out vec4 out_color_flat;\n"
 		"layout(location = " + de::toString(NOPERSPECTIVE) + ") out vec4 out_color_noperspective;\n"
 		"layout(location = " + de::toString(CENTROID) + ") out vec4 out_color_centroid;\n"
+		"\n"
 		"void main()\n"
 		"{\n"
-		"    out_color_smooth = in_color_smooth;\n"
-		"    out_color_flat = in_color_flat;\n"
-		"    out_color_noperspective = in_color_noperspective;\n"
-		"    out_color_centroid = in_color_centroid;\n"
-		"}\n");
+		"    out_color_smooth = ${accessPrefix}in_color_smooth;\n"
+		"    out_color_flat = ${accessPrefix}in_color_flat;\n"
+		"    out_color_noperspective = ${accessPrefix}in_color_noperspective;\n"
+		"    out_color_centroid = ${accessPrefix}in_color_centroid;\n"
+		"}\n"
+	};
 
-	const tcu::StringTemplate			vertShader_single	(std::string(
+	const tcu::StringTemplate vertShaderSingle
+	{
 		"#version 430\n"
+		"${extensions}"
+		"\n"
 		"layout(location = 0) in vec4 in_position;\n"
 		"layout(location = 1) in vec4 in_color;\n"
-		"layout(location = 0) ${qualifier:opt} out vec4 out_color;\n"
+		"\n"
+		"${blockOpeningOut}"
+		"${indent}layout(location = 0) ${outQual}${qualifier:opt}vec4 out_color;\n"
+		"${blockClosure}"
+		"\n"
 		"void main()\n"
 		"{\n"
-		"    out_color = in_color;\n"
+		"    ${accessPrefix}out_color = in_color;\n"
 		"    gl_Position = in_position;\n"
-		"}\n"));
+		"}\n"
+	};
 
-	const tcu::StringTemplate			fragShader_single	(std::string(
+	const tcu::StringTemplate fragShaderSingle
+	{
 		"#version 430\n"
-		"layout(location = 0) ${qualifier:opt} in vec4 in_color;\n"
+		"${extensions}"
+		"\n"
+		"${blockOpeningIn}"
+		"${indent}layout(location = 0) ${inQual}${qualifier:opt}vec4 in_color;\n"
+		"${blockClosure}"
+		"\n"
 		"layout(location = 0) out vec4 out_color;\n"
+		"\n"
 		"void main()\n"
 		"{\n"
-		"    out_color = in_color;\n"
-		"}\n"));
+		"    out_color = ${accessPrefix}in_color;\n"
+		"}\n"
+	};
 
-	std::map<std::string, std::string>	smooth;
-	std::map<std::string, std::string>	flat;
-	std::map<std::string, std::string>	noperspective;
-	std::map<std::string, std::string>	centroid;
+	std::map<std::string, std::string>	smooth			= replacements;
+	std::map<std::string, std::string>	flat			= replacements;
+	std::map<std::string, std::string>	noperspective	= replacements;
+	std::map<std::string, std::string>	centroid		= replacements;
 
-	flat["qualifier"]			= "flat";
-	noperspective["qualifier"]	= "noperspective";
-	centroid["qualifier"]		= "centroid";
+	flat["qualifier"]			= "flat ";
+	noperspective["qualifier"]	= "noperspective ";
+	centroid["qualifier"]		= "centroid ";
 
-	programCollection.glslSources.add("vert_multi")			<< glu::VertexSource(vertShader_multi);
-	programCollection.glslSources.add("frag_multi")			<< glu::FragmentSource(fragShader_multi);
-	programCollection.glslSources.add("vert_smooth")		<< glu::VertexSource(vertShader_single.specialize(smooth));
-	programCollection.glslSources.add("frag_smooth")		<< glu::FragmentSource(fragShader_single.specialize(smooth));
-	programCollection.glslSources.add("vert_flat")			<< glu::VertexSource(vertShader_single.specialize(flat));
-	programCollection.glslSources.add("frag_flat")			<< glu::FragmentSource(fragShader_single.specialize(flat));
-	programCollection.glslSources.add("vert_noperspective")	<< glu::VertexSource(vertShader_single.specialize(noperspective));
-	programCollection.glslSources.add("frag_noperspective")	<< glu::FragmentSource(fragShader_single.specialize(noperspective));
-	programCollection.glslSources.add("vert_centroid")		<< glu::VertexSource(vertShader_single.specialize(centroid));
-	programCollection.glslSources.add("frag_centroid")		<< glu::FragmentSource(fragShader_single.specialize(centroid));
+	programCollection.glslSources.add("vert_multi")			<< glu::VertexSource(vertShaderMulti.specialize(replacements));
+	programCollection.glslSources.add("frag_multi")			<< glu::FragmentSource(fragShaderMulti.specialize(replacements));
+	programCollection.glslSources.add("vert_smooth")		<< glu::VertexSource(vertShaderSingle.specialize(smooth));
+	programCollection.glslSources.add("frag_smooth")		<< glu::FragmentSource(fragShaderSingle.specialize(smooth));
+	programCollection.glslSources.add("vert_flat")			<< glu::VertexSource(vertShaderSingle.specialize(flat));
+	programCollection.glslSources.add("frag_flat")			<< glu::FragmentSource(fragShaderSingle.specialize(flat));
+	programCollection.glslSources.add("vert_noperspective")	<< glu::VertexSource(vertShaderSingle.specialize(noperspective));
+	programCollection.glslSources.add("frag_noperspective")	<< glu::FragmentSource(fragShaderSingle.specialize(noperspective));
+	programCollection.glslSources.add("vert_centroid")		<< glu::VertexSource(vertShaderSingle.specialize(centroid));
+	programCollection.glslSources.add("frag_centroid")		<< glu::FragmentSource(fragShaderSingle.specialize(centroid));
 }
 
 void DrawTestCase::checkSupport (Context& context) const
@@ -544,24 +592,48 @@ void createTests (tcu::TestCaseGroup* testGroup)
 	const vk::VkFormat	format	= vk::VK_FORMAT_R8G8B8A8_UNORM;
 	const tcu::UVec2	size	(128, 128);
 
-	const struct
+	struct TestVariant
 	{
-		const std::string	name;
-		const std::string	desc;
-		const DrawParams	params;
-	} tests[] =
-	{
-		{ "1_sample",	"Without multisampling",	{ format, size, vk::VK_SAMPLE_COUNT_1_BIT	} },
-		{ "2_samples",	"2 samples",				{ format, size, vk::VK_SAMPLE_COUNT_2_BIT	} },
-		{ "4_samples",	"4 samples",				{ format, size, vk::VK_SAMPLE_COUNT_4_BIT	} },
-		{ "8_samples",	"8 samples",				{ format, size, vk::VK_SAMPLE_COUNT_8_BIT	} },
-		{ "16_samples",	"16 samples",				{ format, size, vk::VK_SAMPLE_COUNT_16_BIT	} },
-		{ "32_samples",	"32 samples",				{ format, size, vk::VK_SAMPLE_COUNT_32_BIT	} },
-		{ "64_samples",	"64 samples",				{ format, size, vk::VK_SAMPLE_COUNT_64_BIT	} },
+		const std::string				name;
+		const std::string				desc;
+		const vk::VkSampleCountFlagBits	samples;
 	};
 
-	for (int i = 0; i < DE_LENGTH_OF_ARRAY(tests); i++)
-		testGroup->addChild(new DrawTestCase(testCtx, tests[i].name, tests[i].desc, tests[i].params));
+	static const std::vector<TestVariant> testVariants =
+	{
+		{ "1_sample",	"Without multisampling",	vk::VK_SAMPLE_COUNT_1_BIT	},
+		{ "2_samples",	"2 samples",				vk::VK_SAMPLE_COUNT_2_BIT	},
+		{ "4_samples",	"4 samples",				vk::VK_SAMPLE_COUNT_4_BIT	},
+		{ "8_samples",	"8 samples",				vk::VK_SAMPLE_COUNT_8_BIT	},
+		{ "16_samples",	"16 samples",				vk::VK_SAMPLE_COUNT_16_BIT	},
+		{ "32_samples",	"32 samples",				vk::VK_SAMPLE_COUNT_32_BIT	},
+		{ "64_samples",	"64 samples",				vk::VK_SAMPLE_COUNT_64_BIT	},
+	};
+
+	struct GroupVariant
+	{
+		const bool			useStructure;
+		const std::string	groupName;
+	};
+
+	static const std::vector<GroupVariant> groupVariants =
+	{
+		{ false,	"separate"		},
+		{ true,		"structured"	},
+	};
+
+	for (const auto& grpVariant : groupVariants)
+	{
+		de::MovePtr<tcu::TestCaseGroup> group {new tcu::TestCaseGroup{testCtx, grpVariant.groupName.c_str(), ""}};
+
+		for (const auto& testVariant : testVariants)
+		{
+			const DrawParams params {format, size, testVariant.samples, grpVariant.useStructure};
+			group->addChild(new DrawTestCase(testCtx, testVariant.name, testVariant.desc, params));
+		}
+
+		testGroup->addChild(group.release());
+	}
 }
 
 }	// anonymous
