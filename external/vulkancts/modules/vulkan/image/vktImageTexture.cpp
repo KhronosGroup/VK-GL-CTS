@@ -81,41 +81,81 @@ void Texture::checkInvariants (void) const
 	}
 }
 
-Texture::Texture (const ImageType imageType, const tcu::IVec3& imageLayerSize, const int layers, const int samples)
-	: m_layerSize	(imageLayerSize)
-	, m_type		(imageType)
-	, m_numLayers	(layers)
-	, m_numSamples	(samples)
+	Texture::Texture (const ImageType imageType, const tcu::IVec3& imageLayerSize, const int layers, const int samples, const int levels)
+	: m_layerSize		(imageLayerSize)
+	, m_type			(imageType)
+	, m_numLayers		(layers)
+	, m_numSamples		(samples)
+	, m_numMipmapLevels	(levels)
 {
 	checkInvariants();
 }
 
 Texture::Texture (const Texture& other, const int samples)
-	: m_layerSize	(other.m_layerSize)
-	, m_type		(other.m_type)
-	, m_numLayers	(other.m_numLayers)
-	, m_numSamples	(samples)
+	: m_layerSize		(other.m_layerSize)
+	, m_type			(other.m_type)
+	, m_numLayers		(other.m_numLayers)
+	, m_numSamples		(samples)
+	, m_numMipmapLevels	(other.m_numMipmapLevels)
 {
 	checkInvariants();
 }
 
-tcu::IVec3 Texture::size (void) const
+static inline deUint32 minify (deUint32 value, deUint32 mipmapLevel)
 {
+	return deMax32(value >> mipmapLevel, 1);
+}
+
+tcu::IVec3 Texture::layerSize (const int mipmapLevel) const
+{
+	tcu::IVec3 size = m_layerSize;
+
+	DE_ASSERT(mipmapLevel < numMipmapLevels());
+
+	if (mipmapLevel == 0)
+		return size;
+
+	switch (m_type)
+	{
+	case IMAGE_TYPE_3D:
+		size.z() = minify(size.z(), mipmapLevel);
+		/* fall-through */
+	case IMAGE_TYPE_CUBE:
+	case IMAGE_TYPE_CUBE_ARRAY:
+	case IMAGE_TYPE_2D_ARRAY:
+	case IMAGE_TYPE_2D:
+		size.y() = minify(size.y(), mipmapLevel);
+		/* fall-through */
+	case IMAGE_TYPE_1D_ARRAY:
+	case IMAGE_TYPE_1D:
+		size.x() = minify(size.x(), mipmapLevel);
+		break;
+	default:
+		DE_FATAL("Not supported image type");
+	}
+	return size;
+}
+
+tcu::IVec3 Texture::size (const int mipmapLevel) const
+{
+	// texture.size() includes number of layers in one component. Minify only the relevant component for the mipmap level.
+	tcu::IVec3 size = layerSize(mipmapLevel);
+
 	switch (m_type)
 	{
 		case IMAGE_TYPE_1D:
 		case IMAGE_TYPE_BUFFER:
 		case IMAGE_TYPE_2D:
 		case IMAGE_TYPE_3D:
-			return m_layerSize;
+			return size;
 
 		case IMAGE_TYPE_1D_ARRAY:
-			return tcu::IVec3(m_layerSize.x(), m_numLayers, 1);
+			return tcu::IVec3(size.x(), m_numLayers, 1);
 
 		case IMAGE_TYPE_2D_ARRAY:
 		case IMAGE_TYPE_CUBE:
 		case IMAGE_TYPE_CUBE_ARRAY:
-			return tcu::IVec3(m_layerSize.x(), m_layerSize.y(), m_numLayers);
+			return tcu::IVec3(size.x(), size.y(), m_numLayers);
 
 		default:
 			DE_FATAL("Internal error");

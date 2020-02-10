@@ -72,6 +72,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_shader_fragment_mask",
 		"VK_AMD_buffer_marker",
 		"VK_AMD_shader_explicit_vertex_parameter",
+		"VK_AMD_shader_image_load_store_lod",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)

@@ -110,18 +110,40 @@ tcu::ConstPixelBufferAccess getLayerOrSlice (const Texture& texture, const tcu::
 	}
 }
 
+//! \return the size in bytes of a given level of a mipmap image, including array layers.
+vk::VkDeviceSize getMipmapLevelImageSizeBytes (const Texture& texture, const vk::VkFormat format, const deUint32 mipmapLevel)
+{
+	tcu::IVec3 size = texture.size(mipmapLevel);
+	return tcu::getPixelSize(vk::mapVkFormat(format)) * size.x() * size.y() * size.z();
+}
+
+//! \return the size in bytes of the whole mipmap image, including all mipmap levels and array layers
+vk::VkDeviceSize getMipmapImageTotalSizeBytes (const Texture& texture, const vk::VkFormat format)
+{
+	vk::VkDeviceSize	size			= 0u;
+	deInt32				levelCount		= 0u;
+
+	do
+	{
+		size += getMipmapLevelImageSizeBytes(texture, format, levelCount);
+		levelCount++;
+	} while (levelCount < texture.numMipmapLevels());
+	return size;
+}
+
 //! \return true if all layers match in both pixel buffers
 bool comparePixelBuffers (tcu::TestLog&						log,
 						  const Texture&					texture,
 						  const VkFormat					format,
 						  const tcu::ConstPixelBufferAccess	reference,
-						  const tcu::ConstPixelBufferAccess	result)
+						  const tcu::ConstPixelBufferAccess	result,
+						  const deUint32					mipmapLevel = 0u)
 {
 	DE_ASSERT(reference.getFormat() == result.getFormat());
 	DE_ASSERT(reference.getSize() == result.getSize());
 
 	const bool is3d = (texture.type() == IMAGE_TYPE_3D);
-	const int numLayersOrSlices = (is3d ? texture.size().z() : texture.numLayers());
+	const int numLayersOrSlices = (is3d ? texture.size(mipmapLevel).z() : texture.numLayers());
 	const int numCubeFaces = 6;
 
 	int passedLayers = 0;
@@ -130,7 +152,7 @@ bool comparePixelBuffers (tcu::TestLog&						log,
 		const std::string comparisonName = "Comparison" + de::toString(layerNdx);
 		const std::string comparisonDesc = "Image Comparison, " +
 			(isCube(texture) ? "face " + de::toString(layerNdx % numCubeFaces) + ", cube " + de::toString(layerNdx / numCubeFaces) :
-			is3d			 ? "slice " + de::toString(layerNdx) : "layer " + de::toString(layerNdx));
+			is3d			 ? "slice " + de::toString(layerNdx) : "layer " + de::toString(layerNdx) + " , level " + de::toString(mipmapLevel));
 
 		const tcu::ConstPixelBufferAccess refLayer = getLayerOrSlice(texture, reference, layerNdx);
 		const tcu::ConstPixelBufferAccess resultLayer = getLayerOrSlice(texture, result, layerNdx);
@@ -319,7 +341,7 @@ void commandImageWriteBarrierBetweenShaderInvocations (Context& context, const V
 {
 	const DeviceInterface& vk = context.getDeviceInterface();
 
-	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, texture.numLayers());
+	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, texture.numMipmapLevels(), 0u, texture.numLayers());
 	const VkImageMemoryBarrier shaderWriteBarrier = makeImageMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT, 0u,
 		VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
@@ -363,6 +385,49 @@ void commandCopyImageToBuffer (Context&					context,
 
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &prepareForTransferBarrier);
 	vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1u, &copyRegion);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+}
+
+//! Copy all layers of a mipmap image to a buffer.
+void commandCopyMipmapImageToBuffer (Context&				context,
+									 const VkCommandBuffer	cmdBuffer,
+									 const VkImage			image,
+									 const VkFormat			imageFormat,
+									 const VkBuffer			buffer,
+									 const VkDeviceSize		bufferSizeBytes,
+									 const Texture&			texture)
+{
+	const DeviceInterface& vk = context.getDeviceInterface();
+
+	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, texture.numMipmapLevels(), 0u, texture.numLayers());
+	const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
+		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+		VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		image, fullImageSubresourceRange);
+
+	std::vector<VkBufferImageCopy> copyRegions;
+	VkDeviceSize bufferOffset = 0u;
+	for (deInt32 levelNdx = 0; levelNdx < texture.numMipmapLevels(); levelNdx++)
+	{
+		const VkBufferImageCopy copyParams =
+		{
+			bufferOffset,																				//	VkDeviceSize				bufferOffset;
+			0u,																							//	deUint32					bufferRowLength;
+			0u,																							//	deUint32					bufferImageHeight;
+			makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, levelNdx, 0u, texture.numLayers()),	//	VkImageSubresourceLayers	imageSubresource;
+			makeOffset3D(0, 0, 0),																		//	VkOffset3D					imageOffset;
+			makeExtent3D(texture.layerSize(levelNdx)),													//	VkExtent3D					imageExtent;
+		};
+		copyRegions.push_back(copyParams);
+		bufferOffset += getMipmapLevelImageSizeBytes(texture, imageFormat, levelNdx);
+	}
+
+	const VkBufferMemoryBarrier copyBarrier = makeBufferMemoryBarrier(
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
+		buffer, 0ull, bufferSizeBytes);
+
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &prepareForTransferBarrier);
+	vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, (deUint32) copyRegions.size(), copyRegions.data());
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 }
 
@@ -966,7 +1031,8 @@ public:
 													 const Texture&			texture,
 													 const VkFormat			format,
 													 const VkFormat			imageFormat,
-													 const deUint32			flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER);
+													 const deUint32			flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER,
+													 const deBool			imageLoadStoreLodAMD = DE_FALSE);
 
 	virtual void			checkSupport			(Context&				context) const;
 	void					initPrograms			(SourceCollections&		programCollection) const;
@@ -981,6 +1047,7 @@ private:
 	const bool				m_restrictImages;
 	const bool				m_minalign;
 	bool					m_bufferLoadUniform;
+	const deBool			m_imageLoadStoreLodAMD;
 };
 
 LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
@@ -989,7 +1056,8 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 							  const Texture&		texture,
 							  const VkFormat		format,
 							  const VkFormat		imageFormat,
-							  const deUint32		flags)
+							  const deUint32		flags,
+							  const deBool			imageLoadStoreLodAMD)
 	: TestCase						(testCtx, name, description)
 	, m_texture						(texture)
 	, m_format						(format)
@@ -999,6 +1067,7 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 	, m_restrictImages				((flags & FLAG_RESTRICT_IMAGES) != 0)
 	, m_minalign					((flags & FLAG_MINALIGN) != 0)
 	, m_bufferLoadUniform			((flags & FLAG_UNIFORM_TEXEL_BUFFER) != 0)
+	, m_imageLoadStoreLodAMD		(imageLoadStoreLodAMD)
 {
 	if (m_singleLayerBind)
 		DE_ASSERT(m_texture.numLayers() > 1);
@@ -1014,6 +1083,8 @@ void LoadStoreTest::checkSupport (Context& context) const
 	const vk::VkFormatProperties imageFormatProperties  (vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
 																							   context.getPhysicalDevice(),
 																							   m_imageFormat));
+	if (m_imageLoadStoreLodAMD)
+		context.requireDeviceFunctionality("VK_AMD_shader_image_load_store_lod");
 
 	if (!m_bufferLoadUniform && !m_declareImageFormatInShader)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_READ_WITHOUT_FORMAT);
@@ -1064,12 +1135,18 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string			xMax				= de::toString(m_texture.size().x() - 1);
 
 	std::ostringstream src;
-	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 		<< "\n";
 	if (!m_declareImageFormatInShader)
 	{
 		src << "#extension GL_EXT_shader_image_load_formatted : require\n";
 	}
+
+	if (m_imageLoadStoreLodAMD)
+	{
+		src << "#extension GL_AMD_shader_image_load_store_lod : require\n";
+	}
+
 	src << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
 	if (m_bufferLoadUniform)
 		src << "layout (binding = 0) uniform " << uniformTypeStr << " u_image0;\n";
@@ -1106,20 +1183,60 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 			else
 				src << "    imageStore(u_image1, pos, t);\n";
 		}
+		else if (m_imageLoadStoreLodAMD)
+		{
+			src <<
+				"    int pos = int(gl_GlobalInvocationID.x);\n";
+
+			for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+			{
+				std::string xMaxSize = de::toString(deMax32(((m_texture.layerSize().x() >> levelNdx) - 1), 1u));
+				src << "    imageStoreLodAMD(u_image1, pos, " + de::toString(levelNdx) + ", imageLoadLodAMD(u_image0, " + xMaxSize + "-pos, " + de::toString(levelNdx) + "));\n";
+			}
+		}
 		else
+		{
 			src <<
 				"    int pos = int(gl_GlobalInvocationID.x);\n"
 				"    imageStore(u_image1, pos, imageLoad(u_image0, " + xMax + "-pos));\n";
+		}
 		break;
 	case 2:
-		src <<
-			"    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
-			"    imageStore(u_image1, pos, imageLoad(u_image0, ivec2(" + xMax + "-pos.x, pos.y)));\n";
+		if (m_imageLoadStoreLodAMD)
+		{
+			src << "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n";
+
+			for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+			{
+				std::string xMaxSize = de::toString(deMax32(((m_texture.layerSize().x() >> levelNdx) - 1), 1u));
+				src << "    imageStoreLodAMD(u_image1, pos, " + de::toString(levelNdx) + ", imageLoadLodAMD(u_image0, ivec2(" + xMaxSize + "-pos.x, pos.y), " + de::toString(levelNdx) + "));\n";
+			}
+
+		}
+		else
+		{
+			src <<
+				"    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
+				"    imageStore(u_image1, pos, imageLoad(u_image0, ivec2(" + xMax + "-pos.x, pos.y)));\n";
+		}
 		break;
 	case 3:
-		src <<
-			"    ivec3 pos = ivec3(gl_GlobalInvocationID);\n"
-			"    imageStore(u_image1, pos, imageLoad(u_image0, ivec3(" + xMax + "-pos.x, pos.y, pos.z)));\n";
+		if (m_imageLoadStoreLodAMD)
+		{
+			src << "    ivec3 pos = ivec3(gl_GlobalInvocationID);\n";
+
+			for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+			{
+				std::string xMaxSize = de::toString(deMax32(((m_texture.layerSize().x() >> levelNdx) - 1), 1u));
+				src << "    imageStoreLodAMD(u_image1, pos, " + de::toString(levelNdx) + ", imageLoadLodAMD(u_image0, ivec3(" + xMaxSize + "-pos.x, pos.y, pos.z), " + de::toString(levelNdx) + "));\n";
+			}
+		}
+		else
+		{
+			src <<
+				"    ivec3 pos = ivec3(gl_GlobalInvocationID);\n"
+				"    imageStore(u_image1, pos, imageLoad(u_image0, ivec3(" + xMax + "-pos.x, pos.y, pos.z)));\n";
+		}
 		break;
 	}
 	src << "}\n";
@@ -1385,6 +1502,305 @@ void ImageLoadStoreTestInstance::commandAfterCompute (const VkCommandBuffer cmdB
 	commandCopyImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_imageBuffer->get(), m_imageSizeBytes, m_texture);
 }
 
+//! Load/store Lod AMD test for images
+class ImageLoadStoreLodAMDTestInstance : public BaseTestInstance
+{
+public:
+										ImageLoadStoreLodAMDTestInstance	(Context&				context,
+																			 const Texture&			texture,
+																			 const VkFormat			format,
+																			 const VkFormat			imageFormat,
+																			 const bool				declareImageFormatInShader,
+																			 const bool				singleLayerBind,
+																			 const bool				minalign,
+																			 const bool				bufferLoadUniform);
+
+protected:
+	VkDescriptorSetLayout				prepareDescriptors					(void);
+	void								commandBeforeCompute				(const VkCommandBuffer	cmdBuffer);
+	void								commandBetweenShaderInvocations		(const VkCommandBuffer	cmdBuffer);
+	void								commandAfterCompute					(const VkCommandBuffer	cmdBuffer);
+
+	void								commandBindDescriptorsForLayer		(const VkCommandBuffer	cmdBuffer,
+																			 const VkPipelineLayout pipelineLayout,
+																			 const int				layerNdx);
+
+	Buffer*								getResultBuffer						(void) const { return m_imageBuffer.get(); }
+	tcu::TestStatus						verifyResult						(void);
+
+	de::MovePtr<Buffer>					m_imageBuffer;		//!< Source data and helper buffer
+	const VkDeviceSize					m_imageSizeBytes;
+	const VkFormat						m_imageFormat;		//!< Image format (for storage, may be different than texture format)
+	std::vector<tcu::TextureLevel>		m_referenceImages;	//!< Used as input data and later to verify result image
+
+	bool								m_bufferLoadUniform;
+	VkDescriptorType					m_bufferLoadDescriptorType;
+	VkBufferUsageFlagBits				m_bufferLoadUsageBit;
+
+	de::MovePtr<Image>					m_imageSrc;
+	de::MovePtr<Image>					m_imageDst;
+	Move<VkDescriptorSetLayout>			m_descriptorSetLayout;
+	Move<VkDescriptorPool>				m_descriptorPool;
+	std::vector<SharedVkDescriptorSet>  m_allDescriptorSets;
+	std::vector<SharedVkImageView>      m_allSrcImageViews;
+	std::vector<SharedVkImageView>      m_allDstImageViews;
+
+};
+
+ImageLoadStoreLodAMDTestInstance::ImageLoadStoreLodAMDTestInstance (Context&		context,
+																	const Texture&	texture,
+																	const VkFormat	format,
+																	const VkFormat	imageFormat,
+																	const bool		declareImageFormatInShader,
+																	const bool		singleLayerBind,
+																	const bool		minalign,
+																	const bool		bufferLoadUniform)
+	: BaseTestInstance			(context, texture, format, declareImageFormatInShader, singleLayerBind, minalign, bufferLoadUniform)
+	, m_imageSizeBytes			(getMipmapImageTotalSizeBytes(texture, format))
+	, m_imageFormat				(imageFormat)
+	, m_bufferLoadUniform		(bufferLoadUniform)
+	, m_allDescriptorSets       (texture.numLayers())
+	, m_allSrcImageViews        (texture.numLayers())
+	, m_allDstImageViews        (texture.numLayers())
+{
+	const DeviceInterface&		vk					= m_context.getDeviceInterface();
+	const VkDevice				device				= m_context.getDevice();
+	Allocator&					allocator			= m_context.getDefaultAllocator();
+	const VkImageCreateFlags	imageFlags			= (m_format == m_imageFormat ? 0u : (VkImageCreateFlags)VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT);
+
+	const VkSampleCountFlagBits samples = static_cast<VkSampleCountFlagBits>(m_texture.numSamples());	// integer and bit mask are aligned, so we can cast like this
+
+	for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+	{
+		tcu::TextureLevel referenceImage = generateReferenceImage(texture.size(levelNdx), imageFormat, format);
+		m_referenceImages.push_back(referenceImage);
+	}
+
+	m_bufferLoadDescriptorType = m_bufferLoadUniform ? VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+	m_bufferLoadUsageBit = m_bufferLoadUniform ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+
+	// A helper buffer with enough space to hold the whole image.
+	m_imageBuffer = de::MovePtr<Buffer>(new Buffer(
+												   vk, device, allocator,
+												   makeBufferCreateInfo(m_imageSizeBytes + m_srcViewOffset, m_bufferLoadUsageBit | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+												   MemoryRequirement::HostVisible));
+
+	// Copy reference data to buffer for subsequent upload to image.
+	{
+		const Allocation& alloc = m_imageBuffer->getAllocation();
+		VkDeviceSize bufferOffset = 0u;
+		for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+		{
+			deMemcpy((char *)alloc.getHostPtr() + m_srcViewOffset + bufferOffset, m_referenceImages[levelNdx].getAccess().getDataPtr(), static_cast<size_t>(getMipmapLevelImageSizeBytes(m_texture, m_imageFormat, levelNdx)));
+			bufferOffset += getMipmapLevelImageSizeBytes(m_texture, m_imageFormat, levelNdx);
+		}
+		flushAlloc(vk, device, alloc);
+	}
+
+	{
+		const VkImageCreateInfo imageParamsSrc =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,																// VkStructureType			sType;
+			DE_NULL,																							// const void*				pNext;
+			(isCube(m_texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) | imageFlags,	// VkImageCreateFlags		flags;
+			mapImageType(m_texture.type()),																		// VkImageType				imageType;
+			m_imageFormat,																						// VkFormat					format;
+			makeExtent3D(m_texture.layerSize()),																// VkExtent3D				extent;
+			(deUint32)m_texture.numMipmapLevels(),																// deUint32					mipLevels;
+			(deUint32)m_texture.numLayers(),																	// deUint32					arrayLayers;
+			samples,																							// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,																			// VkImageTiling			tiling;
+			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,										// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,																			// VkSharingMode			sharingMode;
+			0u,																									// deUint32					queueFamilyIndexCount;
+			DE_NULL,																							// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,																			// VkImageLayout			initialLayout;
+		};
+
+		m_imageSrc = de::MovePtr<Image>(new Image(
+												  vk, device, allocator,
+												  imageParamsSrc,
+												  MemoryRequirement::Any));
+	}
+
+	{
+		const VkImageCreateInfo imageParamsDst =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,																// VkStructureType			sType;
+			DE_NULL,																							// const void*				pNext;
+			(isCube(m_texture) ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0u) | imageFlags,	// VkImageCreateFlags		flags;
+			mapImageType(m_texture.type()),																		// VkImageType				imageType;
+			m_imageFormat,																						// VkFormat					format;
+			makeExtent3D(m_texture.layerSize()),																// VkExtent3D				extent;
+			(deUint32)m_texture.numMipmapLevels(),																// deUint32					mipLevels;
+			(deUint32)m_texture.numLayers(),																	// deUint32					arrayLayers;
+			samples,																							// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,																			// VkImageTiling			tiling;
+		    VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,										// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,																			// VkSharingMode			sharingMode;
+			0u,																									// deUint32					queueFamilyIndexCount;
+			DE_NULL,																							// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED,																			// VkImageLayout			initialLayout;
+		};
+
+		m_imageDst = de::MovePtr<Image>(new Image(
+												  vk, device, allocator,
+												  imageParamsDst,
+												  MemoryRequirement::Any));
+	}
+}
+
+tcu::TestStatus ImageLoadStoreLodAMDTestInstance::verifyResult	(void)
+{
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+	const VkDevice			device	= m_context.getDevice();
+
+	const Allocation& alloc = getResultBuffer()->getAllocation();
+	invalidateAlloc(vk, device, alloc);
+
+    VkDeviceSize bufferOffset = 0;
+	for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+	{
+		// Apply the same transformation as done in the shader
+		const tcu::PixelBufferAccess reference = m_referenceImages[levelNdx].getAccess();
+		flipHorizontally(reference);
+
+		const tcu::ConstPixelBufferAccess result(mapVkFormat(m_imageFormat), m_texture.size(levelNdx), (const char *)alloc.getHostPtr() + m_dstViewOffset + bufferOffset);
+
+		if (!comparePixelBuffers(m_context.getTestContext().getLog(), m_texture, m_imageFormat, reference, result, levelNdx))
+		{
+			std::ostringstream errorMessage;
+			errorMessage << "Image Level " << levelNdx << " comparison failed";
+			return tcu::TestStatus::fail(errorMessage.str());
+		}
+		bufferOffset += getMipmapLevelImageSizeBytes(m_texture, m_imageFormat, levelNdx);
+	}
+
+	return tcu::TestStatus::pass("Passed");
+}
+
+VkDescriptorSetLayout ImageLoadStoreLodAMDTestInstance::prepareDescriptors (void)
+{
+	const VkDevice			device	= m_context.getDevice();
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+
+	const int numLayers = m_texture.numLayers();
+	m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, device);
+
+	m_descriptorPool = DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numLayers)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numLayers)
+		.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numLayers);
+
+	if (m_singleLayerBind)
+	{
+		for (int layerNdx = 0; layerNdx < numLayers; ++layerNdx)
+		{
+			const VkImageViewType viewType = mapImageViewType(getImageTypeForSingleLayer(m_texture.type()));
+			const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_texture.numMipmapLevels(), layerNdx, 1u);
+
+			m_allDescriptorSets[layerNdx] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+			m_allSrcImageViews[layerNdx]  = makeVkSharedPtr(makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange));
+			m_allDstImageViews[layerNdx]  = makeVkSharedPtr(makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange));
+		}
+	}
+	else // bind all layers at once
+	{
+		const VkImageViewType viewType = mapImageViewType(m_texture.type());
+		const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_texture.numMipmapLevels(), 0u, numLayers);
+
+		m_allDescriptorSets[0] = makeVkSharedPtr(makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout));
+		m_allSrcImageViews[0]  = makeVkSharedPtr(makeImageView(vk, device, m_imageSrc->get(), viewType, m_format, subresourceRange));
+		m_allDstImageViews[0]  = makeVkSharedPtr(makeImageView(vk, device, m_imageDst->get(), viewType, m_format, subresourceRange));
+	}
+
+	return *m_descriptorSetLayout;  // not passing the ownership
+}
+
+void ImageLoadStoreLodAMDTestInstance::commandBindDescriptorsForLayer (const VkCommandBuffer cmdBuffer, const VkPipelineLayout pipelineLayout, const int layerNdx)
+{
+	const VkDevice			device	= m_context.getDevice();
+	const DeviceInterface&	vk		= m_context.getDeviceInterface();
+
+	const VkDescriptorSet descriptorSet = **m_allDescriptorSets[layerNdx];
+	const VkImageView	  srcImageView	= **m_allSrcImageViews[layerNdx];
+	const VkImageView	  dstImageView	= **m_allDstImageViews[layerNdx];
+
+	const VkDescriptorImageInfo descriptorSrcImageInfo = makeDescriptorImageInfo(DE_NULL, srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+	const VkDescriptorImageInfo descriptorDstImageInfo = makeDescriptorImageInfo(DE_NULL, dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorSrcImageInfo)
+		.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorDstImageInfo)
+		.update(vk, device);
+	vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
+}
+
+void ImageLoadStoreLodAMDTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuffer)
+{
+	const DeviceInterface& vk = m_context.getDeviceInterface();
+	const VkImageSubresourceRange fullImageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, m_texture.numMipmapLevels(), 0u, m_texture.numLayers());
+	{
+		const VkImageMemoryBarrier preCopyImageBarriers[] =
+		{
+			makeImageMemoryBarrier(
+				0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				m_imageSrc->get(), fullImageSubresourceRange),
+			makeImageMemoryBarrier(
+				0u, VK_ACCESS_SHADER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+				m_imageDst->get(), fullImageSubresourceRange)
+		};
+
+		const VkBufferMemoryBarrier barrierFlushHostWriteBeforeCopy = makeBufferMemoryBarrier(
+			VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			m_imageBuffer->get(), 0ull, m_imageSizeBytes + m_srcViewOffset);
+
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+			(VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &barrierFlushHostWriteBeforeCopy, DE_LENGTH_OF_ARRAY(preCopyImageBarriers), preCopyImageBarriers);
+	}
+	{
+		const VkImageMemoryBarrier barrierAfterCopy = makeImageMemoryBarrier(
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+			m_imageSrc->get(), fullImageSubresourceRange);
+
+		std::vector<VkBufferImageCopy> copyRegions;
+		VkDeviceSize bufferOffset = 0u;
+		for (deInt32 levelNdx = 0; levelNdx < m_texture.numMipmapLevels(); levelNdx++)
+		{
+			const VkBufferImageCopy copyParams =
+			{
+				bufferOffset,																					//	VkDeviceSize				bufferOffset;
+				0u,																								//	deUint32					bufferRowLength;
+				0u,																								//	deUint32					bufferImageHeight;
+				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, levelNdx, 0u, m_texture.numLayers()),		//	VkImageSubresourceLayers	imageSubresource;
+				makeOffset3D(0, 0, 0),																			//	VkOffset3D					imageOffset;
+				makeExtent3D(m_texture.layerSize(levelNdx)),													//	VkExtent3D					imageExtent;
+			};
+			copyRegions.push_back(copyParams);
+			bufferOffset += getMipmapLevelImageSizeBytes(m_texture, m_imageFormat, levelNdx);
+		}
+
+		vk.cmdCopyBufferToImage(cmdBuffer, m_imageBuffer->get(), m_imageSrc->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32) copyRegions.size(), copyRegions.data());
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &barrierAfterCopy);
+	}
+}
+
+void ImageLoadStoreLodAMDTestInstance::commandBetweenShaderInvocations (const VkCommandBuffer cmdBuffer)
+{
+	commandImageWriteBarrierBetweenShaderInvocations(m_context, cmdBuffer, m_imageDst->get(), m_texture);
+}
+
+void ImageLoadStoreLodAMDTestInstance::commandAfterCompute (const VkCommandBuffer cmdBuffer)
+{
+	commandCopyMipmapImageToBuffer(m_context, cmdBuffer, m_imageDst->get(), m_imageFormat, m_imageBuffer->get(), m_imageSizeBytes, m_texture);
+}
+
 //! Load/store test for buffers
 class BufferLoadStoreTestInstance : public LoadStoreTestInstance
 {
@@ -1490,6 +1906,9 @@ TestInstance* StoreTest::createInstance (Context& context) const
 
 TestInstance* LoadStoreTest::createInstance (Context& context) const
 {
+	if (m_imageLoadStoreLodAMD)
+		return new ImageLoadStoreLodAMDTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader, m_singleLayerBind, m_minalign, m_bufferLoadUniform);
+
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
 		return new BufferLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader, m_minalign, m_bufferLoadUniform);
 	else
@@ -2126,6 +2545,54 @@ tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formatsThreeComponent[formatNdx]) + "_uniform", "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
 				groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formatsThreeComponent[formatNdx]) + "_minalign_uniform", "", texture, s_formatsThreeComponent[formatNdx], s_formatsThreeComponent[formatNdx], LoadStoreTest::FLAG_MINALIGN | LoadStoreTest::FLAG_UNIFORM_TEXEL_BUFFER));
 			}
+		}
+
+		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
+		testGroupWithoutFormat->addChild(groupWithoutFormatByImageViewType.release());
+	}
+
+	testGroup->addChild(testGroupWithFormat.release());
+	testGroup->addChild(testGroupWithoutFormat.release());
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createImageLoadStoreLodAMDTests (tcu::TestContext& testCtx)
+{
+	static const Texture textures[] =
+	{
+		Texture(IMAGE_TYPE_1D_ARRAY,	tcu::IVec3(64,	1,	1),	8, 1, 6),
+		Texture(IMAGE_TYPE_1D,			tcu::IVec3(64,	1,	1),	1, 1, 6),
+		Texture(IMAGE_TYPE_2D,			tcu::IVec3(64,	64,	1),	1, 1, 6),
+		Texture(IMAGE_TYPE_2D_ARRAY,	tcu::IVec3(64,	64,	1),	8, 1, 6),
+		Texture(IMAGE_TYPE_3D,			tcu::IVec3(64,	64,	8),	1, 1, 6),
+		Texture(IMAGE_TYPE_CUBE,		tcu::IVec3(64,	64,	1),	6, 1, 6),
+		Texture(IMAGE_TYPE_CUBE_ARRAY,	tcu::IVec3(64,	64,	1),	2*6, 1, 6),
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "load_store_lod", "Cases with imageLoad() followed by imageStore()"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupWithFormat(new tcu::TestCaseGroup(testCtx, "with_format", "Declare a format layout qualifier for read images"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupWithoutFormat(new tcu::TestCaseGroup(testCtx, "without_format", "Do not declare a format layout qualifier for read images"));
+
+	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(textures); ++textureNdx)
+	{
+		const Texture& texture = textures[textureNdx];
+		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		const bool isLayered = (texture.numLayers() > 1);
+
+		if (texture.type() == IMAGE_TYPE_BUFFER)
+			continue;
+
+		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
+		{
+			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER, DE_TRUE));
+			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], 0, DE_TRUE));
+
+			if (isLayered)
+				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
+														 texture, s_formats[formatNdx], s_formats[formatNdx],
+														 LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER, DE_TRUE));
 		}
 
 		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
