@@ -9,6 +9,8 @@ include_directories(
 set(DEQP_VK_YCBCR_SRCS
 	vktYCbCrConversionTests.cpp
 	vktYCbCrConversionTests.hpp
+	vktYCbCrFilteringTests.cpp
+	vktYCbCrFilteringTests.hpp
 	vktYCbCrFormatTests.cpp
 	vktYCbCrFormatTests.hpp
 	vktYCbCrImageQueryTests.cpp

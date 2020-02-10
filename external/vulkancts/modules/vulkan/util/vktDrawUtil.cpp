@@ -546,9 +546,9 @@ void VulkanDrawContext::registerDrawObject(const PipelineState& pipelineState, c
 			(drawCallData.topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST) ||
 			(stageFlags & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)));
 
-		object->pipeline = makeGraphicsPipeline(	vk,										// const DeviceInterface&                        vk
+		object->pipeline = makeGraphicsPipeline(vk,										// const DeviceInterface&                        vk
 												device,									// const VkDevice                                device
-												*(object->pipelineLayout),					// const VkPipelineLayout                        pipelineLayout
+												*(object->pipelineLayout),				// const VkPipelineLayout                        pipelineLayout
 												vertShader,								// const VkShaderModule                          vertexShaderModule
 												tessControlShader,						// const VkShaderModule                          tessellationControlShaderModule
 												tessEvalShader,							// const VkShaderModule                          tessellationEvalShaderModule

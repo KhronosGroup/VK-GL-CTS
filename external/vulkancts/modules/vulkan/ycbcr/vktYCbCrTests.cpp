@@ -24,6 +24,7 @@
 #include "vktYCbCrTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktYCbCrFormatTests.hpp"
+#include "vktYCbCrFilteringTests.hpp"
 #include "vktYCbCrViewTests.hpp"
 #include "vktYCbCrImageQueryTests.hpp"
 #include "vktYCbCrConversionTests.hpp"
@@ -43,6 +44,7 @@ void populateTestGroup (tcu::TestCaseGroup* ycbcrTests)
 	tcu::TestContext&	testCtx		= ycbcrTests->getTestContext();
 
 	ycbcrTests->addChild(createFormatTests(testCtx));
+	ycbcrTests->addChild(createFilteringTests(testCtx));
 	ycbcrTests->addChild(createViewTests(testCtx));
 	ycbcrTests->addChild(createImageQueryTests(testCtx));
 	ycbcrTests->addChild(createConversionTests(testCtx));
