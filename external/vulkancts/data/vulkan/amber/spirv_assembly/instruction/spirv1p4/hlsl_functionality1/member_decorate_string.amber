@@ -1,0 +1,124 @@
+#!amber
+
+# Copyright 2020 Valve Corporation.
+# Copyright 2020 The Khronos Group Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_EXTENSION VK_KHR_shader_float_controls
+DEVICE_EXTENSION VK_KHR_spirv_1_4
+
+SHADER vertex vtx_shader SPIRV-ASM
+; Based on:
+;
+; #version 450
+; #extension GL_ARB_enhanced_layouts : require
+;
+; layout(location=0) in vec4 in_pos;
+;
+; layout(location=0) out OutputBlock
+; {
+;     layout(location=0) vec4 out_color;
+; };
+;
+; void main()
+; {
+;     gl_Position = in_pos;
+;     out_color = vec4(0.0, 1.0, 0.0, 1.0);
+; }
+
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 28
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %_ %in_pos %__0
+               OpSource GLSL 450
+               OpSourceExtension "GL_ARB_enhanced_layouts"
+               OpName %main "main"
+               OpName %gl_PerVertex "gl_PerVertex"
+               OpMemberName %gl_PerVertex 0 "gl_Position"
+               OpMemberName %gl_PerVertex 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+               OpName %_ ""
+               OpName %in_pos "in_pos"
+               OpName %OutputBlock "OutputBlock"
+               OpMemberName %OutputBlock 0 "out_color"
+               OpName %__0 ""
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+               OpDecorate %in_pos Location 0
+               OpMemberDecorate %OutputBlock 0 Location 0
+; Testing OpMemberDecorateString below.
+               OpMemberDecorateString %OutputBlock 0 UserSemantic "FOO"
+               OpDecorate %OutputBlock Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+     %in_pos = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutputBlock = OpTypeStruct %v4float
+%_ptr_Output_OutputBlock = OpTypePointer Output %OutputBlock
+        %__0 = OpVariable %_ptr_Output_OutputBlock Output
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+         %26 = OpConstantComposite %v4float %float_0 %float_1 %float_0 %float_1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %18 = OpLoad %v4float %in_pos
+         %20 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %20 %18
+         %27 = OpAccessChain %_ptr_Output_v4float %__0 %int_0
+               OpStore %27 %26
+               OpReturn
+               OpFunctionEnd
+END
+
+SHADER fragment frag_shader GLSL
+#version 450
+// Ignoring input color.
+layout(location=0) out vec4 out_color;
+
+void main()
+{
+    out_color = vec4(0.0, 1.0, 0.0, 1.0);
+}
+END
+
+BUFFER framebuffer_img FORMAT R8G8B8A8_UNORM
+
+PIPELINE graphics graphics_pipeline
+  ATTACH vtx_shader
+  ATTACH frag_shader
+  BIND BUFFER framebuffer_img AS color LOCATION 0
+END
+
+RUN graphics_pipeline DRAW_RECT POS 0 0 SIZE 250 250
+EXPECT framebuffer_img IDX 0 0 SIZE 250 250 EQ_RGBA 0 255 0 255

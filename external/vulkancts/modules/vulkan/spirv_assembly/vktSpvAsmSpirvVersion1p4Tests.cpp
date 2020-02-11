@@ -240,6 +240,7 @@ tcu::TestCaseGroup* createSpirvVersion1p4Group (tcu::TestContext& testCtx)
 	group = CaseGroup(data_dir, "hlsl_functionality1");
 	group.add("counter_buffer", "CounterBuffer decoration");
 	group.add("decorate_string", "OpDecorateString");
+	group.add("member_decorate_string", "OpMemberDecorateString");
 	spirv1p4Tests->addChild(createTestGroup(testCtx, "hlsl_functionality1", "Features in SPV_GOOGLE_hlsl_functionality1 in SPIR-V 1.4", addTestsForAmberFiles, group));
 
 	group = CaseGroup(data_dir, "loop_control");
