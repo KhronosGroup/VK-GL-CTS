@@ -3118,6 +3118,8 @@ void SpirvValidationCapabilitiesTest::init()
 		TessellationControlSource("#version 450\n"
 								  "\n"
 								  "layout (vertices = 3) out;\n"
+								  "layout (location = 3) in vec2 texCoordIn[];\n"
+								  "layout (location = 3) out vec2 texCoordOut[];\n"
 								  "\n"
 								  "void main()\n"
 								  "{\n"
@@ -3130,6 +3132,7 @@ void SpirvValidationCapabilitiesTest::init()
 								  "\n"
 								  "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 								  "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+								  "    texCoordOut[gl_InvocationID] = texCoordIn[gl_InvocationID];\n"
 								  "}\n");
 
 	tessCtrlStage.caps.push_back("Tessellation Shader");
@@ -3139,12 +3142,15 @@ void SpirvValidationCapabilitiesTest::init()
 	tessEvalStage.source = TessellationEvaluationSource("#version 450\n"
 														"\n"
 														"layout (triangles) in;\n"
+														"layout (location = 3) in vec2 texCoordIn[];\n"
+														"layout (location = 3) out vec2 texCoordOut;\n"
 														"\n"
 														"void main()\n"
 														"{\n"
 														"    gl_Position = gl_TessCoord.x * gl_in[0].gl_Position +\n"
 														"                  gl_TessCoord.y * gl_in[1].gl_Position +\n"
 														"                  gl_TessCoord.z * gl_in[2].gl_Position;\n"
+														"    texCoordOut = texCoordIn[0];\n"
 														"}\n");
 
 	ShaderStage geometryStage;
@@ -3152,6 +3158,8 @@ void SpirvValidationCapabilitiesTest::init()
 										  "\n"
 										  "layout (triangles) in;\n"
 										  "layout (triangle_strip, max_vertices = 3) out;\n"
+										  "layout (location = 3) in vec2 texCoordIn[];\n"
+										  "layout (location = 3) out vec2 texCoordOut;\n"
 										  "\n"
 										  "void main()\n"
 										  "{\n"
@@ -3159,6 +3167,7 @@ void SpirvValidationCapabilitiesTest::init()
 										  "    for (int i = 0; i < 3; ++i) {\n"
 										  "        gl_Position = gl_in[i].gl_Position;\n"
 										  "        gl_PointSize = gl_in[i].gl_PointSize;\n"
+										  "        texCoordOut = texCoordIn[i];\n"
 										  "        EmitStreamVertex(0);\n"
 										  "    }\n"
 										  "    EndStreamPrimitive(0);\n"
