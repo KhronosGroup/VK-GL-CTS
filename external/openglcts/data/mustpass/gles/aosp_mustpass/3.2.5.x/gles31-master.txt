@@ -19951,6 +19951,9 @@ dEQP-GLES31.functional.fbo.color.texcubearray.rg16f
 dEQP-GLES31.functional.fbo.color.texcubearray.r32f
 dEQP-GLES31.functional.fbo.color.texcubearray.r16f
 dEQP-GLES31.functional.fbo.color.texcubearray.rgb16f
+dEQP-GLES31.functional.fbo.color.tex2d.r16
+dEQP-GLES31.functional.fbo.color.tex2d.rg16
+dEQP-GLES31.functional.fbo.color.tex2d.rgba16
 dEQP-GLES31.functional.fbo.no_attachments.size.16x16
 dEQP-GLES31.functional.fbo.no_attachments.size.16x64
 dEQP-GLES31.functional.fbo.no_attachments.size.16x256

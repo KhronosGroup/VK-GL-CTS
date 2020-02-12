@@ -250,6 +250,12 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::Ren
 				out.push_back("GL_EXT_color_buffer_float");
 			break;
 
+		case GL_R16:
+		case GL_RG16:
+		case GL_RGBA16:
+			out.push_back("GL_EXT_texture_norm16");
+			break;
+
 		default:
 			break;
 	}

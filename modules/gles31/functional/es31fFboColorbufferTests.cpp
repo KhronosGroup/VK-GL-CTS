@@ -111,6 +111,91 @@ protected:
 	const deUint32	m_format;
 };
 
+class FboColorTex2DCase : public FboColorbufferCase
+{
+	public:
+		FboColorTex2DCase (Context& context, const char* name, const char* description, deUint32 texFmt, const IVec2& texSize)
+			: FboColorbufferCase	(context, name, description, texFmt)
+			, m_texFmt				(texFmt)
+			, m_texSize				(texSize)
+	{
+	}
+
+	protected:
+		void preCheck (void)
+		{
+			checkFormatSupport(m_texFmt);
+		}
+
+		void render (tcu::Surface& dst)
+		{
+			tcu::TextureFormat		texFmt		= glu::mapGLInternalFormat(m_texFmt);
+			tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFmt);
+
+			Texture2DShader			texToFboShader	(DataTypes() << glu::TYPE_SAMPLER_2D, getFragmentOutputType(texFmt), fmtInfo.valueMax-fmtInfo.valueMin, fmtInfo.valueMin);
+			deUint32				texToFboShaderID = getCurrentContext()->createProgram(&texToFboShader);
+			deUint32				fbo;
+			deUint32				tex;
+
+			// Setup shader
+			texToFboShader.setUniforms(*getCurrentContext(), texToFboShaderID);
+
+			//  Generate fbo
+			{
+				glu::TransferFormat	transferFmt	= glu::getTransferFormat(texFmt);
+				deUint32			format		= m_texFmt;
+				const IVec2&		size		= m_texSize;
+
+				glGenFramebuffers(1, &fbo);
+				glGenTextures(1, &tex);
+
+				glBindTexture(GL_TEXTURE_2D, tex);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, format, size.x(), size.y(), 0, transferFmt.format, transferFmt.dataType, DE_NULL);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+				checkError();
+				checkFramebufferStatus(GL_FRAMEBUFFER);
+			}
+
+			// Render texture to fbo
+			{
+				const deUint32		format		= GL_RGBA;
+				const deUint32		dataType	= GL_UNSIGNED_BYTE;
+				const int			texW		= 128;
+				const int			texH		= 128;
+				deUint32			tmpTex		= 0;
+				const IVec2&		viewport	= m_texSize;
+				tcu::TextureLevel	data		(glu::mapGLTransferFormat(format, dataType), texW, texH, 1);
+
+				tcu::fillWithComponentGradients(data.getAccess(), Vec4(0.0f), Vec4(1.0f));
+
+				glGenTextures(1, &tmpTex);
+				glBindTexture(GL_TEXTURE_2D, tmpTex);
+				glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_S,		GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_WRAP_T,		GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MIN_FILTER,	GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAG_FILTER,	GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, format, texW, texH, 0, format, dataType, data.getAccess().getDataPtr());
+
+				glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+				glViewport(0, 0, viewport.x(), viewport.y());
+				sglr::drawQuad(*getCurrentContext(), texToFboShaderID, Vec3(-1.0f, -1.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f));
+			}
+
+			readPixels(dst, 0, 0, getWidth(), getHeight(), texFmt, fmtInfo.lookupScale, fmtInfo.lookupBias);
+			checkError();
+		}
+
+	private:
+		deUint32	m_texFmt;
+		IVec2		m_texSize;
+};
+
 class FboColorTexCubeArrayCase : public FboColorbufferCase
 {
 public:
@@ -318,6 +403,13 @@ void FboColorTests::init (void)
 		GL_RGB16F
 	};
 
+	static const deUint32 unorm16ColorFormats[] =
+	{
+		GL_R16,
+		GL_RG16,
+		GL_RGBA16
+	};
+
 	// .texcubearray
 	{
 		tcu::TestCaseGroup* texCubeArrayGroup = new tcu::TestCaseGroup(m_testCtx, "texcubearray", "Cube map array texture tests");
@@ -326,6 +418,15 @@ void FboColorTests::init (void)
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(colorFormats); fmtNdx++)
 			texCubeArrayGroup->addChild(new FboColorTexCubeArrayCase(m_context, getFormatName(colorFormats[fmtNdx]), "",
 																	 colorFormats[fmtNdx], IVec3(128, 128, 12)));
+	}
+
+	// .tex2d
+	{
+		tcu::TestCaseGroup* tex2dGroup = new tcu::TestCaseGroup(m_testCtx, "tex2d", "Render to texture");
+		addChild(tex2dGroup);
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(unorm16ColorFormats); ndx++)
+			tex2dGroup->addChild(new FboColorTex2DCase(m_context, getFormatName(unorm16ColorFormats[ndx]), "", unorm16ColorFormats[ndx], IVec2(129, 117)));
 	}
 }
 
