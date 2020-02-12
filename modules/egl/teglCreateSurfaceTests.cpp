@@ -133,6 +133,7 @@ EGLSurface createPixmapSurface (EGLDisplay display, EGLConfig config, eglu::Nati
 			EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurfaceEXT() failed");
 		break;
 		case EGL15:
+			checkEGL15Support(egl, display);
 			surface = egl.createPlatformPixmapSurface(display, config, pixmap.getPlatformNative(), DE_NULL);
 			EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurface() failed");
 		break;
