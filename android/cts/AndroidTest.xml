@@ -183,11 +183,16 @@
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
 		<option name="deqp-caselist-file" value="vk-master.txt"/>
+		<option name="runtime-hint" value="2h39m"/>
+	</test>
+	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
+		<option name="deqp-package" value="dEQP-VK"/>
+		<option name="deqp-caselist-file" value="vk-master-2019-03-01.txt"/>
 		<option name="runtime-hint" value="2h29m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
-		<option name="deqp-caselist-file" value="vk-master-risky.txt"/>
+		<option name="deqp-caselist-file" value="vk-master-2020-03-01.txt"/>
 		<option name="runtime-hint" value="10m"/>
 	</test>
 </configuration>
