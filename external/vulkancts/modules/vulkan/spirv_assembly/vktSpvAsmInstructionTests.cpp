@@ -20123,6 +20123,34 @@ tcu::TestCaseGroup* createSpirvIdsAbuseGroup (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createFunctionParamsGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "function_params", "Function parameter tests"));
+
+	static const char data_dir[] = "spirv_assembly/instruction/function_params";
+
+	static const struct
+	{
+		const std::string name;
+		const std::string desc;
+	} cases[] =
+	{
+		{ "sampler_param", "Test combined image sampler as function parameter" },
+	};
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+	{
+		cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																			cases[i].name.c_str(),
+																			cases[i].desc.c_str(),
+																			data_dir,
+																			cases[i].name + ".amber");
+		testGroup->addChild(testCase);
+	}
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	const bool testComputePipeline = true;
@@ -20281,6 +20309,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
 	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
+	instructionTests->addChild(createFunctionParamsGroup(testCtx));
 
 	return instructionTests.release();
 }
