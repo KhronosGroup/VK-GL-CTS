@@ -24,6 +24,12 @@
 	</target_preparer>
 	<option name="test-suite-tag" value="cts"/>
 	<option key="component" name="config-descriptor:metadata" value="deqp"/>
+	<option key="parameter" name="config-descriptor:metadata" value="not_instant_app"/>
+	<option key="parameter" name="config-descriptor:metadata" value="multi_abi"/>
+	<option key="parameter" name="config-descriptor:metadata" value="secondary_user"/>
+	<object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
+		<option name="screenshot-on-failure" value="false"/>
+	</object>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-EGL"/>
 		<option name="deqp-caselist-file" value="egl-master.txt"/>
@@ -31,6 +37,15 @@
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="23m"/>
+		<option name="deqp-config-required" value="true"/>
+	</test>
+	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
+		<option name="deqp-package" value="dEQP-EGL"/>
+		<option name="deqp-caselist-file" value="egl-master-risky.txt"/>
+		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
+		<option name="deqp-surface-type" value="window"/>
+		<option name="deqp-screen-rotation" value="unspecified"/>
+		<option name="runtime-hint" value="2m"/>
 		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
@@ -179,11 +194,6 @@
 		<option name="deqp-surface-type" value="window"/>
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="1m"/>
-	</test>
-	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
-		<option name="deqp-package" value="dEQP-VK"/>
-		<option name="deqp-caselist-file" value="vk-master.txt"/>
-		<option name="runtime-hint" value="2h39m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
