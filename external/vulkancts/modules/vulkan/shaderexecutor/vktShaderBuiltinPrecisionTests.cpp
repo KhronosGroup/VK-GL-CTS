@@ -5746,6 +5746,8 @@ void DefaultSampling<float>::removeNotInRange (vector<float>& dst, const Interva
 {
 	for (vector<float>::iterator it = dst.begin(); it < dst.end();)
 	{
+		// Remove out of range values. PRECISION_LAST means this is an FP16 test so remove any values that
+		// will be denorms when converted to FP16. (This is used in the precision_fp16_storage32b test group).
 		if ( !inputRange.contains(static_cast<double>(*it)) || (prec == glu::PRECISION_LAST && isDenorm16(deFloat32To16Round(*it, DE_ROUNDINGMODE_TO_ZERO))))
 			it = dst.erase(it);
 		else
@@ -5852,11 +5854,11 @@ void DefaultSampling<double>::genFixeds (const FloatFormat& format, const Precis
 	removeNotInRange(dst, inputRange, prec);
 }
 
-void DefaultSampling<double>::removeNotInRange (vector<double>& dst, const Interval& inputRange, const Precision prec) const
+void DefaultSampling<double>::removeNotInRange (vector<double>& dst, const Interval& inputRange, const Precision) const
 {
 	for (vector<double>::iterator it = dst.begin(); it < dst.end();)
 	{
-		if ( !inputRange.contains(*it) || (prec == glu::PRECISION_LAST && isDenorm16(deFloat64To16Round(*it, DE_ROUNDINGMODE_TO_ZERO))))
+		if ( !inputRange.contains(*it) )
 			it = dst.erase(it);
 		else
 			++it;
