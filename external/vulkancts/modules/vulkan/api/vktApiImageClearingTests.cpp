@@ -552,8 +552,8 @@ protected:
 	Unique<VkImage>						m_image;
 	de::MovePtr<Allocation>				m_imageMemory;
 	Unique<VkImageView>					m_imageView;
-	Unique<VkRenderPass>				m_renderPass;
-	Unique<VkFramebuffer>				m_frameBuffer;
+	Move<VkRenderPass>					m_renderPass;
+	Move<VkFramebuffer>					m_frameBuffer;
 };
 
 ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const TestParams& params)
@@ -588,14 +588,18 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 												 m_imageAspectFlags,
 												 params.imageViewLayerRange) : vk::Move<VkImageView>())
 
-	, m_renderPass				(m_isAttachmentFormat ? createRenderPass(params.imageFormat) : vk::Move<vk::VkRenderPass>())
-	, m_frameBuffer				(m_isAttachmentFormat ? createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount) : vk::Move<vk::VkFramebuffer>())
 {
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
 		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
 
 	if (m_params.separateDepthStencilLayoutMode != SEPARATE_DEPTH_STENCIL_LAYOUT_MODE_NONE)
 		context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
+
+	if (m_isAttachmentFormat)
+	{
+		m_renderPass = createRenderPass(params.imageFormat);
+		m_frameBuffer = createFrameBuffer(*m_imageView, *m_renderPass, params.imageExtent.width, params.imageExtent.height, params.imageViewLayerRange.layerCount);
+	}
 }
 
 ImageClearingTestInstance::ViewType ImageClearingTestInstance::getViewType (deUint32 imageLayerCount) const
