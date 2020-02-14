@@ -501,7 +501,7 @@ static qpTestResult reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&	
 		const tcu::Vec4	resultDerivative		= readDerivate(result, derivScale, derivBias, x, y);
 
 		// sample at the front of the back pixel and the back of the front pixel to cover the whole area of
-		// legal sample positions. In general case this is NOT OK, but we know that the target funtion is
+		// legal sample positions. In general case this is NOT OK, but we know that the target function is
 		// (mostly*) linear which allows us to take the sample points at arbitrary points. This gets us the
 		// maximum difference possible in exponents which are used in error bound calculations.
 		// * non-linearity may happen around zero or with very high function values due to subnorms not
@@ -616,17 +616,20 @@ protected:
 	SurfaceType				m_surfaceType;
 	int						m_numSamples;
 	deUint32				m_hint;
+
+	bool					m_useAsymmetricCoords;
 };
 
 TriangleDerivateCase::TriangleDerivateCase (Context& context, const char* name, const char* description)
-	: TestCase			(context, name, description)
-	, m_dataType		(glu::TYPE_LAST)
-	, m_precision		(glu::PRECISION_LAST)
-	, m_coordDataType	(glu::TYPE_LAST)
-	, m_coordPrecision	(glu::PRECISION_LAST)
-	, m_surfaceType		(SURFACETYPE_DEFAULT_FRAMEBUFFER)
-	, m_numSamples		(0)
-	, m_hint			(GL_DONT_CARE)
+	: TestCase				(context, name, description)
+	, m_dataType			(glu::TYPE_LAST)
+	, m_precision			(glu::PRECISION_LAST)
+	, m_coordDataType		(glu::TYPE_LAST)
+	, m_coordPrecision		(glu::PRECISION_LAST)
+	, m_surfaceType			(SURFACETYPE_DEFAULT_FRAMEBUFFER)
+	, m_numSamples			(0)
+	, m_hint				(GL_DONT_CARE)
+	, m_useAsymmetricCoords	(false)
 {
 	DE_ASSERT(m_surfaceType != SURFACETYPE_DEFAULT_FRAMEBUFFER || m_numSamples == 0);
 }
@@ -718,8 +721,8 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 	}
 
 	m_testCtx.getLog() << TestLog::Message << "in: " << m_coordMin << " -> " << m_coordMax << "\n"
-										   << "v_coord.x = in.x * x\n"
-										   << "v_coord.y = in.y * y\n"
+										   << (m_useAsymmetricCoords ? "v_coord.x = in.x * (x+y)/2\n" : "v_coord.x = in.x * x\n")
+										   << (m_useAsymmetricCoords ? "v_coord.y = in.y * (x+y)/2\n" : "v_coord.y = in.y * y\n")
 										   << "v_coord.z = in.z * (x+y)/2\n"
 										   << "v_coord.w = in.w * (1 - (x+y)/2)\n"
 					   << TestLog::EndMessage
@@ -736,13 +739,25 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 			 1.0f, -1.0f, 0.0f, 1.0f,
 			 1.0f,  1.0f, 0.0f, 1.0f
 		};
-		const float coords[] =
+		float coords[] =
 		{
 			m_coordMin.x(), m_coordMin.y(), m_coordMin.z(),							m_coordMax.w(),
 			m_coordMin.x(), m_coordMax.y(), (m_coordMin.z()+m_coordMax.z())*0.5f,	(m_coordMin.w()+m_coordMax.w())*0.5f,
 			m_coordMax.x(), m_coordMin.y(), (m_coordMin.z()+m_coordMax.z())*0.5f,	(m_coordMin.w()+m_coordMax.w())*0.5f,
 			m_coordMax.x(), m_coordMax.y(), m_coordMax.z(),							m_coordMin.w()
 		};
+
+		// For linear tests we want varying data x and y to vary along both axes
+		// to get nonzero x for dfdy and nonzero y for dfdx. To make the gradient
+		// the same for both triangles we set vertices 2 and 3 to middle values.
+		// This way the values go from min -> (max+min) / 2 or (max+min) / 2 -> max
+		// depending on the triangle, but the derivative is the same for both.
+		if (m_useAsymmetricCoords)
+		{
+			coords[4] = coords[8] = (m_coordMin.x() + m_coordMax.x())*0.5f;
+			coords[5] = coords[9] = (m_coordMin.y() + m_coordMax.y())*0.5f;
+		}
+
 		const glu::VertexArrayBinding vertexArrays[] =
 		{
 			glu::va::Float("a_position",	4, 4, 0, &positions[0]),
@@ -989,13 +1004,14 @@ LinearDerivateCase::LinearDerivateCase (Context& context, const char* name, cons
 	, m_func				(func)
 	, m_fragmentTmpl		(fragmentSrcTmpl)
 {
-	m_dataType			= type;
-	m_precision			= precision;
-	m_coordDataType		= m_dataType;
-	m_coordPrecision	= m_precision;
-	m_hint				= hint;
-	m_surfaceType		= surfaceType;
-	m_numSamples		= numSamples;
+	m_dataType				= type;
+	m_precision				= precision;
+	m_coordDataType			= m_dataType;
+	m_coordPrecision		= m_precision;
+	m_hint					= hint;
+	m_surfaceType			= surfaceType;
+	m_numSamples			= numSamples;
+	m_useAsymmetricCoords	= true;
 }
 
 void LinearDerivateCase::init (void)
@@ -1086,8 +1102,9 @@ void LinearDerivateCase::init (void)
 
 qpTestResult LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
 {
-	const tcu::Vec4		xScale				= tcu::Vec4(1.0f, 0.0f, 0.5f, -0.5f);
-	const tcu::Vec4		yScale				= tcu::Vec4(0.0f, 1.0f, 0.5f, -0.5f);
+	const tcu::Vec4		xScale				= tcu::Vec4(0.5f, 0.5f, 0.5f, -0.5f);
+	const tcu::Vec4		yScale				= tcu::Vec4(0.5f, 0.5f, 0.5f, -0.5f);
+
 	const tcu::Vec4		surfaceThreshold	= getSurfaceThreshold() / abs(m_derivScale);
 
 	if (m_func == DERIVATE_DFDX || m_func == DERIVATE_DFDY)
@@ -1154,8 +1171,8 @@ qpTestResult LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& resu
 			const tcu::Vec4				valueRamp		= (m_coordMax - m_coordMin);
 			Linear2DFunctionEvaluator	function;
 
-			function.matrix.setRow(0, tcu::Vec3(valueRamp.x() / w, 0.0f, m_coordMin.x()));
-			function.matrix.setRow(1, tcu::Vec3(0.0f, valueRamp.y() / h, m_coordMin.y()));
+			function.matrix.setRow(0, tcu::Vec3((valueRamp.x() / w) / 2.0f, (valueRamp.x() / h) / 2.0f, m_coordMin.x()));
+			function.matrix.setRow(1, tcu::Vec3((valueRamp.y() / w) / 2.0f, (valueRamp.y() / h) / 2.0f, m_coordMin.y()));
 			function.matrix.setRow(2, tcu::Vec3(valueRamp.z() / w, valueRamp.z() / h, m_coordMin.z() + m_coordMin.z()) / 2.0f);
 			function.matrix.setRow(3, tcu::Vec3(-valueRamp.w() / w, -valueRamp.w() / h, m_coordMax.w() + m_coordMax.w()) / 2.0f);
 
@@ -1337,9 +1354,10 @@ void TextureDerivateCase::init (void)
 		{
 			for (int x = 0; x < level0.getWidth(); x++)
 			{
-				const float		xf		= (float(x)+0.5f) / float(level0.getWidth());
-				const float		yf		= (float(y)+0.5f) / float(level0.getHeight());
-				const tcu::Vec4	s		= tcu::Vec4(xf, yf, (xf+yf)/2.0f, 1.0f - (xf+yf)/2.0f);
+				const float		xf	= (float(x)+0.5f) / float(level0.getWidth());
+				const float		yf	= (float(y)+0.5f) / float(level0.getHeight());
+				// Make x and y data to have dependency to both axes so that dfdx(tex).y and dfdy(tex).x are nonzero.
+				const tcu::Vec4	s	= tcu::Vec4(xf + yf/2.0f, yf + xf/2.0f, (xf+yf)/2.0f, 1.0f - (xf+yf)/2.0f);
 
 				level0.setPixel(m_texValueMin + (m_texValueMax - m_texValueMin)*s, x, y);
 			}
@@ -1414,8 +1432,8 @@ qpTestResult TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& res
 
 	tcu::ConstPixelBufferAccess	compareArea			= tcu::getSubregion(result, 1, 1, result.getWidth()-2, result.getHeight()-2);
 	tcu::PixelBufferAccess		maskArea			= tcu::getSubregion(errorMask, 1, 1, errorMask.getWidth()-2, errorMask.getHeight()-2);
-	const tcu::Vec4				xScale				= tcu::Vec4(1.0f, 0.0f, 0.5f, -0.5f);
-	const tcu::Vec4				yScale				= tcu::Vec4(0.0f, 1.0f, 0.5f, -0.5f);
+	const tcu::Vec4				xScale				= tcu::Vec4(1.0f, 0.5f, 0.5f, -0.5f);
+	const tcu::Vec4				yScale				= tcu::Vec4(0.5f, 1.0f, 0.5f, -0.5f);
 	const float					w					= float(result.getWidth());
 	const float					h					= float(result.getHeight());
 
@@ -1489,8 +1507,8 @@ qpTestResult TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& res
 			const tcu::Vec4				valueRamp		= (m_texValueMax - m_texValueMin);
 			Linear2DFunctionEvaluator	function;
 
-			function.matrix.setRow(0, tcu::Vec3(valueRamp.x() / w, 0.0f, m_texValueMin.x()));
-			function.matrix.setRow(1, tcu::Vec3(0.0f, valueRamp.y() / h, m_texValueMin.y()));
+			function.matrix.setRow(0, tcu::Vec3(valueRamp.x() / w, (valueRamp.x() / h) / 2.0f, m_texValueMin.x()));
+			function.matrix.setRow(1, tcu::Vec3((valueRamp.y() / w) / 2.0f, valueRamp.y() / h, m_texValueMin.y()));
 			function.matrix.setRow(2, tcu::Vec3(valueRamp.z() / w, valueRamp.z() / h, m_texValueMin.z() + m_texValueMin.z()) / 2.0f);
 			function.matrix.setRow(3, tcu::Vec3(-valueRamp.w() / w, -valueRamp.w() / h, m_texValueMax.w() + m_texValueMax.w()) / 2.0f);
 
