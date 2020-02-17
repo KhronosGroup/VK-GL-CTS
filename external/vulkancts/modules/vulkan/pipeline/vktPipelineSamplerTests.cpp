@@ -1086,6 +1086,7 @@ public:
 	{
 		vk::VkFormat	format;
 		bool			unnormalizedCoordinates;
+		bool			solidColor;
 	};
 
 	struct PushConstants
@@ -1247,6 +1248,7 @@ void ExactSamplingCase::checkSupport (Context& context) const
 		|vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
 		|vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
 		|vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+		|(m_params.solidColor ? vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT : 0)
 		);
 
 	if ((props.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
@@ -1265,6 +1267,8 @@ vk::VkExtent3D ExactSamplingInstance::getTextureExtent (void) const
 
 tcu::TestStatus ExactSamplingInstance::iterate (void)
 {
+	const auto& vki			= m_context.getInstanceInterface();
+	const auto	physDevice	= m_context.getPhysicalDevice();
 	const auto&	vkd			= m_context.getDeviceInterface();
 	const auto	device		= m_context.getDevice();
 	auto&		allocator	= m_context.getDefaultAllocator();
@@ -1349,16 +1353,27 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	const float divX = static_cast<float>(W - 1);
 	const float divY = static_cast<float>(H - 1);
 
+	tcu::Vec4 texColor;
+
 	for (int x = 0; x < W; ++x)
 	for (int y = 0; y < H; ++y)
 	for (int z = 0; z < D; ++z)
 	{
-		const float colorX = static_cast<float>(x) / divX;
-		const float colorY = static_cast<float>(y) / divY;
-		const float colorZ = std::min(colorX, colorY);
+		if (m_params.solidColor)
+		{
+			// Texture with solid color for filtered sampling.
+			texColor = tcu::Vec4{0.5f, 0.25f, 0.7529411764705882f, 1.0f};
+		}
+		else
+		{
+			// Use a color gradient otherwise.
+			const float colorX = static_cast<float>(x) / divX;
+			const float colorY = static_cast<float>(y) / divY;
+			const float colorZ = std::min(colorX, colorY);
 
-		tcu::Vec4 color{colorX, colorY, colorZ, 1.0f};
-		tcu::Vec4 finalColor = (color - formatInfo.lookupBias) / formatInfo.lookupScale;
+			texColor = tcu::Vec4{colorX, colorY, colorZ, 1.0f};
+		}
+		const tcu::Vec4 finalColor = (texColor - formatInfo.lookupBias) / formatInfo.lookupScale;
 		texPixels.setPixel(finalColor, x, y, z);
 	}
 
@@ -1398,27 +1413,35 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	// Descriptor set.
 	const auto descriptorSet = vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
 
-	// Texture sampler.
+	// Texture sampler. When using a solid color, test linear filtering. Linear filtering may incur in a small precission loss, but
+	// it should be minimal and we should get the same color when converting back to the original format. Anisotropy should be
+	// irrelevant too, so it is enabled and set to the maximum level if available.
+	const auto	minMagFilter			= (m_params.solidColor ? vk::VK_FILTER_LINEAR : vk::VK_FILTER_NEAREST);
+	const bool	anisotropySupported		= (vk::getPhysicalDeviceFeatures(vki, physDevice).samplerAnisotropy == VK_TRUE);
+	const bool	anisotropyEnable		= (!m_params.unnormalizedCoordinates && m_params.solidColor && anisotropySupported);
+	const float	maxAnisotropy			= (anisotropyEnable ? vk::getPhysicalDeviceProperties(vki, physDevice).limits.maxSamplerAnisotropy : 1.0f);
+	const auto	unnormCoords			= (m_params.unnormalizedCoordinates ? VK_TRUE : VK_FALSE);
+
 	const vk::VkSamplerCreateInfo samplerCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType		sType;
 		nullptr,										// const void*			pNext;
 		0u,												// VkSamplerCreateFlags	flags;
-		vk::VK_FILTER_NEAREST,							// VkFilter				magFilter;
-		vk::VK_FILTER_NEAREST,							// VkFilter				minFilter;
+		minMagFilter,									// VkFilter				magFilter;
+		minMagFilter,									// VkFilter				minFilter;
 		vk::VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode	mipmapMode;
 		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeU;
 		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeV;
 		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeW;
 		0.0f,											// float				mipLodBias;
-		VK_FALSE,										// VkBool32				anisotropyEnable;
-		1.0f,											// float				maxAnisotropy;
+		(anisotropyEnable ? VK_TRUE : VK_FALSE),		// VkBool32				anisotropyEnable;
+		maxAnisotropy,									// float				maxAnisotropy;
 		VK_FALSE,										// VkBool32				compareEnable;
 		vk::VK_COMPARE_OP_NEVER,						// VkCompareOp			compareOp;
 		0.0f,											// float				minLod;
 		0.0f,											// float				maxLod;
 		vk::VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,			// VkBorderColor		borderColor;
-		(m_params.unnormalizedCoordinates ? VK_TRUE : VK_FALSE),// VkBool32				unnormalizedCoordinates;
+		unnormCoords,									// VkBool32				unnormalizedCoordinates;
 	};
 	const auto texSampler = vk::createSampler(vkd, device, &samplerCreateInfo);
 
@@ -1850,6 +1873,12 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 		{ true,		"unnormalized_coords"	},
 	};
 
+	static const std::vector<std::pair<bool, std::string>> solidColor =
+	{
+		{ false,	"gradient"		},
+		{ true,		"solid_color"	},
+	};
+
 	for (const auto format : formats)
 	{
 		const std::string formatName	= getFormatCaseName(format);
@@ -1857,10 +1886,16 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 
 		de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), description.c_str()));
 
-		for (const auto unnorm : unnormalizedCoordinates)
+		for (const auto& solid : solidColor)
 		{
-			const ExactSamplingCase::Params	params = { format, unnorm.first };
-			formatGroup->addChild(new ExactSamplingCase{testCtx, unnorm.second, "", params});
+			de::MovePtr<tcu::TestCaseGroup> solidColorGroup(new tcu::TestCaseGroup(testCtx, solid.second.c_str(), ""));
+
+			for (const auto& unnorm : unnormalizedCoordinates)
+			{
+				const ExactSamplingCase::Params	params = { format, unnorm.first, solid.first };
+				solidColorGroup->addChild(new ExactSamplingCase{testCtx, unnorm.second, "", params});
+			}
+			formatGroup->addChild(solidColorGroup.release());
 		}
 		exactSamplingTests->addChild(formatGroup.release());
 	}
