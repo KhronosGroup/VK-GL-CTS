@@ -3725,7 +3725,7 @@ Move<VkPipeline> makeComputePipeline(Context& context,
 		pipelineShaderStageParams,						// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,									// VkPipelineLayout					layout;
 		basePipelineHandle,								// VkPipeline						basePipelineHandle;
-		0,												// deInt32							basePipelineIndex;
+		-1,												// deInt32							basePipelineIndex;
 	};
 
 	return createComputePipeline(context.getDeviceInterface(),
