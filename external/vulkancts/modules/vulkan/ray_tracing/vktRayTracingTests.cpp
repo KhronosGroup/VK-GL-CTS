@@ -31,6 +31,7 @@
 #include "vktRayTracingAccelerationStructuresTests.hpp"
 #include "vktRayTracingBuildIndirectTests.hpp"
 #include "vktRayTracingWatertightnessTests.hpp"
+#include "vktRayTracingPipelineLibraryTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -54,6 +55,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createAccelerationStructuresTests(testCtx));
 	group->addChild(createBuildIndirectTests(testCtx));
 	group->addChild(createWatertightnessTests(testCtx));
+	group->addChild(createPipelineLibraryTests(testCtx));
 
 	return group.release();
 }

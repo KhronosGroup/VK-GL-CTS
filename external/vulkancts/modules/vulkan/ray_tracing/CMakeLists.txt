@@ -19,6 +19,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingAccelerationStructuresTests.hpp
 	vktRayTracingWatertightnessTests.cpp
 	vktRayTracingWatertightnessTests.hpp
+	vktRayTracingPipelineLibraryTests.cpp
+	vktRayTracingPipelineLibraryTests.hpp
 	vktRayTracingTests.cpp
 	vktRayTracingTests.hpp
 	)
