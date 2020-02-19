@@ -94,7 +94,8 @@ deUint32 chooseQueueFamilyIndex (const InstanceInterface& vki, VkPhysicalDevice 
 	return 0;
 }
 
-Move<VkDevice> createDevice (const PlatformInterface&		vkp,
+Move<VkDevice> createDevice (const vk::Platform&		platform,
+							 const PlatformInterface&		vkp,
 							 const VkInstance				instance,
 							 const InstanceInterface&		vki,
 							 VkPhysicalDevice				physicalDevice,
@@ -104,6 +105,7 @@ Move<VkDevice> createDevice (const PlatformInterface&		vkp,
 							 const VkAllocationCallbacks*	pAllocator = DE_NULL)
 {
 	const float queuePriorities[] = { 1.0f };
+	bool displayAvailable = true;
 	const VkDeviceQueueCreateInfo queueInfos[] =
 	{
 		{
@@ -144,6 +146,19 @@ Move<VkDevice> createDevice (const PlatformInterface&		vkp,
 		if (!isExtensionSupported(supportedExtensions, RequiredExtension(ext)))
 			TCU_THROW(NotSupportedError, (string(ext) + " is not supported").c_str());
 	}
+
+	for (int typeNdx = 0; typeNdx < vk::wsi::TYPE_LAST; ++typeNdx)
+	{
+		vk::wsi::Type	wsiType = (vk::wsi::Type)typeNdx;
+		if (platform.hasDisplay(wsiType))
+		{
+			displayAvailable = false;
+			break;
+		}
+	}
+
+	if (!displayAvailable)
+		TCU_THROW(NotSupportedError, "Display is unavailable as windowing system has access");
 
 	return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
@@ -700,7 +715,7 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance (Context& context)
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
 	, m_deviceExtensions		(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device					(createDevice(m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, context.getTestContext().getCommandLine().isValidationEnabled()))
+	, m_device					(createDevice(context.getTestContext().getPlatform().getVulkanPlatform(), m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, context.getTestContext().getCommandLine().isValidationEnabled()))
 	, m_vkd						(m_vkp, m_instance, *m_device)
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
