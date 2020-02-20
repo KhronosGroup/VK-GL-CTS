@@ -60,6 +60,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkWsiUtil.cpp \
 	external/vulkancts/framework/vulkan/vkYCbCrImageWithMemory.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberExampleTests.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberGlslTests.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberGraphicsFuzzTests.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberHelper.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberTestCase.cpp \

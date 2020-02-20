@@ -91,6 +91,7 @@
 #include "vktMemoryModelTests.hpp"
 #include "vktAmberExampleTests.hpp"
 #include "vktAmberGraphicsFuzzTests.hpp"
+#include "vktAmberGlslTests.hpp"
 #include "vktImagelessFramebufferTests.hpp"
 #include "vktTransformFeedbackTests.hpp"
 #include "vktDescriptorIndexingTests.hpp"
@@ -442,6 +443,9 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests	(testCtx));
 	glslTests->addChild(shaderexecutor::createAtomicOperationTests		(testCtx));
 	glslTests->addChild(shaderexecutor::createShaderClockTests			(testCtx));
+
+	// Amber GLSL tests.
+	glslTests->addChild(cts_amber::createCombinedOperationsGroup		(testCtx));
 }
 
 // TestPackage
