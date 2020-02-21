@@ -4522,6 +4522,22 @@ protected:
 	}
 };
 
+template <>
+Interval LdExp <Signature<double, double, int>>::doApply(const EvalContext& ctx, const IArgs& iargs) const
+{
+	const int minExp = ctx.format.getMinExp();
+	const int maxExp = ctx.format.getMaxExp();
+	// Restrictions from the GLSL.std.450 instruction set.
+	// See Khronos bugzilla 11180 for rationale.
+	bool any = iargs.a.hasNaN() || iargs.b.hi() > (maxExp + 1);
+	Interval ret(any, ldexp(iargs.a.lo(), (int)iargs.b.lo()), ldexp(iargs.a.hi(), (int)iargs.b.hi()));
+	// Add 1ULP precision tolerance to account for differing rounding modes between the GPU and deLdExp.
+	ret += Interval(-ctx.format.ulp(ret.lo()), ctx.format.ulp(ret.hi()));
+	if (iargs.b.lo() < minExp) ret |= 0.0;
+	if (!ret.isFinite()) ret |= TCU_NAN;
+	return ctx.format.convert(ret);
+}
+
 template<int Rows, int Columns, class T>
 class Transpose : public PrimitiveFunc<Signature<Matrix<T, Rows, Columns>,
 												 Matrix<T, Columns, Rows> > >
