@@ -1354,6 +1354,12 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 	storage16bit.pNext = DE_NULL;
 	bool is16bitStorageSupported = context.isDeviceFunctionalitySupported("VK_KHR_16bit_storage");
 
+	VkPhysicalDevice8BitStorageFeatures storage8bit;
+	deMemset(&storage8bit, 0, sizeof(storage8bit));
+	storage8bit.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+	storage8bit.pNext = DE_NULL;
+	bool is8bitStorageSupported = context.isDeviceFunctionalitySupported("VK_KHR_8bit_storage");
+
 	if (context.isDeviceFunctionalitySupported("VK_KHR_shader_subgroup_extended_types") &&
 		context.isDeviceFunctionalitySupported("VK_KHR_shader_float16_int8"))
 	{
@@ -1362,8 +1368,19 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 		if ( is16bitStorageSupported )
 		{
 			float16Int8Features.pNext = &storage16bit;
+			if (is8bitStorageSupported)
+			{
+				storage16bit.pNext = &storage8bit;
+			}
 		}
+		else
+		{
+			if (is8bitStorageSupported)
+			{
+				float16Int8Features.pNext = &storage8bit;
+			}
 
+		}
 	}
 
 	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
@@ -1394,7 +1411,7 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 		case VK_FORMAT_R8G8_UINT:
 		case VK_FORMAT_R8G8B8_UINT:
 		case VK_FORMAT_R8G8B8A8_UINT:
-			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & float16Int8Features.shaderInt8 ? true : false;
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & float16Int8Features.shaderInt8 & storage8bit.storageBuffer8BitAccess ? true : false;
 		case VK_FORMAT_R16_SINT:
 		case VK_FORMAT_R16G16_SINT:
 		case VK_FORMAT_R16G16B16_SINT:
