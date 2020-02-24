@@ -5889,6 +5889,33 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 	{
 		TestParams	params;
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8_UNORM;
+		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		params.dst.buffer.size				= defaultSize * defaultSize;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultSize * defaultHalfSize + 1u,		// VkDeviceSize				bufferOffset;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion	copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset_relaxed", "Copy from image to buffer with buffer offset not a multiple of 4", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent				= defaultExtent;
 		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
@@ -6226,6 +6253,33 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.regions.push_back(copyRegion);
 
 		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
+	}
+
+	{
+		TestParams	params;
+		params.src.buffer.size				= defaultSize * defaultSize;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8_UNORM;
+		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize + 1u,					// VkDeviceSize				bufferOffset;
+			defaultHalfSize + defaultFourthSize,		// deUint32					bufferRowLength;
+			defaultHalfSize + defaultFourthSize,		// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion	copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset_relaxed", "Copy from buffer to image with buffer offset not a multiple of 4", params));
 	}
 
 	{
