@@ -1227,23 +1227,20 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const VkImageSubresourceRange		colorSubresRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
 	const VkImageSubresourceRange		dsSubresRange		= makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, params.image.numLayers);
-	const VkImageMemoryBarrier			colorPassBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-																VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorImage, colorSubresRange);
-	const VkImageMemoryBarrier			dsPassBarrier		= makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-																VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *dsImage, dsSubresRange);
 	std::string							result;
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
-		const VkImageMemoryBarrier		colorBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																				 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *colorImage, colorSubresRange);
-		const VkImageMemoryBarrier		dsBarrier		= makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																				 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *dsImage, dsSubresRange);
+		// Transition the images to new layouts
+		const VkImageMemoryBarrier		colorBarrier	= makeImageMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+																				 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *colorImage, colorSubresRange);
+		const VkImageMemoryBarrier		dsBarrier		= makeImageMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+																				 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *dsImage, dsSubresRange);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorBarrier);
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorBarrier);
 
 		if (dsUsed)
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsBarrier);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsBarrier);
 
 		for (deUint32 layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
@@ -1296,9 +1293,13 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	}
 	// Change images layouts
 	{
-		const VkImageMemoryBarrier		colorBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		// VK_ATTACHMENT_LOAD_OP_LOAD is used for both color and D/S attachments. Thus,
+		// VK_ACCESS_COLOR_ATTACHMENT_READ_BIT and VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+		// bits must be included in the destination access mask of the color and depth barriers
+		// respectively.
+		const VkImageMemoryBarrier		colorBarrier	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
 																				 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorImage, colorSubresRange);
-		const VkImageMemoryBarrier		dsBarrier		= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+		const VkImageMemoryBarrier		dsBarrier		= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
 																				 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *dsImage, dsSubresRange);
 
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorBarrier);
@@ -1307,28 +1308,44 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsBarrier);
 	}
 
-	for (deUint32 pass = 0; pass < passCount; ++pass)
 	{
-		DE_ASSERT(sizeof(pass) == uniformBufSize);
+		// These barriers are inserted between each pair of renderpasses in the following
+		// loop. Note that VK_ATTACHMENT_LOAD_OP_LOAD is used for color and D/S attachments
+		// hence VK_ACCESS_COLOR_ATTACHMENT_READ_BIT and VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+		// bits are included in src and dst access mask of the color and depth barriers.
+		const VkImageMemoryBarrier			colorPassBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+																						 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+																						 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *colorImage, colorSubresRange);
+		const VkImageMemoryBarrier			dsPassBarrier		= makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+																						 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+																						 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, *dsImage, dsSubresRange);
+		for (deUint32 pass = 0; pass < passCount; ++pass)
+		{
+			DE_ASSERT(sizeof(pass) == uniformBufSize);
 
-		VK_CHECK(vk.bindBufferMemory(device, *uniformBuf[pass], uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset()));
-		deMemcpy(uniformBufAlloc[pass]->getHostPtr(), &pass, uniformBufSize);
-		flushMappedMemoryRange(vk, device, uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset(), uniformBufSize);
+			VK_CHECK(vk.bindBufferMemory(device, *uniformBuf[pass], uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset()));
+			deMemcpy(uniformBufAlloc[pass]->getHostPtr(), &pass, uniformBufSize);
+			flushMappedMemoryRange(vk, device, uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset(), VK_WHOLE_SIZE);
 
-		DescriptorSetUpdateBuilder()
-			.writeSingle(*descriptorSet[pass], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufDesc[pass])
-			.update(vk, device);
+			DescriptorSetUpdateBuilder()
+				.writeSingle(*descriptorSet[pass], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufDesc[pass])
+				.update(vk, device);
 
-		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet[pass], 0u, DE_NULL);
-		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(imageExtent2D));
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-		vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
-		endRenderPass(vk, *cmdBuffer);
+			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet[pass], 0u, DE_NULL);
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(imageExtent2D));
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+			vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
+			endRenderPass(vk, *cmdBuffer);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorPassBarrier);
+			// Don't add the barrier after the last renderpass
+			if (pass < passCount - 1)
+			{
+				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorPassBarrier);
 
-		if (dsUsed)
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsPassBarrier);
+				if (dsUsed)
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &dsPassBarrier);
+			}
+		}
 	}
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1341,8 +1358,8 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	{
 		// Copy color image
 		{
-			const VkImageMemoryBarrier	preCopyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-															VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorImage, colorSubresRange);
+			const VkImageMemoryBarrier	preCopyBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+																				 VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorImage, colorSubresRange);
 			const VkBufferImageCopy		region			= makeBufferImageCopy(params.image.size, makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, params.image.numLayers));
 			const VkBufferMemoryBarrier	postCopyBarrier	= makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *colorBuffer, 0ull, VK_WHOLE_SIZE);
 
@@ -1354,8 +1371,8 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 		// Depth/Stencil image copy
 		if (dsUsed)
 		{
-			const VkImageMemoryBarrier	preCopyBarrier		= makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dsImage, dsSubresRange);
+			const VkImageMemoryBarrier	preCopyBarrier		= makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+																					 VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dsImage, dsSubresRange);
 			const VkBufferImageCopy		depthCopyRegion		= makeBufferImageCopy(params.image.size, makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, params.image.numLayers));
 			const VkBufferImageCopy		stencilCopyRegion	= makeBufferImageCopy(params.image.size, makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, params.image.numLayers));
 			const VkBufferMemoryBarrier	postCopyBarriers[]	=
