@@ -43,7 +43,7 @@ class Project:
 		self.copyright	= copyright
 
 class Configuration:
-	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, required = False, runtime = None):
+	def __init__ (self, name, filters, glconfig = None, rotation = None, surfacetype = None, required = False, runtime = None, runByDefault = True):
 		self.name				= name
 		self.glconfig			= glconfig
 		self.rotation			= rotation
@@ -51,6 +51,7 @@ class Configuration:
 		self.required			= required
 		self.filters			= filters
 		self.expectedRuntime	= runtime
+		self.runByDefault		= runByDefault
 
 class Package:
 	def __init__ (self, module, configurations):
@@ -314,9 +315,19 @@ def genAndroidTestXml (mustpass):
 	# add in metadata option for component name
 	ElementTree.SubElement(configElement, "option", name="test-suite-tag", value="cts")
 	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="component", value="deqp")
+	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="parameter", value="not_instant_app")
+	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="parameter", value="multi_abi")
+	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="parameter", value="secondary_user")
+	controllerElement = ElementTree.SubElement(configElement, "object")
+	controllerElement.set("type", "module_controller")
+	controllerElement.set("class", "com.android.tradefed.testtype.suite.module.TestFailureModuleController")
+	addOptionElement(controllerElement, "screenshot-on-failure", "false")
 
 	for package in mustpass.packages:
 		for config in package.configurations:
+			if not config.runByDefault:
+				continue
+
 			testElement = ElementTree.SubElement(configElement, "test")
 			testElement.set("class", RUNNER_CLASS)
 			addOptionElement(testElement, "deqp-package", package.module.name)

@@ -20,6 +20,7 @@
      -->
 	<TestPackage name="dEQP-EGL">
 		<Configuration caseListFile="egl-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
+		<Configuration caseListFile="egl-master-risky.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-risky"/>
 	</TestPackage>
 	<TestPackage name="dEQP-GLES2">
 		<Configuration caseListFile="gles2-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>

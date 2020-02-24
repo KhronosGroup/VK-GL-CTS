@@ -59,7 +59,8 @@ MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"),
 								   exclude("egl-test-issues.txt"),
 								   exclude("egl-internal-api-tests.txt"),
 								   exclude("egl-manual-robustness.txt"),
-								   exclude("egl-driver-issues.txt")]
+								   exclude("egl-driver-issues.txt"),
+								   exclude("egl-temp-excluded.txt")]
 MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -69,6 +70,14 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 					  required		= True,
 					  filters		= MASTER_EGL_COMMON_FILTERS,
 				      runtime		= "23m"),
+		# Risky subset
+		Configuration(name			= "master-risky",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  required		= True,
+					  filters		= [include("egl-temp-excluded.txt")],
+				      runtime		= "2m"),
 	])
 
 MASTER_GLES2_COMMON_FILTERS		= [
@@ -243,7 +252,8 @@ MASTER_VULKAN_FILTERS			= [
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
 					  filters		= MASTER_VULKAN_FILTERS,
-					  runtime		= "2h39m"),
+					  runtime		= "2h39m",
+					  runByDefault		= False),
 		Configuration(name			= "master-2019-03-01",
 					  filters		= [include("vk-master-2019-03-01.txt")],
 					  runtime		= "2h29m"),
