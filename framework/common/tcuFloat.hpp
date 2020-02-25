@@ -126,6 +126,8 @@ public:
 	inline bool				isZero			(void) const	{ return exponentBits() == 0						&& mantissaBits() == 0;	}
 	inline bool				isDenorm		(void) const	{ return exponentBits() == 0						&& mantissaBits() != 0;	}
 
+	inline bool				operator<		(const Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>& other) const { return this->asDouble() < other.asDouble(); }
+
 	static Float			zero			(int sign);
 	static Float			inf				(int sign);
 	static Float			nan				(void);

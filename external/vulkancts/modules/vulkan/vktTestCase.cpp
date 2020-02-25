@@ -73,6 +73,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_buffer_marker",
 		"VK_AMD_shader_explicit_vertex_parameter",
 		"VK_AMD_shader_image_load_store_lod",
+		"VK_AMD_shader_trinary_minmax",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -442,7 +443,7 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 {
 	// check if extension was promoted to core
 	deUint32 apiVersion = getUsedApiVersion();
-	if (isCoreDeviceExtension(getUsedApiVersion(), extension))
+	if (isCoreDeviceExtension(apiVersion, extension))
 	{
 		// all folowing checks are for vk12 and can be skipped for previous versions
 		if (apiVersion < VK_MAKE_VERSION(1, 2, 0))
