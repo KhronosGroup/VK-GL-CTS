@@ -425,6 +425,11 @@ tcu::TestNode::IterateResult GPUShader5ImplicitConversionsTest::iterate()
 	};
 	static const size_t n_test_cases = sizeof(test_cases) / sizeof(test_cases[0]);
 
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gpu_shader5"))
+	{
+		throw tcu::NotSupportedError("GL_ARB_gpu_shader5 is not supported.");
+	}
+
 	testInit();
 
 	/* Execute test cases */
@@ -729,6 +734,11 @@ tcu::TestNode::IterateResult GPUShader5FunctionOverloadingTest::iterate()
 	static const glw::GLuint u2_data_1[4] = { 0xffff0000, 0x0000ffff, 0x00ffffff, 0xffffffff };
 	static const glw::GLuint u2_data_2[4] = { 0xfff70000, 0x00007fff, 0x007fffff, 0xfffffff7 };
 
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gpu_shader5"))
+	{
+		throw tcu::NotSupportedError("GL_ARB_gpu_shader5 is not supported.");
+	}
+
 	testInit();
 
 	/* Execute test case */
@@ -1016,6 +1026,11 @@ tcu::TestNode::IterateResult GPUShader5FloatEncodingTest::iterate()
 		  true },
 	};
 	static const size_t n_test_cases = sizeof(test_cases) / sizeof(test_cases[0]);
+
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gpu_shader5"))
+	{
+		throw tcu::NotSupportedError("GL_ARB_gpu_shader5 is not supported.");
+	}
 
 	testInit();
 
