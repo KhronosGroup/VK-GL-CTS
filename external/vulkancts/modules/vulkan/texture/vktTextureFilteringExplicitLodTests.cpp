@@ -512,7 +512,7 @@ protected:
 	bool								isSupported						(void);
 	void								createResources					(void);
 	void								execute							(void);
-	bool								verify							(void);
+	TestStatus							verify							(void);
 
 	tcu::Sampler						mapTcuSampler					(void) const;
 
@@ -587,7 +587,7 @@ TestStatus TextureFilteringTestInstance::runTest (void)
 										<< TestLog::EndMessage;
 
     startTime = deGetMicroseconds();
-	bool result = verify();
+	TestStatus result = verify();
     endTime = deGetMicroseconds();
 
 	m_context.getTestContext().getLog() << TestLog::Message
@@ -596,18 +596,10 @@ TestStatus TextureFilteringTestInstance::runTest (void)
 										<< "us"
 										<< TestLog::EndMessage;
 
-	if (result)
-	{
-		return TestStatus::pass("Success");
-	}
-	else
-	{
-		// \todo [2016-06-24 collinbaker] Print report if verification fails
-		return TestStatus::fail("Verification failed");
-	}
+	return result;
 }
 
-bool TextureFilteringTestInstance::verify (void)
+TestStatus TextureFilteringTestInstance::verify (void)
 {
 	// \todo [2016-06-24 collinbaker] Handle cubemaps
 
@@ -615,6 +607,7 @@ bool TextureFilteringTestInstance::verify (void)
 	const int						mipmapBits			= (int)m_context.getDeviceProperties().limits.mipmapPrecisionBits;
 	const int						maxPrintedFailures	= 5;
 	int								failCount			= 0;
+	int								warningCount		= 0;
 	const tcu::TextureFormat		tcuFormat			= mapVkFormat(m_imParams.format);
 	std::vector<tcu::FloatFormat>	strictPrecision		= getPrecision(m_imParams.format, 0);
 	std::vector<tcu::FloatFormat>	relaxedPrecision	= tcuFormat.type == tcu::TextureFormat::HALF_FLOAT ? getPrecision(m_imParams.format, -3) : getPrecision(m_imParams.format, -2);
@@ -653,7 +646,10 @@ bool TextureFilteringTestInstance::verify (void)
 
 			compareOK = relaxedVerifier.verifySample(m_sampleArguments[sampleNdx], m_resultSamples[sampleNdx]);
 			if (compareOK)
+			{
+				warningCount++;
 				continue;
+			}
 		}
 		if ( failCount++ < maxPrintedFailures )
 		{
@@ -679,7 +675,12 @@ bool TextureFilteringTestInstance::verify (void)
 		<< "Passed " << m_numSamples - failCount << " out of " << m_numSamples << "."
 		<< TestLog::EndMessage;
 
-	return failCount == 0;
+	if (failCount > 0)
+		return TestStatus::fail("Verification failed");
+	else if (warningCount > 0)
+		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Inaccurate filtering results");
+
+	return TestStatus::pass("Success");
 }
 
 void TextureFilteringTestInstance::execute (void)
