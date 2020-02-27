@@ -672,7 +672,7 @@ void TextureUnitCase::init (void)
 			if (is2d)
 			{
 				m_ndx2dOrCube.push_back((int)m_textures2d.size()); // Remember the index this texture has in the 2d array.
-				m_textures2d.push_back(new tcu::Texture2D(glu::mapGLTransferFormat(params.format, params.dataType), texWidth, texHeight));
+				m_textures2d.push_back(new tcu::Texture2D(glu::mapGLTransferFormat(params.format, params.dataType), texWidth, texHeight, isES2Context(m_context.getRenderContext().getType())));
 			}
 			else
 			{

@@ -1465,7 +1465,7 @@ ViewType getEffectiveTView (const ViewType& src, std::vector<tcu::ConstPixelBuff
 {
 	storage.resize(src.getNumLevels());
 
-	ViewType view = ViewType(src.getNumLevels(), &storage[0]);
+	ViewType view = ViewType(src.getNumLevels(), &storage[0], src.isES2());
 
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)
 		storage[levelNdx] = tcu::getEffectiveDepthStencilAccess(src.getLevel(levelNdx), sampler.depthStencilMode);
@@ -1487,7 +1487,7 @@ tcu::TextureCubeView getEffectiveTView (const tcu::TextureCubeView& src, std::ve
 		&storage[5 * src.getNumLevels()],
 	};
 
-	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs);
+	tcu::TextureCubeView view = tcu::TextureCubeView(src.getNumLevels(), storagePtrs, false);
 
 	for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; ++faceNdx)
 	for (int levelNdx = 0; levelNdx < src.getNumLevels(); ++levelNdx)

@@ -106,7 +106,7 @@ Texture2D::Texture2D (const RenderContext& context, deUint32 format, deUint32 da
 	: m_context			(context)
 	, m_isCompressed	(false)
 	, m_format			(format)
-	, m_refTexture		(mapGLTransferFormat(format, dataType), width, height)
+	, m_refTexture		(mapGLTransferFormat(format, dataType), width, height, isES2Context(context.getType()))
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = context.getFunctions();
@@ -118,7 +118,7 @@ Texture2D::Texture2D (const RenderContext& context, deUint32 sizedFormat, int wi
 	: m_context			(context)
 	, m_isCompressed	(false)
 	, m_format			(sizedFormat)
-	, m_refTexture		(mapGLInternalFormat(sizedFormat), width, height)
+	, m_refTexture		(mapGLInternalFormat(sizedFormat), width, height, isES2Context(context.getType()))
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = context.getFunctions();
@@ -130,7 +130,7 @@ Texture2D::Texture2D (const RenderContext& context, const ContextInfo& contextIn
 	: m_context			(context)
 	, m_isCompressed	(true)
 	, m_format			(getGLFormat(levels[0].getFormat()))
-	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth(), levels[0].getHeight())
+	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth(), levels[0].getHeight(), isES2Context(context.getType()))
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = context.getFunctions();
@@ -323,7 +323,7 @@ TextureCube::TextureCube (const RenderContext& context, const ContextInfo& conte
 	: m_context			(context)
 	, m_isCompressed	(true)
 	, m_format			(getGLFormat(levels[0].getFormat()))
-	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth())
+	, m_refTexture		(getUncompressedFormat(levels[0].getFormat()), levels[0].getWidth(), isES2Context(context.getType()))
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = m_context.getFunctions();
@@ -351,7 +351,7 @@ TextureCube::TextureCube (const RenderContext& context, deUint32 format, deUint3
 	: m_context			(context)
 	, m_isCompressed	(false)
 	, m_format			(format)
-	, m_refTexture		(mapGLTransferFormat(format, dataType), size)
+	, m_refTexture		(mapGLTransferFormat(format, dataType), size, isES2Context(context.getType()))
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = m_context.getFunctions();
@@ -363,7 +363,7 @@ TextureCube::TextureCube (const RenderContext& context, deUint32 internalFormat,
 	: m_context			(context)
 	, m_isCompressed	(false)
 	, m_format			(internalFormat)
-	, m_refTexture		(mapGLInternalFormat(internalFormat), size)
+	, m_refTexture		(mapGLInternalFormat(internalFormat), size, isES2Context(context.getType()))
 	, m_glTexture		(0)
 {
 	const glw::Functions& gl = m_context.getFunctions();

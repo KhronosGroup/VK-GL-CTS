@@ -181,7 +181,7 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 	getFormatInfo(format, glFormat, glType, pixelSize);
 	m_testCtx.getLog() << tcu::TestLog::Message << "Format: " << glu::getTextureFormatStr(glFormat) << ", Type: " << glu::getTypeStr(glType) << tcu::TestLog::EndMessage;
 
-	tcu::Texture2D reference(format, width, height);
+	tcu::Texture2D reference(format, width, height, glu::isES2Context(m_context.getRenderContext().getType()));
 	reference.allocLevel(0);
 
 	GLU_CHECK_CALL(glViewport(0, 0, width, height));
@@ -221,8 +221,8 @@ TestCase::IterateResult ReadPixelsTest::iterate (void)
 		const deUint8		alphaThreshold	= (deUint8)deCeilFloatToInt32(256.0f * (2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()))));
 
 		// bilinearCompare only accepts RGBA, UINT8
-		tcu::Texture2D		referenceRGBA8	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height);
-		tcu::Texture2D		resultRGBA8		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height);
+		tcu::Texture2D		referenceRGBA8	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height, glu::isES2Context(m_context.getRenderContext().getType()));
+		tcu::Texture2D		resultRGBA8		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), width, height, glu::isES2Context(m_context.getRenderContext().getType()));
 
 		referenceRGBA8.allocLevel(0);
 		resultRGBA8.allocLevel(0);

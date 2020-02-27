@@ -465,11 +465,11 @@ private:
 } DE_WARN_UNUSED_TYPE;
 
 Vec4	sampleLevelArray1D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, int level, float lod);
-Vec4	sampleLevelArray2D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod);
+Vec4	sampleLevelArray2D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod, bool es2 = false);
 Vec4	sampleLevelArray3D				(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod);
 
 Vec4	sampleLevelArray1DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float lod, const IVec2& offset);
-Vec4	sampleLevelArray2DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset);
+Vec4	sampleLevelArray2DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset, bool es2 = false);
 Vec4	sampleLevelArray3DOffset		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset);
 
 float	sampleLevelArray1DCompare		(const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float ref, float s, float lod, const IVec2& offset);
@@ -518,12 +518,13 @@ CubeFaceIntCoords		remapCubeEdgeCoords		(const CubeFaceIntCoords& coords, int si
 class Texture1DView
 {
 public:
-									Texture1DView		(int numLevels, const ConstPixelBufferAccess* levels);
+									Texture1DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2);
 
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2					(void) const	{ return false;												}
 
 	Vec4							sample				(const Sampler& sampler, float s, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float lod, deInt32 offset) const;
@@ -535,7 +536,7 @@ protected:
 	const ConstPixelBufferAccess*	m_levels;
 } DE_WARN_UNUSED_TYPE;
 
-inline Texture1DView::Texture1DView (int numLevels, const ConstPixelBufferAccess* levels)
+inline Texture1DView::Texture1DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR = false)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -568,13 +569,14 @@ inline float Texture1DView::sampleCompareOffset (const Sampler& sampler, float r
 class Texture2DView
 {
 public:
-									Texture2DView		(int numLevels, const ConstPixelBufferAccess* levels);
+									Texture2DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
 
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
 	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2					(void) const	{ return m_es2;												}
 
 	Vec4							sample				(const Sampler& sampler, float s, float t, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float lod, const IVec2& offset) const;
@@ -587,18 +589,20 @@ public:
 protected:
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels;
+	bool								m_es2;
 } DE_WARN_UNUSED_TYPE;
 
-inline Texture2DView::Texture2DView (int numLevels, const ConstPixelBufferAccess* levels)
+inline Texture2DView::Texture2DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
+	, m_es2			(es2)
 {
 	DE_ASSERT(m_numLevels >= 0 && ((m_numLevels == 0) == !m_levels));
 }
 
 inline Vec4 Texture2DView::sample (const Sampler& sampler, float s, float t, float lod) const
 {
-	return sampleLevelArray2D(m_levels, m_numLevels, sampler, s, t, 0 /* depth */, lod);
+	return sampleLevelArray2D(m_levels, m_numLevels, sampler, s, t, 0 /* depth */, lod, m_es2);
 }
 
 inline Vec4 Texture2DView::sampleOffset (const Sampler& sampler, float s, float t, float lod, const IVec2& offset) const
@@ -721,7 +725,7 @@ inline float Texture1D::sampleCompareOffset	(const Sampler& sampler, float ref, 
 class Texture2D : private TextureLevelPyramid
 {
 public:
-									Texture2D			(const TextureFormat& format, int width, int height);
+									Texture2D			(const TextureFormat& format, int width, int height, bool es2 = false);
 									Texture2D			(const TextureFormat& format, int width, int height, int mipmaps);
 									Texture2D			(const Texture2D& other);
 									~Texture2D			(void);
@@ -794,9 +798,10 @@ class TextureCubeView
 {
 public:
 									TextureCubeView		(void);
-									TextureCubeView		(int numLevels, const ConstPixelBufferAccess* const (&levels)[CUBEFACE_LAST]);
+									TextureCubeView		(int numLevels, const ConstPixelBufferAccess* const (&levels)[CUBEFACE_LAST], bool es2 = false);
 
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
+	bool								isES2					(void) const	{ return m_es2;												}
 	int								getSize				(void) const	{ return m_numLevels > 0 ? m_levels[0][0].getWidth() : 0;	}
 	const ConstPixelBufferAccess&	getLevelFace		(int ndx, CubeFace face) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[face][ndx];	}
 	const ConstPixelBufferAccess*	getFaceLevels		(CubeFace face) const			{ return m_levels[face];					}
@@ -810,6 +815,7 @@ public:
 protected:
 	int								m_numLevels;
 	const ConstPixelBufferAccess*	m_levels[CUBEFACE_LAST];
+	bool								m_es2;
 } DE_WARN_UNUSED_TYPE;
 
 /*--------------------------------------------------------------------*//*!
@@ -818,12 +824,13 @@ protected:
 class TextureCube
 {
 public:
-									TextureCube			(const TextureFormat& format, int size);
+									TextureCube			(const TextureFormat& format, int size, bool es2 = false);
 									TextureCube			(const TextureCube& other);
 									~TextureCube		(void);
 
 	const TextureFormat&			getFormat			(void) const	{ return m_format;	}
 	int								getSize				(void) const	{ return m_size;	}
+	const TextureCubeView&		getView				(void) const	{ return m_view;	}
 
 	int								getNumLevels		(void) const					{ return (int)m_access[0].size();	}
 	const ConstPixelBufferAccess&	getLevelFace		(int ndx, CubeFace face) const	{ DE_ASSERT(de::inBounds(ndx, 0, getNumLevels())); return m_access[face][(size_t)ndx];	}
@@ -879,13 +886,14 @@ inline Vec4 TextureCube::gatherCompare (const Sampler& sampler, float ref, float
 class Texture1DArrayView
 {
 public:
-									Texture1DArrayView	(int numLevels, const ConstPixelBufferAccess* levels);
+									Texture1DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
 
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getNumLayers		(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2						(void) const	{ return false;												}
 
 	Vec4							sample				(const Sampler& sampler, float s, float t, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float lod, deInt32 offset) const;
@@ -905,7 +913,7 @@ protected:
 class Texture2DArrayView
 {
 public:
-									Texture2DArrayView	(int numLevels, const ConstPixelBufferAccess* levels);
+									Texture2DArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
 
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
@@ -913,6 +921,7 @@ public:
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2						(void) const	{ return false;												}
 
 	Vec4							sample				(const Sampler& sampler, float s, float t, float r, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float r, float lod, const IVec2& offset) const;
@@ -1062,7 +1071,7 @@ inline Vec4 Texture2DArray::gatherOffsetsCompare (const Sampler& sampler, float 
 class Texture3DView
 {
 public:
-									Texture3DView		(int numLevels, const ConstPixelBufferAccess* levels);
+									Texture3DView		(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
 
 	int								getWidth			(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getHeight			(void) const	{ return m_numLevels > 0 ? m_levels[0].getHeight()	: 0;	}
@@ -1070,6 +1079,7 @@ public:
 	int								getNumLevels		(void) const	{ return m_numLevels;										}
 	const ConstPixelBufferAccess&	getLevel			(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels			(void) const	{ return m_levels;											}
+	bool								isES2						(void) const	{ return false;												}
 
 	Vec4							sample				(const Sampler& sampler, float s, float t, float r, float lod) const;
 	Vec4							sampleOffset		(const Sampler& sampler, float s, float t, float r, float lod, const IVec3& offset) const;
@@ -1141,7 +1151,7 @@ inline Vec4 Texture3D::sampleOffset (const Sampler& sampler, float s, float t, f
 class TextureCubeArrayView
 {
 public:
-									TextureCubeArrayView	(int numLevels, const ConstPixelBufferAccess* levels);
+									TextureCubeArrayView	(int numLevels, const ConstPixelBufferAccess* levels, bool es2 = false);
 
 	int								getSize					(void) const	{ return m_numLevels > 0 ? m_levels[0].getWidth()	: 0;	}
 	int								getDepth				(void) const	{ return m_numLevels > 0 ? m_levels[0].getDepth()	: 0;	}
@@ -1149,6 +1159,7 @@ public:
 	int								getNumLevels			(void) const	{ return m_numLevels;										}
 	const ConstPixelBufferAccess&	getLevel				(int ndx) const	{ DE_ASSERT(de::inBounds(ndx, 0, m_numLevels)); return m_levels[ndx];	}
 	const ConstPixelBufferAccess*	getLevels				(void) const	{ return m_levels;											}
+	bool									isES2						(void) const	{ return false;												}
 
 	Vec4							sample					(const Sampler& sampler, float s, float t, float r, float q, float lod) const;
 	Vec4							sampleOffset			(const Sampler& sampler, float s, float t, float r, float q, float lod, const IVec2& offset) const;

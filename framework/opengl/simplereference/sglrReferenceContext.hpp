@@ -167,7 +167,7 @@ private:
 class Texture2D : public Texture
 {
 public:
-										Texture2D		(deUint32 name = 0);
+										Texture2D		(deUint32 name = 0, bool es2 = false);
 	virtual								~Texture2D		(void);
 
 	void								clearLevels		(void) { m_levels.clear(); }

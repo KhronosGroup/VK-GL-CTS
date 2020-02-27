@@ -305,14 +305,14 @@ DE_INLINE deBool deGetTrue (void) { return DE_TRUE; }
 
 #if (DE_COMPILER == DE_COMPILER_GCC) || (DE_COMPILER == DE_COMPILER_CLANG)
 	/* GCC 4.8 and newer warns about unused typedefs. */
-#	define DE_UNUSED_TYPEDEF_ATTR __attribute__((unused))
+#	define DE_UNUSED_ATTR __attribute__((unused))
 #else
-#	define DE_UNUSED_TYPEDEF_ATTR
+#	define DE_UNUSED_ATTR
 #endif
 
 /** Compile-time assertion macro. */
-#define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_TYPEDEF_ATTR
-#define DE_HEADER_STATIC_ASSERT(HEADERTOKEN, X)	typedef char DE_HEADER_UNIQUE_NAME(HEADERTOKEN)[(X) ? 1 : -1] DE_UNUSED_TYPEDEF_ATTR
+#define DE_STATIC_ASSERT(X)						typedef char DE_UNIQUE_NAME[(X) ? 1 : -1] DE_UNUSED_ATTR
+#define DE_HEADER_STATIC_ASSERT(HEADERTOKEN, X)	typedef char DE_HEADER_UNIQUE_NAME(HEADERTOKEN)[(X) ? 1 : -1] DE_UNUSED_ATTR
 
 #define DE_UNIQUE_NAME						DE_MAKE_NAME(__LINE__, hoax)
 #define DE_HEADER_UNIQUE_NAME(HEADERTOKEN)	DE_MAKE_NAME(__LINE__, HEADERTOKEN)

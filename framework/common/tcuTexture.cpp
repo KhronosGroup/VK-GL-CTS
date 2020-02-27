@@ -2223,9 +2223,9 @@ Vec4 sampleLevelArray1D (const ConstPixelBufferAccess* levels, int numLevels, co
 	return sampleLevelArray1DOffset(levels, numLevels, sampler, s, lod, IVec2(0, depth)); // y-offset in 1D textures is layer selector
 }
 
-Vec4 sampleLevelArray2D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod)
+Vec4 sampleLevelArray2D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, int depth, float lod, bool es2)
 {
-	return sampleLevelArray2DOffset(levels, numLevels, sampler, s, t, lod, IVec3(0, 0, depth)); // z-offset in 2D textures is layer selector
+	return sampleLevelArray2DOffset(levels, numLevels, sampler, s, t, lod, IVec3(0, 0, depth), es2); // z-offset in 2D textures is layer selector
 }
 
 Vec4 sampleLevelArray3D (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float r, float lod)
@@ -2273,9 +2273,15 @@ Vec4 sampleLevelArray1DOffset (const ConstPixelBufferAccess* levels, int numLeve
 	}
 }
 
-Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset)
+Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLevels, const Sampler& sampler, float s, float t, float lod, const IVec3& offset, bool es2)
 {
-	bool					magnified	= lod <= sampler.lodThreshold;
+	bool					magnified;
+
+	if (es2 && sampler.magFilter == Sampler::LINEAR &&
+		(sampler.minFilter == Sampler::NEAREST_MIPMAP_NEAREST || sampler.minFilter == Sampler::NEAREST_MIPMAP_LINEAR))
+		magnified = lod <= 0.5;
+	else
+		magnified = lod <= sampler.lodThreshold;
 	Sampler::FilterMode		filterMode	= magnified ? sampler.magFilter : sampler.minFilter;
 
 	switch (filterMode)
@@ -3281,11 +3287,11 @@ void Texture1D::allocLevel (int levelNdx)
 
 // Texture2D
 
-Texture2D::Texture2D (const TextureFormat& format, int width, int height)
+Texture2D::Texture2D (const TextureFormat& format, int width, int height, bool es2)
 	: TextureLevelPyramid	(format, computeMipPyramidLevels(width, height))
 	, m_width				(width)
 	, m_height				(height)
-	, m_view				(getNumLevels(), getLevels())
+	, m_view				(getNumLevels(), getLevels(), es2)
 {
 }
 
@@ -3301,7 +3307,7 @@ Texture2D::Texture2D (const Texture2D& other)
 	: TextureLevelPyramid	(other)
 	, m_width				(other.m_width)
 	, m_height				(other.m_height)
-	, m_view				(getNumLevels(), getLevels())
+	, m_view				(getNumLevels(), getLevels(), other.getView().isES2())
 {
 }
 
@@ -3314,7 +3320,7 @@ Texture2D& Texture2D::operator= (const Texture2D& other)
 
 	m_width		= other.m_width;
 	m_height	= other.m_height;
-	m_view		= Texture2DView(getNumLevels(), getLevels());
+	m_view		= Texture2DView(getNumLevels(), getLevels(), other.getView().isES2());
 
 	return *this;
 }
@@ -3342,8 +3348,9 @@ TextureCubeView::TextureCubeView (void)
 		m_levels[ndx] = DE_NULL;
 }
 
-TextureCubeView::TextureCubeView (int numLevels, const ConstPixelBufferAccess* const (&levels) [CUBEFACE_LAST])
+TextureCubeView::TextureCubeView (int numLevels, const ConstPixelBufferAccess* const (&levels) [CUBEFACE_LAST], bool es2)
 	: m_numLevels(numLevels)
+	, m_es2(es2)
 {
 	for (int ndx = 0; ndx < CUBEFACE_LAST; ndx++)
 		m_levels[ndx] = levels[ndx];
@@ -3358,7 +3365,7 @@ tcu::Vec4 TextureCubeView::sample (const Sampler& sampler, float s, float t, flo
 	if (sampler.seamlessCubeMap)
 		return sampleLevelArrayCubeSeamless(m_levels, m_numLevels, coords.face, sampler, coords.s, coords.t, 0 /* depth */, lod);
 	else
-		return sampleLevelArray2D(m_levels[coords.face], m_numLevels, sampler, coords.s, coords.t, 0 /* depth */, lod);
+		return sampleLevelArray2D(m_levels[coords.face], m_numLevels, sampler, coords.s, coords.t, 0 /* depth */, lod, m_es2);
 }
 
 float TextureCubeView::sampleCompare (const Sampler& sampler, float ref, float s, float t, float r, float lod) const
@@ -3424,7 +3431,7 @@ Vec4 TextureCubeView::gatherCompare (const Sampler& sampler, float ref, float s,
 
 // TextureCube
 
-TextureCube::TextureCube (const TextureFormat& format, int size)
+TextureCube::TextureCube (const TextureFormat& format, int size, bool es2)
 	: m_format	(format)
 	, m_size	(size)
 {
@@ -3438,7 +3445,7 @@ TextureCube::TextureCube (const TextureFormat& format, int size)
 		levels[face] = &m_access[face][0];
 	}
 
-	m_view = TextureCubeView(numLevels, levels);
+	m_view = TextureCubeView(numLevels, levels, es2);
 }
 
 TextureCube::TextureCube (const TextureCube& other)
@@ -3455,7 +3462,7 @@ TextureCube::TextureCube (const TextureCube& other)
 		levels[face] = &m_access[face][0];
 	}
 
-	m_view = TextureCubeView(numLevels, levels);
+	m_view = TextureCubeView(numLevels, levels, other.getView().isES2());
 
 	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
 	{
@@ -3488,7 +3495,7 @@ TextureCube& TextureCube::operator= (const TextureCube& other)
 
 	m_format	= other.m_format;
 	m_size		= other.m_size;
-	m_view		= TextureCubeView(numLevels, levels);
+	m_view		= TextureCubeView(numLevels, levels, other.getView().isES2());
 
 	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
 	{
@@ -3532,7 +3539,7 @@ void TextureCube::clearLevel (tcu::CubeFace face, int levelNdx)
 
 // Texture1DArrayView
 
-Texture1DArrayView::Texture1DArrayView (int numLevels, const ConstPixelBufferAccess* levels)
+Texture1DArrayView::Texture1DArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -3566,7 +3573,7 @@ float Texture1DArrayView::sampleCompareOffset (const Sampler& sampler, float ref
 
 // Texture2DArrayView
 
-Texture2DArrayView::Texture2DArrayView (int numLevels, const ConstPixelBufferAccess* levels)
+Texture2DArrayView::Texture2DArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -3704,7 +3711,7 @@ void Texture2DArray::allocLevel (int levelNdx)
 
 // Texture3DView
 
-Texture3DView::Texture3DView (int numLevels, const ConstPixelBufferAccess* levels)
+Texture3DView::Texture3DView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {
@@ -3762,7 +3769,7 @@ void Texture3D::allocLevel (int levelNdx)
 
 // TextureCubeArrayView
 
-TextureCubeArrayView::TextureCubeArrayView (int numLevels, const ConstPixelBufferAccess* levels)
+TextureCubeArrayView::TextureCubeArrayView (int numLevels, const ConstPixelBufferAccess* levels, bool es2 DE_UNUSED_ATTR)
 	: m_numLevels	(numLevels)
 	, m_levels		(levels)
 {

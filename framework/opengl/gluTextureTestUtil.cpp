@@ -113,7 +113,7 @@ static tcu::Texture2DView getSubView (const tcu::Texture2DView& view, int baseLe
 	const int	clampedBase	= de::clamp(baseLevel, 0, view.getNumLevels()-1);
 	const int	clampedMax	= de::clamp(maxLevel, clampedBase, view.getNumLevels()-1);
 	const int	numLevels	= clampedMax-clampedBase+1;
-	return tcu::Texture2DView(numLevels, view.getLevels()+clampedBase);
+	return tcu::Texture2DView(numLevels, view.getLevels()+clampedBase, view.isES2());
 }
 
 static tcu::TextureCubeView getSubView (const tcu::TextureCubeView& view, int baseLevel, int maxLevel)

@@ -191,6 +191,7 @@ inline deUint32 ContextType::pack (deUint32 apiBits, ContextFlags flags)
 inline bool		isContextTypeES				(ContextType type)	{ return type.getAPI().getProfile() == PROFILE_ES;				}
 inline bool		isContextTypeGLCore			(ContextType type)	{ return type.getAPI().getProfile() == PROFILE_CORE;			}
 inline bool		isContextTypeGLCompatibility(ContextType type)	{ return type.getAPI().getProfile() == PROFILE_COMPATIBILITY;	}
+inline bool		isES2Context				(ContextType type)	{ return isContextTypeES(type) && type.getMajorVersion() == 2; }
 bool			contextSupports				(ContextType ctxType, ApiType requiredApiType);
 
 const char*		getApiTypeDescription		(ApiType type);

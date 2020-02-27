@@ -821,7 +821,7 @@ Texture2DGenMipmapCase::IterateResult Texture2DGenMipmapCase::iterate (void)
 
 	const int				numLevels			= deLog2Floor32(de::max(m_width, m_height))+1;
 
-	tcu::Texture2D			resultTexture		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_texture->getRefTexture().getWidth(), m_texture->getRefTexture().getHeight());
+	tcu::Texture2D			resultTexture		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), m_texture->getRefTexture().getWidth(), m_texture->getRefTexture().getHeight(), isES2Context(m_renderCtx.getType()));
 
 	vector<float>			texCoord;
 

@@ -324,7 +324,7 @@ ReferenceContext::ReferenceContext (const ReferenceContextLimits& limits, const 
 	, m_activeTexture					(0)
 	, m_textureUnits					(m_limits.maxTextureImageUnits)
 	, m_emptyTex1D						()
-	, m_emptyTex2D						()
+	, m_emptyTex2D						(isES2Context(limits.contextType))
 	, m_emptyTexCube					()
 	, m_emptyTex2DArray					()
 	, m_emptyTex3D						()
@@ -4825,9 +4825,9 @@ void Texture1D::updateView (tcu::Sampler::DepthStencilMode mode)
 		m_view = tcu::Texture2DView(0, DE_NULL);
 }
 
-Texture2D::Texture2D (deUint32 name)
+Texture2D::Texture2D (deUint32 name, bool es2)
 	: Texture	(name, TYPE_2D)
-	, m_view	(0, DE_NULL)
+	, m_view	(0, DE_NULL, es2)
 {
 }
 
