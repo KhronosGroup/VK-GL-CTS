@@ -6938,7 +6938,32 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
-		return group.release();
+	// OpUndef with constants.
+	{
+		static const char data_dir[] = "spirv_assembly/instruction/compute/undef";
+
+		static const struct
+		{
+			const std::string name;
+			const std::string desc;
+		} amberCases[] =
+		{
+			{ "undefined_constant_composite",		"OpUndef value in OpConstantComposite"		},
+			{ "undefined_spec_constant_composite",	"OpUndef value in OpSpecConstantComposite"	},
+		};
+
+		for (int i = 0; i < DE_LENGTH_OF_ARRAY(amberCases); ++i)
+		{
+			cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(testCtx,
+																				amberCases[i].name.c_str(),
+																				amberCases[i].desc.c_str(),
+																				data_dir,
+																				amberCases[i].name + ".amber");
+			group->addChild(testCase);
+		}
+	}
+
+	return group.release();
 }
 
 // Checks that a compute shader can generate a constant composite value of various types, without exercising a computation on it.
