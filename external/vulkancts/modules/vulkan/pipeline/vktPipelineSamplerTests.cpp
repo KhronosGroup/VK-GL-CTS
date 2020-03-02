@@ -42,6 +42,7 @@
 #include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuMaybe.hpp"
 
 #include "deStringUtil.hpp"
 #include "deMemory.h"
@@ -1079,14 +1080,19 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 	return samplerAddressModesTests;
 }
 
+// Exact sampling case:
+//	1) Create a texture and a framebuffer image of the same size.
+//	2) Draw a full screen quad with the texture and VK_FILTER_NEAREST.
+//	3) Verify the rendered image matches the texture exactly.
 class ExactSamplingCase : public vkt::TestCase
 {
 public:
 	struct Params
 	{
-		vk::VkFormat	format;
-		bool			unnormalizedCoordinates;
-		bool			solidColor;
+		vk::VkFormat		format;
+		bool				unnormalizedCoordinates;
+		bool				solidColor;
+		tcu::Maybe<float>	offsetSign; // -1.0 or 1.0
 	};
 
 	struct PushConstants
@@ -1282,6 +1288,7 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	const auto	fbUsage		= (vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	const auto	descType	= vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	const auto	texLayout	= vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	const bool&	unnorm		= m_params.unnormalizedCoordinates;
 
 	// Some code below depends on this.
 	DE_ASSERT(texExtent.depth == 1u);
@@ -1379,14 +1386,32 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 
 	vk::flushAlloc(vkd, device, texBufferAlloc);
 
+	float minU = 0.0f;
+	float maxU = 1.0f;
+	float minV = 0.0f;
+	float maxV = 1.0f;
+
+	// When testing the edges, apply a texture offset of almost half a texel, so the sample location is very close to the texel border.
+	if (m_params.offsetSign)
+	{
+		const float sign			= m_params.offsetSign.get(); DE_ASSERT(sign == 1.0f || sign == -1.0f);
+		const float offsetWidth		= 0.499f / static_cast<float>(texExtent.width);
+		const float offsetHeight	= 0.499f / static_cast<float>(texExtent.height);
+
+		minU += sign * offsetWidth;
+		maxU += sign * offsetWidth;
+		minV += sign * offsetHeight;
+		maxV += sign * offsetHeight;
+	}
+
 	const std::vector<ExactSamplingCase::VertexData> fullScreenQuad =
 	{
-		{{  1.f, -1.f }, { 1.f, 0.f }, },
-		{{ -1.f, -1.f }, { 0.f, 0.f }, },
-		{{ -1.f,  1.f }, { 0.f, 1.f }, },
-		{{ -1.f,  1.f }, { 0.f, 1.f }, },
-		{{  1.f, -1.f }, { 1.f, 0.f }, },
-		{{  1.f,  1.f }, { 1.f, 1.f }, },
+		{{  1.f, -1.f }, { maxU, minV }, },
+		{{ -1.f, -1.f }, { minU, minV }, },
+		{{ -1.f,  1.f }, { minU, maxV }, },
+		{{ -1.f,  1.f }, { minU, maxV }, },
+		{{  1.f, -1.f }, { maxU, minV }, },
+		{{  1.f,  1.f }, { maxU, maxV }, },
 	};
 
 	// Vertex buffer.
@@ -1418,9 +1443,10 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	// irrelevant too, so it is enabled and set to the maximum level if available.
 	const auto	minMagFilter			= (m_params.solidColor ? vk::VK_FILTER_LINEAR : vk::VK_FILTER_NEAREST);
 	const bool	anisotropySupported		= (vk::getPhysicalDeviceFeatures(vki, physDevice).samplerAnisotropy == VK_TRUE);
-	const bool	anisotropyEnable		= (!m_params.unnormalizedCoordinates && m_params.solidColor && anisotropySupported);
+	const bool	anisotropyEnable		= (!unnorm && m_params.solidColor && anisotropySupported);
 	const float	maxAnisotropy			= (anisotropyEnable ? vk::getPhysicalDeviceProperties(vki, physDevice).limits.maxSamplerAnisotropy : 1.0f);
-	const auto	unnormCoords			= (m_params.unnormalizedCoordinates ? VK_TRUE : VK_FALSE);
+	const auto	addressMode				= (unnorm ? vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE : vk::VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	const auto	unnormalizedCoordinates	= (unnorm ? VK_TRUE : VK_FALSE);
 
 	const vk::VkSamplerCreateInfo samplerCreateInfo =
 	{
@@ -1430,9 +1456,9 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 		minMagFilter,									// VkFilter				magFilter;
 		minMagFilter,									// VkFilter				minFilter;
 		vk::VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode	mipmapMode;
-		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeU;
-		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeV;
-		vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode	addressModeW;
+		addressMode,									// VkSamplerAddressMode	addressModeU;
+		addressMode,									// VkSamplerAddressMode	addressModeV;
+		addressMode,									// VkSamplerAddressMode	addressModeW;
 		0.0f,											// float				mipLodBias;
 		(anisotropyEnable ? VK_TRUE : VK_FALSE),		// VkBool32				anisotropyEnable;
 		maxAnisotropy,									// float				maxAnisotropy;
@@ -1440,8 +1466,8 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 		vk::VK_COMPARE_OP_NEVER,						// VkCompareOp			compareOp;
 		0.0f,											// float				minLod;
 		0.0f,											// float				maxLod;
-		vk::VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,			// VkBorderColor		borderColor;
-		unnormCoords,									// VkBool32				unnormalizedCoordinates;
+		vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,	// VkBorderColor		borderColor;
+		unnormalizedCoordinates,						// VkBool32				unnormalizedCoordinates;
 	};
 	const auto texSampler = vk::createSampler(vkd, device, &samplerCreateInfo);
 
@@ -1604,7 +1630,7 @@ tcu::TestStatus ExactSamplingInstance::iterate (void)
 	const auto							resultsBufferPtr	= reinterpret_cast<const char*>(resultsBufferAlloc.getHostPtr()) + resultsBufferAlloc.getOffset();
 	const tcu::ConstPixelBufferAccess	resultPixels		{tcuFormat, iImgSize[0], iImgSize[1], 1, resultsBufferPtr};
 
-	const tcu::TextureFormat			diffFormat			{tcu::TextureFormat::RGB, tcu::TextureFormat::UNSIGNED_INT8};
+	const tcu::TextureFormat			diffFormat			{tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8};
 	const auto							diffBytes			= tcu::getPixelSize(diffFormat) * iImgSize[0] * iImgSize[1];
 	std::unique_ptr<deUint8[]>			diffData			{new deUint8[diffBytes]};
 	const tcu::PixelBufferAccess		diffImg				{diffFormat, iImgSize[0], iImgSize[1], 1, diffData.get()};
@@ -1867,10 +1893,27 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 		vk::VK_FORMAT_R32_SFLOAT,
 	};
 
-	static const std::vector<std::pair<bool, std::string>> unnormalizedCoordinates =
+	static const struct
 	{
-		{ false,	"normalized_coords"		},
-		{ true,		"unnormalized_coords"	},
+		const bool			unnormalized;
+		const std::string	name;
+		const std::string	desc;
+	} unnormalizedCoordinates[] =
+	{
+		{ false,	"normalized_coords",	"Normalized coordinates"	},
+		{ true,		"unnormalized_coords",	"Unnormalized coordinates"	},
+	};
+
+	static const struct
+	{
+		const tcu::Maybe<float>	offset;
+		const std::string		name;
+		const std::string		desc;
+	} testEdges[] =
+	{
+		{ tcu::nothing<float>(),	"centered",		"Sampling points centered in texel"		},
+		{ tcu::just<float>(-1.0f),	"edge_left",	"Sampling points near left edge"		},
+		{ tcu::just<float>(+1.0f),	"edge_right",	"Sampling points near right edge"		},
 	};
 
 	static const std::vector<std::pair<bool, std::string>> solidColor =
@@ -1890,13 +1933,24 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 		{
 			de::MovePtr<tcu::TestCaseGroup> solidColorGroup(new tcu::TestCaseGroup(testCtx, solid.second.c_str(), ""));
 
-			for (const auto& unnorm : unnormalizedCoordinates)
+			for (int unIdx = 0; unIdx < DE_LENGTH_OF_ARRAY(unnormalizedCoordinates); ++unIdx)
 			{
-				const ExactSamplingCase::Params	params = { format, unnorm.first, solid.first };
-				solidColorGroup->addChild(new ExactSamplingCase{testCtx, unnorm.second, "", params});
+				const auto&						unnorm		= unnormalizedCoordinates[unIdx];
+				de::MovePtr<tcu::TestCaseGroup> coordGroup	(new tcu::TestCaseGroup(testCtx, unnorm.name.c_str(), unnorm.desc.c_str()));
+
+				for (int edgeIdx = 0; edgeIdx < DE_LENGTH_OF_ARRAY(testEdges); ++edgeIdx)
+				{
+					const auto&						edges	= testEdges[edgeIdx];
+					const ExactSamplingCase::Params	params	= { format, unnorm.unnormalized, solid.first, edges.offset };
+					coordGroup->addChild(new ExactSamplingCase{testCtx, edges.name, edges.desc, params});
+				}
+
+				solidColorGroup->addChild(coordGroup.release());
 			}
+
 			formatGroup->addChild(solidColorGroup.release());
 		}
+
 		exactSamplingTests->addChild(formatGroup.release());
 	}
 
