@@ -23,12 +23,18 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "glcTestPackage.hpp"
+#include "gluContextInfo.hpp"
+#include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
+#include "tcuWaiverUtil.hpp"
+#include "glwEnums.hpp"
 
 namespace deqp
 {
 
 PackageContext::PackageContext(tcu::TestContext& testCtx, glu::ContextType renderContextType)
-	: m_context(testCtx, renderContextType), m_caseWrapper(m_context)
+	: m_context			(testCtx, renderContextType)
+	, m_caseWrapper		(m_context)
 {
 }
 
@@ -38,10 +44,11 @@ PackageContext::~PackageContext(void)
 
 TestPackage::TestPackage(tcu::TestContext& testCtx, const char* name, const char* description,
 						 glu::ContextType renderContextType, const char* resourcesPath)
-	: tcu::TestPackage(testCtx, name, description)
-	, m_renderContextType(renderContextType)
-	, m_packageCtx(DE_NULL)
-	, m_archive(testCtx.getRootArchive(), resourcesPath)
+	: tcu::TestPackage		(testCtx, name, description)
+	, m_waiverMechanism		(new tcu::WaiverUtil)
+	, m_renderContextType	(renderContextType)
+	, m_packageCtx			(DE_NULL)
+	, m_archive				(testCtx.getRootArchive(), resourcesPath)
 {
 }
 
@@ -58,6 +65,15 @@ void TestPackage::init(void)
 	{
 		// Create context
 		m_packageCtx = new PackageContext(m_testCtx, m_renderContextType);
+
+		// Setup waiver mechanism
+		if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
+		{
+			Context&				context		= m_packageCtx->getContext();
+			const glu::ContextInfo&	contextInfo = context.getContextInfo();
+			m_waiverMechanism->setup(context.getTestContext().getCommandLine().getWaiverFileName(), m_name,
+									 contextInfo.getString(GL_VENDOR), contextInfo.getString(GL_RENDERER));
+		}
 	}
 	catch (...)
 	{

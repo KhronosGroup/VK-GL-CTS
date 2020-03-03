@@ -29,6 +29,12 @@
 #include "tcuDefs.hpp"
 #include "tcuResource.hpp"
 #include "tcuTestPackage.hpp"
+#include "deSharedPtr.hpp"
+
+namespace tcu
+{
+	class WaiverUtil;
+};
 
 namespace deqp
 {
@@ -77,14 +83,16 @@ public:
 		return m_packageCtx->getContext();
 	}
 
+protected:
+	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
+
 private:
 	TestPackage(const TestPackage& other);
 	TestPackage& operator=(const TestPackage& other);
 
-	glu::ContextType m_renderContextType;
-
-	PackageContext*		m_packageCtx;
-	tcu::ResourcePrefix m_archive;
+	glu::ContextType				m_renderContextType;
+	PackageContext*					m_packageCtx;
+	tcu::ResourcePrefix				m_archive;
 };
 
 } // deqp

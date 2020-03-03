@@ -165,6 +165,11 @@ and a list of mandatory information tests for each fraction must be supplied:
 
 	--deqp-fraction-mandatory-caselist-file=<vulkancts>external/vulkancts/mustpass/master/vk-fraction-mandatory-tests.txt
 
+To specify file containing waived tests that are omitted only by specified vendor and renderer/device
+the following command line option may be used:
+
+	--deqp-waiver-file=<path>
+
 No other command line options are allowed.
 
 ### Win32
@@ -315,6 +320,7 @@ codes are allowed:
 	NotSupported
 	QualityWarning
 	CompatibilityWarning
+	Waiver
 
 Submission package can be verified using `external/vulkancts/scripts/verify_submission.py`
 script. The script takes two arguments: path to extracted submission package

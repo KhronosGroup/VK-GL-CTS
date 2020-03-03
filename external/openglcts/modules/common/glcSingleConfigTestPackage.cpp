@@ -28,6 +28,7 @@
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuWaiverUtil.hpp"
 
 #include "subgroups/glcSubgroupsTests.hpp"
 
@@ -37,7 +38,7 @@ namespace glcts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(SingleConfigTestPackage& package);
+	TestCaseWrapper(SingleConfigTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
 	~TestCaseWrapper(void);
 
 	void init(tcu::TestCase* testCase, const std::string& path);
@@ -46,9 +47,12 @@ public:
 
 private:
 	SingleConfigTestPackage& m_testPackage;
+	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(SingleConfigTestPackage& package) : m_testPackage(package)
+TestCaseWrapper::TestCaseWrapper(SingleConfigTestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+	: m_testPackage(package)
+	, m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -56,8 +60,11 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string&)
+void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
 {
+	if (m_waiverMechanism->isOnWaiverList(path))
+		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+
 	testCase->init();
 }
 
@@ -134,7 +141,7 @@ void SingleConfigTestPackage::init(void)
 
 tcu::TestCaseExecutor* SingleConfigTestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<SingleConfigTestPackage&>(*this));
+	return new TestCaseWrapper(const_cast<SingleConfigTestPackage&>(*this), m_waiverMechanism);
 }
 
 } // glcts

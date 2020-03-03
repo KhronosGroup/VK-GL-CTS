@@ -99,6 +99,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFraction,				std::vector<int>);
 DE_DECLARE_COMMAND_LINE_OPT(CaseFractionMandatoryTests,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(WaiverFile,					std::string);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -196,7 +197,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<ShaderCacheTruncate>			(DE_NULL,	"deqp-shadercache-truncate",				"Truncate shader cache before running tests",		s_enableNames,		"enable")
 		<< Option<RenderDoc>					(DE_NULL,	"deqp-renderdoc",							"Enable RenderDoc frame markers",					s_enableNames,		"disable")
 		<< Option<CaseFraction>					(DE_NULL,	"deqp-fraction",							"Run a fraction of the test cases (e.g. N,M means run group%M==N)",	parseIntList,	"")
-		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"");
+		<< Option<CaseFractionMandatoryTests>	(DE_NULL,	"deqp-fraction-mandatory-caselist-file",	"Case list file that must be run for each fraction",					"")
+		<< Option<WaiverFile>					(DE_NULL,	"deqp-waiver-file",							"Read waived tests from given file",									"");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -554,9 +556,9 @@ static CaseTreeNode* parseCaseList (std::istream& in)
 class CasePaths
 {
 public:
-							CasePaths	(const string& pathList);
-							CasePaths	(const vector<string>& pathList);
-	bool					matches		(const string& caseName, bool allowPrefix=false) const;
+	CasePaths(const string& pathList);
+	CasePaths(const vector<string>& pathList);
+	bool					matches(const string& caseName, bool allowPrefix = false) const;
 
 private:
 	const vector<string>	m_casePatterns;
@@ -573,11 +575,11 @@ CasePaths::CasePaths(const vector<string>& pathList)
 }
 
 // Match a single path component against a pattern component that may contain *-wildcards.
-static bool matchWildcards(string::const_iterator	patternStart,
-						   string::const_iterator	patternEnd,
-						   string::const_iterator	pathStart,
-						   string::const_iterator	pathEnd,
-						   bool						allowPrefix)
+bool matchWildcards(string::const_iterator	patternStart,
+					string::const_iterator	patternEnd,
+					string::const_iterator	pathStart,
+					string::const_iterator	pathEnd,
+					bool					allowPrefix)
 {
 	string::const_iterator	pattern	= patternStart;
 	string::const_iterator	path	= pathStart;
@@ -824,6 +826,7 @@ bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLi
 int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();							}
 bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();							}
 bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();								}
+const char*				CommandLine::getWaiverFileName				(void) const	{ return m_cmdLine.getOption<opt::WaiverFile>().c_str();					}
 const std::vector<int>&	CommandLine::getCaseFraction				(void) const	{ return m_cmdLine.getOption<opt::CaseFraction>();							}
 const char*				CommandLine::getCaseFractionMandatoryTests	(void) const	{ return m_cmdLine.getOption<opt::CaseFractionMandatoryTests>().c_str();	}
 const char*				CommandLine::getArchiveDir					(void) const	{ return m_cmdLine.getOption<opt::ArchiveDir>().c_str();					}

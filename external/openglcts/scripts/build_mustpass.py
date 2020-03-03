@@ -1074,13 +1074,13 @@ GL_CTS_KHR_MP_SINGLE_DEVICE_DIR		= "gl_cts/data/mustpass/gl/khronos_mustpass_sin
 GL_CTS_KHR_SINGLE_PROJECT			= Project(name = "Khronos Mustpass GL Single Config", path = GL_CTS_KHR_MP_SINGLE_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_SINGLE_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
 GL_MODULES							= OrderedDict([
-			('KHR-GL46',		['master',		[include('gl46-master.txt'), exclude('gl46-test-issues.txt'), exclude('gl46-waivers.txt')]]),
-			('KHR-GL45',		['master',		[include('gl45-master.txt'), exclude('gl45-test-issues.txt'), exclude('gl45-waivers.txt')]]),
-			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt'), exclude('gl44-waivers.txt')]]),
-			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt'), exclude('gl43-waivers.txt')]]),
-			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt'), exclude('gl42-waivers.txt')]]),
-			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt'), exclude('gl41-waivers.txt')]]),
-			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt'), exclude('gl40-waivers.txt')]]),
+			('KHR-GL46',		['master',		[include('gl46-master.txt'), exclude('gl46-test-issues.txt')]]),
+			('KHR-GL45',		['master',		[include('gl45-master.txt'), exclude('gl45-test-issues.txt')]]),
+			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt')]]),
+			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt')]]),
+			('KHR-GL42',		['master',		[include('gl42-master.txt'), exclude('gl42-test-issues.txt')]]),
+			('KHR-GL41',		['master',		[include('gl41-master.txt'), exclude('gl41-test-issues.txt')]]),
+			('KHR-GL40',		['master',		[include('gl40-master.txt'), exclude('gl40-test-issues.txt')]]),
 			('KHR-GL33',		['master',		[include('gl33-master.txt'), exclude('gl33-test-issues.txt')]]),
 			('KHR-GL32',		['master',		[include('gl32-master.txt'), exclude('gl32-test-issues.txt')]]),
 			('KHR-GL31',		['master',		[include('gl31-master.txt'), exclude('gl31-test-issues.txt')]]),

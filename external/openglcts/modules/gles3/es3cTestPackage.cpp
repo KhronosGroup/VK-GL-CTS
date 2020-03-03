@@ -49,6 +49,7 @@
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuWaiverUtil.hpp"
 
 namespace es3cts
 {
@@ -56,7 +57,7 @@ namespace es3cts
 class TestCaseWrapper : public tcu::TestCaseExecutor
 {
 public:
-	TestCaseWrapper(ES30TestPackage& package);
+	TestCaseWrapper(ES30TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism);
 	~TestCaseWrapper(void);
 
 	void init(tcu::TestCase* testCase, const std::string& path);
@@ -65,9 +66,11 @@ public:
 
 private:
 	ES30TestPackage& m_testPackage;
+	de::SharedPtr<tcu::WaiverUtil> m_waiverMechanism;
 };
 
-TestCaseWrapper::TestCaseWrapper(ES30TestPackage& package) : m_testPackage(package)
+TestCaseWrapper::TestCaseWrapper(ES30TestPackage& package, de::SharedPtr<tcu::WaiverUtil> waiverMechanism)
+	: m_testPackage(package), m_waiverMechanism(waiverMechanism)
 {
 }
 
@@ -75,8 +78,11 @@ TestCaseWrapper::~TestCaseWrapper(void)
 {
 }
 
-void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string&)
+void TestCaseWrapper::init(tcu::TestCase* testCase, const std::string& path)
 {
+	if (m_waiverMechanism->isOnWaiverList(path))
+		throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
+
 	glu::resetState(m_testPackage.getContext().getRenderContext(), m_testPackage.getContext().getContextInfo());
 
 	testCase->init();
@@ -192,7 +198,7 @@ void ES30TestPackage::init(void)
 
 tcu::TestCaseExecutor* ES30TestPackage::createExecutor(void) const
 {
-	return new TestCaseWrapper(const_cast<ES30TestPackage&>(*this));
+	return new TestCaseWrapper(const_cast<ES30TestPackage&>(*this), m_waiverMechanism);
 }
 
 } // es3cts

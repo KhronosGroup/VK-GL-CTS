@@ -91,6 +91,13 @@ class CaseTreeNode;
 class CasePaths;
 class Archive;
 
+// Match a single path component against a pattern component that may contain *-wildcards.
+bool matchWildcards(std::string::const_iterator		patternStart,
+					std::string::const_iterator		patternEnd,
+					std::string::const_iterator		pathStart,
+					std::string::const_iterator		pathEnd,
+					bool							allowPrefix);
+
 class CaseListFilter
 {
 public:
@@ -233,6 +240,9 @@ public:
 
 	//! Enable RenderDoc frame markers (--deqp-renderdoc)
 	bool							isRenderDocEnabled			(void) const;
+
+	//! Get waiver file name (--deqp-waiver-file)
+	const char*						getWaiverFileName			(void) const;
 
 	//! Get case list fraction
 	const std::vector<int>&			getCaseFraction				(void) const;

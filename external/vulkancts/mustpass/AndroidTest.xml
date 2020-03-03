@@ -34,10 +34,6 @@
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-VK"/>
-		<option name="deqp-caselist-file" value="vk-default-no-waivers.txt"/>
-	</test>
-	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
-		<option name="deqp-package" value="dEQP-VK"/>
 		<option name="deqp-caselist-file" value="vk-fraction-mandatory-tests.txt"/>
 	</test>
 </configuration>

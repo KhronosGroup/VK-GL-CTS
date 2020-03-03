@@ -4085,6 +4085,7 @@ KHR-GL45.shading_language_420pack.built_in_assignment
 KHR-GL45.texture_view.gettexparameter
 KHR-GL45.texture_view.errors
 KHR-GL45.texture_view.view_sampling
+KHR-GL45.texture_view.view_classes
 KHR-GL45.texture_view.coherency
 KHR-GL45.texture_view.base_and_max_levels
 KHR-GL45.texture_view.reference_counting

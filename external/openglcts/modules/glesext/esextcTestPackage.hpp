@@ -28,6 +28,12 @@
 #include "glcTestCase.hpp"
 #include "glcTestPackage.hpp"
 #include "tcuDefs.hpp"
+#include "deSharedPtr.hpp"
+
+namespace tcu
+{
+class WaiverUtil;
+};
 
 namespace esextcts
 {

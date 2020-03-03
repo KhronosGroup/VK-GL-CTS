@@ -196,6 +196,7 @@ bool App::iterate (void)
 			print("  Failed:        %d/%d (%.1f%%)\n", result.numFailed,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numFailed			/ (float)result.numExecuted) : 0.0f));
 			print("  Not supported: %d/%d (%.1f%%)\n", result.numNotSupported,	result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numNotSupported	/ (float)result.numExecuted) : 0.0f));
 			print("  Warnings:      %d/%d (%.1f%%)\n", result.numWarnings,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWarnings		/ (float)result.numExecuted) : 0.0f));
+			print("  Waived:        %d/%d (%.1f%%)\n", result.numWaived,		result.numExecuted, (result.numExecuted > 0 ? (100.0f * (float)result.numWaived			/ (float)result.numExecuted) : 0.0f));
 			if (!result.isComplete)
 				print("Test run was ABORTED!\n");
 		}

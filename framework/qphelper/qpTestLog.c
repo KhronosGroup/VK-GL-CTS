@@ -171,6 +171,7 @@ static const qpKeyStringMap s_qpTestResultMap[] =
 	{ QP_TEST_RESULT_INTERNAL_ERROR,			"InternalError"			},
 	{ QP_TEST_RESULT_CRASH,						"Crash"					},
 	{ QP_TEST_RESULT_TIMEOUT,					"Timeout"				},
+	{ QP_TEST_RESULT_WAIVER,					"Waiver"				},
 
 	/* Add new values here if needed, remember to update qpTestResult enumeration. */
 

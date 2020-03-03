@@ -15,7 +15,6 @@ LOCAL_SRC_FILES := \
 	executor/xeCallQueue.cpp \
 	executor/xeCommLink.cpp \
 	executor/xeContainerFormatParser.cpp \
-	executor/xeDefs.cpp \
 	executor/xeLocalTcpIpLink.cpp \
 	executor/xeTcpIpLink.cpp \
 	executor/xeTestCase.cpp \
@@ -24,7 +23,6 @@ LOCAL_SRC_FILES := \
 	executor/xeTestLogParser.cpp \
 	executor/xeTestLogWriter.cpp \
 	executor/xeTestResultParser.cpp \
-	executor/xeXMLParser.cpp \
 	executor/xeXMLWriter.cpp \
 	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
 	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
@@ -494,6 +492,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuTexture.cpp \
 	framework/common/tcuTextureUtil.cpp \
 	framework/common/tcuThreadUtil.cpp \
+	framework/common/tcuWaiverUtil.cpp \
 	framework/delibs/debase/deDefs.c \
 	framework/delibs/debase/deFloat16.c \
 	framework/delibs/debase/deFloat16Test.c \

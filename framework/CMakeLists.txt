@@ -12,6 +12,9 @@ add_subdirectory(opengl)
 # EGL utilities
 add_subdirectory(egl)
 
+# XE xml util
+add_subdirectory(xexml)
+
 if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/randomshaders)
 	add_subdirectory(randomshaders)
 endif ()
