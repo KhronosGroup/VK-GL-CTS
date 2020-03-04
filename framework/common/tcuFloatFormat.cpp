@@ -295,6 +295,42 @@ FloatFormat	FloatFormat::nativeDouble (void)
 	return nativeFormat<double>();
 }
 
+NormalizedFormat::NormalizedFormat (int		fractionBits)
+	: FloatFormat(0, 0, fractionBits, true, tcu::YES)
+{
+
+}
+
+double NormalizedFormat::round(double d, bool upward) const
+{
+	const int fractionBits = getFractionBits();
+
+	if (fractionBits <= 0)
+		return d;
+
+	const int maxIntValue = (1 << fractionBits) - 1;
+	const double value = d * maxIntValue;
+	const double normValue = upward ? deCeil(value) : deFloor(value);
+	return normValue / maxIntValue;
+}
+
+double NormalizedFormat::ulp(double x, double count) const
+{
+	(void) x;
+
+	const int maxIntValue = (1 << getFractionBits()) - 1;
+	const double precision = 1.0 / maxIntValue;
+	return precision * count;
+}
+
+double NormalizedFormat::roundOut (double d, bool upward, bool roundUnderOverflow) const
+{
+	if (roundUnderOverflow && deAbs(d) > 1.0 && (upward == (d < 0.0)))
+		return deSign(d);
+	else
+		return round(d, upward);
+}
+
 namespace
 {
 

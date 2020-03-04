@@ -615,24 +615,24 @@ deInt64 signExtend (deUint64 src, int bits)
 	return (deInt64) src;
 }
 
-void convertFP16 (const void*	fp16Ptr,
-				  FloatFormat	internalFormat,
-				  float&		resultMin,
-				  float&		resultMax)
+void convertFP16 (const void*						fp16Ptr,
+				  const de::SharedPtr<FloatFormat>&	internalFormat,
+				  float&							resultMin,
+				  float&							resultMax)
 {
 	const Float16  fp16(*(const deUint16*) fp16Ptr);
-	const Interval fpInterval = internalFormat.roundOut(Interval(fp16.asDouble()), false);
+	const Interval fpInterval = internalFormat->roundOut(Interval(fp16.asDouble()), false);
 
 	resultMin = (float) fpInterval.lo();
 	resultMax = (float) fpInterval.hi();
 }
 
-void convertNormalizedInt (deInt64		num,
-						   int			numBits,
-						   bool			isSigned,
-						   FloatFormat	internalFormat,
-						   float&		resultMin,
-						   float&		resultMax)
+void convertNormalizedInt (deInt64									num,
+						   int										numBits,
+						   bool										isSigned,
+						   const de::SharedPtr<tcu::FloatFormat>&	internalFormat,
+						   float&									resultMin,
+						   float&									resultMax)
 {
 	DE_ASSERT(numBits > 0);
 
@@ -643,9 +643,10 @@ void convertNormalizedInt (deInt64		num,
 		--exp;
 
 	const double div = (double) (((deUint64) 1 << exp) - 1);
+	const double value = de::max(c / div, -1.0);
 
-	Interval resultInterval(de::max(c / div, -1.0));
-	resultInterval = internalFormat.roundOut(resultInterval, false);
+	Interval resultInterval(value - internalFormat->ulp(value), value + internalFormat->ulp(value));
+	resultInterval = internalFormat->roundOut(resultInterval, false);
 
 	resultMin = (float) resultInterval.lo();
 	resultMax = (float) resultInterval.hi();
@@ -773,11 +774,11 @@ deUint64 readChannel (const void* ptr,
 	return result;
 }
 
-void convertNormalizedFormat (const void*						pixelPtr,
-							  TextureFormat						texFormat,
-							  const std::vector<FloatFormat>&	internalFormat,
-							  Vec4&								resultMin,
-							  Vec4&								resultMax)
+void convertNormalizedFormat (const void*										pixelPtr,
+							  TextureFormat										texFormat,
+							  const std::vector<de::SharedPtr<FloatFormat>>&	internalFormat,
+							  Vec4&												resultMin,
+							  Vec4&												resultMax)
 {
     TextureSwizzle				readSwizzle	= getChannelReadSwizzle(texFormat.order);
 	const TextureChannelClass	chanClass	= getTextureChannelClass(texFormat.type);
@@ -900,19 +901,19 @@ void convertNormalizedFormat (const void*						pixelPtr,
 			if (chanBits == 1)
 			{
 				if (resultMin[compNdx] == 1.0f)
-					resultMin[compNdx] -= float(internalFormat[compNdx].ulp(1.0));
+					resultMin[compNdx] -= float(internalFormat[compNdx]->ulp(1.0));
 				if (resultMax[compNdx] == 0.0f)
-					resultMax[compNdx] += float(internalFormat[compNdx].ulp(0.0));
+					resultMax[compNdx] += float(internalFormat[compNdx]->ulp(0.0));
 			}
 		}
 	}
 }
 
-void convertFloatFormat (const void*						pixelPtr,
-						 TextureFormat						texFormat,
-						 const std::vector<FloatFormat>&	internalFormat,
-						 Vec4&								resultMin,
-						 Vec4&								resultMax)
+void convertFloatFormat (const void*									pixelPtr,
+						 TextureFormat									texFormat,
+						 const std::vector<de::SharedPtr<FloatFormat>>&	internalFormat,
+						 Vec4&											resultMin,
+						 Vec4&											resultMax)
 {
 	DE_ASSERT(getTextureChannelClass(texFormat.type) == TEXTURECHANNELCLASS_FLOATING_POINT);
 
@@ -949,11 +950,11 @@ void convertFloatFormat (const void*						pixelPtr,
 
 } // anonymous
 
-void convertFormat (const void*						pixelPtr,
-					TextureFormat					texFormat,
-					const std::vector<FloatFormat>&	internalFormat,
-					Vec4&							resultMin,
-					Vec4&							resultMax)
+void convertFormat (const void*										pixelPtr,
+					TextureFormat									texFormat,
+					const std::vector<de::SharedPtr<FloatFormat>>&	internalFormat,
+					Vec4&											resultMin,
+					Vec4&											resultMax)
 {
 	const TextureChannelClass	chanClass	 = getTextureChannelClass(texFormat.type);
 

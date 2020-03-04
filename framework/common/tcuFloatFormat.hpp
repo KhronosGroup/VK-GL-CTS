@@ -49,6 +49,7 @@ public:
 									 YesNoMaybe	hasSubnormal	= MAYBE,
 									 YesNoMaybe	hasInf			= MAYBE,
 									 YesNoMaybe	hasNaN			= MAYBE);
+	virtual				~FloatFormat() {}
 
 	int					getMinExp		(void) const { return m_minExp; }
 	int					getMaxExp		(void) const { return m_maxExp; }
@@ -57,10 +58,10 @@ public:
 	YesNoMaybe			hasInf			(void) const { return m_hasInf; }
 	YesNoMaybe			hasSubnormal	(void) const { return m_hasSubnormal; }
 
-	double				ulp				(double x, double count = 1.0) const;
+	virtual double		ulp				(double x, double count = 1.0) const;
 	Interval			roundOut		(const Interval& x, bool roundUnderOverflow) const;
-	double				round			(double d, bool upward) const;
-	double				roundOut		(double d, bool upward, bool roundUnderOverflow) const;
+	virtual double		round			(double d, bool upward) const;
+	virtual double		roundOut		(double d, bool upward, bool roundUnderOverflow) const;
 	Interval			convert			(const Interval& x) const;
 
 	std::string			floatToHex		(double x) const;
@@ -81,6 +82,18 @@ private:
 	YesNoMaybe			m_hasNaN;			// Does the format support NaNs?
 	bool				m_exactPrecision;	// Are larger precisions disallowed?
 	double				m_maxValue;			// Largest representable finite value.
+} DE_WARN_UNUSED_TYPE;
+
+class NormalizedFormat : public FloatFormat
+{
+public:
+			NormalizedFormat    (int		fractionBits);
+			~NormalizedFormat	() {}
+
+	double		ulp				(double x, double count = 1.0) const override;
+	double		round			(double d, bool upward) const override;
+	double		roundOut		(double d, bool upward, bool roundUnderOverflow) const override;
+
 } DE_WARN_UNUSED_TYPE;
 
 void		FloatFormat_selfTest	(void);

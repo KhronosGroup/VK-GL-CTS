@@ -62,14 +62,14 @@ int calcUnnormalizedDim (const ImgDim dim)
 
 } // anonymous
 
-SampleVerifier::SampleVerifier (const ImageViewParameters&						imParams,
-								const SamplerParameters&						samplerParams,
-								const SampleLookupSettings&						sampleLookupSettings,
-								int												coordBits,
-								int												mipmapBits,
-								const std::vector<tcu::FloatFormat>&			conversionPrecision,
-								const std::vector<tcu::FloatFormat>&			filteringPrecision,
-								const std::vector<tcu::ConstPixelBufferAccess>&	levels)
+SampleVerifier::SampleVerifier (const ImageViewParameters&							imParams,
+								const SamplerParameters&							samplerParams,
+								const SampleLookupSettings&							sampleLookupSettings,
+								int													coordBits,
+								int													mipmapBits,
+								const std::vector<de::SharedPtr<tcu::FloatFormat>>&	conversionPrecision,
+								const std::vector<de::SharedPtr<tcu::FloatFormat>>&	filteringPrecision,
+								const std::vector<tcu::ConstPixelBufferAccess>&		levels)
 	: m_imParams				(imParams)
 	, m_samplerParams			(samplerParams)
 	, m_sampleLookupSettings	(sampleLookupSettings)
@@ -308,10 +308,10 @@ void SampleVerifier::getFilteredSample1D (const IVec3&	texelBase,
 
 		for (int i = 0; i < 2; ++i)
 		{
-			const Interval	weightInterval	= m_filteringPrecision[compNdx].roundOut(Interval(i == 0 ? 1.0f - weight : weight), false);
+			const Interval	weightInterval	= m_filteringPrecision[compNdx]->roundOut(Interval(i == 0 ? 1.0f - weight : weight), false);
 			const Interval	texelInterval	(false, texelsMin[i][compNdx], texelsMax[i][compNdx]);
 
-			resultInterval = m_filteringPrecision[compNdx].roundOut(resultInterval + weightInterval * texelInterval, false);
+			resultInterval = m_filteringPrecision[compNdx]->roundOut(resultInterval + weightInterval * texelInterval, false);
 		}
 
 		resultMin[compNdx] = (float)resultInterval.lo();
@@ -343,14 +343,14 @@ void SampleVerifier::getFilteredSample2D (const IVec3&	texelBase,
 
 		for (int i = 0; i < 2; ++i)
 		{
-			const Interval iWeightInterval = m_filteringPrecision[compNdx].roundOut(Interval(i == 0 ? 1.0f - weights[1] : weights[1]), false);
+			const Interval iWeightInterval = m_filteringPrecision[compNdx]->roundOut(Interval(i == 0 ? 1.0f - weights[1] : weights[1]), false);
 
 			for (int j = 0; j < 2; ++j)
 			{
-				const Interval jWeightInterval = m_filteringPrecision[compNdx].roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[0] : weights[0]), false);
+				const Interval jWeightInterval = m_filteringPrecision[compNdx]->roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[0] : weights[0]), false);
 				const Interval texelInterval(false, texelsMin[2 * i + j][compNdx], texelsMax[2 * i + j][compNdx]);
 
-				resultInterval = m_filteringPrecision[compNdx].roundOut(resultInterval + jWeightInterval * texelInterval, false);
+				resultInterval = m_filteringPrecision[compNdx]->roundOut(resultInterval + jWeightInterval * texelInterval, false);
 			}
 		}
 
@@ -386,19 +386,19 @@ void SampleVerifier::getFilteredSample3D (const IVec3&	texelBase,
 
 		for (int i = 0; i < 2; ++i)
 		{
-			const Interval iWeightInterval = m_filteringPrecision[compNdx].roundOut(Interval(i == 0 ? 1.0f - weights[2] : weights[2]), false);
+			const Interval iWeightInterval = m_filteringPrecision[compNdx]->roundOut(Interval(i == 0 ? 1.0f - weights[2] : weights[2]), false);
 
 			for (int j = 0; j < 2; ++j)
 			{
-				const Interval jWeightInterval = m_filteringPrecision[compNdx].roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[1] : weights[1]), false);
+				const Interval jWeightInterval = m_filteringPrecision[compNdx]->roundOut(iWeightInterval * Interval(j == 0 ? 1.0f - weights[1] : weights[1]), false);
 
 				for (int k = 0; k < 2; ++k)
 				{
-					const Interval kWeightInterval = m_filteringPrecision[compNdx].roundOut(jWeightInterval * Interval(k == 0 ? 1.0f - weights[0] : weights[0]), false);
+					const Interval kWeightInterval = m_filteringPrecision[compNdx]->roundOut(jWeightInterval * Interval(k == 0 ? 1.0f - weights[0] : weights[0]), false);
 
 					const Interval texelInterval(false, texelsMin[4 * i + 2 * j + k][compNdx], texelsMax[4 * i + 2 * j + k][compNdx]);
 
-					resultInterval = m_filteringPrecision[compNdx].roundOut(resultInterval + kWeightInterval * texelInterval, false);
+					resultInterval = m_filteringPrecision[compNdx]->roundOut(resultInterval + kWeightInterval * texelInterval, false);
 				}
 			}
 		}
@@ -542,7 +542,7 @@ bool SampleVerifier::verifySampleFiltered (const Vec4&			result,
 				const Interval idealSampleHi(false, idealSampleHiMin[compNdx], idealSampleHiMax[compNdx]);
 
 				const Interval idealSample
-					= m_filteringPrecision[compNdx].roundOut(Interval(weight) * idealSampleLo + Interval(1.0f - weight) * idealSampleHi, false);
+					= m_filteringPrecision[compNdx]->roundOut(Interval(weight) * idealSampleLo + Interval(1.0f - weight) * idealSampleHi, false);
 
 				idealSampleMin[compNdx] = (float)idealSample.lo();
 				idealSampleMax[compNdx] = (float)idealSample.hi();
