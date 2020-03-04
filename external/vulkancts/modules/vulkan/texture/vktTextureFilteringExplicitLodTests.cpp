@@ -50,6 +50,7 @@
 #include "deMath.h"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
+#include "deSharedPtr.hpp"
 
 #include <sstream>
 #include <string>
@@ -67,28 +68,31 @@ using std::string;
 namespace
 {
 
-std::vector<tcu::FloatFormat> getPrecision (VkFormat format, int fpPrecisionDelta)
+std::vector<de::SharedPtr<tcu::FloatFormat>> getPrecision (VkFormat format, int fpPrecisionDelta)
 {
-	std::vector<tcu::FloatFormat>	floatFormats;
-	const tcu::FloatFormat			fp16			(-14, 15, 10, false);
-	const tcu::FloatFormat			fp32			(-126, 127, 23, true);
-	const tcu::TextureFormat		tcuFormat		= mapVkFormat(format);
-	const tcu::TextureChannelClass	channelClass	= tcu::getTextureChannelClass(tcuFormat.type);
-	const tcu::IVec4				channelDepth	= tcu::getTextureFormatBitDepth(tcuFormat);
+	std::vector<de::SharedPtr<tcu::FloatFormat>>	floatFormats;
+	de::SharedPtr<tcu::FloatFormat>					fp16			(new tcu::FloatFormat(-14, 15, std::max(0, 10 + fpPrecisionDelta), false, tcu::YES));
+	de::SharedPtr<tcu::FloatFormat>					fp32			(new tcu::FloatFormat(-126, 127, std::max(0, 23 + fpPrecisionDelta), true));
+	const tcu::TextureFormat						tcuFormat		= mapVkFormat(format);
+	const tcu::TextureChannelClass					channelClass	= tcu::getTextureChannelClass(tcuFormat.type);
+	const tcu::IVec4								channelDepth	= tcu::getTextureFormatBitDepth(tcuFormat);
 
 	for (int channelIdx = 0; channelIdx < 4; channelIdx++)
 	{
 		switch(channelClass)
 		{
 			case TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+				floatFormats.push_back(de::SharedPtr<tcu::FloatFormat>(new tcu::NormalizedFormat(std::max(0,channelDepth[channelIdx] + fpPrecisionDelta - 1))));
+				break;
+
 			case TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-				floatFormats.push_back(tcu::FloatFormat(0, 0, std::max(0,channelDepth[channelIdx] + fpPrecisionDelta), false, tcu::YES));
+				floatFormats.push_back(de::SharedPtr<tcu::FloatFormat>(new tcu::NormalizedFormat(std::max(0,channelDepth[channelIdx] + fpPrecisionDelta))));
 				break;
 
 			case TEXTURECHANNELCLASS_FLOATING_POINT:
 				if (channelDepth[channelIdx] == 16)
 				{
-					floatFormats.push_back(tcu::FloatFormat(fp16.getMinExp(), fp16.getMaxExp(), std::max(0,fp16.getFractionBits() + fpPrecisionDelta), false, tcu::YES));
+					floatFormats.push_back(fp16);
 				}
 				else
 				{
@@ -603,15 +607,15 @@ TestStatus TextureFilteringTestInstance::verify (void)
 {
 	// \todo [2016-06-24 collinbaker] Handle cubemaps
 
-	const int						coordBits			= (int)m_context.getDeviceProperties().limits.subTexelPrecisionBits;
-	const int						mipmapBits			= (int)m_context.getDeviceProperties().limits.mipmapPrecisionBits;
-	const int						maxPrintedFailures	= 5;
-	int								failCount			= 0;
-	int								warningCount		= 0;
-	const tcu::TextureFormat		tcuFormat			= mapVkFormat(m_imParams.format);
-	std::vector<tcu::FloatFormat>	strictPrecision		= getPrecision(m_imParams.format, 0);
-	std::vector<tcu::FloatFormat>	relaxedPrecision	= tcuFormat.type == tcu::TextureFormat::HALF_FLOAT ? getPrecision(m_imParams.format, -3) : getPrecision(m_imParams.format, -2);
-	const bool						allowRelaxedPrecision	= (tcuFormat.type == tcu::TextureFormat::HALF_FLOAT || tcuFormat.type == tcu::TextureFormat::SNORM_INT8) &&
+	const int										coordBits			= (int)m_context.getDeviceProperties().limits.subTexelPrecisionBits;
+	const int										mipmapBits			= (int)m_context.getDeviceProperties().limits.mipmapPrecisionBits;
+	const int										maxPrintedFailures	= 5;
+	int												failCount			= 0;
+	int												warningCount		= 0;
+	const tcu::TextureFormat						tcuFormat			= mapVkFormat(m_imParams.format);
+	std::vector<de::SharedPtr<tcu::FloatFormat>>	strictPrecision		= getPrecision(m_imParams.format, 0);
+	std::vector<de::SharedPtr<tcu::FloatFormat>>	relaxedPrecision	= tcuFormat.type == tcu::TextureFormat::HALF_FLOAT ? getPrecision(m_imParams.format, -3) : getPrecision(m_imParams.format, -2);
+	const bool										allowRelaxedPrecision	= (tcuFormat.type == tcu::TextureFormat::HALF_FLOAT || tcuFormat.type == tcu::TextureFormat::SNORM_INT8) &&
 		(m_samplerParams.minFilter == VK_FILTER_LINEAR || m_samplerParams.magFilter == VK_FILTER_LINEAR);
 
 	const SampleVerifier			verifier			(m_imParams,
