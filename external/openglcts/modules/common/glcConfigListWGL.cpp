@@ -59,6 +59,21 @@ static void getDefaultWglConfigList(tcu::win32::Platform& wglPlatform, glu::ApiT
 						fmtInfo.pixelType == tcu::wgl::PixelFormatInfo::PIXELTYPE_RGBA;
 		bool isOk = isAOSPOk && (fmtInfo.sampleBuffers == 0);
 
+		if (isOk && (type.getProfile() == glu::PROFILE_ES) &&
+			(fmtInfo.redBits > 8 || fmtInfo.greenBits > 8 || fmtInfo.blueBits > 8 || fmtInfo.alphaBits > 8))
+		{
+			// The OpenGL ES tests use of glReadPixels is not compatible with default framebufer pixel
+			// formats with more than 8-bits per pixel component.
+			isOk = false;
+		}
+
+		if (isOk && (type.getProfile() == glu::PROFILE_ES) && fmtInfo.sRGB)
+		{
+			// The OpenGL ES tests don't interact correctly with a default framebuffer
+			// in the sRGB color space.
+			isOk = false;
+		}
+
 		if (isAOSPOk)
 		{
 			configList.aospConfigs.push_back(AOSPConfig(

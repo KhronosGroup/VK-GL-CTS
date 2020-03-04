@@ -128,6 +128,9 @@ public:
 	int				sampleBuffers;
 	int				samples;
 
+	// From WGL_EXT_colorspace
+	bool			sRGB;
+
 	// \todo [2013-04-14 pyry] Version bits?
 
 	PixelFormatInfo (void)
@@ -152,6 +155,7 @@ public:
 		, numAuxBuffers		(0)
 		, sampleBuffers		(0)
 		, samples			(0)
+		, sRGB				(false)
 	{
 	}
 };
