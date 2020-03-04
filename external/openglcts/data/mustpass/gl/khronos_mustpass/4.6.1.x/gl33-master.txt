@@ -3071,3 +3071,5 @@ KHR-GL33.texture_swizzle.api_errors
 KHR-GL33.texture_swizzle.intial_state
 KHR-GL33.texture_swizzle.smoke
 KHR-GL33.texture_swizzle.functional
+KHR-GL33.nearest_edge.offset_left
+KHR-GL33.nearest_edge.offset_right

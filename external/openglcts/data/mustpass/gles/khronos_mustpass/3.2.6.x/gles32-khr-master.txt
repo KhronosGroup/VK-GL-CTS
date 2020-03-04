@@ -1089,3 +1089,5 @@ KHR-GLES32.core.ext_texture_shadow_lod.texturelod.samplercubeshadow_fragment
 KHR-GLES32.core.ext_texture_shadow_lod.texturelod.samplercubearrayshadow_fragment
 KHR-GLES32.core.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_vertex
 KHR-GLES32.core.ext_texture_shadow_lod.texturelodoffset.sampler2darrayshadow_fragment
+KHR-GLES32.core.nearest_edge.offset_left
+KHR-GLES32.core.nearest_edge.offset_right

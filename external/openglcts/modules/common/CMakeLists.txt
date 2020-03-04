@@ -40,6 +40,8 @@ set(GLCTS_COMMON_SRCS
 	glcKHRDebugTests.hpp
 	glcMultipleContextsTests.cpp
 	glcMultipleContextsTests.hpp
+	glcNearestEdgeTests.cpp
+	glcNearestEdgeTests.hpp
 	glcNoErrorTests.cpp
 	glcNoErrorTests.hpp
 	glcRobustnessTests.cpp

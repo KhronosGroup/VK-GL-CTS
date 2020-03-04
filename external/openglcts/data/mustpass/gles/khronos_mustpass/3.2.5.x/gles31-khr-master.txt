@@ -2307,6 +2307,8 @@ KHR-GLES31.core.internalformat.copy_tex_image.rgb8
 KHR-GLES31.core.internalformat.renderbuffer.rgba8
 KHR-GLES31.core.internalformat.renderbuffer.rgb8
 KHR-GLES31.core.internalformat.renderbuffer.rgb5_a1
+KHR-GLES31.core.nearest_edge.offset_left
+KHR-GLES31.core.nearest_edge.offset_right
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_line_strip

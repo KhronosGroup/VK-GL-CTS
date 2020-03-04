@@ -44,6 +44,7 @@
 #include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -174,6 +175,7 @@ void ES30TestPackage::init(void)
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
 		coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
 		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
+		coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
 		addChild(coreGroup);
 		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 		addChild(new glcts::PackedPixelsTests(getContext()));

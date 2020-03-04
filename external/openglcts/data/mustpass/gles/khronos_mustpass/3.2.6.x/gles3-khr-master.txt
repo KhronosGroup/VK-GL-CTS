@@ -3278,6 +3278,8 @@ KHR-GLES3.core.internalformat.copy_tex_image.rgb8
 KHR-GLES3.core.internalformat.renderbuffer.rgba8
 KHR-GLES3.core.internalformat.renderbuffer.rgb8
 KHR-GLES3.core.internalformat.renderbuffer.rgb5_a1
+KHR-GLES3.core.nearest_edge.offset_left
+KHR-GLES3.core.nearest_edge.offset_right
 KHR-GLES3.parallel_shader_compile.simple_queries
 KHR-GLES3.parallel_shader_compile.max_shader_compile_threads
 KHR-GLES3.parallel_shader_compile.compilation_completion_parallel

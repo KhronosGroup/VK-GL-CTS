@@ -40,6 +40,7 @@
 #include "glcShaderStructTests.hpp"
 #include "glcShaderSwitchTests.hpp"
 #include "glcUniformBlockTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -167,6 +168,7 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::CopyImageTests(getContext()));
 		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
 		coreGroup->addChild(new deqp::Functional::TextureShadowLodTest(getContext()));
+		coreGroup->addChild(new glcts::NearestEdgeCases(getContext()));
 		addChild(coreGroup);
 	}
 	catch (...)

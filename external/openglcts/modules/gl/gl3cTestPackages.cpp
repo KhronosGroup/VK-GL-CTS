@@ -46,6 +46,7 @@
 #include "glcShaderSwitchTests.hpp"
 #include "glcTextureRepeatModeTests.hpp"
 #include "glcUniformBlockTests.hpp"
+#include "glcNearestEdgeTests.hpp"
 #include "gluStateReset.hpp"
 #include "tcuTestLog.hpp"
 
@@ -293,6 +294,7 @@ void GL33TestPackage::init(void)
 		addChild(new glcts::PipelineStatisticsQueryTests(getContext()));
 		addChild(new glcts::CullDistance::Tests(getContext()));
 		addChild(new gl3cts::TextureSwizzleTests(getContext()));
+		addChild(new glcts::NearestEdgeCases(getContext()));
 	}
 	catch (...)
 	{
