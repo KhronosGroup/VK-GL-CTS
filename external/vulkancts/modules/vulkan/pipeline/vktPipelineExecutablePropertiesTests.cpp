@@ -263,7 +263,7 @@ public:
 															 const char*					sourceName,
 															 const char*					entryName);
 	void					enableTessellationStage			(deUint32						patchControlPoints);
-	VkPipeline				buildPipeline					(tcu::UVec2						renderSize,
+	Move<VkPipeline>		buildPipeline					(tcu::UVec2						renderSize,
 															 VkRenderPass					renderPass,
 															 VkPipelineCache				cache,
 															 VkPipelineLayout				pipelineLayout,
@@ -326,8 +326,8 @@ void SimpleGraphicsPipelineBuilder::bindShaderStage (VkShaderStageFlagBits	stage
 	m_shaderStageCount++;
 }
 
-VkPipeline SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, VkRenderPass renderPass, VkPipelineCache cache,
-														 VkPipelineLayout pipelineLayout, VkPipelineCreateFlags flags)
+Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, VkRenderPass renderPass, VkPipelineCache cache,
+															   VkPipelineLayout pipelineLayout, VkPipelineCreateFlags flags)
 {
 	const DeviceInterface&		vk					= m_context.getDeviceInterface();
 	const VkDevice				vkDevice			= m_context.getDevice();
@@ -515,9 +515,8 @@ VkPipeline SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 renderSize, 
 		DE_NULL,											// VkPipeline										basePipelineHandle;
 		0,													// deInt32											basePipelineIndex;
 	};
-	VkPipeline pipeline;
-	vk.createGraphicsPipelines(vkDevice, cache, 1u, &graphicsPipelineParams, DE_NULL, &pipeline);
-	return pipeline;
+
+	return createGraphicsPipeline(vk, vkDevice, cache, &graphicsPipelineParams, DE_NULL);
 }
 
 void SimpleGraphicsPipelineBuilder::enableTessellationStage (deUint32 patchControlPoints)
@@ -568,7 +567,7 @@ protected:
 	Move<VkPipelineCache>	m_cache;
 	deBool					m_extensions;
 
-	VkPipeline				m_pipeline[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkPipeline>		m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 };
 
 ExecutablePropertiesTestInstance::ExecutablePropertiesTestInstance (Context&					context,
@@ -636,7 +635,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyStatistics (deUint32 exe
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR,	// VkStructureType					sType;
 			DE_NULL,										// const void*						pNext;
-			m_pipeline[ndx],								// VkPipeline						pipeline;
+			*m_pipeline[ndx],								// VkPipeline						pipeline;
 			executableNdx,									// uint32_t							executableIndex;
 		};
 
@@ -793,7 +792,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyInternalRepresentations 
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR,	// VkStructureType					sType;
 		DE_NULL,										// const void*						pNext;
-		m_pipeline[1],									// VkPipeline						pipeline;
+		*m_pipeline[1],									// VkPipeline						pipeline;
 		executableNdx,									// uint32_t							executableIndex;
 	};
 
@@ -922,7 +921,7 @@ tcu::TestStatus ExecutablePropertiesTestInstance::verifyTestResult (void)
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR,	// VkStructureType					sType;
 			DE_NULL,								// const void*						pNext;
-			m_pipeline[ndx],						// VkPipeline						pipeline;
+			*m_pipeline[ndx],						// VkPipeline						pipeline;
 
 		};
 		deUint32 executableCount = 0;
@@ -1338,14 +1337,14 @@ protected:
 	void					buildPipeline					(deUint32 ndx);
 protected:
 	Move<VkBuffer>					m_inputBuf;
-	de::MovePtr<Allocation>		m_inputBufferAlloc;
+	de::MovePtr<Allocation>			m_inputBufferAlloc;
 	Move<VkShaderModule>			m_computeShaderModule[PIPELINE_CACHE_NDX_COUNT];
 
 	Move<VkBuffer>					m_outputBuf[PIPELINE_CACHE_NDX_COUNT];
-	de::MovePtr<Allocation>		m_outputBufferAlloc[PIPELINE_CACHE_NDX_COUNT];
+	de::MovePtr<Allocation>			m_outputBufferAlloc[PIPELINE_CACHE_NDX_COUNT];
 
 	Move<VkDescriptorPool>			m_descriptorPool[PIPELINE_CACHE_NDX_COUNT];
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayout[PIPELINE_CACHE_NDX_COUNT];
+	Move<VkDescriptorSetLayout>		m_descriptorSetLayout[PIPELINE_CACHE_NDX_COUNT];
 	Move<VkDescriptorSet>			m_descriptorSet[PIPELINE_CACHE_NDX_COUNT];
 
 	Move<VkPipelineLayout>			m_pipelineLayout[PIPELINE_CACHE_NDX_COUNT];
@@ -1461,7 +1460,7 @@ void ComputeExecutablePropertiesTestInstance::buildPipeline (deUint32 ndx)
 		0u,															// deInt32							basePipelineIndex;
 	};
 
-	vk.createComputePipelines(vkDevice, *m_cache, 1u, &pipelineCreateInfo, DE_NULL, &m_pipeline[ndx]);
+	m_pipeline[ndx] = createComputePipeline(vk, vkDevice, *m_cache, &pipelineCreateInfo, DE_NULL);
 }
 
 ComputeExecutablePropertiesTestInstance::ComputeExecutablePropertiesTestInstance (Context&				context,
