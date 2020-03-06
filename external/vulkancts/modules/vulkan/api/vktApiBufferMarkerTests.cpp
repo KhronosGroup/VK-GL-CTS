@@ -414,7 +414,6 @@ enum MemoryDepOwner
 
 void computeMemoryDepBarrier(MemoryDepMethod			method,
 							 MemoryDepOwner				owner,
-							 VkPipelineStageFlagBits	markerStage,
 							 VkAccessFlags*				memoryDepAccess,
 							 VkPipelineStageFlags*		executionScope)
 {
@@ -423,7 +422,7 @@ void computeMemoryDepBarrier(MemoryDepMethod			method,
 	if (owner == MEMORY_DEP_OWNER_MARKER)
 	{
 		*memoryDepAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
-		*executionScope  = markerStage;
+		*executionScope  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	}
 	else
 	{
@@ -877,8 +876,8 @@ tcu::TestStatus bufferMarkerMemoryDep(Context& context, MemoryDepParams params)
 			VkPipelineStageFlags srcStageMask;
 			VkPipelineStageFlags dstStageMask;
 
-			computeMemoryDepBarrier(params.method, oldOwner, params.base.stage, &memoryDep.srcAccessMask, &srcStageMask);
-			computeMemoryDepBarrier(params.method, newOwner, params.base.stage, &memoryDep.dstAccessMask, &dstStageMask);
+			computeMemoryDepBarrier(params.method, oldOwner, &memoryDep.srcAccessMask, &srcStageMask);
+			computeMemoryDepBarrier(params.method, newOwner, &memoryDep.dstAccessMask, &dstStageMask);
 
 			vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 1, &memoryDep, 0, DE_NULL);
 		}
