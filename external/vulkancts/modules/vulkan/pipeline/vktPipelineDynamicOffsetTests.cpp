@@ -45,6 +45,7 @@
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
+#include <sstream>
 
 namespace vkt
 {
@@ -63,6 +64,13 @@ typedef de::SharedPtr<Unique<VkRenderPass> >	VkRenderPassSp;
 typedef de::SharedPtr<Unique<VkFramebuffer> >	VkFramebufferSp;
 typedef de::SharedPtr<Unique<VkPipeline> >		VkPipelineSp;
 
+enum class GroupingStrategy
+{
+	SINGLE_SET	= 0,
+	MULTISET	= 1,
+	ARRAYS		= 2,
+};
+
 struct TestParams
 {
 	VkDescriptorType	descriptorType;
@@ -71,6 +79,7 @@ struct TestParams
 	deUint32			numDescriptorSetBindings;
 	deUint32			numDynamicBindings;
 	deUint32			numNonDynamicBindings;
+	GroupingStrategy	groupingStrategy;
 };
 
 vector<Vertex4RGBA> createQuads (deUint32 numQuads, float size)
@@ -133,28 +142,28 @@ public:
 	tcu::TestStatus				verifyImage							(void);
 
 private:
-	const tcu::UVec2			m_renderSize;
-	const VkFormat				m_colorFormat;
-	VkImageCreateInfo			m_colorImageCreateInfo;
-	Move<VkImage>				m_colorImage;
-	de::MovePtr<Allocation>		m_colorImageAlloc;
-	Move<VkImageView>			m_colorAttachmentView;
-	vector<VkRenderPassSp>		m_renderPasses;
-	vector<VkFramebufferSp>		m_framebuffers;
-	Move<VkShaderModule>		m_vertexShaderModule;
-	Move<VkShaderModule>		m_fragmentShaderModule;
-	Move<VkBuffer>				m_vertexBuffer;
-	de::MovePtr<Allocation>		m_vertexBufferAlloc;
-	Move<VkBuffer>				m_buffer;
-	de::MovePtr<Allocation>		m_bufferAlloc;
-	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
-	Move<VkDescriptorPool>		m_descriptorPool;
-	Move<VkDescriptorSet>		m_descriptorSet;
-	Move<VkPipelineLayout>		m_pipelineLayout;
-	vector<VkPipelineSp>		m_graphicsPipelines;
-	Move<VkCommandPool>			m_cmdPool;
-	vector<VkCommandBufferSp>	m_cmdBuffers;
-	vector<Vertex4RGBA>			m_vertices;
+	const tcu::UVec2					m_renderSize;
+	const VkFormat						m_colorFormat;
+	VkImageCreateInfo					m_colorImageCreateInfo;
+	Move<VkImage>						m_colorImage;
+	de::MovePtr<Allocation>				m_colorImageAlloc;
+	Move<VkImageView>					m_colorAttachmentView;
+	vector<VkRenderPassSp>				m_renderPasses;
+	vector<VkFramebufferSp>				m_framebuffers;
+	Move<VkShaderModule>				m_vertexShaderModule;
+	Move<VkShaderModule>				m_fragmentShaderModule;
+	Move<VkBuffer>						m_vertexBuffer;
+	de::MovePtr<Allocation>				m_vertexBufferAlloc;
+	Move<VkBuffer>						m_buffer;
+	de::MovePtr<Allocation>				m_bufferAlloc;
+	vector<Move<VkDescriptorSetLayout>>	m_descriptorSetLayouts;
+	Move<VkDescriptorPool>				m_descriptorPool;
+	vector<Move<VkDescriptorSet>>		m_descriptorSets;
+	Move<VkPipelineLayout>				m_pipelineLayout;
+	vector<VkPipelineSp>				m_graphicsPipelines;
+	Move<VkCommandPool>					m_cmdPool;
+	vector<VkCommandBufferSp>			m_cmdBuffers;
+	vector<Vertex4RGBA>					m_vertices;
 };
 
 DynamicOffsetGraphicsTestInstance::DynamicOffsetGraphicsTestInstance (Context& context, const TestParams& params)
@@ -175,10 +184,15 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	deUint32						offset						= 0;
 	deUint32						quadNdx						= 0;
 	const VkPhysicalDeviceLimits	deviceLimits				= getPhysicalDeviceProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()).limits;
-	const VkDeviceSize				colorBlockInputSize			= de::max(kColorSize, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
+	const VkDeviceSize				alignment					= ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ? deviceLimits.minUniformBufferOffsetAlignment : deviceLimits.minStorageBufferOffsetAlignment);
+	const VkDeviceSize				extraBytes					= kColorSize % alignment;
+	const VkDeviceSize				colorBlockInputSize			= ((extraBytes == 0ull) ? kColorSize : (kColorSize + alignment - extraBytes));
 	const VkDeviceSize				bufferSize					= colorBlockInputSize * kNumTestColors;
 	const VkDeviceSize				bindingOffset				= bufferSize / numBindings;
 	const VkDescriptorType			nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+	vector<VkDescriptorSetLayout>	descriptorSetLayoutsPlain;
+	vector<VkDescriptorSet>			descriptorSetsPlain;
 
 	// Create color image
 	{
@@ -318,45 +332,77 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 
 	// Create pipeline layout
 	{
-		// Create descriptor set layout
+		// Create descriptor set layouts
 		vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings;
 
 		for (deUint32 binding = 0; binding < numBindings; binding++)
 		{
-			const VkDescriptorType					descriptorType					= binding >= m_params.numDynamicBindings ? nonDynamicDescriptorType : m_params.descriptorType;
+			const bool								dynamicDesc						= (binding < m_params.numDynamicBindings);
+			const VkDescriptorType					descriptorType					= (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
+			const deUint32							bindingNumber					= (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? binding : 0u);
+			const deUint32							descriptorCount					= ((m_params.groupingStrategy == GroupingStrategy::ARRAYS) ? (dynamicDesc ? m_params.numDynamicBindings : m_params.numNonDynamicBindings) : 1u);
 			const VkDescriptorSetLayoutBinding		descriptorSetLayoutBinding		=
 			{
-				binding,					// uint32_t				binding;
+				bindingNumber,				// uint32_t				binding;
 				descriptorType,				// VkDescriptorType		descriptorType;
-				1u,							// uint32_t				descriptorCount;
+				descriptorCount,			// uint32_t				descriptorCount;
 				VK_SHADER_STAGE_VERTEX_BIT,	// VkShaderStageFlags	stageFlags;
 				DE_NULL						// const VkSampler*		pImmutableSamplers;
 			};
 
+			// Skip used descriptors in array mode.
+			if (m_params.groupingStrategy == GroupingStrategy::ARRAYS)
+				binding = (dynamicDesc ? m_params.numDynamicBindings - 1 : numBindings);
+
 			descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
 		}
 
-		const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-			numBindings,											// uint32_t								bindingCount;
-			descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
-		};
+		vector<VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutCreateInfos;
 
-		m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL);
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+		{
+			const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkDescriptorSetLayoutCreateFlags		flags;
+				numBindings,											// uint32_t								bindingCount;
+				descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
+			};
+
+			m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo));
+		}
+		else
+		{
+			for (size_t i = 0; i < descriptorSetLayoutBindings.size(); ++i)
+			{
+				const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+				{
+					VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
+					DE_NULL,												// const void*							pNext;
+					0u,														// VkDescriptorSetLayoutCreateFlags		flags;
+					1u,														// uint32_t								bindingCount;
+					&descriptorSetLayoutBindings[i]							// const VkDescriptorSetLayoutBinding*	pBindings;
+				};
+
+				m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo));
+			}
+		}
 
 		// Create pipeline layout
+		descriptorSetLayoutsPlain.resize(m_descriptorSetLayouts.size());
+		for (size_t i = 0; i < descriptorSetLayoutsPlain.size(); ++i)
+			descriptorSetLayoutsPlain[i] = m_descriptorSetLayouts[i].get();
+
 		const VkPipelineLayoutCreateInfo		pipelineLayoutParams			=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			0u,												// VkPipelineLayoutCreateFlags	flags;
-			1u,												// deUint32						descriptorSetCount;
-			&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,												// deUint32						pushConstantRangeCount;
-			DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// VkStructureType				sType;
+			DE_NULL,													// const void*					pNext;
+			0u,															// VkPipelineLayoutCreateFlags	flags;
+			static_cast<deUint32>(descriptorSetLayoutsPlain.size()),	// deUint32						descriptorSetCount;
+			descriptorSetLayoutsPlain.data(),							// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,															// deUint32						pushConstantRangeCount;
+			DE_NULL														// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -395,26 +441,34 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		DescriptorPoolBuilder	poolBuilder;
 		poolBuilder.addType(m_params.descriptorType, m_params.numDynamicBindings);
 		poolBuilder.addType(nonDynamicDescriptorType, m_params.numNonDynamicBindings);
-		m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_descriptorSetLayouts.size()));
 	}
 
-	// Create descriptor set
+	// Create descriptor sets
 	{
-		const VkDescriptorSetAllocateInfo allocInfo =
+		for (size_t i = 0; i < m_descriptorSetLayouts.size(); ++i)
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			*m_descriptorPool,								// VkDescriptorPool					descriptorPool;
-			1u,												// deUint32							setLayoutCount;
-			&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*		pSetLayouts;
-		};
-		m_descriptorSet	= allocateDescriptorSet(vk, vkDevice, &allocInfo);
+			const VkDescriptorSetAllocateInfo allocInfo =
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType					sType;
+				DE_NULL,										// const void*						pNext;
+				*m_descriptorPool,								// VkDescriptorPool					descriptorPool;
+				1u,												// deUint32							setLayoutCount;
+				&(m_descriptorSetLayouts[i].get()),				// const VkDescriptorSetLayout*		pSetLayouts;
+			};
+			m_descriptorSets.push_back(allocateDescriptorSet(vk, vkDevice, &allocInfo));
+		}
 	}
 
-	// Update descriptor set
+	descriptorSetsPlain.resize(m_descriptorSets.size());
+	for (size_t i = 0; i < descriptorSetsPlain.size(); ++i)
+		descriptorSetsPlain[i] = m_descriptorSets[i].get();
+
+	// Update descriptor sets
 	for (deUint32 binding = 0; binding < numBindings; ++binding)
 	{
-		const VkDescriptorType			descriptorType			= binding >= m_params.numDynamicBindings ? nonDynamicDescriptorType : m_params.descriptorType;
+		const bool						dynamicDesc				= (binding < m_params.numDynamicBindings);
+		const VkDescriptorType			descriptorType			= (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
 		const VkDescriptorBufferInfo	descriptorBufferInfo	=
 		{
 			*m_buffer,					// VkBuffer			buffer;
@@ -422,13 +476,36 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			kColorSize					// VkDeviceSize		range;
 		};
 
+		VkDescriptorSet	bindingSet;
+		deUint32		bindingNumber;
+		deUint32		dstArrayElement;
+
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+		{
+			bindingSet		= m_descriptorSets[0].get();
+			bindingNumber	= binding;
+			dstArrayElement	= 0u;
+		}
+		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+		{
+			bindingSet		= m_descriptorSets[binding].get();
+			bindingNumber	= 0u;
+			dstArrayElement	= 0u;
+		}
+		else // GroupingStrategy::ARRAYS
+		{
+			bindingSet		= (dynamicDesc ? m_descriptorSets[0].get() : m_descriptorSets[1].get());
+			bindingNumber	= 0u;
+			dstArrayElement	= (dynamicDesc ? binding : (binding - m_params.numDynamicBindings));
+		}
+
 		const VkWriteDescriptorSet		writeDescriptorSet		=
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType					sType;
 			DE_NULL,								// const void*						pNext;
-			*m_descriptorSet,						// VkDescriptorSet					dstSet;
-			binding,								// uint32_t							dstBinding;
-			0u,										// uint32_t							dstArrayElement;
+			bindingSet,								// VkDescriptorSet					dstSet;
+			bindingNumber,							// uint32_t							dstBinding;
+			dstArrayElement,						// uint32_t							dstArrayElement;
 			1u,										// uint32_t							descriptorCount;
 			descriptorType,							// VkDescriptorType					descriptorType;
 			DE_NULL,								// const VkDescriptorImageInfo*		pImageInfo;
@@ -552,7 +629,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 			for (deUint32 dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
 				offsets.push_back(offset + (deUint32)colorBlockInputSize * dynamicBindingIdx);
 
-			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), m_params.numDynamicBindings, offsets.data());
+			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, static_cast<deUint32>(descriptorSetsPlain.size()), descriptorSetsPlain.data(), m_params.numDynamicBindings, offsets.data());
 			offset += (deUint32)colorBlockInputSize;
 
 			// Draw quad
@@ -670,18 +747,57 @@ TestInstance* DynamicOffsetGraphicsTest::createInstance (Context& context) const
 
 void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
 {
-	const deUint32	numBindings	= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const string	bufferType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "readonly buffer";
-	string			inputBlocks;
-	string			inputSum;
+	const deUint32	numBindings		= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
+	const string	bufferType		= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "readonly buffer";
+	ostringstream	inputBlocks;
+	ostringstream	inputSum;
+	string			setAndBinding;
+	string			blockSuffix;
+	string			accessSuffix;
+	bool			dynArrayDecl	= false;	// Dynamic descriptor block array declared?
+	bool			nonDynArrayDecl	= false;	// Nondynamic descriptor block array declared?
 
-	for (deUint32 binding = 0; binding < numBindings; binding++)
+	for (deUint32 b = 0; b < numBindings; b++)
 	{
-		const string b = de::toString(binding);
-		inputBlocks +=
-			string("layout(set = 0, binding = ") + b + ") " + bufferType + " Block" + b + "\n"
-			+ "{\n" + "    vec4 color;\n" + "} inputData" + b + ";\n";
-		inputSum += string("    vtxColor.rgb += inputData") + b + ".color.rgb;\n";
+		const bool		dynBind	= (b < m_params.numDynamicBindings);
+		const string	bStr	= de::toString(b);
+
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+		{
+			setAndBinding	= "set = 0, binding = " + bStr;
+			blockSuffix		= bStr;
+			accessSuffix	= bStr;
+		}
+		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+		{
+			setAndBinding	= "set = " + bStr + ", binding = 0";
+			blockSuffix		= bStr;
+			accessSuffix	= bStr;
+		}
+		else // GroupingStrategy::ARRAYS
+		{
+			// In array mode, only two sets are declared, one with an array of dynamic descriptors and another one with an array of
+			// nondynamic descriptors.
+			setAndBinding	= "set = " + string(dynBind ? "0" : "1") + ", binding = 0";
+			blockSuffix		= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(m_params.numDynamicBindings) : de::toString(m_params.numNonDynamicBindings)) + "]";
+			accessSuffix	= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(b) : de::toString(b - m_params.numDynamicBindings)) + "]";
+		}
+
+		// In array mode, declare the input block only once per descriptor type.
+		bool& arrayDeclFlag = (dynBind ? dynArrayDecl : nonDynArrayDecl);
+		if (m_params.groupingStrategy != GroupingStrategy::ARRAYS || !arrayDeclFlag)
+		{
+			inputBlocks
+				<< "layout(" << setAndBinding << ") " << bufferType << " Block" << bStr << "\n"
+				<< "{\n"
+				<< "    vec4 color;\n"
+				<< "} inputData" << blockSuffix << ";\n"
+				;
+			arrayDeclFlag = true;
+		}
+
+		// But the sum always needs to be added once per descriptor.
+		inputSum << "    vtxColor.rgb += inputData" << accessSuffix << ".color.rgb;\n";
 	}
 
 	const string	vertexSrc	=
@@ -689,7 +805,7 @@ void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollectio
 		"layout(location = 0) in highp vec4 position;\n"
 		"layout(location = 1) in highp vec4 color;\n"
 		"layout(location = 0) out highp vec4 vtxColor;\n"
-		+ inputBlocks +
+		+ inputBlocks.str() +
 		"\n"
 		"out gl_PerVertex { vec4 gl_Position; };\n"
 		"\n"
@@ -697,7 +813,7 @@ void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollectio
 		"{\n"
 		"    gl_Position = position;\n"
 		"    vtxColor = vec4(0, 0, 0, 1);\n"
-		+ inputSum +
+		+ inputSum.str() +
 		"}\n";
 
 	const string	fragmentSrc	=
@@ -724,21 +840,21 @@ public:
 	tcu::TestStatus				verifyOutput						(void);
 
 private:
-	const deUint32					m_numBindings;
-	const deUint32					m_numOutputColors;
-	const VkPhysicalDeviceLimits	m_deviceLimits;
-	Move<VkShaderModule>			m_computeShaderModule;
-	Move<VkBuffer>					m_buffer;
-	de::MovePtr<Allocation>			m_bufferAlloc;
-	Move<VkDescriptorSetLayout>		m_descriptorSetLayout;
-	Move<VkDescriptorPool>			m_descriptorPool;
-	Move<VkDescriptorSet>			m_descriptorSet;
-	Move<VkPipelineLayout>			m_pipelineLayout;
-	Move<VkPipeline>				m_computePipeline;
-	Move<VkBuffer>					m_outputBuffer;
-	de::MovePtr<Allocation>			m_outputBufferAlloc;
-	Move<VkCommandPool>				m_cmdPool;
-	vector<VkCommandBufferSp>		m_cmdBuffers;
+	const deUint32						m_numBindings;
+	const deUint32						m_numOutputColors;
+	const VkPhysicalDeviceLimits		m_deviceLimits;
+	Move<VkShaderModule>				m_computeShaderModule;
+	Move<VkBuffer>						m_buffer;
+	de::MovePtr<Allocation>				m_bufferAlloc;
+	vector<Move<VkDescriptorSetLayout>>	m_descriptorSetLayouts;
+	Move<VkDescriptorPool>				m_descriptorPool;
+	vector<Move<VkDescriptorSet>>		m_descriptorSets;
+	Move<VkPipelineLayout>				m_pipelineLayout;
+	Move<VkPipeline>					m_computePipeline;
+	Move<VkBuffer>						m_outputBuffer;
+	de::MovePtr<Allocation>				m_outputBufferAlloc;
+	Move<VkCommandPool>					m_cmdPool;
+	vector<VkCommandBufferSp>			m_cmdBuffers;
 };
 
 DynamicOffsetComputeTestInstance::DynamicOffsetComputeTestInstance (Context& context, const TestParams& params)
@@ -751,41 +867,55 @@ DynamicOffsetComputeTestInstance::DynamicOffsetComputeTestInstance (Context& con
 
 void DynamicOffsetComputeTestInstance::init (void)
 {
-	const DeviceInterface&		vk							= m_context.getDeviceInterface();
-	const VkDevice				vkDevice					= m_context.getDevice();
-	const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
-	const VkDeviceSize			colorBlockInputSize			= de::max(kColorSize, m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? m_deviceLimits.minUniformBufferOffsetAlignment : m_deviceLimits.minStorageBufferOffsetAlignment);
-	const deUint32				colorBlockInputSizeU32		= static_cast<deUint32>(colorBlockInputSize);
-	const VkDeviceSize			colorBlockOutputSize		= de::max(kColorSize, m_deviceLimits.minStorageBufferOffsetAlignment);
-	const deUint32				colorBlockOutputSizeU32		= static_cast<deUint32>(colorBlockOutputSize);
-	const VkDeviceSize			bufferSize					= colorBlockInputSize * kNumTestColors;
-	const VkDeviceSize			bindingOffset				= bufferSize / m_numBindings;
-	const VkDescriptorType		nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	const VkDeviceSize			outputBufferSize			= colorBlockOutputSize * m_numOutputColors;
+	const DeviceInterface&			vk							= m_context.getDeviceInterface();
+	const VkDevice					vkDevice					= m_context.getDevice();
+	const deUint32					queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkDeviceSize				inputAlignment				= ((m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) ? m_deviceLimits.minUniformBufferOffsetAlignment : m_deviceLimits.minStorageBufferOffsetAlignment);
+	const VkDeviceSize				inputExtraBytes				= kColorSize % inputAlignment;
+	const VkDeviceSize				colorBlockInputSize			= ((inputExtraBytes == 0ull) ? kColorSize : (kColorSize + inputAlignment - inputExtraBytes));
+	const deUint32					colorBlockInputSizeU32		= static_cast<deUint32>(colorBlockInputSize);
+	const VkDeviceSize				outputExtraBytes			= kColorSize % m_deviceLimits.minStorageBufferOffsetAlignment;
+	const VkDeviceSize				colorBlockOutputSize		= ((outputExtraBytes == 0ull) ? kColorSize : (kColorSize + m_deviceLimits.minStorageBufferOffsetAlignment - outputExtraBytes));
+	const deUint32					colorBlockOutputSizeU32		= static_cast<deUint32>(colorBlockOutputSize);
+	const VkDeviceSize				bufferSize					= colorBlockInputSize * kNumTestColors;
+	const VkDeviceSize				bindingOffset				= bufferSize / m_numBindings;
+	const VkDescriptorType			nonDynamicDescriptorType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	const VkDeviceSize				outputBufferSize			= colorBlockOutputSize * m_numOutputColors;
+
+	vector<VkDescriptorSetLayout>	descriptorSetLayoutsPlain;
+	vector<VkDescriptorSet>			descriptorSetsPlain;
 
 	// Create pipeline layout
 	{
-		// Create descriptor set layout
+		// Create descriptor set layouts
 		vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings;
 
 		for (deUint32 binding = 0; binding < m_numBindings; binding++)
 		{
-			const VkDescriptorType					descriptorType				= binding >= m_params.numDynamicBindings ? nonDynamicDescriptorType : m_params.descriptorType;
+			const bool								dynamicDesc					= (binding < m_params.numDynamicBindings);
+			const VkDescriptorType					descriptorType				= (dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType);
+			const deUint32							bindingNumber				= (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? binding : 0u);
+			const deUint32							descriptorCount				= ((m_params.groupingStrategy == GroupingStrategy::ARRAYS) ? (dynamicDesc ? m_params.numDynamicBindings : m_params.numNonDynamicBindings) : 1u);
 			const VkDescriptorSetLayoutBinding		descriptorSetLayoutBinding	=
 			{
-				binding,						// uint32_t				binding;
+				bindingNumber,					// uint32_t				binding;
 				descriptorType,					// VkDescriptorType		descriptorType;
-				1u,								// uint32_t				descriptorCount;
+				descriptorCount,				// uint32_t				descriptorCount;
 				VK_SHADER_STAGE_COMPUTE_BIT,	// VkShaderStageFlags	stageFlags;
 				DE_NULL							// const VkSampler*		pImmutableSamplers;
 			};
 
+			// Skip used descriptors in array mode.
+			if (m_params.groupingStrategy == GroupingStrategy::ARRAYS)
+				binding = (dynamicDesc ? m_params.numDynamicBindings - 1 : m_numBindings);
+
 			descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
 		}
 
+		const deUint32							bindingNumberOutput					= (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET ? m_numBindings : 0u);
 		const VkDescriptorSetLayoutBinding		descriptorSetLayoutBindingOutput	=
 		{
-			m_numBindings,								// uint32_t				binding;
+			bindingNumberOutput,						// uint32_t				binding;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	// VkDescriptorType		descriptorType;
 			1u,											// uint32_t				descriptorCount;
 			VK_SHADER_STAGE_COMPUTE_BIT,				// VkShaderStageFlags	stageFlags;
@@ -794,27 +924,50 @@ void DynamicOffsetComputeTestInstance::init (void)
 
 		descriptorSetLayoutBindings.push_back(descriptorSetLayoutBindingOutput);
 
-		const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			0u,														// VkDescriptorSetLayoutCreateFlags		flags;
-			m_numBindings + 1,										// uint32_t								bindingCount;
-			descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
-		};
+			const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkDescriptorSetLayoutCreateFlags		flags;
+				m_numBindings + 1,										// uint32_t								bindingCount;
+				descriptorSetLayoutBindings.data()						// const VkDescriptorSetLayoutBinding*	pBindings;
+			};
 
-		m_descriptorSetLayout = createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL);
+			m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+		}
+		else
+		{
+			for (size_t i = 0; i < descriptorSetLayoutBindings.size(); ++i)
+			{
+				const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+				{
+					VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType						sType;
+					DE_NULL,												// const void*							pNext;
+					0u,														// VkDescriptorSetLayoutCreateFlags		flags;
+					1u,														// uint32_t								bindingCount;
+					&descriptorSetLayoutBindings[i]							// const VkDescriptorSetLayoutBinding*	pBindings;
+				};
+
+				m_descriptorSetLayouts.push_back(createDescriptorSetLayout(vk, vkDevice, &descriptorSetLayoutCreateInfo, DE_NULL));
+			}
+		}
 
 		// Create pipeline layout
+		descriptorSetLayoutsPlain.resize(m_descriptorSetLayouts.size());
+		for (size_t i = 0; i < descriptorSetLayoutsPlain.size(); ++i)
+			descriptorSetLayoutsPlain[i] = m_descriptorSetLayouts[i].get();
+
 		const VkPipelineLayoutCreateInfo		pipelineLayoutParams			=
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			0u,												// VkPipelineLayoutCreateFlags	flags;
-			1u,												// deUint32						descriptorSetCount;
-			&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
-			0u,												// deUint32						pushConstantRangeCount;
-			DE_NULL											// const VkPushDescriptorRange*	pPushDescriptorRanges;
+			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,				// VkStructureType				sType;
+			DE_NULL,													// const void*					pNext;
+			0u,															// VkPipelineLayoutCreateFlags	flags;
+			static_cast<deUint32>(descriptorSetLayoutsPlain.size()),	// deUint32						descriptorSetCount;
+			descriptorSetLayoutsPlain.data(),							// const VkDescriptorSetLayout*	pSetLayouts;
+			0u,															// deUint32						pushConstantRangeCount;
+			DE_NULL														// const VkPushDescriptorRange*	pPushDescriptorRanges;
 		};
 
 		m_pipelineLayout = createPipelineLayout(vk, vkDevice, &pipelineLayoutParams);
@@ -873,26 +1026,34 @@ void DynamicOffsetComputeTestInstance::init (void)
 		poolBuilder.addType(m_params.descriptorType, m_params.numDynamicBindings);
 		poolBuilder.addType(nonDynamicDescriptorType, m_params.numNonDynamicBindings);
 		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1u);
-		m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+		m_descriptorPool = poolBuilder.build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, static_cast<deUint32>(m_descriptorSetLayouts.size()));
 	}
 
-	// Create descriptor set
+	// Create descriptor sets
 	{
-		const VkDescriptorSetAllocateInfo allocInfo =
+		for (size_t i = 0; i < m_descriptorSetLayouts.size(); ++i)
 		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			*m_descriptorPool,								// VkDescriptorPool				descriptorPool;
-			1u,												// deUint32						setLayoutCount;
-			&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
-		};
-		m_descriptorSet	= allocateDescriptorSet(vk, vkDevice, &allocInfo);
+			const VkDescriptorSetAllocateInfo allocInfo =
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType				sType;
+				DE_NULL,										// const void*					pNext;
+				*m_descriptorPool,								// VkDescriptorPool				descriptorPool;
+				1u,												// deUint32						setLayoutCount;
+				&(m_descriptorSetLayouts[i].get()),				// const VkDescriptorSetLayout*	pSetLayouts;
+			};
+			m_descriptorSets.push_back(allocateDescriptorSet(vk, vkDevice, &allocInfo));
+		}
 	}
+
+	descriptorSetsPlain.resize(m_descriptorSets.size());
+	for (size_t i = 0; i < descriptorSetsPlain.size(); ++i)
+		descriptorSetsPlain[i] = m_descriptorSets[i].get();
 
 	// Update input buffer descriptors
 	for (deUint32 binding = 0; binding < m_numBindings; ++binding)
 	{
-		const VkDescriptorType			descriptorType			= binding >= m_params.numDynamicBindings ? nonDynamicDescriptorType : m_params.descriptorType;
+		const bool						dynamicDesc				= (binding < m_params.numDynamicBindings);
+		const VkDescriptorType			descriptorType			= dynamicDesc ? m_params.descriptorType : nonDynamicDescriptorType;
 		const VkDescriptorBufferInfo	descriptorBufferInfo	=
 		{
 			*m_buffer,					// VkBuffer			buffer;
@@ -900,13 +1061,36 @@ void DynamicOffsetComputeTestInstance::init (void)
 			kColorSize					// VkDeviceSize		range;
 		};
 
+		VkDescriptorSet	bindingSet;
+		deUint32		bindingNumber;
+		deUint32		dstArrayElement;
+
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+		{
+			bindingSet		= m_descriptorSets[0].get();
+			bindingNumber	= binding;
+			dstArrayElement	= 0u;
+		}
+		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+		{
+			bindingSet		= m_descriptorSets[binding].get();
+			bindingNumber	= 0u;
+			dstArrayElement	= 0u;
+		}
+		else // GroupingStrategy::ARRAYS
+		{
+			bindingSet		= (dynamicDesc ? m_descriptorSets[0].get() : m_descriptorSets[1].get());
+			bindingNumber	= 0u;
+			dstArrayElement	= (dynamicDesc ? binding : (binding - m_params.numDynamicBindings));
+		}
+
 		const VkWriteDescriptorSet		writeDescriptorSet		=
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType					sType;
 			DE_NULL,								// const void*						pNext;
-			*m_descriptorSet,						// VkDescriptorSet					dstSet;
-			binding,								// uint32_t							dstBinding;
-			0u,										// uint32_t							dstArrayElement;
+			bindingSet,								// VkDescriptorSet					dstSet;
+			bindingNumber,							// uint32_t							dstBinding;
+			dstArrayElement,						// uint32_t							dstArrayElement;
 			1u,										// uint32_t							descriptorCount;
 			descriptorType,							// VkDescriptorType					descriptorType;
 			DE_NULL,								// const VkDescriptorImageInfo*		pImageInfo;
@@ -926,12 +1110,31 @@ void DynamicOffsetComputeTestInstance::init (void)
 			kColorSize			// VkDeviceSize		range;
 		};
 
+		VkDescriptorSet	bindingSet;
+		deUint32		bindingNumber;
+
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+		{
+			bindingSet		= m_descriptorSets[0].get();
+			bindingNumber	= m_numBindings;
+		}
+		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+		{
+			bindingSet		= m_descriptorSets.back().get();
+			bindingNumber	= 0u;
+		}
+		else // GroupingStrategy::ARRAYS
+		{
+			bindingSet		= m_descriptorSets.back().get();
+			bindingNumber	= 0u;
+		}
+
 		const VkWriteDescriptorSet		writeDescriptorSet		=
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType					sType;
 			DE_NULL,									// const void*						pNext;
-			*m_descriptorSet,							// VkDescriptorSet					dstSet;
-			m_numBindings,								// uint32_t							dstBinding;
+			bindingSet,									// VkDescriptorSet					dstSet;
+			bindingNumber,								// uint32_t							dstBinding;
 			0u,											// uint32_t							dstArrayElement;
 			1u,											// uint32_t							descriptorCount;
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	// VkDescriptorType					descriptorType;
@@ -1005,7 +1208,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 			offsets.push_back(outputOffset);
 			outputOffset += colorBlockOutputSizeU32;
 
-			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u, &m_descriptorSet.get(), (deUint32)offsets.size(), offsets.data());
+			vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, static_cast<deUint32>(descriptorSetsPlain.size()), descriptorSetsPlain.data(), (deUint32)offsets.size(), offsets.data());
 
 			// Dispatch
 			vk.cmdDispatch(**m_cmdBuffers[idx], 1, 1, 1);
@@ -1098,24 +1301,83 @@ TestInstance* DynamicOffsetComputeTest::createInstance (Context& context) const
 
 void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollections) const
 {
-	const deUint32	numBindings	= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const string	bufferType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "buffer";
-	string			inputBlocks;
-	string			inputSum;
+	const deUint32	numBindings		= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
+	const string	bufferType		= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "buffer";
+	ostringstream	inputBlocks;
+	ostringstream	inputSum;
+	string			setAndBinding;
+	string			blockSuffix;
+	string			accessSuffix;
+	bool			dynArrayDecl	= false;	// Dynamic descriptor block array declared?
+	bool			nonDynArrayDecl	= false;	// Nondynamic descriptor block array declared?
+	string			bStr;
 
-	for (deUint32 binding = 0; binding < numBindings; binding++)
+	for (deUint32 b = 0; b < numBindings; b++)
 	{
-		const string b = de::toString(binding);
-		inputBlocks +=
-			string("layout(set = 0, binding = ") + b + ") " + bufferType + " Block" + b + "\n"
-			+ "{\n" + "    vec4 color;\n" + "} inputData" + b + ";\n";
-		inputSum += string("    outData.color.rgb += inputData") + b + ".color.rgb;\n";
+		const bool dynBind	= (b < m_params.numDynamicBindings);
+		bStr				= de::toString(b);
+
+		if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+		{
+			setAndBinding = "set = 0, binding = " + bStr;
+			blockSuffix		= bStr;
+			accessSuffix	= bStr;
+		}
+		else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+		{
+			setAndBinding = "set = " + bStr + ", binding = 0";
+			blockSuffix		= bStr;
+			accessSuffix	= bStr;
+		}
+		else // GroupingStrategy::ARRAYS
+		{
+			// In array mode, only two sets are declared, one with an array of dynamic descriptors and another one with an array of
+			// nondynamic descriptors.
+			setAndBinding	= "set = " + string(dynBind ? "0" : "1") + ", binding = 0";
+			blockSuffix		= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(m_params.numDynamicBindings) : de::toString(m_params.numNonDynamicBindings)) + "]";
+			accessSuffix	= string(dynBind ? "Dyn" : "NonDyn") + "[" + (dynBind ? de::toString(b) : de::toString(b - m_params.numDynamicBindings)) + "]";
+		}
+
+		// In array mode, declare the input block only once per descriptor type.
+		bool& arrayDeclFlag = (dynBind ? dynArrayDecl : nonDynArrayDecl);
+		if (m_params.groupingStrategy != GroupingStrategy::ARRAYS || !arrayDeclFlag)
+		{
+			inputBlocks
+				<< "layout(" << setAndBinding << ") " << bufferType << " Block" << bStr << "\n"
+				<< "{\n"
+				<< "    vec4 color;\n"
+				<< "} inputData" << blockSuffix << ";\n"
+				;
+			arrayDeclFlag = true;
+		}
+
+		// But the sum always needs to be added once per descriptor.
+		inputSum << "    outData.color.rgb += inputData" << accessSuffix << ".color.rgb;\n";
+	}
+
+	bStr = de::toString(numBindings);
+	if (m_params.groupingStrategy == GroupingStrategy::SINGLE_SET)
+	{
+		setAndBinding = "set = 0, binding = " + bStr;
+	}
+	else if (m_params.groupingStrategy == GroupingStrategy::MULTISET)
+	{
+		setAndBinding = "set = " + bStr + ", binding = 0";
+	}
+	else // GroupingStrategy::ARRAYS
+	{
+		// The output buffer goes to a separate set.
+		deUint32 usedSets = 0u;
+		if (dynArrayDecl)		++usedSets;
+		if (nonDynArrayDecl)	++usedSets;
+
+		setAndBinding = "set = " + de::toString(usedSets) + ", binding = 0";
 	}
 
 	const string	computeSrc	=
 		"#version 450\n"
-		+ inputBlocks +
-		"layout(set = 0, binding = " + de::toString(numBindings) + ") writeonly buffer Output\n"
+		+ inputBlocks.str() +
+		"layout(" + setAndBinding + ") writeonly buffer Output\n"
 		"{\n"
 		"	vec4 color;\n"
 		"} outData;\n"
@@ -1123,7 +1385,7 @@ void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollection
 		"void main()\n"
 		"{\n"
 		"    outData.color = vec4(0, 0, 0, 1);\n"
-		+ inputSum +
+		+ inputSum.str() +
 		"}\n";
 
 	sourceCollections.glslSources.add("compute") << glu::ComputeSource(computeSrc);
@@ -1134,6 +1396,18 @@ void DynamicOffsetComputeTest::initPrograms (SourceCollections& sourceCollection
 tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 {
 	const char*	pipelineTypes[]			= { "graphics", "compute" };
+
+	struct
+	{
+		const char*				name;
+		const GroupingStrategy	strategy;
+	}
+	const groupingTypes[]				=
+	{
+		{ "single_set",		GroupingStrategy::SINGLE_SET	},
+		{ "multiset",		GroupingStrategy::MULTISET		},
+		{ "arrays",			GroupingStrategy::ARRAYS		},
+	};
 
 	struct
 	{
@@ -1202,67 +1476,75 @@ tcu::TestCaseGroup* createDynamicOffsetTests (tcu::TestContext& testCtx)
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>	dynamicOffsetTests	(new tcu::TestCaseGroup(testCtx, "dynamic_offset", "Dynamic offset tests"));
-	de::MovePtr<tcu::TestCaseGroup>	graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "graphics pipeline"));
 
 	for (deUint32 pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	pipelineTypeGroup	(new tcu::TestCaseGroup(testCtx, pipelineTypes[pipelineTypeIdx], ""));
 
-		for (deUint32 descriptorTypeIdx = 0; descriptorTypeIdx < DE_LENGTH_OF_ARRAY(descriptorTypes); descriptorTypeIdx++)
+		for (deUint32 groupingTypeIdx = 0; groupingTypeIdx < DE_LENGTH_OF_ARRAY(groupingTypes); ++groupingTypeIdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name, ""));
+			de::MovePtr<tcu::TestCaseGroup> groupingTypeGroup (new tcu::TestCaseGroup(testCtx, groupingTypes[groupingTypeIdx].name, ""));
 
-			for (deUint32 numCmdBuffersIdx = 0; numCmdBuffersIdx < DE_LENGTH_OF_ARRAY(numCmdBuffers); numCmdBuffersIdx++)
+			for (deUint32 descriptorTypeIdx = 0; descriptorTypeIdx < DE_LENGTH_OF_ARRAY(descriptorTypes); descriptorTypeIdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name, ""));
+				de::MovePtr<tcu::TestCaseGroup>	descriptorTypeGroup	(new tcu::TestCaseGroup(testCtx, descriptorTypes[descriptorTypeIdx].name, ""));
 
-				for (deUint32 reverseOrderIdx = 0; reverseOrderIdx < DE_LENGTH_OF_ARRAY(reverseOrders); reverseOrderIdx++)
+				for (deUint32 numCmdBuffersIdx = 0; numCmdBuffersIdx < DE_LENGTH_OF_ARRAY(numCmdBuffers); numCmdBuffersIdx++)
 				{
-					if (numCmdBuffers[numCmdBuffersIdx].num < 2 && reverseOrders[reverseOrderIdx].reverse)
-						continue;
+					de::MovePtr<tcu::TestCaseGroup>	numCmdBuffersGroup	(new tcu::TestCaseGroup(testCtx, numCmdBuffers[numCmdBuffersIdx].name, ""));
 
-					de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name, ""));
-
-					for (deUint32 numDescriptorSetBindingsIdx = 0; numDescriptorSetBindingsIdx < DE_LENGTH_OF_ARRAY(numDescriptorSetBindings); numDescriptorSetBindingsIdx++)
+					for (deUint32 reverseOrderIdx = 0; reverseOrderIdx < DE_LENGTH_OF_ARRAY(reverseOrders); reverseOrderIdx++)
 					{
-						if (numCmdBuffers[numCmdBuffersIdx].num > 1 && numDescriptorSetBindings[numDescriptorSetBindingsIdx].num > 1)
+						if (numCmdBuffers[numCmdBuffersIdx].num < 2 && reverseOrders[reverseOrderIdx].reverse)
 							continue;
 
-						de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name, ""));
-						for (deUint32 numDynamicBindingsIdx = 0; numDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numDynamicBindings); numDynamicBindingsIdx++)
+						de::MovePtr<tcu::TestCaseGroup>	reverseOrderGroup	(new tcu::TestCaseGroup(testCtx, reverseOrders[reverseOrderIdx].name, ""));
+
+						for (deUint32 numDescriptorSetBindingsIdx = 0; numDescriptorSetBindingsIdx < DE_LENGTH_OF_ARRAY(numDescriptorSetBindings); numDescriptorSetBindingsIdx++)
 						{
-							de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name, ""));
+							if (numCmdBuffers[numCmdBuffersIdx].num > 1 && numDescriptorSetBindings[numDescriptorSetBindingsIdx].num > 1)
+								continue;
 
-							for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
+							de::MovePtr<tcu::TestCaseGroup>	numDescriptorSetBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDescriptorSetBindings[numDescriptorSetBindingsIdx].name, ""));
+							for (deUint32 numDynamicBindingsIdx = 0; numDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numDynamicBindings); numDynamicBindingsIdx++)
 							{
-								TestParams params;
-								params.descriptorType			= descriptorTypes[descriptorTypeIdx].type;
-								params.numCmdBuffers			= numCmdBuffers[numCmdBuffersIdx].num;
-								params.reverseOrder				= reverseOrders[reverseOrderIdx].reverse;
-								params.numDescriptorSetBindings	= numDescriptorSetBindings[numDescriptorSetBindingsIdx].num;
-								params.numDynamicBindings		= numDynamicBindings[numDynamicBindingsIdx].num;
-								params.numNonDynamicBindings	= numNonDynamicBindings[numNonDynamicBindingsIdx].num;
+								de::MovePtr<tcu::TestCaseGroup>	numDynamicBindingsGroup	(new tcu::TestCaseGroup(testCtx, numDynamicBindings[numDynamicBindingsIdx].name, ""));
 
-								if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
-									numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
-								else
-									numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+								for (deUint32 numNonDynamicBindingsIdx = 0; numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings); numNonDynamicBindingsIdx++)
+								{
+									TestParams params;
+									params.descriptorType			= descriptorTypes[descriptorTypeIdx].type;
+									params.numCmdBuffers			= numCmdBuffers[numCmdBuffersIdx].num;
+									params.reverseOrder				= reverseOrders[reverseOrderIdx].reverse;
+									params.numDescriptorSetBindings	= numDescriptorSetBindings[numDescriptorSetBindingsIdx].num;
+									params.numDynamicBindings		= numDynamicBindings[numDynamicBindingsIdx].num;
+									params.numNonDynamicBindings	= numNonDynamicBindings[numNonDynamicBindingsIdx].num;
+									params.groupingStrategy			= groupingTypes[groupingTypeIdx].strategy;
+
+									if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
+										numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+									else
+										numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, "", params));
+								}
+
+								numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());
 							}
 
-							numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());
+							reverseOrderGroup->addChild(numDescriptorSetBindingsGroup.release());
 						}
 
-						reverseOrderGroup->addChild(numDescriptorSetBindingsGroup.release());
+						numCmdBuffersGroup->addChild(reverseOrderGroup.release());
 					}
 
-					numCmdBuffersGroup->addChild(reverseOrderGroup.release());
+					descriptorTypeGroup->addChild(numCmdBuffersGroup.release());
 				}
 
-				descriptorTypeGroup->addChild(numCmdBuffersGroup.release());
+				groupingTypeGroup->addChild(descriptorTypeGroup.release());
 			}
 
-			pipelineTypeGroup->addChild(descriptorTypeGroup.release());
+			pipelineTypeGroup->addChild(groupingTypeGroup.release());
 		}
+
 		dynamicOffsetTests->addChild(pipelineTypeGroup.release());
 	}
 
