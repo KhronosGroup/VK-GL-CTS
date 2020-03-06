@@ -42,6 +42,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawMultipleInterpolationTests.cpp
 	vktDrawDiscardRectanglesTests.hpp
 	vktDrawDiscardRectanglesTests.cpp
+	vktDrawExplicitVertexParameterTests.cpp
+	vktDrawExplicitVertexParameterTests.hpp
 )
 
 set(DEQP_VK_DRAW_LIBS
