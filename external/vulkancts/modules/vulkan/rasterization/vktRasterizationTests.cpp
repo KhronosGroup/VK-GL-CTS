@@ -4437,6 +4437,40 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 			provokingVertex->addChild(testCase);
 		}
 	}
+
+	// .line_continuity
+	{
+		tcu::TestCaseGroup* const	lineContinuity	= new tcu::TestCaseGroup(testCtx, "line_continuity", "Test line continuity");
+		static const char			dataDir[]		= "rasterization/line_continuity";
+
+		struct Case
+		{
+			std::string	name;
+			std::string	desc;
+			bool		requireFillModeNonSolid;
+		};
+
+		static const Case cases[] =
+		{
+			{	"line-strip",			"Test line strip drawing produces continuous lines",	false	},
+			{	"polygon-mode-lines",	"Test triangles drawn with lines are continuous",		true	}
+		};
+
+		rasterizationTests->addChild(lineContinuity);
+
+		for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+		{
+			const std::string			fileName	= cases[i].name + ".amber";
+			cts_amber::AmberTestCase*	testCase	= cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName);
+
+			if (cases[i].requireFillModeNonSolid)
+			{
+				testCase->addRequirement("Features.fillModeNonSolid");
+			}
+
+			lineContinuity->addChild(testCase);
+		}
+	}
 }
 
 } // anonymous
