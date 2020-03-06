@@ -1,0 +1,413 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A frag. shader that increments a value in nested for loop
+
+# The test passes because shader always writes red.
+
+# Optimized using spirv-opt with the following arguments:
+# '-O'
+# spirv-opt commit hash: ab7ac60f14ae66006bed5c989a2cfd4c4881704c
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0 {
+#  vec2 injectionSwitch;
+# };
+#
+# // func returns 1 if "ref" > 0.
+# int func(int ref)
+# {
+#     bool alwaysFalse = gl_FragCoord.x < -1.0;
+#
+#     if (!(injectionSwitch.x < 0.0))
+#     {
+#         if (alwaysFalse)
+#             return 0;
+#
+#         // Returns on first iteration.
+#         for (int i = 1; i < ref; i++)
+#         {
+#             if (alwaysFalse)
+#                 continue;
+#
+#             // Always true.
+#             if (i > 0)
+#                 return 1;
+#         }
+#     }
+#     return 0;
+# }
+#
+# void main()
+# {
+#     bool alwaysFalse = injectionSwitch.x < -1.0;
+#     int value = 0;
+#
+#     // Iterates once.
+#     for (int i = 0; i < (gl_FragCoord.y > -1.0 ? 10 : 100); i++)
+#     {
+#         for (int k = 0; k < 2; k++)
+#         {
+#             // After 2 iterations: value == 2
+#             value += func(3);
+#
+#             if (alwaysFalse)
+#             {
+#                 while (alwaysFalse)
+#                 {
+#                     _GLF_color = vec4(i);
+#                 }
+#                 return;
+#             }
+#         }
+#
+#         if (!alwaysFalse)
+#             break;
+#     }
+#
+#     // Iterates 2 times.
+#     for (int i = 0; i < int(injectionSwitch.y + 1.0); i++)
+#     {
+#         // After 2 iterations: value == 4
+#         value += func(3);
+#         // func(0) will always return 0.
+#         if (alwaysFalse || func(0) != 0)
+#             break;
+#     }
+#
+#     if (value == 4)
+#         _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
+#     else
+#         _GLF_color = vec4(0.0, 0.0, 0.0, 0.0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 454
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %18 %110
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %18 "gl_FragCoord"
+               OpName %27 "buf0"
+               OpMemberName %27 0 "injectionSwitch"
+               OpName %29 ""
+               OpName %110 "_GLF_color"
+               OpDecorate %18 BuiltIn FragCoord
+               OpMemberDecorate %27 0 Offset 0
+               OpDecorate %27 Block
+               OpDecorate %29 DescriptorSet 0
+               OpDecorate %29 Binding 0
+               OpDecorate %110 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %12 = OpTypeBool
+         %15 = OpTypeFloat 32
+         %16 = OpTypeVector %15 4
+         %17 = OpTypePointer Input %16
+         %18 = OpVariable %17 Input
+         %19 = OpTypeInt 32 0
+         %20 = OpConstant %19 0
+         %21 = OpTypePointer Input %15
+         %24 = OpConstant %15 -1
+         %26 = OpTypeVector %15 2
+         %27 = OpTypeStruct %26
+         %28 = OpTypePointer Uniform %27
+         %29 = OpVariable %28 Uniform
+         %30 = OpConstant %6 0
+         %31 = OpTypePointer Uniform %15
+         %34 = OpConstant %15 0
+         %44 = OpConstant %6 1
+         %78 = OpConstant %19 1
+         %82 = OpConstant %6 10
+         %83 = OpConstant %6 100
+         %93 = OpConstant %6 2
+         %95 = OpConstant %6 3
+        %109 = OpTypePointer Output %16
+        %110 = OpVariable %109 Output
+        %133 = OpConstant %15 1
+        %155 = OpConstant %6 4
+        %159 = OpConstantComposite %16 %133 %34 %34 %133
+        %161 = OpConstantComposite %16 %34 %34 %34 %34
+        %166 = OpConstantFalse %12
+        %168 = OpConstantTrue %12
+        %319 = OpUndef %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %163
+        %163 = OpLabel
+         %67 = OpAccessChain %31 %29 %30 %20
+         %68 = OpLoad %15 %67
+         %69 = OpFOrdLessThan %12 %68 %24
+               OpLoopMerge %162 %165 None
+               OpBranch %72
+         %72 = OpLabel
+        %337 = OpPhi %12 %166 %163 %335 %75
+        %324 = OpPhi %6 %30 %163 %383 %75
+        %317 = OpPhi %6 %319 %163 %441 %75
+        %305 = OpPhi %6 %30 %163 %123 %75
+         %79 = OpAccessChain %21 %18 %78
+         %80 = OpLoad %15 %79
+         %81 = OpFOrdGreaterThan %12 %80 %24
+         %84 = OpSelect %6 %81 %82 %83
+         %85 = OpSLessThan %12 %305 %84
+               OpLoopMerge %74 %75 None
+               OpBranchConditional %85 %73 %74
+         %73 = OpLabel
+               OpBranch %87
+         %87 = OpLabel
+        %323 = OpPhi %6 %324 %73 %99 %90
+        %316 = OpPhi %6 %317 %73 %312 %90
+        %306 = OpPhi %6 %30 %73 %116 %90
+         %94 = OpSLessThan %12 %306 %93
+               OpLoopMerge %89 %90 None
+               OpBranchConditional %94 %88 %89
+         %88 = OpLabel
+               OpBranch %187
+        %187 = OpLabel
+               OpLoopMerge %188 %189 None
+               OpBranch %190
+        %190 = OpLabel
+        %191 = OpAccessChain %21 %18 %20
+        %192 = OpLoad %15 %191
+        %193 = OpFOrdLessThan %12 %192 %24
+        %196 = OpFOrdLessThan %12 %68 %34
+        %197 = OpLogicalNot %12 %196
+               OpSelectionMerge %198 None
+               OpBranchConditional %197 %199 %198
+        %199 = OpLabel
+               OpSelectionMerge %201 None
+               OpBranchConditional %193 %202 %201
+        %202 = OpLabel
+               OpBranch %188
+        %201 = OpLabel
+               OpBranch %203
+        %203 = OpLabel
+        %307 = OpPhi %6 %44 %201 %219 %205
+        %209 = OpSLessThan %12 %307 %95
+               OpLoopMerge %204 %205 None
+               OpBranchConditional %209 %210 %204
+        %210 = OpLabel
+               OpSelectionMerge %212 None
+               OpBranchConditional %193 %213 %212
+        %213 = OpLabel
+               OpBranch %205
+        %212 = OpLabel
+        %215 = OpSGreaterThan %12 %307 %30
+               OpSelectionMerge %216 None
+               OpBranchConditional %215 %217 %216
+        %217 = OpLabel
+               OpBranch %204
+        %216 = OpLabel
+               OpBranch %205
+        %205 = OpLabel
+        %219 = OpIAdd %6 %307 %44
+               OpBranch %203
+        %204 = OpLabel
+        %313 = OpPhi %6 %316 %203 %44 %217
+        %308 = OpPhi %12 %166 %203 %168 %217
+               OpSelectionMerge %221 None
+               OpBranchConditional %308 %188 %221
+        %221 = OpLabel
+               OpBranch %198
+        %198 = OpLabel
+               OpBranch %188
+        %189 = OpLabel
+               OpBranch %187
+        %188 = OpLabel
+        %312 = OpPhi %6 %30 %202 %313 %204 %30 %198
+         %99 = OpIAdd %6 %323 %312
+               OpSelectionMerge %102 None
+               OpBranchConditional %69 %101 %102
+        %101 = OpLabel
+               OpBranch %103
+        %103 = OpLabel
+               OpLoopMerge %105 %104 None
+               OpBranchConditional %69 %104 %105
+        %104 = OpLabel
+        %112 = OpConvertSToF %15 %305
+        %113 = OpCompositeConstruct %16 %112 %112 %112 %112
+               OpStore %110 %113
+               OpBranch %103
+        %105 = OpLabel
+               OpBranch %89
+        %102 = OpLabel
+               OpBranch %90
+         %90 = OpLabel
+        %116 = OpIAdd %6 %306 %44
+               OpBranch %87
+         %89 = OpLabel
+        %441 = OpPhi %6 %316 %87 %312 %105
+        %383 = OpPhi %6 %323 %87 %99 %105
+        %335 = OpPhi %12 %337 %87 %168 %105
+               OpSelectionMerge %169 None
+               OpBranchConditional %335 %74 %169
+        %169 = OpLabel
+        %118 = OpLogicalNot %12 %69
+               OpSelectionMerge %120 None
+               OpBranchConditional %118 %119 %120
+        %119 = OpLabel
+               OpBranch %74
+        %120 = OpLabel
+               OpBranch %75
+         %75 = OpLabel
+        %123 = OpIAdd %6 %305 %44
+               OpBranch %72
+         %74 = OpLabel
+        %382 = OpPhi %6 %324 %72 %383 %89 %383 %119
+        %354 = OpPhi %12 %337 %72 %335 %89 %335 %119
+               OpSelectionMerge %171 None
+               OpBranchConditional %354 %162 %171
+        %171 = OpLabel
+               OpBranch %125
+        %125 = OpLabel
+        %381 = OpPhi %6 %382 %171 %140 %128
+        %365 = OpPhi %6 %319 %171 %361 %128
+        %355 = OpPhi %6 %30 %171 %153 %128
+        %131 = OpAccessChain %31 %29 %30 %78
+        %132 = OpLoad %15 %131
+        %134 = OpFAdd %15 %132 %133
+        %135 = OpConvertFToS %6 %134
+        %136 = OpSLessThan %12 %355 %135
+               OpLoopMerge %127 %128 None
+               OpBranchConditional %136 %126 %127
+        %126 = OpLabel
+               OpBranch %228
+        %228 = OpLabel
+               OpLoopMerge %229 %230 None
+               OpBranch %231
+        %231 = OpLabel
+        %232 = OpAccessChain %21 %18 %20
+        %233 = OpLoad %15 %232
+        %234 = OpFOrdLessThan %12 %233 %24
+        %237 = OpFOrdLessThan %12 %68 %34
+        %238 = OpLogicalNot %12 %237
+               OpSelectionMerge %239 None
+               OpBranchConditional %238 %240 %239
+        %240 = OpLabel
+               OpSelectionMerge %242 None
+               OpBranchConditional %234 %243 %242
+        %243 = OpLabel
+               OpBranch %229
+        %242 = OpLabel
+               OpBranch %244
+        %244 = OpLabel
+        %356 = OpPhi %6 %44 %242 %260 %246
+        %250 = OpSLessThan %12 %356 %95
+               OpLoopMerge %245 %246 None
+               OpBranchConditional %250 %251 %245
+        %251 = OpLabel
+               OpSelectionMerge %253 None
+               OpBranchConditional %234 %254 %253
+        %254 = OpLabel
+               OpBranch %246
+        %253 = OpLabel
+        %256 = OpSGreaterThan %12 %356 %30
+               OpSelectionMerge %257 None
+               OpBranchConditional %256 %258 %257
+        %258 = OpLabel
+               OpBranch %245
+        %257 = OpLabel
+               OpBranch %246
+        %246 = OpLabel
+        %260 = OpIAdd %6 %356 %44
+               OpBranch %244
+        %245 = OpLabel
+        %362 = OpPhi %6 %365 %244 %44 %258
+        %357 = OpPhi %12 %166 %244 %168 %258
+               OpSelectionMerge %262 None
+               OpBranchConditional %357 %229 %262
+        %262 = OpLabel
+               OpBranch %239
+        %239 = OpLabel
+               OpBranch %229
+        %230 = OpLabel
+               OpBranch %228
+        %229 = OpLabel
+        %361 = OpPhi %6 %30 %243 %362 %245 %30 %239
+        %140 = OpIAdd %6 %381 %361
+        %142 = OpLogicalNot %12 %69
+        %453 = OpSelect %12 %142 %166 %69
+               OpSelectionMerge %150 None
+               OpBranchConditional %453 %149 %150
+        %149 = OpLabel
+               OpBranch %127
+        %150 = OpLabel
+               OpBranch %128
+        %128 = OpLabel
+        %153 = OpIAdd %6 %355 %44
+               OpBranch %125
+        %127 = OpLabel
+        %431 = OpPhi %6 %381 %125 %140 %149
+        %156 = OpIEqual %12 %431 %155
+               OpSelectionMerge %158 None
+               OpBranchConditional %156 %157 %160
+        %160 = OpLabel
+               OpStore %110 %161
+               OpBranch %158
+        %157 = OpLabel
+               OpStore %110 %159
+               OpBranch %158
+        %158 = OpLabel
+               OpBranch %162
+        %165 = OpLabel
+               OpBranch %163
+        %162 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

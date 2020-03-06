@@ -1,0 +1,191 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader that finds MSB from LSB
+
+# The test passes because shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# void main()
+# {
+#     // State of variables/expressions after "result += x;".
+#     //
+#     // i  x  i >> x  findLSB  findMSB  result
+#     // 0  0  0       -1       -1       0
+#     // 0  1  0       -1       -1       1
+#     // 1  0  1        0       -1       1
+#     // 1  1  0       -1       -1       2
+#
+#     int result = 0;
+#     for (int i = 0; i < 2; i++)
+#     {
+#         for (int x = 0; x < 2; x++)
+#         {
+#             // findMSB(findLSB(i >> x)) is always -1.
+#             for ( ; x > findMSB(findLSB(i >> x)) && x < 2; x++)
+#             {
+#                 result += x;
+#             }
+#         }
+#     }
+#     if (result == 2)
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0, 0, 0, 1);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 66
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %60
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "result"
+               OpName %10 "i"
+               OpName %20 "x"
+               OpName %60 "_GLF_color"
+               OpDecorate %60 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %17 = OpConstant %6 2
+         %18 = OpTypeBool
+         %47 = OpConstant %6 1
+         %57 = OpTypeFloat 32
+         %58 = OpTypeVector %57 4
+         %59 = OpTypePointer Output %58
+         %60 = OpVariable %59 Output
+         %61 = OpConstant %57 1
+         %62 = OpConstant %57 0
+         %63 = OpConstantComposite %58 %61 %62 %62 %61
+         %65 = OpConstantComposite %58 %62 %62 %62 %61
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %20 = OpVariable %7 Function
+               OpStore %8 %9
+               OpStore %10 %9
+               OpBranch %11
+         %11 = OpLabel
+               OpLoopMerge %13 %14 None
+               OpBranch %15
+         %15 = OpLabel
+         %16 = OpLoad %6 %10
+         %19 = OpSLessThan %18 %16 %17
+               OpBranchConditional %19 %12 %13
+         %12 = OpLabel
+               OpStore %20 %9
+               OpBranch %21
+         %21 = OpLabel
+               OpLoopMerge %23 %24 None
+               OpBranch %25
+         %25 = OpLabel
+         %26 = OpLoad %6 %20
+         %27 = OpSLessThan %18 %26 %17
+               OpBranchConditional %27 %22 %23
+         %22 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpLoopMerge %30 %31 None
+               OpBranch %32
+         %32 = OpLabel
+         %33 = OpLoad %6 %20
+         %34 = OpLoad %6 %10
+         %35 = OpLoad %6 %20
+         %36 = OpShiftRightArithmetic %6 %34 %35
+         %37 = OpExtInst %6 %1 FindILsb %36
+         %38 = OpExtInst %6 %1 FindSMsb %37
+         %39 = OpSGreaterThan %18 %33 %38
+         %40 = OpLoad %6 %20
+         %41 = OpSLessThan %18 %40 %17
+         %42 = OpLogicalAnd %18 %39 %41
+               OpBranchConditional %42 %29 %30
+         %29 = OpLabel
+         %43 = OpLoad %6 %20
+         %44 = OpLoad %6 %8
+         %45 = OpIAdd %6 %44 %43
+               OpStore %8 %45
+               OpBranch %31
+         %31 = OpLabel
+         %46 = OpLoad %6 %20
+         %48 = OpIAdd %6 %46 %47
+               OpStore %20 %48
+               OpBranch %28
+         %30 = OpLabel
+               OpBranch %24
+         %24 = OpLabel
+         %49 = OpLoad %6 %20
+         %50 = OpIAdd %6 %49 %47
+               OpStore %20 %50
+               OpBranch %21
+         %23 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %51 = OpLoad %6 %10
+         %52 = OpIAdd %6 %51 %47
+               OpStore %10 %52
+               OpBranch %11
+         %13 = OpLabel
+         %53 = OpLoad %6 %8
+         %54 = OpIEqual %18 %53 %17
+               OpSelectionMerge %56 None
+               OpBranchConditional %54 %55 %64
+         %55 = OpLabel
+               OpStore %60 %63
+               OpBranch %56
+         %64 = OpLabel
+               OpStore %60 %65
+               OpBranch %56
+         %56 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

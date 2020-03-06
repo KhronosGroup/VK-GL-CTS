@@ -1,0 +1,208 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: A fragment shader that has nested if condition in do while
+
+# The test passes because shader always writes red.
+
+# Optimized using spirv-opt with the following arguments:
+# '--eliminate-dead-code-aggressive'
+# '--copy-propagate-arrays'
+# '--copy-propagate-arrays'
+# '--vector-dce'
+# '--redundancy-elimination'
+# '--eliminate-local-single-block'
+# '--redundancy-elimination'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--eliminate-dead-branches'
+# '--merge-return'
+# '--combine-access-chains'
+# '--redundancy-elimination'
+# '--private-to-local'
+# '--simplify-instructions'
+# '--ccp'
+# '--eliminate-local-multi-store'
+# '--inline-entry-points-exhaustive'
+# '--if-conversion'
+# '--eliminate-dead-inserts'
+# spirv-opt commit hash: ab7ac60f14ae66006bed5c989a2cfd4c4881704c
+
+
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# float one()
+# {
+#     return 1.0;
+# }
+#
+# void main()
+# {
+#     vec2 v = vec2(0);
+#     bool alwaysFalse = gl_FragCoord.x < -1.0;
+#
+#     do
+#     {
+#         if (v.x < 2.0) // Always true
+#         {
+#             if (!alwaysFalse)
+#                 v[int(one())] = 1.0;
+#         }
+#     } while (alwaysFalse);
+#
+#     if (v[0] == 0.0 && v[1] == 1.0)
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 72
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %23 %64
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "one("
+               OpName %15 "v"
+               OpName %20 "alwaysFalse"
+               OpName %23 "gl_FragCoord"
+               OpName %64 "_GLF_color"
+               OpDecorate %23 BuiltIn FragCoord
+               OpDecorate %64 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeFunction %6
+         %10 = OpConstant %6 1
+         %13 = OpTypeVector %6 2
+         %14 = OpTypePointer Function %13
+         %16 = OpConstant %6 0
+         %17 = OpConstantComposite %13 %16 %16
+         %18 = OpTypeBool
+         %19 = OpTypePointer Function %18
+         %21 = OpTypeVector %6 4
+         %22 = OpTypePointer Input %21
+         %23 = OpVariable %22 Input
+         %24 = OpTypeInt 32 0
+         %25 = OpConstant %24 0
+         %26 = OpTypePointer Input %6
+         %29 = OpConstant %6 -1
+         %35 = OpTypePointer Function %6
+         %38 = OpConstant %6 2
+         %47 = OpTypeInt 32 1
+         %56 = OpConstant %24 1
+         %63 = OpTypePointer Output %21
+         %64 = OpVariable %63 Output
+         %65 = OpConstantComposite %21 %10 %16 %16 %10
+         %67 = OpConstantComposite %21 %16 %16 %16 %16
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %71 = OpVariable %35 Function
+         %15 = OpVariable %14 Function
+         %20 = OpVariable %19 Function
+               OpStore %15 %17
+         %27 = OpAccessChain %26 %23 %25
+         %28 = OpLoad %6 %27
+         %30 = OpFOrdLessThan %18 %28 %29
+               OpStore %20 %30
+               OpBranch %31
+         %31 = OpLabel
+               OpLoopMerge %33 %34 None
+               OpBranch %32
+         %32 = OpLabel
+         %36 = OpAccessChain %35 %15 %25
+         %37 = OpLoad %6 %36
+         %39 = OpFOrdLessThan %18 %37 %38
+               OpSelectionMerge %41 None
+               OpBranchConditional %39 %40 %41
+         %40 = OpLabel
+         %43 = OpLogicalNot %18 %30
+               OpSelectionMerge %45 None
+               OpBranchConditional %43 %44 %45
+         %44 = OpLabel
+               OpStore %71 %10
+         %46 = OpLoad %6 %71
+         %48 = OpConvertFToS %47 %46
+         %49 = OpAccessChain %35 %15 %48
+               OpStore %49 %10
+               OpBranch %45
+         %45 = OpLabel
+               OpBranch %41
+         %41 = OpLabel
+               OpBranch %34
+         %34 = OpLabel
+               OpBranchConditional %30 %31 %33
+         %33 = OpLabel
+         %52 = OpLoad %6 %36
+         %53 = OpFOrdEqual %18 %52 %16
+               OpSelectionMerge %55 None
+               OpBranchConditional %53 %54 %55
+         %54 = OpLabel
+         %57 = OpAccessChain %35 %15 %56
+         %58 = OpLoad %6 %57
+         %59 = OpFOrdEqual %18 %58 %10
+               OpBranch %55
+         %55 = OpLabel
+         %60 = OpPhi %18 %53 %33 %59 %54
+               OpSelectionMerge %62 None
+               OpBranchConditional %60 %61 %66
+         %61 = OpLabel
+               OpStore %64 %65
+               OpBranch %62
+         %66 = OpLabel
+               OpStore %64 %67
+               OpBranch %62
+         %62 = OpLabel
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %6 None %7
+          %9 = OpLabel
+               OpReturnValue %10
+               OpFunctionEnd
+END
+
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
