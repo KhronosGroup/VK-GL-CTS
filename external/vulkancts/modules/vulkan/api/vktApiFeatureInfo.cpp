@@ -3338,6 +3338,16 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 				<< TestLog::EndMessage;
 			allOk = false;
 		}
+
+		if (((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0) &&
+			((supported & VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
+		{
+			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+									<< " supports VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT"
+									<< " but not VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT"
+				<< TestLog::EndMessage;
+			allOk = false;
+		}
 	}
 
 	if (allOk)
