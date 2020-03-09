@@ -1567,6 +1567,7 @@ void addCompute8bitStorage16To8Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
@@ -1724,6 +1725,7 @@ void addCompute8bitUniform8To16Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
 
 			if (cTypes[tyIdx].componentsCount == 4)
 				spec.verifyIO = checkUniformsArray<deInt8, deInt16, 4>;
@@ -1895,6 +1897,7 @@ void addCompute8bitStoragePushConstant8To16Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures.ext8BitStorage = EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName, testName, spec));
 		}
@@ -3693,6 +3696,7 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 			fragments["decoration"]			= categories[catIdx].decoration.specialize(specs);
 
 			features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+			features.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM;
 			features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 			features.coreFeatures.fragmentStoresAndAtomics			= true;
 
@@ -3973,6 +3977,7 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 				}
 
 				features												= get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
+				features.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM;
 				features.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 				features.coreFeatures.fragmentStoresAndAtomics			= true;
 
@@ -4029,6 +4034,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics	= true;
 	requiredFeatures.coreFeatures.fragmentStoresAndAtomics			= true;
 	requiredFeatures.ext8BitStorage									= EXT8BITSTORAGEFEATURES_PUSH_CONSTANT;
+	requiredFeatures.ext16BitStorage								= EXT16BITSTORAGEFEATURES_UNIFORM;
 
 	fragments["capability"]				= "OpCapability StoragePushConstant8\n"
 										  "OpCapability StorageUniform16\n";
