@@ -53,6 +53,7 @@
 #include "vktPipelineMaxVaryingsTests.hpp"
 #include "vktPipelineBlendOperationAdvancedTests.hpp"
 #include "vktPipelineExtendedDynamicStateTests.hpp"
+#include "vktPipelineCreationCacheControlTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -97,6 +98,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createMaxVaryingsTests				(testCtx));
 	pipelineTests->addChild(createBlendOperationAdvancedTests	(testCtx));
 	pipelineTests->addChild(createExtendedDynamicStateTests		(testCtx));
+	pipelineTests->addChild(createCacheControlTests				(testCtx));
 }
 
 } // anonymous

@@ -1,9 +1,4 @@
 
-include_directories(
-	..
-	../amber
-	)
-
 set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineBlendTests.cpp
 	vktPipelineBlendTests.hpp
@@ -101,6 +96,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineBlendOperationAdvancedTests.hpp
 	vktPipelineExtendedDynamicStateTests.cpp
 	vktPipelineExtendedDynamicStateTests.hpp
+	vktPipelineCreationCacheControlTests.cpp
+	vktPipelineCreationCacheControlTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
@@ -111,8 +108,13 @@ set(DEQP_VK_PIPELINE_LIBS
 	)
 
 PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
-include_directories("../../../../amber/src/include")
-include_directories("../amber")
 
 add_library(deqp-vk-pipeline STATIC ${DEQP_VK_PIPELINE_SRCS})
 target_link_libraries(deqp-vk-pipeline ${DEQP_VK_PIPELINE_LIBS})
+target_include_directories(deqp-vk-pipeline
+	PRIVATE
+		..
+		../../../../amber/src/include
+		../amber
+		../util
+)

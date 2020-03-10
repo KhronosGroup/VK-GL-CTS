@@ -41,6 +41,7 @@ VkPhysicalDeviceImagelessFramebufferFeaturesKHR 			FEATURES ( imagelessFramebuff
 VkPhysicalDeviceVulkan12Features							FEATURES ( imagelessFramebuffer )								REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features							FEATURES ( uniformBufferStandardLayout )						REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceSeparateDepthStencilLayoutsFeaturesKHR		FEATURES ( separateDepthStencilLayouts )						REQUIREMENTS ( VK_KHR_separate_depth_stencil_layouts )
+VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT		FEATURES ( pipelineCreationCacheControl )						REQUIREMENTS ( VK_EXT_pipeline_creation_cache_control )
 VkPhysicalDeviceVulkan12Features							FEATURES ( separateDepthStencilLayouts )						REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceHostQueryResetFeaturesEXT					FEATURES ( hostQueryReset )										REQUIREMENTS ( VK_EXT_host_query_reset )
 VkPhysicalDeviceVulkan12Features							FEATURES ( hostQueryReset )										REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
