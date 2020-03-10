@@ -506,9 +506,20 @@ class MSCaseInterpolateAtSampleConsistency;
 
 template<> void MSCase<MSCaseInterpolateAtSampleConsistency>::init (void)
 {
+	const std::string	indexStr = de::toString(m_imageMSParams.componentData.index);
+	std::string			componentMsg;
+
+	switch (m_imageMSParams.componentData.source)
+	{
+	case multisample::ComponentSource::CONSTANT:		componentMsg = "Using single constant component " + indexStr;			break;
+	case multisample::ComponentSource::PUSH_CONSTANT:	componentMsg = "Using single component via push constant " + indexStr;	break;
+	default: break;
+	}
+
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
 		<< "Verifying that interpolateAtSample with the sample set to the current sampleID returns consistent values.\n"
+		<< (componentMsg.empty() ? std::string() : componentMsg + "\n")
 		<< "	Interpolate varying containing screen space location with centroid and sample qualifiers.\n"
 		<< "	=> interpolateAtSample(screenCentroid, sampleID) = screenSample\n"
 		<< tcu::TestLog::EndMessage;
@@ -543,19 +554,44 @@ template<> void MSCase<MSCaseInterpolateAtSampleConsistency>::initPrograms (vk::
 	// Create fragment shader
 	std::ostringstream fs;
 
-	fs << "#version 440\n"
+	fs	<< "#version 440\n"
 		<< "layout(location = 0) centroid in vec2 fs_in_pos_screen_centroid;\n"
 		<< "layout(location = 1) sample   in vec2 fs_in_pos_screen_sample;\n"
 		<< "\n"
 		<< "layout(location = 0) out vec4 fs_out_color;\n"
-		<< "\n"
-		<< "void main (void)\n"
+		<< "\n";
+
+	if (m_imageMSParams.componentData.source == multisample::ComponentSource::PUSH_CONSTANT)
+	{
+		fs	<< "layout(push_constant) uniform PushConstants {\n"
+			<< "   uint component;\n"
+			<< "};\n"
+			<< "\n";
+	}
+
+	fs	<< "void main (void)\n"
 		<< "{\n"
 		<< "	const float threshold = 0.15625;\n"
-		<< "\n"
-		<< "	const vec2  pos_interpolated_at_sample = interpolateAtSample(fs_in_pos_screen_centroid, gl_SampleID);\n"
-		<< "	const bool  valuesEqual				   = all(lessThan(abs(pos_interpolated_at_sample - fs_in_pos_screen_sample), vec2(threshold)));\n"
-		<< "\n"
+		<< "\n";
+
+	if (m_imageMSParams.componentData.source == multisample::ComponentSource::NONE)
+	{
+		fs	<< "	const vec2  pos_interpolated_at_sample = interpolateAtSample(fs_in_pos_screen_centroid, gl_SampleID);\n"
+			<< "	const bool  valuesEqual                = all(lessThan(abs(pos_interpolated_at_sample - fs_in_pos_screen_sample), vec2(threshold)));\n";
+	}
+	else if (m_imageMSParams.componentData.source == multisample::ComponentSource::CONSTANT)
+	{
+		const auto& index = m_imageMSParams.componentData.index;
+		fs	<< "	const float pos_interpolated_at_sample = interpolateAtSample(fs_in_pos_screen_centroid[" << index << "], gl_SampleID);\n"
+			<< "	const bool  valuesEqual                = (abs(pos_interpolated_at_sample - fs_in_pos_screen_sample[" << index << "]) < threshold);\n";
+	}
+	else // multisample::ComponentSource::PUSH_CONSTANT
+	{
+		fs	<< "	const float pos_interpolated_at_sample = interpolateAtSample(fs_in_pos_screen_centroid[component], gl_SampleID);\n"
+			<< "	const bool  valuesEqual                = (abs(pos_interpolated_at_sample - fs_in_pos_screen_sample[component]) < threshold);\n";
+	}
+
+	fs	<< "\n"
 		<< "	if (valuesEqual)\n"
 		<< "		fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		<< "	else\n"
@@ -579,9 +615,20 @@ class MSCaseInterpolateAtCentroidConsistency;
 
 template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::init (void)
 {
+	const std::string	indexStr = de::toString(m_imageMSParams.componentData.index);
+	std::string			componentMsg;
+
+	switch (m_imageMSParams.componentData.source)
+	{
+	case multisample::ComponentSource::CONSTANT:		componentMsg = "Using single constant component " + indexStr;			break;
+	case multisample::ComponentSource::PUSH_CONSTANT:	componentMsg = "Using single component via push constant " + indexStr;	break;
+	default: break;
+	}
+
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
 		<< "Verifying that interpolateAtCentroid does not return different values than a corresponding centroid qualified varying.\n"
+		<< (componentMsg.empty() ? std::string() : componentMsg + "\n")
 		<< "	Interpolate varying containing screen space location with sample and centroid qualifiers.\n"
 		<< "	=> interpolateAtCentroid(screenSample) = screenCentroid\n"
 		<< tcu::TestLog::EndMessage;
@@ -616,19 +663,44 @@ template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::initPrograms (vk
 	// Create fragment shader
 	std::ostringstream fs;
 
-	fs << "#version 440\n"
+	fs	<< "#version 440\n"
 		<< "layout(location = 0) sample   in vec2 fs_in_pos_screen_sample;\n"
 		<< "layout(location = 1) centroid in vec2 fs_in_pos_screen_centroid;\n"
 		<< "\n"
 		<< "layout(location = 0) out vec4 fs_out_color;\n"
-		<< "\n"
-		<< "void main (void)\n"
+		<< "\n";
+
+	if (m_imageMSParams.componentData.source == multisample::ComponentSource::PUSH_CONSTANT)
+	{
+		fs	<< "layout(push_constant) uniform PushConstants {\n"
+			<< "   uint component;\n"
+			<< "};\n"
+			<< "\n";
+	}
+
+	fs	<< "void main (void)\n"
 		<< "{\n"
 		<< "	const float threshold = 0.0005;\n"
-		<< "\n"
-		<< "	const vec2 pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample);\n"
-		<< "	const bool valuesEqual					= all(lessThan(abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid), vec2(threshold)));\n"
-		<< "\n"
+		<< "\n";
+
+	if (m_imageMSParams.componentData.source == multisample::ComponentSource::NONE)
+	{
+		fs	<< "	const vec2 pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample);\n"
+			<< "	const bool valuesEqual                  = all(lessThan(abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid), vec2(threshold)));\n";
+	}
+	else if (m_imageMSParams.componentData.source == multisample::ComponentSource::CONSTANT)
+	{
+		const auto& index = m_imageMSParams.componentData.index;
+		fs	<< "	const float pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[" << index << "]);\n"
+			<< "	const bool  valuesEqual                  = (abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[" << index << "]) < threshold);\n";
+	}
+	else // multisample::ComponentSource::PUSH_CONSTANT
+	{
+		fs	<< "	const float pos_interpolated_at_centroid = interpolateAtCentroid(fs_in_pos_screen_sample[component]);\n"
+			<< "	const bool  valuesEqual                  = (abs(pos_interpolated_at_centroid - fs_in_pos_screen_centroid[component]) < threshold);\n";
+	}
+
+	fs	<< "\n"
 		<< "	if (valuesEqual)\n"
 		<< "		fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		<< "	else\n"
@@ -732,10 +804,21 @@ class MSCaseInterpolateAtOffsetSamplePosition;
 
 template<> void MSCase<MSCaseInterpolateAtOffsetSamplePosition>::init (void)
 {
+	const std::string	indexStr = de::toString(m_imageMSParams.componentData.index);
+	std::string			componentMsg;
+
+	switch (m_imageMSParams.componentData.source)
+	{
+	case multisample::ComponentSource::CONSTANT:		componentMsg = "Using single constant component " + indexStr;			break;
+	case multisample::ComponentSource::PUSH_CONSTANT:	componentMsg = "Using single component via push constant " + indexStr;	break;
+	default: break;
+	}
+
 	m_testCtx.getLog()
 		<< tcu::TestLog::Message
 		<< "Verifying that interpolateAtOffset of screen position with the offset of current sample position returns value "
 		<< "similar to screen position interpolated at sample.\n"
+		<< (componentMsg.empty() ? std::string() : componentMsg + "\n")
 		<< "	Interpolate varying containing screen space location with and without sample qualifier.\n"
 		<< "	=> interpolateAtOffset(screenFragment, samplePosition - (0.5,0.5)) = screenSample"
 		<< tcu::TestLog::EndMessage;
@@ -770,20 +853,45 @@ template<> void MSCase<MSCaseInterpolateAtOffsetSamplePosition>::initPrograms (v
 	// Create fragment shader
 	std::ostringstream fs;
 
-	fs << "#version 440\n"
+	fs	<< "#version 440\n"
 		<< "layout(location = 0)		in vec2 fs_in_pos_screen_fragment;\n"
 		<< "layout(location = 1) sample in vec2 fs_in_pos_screen_sample;\n"
 		<< "\n"
 		<< "layout(location = 0) out vec4 fs_out_color;\n"
-		<< "\n"
-		<< "void main (void)\n"
+		<< "\n";
+
+	if (m_imageMSParams.componentData.source == multisample::ComponentSource::PUSH_CONSTANT)
+	{
+		fs	<< "layout(push_constant) uniform PushConstants {\n"
+			<< "   uint component;\n"
+			<< "};\n"
+			<< "\n";
+	}
+
+	fs	<< "void main (void)\n"
 		<< "{\n"
 		<< "	const float threshold = 0.15625;\n"
 		<< "\n"
-		<< "	const vec2 offset					  = gl_SamplePosition - vec2(0.5, 0.5);\n"
-		<< "	const vec2 pos_interpolated_at_offset = interpolateAtOffset(fs_in_pos_screen_fragment, offset);\n"
-		<< "	const bool valuesEqual				  = all(lessThan(abs(pos_interpolated_at_offset - fs_in_pos_screen_sample), vec2(threshold)));\n"
-		<< "\n"
+		<< "	const vec2 offset                     = gl_SamplePosition - vec2(0.5, 0.5);\n";
+
+	if (m_imageMSParams.componentData.source == multisample::ComponentSource::NONE)
+	{
+		fs	<< "	const vec2 pos_interpolated_at_offset = interpolateAtOffset(fs_in_pos_screen_fragment, offset);\n"
+			<< "	const bool valuesEqual                = all(lessThan(abs(pos_interpolated_at_offset - fs_in_pos_screen_sample), vec2(threshold)));\n";
+	}
+	else if (m_imageMSParams.componentData.source == multisample::ComponentSource::CONSTANT)
+	{
+		const auto& index = m_imageMSParams.componentData.index;
+		fs	<< "	const float pos_interpolated_at_offset = interpolateAtOffset(fs_in_pos_screen_fragment[" << index << "], offset);\n"
+			<< "	const bool valuesEqual                 = (abs(pos_interpolated_at_offset - fs_in_pos_screen_sample[" << index << "]) < threshold);\n";
+	}
+	else // multisample::ComponentSource::PUSH_CONSTANT
+	{
+		fs	<< "	const float pos_interpolated_at_offset = interpolateAtOffset(fs_in_pos_screen_fragment[component], offset);\n"
+			<< "	const bool valuesEqual                 = (abs(pos_interpolated_at_offset - fs_in_pos_screen_sample[component]) < threshold);\n";
+	}
+
+	fs	<< "\n"
 		<< "	if (valuesEqual)\n"
 		<< "		fs_out_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		<< "	else\n"
@@ -963,12 +1071,35 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleDistinctValues> >	(testCtx, "sample_interpolate_at_distinct_values",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleIgnoresCentroid> >(testCtx, "sample_interpolate_at_ignores_centroid",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "sample_interpolate_at_consistency",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+
+	de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, "sample_interpolation_consistency", "Test consistency in sample interpolation function"));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "all_components",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "component_0",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "component_1",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
+	sampleGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtSampleConsistency> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
+	testGroup->addChild(sampleGroup.release());
+
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseSampleQualifierDistinctValues> >		(testCtx, "sample_qualifier_distinct_values",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "centroid_interpolate_at_consistency",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+
+	de::MovePtr<tcu::TestCaseGroup> centroidGroup(new tcu::TestCaseGroup(testCtx, "centroid_interpolation_consistency", "Test consistency in centroid interpolation function"));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "all_components",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "component_0",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "component_1",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
+	centroidGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtCentroidConsistency> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
+	testGroup->addChild(centroidGroup.release());
+
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseCentroidQualifierInsidePrimitive> >	(testCtx, "centroid_qualifier_inside_primitive",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
 	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetPixelCenter> >	(testCtx, "offset_interpolate_at_pixel_center",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
-	testGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "offset_interpolate_at_sample_position",	imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+
+	de::MovePtr<tcu::TestCaseGroup> offsetGroup(new tcu::TestCaseGroup(testCtx, "offset_interpolation_at_sample_position", "Test interpolation at offset function works for sample positions"));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "all_components",		imageSizes, sizesElemCount, imageSamples, samplesElemCount));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_0",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 0u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "component_1",		imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::CONSTANT, 1u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "pushc_component_0",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 0u}));
+	offsetGroup->addChild(makeMSGroup<multisample::MSCase<multisample::MSCaseInterpolateAtOffsetSamplePosition> >	(testCtx, "pushc_component_1",	imageSizes, sizesElemCount, imageSamples, samplesElemCount, multisample::ComponentData{multisample::ComponentSource::PUSH_CONSTANT, 1u}));
+	testGroup->addChild(offsetGroup.release());
 
 	return testGroup.release();
 }
