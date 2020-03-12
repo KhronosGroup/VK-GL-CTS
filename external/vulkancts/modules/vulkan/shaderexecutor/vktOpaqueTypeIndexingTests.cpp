@@ -185,6 +185,8 @@ public:
 											generateSources(m_shaderType, m_shaderSpec, programCollection);
 										}
 
+			void						checkSupport				(Context& context) const;
+
 protected:
 	const char*							m_name;
 	const glu::ShaderType				m_shaderType;
@@ -206,6 +208,11 @@ OpaqueTypeIndexingCase::OpaqueTypeIndexingCase (tcu::TestContext&			testCtx,
 
 OpaqueTypeIndexingCase::~OpaqueTypeIndexingCase (void)
 {
+}
+
+void OpaqueTypeIndexingCase::checkSupport (Context& context) const
+{
+	checkSupportShader(context, m_shaderType);
 }
 
 class OpaqueTypeIndexingTestInstance : public TestInstance

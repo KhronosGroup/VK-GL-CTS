@@ -118,6 +118,7 @@ private:
 bool				executorSupported	(glu::ShaderType shaderType);
 void				generateSources		(glu::ShaderType shaderType, const ShaderSpec& shaderSpec, vk::SourceCollections& dst);
 ShaderExecutor*		createExecutor		(Context& context, glu::ShaderType shaderType, const ShaderSpec& shaderSpec, vk::VkDescriptorSetLayout extraResourcesLayout = (vk::VkDescriptorSetLayout)0);
+void				checkSupportShader	(Context& context, const glu::ShaderType shaderType);
 
 } // shaderexecutor
 } // vkt

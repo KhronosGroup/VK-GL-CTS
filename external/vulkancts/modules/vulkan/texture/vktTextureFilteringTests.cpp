@@ -1045,6 +1045,9 @@ bool verifierCanBeUsed(const VkFormat format, const Sampler::FilterMode minFilte
 		(tcu::TexVerifierUtil::isLinearFilter(minFilter) || tcu::TexVerifierUtil::isLinearFilter(magFilter) ||
 		 tcu::TexVerifierUtil::isCubicFilter(minFilter)  || tcu::TexVerifierUtil::isCubicFilter(magFilter)));
 }
+
+} // anonymous
+
 void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 {
 	tcu::TestContext&	testCtx		= textureFilteringTests->getTestContext();
@@ -1780,8 +1783,6 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		textureFilteringTests->addChild(group3D.release());
 	}
 }
-
-} // anonymous
 
 tcu::TestCaseGroup*	createTextureFilteringTests	(tcu::TestContext& testCtx)
 {

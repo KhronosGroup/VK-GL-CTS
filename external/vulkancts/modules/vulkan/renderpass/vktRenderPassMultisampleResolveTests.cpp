@@ -2576,6 +2576,16 @@ struct Programs
 	}
 };
 
+void checkSupport(Context& context, TestConfig config)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
+		(config.sampleCount != VK_SAMPLE_COUNT_1_BIT) && (config.layerCount != 1))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
+	}
+}
+
 std::string formatToName (VkFormat format)
 {
 	const std::string	formatStr	= de::toString(format);
@@ -2682,7 +2692,7 @@ void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 					renderPassType
 				};
 
-				formatGroup->addChild(new InstanceFactory1<MultisampleRenderPassTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
+				formatGroup->addChild(new InstanceFactory1WithSupport<MultisampleRenderPassTestInstance, TestConfig, FunctionSupport1<TestConfig>, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig, typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 
 				// MaxAttachmenstsRenderPassTest is ment to test extreme cases where applications might consume all available on-chip
 				// memory. This is achieved by using maxColorAttachments attachments and two subpasses, but during test creation we

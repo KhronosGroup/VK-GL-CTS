@@ -3090,6 +3090,20 @@ void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 		addFunctionCase(group, cur->name, "", cases.function, cur->parameters);
 }
 
+void checkEventSupport (Context& context, const Event::Parameters)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+}
+
+// specialization for Event
+template<>
+void addCases (tcu::TestCaseGroup* group, const CaseDescription<Event>& cases)
+{
+	for (const NamedParameters<Event>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
+		addFunctionCase(group, cur->name, "", checkEventSupport, cases.function, cur->parameters);
+}
+
 template<typename Object>
 void addCasesWithProgs (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 {

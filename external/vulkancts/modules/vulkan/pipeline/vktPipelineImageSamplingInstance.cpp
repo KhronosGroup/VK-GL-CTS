@@ -325,6 +325,20 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 
 	if (params.allocationKind == ALLOCATION_KIND_DEDICATED)
 		context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
+	{
+		const auto portabilitySubsetFeatures	= context.getPortabilitySubsetFeatures();
+		const auto componentMapping				= params.componentMapping;
+		if (!portabilitySubsetFeatures.imageViewFormatSwizzle &&
+			((componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY) ||
+			 (componentMapping.g != VK_COMPONENT_SWIZZLE_IDENTITY) ||
+			 (componentMapping.b != VK_COMPONENT_SWIZZLE_IDENTITY) ||
+			 (componentMapping.a != VK_COMPONENT_SWIZZLE_IDENTITY)))
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support remapping format components");
+		}
+	}
 }
 
 ImageSamplingInstance::ImageSamplingInstance (Context&						context,

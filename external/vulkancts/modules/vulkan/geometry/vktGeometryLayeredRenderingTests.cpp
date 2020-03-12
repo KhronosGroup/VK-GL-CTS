@@ -1809,7 +1809,15 @@ void checkSupport (Context& context, const TestParams params)
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
 	if (params.image.viewType == VK_IMAGE_VIEW_TYPE_3D)
+	{
 		context.requireDeviceFunctionality("VK_KHR_maintenance1");
+
+		if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().imageView2DOn3DImage)
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support 2D or 2D array image view to be created on a 3D VkImage");
+		}
+	}
 
 	if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);

@@ -3926,6 +3926,20 @@ tcu::TestStatus testImageExportImportBindBind (Context&					context,
 
 	return tcu::TestStatus::pass("Pass");
 }
+
+template<class TestConfig> void checkEvent (Context& context, const TestConfig)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+}
+
+template<class TestConfig> void checkSupport (Context& context, const TestConfig config)
+{
+	const Transference transference (getHandelTypeTransferences(config.externalType));
+	if (transference == TRANSFERENCE_COPY)
+		checkEvent(context, config);
+}
+
 de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk::VkExternalFenceHandleTypeFlagBits externalType)
 {
 	const struct
@@ -3957,13 +3971,13 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 			addFunctionCase(fenceGroup.get(), std::string("create_win32_") + permanenceName,	"Test creating fence with win32 properties.",	testFenceWin32Create,	config);
 		}
 
-		addFunctionCase(fenceGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing fence twice.",											testFenceImportTwice,				config);
-		addFunctionCase(fenceGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported fence.",					testFenceImportReimport,			config);
-		addFunctionCase(fenceGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing fence multiple times.",									testFenceMultipleImports,			config);
-		addFunctionCase(fenceGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	testFenceSignalExportImportWait,	config);
-		addFunctionCase(fenceGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the fence.",								testFenceSignalImport,				config);
-		addFunctionCase(fenceGroup.get(), std::string("reset_") + permanenceName,						"Test resetting the fence.",											testFenceReset,						config);
-		addFunctionCase(fenceGroup.get(), std::string("transference_") + permanenceName,				"Test fences transference.",											testFenceTransference,				config);
+		addFunctionCase(fenceGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing fence twice.",											checkSupport,	testFenceImportTwice,				config);
+		addFunctionCase(fenceGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported fence.",					checkSupport,	testFenceImportReimport,			config);
+		addFunctionCase(fenceGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing fence multiple times.",									checkSupport,	testFenceMultipleImports,			config);
+		addFunctionCase(fenceGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	checkEvent,		testFenceSignalExportImportWait,	config);
+		addFunctionCase(fenceGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the fence.",								checkSupport,	testFenceSignalImport,				config);
+		addFunctionCase(fenceGroup.get(), std::string("reset_") + permanenceName,						"Test resetting the fence.",											checkEvent,		testFenceReset,						config);
+		addFunctionCase(fenceGroup.get(), std::string("transference_") + permanenceName,				"Test fences transference.",											checkEvent,		testFenceTransference,				config);
 
 		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT)
 		{
@@ -3974,12 +3988,12 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		{
 			// \note Not supported on WIN32 handles
-			addFunctionCase(fenceGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting fence multiple times.",		testFenceMultipleExports,	config);
+			addFunctionCase(fenceGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting fence multiple times.",		checkSupport,	testFenceMultipleExports,	config);
 
-			addFunctionCase(fenceGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported fence.",	testFenceFdDup,				config);
-			addFunctionCase(fenceGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported fence.",	testFenceFdDup2,			config);
-			addFunctionCase(fenceGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported fence.",	testFenceFdDup3,			config);
-			addFunctionCase(fenceGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending fence fd over socket.",		testFenceFdSendOverSocket,	config);
+			addFunctionCase(fenceGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported fence.",	checkSupport,	testFenceFdDup,				config);
+			addFunctionCase(fenceGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported fence.",	checkSupport,	testFenceFdDup2,			config);
+			addFunctionCase(fenceGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported fence.",	checkSupport,	testFenceFdDup3,			config);
+			addFunctionCase(fenceGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending fence fd over socket.",		checkSupport,	testFenceFdSendOverSocket,	config);
 		}
 
 		if (getHandelTypeTransferences(externalType) == TRANSFERENCE_REFERENCE)
@@ -4339,12 +4353,12 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 			addFunctionCase(semaphoreGroup.get(), std::string("create_win32_") + permanenceName,	"Test creating semaphore with win32 properties.",	testSemaphoreWin32Create,	config);
 		}
 
-		addFunctionCase(semaphoreGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing semaphore twice.",										testSemaphoreImportTwice,				config);
-		addFunctionCase(semaphoreGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported semaphore.",				testSemaphoreImportReimport,			config);
-		addFunctionCase(semaphoreGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing semaphore multiple times.",								testSemaphoreMultipleImports,			config);
-		addFunctionCase(semaphoreGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	testSemaphoreSignalExportImportWait,	config);
-		addFunctionCase(semaphoreGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the semaphore.",							testSemaphoreSignalImport,				config);
-		addFunctionCase(semaphoreGroup.get(), std::string("transference_") + permanenceName,				"Test semaphores transference.",										testSemaphoreTransference,				config);
+		addFunctionCase(semaphoreGroup.get(), std::string("import_twice_") + permanenceName,				"Test importing semaphore twice.",										checkSupport,	testSemaphoreImportTwice,				config);
+		addFunctionCase(semaphoreGroup.get(), std::string("reimport_") + permanenceName,					"Test importing again over previously imported semaphore.",				checkSupport,	testSemaphoreImportReimport,			config);
+		addFunctionCase(semaphoreGroup.get(), std::string("import_multiple_times_") + permanenceName,		"Test importing semaphore multiple times.",								checkSupport,	testSemaphoreMultipleImports,			config);
+		addFunctionCase(semaphoreGroup.get(), std::string("signal_export_import_wait_") + permanenceName,	"Test signaling, exporting, importing and waiting for the sempahore.",	checkEvent,		testSemaphoreSignalExportImportWait,	config);
+		addFunctionCase(semaphoreGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the semaphore.",							checkSupport,	testSemaphoreSignalImport,				config);
+		addFunctionCase(semaphoreGroup.get(), std::string("transference_") + permanenceName,				"Test semaphores transference.",										checkEvent,		testSemaphoreTransference,				config);
 
 		if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)
 		{
@@ -4356,19 +4370,19 @@ de::MovePtr<tcu::TestCaseGroup> createSemaphoreTests (tcu::TestContext& testCtx,
 			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 		{
 			// \note Not supported on WIN32 handles
-			addFunctionCase(semaphoreGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting semaphore multiple times.",		testSemaphoreMultipleExports,	config);
+			addFunctionCase(semaphoreGroup.get(), std::string("export_multiple_times_") + permanenceName,	"Test exporting semaphore multiple times.",		checkSupport,	testSemaphoreMultipleExports,	config);
 
-			addFunctionCase(semaphoreGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported semaphore.",	testSemaphoreFdDup,				config);
-			addFunctionCase(semaphoreGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported semaphore.",	testSemaphoreFdDup2,			config);
-			addFunctionCase(semaphoreGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported semaphore.",	testSemaphoreFdDup3,			config);
-			addFunctionCase(semaphoreGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending semaphore fd over socket.",		testSemaphoreFdSendOverSocket,	config);
+			addFunctionCase(semaphoreGroup.get(), std::string("dup_") + permanenceName,						"Test calling dup() on exported semaphore.",	checkSupport,	testSemaphoreFdDup,				config);
+			addFunctionCase(semaphoreGroup.get(), std::string("dup2_") + permanenceName,					"Test calling dup2() on exported semaphore.",	checkSupport,	testSemaphoreFdDup2,			config);
+			addFunctionCase(semaphoreGroup.get(), std::string("dup3_") + permanenceName,					"Test calling dup3() on exported semaphore.",	checkSupport,	testSemaphoreFdDup3,			config);
+			addFunctionCase(semaphoreGroup.get(), std::string("send_over_socket_") + permanenceName,		"Test sending semaphore fd over socket.",		checkSupport,	testSemaphoreFdSendOverSocket,	config);
 		}
 
 		if (getHandelTypeTransferences(externalType) == TRANSFERENCE_REFERENCE)
 		{
 			addFunctionCase(semaphoreGroup.get(), std::string("signal_wait_import_") + permanenceName,			"Test signaling and then waiting for the the sepmahore.",				testSemaphoreSignalWaitImport,			config);
 			addFunctionCase(semaphoreGroup.get(), std::string("export_signal_import_wait_") + permanenceName,	"Test exporting, signaling, importing and waiting for the semaphore.",	testSemaphoreExportSignalImportWait,	config);
-			addFunctionCase(semaphoreGroup.get(), std::string("export_import_signal_wait_") + permanenceName,	"Test exporting, importing, signaling and waiting for the semaphore.",	testSemaphoreExportImportSignalWait,	config);
+			addFunctionCase(semaphoreGroup.get(), std::string("export_import_signal_wait_") + permanenceName,	"Test exporting, importing, signaling and waiting for the semaphore.",	checkEvent,		testSemaphoreExportImportSignalWait,	config);
 		}
 	}
 

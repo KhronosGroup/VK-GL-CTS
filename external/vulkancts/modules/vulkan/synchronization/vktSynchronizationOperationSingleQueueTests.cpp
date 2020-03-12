@@ -582,6 +582,16 @@ public:
 		return DE_NULL;
 	}
 
+	void checkSupport (Context& context) const
+	{
+		if (SYNC_PRIMITIVE_EVENT == m_syncPrimitive &&
+			context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+			!context.getPortabilitySubsetFeatures().events)
+		{
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+		}
+	}
+
 private:
 	const ResourceDescription				m_resourceDesc;
 	const de::SharedPtr<OperationSupport>	m_writeOp;

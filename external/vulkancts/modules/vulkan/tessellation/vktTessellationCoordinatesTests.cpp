@@ -371,6 +371,7 @@ public:
 												 const bool					executionModeInEvaluationShader = true);
 
 	void						initPrograms	(SourceCollections&			programCollection) const;
+	void						checkSupport	(Context&					context) const;
 	TestInstance*				createInstance	(Context&					context) const;
 
 private:
@@ -388,6 +389,15 @@ TessCoordTest::TessCoordTest (tcu::TestContext&			testCtx,
 	, m_spacingMode						(spacingMode)
 	, m_executionModeInEvaluationShader	(executionModeInEvaluationShader)
 {
+}
+
+void TessCoordTest::checkSupport (Context& context) const
+{
+	if (const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR* const features = getPortability(context))
+	{
+		checkPointMode(*features);
+		checkPrimitive(*features, m_primitiveType);
+	}
 }
 
 void TessCoordTest::initPrograms (SourceCollections& programCollection) const

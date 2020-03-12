@@ -626,7 +626,7 @@ tcu::TestCaseGroup* createPrimitiveDiscardTests (tcu::TestContext& testCtx)
 									 + (caseDef.usePointMode ? "_point_mode" : "")
 									 + (caseDef.useLessThanOneInnerLevels ? "" : "_valid_levels");
 
-		addFunctionCaseWithPrograms(group.get(), caseName, "", initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(group.get(), caseName, "", checkSupportCase, initPrograms, test, caseDef);
 	}
 
 	return group.release();

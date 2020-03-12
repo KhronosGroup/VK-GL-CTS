@@ -1000,6 +1000,8 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 	default:
 		DE_FATAL("Unsupported shader type");
 	}
+
+	checkSupportShader(ctx, m_shaderType.getType());
 }
 
 void AtomicOperationCase::createShaderSpec (void)

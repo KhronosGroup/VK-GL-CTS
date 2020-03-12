@@ -1217,6 +1217,13 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 
 	if ((imageFormatProperties.sampleCounts & m_testParams.colorSamples) == 0)
 		TCU_THROW(NotSupportedError, "Color image type not supported");
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().multisampleArrayImage &&
+		(m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT) && (m_testParams.viewCount != 1))
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Implementation does not support image array with multiple samples per texel");
+	}
 }
 
 FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&				context,

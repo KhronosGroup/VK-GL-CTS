@@ -171,6 +171,9 @@ private:
 	vk::VkComponentMapping							m_componentMapping;
 };
 
+void checkTextureSupport (Context& context, const vk::VkFormat imageFormat, const vk::VkComponentMapping& imageComponents,
+											const vk::VkFormat viewFormat,  const vk::VkComponentMapping& viewComponents);
+
 typedef de::SharedPtr<TextureBinding>	TextureBindingSp;
 
 class TextureRenderer
@@ -321,6 +324,7 @@ public:
 										{
 											initializePrograms(programCollection, m_testsParameters.texCoordPrecision, m_testsParameters.programs);
 										}
+
 	virtual void						checkSupport				(Context& context) const
 										{
 											checkTextureSupport(context, m_testsParameters);

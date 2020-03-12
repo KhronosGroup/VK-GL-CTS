@@ -127,6 +127,7 @@ class IdentityGeometryShaderTestCase : public TestCase
 {
 public:
 	void			initPrograms	(vk::SourceCollections& programCollection) const;
+	void			checkSupport	(Context& context) const;
 	TestInstance*	createInstance	(Context& context) const;
 
 	IdentityGeometryShaderTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType)
@@ -138,6 +139,11 @@ public:
 private:
 	const TessPrimitiveType m_primitiveType;
 };
+
+void IdentityGeometryShaderTestCase::checkSupport (Context& context) const
+{
+	checkSupportPrimitive(context, m_primitiveType);
+}
 
 void IdentityGeometryShaderTestCase::initPrograms (vk::SourceCollections& programCollection) const
 {
@@ -216,6 +222,7 @@ class IdentityTessellationShaderTestCase : public TestCase
 {
 public:
 	void			initPrograms	(vk::SourceCollections& programCollection) const;
+	void			checkSupport	(Context& context) const;
 	TestInstance*	createInstance	(Context& context) const;
 
 	IdentityTessellationShaderTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TessPrimitiveType primitiveType)
@@ -227,6 +234,11 @@ public:
 private:
 	const TessPrimitiveType m_primitiveType;
 };
+
+void IdentityTessellationShaderTestCase::checkSupport (Context& context) const
+{
+	checkSupportPrimitive(context, m_primitiveType);
+}
 
 //! Geometry shader used in passthrough tessellation shader case.
 std::string generateGeometryShader (const TessPrimitiveType primitiveType, const std::string& colorSourceName)

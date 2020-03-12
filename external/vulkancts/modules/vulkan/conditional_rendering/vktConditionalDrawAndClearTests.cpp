@@ -1400,6 +1400,17 @@ void checkSupport (Context& context)
 	context.requireDeviceFunctionality("VK_EXT_conditional_rendering");
 }
 
+void checkFan (Context& context)
+{
+	checkSupport(context);
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
+}
+
 } // unnamed namespace
 
 ConditionalRenderingDrawAndClearTests::ConditionalRenderingDrawAndClearTests (tcu::TestContext &testCtx)
@@ -1428,10 +1439,10 @@ void ConditionalRenderingDrawAndClearTests::init (void)
 		depth->addChild(new InstanceFactory1WithSupport<ConditionalRenderingClearAttachmentsTestInstance, ClearTestParams, FunctionSupport0>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "clear_attachment_twice_" + generateClearTestName(clearDepthTwiceGrid[testNdx]), "Depth clear test.", clearDepthTwiceGrid[testNdx], checkSupport));
 
 	for (int testNdx = 0; testNdx < DE_LENGTH_OF_ARRAY(drawTestGrid); testNdx++)
-		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "case_" + de::toString(testNdx), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx], checkSupport));
+		draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingDrawTestInstance, DrawTestParams, FunctionSupport0, AddProgramsDraw>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "case_" + de::toString(testNdx), "Draw test.", AddProgramsDraw(), drawTestGrid[testNdx], checkFan));
 
-	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_no_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), true, checkSupport));
-	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), false, checkSupport));
+	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_no_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), true, checkFan));
+	draw->addChild(new InstanceFactory1WithSupport<ConditionalRenderingUpdateBufferWithDrawTestInstance, bool, FunctionSupport0, AddProgramsUpdateBufferUsingRendering>(m_testCtx, tcu::NODETYPE_SELF_VALIDATE, "update_with_rendering_discard", "Draw test.", AddProgramsUpdateBufferUsingRendering(), false, checkFan));
 
 	clear->addChild(color);
 	clear->addChild(depth);

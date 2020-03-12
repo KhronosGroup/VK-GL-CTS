@@ -1698,6 +1698,8 @@ protected:
 	}
 };
 
+} // anonymous
+
 void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 {
 	tcu::TestContext&	testCtx		= textureMipmappingTests->getTestContext();
@@ -2163,8 +2165,6 @@ void populateTextureMipmappingTests (tcu::TestCaseGroup* textureMipmappingTests)
 		textureMipmappingTests->addChild(group3D.release());
 	}
 }
-
-} // anonymous
 
 tcu::TestCaseGroup* createTextureMipmappingTests (tcu::TestContext& testCtx)
 {

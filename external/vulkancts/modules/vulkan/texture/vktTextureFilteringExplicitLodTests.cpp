@@ -28,6 +28,7 @@
 #include "vktSampleVerifier.hpp"
 #include "vktShaderExecutor.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTextureTestUtil.hpp"
 
 #include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -951,6 +952,11 @@ public:
 	}
 
 	void initSpec (void);
+
+	void checkSupport (Context& context) const
+	{
+		util::checkTextureSupport(context, m_testCaseData.imParams.format);
+	}
 
 	virtual void initPrograms (vk::SourceCollections& programCollection) const
 	{

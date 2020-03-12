@@ -438,6 +438,25 @@ void BlendTest::checkSupport (Context& context) const
 {
 	if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
 		throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
+
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().constantAlphaColorBlendFactors)
+	{
+		int quadNdx = 0;
+		for (; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+		{
+			const VkPipelineColorBlendAttachmentState& blendState = m_blendStates[quadNdx];
+			if (blendState.srcColorBlendFactor == VK_BLEND_FACTOR_CONSTANT_ALPHA ||
+				blendState.dstColorBlendFactor == VK_BLEND_FACTOR_CONSTANT_ALPHA ||
+				blendState.srcColorBlendFactor == VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA ||
+				blendState.dstColorBlendFactor == VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA)
+			{
+				break;
+			}
+		}
+		if (quadNdx < BlendTest::QUAD_COUNT)
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Constant alpha color blend factors are not supported by this implementation");
+	}
 }
 
 void BlendTest::initPrograms (SourceCollections& sourceCollections) const

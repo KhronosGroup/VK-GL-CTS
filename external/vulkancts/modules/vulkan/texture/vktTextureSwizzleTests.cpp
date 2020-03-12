@@ -283,6 +283,8 @@ tcu::TestStatus Swizzle2DTestInstance::iterate (void)
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
 
+} // anonymous
+
 void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 {
 	tcu::TestContext&	testCtx	= textureSwizzleTests->getTestContext();
@@ -522,8 +524,6 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 	textureSwizzleTests->addChild(groupCompMap.release());
 	textureSwizzleTests->addChild(groupTexCoord.release());
 }
-
-} // anonymous
 
 tcu::TestCaseGroup* createTextureSwizzleTests (tcu::TestContext& testCtx)
 {

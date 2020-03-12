@@ -4094,3 +4094,13 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	return makeComputeTestRequiredSubgroupSize(context, format, inputs, inputsCount, internalData, checkResult, pipelineShaderStageCreateFlags,
 											   numWorkgroups, requiredSubgroupSize != 0u, subgroupSize, localSizesToTest, localSizesToTestCount);
 }
+
+void vkt::subgroups::supportedCheckShader(Context& context, const vk::VkShaderStageFlags shaderStage)
+{
+	if ((VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) & shaderStage &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().tessellationIsolines)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
+	}
+}

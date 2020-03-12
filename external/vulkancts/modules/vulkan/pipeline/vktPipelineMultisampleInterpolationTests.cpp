@@ -87,12 +87,24 @@ public:
 
 	void						init			(void);
 	void						initPrograms	(vk::SourceCollections& programCollection) const;
-	virtual void				checkSupport	(Context&) const {}
+	void						checkSupport	(Context&				context) const;
 	TestInstance*				createInstance	(Context&				context) const;
 	static MultisampleCaseBase*	createCase		(tcu::TestContext&		testCtx,
 												 const std::string&		name,
 												 const ImageMSParams&	imageMSParams);
 };
+
+template <typename CaseClassName>
+void MSCase<CaseClassName>::checkSupport (Context& context) const
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().shaderSampleRateInterpolationFunctions)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Shader sample rate interpolation functions are not supported by this implementation");
+	}
+
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+}
 
 template <typename CaseClassName>
 MultisampleCaseBase* MSCase<CaseClassName>::createCase (tcu::TestContext& testCtx, const std::string& name, const ImageMSParams& imageMSParams)
@@ -291,11 +303,6 @@ template<> void MSCase<MSCaseInterpolateAtSampleDistinctValues>::initPrograms (v
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
 }
 
-template<> void MSCase<MSCaseInterpolateAtSampleDistinctValues>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
-}
-
 template<> TestInstance* MSCase<MSCaseInterpolateAtSampleDistinctValues>::createInstance (Context& context) const
 {
 	return new MSInstance<MSInstanceDistinctValues>(context, m_imageMSParams);
@@ -418,11 +425,6 @@ template<> void MSCase<MSCaseInterpolateAtSampleSingleSample>::initPrograms (vk:
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
 }
 
-template<> void MSCase<MSCaseInterpolateAtSampleSingleSample>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
-}
-
 template<> TestInstance* MSCase<MSCaseInterpolateAtSampleSingleSample>::createInstance (Context& context) const
 {
 	return new MSInstance<MSInstanceInterpolateScreenPosition>(context, m_imageMSParams);
@@ -490,11 +492,6 @@ template<> void MSCase<MSCaseInterpolateAtSampleIgnoresCentroid>::initPrograms (
 		<< "}\n";
 
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
-}
-
-template<> void MSCase<MSCaseInterpolateAtSampleIgnoresCentroid>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> TestInstance* MSCase<MSCaseInterpolateAtSampleIgnoresCentroid>::createInstance (Context& context) const
@@ -601,11 +598,6 @@ template<> void MSCase<MSCaseInterpolateAtSampleConsistency>::initPrograms (vk::
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
 }
 
-template<> void MSCase<MSCaseInterpolateAtSampleConsistency>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
-}
-
 template<> TestInstance* MSCase<MSCaseInterpolateAtSampleConsistency>::createInstance (Context& context) const
 {
 	return new MSInstance<MSInstanceInterpolateScreenPosition>(context, m_imageMSParams);
@@ -710,11 +702,6 @@ template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::initPrograms (vk
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
 }
 
-template<> void MSCase<MSCaseInterpolateAtCentroidConsistency>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
-}
-
 template<> TestInstance* MSCase<MSCaseInterpolateAtCentroidConsistency>::createInstance (Context& context) const
 {
 	return new MSInstance<MSInstanceInterpolateScreenPosition>(context, m_imageMSParams);
@@ -788,11 +775,6 @@ template<> void MSCase<MSCaseInterpolateAtOffsetPixelCenter>::initPrograms (vk::
 		<< "}\n";
 
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
-}
-
-template<> void MSCase<MSCaseInterpolateAtOffsetPixelCenter>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> TestInstance* MSCase<MSCaseInterpolateAtOffsetPixelCenter>::createInstance (Context& context) const
@@ -899,11 +881,6 @@ template<> void MSCase<MSCaseInterpolateAtOffsetSamplePosition>::initPrograms (v
 		<< "}\n";
 
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
-}
-
-template<> void MSCase<MSCaseInterpolateAtOffsetSamplePosition>::checkSupport (Context& context) const
-{
-	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
 template<> TestInstance* MSCase<MSCaseInterpolateAtOffsetSamplePosition>::createInstance (Context& context) const
@@ -1018,6 +995,10 @@ template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::initPrograms (vk
 		<< "}\n";
 
 	programCollection.glslSources.add("fragment_shader") << glu::FragmentSource(fs.str());
+}
+
+template<> void MSCase<MSCaseCentroidQualifierInsidePrimitive>::checkSupport (Context&) const
+{
 }
 
 template<> TestInstance* MSCase<MSCaseCentroidQualifierInsidePrimitive>::createInstance (Context& context) const

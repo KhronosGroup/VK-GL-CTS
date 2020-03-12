@@ -660,6 +660,13 @@ void supportedCheckFeatures (Context& context, CaseDefinition caseDef)
 	}
 }
 
+void supportedCheckFeaturesShader (Context& context, CaseDefinition caseDef)
+{
+	supportedCheckFeatures(context, caseDef);
+
+	vkt::subgroups::supportedCheckShader(context, caseDef.shaderStage);
+}
+
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
 	struct internalDataStruct internalData =
@@ -1020,12 +1027,12 @@ tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
 		const CaseDefinition caseDefCompute = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
 		addFunctionCaseWithPrograms(computeGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeatures, initPrograms, test, caseDefCompute);
 		const CaseDefinition caseDefAllGraphics = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeatures, initPrograms, test, caseDefAllGraphics);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initPrograms, test, caseDefAllGraphics);
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDefStage = {VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_NONE};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStage.shaderStage) + "_allow_varying_subgroup_size", "", supportedCheckFeatures, initFrameBufferPrograms, noSSBOtest, caseDefStage);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStage.shaderStage) + "_allow_varying_subgroup_size", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtest, caseDefStage);
 		}
 	}
 
@@ -1045,20 +1052,20 @@ tcu::TestCaseGroup* createSubgroupsSizeControlTests (tcu::TestContext& testCtx)
 	// Tests to check setting a required subgroup size value.
 	{
 		const CaseDefinition caseDefAllGraphicsMax = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_max", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMax);
 		const CaseDefinition caseDefComputeMax = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
 		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_max", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMax);
 
 		const CaseDefinition caseDefAllGraphicsMin = {0u, VK_SHADER_STAGE_ALL_GRAPHICS, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
-		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
+		addFunctionCaseWithPrograms(graphicsGroup.get(), "required_subgroup_size_min", "", supportedCheckFeaturesShader, initPrograms, testRequireSubgroupSize, caseDefAllGraphicsMin);
 		const CaseDefinition caseDefComputeMin = {0u, VK_SHADER_STAGE_COMPUTE_BIT, DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
 		addFunctionCaseWithPrograms(computeGroup.get(), "required_subgroup_size_min", "", supportedCheckFeatures, initPrograms, testRequireSubgroupSize, caseDefComputeMin);
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDefStageMax = {0u, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MAX};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMax.shaderStage) + "_required_subgroup_size_max", "", supportedCheckFeatures, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMax);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMax.shaderStage) + "_required_subgroup_size_max", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMax);
 			const CaseDefinition caseDefStageMin = {0u, stages[stageIndex], DE_FALSE, REQUIRED_SUBGROUP_SIZE_MIN};
-			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMin.shaderStage) + "_required_subgroup_size_min", "", supportedCheckFeatures, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMin);
+			addFunctionCaseWithPrograms(framebufferGroup.get(),  getShaderStageName(caseDefStageMin.shaderStage) + "_required_subgroup_size_min", "", supportedCheckFeaturesShader, initFrameBufferPrograms, noSSBOtestRequireSubgroupSize, caseDefStageMin);
 		}
 	}
 

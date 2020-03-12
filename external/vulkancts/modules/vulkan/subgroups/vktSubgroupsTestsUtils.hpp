@@ -281,6 +281,8 @@ tcu::TestStatus makeComputeTestRequiredSubgroupSize(
 						deUint32 subgroupSize),
 	const deUint32 pipelineShaderStageCreateFlags, const deUint32 numWorkgroups[3],
 	const deBool isRequiredSubgroupSize, const deUint32 subgroupSize, const deUint32 localSizesToTest[][3], const deUint32 localSizesToTestCount);
+
+void supportedCheckShader(Context& context, const vk::VkShaderStageFlags shaderStage);
 } // subgroups
 } // vkt
 

@@ -185,6 +185,13 @@ void AmberTestCase::checkSupport(Context& ctx) const
 			TCU_THROW(NotSupportedError, "Buffer format doesn't support required feature flags");
 		}
 	}
+
+	if (m_name == "triangle_fan" &&
+		ctx.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!ctx.getPortabilitySubsetFeatures().triangleFans)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
 }
 
 class Delegate : public amber::Delegate

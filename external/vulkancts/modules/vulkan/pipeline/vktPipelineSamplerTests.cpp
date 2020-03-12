@@ -223,6 +223,7 @@ public:
 															 bool					separateStencilUsage);
 	virtual							~SamplerLodTest			(void) {}
 	virtual VkSamplerCreateInfo		getSamplerCreateInfo	(void) const;
+	virtual void					checkSupport			(Context& context) const;
 
 private:
 	VkSamplerMipmapMode				m_mipmapMode;
@@ -230,6 +231,17 @@ private:
 	float							m_maxLod;
 	float							m_mipLodBias;
 };
+
+void SamplerLodTest::checkSupport (Context& context) const
+{
+	SamplerTest::checkSupport(context);
+
+	if (m_mipLodBias != 0.0f && context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().samplerMipLodBias)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Sampler mipmap LOD bias is not supported by this implementation");
+	}
+}
 
 class SamplerAddressModesTest : public SamplerTest
 {

@@ -294,16 +294,22 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context)
 	return tcu::TestStatus::pass("Wait and set even on device using secondary command buffers tests pass");
 }
 
+void checkEventSupport (Context& context)
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") && !context.getPortabilitySubsetFeatures().events)
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
-	addFunctionCase(basicTests.get(), "host_set_reset",   "Basic event tests set and reset on host", hostResetSetEventCase);
-	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", deviceResetSetEventCase);
-	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", singleSubmissionCase);
-	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", multiSubmissionCase);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", secondaryCommandBufferCase);
+	addFunctionCase(basicTests.get(), "host_set_reset",   "Basic event tests set and reset on host", checkEventSupport, hostResetSetEventCase);
+	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkEventSupport, deviceResetSetEventCase);
+	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkEventSupport, singleSubmissionCase);
+	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkEventSupport, multiSubmissionCase);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkEventSupport, secondaryCommandBufferCase);
 
 	return basicTests.release();
 }

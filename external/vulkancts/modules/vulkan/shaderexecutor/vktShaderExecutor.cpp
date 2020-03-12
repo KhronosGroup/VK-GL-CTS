@@ -3511,6 +3511,16 @@ bool  executorSupported(glu::ShaderType shaderType)
 	}
 }
 
+void checkSupportShader(Context& context, const glu::ShaderType shaderType)
+{
+	if (shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION &&
+		context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+		!context.getPortabilitySubsetFeatures().tessellationIsolines)
+	{
+		TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Tessellation iso lines are not supported by this implementation");
+	}
+}
+
 
 } // shaderexecutor
 } // vkt

@@ -3017,12 +3017,25 @@ public:
 								{
 									return new CullingTestInstance(context, m_cullMode, m_primitiveTopology, m_frontFace, m_polygonMode);
 								}
+	void						checkSupport		(Context& context) const;
 protected:
 	const VkCullModeFlags		m_cullMode;
 	const VkPrimitiveTopology	m_primitiveTopology;
 	const VkFrontFace			m_frontFace;
 	const VkPolygonMode			m_polygonMode;
 };
+
+void CullingTestCase::checkSupport (Context& context) const
+{
+	if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
+	{
+		const VkPhysicalDevicePortabilitySubsetFeaturesKHR& subsetFeatures = context.getPortabilitySubsetFeatures();
+		if (m_polygonMode == VK_POLYGON_MODE_POINT && !subsetFeatures.pointPolygons)
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Point polygons are not supported by this implementation");
+		if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN && !subsetFeatures.triangleFans)
+			TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+	}
+}
 
 class DiscardTestInstance : public BaseRenderingTestInstance
 {
@@ -3494,6 +3507,11 @@ public:
 								{
 									if (m_queryFragmentShaderInvocations)
 										context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_PIPELINE_STATISTICS_QUERY);
+
+									if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+											context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+											!context.getPortabilitySubsetFeatures().triangleFans)
+										TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
 								}
 
 protected:
@@ -3732,6 +3750,16 @@ public:
 	virtual TestInstance*		createInstance					(Context& context) const
 								{
 									return new TriangleInterpolationTestInstance(context, m_primitiveTopology, m_flags, m_sampleCount);
+								}
+
+	virtual	void				checkSupport		(Context& context) const
+								{
+									if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN &&
+										context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
+										!context.getPortabilitySubsetFeatures().triangleFans)
+									{
+										TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Triangle fans are not supported by this implementation");
+									}
 								}
 protected:
 	const VkPrimitiveTopology	m_primitiveTopology;

@@ -507,6 +507,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	}
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
+
+	vkt::subgroups::supportedCheckShader(context, caseDef.shaderStage);
 }
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
