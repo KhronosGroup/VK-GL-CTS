@@ -38,6 +38,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
@@ -48,6 +50,7 @@
 #include "deMath.h"
 
 #include <vector>
+#include <memory>
 
 namespace vkt
 {
@@ -457,6 +460,49 @@ void initVertexTestPrograms (SourceCollections& programCollection, const int num
 	}
 }
 
+void initFragmentTestPrograms (SourceCollections& programCollection, const int numViewports)
+{
+	// Vertex shader.
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "#extension GL_ARB_shader_viewport_layer_array : require\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_position;\n"
+			<< "layout(location = 1) in  vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    gl_ViewportIndex = gl_VertexIndex / 6;\n"
+			<< "    gl_Position = in_position;\n"
+			<< "    out_color = in_color;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		// Ignore input color and choose one using the viewport index.
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "layout(set=0, binding=0) uniform Colors {\n"
+			<< "    vec4 color[" << numViewports << "];\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    out_color = color[gl_ViewportIndex];\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+}
+
 void initTessellationTestPrograms (SourceCollections& programCollection, const int numViewports)
 {
 	DE_UNREF(numViewports);
@@ -586,6 +632,7 @@ public:
 	enum Shader {
 		VERTEX,
 		TESSELLATION,
+		FRAGMENT,
 	};
 
 	Renderer (Context&						context,
@@ -601,7 +648,9 @@ public:
 		, m_colorSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u))
 		, m_clearColor				(clearColor)
 		, m_numViewports			(numViewports)
+		, m_colors					(colors)
 		, m_vertices				(generateVertices(colors))
+		, m_shader					(shader)
 	{
 		const DeviceInterface&		vk					= context.getDeviceInterface();
 		const VkDevice				device				= context.getDevice();
@@ -631,7 +680,15 @@ public:
 		m_renderPass		= makeRenderPass		(vk, device, m_colorFormat);
 		m_framebuffer		= makeFramebuffer		(vk, device, *m_renderPass, m_colorAttachment.get(),
 													 static_cast<deUint32>(m_renderSize.x()),  static_cast<deUint32>(m_renderSize.y()));
-		m_pipelineLayout	= makePipelineLayout	(vk, device);
+
+		if (shader == FRAGMENT)
+		{
+			vk::DescriptorSetLayoutBuilder builder;
+			builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+			m_descriptorSetLayout = builder.build(vk, device);
+		}
+
+		m_pipelineLayout	= makePipelineLayout	(vk, device, (shader == FRAGMENT ? m_descriptorSetLayout.get() : DE_NULL));
 		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule, *m_tessellationControlModule,
 													 *m_tessellationEvaluationModule, *m_fragmentModule, m_renderSize, m_numViewports, cells);
 		m_cmdPool			= createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -643,6 +700,7 @@ public:
 		const DeviceInterface&		vk			= context.getDeviceInterface();
 		const VkDevice				device		= context.getDevice();
 		const VkQueue				queue		= context.getUniversalQueue();
+		Allocator&					allocator	= context.getDefaultAllocator();
 
 		beginCommandBuffer(vk, *m_cmdBuffer);
 
@@ -654,6 +712,41 @@ public:
 			const VkDeviceSize vertexBufferOffset = 0ull;
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		}
+
+		// Prepare colors buffer if needed.
+		std::unique_ptr<vk::BufferWithMemory>	colorsBuffer;
+		vk::Move<vk::VkDescriptorPool>			descriptorPool;
+		vk::Move<vk::VkDescriptorSet>			descriptorSet;
+
+		if (m_shader == FRAGMENT)
+		{
+			// Create buffer.
+			const auto	colorsBufferSize		= m_colors.size() * sizeof(decltype(m_colors)::value_type);
+			const auto	colorsBufferCreateInfo	= vk::makeBufferCreateInfo(static_cast<VkDeviceSize>(colorsBufferSize), vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+			colorsBuffer.reset(new vk::BufferWithMemory{vk, device, allocator, colorsBufferCreateInfo, MemoryRequirement::HostVisible});
+
+			// Copy colors and flush allocation.
+			auto& colorsBufferAlloc = colorsBuffer->getAllocation();
+			deMemcpy(colorsBufferAlloc.getHostPtr(), m_colors.data(), colorsBufferSize);
+			vk::flushAlloc(vk, device, colorsBufferAlloc);
+
+			// Descriptor pool.
+			vk::DescriptorPoolBuilder poolBuilder;
+			poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u);
+			descriptorPool = poolBuilder.build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+			// Descriptor set.
+			descriptorSet = vk::makeDescriptorSet(vk, device, descriptorPool.get(), m_descriptorSetLayout.get());
+
+			// Update and bind descriptor set.
+			const auto						colorsBufferDescriptorInfo = vk::makeDescriptorBufferInfo(colorsBuffer->get(), 0ull, VK_WHOLE_SIZE);
+			vk::DescriptorSetUpdateBuilder	updateBuilder;
+			updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &colorsBufferDescriptorInfo);
+			updateBuilder.update(vk, device);
+
+			vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+		}
+
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_numViewports * 6), 1u, 0u, 0u);	// two triangles per viewport
 		endRenderPass(vk, *m_cmdBuffer);
 
@@ -669,7 +762,9 @@ private:
 	const VkImageSubresourceRange			m_colorSubresourceRange;
 	const Vec4								m_clearColor;
 	const int								m_numViewports;
+	const std::vector<Vec4>					m_colors;
 	const std::vector<PositionColorVertex>	m_vertices;
+	const Shader							m_shader;
 
 	Move<VkImage>							m_colorImage;
 	MovePtr<Allocation>						m_colorImageAlloc;
@@ -681,6 +776,7 @@ private:
 	Move<VkShaderModule>					m_fragmentModule;
 	Move<VkRenderPass>						m_renderPass;
 	Move<VkFramebuffer>						m_framebuffer;
+	Move<VkDescriptorSetLayout>				m_descriptorSetLayout;
 	Move<VkPipelineLayout>					m_pipelineLayout;
 	Move<VkPipeline>						m_pipeline;
 	Move<VkCommandPool>						m_cmdPool;
@@ -691,7 +787,7 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-tcu::TestStatus testVertexShader (Context& context, const int numViewports)
+tcu::TestStatus testVertexFragmentShader (Context& context, const int numViewports, Renderer::Shader shader)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -722,7 +818,7 @@ tcu::TestStatus testVertexShader (Context& context, const int numViewports)
 
 	// Draw
 	{
-		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors, Renderer::VERTEX);
+		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors, shader);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -740,6 +836,16 @@ tcu::TestStatus testVertexShader (Context& context, const int numViewports)
 	}
 
 	return tcu::TestStatus::pass("OK");
+}
+
+tcu::TestStatus testVertexShader (Context& context, const int numViewports)
+{
+	return testVertexFragmentShader(context, numViewports, Renderer::VERTEX);
+}
+
+tcu::TestStatus testFragmentShader (Context& context, const int numViewports)
+{
+	return testVertexFragmentShader(context, numViewports, Renderer::FRAGMENT);
 }
 
 tcu::TestStatus testTessellationShader (Context& context, const int numViewports)
@@ -802,6 +908,11 @@ void checkSupportVertex (Context& context, const int)
 		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
 }
 
+void checkSupportFragment (Context& context, const int)
+{
+	checkSupportVertex(context, 0);
+}
+
 void checkSupportTessellation (Context& context, const int)
 {
 	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
@@ -817,6 +928,9 @@ tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx)
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
 		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", checkSupportVertex, initVertexTestPrograms, testVertexShader, numViewports);
+
+	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
+		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(numViewports), "", checkSupportFragment, initFragmentTestPrograms, testFragmentShader, numViewports);
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
 		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numViewports), "", checkSupportTessellation, initTessellationTestPrograms, testTessellationShader, numViewports);
