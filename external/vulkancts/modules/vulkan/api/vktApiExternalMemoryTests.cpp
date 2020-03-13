@@ -29,6 +29,7 @@
 #include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkApiVersion.hpp"
+#include "vkImageUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
@@ -4002,13 +4003,16 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
 
+	const vk::VkImageUsageFlagBits framebufferUsageFlag = vk::isDepthStencilFormat(format) ? vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+																						   : vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
 	const vk::VkImageUsageFlagBits				  usageFlags[]		  =
 	{
 		vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		vk::VK_IMAGE_USAGE_SAMPLED_BIT,
 		vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-		vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		framebufferUsageFlag,
 	};
 	const vk::VkImageCreateFlagBits				  createFlags[]		  =
 	{
@@ -4370,6 +4374,12 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 			vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
 			vk::VK_FORMAT_R16G16B16A16_SFLOAT,
 			vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+			vk::VK_FORMAT_D16_UNORM,
+			vk::VK_FORMAT_X8_D24_UNORM_PACK32,
+			vk::VK_FORMAT_D24_UNORM_S8_UINT,
+			vk::VK_FORMAT_D32_SFLOAT,
+			vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
+			vk::VK_FORMAT_S8_UINT,
 		};
 		const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
 
