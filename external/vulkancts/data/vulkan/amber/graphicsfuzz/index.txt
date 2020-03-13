@@ -57,7 +57,6 @@
 {	"cov-liveinterval-different-dest.amber",		"cov-liveinterval-different-dest",		"A fragment shader that covers a specific live interval code path."						},
 {	"cov-merge-return-condition-twice.amber",		"cov-merge-return-condition-twice",		"A fragment shader that covers a specific return merge path."							},
 {	"cov-modf-integer-to-private.amber",			"cov-modf-integer-to-private",			"A fragment shader that covers a specific private to local path."						},
-{	"cov-reduce-load-array-replace-extract.amber",	"cov-reduce-load-array-replace-extract","A fragment shader that covers a specific load size reduction path."					},
 {	"cov-reduce-load-replace-extract.amber",		"cov-reduce-load-replace-extract",		"A fragment shader that covers a specific load size reduction path."					},
 {	"cov-simplification-while-inside-for.amber",	"cov-simplification-while-inside-for",	"A fragment shader that covers a specific code simplification path."					},
 {	"cov-single-block-elim-self-assign.amber",		"cov-single-block-elim-self-assign",	"A fragment shader that covers a specific single block elimination path."				},
