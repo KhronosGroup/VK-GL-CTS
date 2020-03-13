@@ -80,3 +80,4 @@ VK_EXT_separate_stencil_usage 		 		DEVICE 1_2_0
 VK_KHR_pipeline_executable_properties 		DEVICE
 VK_KHR_shader_clock							DEVICE
 VK_KHR_performance_query					DEVICE
+VK_KHR_shader_non_semantic_info				DEVICE
