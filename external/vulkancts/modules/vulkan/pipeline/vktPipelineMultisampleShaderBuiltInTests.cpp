@@ -1087,7 +1087,7 @@ class WriteSampleTest : public vkt::TestCase
 {
 public:
 									WriteSampleTest		(tcu::TestContext& testCtx, const std::string& name, const std::string& desc, const WriteSampleParams& params)
-										: vkt::TestCase(testCtx, name, desc), m_params{params}
+										: vkt::TestCase(testCtx, name, desc), m_params(params)
 										{}
 	virtual							~WriteSampleTest	(void) {}
 
@@ -1126,7 +1126,7 @@ class WriteSampleTestInstance : public vkt::TestInstance
 {
 public:
 								WriteSampleTestInstance		(vkt::Context& context, const WriteSampleParams& params)
-									: vkt::TestInstance(context), m_params{params}
+									: vkt::TestInstance(context), m_params(params)
 									{}
 
 	virtual						~WriteSampleTestInstance	(void) {}
