@@ -1657,6 +1657,7 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance (Context&							ctx,
 	const deUint32											componentsRequired			= m_locationsRequired * componentsPerLocation;
 	const InstanceInterface&								vki							= m_context.getInstanceInterface();
 	const VkPhysicalDevice									physDevice					= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures							features					= getPhysicalDeviceFeatures(vki, physDevice);
 	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		transformFeedbackFeatures	= m_context.getTransformFeedbackFeaturesEXT();
 	const VkPhysicalDeviceLimits							limits						= getPhysicalDeviceProperties(vki, physDevice).limits;
 	VkPhysicalDeviceTransformFeedbackPropertiesEXT			transformFeedbackProperties;
@@ -1690,6 +1691,9 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance (Context&							ctx,
 
 	if (m_testStageFlags == TEST_STAGE_GEOMETRY)
 	{
+		if (!features.geometryShader)
+			TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
+
 		if (limits.maxGeometryOutputComponents < componentsRequired)
 			TCU_THROW(NotSupportedError, "maxGeometryOutputComponents=" + de::toString(limits.maxGeometryOutputComponents) + " is less than required (" + de::toString(componentsRequired) + ")");
 	}
