@@ -147,12 +147,17 @@ enum ValueId
 	V_MINUS_ONE_OR_CLOSE,			// value used only fur fp16 subtraction result of preserved denorm and one
 	V_PI_DIV_2,
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
+	V_ZERO_OR_ONE,					// both +0 and 1 are accepted
 	V_ZERO_OR_FP16_DENORM_TO_FP32,	// both 0 and fp32 representation of fp16 denorm are accepted
 	V_ZERO_OR_FP16_DENORM_TO_FP64,
 	V_ZERO_OR_FP32_DENORM_TO_FP64,
 	V_DENORM_TIMES_TWO,
 	V_DEGREES_DENORM,
 	V_TRIG_ONE,						// 1.0 trigonometric operations, including precision margin
+	V_MINUS_INF_OR_LOG_DENORM,
+	V_MINUS_INF_OR_LOG2_DENORM,
+	V_ZERO_OR_SQRT_DENORM,
+	V_INF_OR_INV_SQRT_DENORM,
 
 	//results of conversion operations
 	V_CONV_TO_FP16_RTZ_RESULT,
@@ -1000,7 +1005,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ O_TRUNC,			V_ZERO },
 		{ O_ABS,			V_ZERO },
 		{ O_FLOOR,			V_ZERO },
-		{ O_CEIL,			V_ZERO },
+		{ O_CEIL,			V_ZERO_OR_ONE },
 		{ O_FRACT,			V_ZERO },
 		{ O_RADIANS,		V_ZERO },
 		{ O_DEGREES,		V_ZERO },
@@ -1017,11 +1022,11 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ O_ACOSH,			V_UNUSED },
 		{ O_ATANH,			V_ZERO },
 		{ O_EXP,			V_ONE },
-		{ O_LOG,			V_MINUS_INF },
+		{ O_LOG,			V_MINUS_INF_OR_LOG_DENORM },
 		{ O_EXP2,			V_ONE },
-		{ O_LOG2,			V_MINUS_INF },
-		{ O_SQRT,			V_ZERO },
-		{ O_INV_SQRT,		V_INF },
+		{ O_LOG2,			V_MINUS_INF_OR_LOG2_DENORM },
+		{ O_SQRT,			V_ZERO_OR_SQRT_DENORM },
+		{ O_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
 		{ O_MAT_DET,		V_ZERO },
 		{ O_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
 		{ O_MODF,			V_ZERO },
@@ -1128,7 +1133,7 @@ TypeTestResults<float>::TypeTestResults()
 		{ O_TRUNC,			V_ZERO },
 		{ O_ABS,			V_ZERO },
 		{ O_FLOOR,			V_ZERO },
-		{ O_CEIL,			V_ZERO },
+		{ O_CEIL,			V_ZERO_OR_ONE },
 		{ O_FRACT,			V_ZERO },
 		{ O_RADIANS,		V_ZERO },
 		{ O_DEGREES,		V_ZERO },
@@ -1145,11 +1150,11 @@ TypeTestResults<float>::TypeTestResults()
 		{ O_ACOSH,			V_UNUSED },
 		{ O_ATANH,			V_ZERO },
 		{ O_EXP,			V_ONE },
-		{ O_LOG,			V_MINUS_INF },
+		{ O_LOG,			V_MINUS_INF_OR_LOG_DENORM },
 		{ O_EXP2,			V_ONE },
-		{ O_LOG2,			V_MINUS_INF },
-		{ O_SQRT,			V_ZERO },
-		{ O_INV_SQRT,		V_INF },
+		{ O_LOG2,			V_MINUS_INF_OR_LOG2_DENORM },
+		{ O_SQRT,			V_ZERO_OR_SQRT_DENORM },
+		{ O_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
 		{ O_MAT_DET,		V_ZERO },
 		{ O_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
 		{ O_MODF,			V_ZERO },
@@ -1256,10 +1261,10 @@ TypeTestResults<double>::TypeTestResults()
 		{ O_TRUNC,			V_ZERO },
 		{ O_ABS,			V_ZERO },
 		{ O_FLOOR,			V_ZERO },
-		{ O_CEIL,			V_ZERO },
+		{ O_CEIL,			V_ZERO_OR_ONE },
 		{ O_FRACT,			V_ZERO },
-		{ O_SQRT,			V_ZERO },
-		{ O_INV_SQRT,		V_INF },
+		{ O_SQRT,			V_ZERO_OR_SQRT_DENORM },
+		{ O_INV_SQRT,		V_INF_OR_INV_SQRT_DENORM },
 		{ O_MAT_DET,		V_ZERO },
 		{ O_MAT_INV,		V_ZERO_OR_MINUS_ZERO },
 		{ O_MODF,			V_ZERO },
@@ -2343,6 +2348,99 @@ bool isCosResultCorrect(const TYPE& returnedFloat, TestLog& log)
 	return false;
 }
 
+template <typename FLOAT_TYPE>
+double getFloatTypeAsDouble(FLOAT_TYPE param)
+{
+	return param;
+}
+template<> double getFloatTypeAsDouble(deFloat16 param)
+{
+	return deFloat16To64(param);
+}
+
+
+double getPrecisionAt(double value, float ulp, int mantissaBits)
+{
+	if (mantissaBits == 23)
+	{
+		FloatFormat fp32Format(-126, 127, 23, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
+		return fp32Format.ulp(value, ulp);
+	}
+	else if (mantissaBits == 52)
+	{
+		FloatFormat fp32Format(-1022, 1023, 52, true, tcu::MAYBE, tcu::YES, tcu::MAYBE);
+		return fp32Format.ulp(value, ulp);
+	}
+	else
+	{
+		DE_ASSERT(mantissaBits == 10);
+		FloatFormat fp16Format(-14, 15, 10, true, tcu::MAYBE);
+		return fp16Format.ulp(value, ulp);
+	}
+}
+
+template <typename TYPE, typename FLOAT_TYPE, typename REF_FUNCTION>
+bool isLogResultCorrect(const TYPE& returnedFloat, FLOAT_TYPE param, REF_FUNCTION refFunction, TestLog& log)
+{
+	if (returnedFloat.isInf() && returnedFloat.signBit())
+		return true;
+
+	const double expected	= refFunction(getFloatTypeAsDouble(param));
+	const double precision	= getPrecisionAt(expected, 3.0, returnedFloat.MANTISSA_BITS);
+
+	if (deAbs(returnedFloat.asDouble() - expected) < precision)
+		return true;
+
+	log << TestLog::Message << "Expected result to be -INF or in range"
+		<< " (" << expected - precision << ", " << expected + precision << "), got "
+		<< returnedFloat.asDouble() << TestLog::EndMessage;
+	return false;
+}
+
+template <typename TYPE, typename FLOAT_TYPE>
+bool isInverseSqrtResultCorrect(const TYPE& returnedFloat, FLOAT_TYPE param, TestLog& log)
+{
+	if (returnedFloat.isInf() && !returnedFloat.signBit())
+		return true;
+
+	const double expected	= 1.0/ deSqrt(getFloatTypeAsDouble(param));
+	const double precision	= getPrecisionAt(expected, 2.0, returnedFloat.MANTISSA_BITS);
+
+	if (deAbs(returnedFloat.asDouble() - expected) < precision)
+		return true;
+
+	log << TestLog::Message << "Expected result to be INF or in range"
+		<< " (" << expected - precision << ", " << expected + precision << "), got "
+		<< returnedFloat.asDouble() << TestLog::EndMessage;
+	return false;
+}
+
+template <typename TYPE, typename FLOAT_TYPE>
+bool isSqrtResultCorrect(const TYPE& returnedFloat, FLOAT_TYPE param, TestLog& log)
+{
+	if (returnedFloat.isZero() && !returnedFloat.signBit())
+		return true;
+
+
+	const double expected				= deSqrt(getFloatTypeAsDouble(param));
+	const double expectedInverseSqrt	= 1.0 / expected;
+	const double inverseSqrtPrecision	= getPrecisionAt(expectedInverseSqrt, 2.0, returnedFloat.MANTISSA_BITS);
+
+	double expectedMin = deMin(1.0 / (expectedInverseSqrt - inverseSqrtPrecision), 1.0 / (expectedInverseSqrt + inverseSqrtPrecision));
+	double expectedMax = deMax(1.0 / (expectedInverseSqrt - inverseSqrtPrecision), 1.0 / (expectedInverseSqrt + inverseSqrtPrecision));
+
+	expectedMin -= getPrecisionAt(expectedMin, 2.5, returnedFloat.MANTISSA_BITS);
+	expectedMax += getPrecisionAt(expectedMax, 2.5, returnedFloat.MANTISSA_BITS);
+
+	if (returnedFloat.asDouble() >= expectedMin  && returnedFloat.asDouble() <= expectedMax)
+		return true;
+
+	log << TestLog::Message << "Expected result to be +0 or in range"
+		<< " (" << expectedMin << ", " << expectedMax << "), got "
+		<< returnedFloat.asDouble() << TestLog::EndMessage;
+	return false;
+}
+
 // Function used to compare test result with expected output.
 // TYPE can be Float16, Float32 or Float64.
 // FLOAT_TYPE can be deFloat16, float, double.
@@ -2401,6 +2499,8 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 		log << TestLog::Message << "Expected 0 or -0" << TestLog::EndMessage;
 		return false;
 	}
+	if (expectedValueId == V_ZERO_OR_ONE)
+		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_ONE, log);
 	if ((expectedValueId == V_ZERO_OR_FP16_DENORM_TO_FP32) || (expectedValueId == V_ZERO_OR_FP16_DENORM_TO_FP64))
 		return isZeroOrOtherValue<TYPE, FLOAT_TYPE>(returnedFloat, V_CONV_DENORM_SMALLER, log);
 	if (expectedValueId == V_ZERO_OR_FP32_DENORM_TO_FP64)
@@ -2422,6 +2522,20 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 		return isAcosResultCorrect<TYPE>(returnedFloat, log);
 
 	TypeValues<FLOAT_TYPE> typeValues;
+
+	if (expectedValueId == V_MINUS_INF_OR_LOG_DENORM)
+		return isLogResultCorrect<TYPE>(returnedFloat, typeValues.getValue(V_DENORM), deLog, log);
+
+	if (expectedValueId == V_MINUS_INF_OR_LOG2_DENORM)
+		return isLogResultCorrect<TYPE>(returnedFloat, typeValues.getValue(V_DENORM), deLog2, log);
+
+	if (expectedValueId == V_ZERO_OR_SQRT_DENORM)
+		return isSqrtResultCorrect<TYPE>(returnedFloat, typeValues.getValue(V_DENORM), log);
+
+	if (expectedValueId == V_INF_OR_INV_SQRT_DENORM)
+		return isInverseSqrtResultCorrect<TYPE>(returnedFloat, typeValues.getValue(V_DENORM), log);
+
+
 	typename RawConvert<FLOAT_TYPE, SType>::Value value;
 	value.fp = typeValues.getValue(expectedValueId);
 
