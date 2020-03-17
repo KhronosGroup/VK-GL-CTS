@@ -3932,8 +3932,8 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 	const int			numElements		= 100;
 	vector<float>		inputFloats		(numElements, 0);
 	vector<float>		outputFloats	(numElements, 0);
-	vector<deFloat16>	inputFloats16	(numElements, 0);
-	vector<deFloat16>	outputFloats16	(numElements, 0);
+	vector<deUint32>	inputUints		(numElements, 0);
+	vector<deUint32>	outputUints		(numElements, 0);
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
 
@@ -3948,8 +3948,8 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 	{
-		inputFloats16[ndx] = tcu::Float16(inputFloats[ndx]).bits();
-		outputFloats16[ndx] = tcu::Float16(outputFloats[ndx]).bits();
+		inputUints[ndx] = tcu::Float16(inputFloats[ndx]).bits();
+		outputUints[ndx] = tcu::Float16(outputFloats[ndx]).bits();
 	}
 
 	// All of the tests are of the form:
@@ -4008,9 +4008,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 
 	specFloat16.assembly =
 		"OpCapability Shader\n"
-		"OpCapability StorageUniformBufferBlock16\n"
 		"OpCapability Float16\n"
-		"OpExtension \"SPV_KHR_16bit_storage\"\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
@@ -4026,16 +4024,20 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"OpDecorate %indata Binding 0\n"
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 1\n"
-		"OpDecorate %f16arr ArrayStride 2\n"
+		"OpDecorate %u32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n"
-
-		"%f16      = OpTypeFloat 16\n"
-		"%f16ptr   = OpTypePointer Uniform %f16\n"
-		"%f16arr   = OpTypeRuntimeArray %f16\n"
 
 		+ string(getComputeAsmCommonTypes()) +
 
-		"%buf      = OpTypeStruct %f16arr\n"
+		"%f16      = OpTypeFloat 16\n"
+		"%f16vec2  = OpTypeVector %f16 2\n"
+		"%fvec2    = OpTypeVector %f32 2\n"
+		"%u32ptr   = OpTypePointer Uniform %u32\n"
+		"%u32arr   = OpTypeRuntimeArray %u32\n"
+		"%f16_0    = OpConstant %f16 0.0\n"
+
+
+		"%buf      = OpTypeStruct %u32arr\n"
 		"%bufptr   = OpTypePointer Uniform %buf\n"
 		"%indata   = OpVariable %bufptr Uniform\n"
 		"%outdata  = OpVariable %bufptr Uniform\n"
@@ -4050,9 +4052,11 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"%entry    = OpLabel\n"
 		"%idval    = OpLoad %uvec3 %id\n"
 		"%x        = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc    = OpAccessChain %f16ptr %indata %zero %x\n"
-		"%inval    = OpLoad %f16 %inloc\n"
-		"%f32_inval = OpFConvert %f32 %inval\n"
+		"%inloc    = OpAccessChain %u32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %u32 %inloc\n"
+		"%f16_vec2_inval = OpBitcast %f16vec2 %inval\n"
+		"%f16_inval = OpCompositeExtract %f16 %f16_vec2_inval 0\n"
+		"%f32_inval = OpFConvert %f32 %f16_inval\n"
 
 		"%comp     = OpFOrdGreaterThan %bool %f32_inval %float_0\n"
 		"            OpSelectionMerge %cm None\n"
@@ -4065,15 +4069,18 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"%res      = OpPhi %f32 %float_1 %tb %float_n1 %fb\n"
 		"%f16_res  = OpFConvert %f16 %res\n"
 
-		"%outloc   = OpAccessChain %f16ptr %outdata %zero %x\n"
-		"            OpStore %outloc %f16_res\n"
+		"%f16vec2_res = OpCompositeConstruct %f16vec2 %f16_res %f16_0\n"
+		"%u32_res  = OpBitcast %u32 %f16vec2_res\n"
+
+		"%outloc   = OpAccessChain %u32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %u32_res\n"
 		"            OpReturn\n"
 
 		"            OpFunctionEnd\n";
-	specFloat16.inputs.push_back(BufferSp(new Float16Buffer(inputFloats16)));
-	specFloat16.outputs.push_back(BufferSp(new Float16Buffer(outputFloats16)));
+
+	specFloat16.inputs.push_back(BufferSp(new Uint32Buffer(inputUints)));
+	specFloat16.outputs.push_back(BufferSp(new Uint32Buffer(outputUints)));
 	specFloat16.numWorkGroups = IVec3(numElements, 1, 1);
-	specFloat16.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 	specFloat16.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
 	specMat4.assembly =
@@ -8550,13 +8557,10 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	fragments4["pre_main"]		= typesAndConstants4;
 	fragments4["testfun"]		= function4;
-	fragments4["capability"]	= "OpCapability StorageUniformBufferBlock16\nOpCapability Float16\n";
-	fragments4["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
+	fragments4["capability"]	= "OpCapability Float16\n";
 
-	extensions4.push_back("VK_KHR_16bit_storage");
 	extensions4.push_back("VK_KHR_shader_float16_int8");
 
-	vulkanFeatures4.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 	vulkanFeatures4.extFloat16Int8	= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 	outputColors4[0]			= RGBA(127, 127, 127, 255);
@@ -10696,6 +10700,9 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_FLOAT_64,			0x64D2,								true,	0x4093480000000000));
 		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_FLOAT_16,			0x4093480000000000,					true,	0x64D2));
+		testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_16,			DATA_TYPE_FLOAT_64,			0x64D2,								true,	0x4093480000000000,		"no_storage",	false));
+	    testCases.push_back(ConvertCase(instruction,	DATA_TYPE_FLOAT_64,			DATA_TYPE_FLOAT_16,			0x4093480000000000,					true,	0x64D2,					"no_storage",	false));
+
 	}
 	else if (instruction == "OpConvertFToU")
 	{
@@ -10899,26 +10906,28 @@ const map<string, string> getConvertCaseFragments (string instruction, const Con
 
 	const StringTemplate pre_main (
 		"${datatype_additional_decl:opt}"
-		"    %ptr_in = OpTypePointer StorageBuffer %${inputType}\n"
-		"   %ptr_out = OpTypePointer StorageBuffer %${outputType}\n"
-		"   %s_SSBOi = OpTypeStruct %${inputType}\n"
-		"   %s_SSBOo = OpTypeStruct %${outputType}\n"
+		"    %ptr_in = OpTypePointer StorageBuffer %${inStorageType}\n"
+		"   %ptr_out = OpTypePointer StorageBuffer %${outStorageType}\n"
+		"   %s_SSBOi = OpTypeStruct %${inStorageType}\n"
+		"   %s_SSBOo = OpTypeStruct %${outStorageType}\n"
 		" %ptr_SSBOi = OpTypePointer StorageBuffer %s_SSBOi\n"
 		" %ptr_SSBOo = OpTypePointer StorageBuffer %s_SSBOo\n"
 		"     %SSBOi = OpVariable %ptr_SSBOi StorageBuffer\n"
 		"     %SSBOo = OpVariable %ptr_SSBOo StorageBuffer\n");
 
 	const StringTemplate testfun (
-		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
-		"%param     = OpFunctionParameter %v4f32\n"
-		"%label     = OpLabel\n"
-		"%iLoc      = OpAccessChain %ptr_in %SSBOi %c_u32_0\n"
-		"%oLoc      = OpAccessChain %ptr_out %SSBOo %c_u32_0\n"
-		"%valIn     = OpLoad %${inputType} %iLoc\n"
-		"%valOut    = ${instruction} %${outputType} %valIn\n"
-		"             OpStore %oLoc %valOut\n"
-		"             OpReturnValue %param\n"
-		"             OpFunctionEnd\n");
+		"%test_code  = OpFunction %v4f32 None %v4f32_v4f32_function\n"
+		"%param      = OpFunctionParameter %v4f32\n"
+		"%label      = OpLabel\n"
+		"%iLoc       = OpAccessChain %ptr_in %SSBOi %c_u32_0\n"
+		"%oLoc       = OpAccessChain %ptr_out %SSBOo %c_u32_0\n"
+		"%valIn      = OpLoad %${inStorageType} %iLoc\n"
+		"%valInCast  = ${inCast} %${inputType} %valIn\n"
+		"%conv       = ${instruction} %${outputType} %valInCast\n"
+		"%valOutCast = ${outCast} %${outStorageType} %conv\n"
+		"              OpStore %oLoc %valOutCast\n"
+		"              OpReturnValue %param\n"
+		"              OpFunctionEnd\n");
 
 	params["datatype_extensions"] =
 		params["datatype_extensions"] +
