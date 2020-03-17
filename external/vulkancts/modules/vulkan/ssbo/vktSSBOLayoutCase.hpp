@@ -64,6 +64,12 @@ enum MatrixLoadFlags
 	LOAD_MATRIX_COMPONENTS	= 1,
 };
 
+enum MatrixStoreFlags
+{
+	STORE_FULL_MATRIX		= 0,
+	STORE_MATRIX_COLUMNS	= 1,
+};
+
 class BufferVar
 {
 public:
@@ -232,7 +238,7 @@ public:
 		BUFFERMODE_LAST
 	};
 
-								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool usePhysStorageBuffer);
+								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer);
 	virtual						~SSBOLayoutCase				(void);
 
 	virtual void				delayedInit					(void);
@@ -243,6 +249,7 @@ protected:
 	BufferMode					m_bufferMode;
 	ShaderInterface				m_interface;
 	MatrixLoadFlags				m_matrixLoadFlag;
+	MatrixStoreFlags			m_matrixStoreFlag;
 	std::string					m_computeShaderSrc;
 	bool						m_usePhysStorageBuffer;
 

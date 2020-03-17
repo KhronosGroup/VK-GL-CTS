@@ -1118,6 +1118,43 @@ int getDataTypeMatrixNumColumns (DataType dataType)
 	}
 }
 
+DataType getDataTypeMatrixColumnType (DataType dataType)
+{
+	switch (dataType)
+	{
+		case TYPE_FLOAT_MAT2:		return TYPE_FLOAT_VEC2;
+		case TYPE_FLOAT_MAT2X3:		return TYPE_FLOAT_VEC3;
+		case TYPE_FLOAT_MAT2X4:		return TYPE_FLOAT_VEC4;
+		case TYPE_FLOAT_MAT3X2:		return TYPE_FLOAT_VEC2;
+		case TYPE_FLOAT_MAT3:		return TYPE_FLOAT_VEC3;
+		case TYPE_FLOAT_MAT3X4:		return TYPE_FLOAT_VEC4;
+		case TYPE_FLOAT_MAT4X2:		return TYPE_FLOAT_VEC2;
+		case TYPE_FLOAT_MAT4X3:		return TYPE_FLOAT_VEC3;
+		case TYPE_FLOAT_MAT4:		return TYPE_FLOAT_VEC4;
+		case TYPE_DOUBLE_MAT2:		return TYPE_DOUBLE_VEC2;
+		case TYPE_DOUBLE_MAT2X3:	return TYPE_DOUBLE_VEC3;
+		case TYPE_DOUBLE_MAT2X4:	return TYPE_DOUBLE_VEC4;
+		case TYPE_DOUBLE_MAT3X2:	return TYPE_DOUBLE_VEC2;
+		case TYPE_DOUBLE_MAT3:		return TYPE_DOUBLE_VEC3;
+		case TYPE_DOUBLE_MAT3X4:	return TYPE_DOUBLE_VEC4;
+		case TYPE_DOUBLE_MAT4X2:	return TYPE_DOUBLE_VEC2;
+		case TYPE_DOUBLE_MAT4X3:	return TYPE_DOUBLE_VEC3;
+		case TYPE_DOUBLE_MAT4:		return TYPE_DOUBLE_VEC4;
+		case TYPE_FLOAT16_MAT2:		return TYPE_FLOAT16_VEC2;
+		case TYPE_FLOAT16_MAT2X3:	return TYPE_FLOAT16_VEC3;
+		case TYPE_FLOAT16_MAT2X4:	return TYPE_FLOAT16_VEC4;
+		case TYPE_FLOAT16_MAT3X2:	return TYPE_FLOAT16_VEC2;
+		case TYPE_FLOAT16_MAT3:		return TYPE_FLOAT16_VEC3;
+		case TYPE_FLOAT16_MAT3X4:	return TYPE_FLOAT16_VEC4;
+		case TYPE_FLOAT16_MAT4X2:	return TYPE_FLOAT16_VEC2;
+		case TYPE_FLOAT16_MAT4X3:	return TYPE_FLOAT16_VEC3;
+		case TYPE_FLOAT16_MAT4:		return TYPE_FLOAT16_VEC4;
+		default:
+			DE_ASSERT(false);
+			return TYPE_INVALID;
+	}
+}
+
 int	getDataTypeNumLocations	(DataType dataType)
 {
 	if (isDataTypeScalarOrVector(dataType))
