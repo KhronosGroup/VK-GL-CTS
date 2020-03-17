@@ -507,7 +507,7 @@ Move<VkBuffer>  ExternalMemoryHostRenderImageTestInstance::createBindMemoryIniti
 	void* const							mapPtr							= m_vertexBufferAllocation->getHostPtr();
 
 	deMemcpy(mapPtr, triangleData, sizeof(triangleData));
-	flushMappedMemoryRange(m_vkd, m_device, m_vertexBufferAllocation->getMemory(), m_vertexBufferAllocation->getOffset(), sizeof(triangleData));
+	flushAlloc(m_vkd, m_device, *m_vertexBufferAllocation);
 
 	return buffer;
 }

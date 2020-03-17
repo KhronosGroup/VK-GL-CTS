@@ -587,7 +587,7 @@ VkDeviceSize createBufferAndBind	(ut::BufferHandleAllocSp&	output,
 {
 	const size_t				nonCoherentAtomSize	(static_cast<size_t>(ctx.getDeviceProperties().limits.nonCoherentAtomSize));
 	const VkDeviceSize			roundedSize			(deAlignSize(static_cast<size_t>(desiredSize), nonCoherentAtomSize));
-	Allocator&                  allocator			(ctx.getDefaultAllocator());
+	Allocator&					allocator			(ctx.getDefaultAllocator());
 	VkDevice					device				(ctx.getDevice());
 	const DeviceInterface&		interface			(ctx.getDeviceInterface());
 

@@ -285,7 +285,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 
 		deMemcpy(inputBufferAlloc->getHostPtr(), &referenceData[0], m_bufferSize);
 
-		flushMappedMemoryRange(deviceInterface, getDevice(), inputBufferAlloc->getMemory(), inputBufferAlloc->getOffset(), m_bufferSize);
+		flushAlloc(deviceInterface, getDevice(), *inputBufferAlloc);
 
 		// Create output buffer
 		const VkBufferCreateInfo		outputBufferCreateInfo	= makeBufferCreateInfo(m_bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);

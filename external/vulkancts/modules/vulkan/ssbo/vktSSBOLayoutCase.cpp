@@ -2527,7 +2527,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		const int refCount = 1;
 		int resCount = 0;
 
-		invalidateMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acBufferSize);
+		invalidateAlloc(vk, device, *acBufferAlloc);
 
 		resCount = *((const int*)acBufferAlloc->getHostPtr());
 
@@ -2541,7 +2541,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
 	{
 		vk::Allocation *alloc = m_uniformAllocs[allocNdx].get();
-		invalidateMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *alloc);
 	}
 
 	// Validate result

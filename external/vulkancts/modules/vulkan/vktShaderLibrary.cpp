@@ -1624,7 +1624,7 @@ TestStatus ShaderCaseInstance::iterate (void)
 	{
 		const ConstPixelBufferAccess	imgAccess	(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), RENDER_WIDTH, RENDER_HEIGHT, 1, m_readImageMem[0]->getHostPtr());
 
-		invalidateMappedMemoryRange(vkd, device, m_readImageMem[0]->getMemory(), m_readImageMem[0]->getOffset(), (vk::VkDeviceSize)(RENDER_WIDTH*RENDER_HEIGHT*4));
+		invalidateAlloc(vkd, device, *m_readImageMem[0]);
 
 		if (!checkResultImage(imgAccess))
 		{
@@ -1658,7 +1658,7 @@ TestStatus ShaderCaseInstance::iterate (void)
 					DE_FATAL("Unknown data type");
 			}
 
-			invalidateMappedMemoryRange(vkd, device, m_readImageMem[outNdx]->getMemory(), m_readImageMem[outNdx]->getOffset(), (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat))));
+			invalidateAlloc(vkd, device, *m_readImageMem[outNdx]);
 
 			if (!checkResultImageWithReference(imgAccess, reference))
 			{

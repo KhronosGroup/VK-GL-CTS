@@ -515,7 +515,7 @@ void TransformFeedbackTestInstance::verifyTransformFeedbackBuffer (const MovePtr
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 
-	invalidateMappedMemoryRange(vk, device, bufAlloc->getMemory(), bufAlloc->getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vk, device, *bufAlloc);
 
 	const deUint32			numPoints	= static_cast<deUint32>(bufBytes / sizeof(deUint32));
 	const deUint32*			tfData		= (deUint32*)bufAlloc->getHostPtr();
@@ -926,7 +926,7 @@ void TransformFeedbackWindingOrderTestInstance::verifyTransformFeedbackBuffer(co
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 	const VkDevice			device	= m_context.getDevice();
 
-	invalidateMappedMemoryRange(vk, device, bufAlloc->getMemory(), bufAlloc->getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vk, device, *bufAlloc);
 
 	const deUint32	numPoints			= static_cast<deUint32>(bufBytes / sizeof(deUint32));
 	const deUint32	vertexPerPrimitive	= m_tParameters.vertexPerPrimitive;
@@ -1008,7 +1008,7 @@ void TransformFeedbackBuiltinTestInstance::verifyTransformFeedbackBuffer (const 
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 
-	invalidateMappedMemoryRange(vk, device, bufAlloc->getMemory(), bufAlloc->getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vk, device, *bufAlloc);
 
 	const deUint32			numPoints	= static_cast<deUint32>(bufBytes / sizeof(float));
 	const deUint8*			tfDataBytes	= (deUint8*)bufAlloc->getHostPtr();
@@ -1154,7 +1154,7 @@ void TransformFeedbackMultistreamTestInstance::verifyTransformFeedbackBuffer (co
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 
-	invalidateMappedMemoryRange(vk, device, bufAlloc->getMemory(), bufAlloc->getOffset(), bufBytes);
+	invalidateAlloc(vk, device, *bufAlloc);
 
 	const deUint32			numPoints	= static_cast<deUint32>(bufBytes / sizeof(deUint32));
 	const float*			tfData		= (float*)bufAlloc->getHostPtr();

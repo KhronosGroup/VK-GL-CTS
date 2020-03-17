@@ -321,7 +321,7 @@ void clearBuffer (const DeviceInterface& vk, const VkDevice device, const de::Sh
 	const std::vector<deUint8>	data			((size_t)bufferSizeBytes, 0u);
 	const Allocation&			allocation		= buffer->getBoundMemory();
 	void*						allocationData	= allocation.getHostPtr();
-	invalidateMappedMemoryRange(vk, device, allocation.getMemory(), allocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, allocation);
 	deMemcpy(allocationData, &data[0], (size_t)bufferSizeBytes);
 }
 
@@ -552,7 +552,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 
 		// Validate the results
 		const Allocation& bufferAllocation = buffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+		invalidateAlloc(vk, device, bufferAllocation);
 
 		if (m_parameters[0].resetType == RESET_TYPE_NORMAL)
 		{
@@ -608,7 +608,6 @@ protected:
 																	 const de::SharedPtr<Buffer>	buffer,
 																	 const VkDeviceSize				bufferSizeBytes);
 	virtual tcu::TestStatus	checkResult								(const de::SharedPtr<Buffer>	buffer,
-																	 const VkDeviceSize				bufferSizeBytes,
 																	 const VkQueryPool				queryPool);
 };
 
@@ -728,10 +727,10 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
-	return checkResult(buffer, bufferSizeBytes, *queryPool);
+	return checkResult(buffer, *queryPool);
 }
 
-tcu::TestStatus ComputeInvocationsSecondaryTestInstance::checkResult (const de::SharedPtr<Buffer> buffer, const VkDeviceSize bufferSizeBytes, const VkQueryPool queryPool)
+tcu::TestStatus ComputeInvocationsSecondaryTestInstance::checkResult (const de::SharedPtr<Buffer> buffer, const VkQueryPool queryPool)
 {
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
@@ -778,7 +777,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::checkResult (const de::
 	{
 		// Validate the results
 		const Allocation&	bufferAllocation	= buffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+		invalidateAlloc(vk, device, bufferAllocation);
 		const deUint32*		bufferPtr			= static_cast<deUint32*>(bufferAllocation.getHostPtr());
 		deUint32			minSize				= ~0u;
 		for(size_t parametersNdx = 0; parametersNdx < m_parameters.size(); ++parametersNdx)
@@ -936,7 +935,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
-	return checkResult(buffer, bufferSizeBytes, *queryPool);
+	return checkResult(buffer, *queryPool);
 }
 
 class GraphicBasicTestInstance : public StatisticQueryTestInstance

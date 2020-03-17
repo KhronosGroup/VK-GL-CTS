@@ -582,7 +582,7 @@ void MultiViewRenderTestInstance::createVertexBuffer (void)
 
 		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexCoordBuffer, m_vertexCoordAlloc->getMemory(), m_vertexCoordAlloc->getOffset()));
 		deMemcpy(m_vertexCoordAlloc->getHostPtr(), m_vertexCoord.data(), static_cast<size_t>(dataSize));
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, m_vertexCoordAlloc->getMemory(), m_vertexCoordAlloc->getOffset(), static_cast<size_t>(bufferDataSize));
+		flushAlloc(*m_device, *m_logicalDevice, *m_vertexCoordAlloc);
 	}
 
 	// Upload vertex colors
@@ -596,7 +596,7 @@ void MultiViewRenderTestInstance::createVertexBuffer (void)
 
 		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexColorBuffer, m_vertexColorAlloc->getMemory(), m_vertexColorAlloc->getOffset()));
 		deMemcpy(m_vertexColorAlloc->getHostPtr(), m_vertexColor.data(), static_cast<size_t>(dataSize));
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, m_vertexColorAlloc->getMemory(), m_vertexColorAlloc->getOffset(), static_cast<size_t>(bufferDataSize));
+		flushAlloc(*m_device, *m_logicalDevice, *m_vertexColorAlloc);
 	}
 
 	// Upload vertex indices
@@ -614,7 +614,7 @@ void MultiViewRenderTestInstance::createVertexBuffer (void)
 		// Init host buffer data
 		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexIndicesBuffer, m_vertexIndicesAllocation->getMemory(), m_vertexIndicesAllocation->getOffset()));
 		deMemcpy(m_vertexIndicesAllocation->getHostPtr(), m_vertexIndices.data(), static_cast<size_t>(dataSize));
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, m_vertexIndicesAllocation->getMemory(), m_vertexIndicesAllocation->getOffset(), static_cast<size_t>(bufferDataSize));
+		flushAlloc(*m_device, *m_logicalDevice, *m_vertexIndicesAllocation);
 	}
 	else
 		DE_ASSERT(m_vertexIndices.empty());
@@ -1048,7 +1048,7 @@ void MultiViewRenderTestInstance::readImage (VkImage image, const tcu::PixelBuff
 		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 
 		deMemset(bufferAlloc->getHostPtr(), 0, static_cast<size_t>(pixelDataSize));
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+		flushAlloc(*m_device, *m_logicalDevice, *bufferAlloc);
 	}
 
 	const VkBufferMemoryBarrier	bufferBarrier	=
@@ -1104,7 +1104,7 @@ void MultiViewRenderTestInstance::readImage (VkImage image, const tcu::PixelBuff
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 
 	// Read buffer data
-	invalidateMappedMemoryRange(*m_device, *m_logicalDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateAlloc(*m_device, *m_logicalDevice, *bufferAlloc);
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
 }
 
@@ -1668,7 +1668,7 @@ void MultiViewAttachmentsTestInstance::setImageData (VkImage image)
 
 	// Write buffer data
 	deMemcpy(bufferAlloc->getHostPtr(), data->getLevel(0).getDataPtr(), bufferSize);
-	flushMappedMemoryRange(*m_device, *m_logicalDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+	flushAlloc(*m_device, *m_logicalDevice, *bufferAlloc);
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
@@ -1915,7 +1915,7 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount, VkRen
 
 		deMemcpy(allocationBuffer->getHostPtr(), drawCommandsDataPtr, static_cast<size_t>(dataSize));
 
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, allocationBuffer->getMemory(), allocationBuffer->getOffset(), static_cast<size_t>(bufferDataSize));
+		flushAlloc(*m_device, *m_logicalDevice, *allocationBuffer);
 		indirectBuffers[subpassNdx] = (BufferSP(new Unique<VkBuffer>(indirectBuffer)));
 		indirectAllocations[subpassNdx] = (AllocationSP(new UniquePtr<Allocation>(allocationBuffer)));
 	}
@@ -2990,7 +2990,7 @@ void MultiViewDepthStencilTestInstance::readImage (VkImage image, const tcu::Pix
 		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 
 		deMemset(bufferAlloc->getHostPtr(), 0xCC, static_cast<size_t>(pixelDataSize));
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+		flushAlloc(*m_device, *m_logicalDevice, *bufferAlloc);
 	}
 
 	const VkBufferMemoryBarrier	bufferBarrier	=
@@ -3038,7 +3038,7 @@ void MultiViewDepthStencilTestInstance::readImage (VkImage image, const tcu::Pix
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 
 	// Read buffer data
-	invalidateMappedMemoryRange(*m_device, *m_logicalDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateAlloc(*m_device, *m_logicalDevice, *bufferAlloc);
 
 	if (m_depthTest)
 	{

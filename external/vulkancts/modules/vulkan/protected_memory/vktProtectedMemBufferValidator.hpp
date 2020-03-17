@@ -196,7 +196,7 @@ bool BufferValidator<T>::validateBuffer (ProtectedContext&		ctx,
 	// Set the reference uniform data
 	{
 		deMemcpy(refUniform->getAllocation().getHostPtr(), getReferenceDataSrc(), refDataSize);
-		vk::flushMappedMemoryRange(vk, device, refUniform->getAllocation().getMemory(), refUniform->getAllocation().getOffset(), refDataSize);
+		flushAlloc(vk, device, refUniform->getAllocation());
 	}
 
 	const deUint32							helperBufferSize	= (deUint32)(2 * sizeof(deUint32));

@@ -599,7 +599,7 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate	(void)
 	// Verify results
 	{
 		const Allocation alloc = m_colorBuffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, alloc);
 
 		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), m_renderSize.x(), m_renderSize.y(), 1u, alloc.getHostPtr());
 		const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), m_renderSize, m_params.testMode, m_clearColor,

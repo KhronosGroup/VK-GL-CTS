@@ -175,7 +175,7 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)
 	{
 		// Log the result image.
 		const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
+		invalidateAlloc(vk, device, colorBufferAlloc);
 		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), resolution.x(), resolution.y(), 1, colorBufferAlloc.getHostPtr());
 
 		if (!compareWithFileImage(m_context, imagePixelAccess, m_name))

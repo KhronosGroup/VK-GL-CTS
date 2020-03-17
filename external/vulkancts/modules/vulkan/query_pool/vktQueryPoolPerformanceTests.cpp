@@ -546,7 +546,7 @@ void GraphicQueryTestBase::initStateObjects(void)
 		tcu::Vec4 *ptr = reinterpret_cast<tcu::Vec4*>(m_vertexBuffer->getBoundMemory().getHostPtr());
 		deMemcpy(ptr, &vertices[0], kBufferSize);
 
-		flushMappedMemoryRange(vkd, device,	m_vertexBuffer->getBoundMemory().getMemory(), m_vertexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
+		flushAlloc(vkd, device, m_vertexBuffer->getBoundMemory());
 	}
 }
 
@@ -946,7 +946,7 @@ void ComputeQueryTestBase::initStateObjects(void)
 	const std::vector<deUint8>	data((size_t)bufferSize, 0u);
 	const Allocation&			allocation = m_buffer->getBoundMemory();
 	void*						allocationData = allocation.getHostPtr();
-	invalidateMappedMemoryRange(vkd, device, allocation.getMemory(), allocation.getOffset(), bufferSize);
+	invalidateAlloc(vkd, device, allocation);
 	deMemcpy(allocationData, &data[0], (size_t)bufferSize);
 
 	const VkBufferMemoryBarrier barrier =
