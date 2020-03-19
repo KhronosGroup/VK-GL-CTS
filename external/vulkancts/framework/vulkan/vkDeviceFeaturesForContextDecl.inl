@@ -16,6 +16,8 @@ const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				getCoverageReducti
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicatedAllocationImageAliasingFeatures		(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures					(void) const;
+const vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&			getDeviceGeneratedCommandsFeatures				(void) const;
+const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					getDiagnosticsConfigFeatures					(void) const;
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					getExclusiveScissorFeatures						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				getFragmentDensityMapFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			getFragmentShaderBarycentricFeatures			(void) const;
@@ -29,8 +31,10 @@ const vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT&					getMemoryPriorityFeatur
 const vk::VkPhysicalDeviceMeshShaderFeaturesNV&							getMeshShaderFeatures							(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(void) const;
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
+const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		getPipelineCreationCacheControlFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
+const vk::VkPhysicalDeviceRayTracingFeaturesKHR&						getRayTracingFeatures							(void) const;
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures			(void) const;
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures				(void) const;
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					getScalarBlockLayoutFeatures					(void) const;

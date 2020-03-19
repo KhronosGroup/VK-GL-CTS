@@ -112,6 +112,31 @@ Handle allocateHandle (const CreateInfo* pCreateInfo, const VkAllocationCallback
 	return reinterpret_cast<Handle>(obj);
 }
 
+template<typename Object, typename Handle, typename Parent>
+Handle allocateHandle (Parent parent, const VkAllocationCallbacks* pAllocator)
+{
+	Object* obj = DE_NULL;
+
+	if (pAllocator)
+	{
+		void* mem = allocateSystemMem<Object>(pAllocator, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		try
+		{
+			obj = new (mem) Object(parent);
+			DE_ASSERT(obj == mem);
+		}
+		catch (...)
+		{
+			pAllocator->pfnFree(pAllocator->pUserData, mem);
+			throw;
+		}
+	}
+	else
+		obj = new Object(parent);
+
+	return reinterpret_cast<Handle>(obj);
+}
+
 template<typename Object, typename Handle>
 void freeHandle (Handle handle, const VkAllocationCallbacks* pAllocator)
 {
@@ -137,6 +162,13 @@ template<typename Object, typename Handle, typename Parent, typename CreateInfo>
 Handle allocateNonDispHandle (Parent parent, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	return allocateNonDispHandle<Object, Object, Handle, Parent, CreateInfo>(parent, pCreateInfo, pAllocator);
+}
+
+template<typename Object, typename Handle, typename Parent>
+Handle allocateNonDispHandle (Parent parent, const VkAllocationCallbacks* pAllocator)
+{
+	Object* const	obj		= allocateHandle<Object, Object*>(parent, pAllocator);
+	return Handle((deUint64)(deUintptr)obj);
 }
 
 template<typename Object, typename Handle>
@@ -244,6 +276,7 @@ public:
 	Pipeline (VkDevice, const VkGraphicsPipelineCreateInfo*) {}
 	Pipeline (VkDevice, const VkComputePipelineCreateInfo*) {}
 	Pipeline (VkDevice, const VkRayTracingPipelineCreateInfoNV*) {}
+	Pipeline (VkDevice, const VkRayTracingPipelineCreateInfoKHR*) {}
 };
 
 class RenderPass
@@ -477,17 +510,10 @@ private:
 };
 #endif // defined(USE_ANDROID_O_HARDWARE_BUFFER)
 
-class IndirectCommandsLayoutNVX
+class IndirectCommandsLayoutNV
 {
 public:
-						IndirectCommandsLayoutNVX	(VkDevice, const VkIndirectCommandsLayoutCreateInfoNVX*)
-						{}
-};
-
-class ObjectTableNVX
-{
-public:
-						ObjectTableNVX				(VkDevice, const VkObjectTableCreateInfoNVX*)
+						IndirectCommandsLayoutNV	(VkDevice, const VkIndirectCommandsLayoutCreateInfoNV*)
 						{}
 };
 
@@ -502,6 +528,20 @@ class AccelerationStructureNV
 {
 public:
 						AccelerationStructureNV		(VkDevice, const VkAccelerationStructureCreateInfoNV*)
+						{}
+};
+
+class AccelerationStructureKHR
+{
+public:
+						AccelerationStructureKHR	(VkDevice, const VkAccelerationStructureCreateInfoKHR*)
+						{}
+};
+
+class DeferredOperationKHR
+{
+public:
+						DeferredOperationKHR		(VkDevice)
 						{}
 };
 
@@ -722,7 +762,33 @@ VKAPI_ATTR VkResult VKAPI_CALL createComputePipelines (VkDevice device, VkPipeli
 	}
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createRayTracingPipelinesNV (VkDevice device, VkPipelineCache, deUint32 count, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
+VKAPI_ATTR VkResult VKAPI_CALL createRayTracingPipelinesNV (VkDevice device, VkPipelineCache, deUint32 count, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
+{
+	deUint32 allocNdx;
+	try
+	{
+		for (allocNdx = 0; allocNdx < count; allocNdx++)
+			pPipelines[allocNdx] = allocateNonDispHandle<Pipeline, VkPipeline>(device, pCreateInfos+allocNdx, pAllocator);
+
+		return VK_SUCCESS;
+	}
+	catch (const std::bad_alloc&)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+	catch (VkResult err)
+	{
+		for (deUint32 freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+			freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+		return err;
+	}
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createRayTracingPipelinesKHR (VkDevice device, VkPipelineCache, deUint32 count, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
 	deUint32 allocNdx;
 	try

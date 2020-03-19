@@ -41,6 +41,7 @@
 #include <utility>
 #include <map>
 #include <algorithm>
+#include <memory>
 
 namespace glcts
 {

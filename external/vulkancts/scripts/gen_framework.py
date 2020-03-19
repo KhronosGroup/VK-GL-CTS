@@ -263,7 +263,7 @@ class Bitfield:
 		return '%s (%s)' % (self.name, self.alias)
 
 class Variable:
-	def __init__ (self, type, name, arraySize):
+	def __init__ (self, type, name, arraySizeOrFieldWidth):
 		type		= type.replace('*',' *').replace('&',' &')
 		for src, dst in TYPE_SUBSTITUTIONS:
 			type = type.replace(src, dst)
@@ -274,7 +274,12 @@ class Variable:
 				self.type = self.type[:range[0]]+[PLATFORM_TYPE_NAMESPACE + '::' + substitute[0]] + substitute[1:] + self.type[range[1]:]
 				break
 		self.name		= name
-		self.arraySize	= arraySize
+		if len(arraySizeOrFieldWidth) > 0 and arraySizeOrFieldWidth[0] == ':':
+			self.arraySize	= ''
+			self.fieldWidth = arraySizeOrFieldWidth
+		else:
+			self.arraySize	= arraySizeOrFieldWidth
+			self.fieldWidth = ''
 
 	def contains(self, big, small):
 		for i in range(len(big)-len(small)+1):
@@ -289,7 +294,7 @@ class Variable:
 		return ' '.join(self.type).replace(' *','*').replace(' &','&')
 
 	def getAsString (self, separator):
-		return '%s%s%s%s' % (self.getType(), separator, self.name, self.arraySize)
+		return '%s%s%s%s%s' % (self.getType(), separator, self.name, self.arraySize, self.fieldWidth)
 
 	def __repr__ (self):
 		return '<%s> <%s> <%s>' % (self.type, self.name, self.arraySize)
@@ -407,6 +412,7 @@ def readFile (filename):
 		return f.read()
 
 IDENT_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_]*'
+WIDTH_PTRN	= r'[:0-9]*'
 TYPE_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_ \t*&]*'
 
 def fixupEnumValues (values):
@@ -477,7 +483,7 @@ def parseEnums (src):
 
 
 def parseCompositeType (type, name, src):
-	typeNamePtrn	= r'(' + TYPE_PTRN + r')(\s+' + IDENT_PTRN + r')((\[[^\]]+\])*)\s*;'
+	typeNamePtrn	= r'(' + TYPE_PTRN + r')(\s+' + IDENT_PTRN + r')((\[[^\]]+\]|:[0-9]+)*)\s*;'
 	matches			= re.findall(typeNamePtrn, src)
 	members			= [Variable(t.strip(), n.strip(), a.strip()) for t, n, a, _ in matches]
 	return CompositeType(type, name, members)
@@ -678,7 +684,6 @@ def parseExtensions (src, versions, allFunctions, allCompositeTypes, allEnums, a
 			populateExtensionAliases(bitfieldsByName, extBitfields)
 			populateExtensionAliases(compositeTypesByName, extCompositeTypes)
 
-
 		extensions.append(Extension(extensionName, extHandles, extEnums, extBitfields, extCompositeTypes, extFunctions, extDefinitions, additionalDefinitions, extCoreVersion))
 	return extensions
 
@@ -720,10 +725,23 @@ def parseAPI (src):
 	populateAliasesWithTypedefs(compositeTypes, src)
 	populateAliasesWithTypedefs(enums, src)
 	populateAliasesWithTypedefs(bitfields, src)
+	populateAliasesWithTypedefs(handles, src)
 
 	for enum in enums:
 		removeAliasedValues(enum)
 
+
+	# Make generator to create Deleter<VkAccelerationStructureNV>
+	for f in allFunctions:
+		if (f.name == 'vkDestroyAccelerationStructureNV'):
+			f.arguments[1].type[0] = 'VkAccelerationStructureNV'
+
+	# Dealias handles VkAccelerationStructureNV and VkAccelerationStructureKHR
+	for handle in handles:
+		if handle.name == 'VkAccelerationStructureKHR':
+			handle.alias = None
+		if handle.name == 'VkAccelerationStructureNV':
+			handle.isAlias = False
 	return API(
 		versions		= versions,
 		definitions		= definitions,
@@ -897,12 +915,20 @@ def writeBasicTypes (api, filename):
 			if not enum.isAlias:
 				for line in genEnumSrc(enum):
 					yield line
+			else:
+				for enum2 in api.enums:
+					if enum2.alias == enum:
+						yield "typedef %s %s;" % (enum2.name, enum.name)
 			yield ""
 
 		for bitfield in api.bitfields:
 			if not bitfield.isAlias:
 				for line in genBitfieldSrc(bitfield):
 					yield line
+			else:
+				for bitfield2 in api.bitfields:
+					if bitfield2.alias == bitfield:
+						yield "typedef %s %s;" % (bitfield2.name, bitfield.name)
 			yield ""
 		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s);" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
@@ -1015,7 +1041,7 @@ def writeStrUtilProto (api, filename):
 		for line in indentLines(["inline std::ostream&\toperator<<\t(std::ostream& s, %s value)\t{ return s << get%sStr(value);\t}" % (e.name, e.name[2:]) for e in api.enums if not e.isAlias]):
 			yield line
 		yield ""
-		for line in indentLines(["tcu::Format::Bitfield<32>\tget%sStr\t(%s value);" % (bitfield.name[2:], bitfield.name) for bitfield in api.bitfields if not bitfield.isAlias]):
+		for line in indentLines(["tcu::Format::Bitfield<32>\tget%sStr\t(%s value);" % (bitfield.name[2:], bitfield.name) for bitfield in api.bitfields if not bitfield.isAlias or bitfield.name=='VkBuildAccelerationStructureFlagsNV']):
 			yield line
 		yield ""
 		for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.compositeTypes if not s.isAlias]):
@@ -1052,7 +1078,8 @@ def writeStrUtilImpl (api, filename):
 
 		for bitfield in api.bitfields:
 			if bitfield.isAlias:
-				continue
+				if bitfield.name != 'VkBuildAccelerationStructureFlagsNV':
+					continue
 			yield ""
 			yield "tcu::Format::Bitfield<32> get%sStr (%s value)" % (bitfield.name[2:], bitfield.name)
 			yield "{"
@@ -1226,6 +1253,7 @@ def writeNullDriverImpl (api, filename):
 				"vkCreateGraphicsPipelines",
 				"vkCreateComputePipelines",
 				"vkCreateRayTracingPipelinesNV",
+				"vkCreateRayTracingPipelinesKHR",
 				"vkGetInstanceProcAddr",
 				"vkGetDeviceProcAddr",
 				"vkEnumeratePhysicalDevices",
@@ -1793,6 +1821,8 @@ def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	stream = []
 	for _, _, extStruct, _, _, _ in dfDefs:
 		nameSubStr = extStruct.replace("VkPhysicalDevice", "").replace("KHR", "").replace("NV", "")
+		if extStruct == "VkPhysicalDeviceRayTracingPropertiesNV":
+			nameSubStr += "NV"
 		stream.append(pattern.format(extStruct, nameSubStr))
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 

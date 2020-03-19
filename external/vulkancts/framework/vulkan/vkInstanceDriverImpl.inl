@@ -292,11 +292,6 @@ VkResult InstanceDriver::getPhysicalDeviceExternalImageFormatPropertiesNV (VkPhy
 	return m_vk.getPhysicalDeviceExternalImageFormatPropertiesNV(physicalDevice, format, type, tiling, usage, flags, externalHandleType, pExternalImageFormatProperties);
 }
 
-void InstanceDriver::getPhysicalDeviceGeneratedCommandsPropertiesNVX (VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX* pFeatures, VkDeviceGeneratedCommandsLimitsNVX* pLimits) const
-{
-	m_vk.getPhysicalDeviceGeneratedCommandsPropertiesNVX(physicalDevice, pFeatures, pLimits);
-}
-
 VkResult InstanceDriver::releaseDisplayEXT (VkPhysicalDevice physicalDevice, VkDisplayKHR display) const
 {
 	return m_vk.releaseDisplayEXT(physicalDevice, display);

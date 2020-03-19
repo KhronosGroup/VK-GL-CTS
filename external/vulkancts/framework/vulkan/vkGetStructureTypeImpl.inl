@@ -1146,36 +1146,6 @@ template<> VkStructureType getStructureType<VkCommandBufferInheritanceConditiona
 	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkDeviceGeneratedCommandsFeaturesNVX> (void)
-{
-	return VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX;
-}
-
-template<> VkStructureType getStructureType<VkDeviceGeneratedCommandsLimitsNVX> (void)
-{
-	return VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_LIMITS_NVX;
-}
-
-template<> VkStructureType getStructureType<VkIndirectCommandsLayoutCreateInfoNVX> (void)
-{
-	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX;
-}
-
-template<> VkStructureType getStructureType<VkCmdProcessCommandsInfoNVX> (void)
-{
-	return VK_STRUCTURE_TYPE_CMD_PROCESS_COMMANDS_INFO_NVX;
-}
-
-template<> VkStructureType getStructureType<VkCmdReserveSpaceForCommandsInfoNVX> (void)
-{
-	return VK_STRUCTURE_TYPE_CMD_RESERVE_SPACE_FOR_COMMANDS_INFO_NVX;
-}
-
-template<> VkStructureType getStructureType<VkObjectTableCreateInfoNVX> (void)
-{
-	return VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX;
-}
-
 template<> VkStructureType getStructureType<VkPipelineViewportWScalingStateCreateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_W_SCALING_STATE_CREATE_INFO_NV;
@@ -1451,14 +1421,14 @@ template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfoNV>
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_NV;
 }
 
-template<> VkStructureType getStructureType<VkBindAccelerationStructureMemoryInfoNV> (void)
+template<> VkStructureType getStructureType<VkBindAccelerationStructureMemoryInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
+	return VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR;
 }
 
-template<> VkStructureType getStructureType<VkWriteDescriptorSetAccelerationStructureNV> (void)
+template<> VkStructureType getStructureType<VkWriteDescriptorSetAccelerationStructureKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV;
+	return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureMemoryRequirementsInfoNV> (void)
@@ -1606,9 +1576,9 @@ template<> VkStructureType getStructureType<VkInitializePerformanceApiInfoINTEL>
 	return VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL;
 }
 
-template<> VkStructureType getStructureType<VkQueryPoolCreateInfoINTEL> (void)
+template<> VkStructureType getStructureType<VkQueryPoolPerformanceQueryCreateInfoINTEL> (void)
 {
-	return VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL;
+	return VK_STRUCTURE_TYPE_QUERY_POOL_PERFORMANCE_QUERY_CREATE_INFO_INTEL;
 }
 
 template<> VkStructureType getStructureType<VkPerformanceMarkerInfoINTEL> (void)
@@ -1796,6 +1766,46 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDemoteToHelper
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkGraphicsShaderGroupCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkGraphicsPipelineShaderGroupsCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_SHADER_GROUPS_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkIndirectCommandsLayoutTokenNV> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_TOKEN_NV;
+}
+
+template<> VkStructureType getStructureType<VkIndirectCommandsLayoutCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkGeneratedCommandsInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_GENERATED_COMMANDS_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkGeneratedCommandsMemoryRequirementsInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_GENERATED_COMMANDS_MEMORY_REQUIREMENTS_INFO_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT;
@@ -1804,6 +1814,31 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignment
 template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassTransformBeginInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkCommandBufferInheritanceRenderPassTransformInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDiagnosticsConfigFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkDeviceDiagnosticsConfigCreateInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV;
 }
 
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
@@ -1839,6 +1874,106 @@ template<> VkStructureType getStructureType<VkMemoryGetAndroidHardwareBufferInfo
 template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkDeferredOperationInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPipelineLibraryCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRayTracingShaderGroupCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRayTracingPipelineInterfaceCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRayTracingPipelineCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryTrianglesDataKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryAabbsDataKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryInstancesDataKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureBuildGeometryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureCreateGeometryTypeInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureMemoryRequirementsInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureDeviceAddressInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureVersionKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyAccelerationStructureToMemoryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyMemoryToAccelerationStructureInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyAccelerationStructureInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImagePipeSurfaceCreateInfoFUCHSIA> (void)

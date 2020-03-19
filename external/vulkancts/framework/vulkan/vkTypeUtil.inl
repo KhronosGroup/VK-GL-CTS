@@ -443,81 +443,6 @@ inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (deUint32 numUsedVgpr
 	return res;
 }
 
-inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
-{
-	VkIndirectCommandsTokenNVX res;
-	res.tokenType	= tokenType;
-	res.buffer		= buffer;
-	res.offset		= offset;
-	return res;
-}
-
-inline VkIndirectCommandsLayoutTokenNVX makeIndirectCommandsLayoutTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, deUint32 bindingUnit, deUint32 dynamicCount, deUint32 divisor)
-{
-	VkIndirectCommandsLayoutTokenNVX res;
-	res.tokenType		= tokenType;
-	res.bindingUnit		= bindingUnit;
-	res.dynamicCount	= dynamicCount;
-	res.divisor			= divisor;
-	return res;
-}
-
-inline VkObjectTableEntryNVX makeObjectTableEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags)
-{
-	VkObjectTableEntryNVX res;
-	res.type	= type;
-	res.flags	= flags;
-	return res;
-}
-
-inline VkObjectTablePipelineEntryNVX makeObjectTablePipelineEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipeline pipeline)
-{
-	VkObjectTablePipelineEntryNVX res;
-	res.type		= type;
-	res.flags		= flags;
-	res.pipeline	= pipeline;
-	return res;
-}
-
-inline VkObjectTableDescriptorSetEntryNVX makeObjectTableDescriptorSetEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet)
-{
-	VkObjectTableDescriptorSetEntryNVX res;
-	res.type			= type;
-	res.flags			= flags;
-	res.pipelineLayout	= pipelineLayout;
-	res.descriptorSet	= descriptorSet;
-	return res;
-}
-
-inline VkObjectTableVertexBufferEntryNVX makeObjectTableVertexBufferEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkBuffer buffer)
-{
-	VkObjectTableVertexBufferEntryNVX res;
-	res.type	= type;
-	res.flags	= flags;
-	res.buffer	= buffer;
-	return res;
-}
-
-inline VkObjectTableIndexBufferEntryNVX makeObjectTableIndexBufferEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkBuffer buffer, VkIndexType indexType)
-{
-	VkObjectTableIndexBufferEntryNVX res;
-	res.type		= type;
-	res.flags		= flags;
-	res.buffer		= buffer;
-	res.indexType	= indexType;
-	return res;
-}
-
-inline VkObjectTablePushConstantEntryNVX makeObjectTablePushConstantEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags)
-{
-	VkObjectTablePushConstantEntryNVX res;
-	res.type			= type;
-	res.flags			= flags;
-	res.pipelineLayout	= pipelineLayout;
-	res.stageFlags		= stageFlags;
-	return res;
-}
-
 inline VkViewportWScalingNV makeViewportWScalingNV (float xcoeff, float ycoeff)
 {
 	VkViewportWScalingNV res;
@@ -614,6 +539,18 @@ inline VkCoarseSampleOrderCustomNV makeCoarseSampleOrderCustomNV (VkShadingRateP
 	return res;
 }
 
+inline VkAabbPositionsKHR makeAabbPositionsKHR (float minX, float minY, float minZ, float maxX, float maxY, float maxZ)
+{
+	VkAabbPositionsKHR res;
+	res.minX	= minX;
+	res.minY	= minY;
+	res.minZ	= minZ;
+	res.maxX	= maxX;
+	res.maxY	= maxY;
+	res.maxZ	= maxZ;
+	return res;
+}
+
 inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (deUint32 binding, deUint32 divisor)
 {
 	VkVertexInputBindingDivisorDescriptionEXT res;
@@ -635,5 +572,74 @@ inline VkDrawMeshTasksIndirectCommandNV makeDrawMeshTasksIndirectCommandNV (deUi
 	VkDrawMeshTasksIndirectCommandNV res;
 	res.taskCount	= taskCount;
 	res.firstTask	= firstTask;
+	return res;
+}
+
+inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (deUint32 groupIndex)
+{
+	VkBindShaderGroupIndirectCommandNV res;
+	res.groupIndex	= groupIndex;
+	return res;
+}
+
+inline VkBindIndexBufferIndirectCommandNV makeBindIndexBufferIndirectCommandNV (VkDeviceAddress bufferAddress, deUint32 size, VkIndexType indexType)
+{
+	VkBindIndexBufferIndirectCommandNV res;
+	res.bufferAddress	= bufferAddress;
+	res.size			= size;
+	res.indexType		= indexType;
+	return res;
+}
+
+inline VkBindVertexBufferIndirectCommandNV makeBindVertexBufferIndirectCommandNV (VkDeviceAddress bufferAddress, deUint32 size, deUint32 stride)
+{
+	VkBindVertexBufferIndirectCommandNV res;
+	res.bufferAddress	= bufferAddress;
+	res.size			= size;
+	res.stride			= stride;
+	return res;
+}
+
+inline VkSetStateFlagsIndirectCommandNV makeSetStateFlagsIndirectCommandNV (deUint32 data)
+{
+	VkSetStateFlagsIndirectCommandNV res;
+	res.data	= data;
+	return res;
+}
+
+inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer, VkDeviceSize offset)
+{
+	VkIndirectCommandsStreamNV res;
+	res.buffer	= buffer;
+	res.offset	= offset;
+	return res;
+}
+
+inline VkAccelerationStructureBuildOffsetInfoKHR makeAccelerationStructureBuildOffsetInfoKHR (deUint32 primitiveCount, deUint32 primitiveOffset, deUint32 firstVertex, deUint32 transformOffset)
+{
+	VkAccelerationStructureBuildOffsetInfoKHR res;
+	res.primitiveCount	= primitiveCount;
+	res.primitiveOffset	= primitiveOffset;
+	res.firstVertex		= firstVertex;
+	res.transformOffset	= transformOffset;
+	return res;
+}
+
+inline VkStridedBufferRegionKHR makeStridedBufferRegionKHR (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize stride, VkDeviceSize size)
+{
+	VkStridedBufferRegionKHR res;
+	res.buffer	= buffer;
+	res.offset	= offset;
+	res.stride	= stride;
+	res.size	= size;
+	return res;
+}
+
+inline VkTraceRaysIndirectCommandKHR makeTraceRaysIndirectCommandKHR (deUint32 width, deUint32 height, deUint32 depth)
+{
+	VkTraceRaysIndirectCommandKHR res;
+	res.width	= width;
+	res.height	= height;
+	res.depth	= depth;
 	return res;
 }

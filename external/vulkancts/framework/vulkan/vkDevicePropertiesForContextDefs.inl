@@ -6,6 +6,7 @@ const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	Context::getCo
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			Context::getCooperativeMatrixProperties				(void) const { return m_device->getCooperativeMatrixProperties();				}
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			Context::getDepthStencilResolveProperties			(void) const { return m_device->getDepthStencilResolveProperties();				}
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				Context::getDescriptorIndexingProperties			(void) const { return m_device->getDescriptorIndexingProperties();				}
+const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		Context::getDeviceGeneratedCommandsProperties		(void) const { return m_device->getDeviceGeneratedCommandsProperties();			}
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			Context::getDiscardRectanglePropertiesEXT			(void) const { return m_device->getDiscardRectanglePropertiesEXT();				}
 const vk::VkPhysicalDeviceDriverProperties&							Context::getDriverProperties						(void) const { return m_device->getDriverProperties();							}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			Context::getExternalMemoryHostPropertiesEXT			(void) const { return m_device->getExternalMemoryHostPropertiesEXT();			}
@@ -23,7 +24,8 @@ const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerforman
 const vk::VkPhysicalDevicePointClippingProperties&					Context::getPointClippingProperties					(void) const { return m_device->getPointClippingProperties();					}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				Context::getPushDescriptorProperties				(void) const { return m_device->getPushDescriptorProperties();					}
-const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingProperties					(void) const { return m_device->getRayTracingProperties();						}
+const vk::VkPhysicalDeviceRayTracingPropertiesKHR&					Context::getRayTracingProperties					(void) const { return m_device->getRayTracingProperties();						}
+const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingPropertiesNV					(void) const { return m_device->getRayTracingPropertiesNV();					}
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			Context::getSamplerFilterMinmaxProperties			(void) const { return m_device->getSamplerFilterMinmaxProperties();				}
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLocationsPropertiesEXT			(void) const { return m_device->getSampleLocationsPropertiesEXT();				}
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					Context::getShaderCorePropertiesAMD					(void) const { return m_device->getShaderCorePropertiesAMD();					}

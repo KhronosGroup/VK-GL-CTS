@@ -81,7 +81,6 @@ m_vk.createDebugReportCallbackEXT										= (CreateDebugReportCallbackEXTFunc)	
 m_vk.destroyDebugReportCallbackEXT										= (DestroyDebugReportCallbackEXTFunc)									GET_PROC_ADDR("vkDestroyDebugReportCallbackEXT");
 m_vk.debugReportMessageEXT												= (DebugReportMessageEXTFunc)											GET_PROC_ADDR("vkDebugReportMessageEXT");
 m_vk.getPhysicalDeviceExternalImageFormatPropertiesNV					= (GetPhysicalDeviceExternalImageFormatPropertiesNVFunc)				GET_PROC_ADDR("vkGetPhysicalDeviceExternalImageFormatPropertiesNV");
-m_vk.getPhysicalDeviceGeneratedCommandsPropertiesNVX					= (GetPhysicalDeviceGeneratedCommandsPropertiesNVXFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX");
 m_vk.releaseDisplayEXT													= (ReleaseDisplayEXTFunc)												GET_PROC_ADDR("vkReleaseDisplayEXT");
 m_vk.getPhysicalDeviceSurfaceCapabilities2EXT							= (GetPhysicalDeviceSurfaceCapabilities2EXTFunc)						GET_PROC_ADDR("vkGetPhysicalDeviceSurfaceCapabilities2EXT");
 m_vk.createDebugUtilsMessengerEXT										= (CreateDebugUtilsMessengerEXTFunc)									GET_PROC_ADDR("vkCreateDebugUtilsMessengerEXT");

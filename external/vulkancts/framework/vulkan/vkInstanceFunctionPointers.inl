@@ -59,7 +59,6 @@ CreateDebugReportCallbackEXTFunc									createDebugReportCallbackEXT;
 DestroyDebugReportCallbackEXTFunc									destroyDebugReportCallbackEXT;
 DebugReportMessageEXTFunc											debugReportMessageEXT;
 GetPhysicalDeviceExternalImageFormatPropertiesNVFunc				getPhysicalDeviceExternalImageFormatPropertiesNV;
-GetPhysicalDeviceGeneratedCommandsPropertiesNVXFunc					getPhysicalDeviceGeneratedCommandsPropertiesNVX;
 ReleaseDisplayEXTFunc												releaseDisplayEXT;
 GetPhysicalDeviceSurfaceCapabilities2EXTFunc						getPhysicalDeviceSurfaceCapabilities2EXT;
 CreateDebugUtilsMessengerEXTFunc									createDebugUtilsMessengerEXT;

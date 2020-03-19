@@ -6,6 +6,7 @@ const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativ
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolveProperties			(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const;
+const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;
 const vk::VkPhysicalDeviceDiscardRectanglePropertiesEXT&			getDiscardRectanglePropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDriverProperties&							getDriverProperties							(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHostPropertiesEXT			(void) const;
@@ -23,7 +24,8 @@ const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryPr
 const vk::VkPhysicalDevicePointClippingProperties&					getPointClippingProperties					(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const;
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const;
-const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingProperties						(void) const;
+const vk::VkPhysicalDeviceRayTracingPropertiesKHR&					getRayTracingProperties						(void) const;
+const vk::VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingPropertiesNV					(void) const;
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxProperties			(void) const;
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderCorePropertiesAMD&					getShaderCorePropertiesAMD					(void) const;
