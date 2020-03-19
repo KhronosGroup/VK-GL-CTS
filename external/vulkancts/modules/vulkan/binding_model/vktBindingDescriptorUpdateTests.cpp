@@ -197,7 +197,7 @@ const tcu::Vec4			SamplerlessDescriptorWriteTestInstance::kDescriptorColor	{0.0f
 
 SamplerlessDescriptorWriteTestCase::SamplerlessDescriptorWriteTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SamplerlessParams& params)
 	: vkt::TestCase{testCtx, name, description}
-	, m_params{params}
+	, m_params(params)
 {
 }
 
@@ -292,7 +292,7 @@ vkt::TestInstance* SamplerlessDescriptorWriteTestCase::createInstance (Context& 
 
 SamplerlessDescriptorWriteTestInstance::SamplerlessDescriptorWriteTestInstance (Context& context, const SamplerlessParams& params)
 	: vkt::TestInstance{context}
-	, m_params{params}
+	, m_params(params)
 {
 }
 

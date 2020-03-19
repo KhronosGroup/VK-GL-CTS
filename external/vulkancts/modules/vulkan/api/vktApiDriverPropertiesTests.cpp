@@ -65,6 +65,8 @@ static const deUint32 knownDriverIds[] =
 
 static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
+	makeConformanceVersion(1, 2, 2, 0),
+	makeConformanceVersion(1, 2, 1, 1),
 	makeConformanceVersion(1, 2, 1, 0),
 	makeConformanceVersion(1, 2, 0, 2),
 	makeConformanceVersion(1, 2, 0, 1),
@@ -84,14 +86,6 @@ static const VkConformanceVersionKHR knownConformanceVersions[] =
 	makeConformanceVersion(1, 1, 3, 2),
 	makeConformanceVersion(1, 1, 3, 1),
 	makeConformanceVersion(1, 1, 3, 0),
-	makeConformanceVersion(1, 1, 2, 3),
-	makeConformanceVersion(1, 1, 2, 2),
-	makeConformanceVersion(1, 1, 2, 1),
-	makeConformanceVersion(1, 1, 2, 0),
-	makeConformanceVersion(1, 1, 1, 3),
-	makeConformanceVersion(1, 1, 1, 2),
-	makeConformanceVersion(1, 1, 1, 1),
-	makeConformanceVersion(1, 1, 1, 0),
 };
 
 DE_INLINE bool isNullTerminated(const char* str, const deUint32 maxSize)

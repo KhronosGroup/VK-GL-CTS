@@ -1165,7 +1165,7 @@ std::vector<vk::VkVertexInputAttributeDescription> ExactSamplingCase::VertexData
 
 
 ExactSamplingCase::ExactSamplingCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
-	: vkt::TestCase{testCtx, name, description}, m_params{params}
+	: vkt::TestCase{testCtx, name, description}, m_params(params)
 {
 }
 
@@ -1254,7 +1254,7 @@ void ExactSamplingCase::checkSupport (Context& context) const
 }
 
 ExactSamplingInstance::ExactSamplingInstance (Context& context, const Params& params)
-	: vkt::TestInstance{context}, m_params{params}
+	: vkt::TestInstance{context}, m_params(params)
 {
 }
 

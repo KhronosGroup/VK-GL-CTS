@@ -1073,7 +1073,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 		logStash->messages.push_back("Rasterization line draw strictness mode: " + std::string(strictMode ? "strict" : "non-strict") + ".");
 	}
 
-	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, VERIFICATIONMODE_STRICT, logStash, vulkanLinesTest);
+	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, scene.verificationMode, logStash, vulkanLinesTest);
 }
 
 bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						surface,

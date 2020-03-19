@@ -78,6 +78,7 @@
 #include "vktSpvAsmSignedIntCompareTests.hpp"
 #include "vktSpvAsmPtrAccessChainTests.hpp"
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
+#include "vktSpvAsmNonSemanticInfoTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
 
 #include <cmath>
@@ -20186,6 +20187,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
 	computeTests->addChild(createLocalSizeGroup(testCtx));
+	computeTests->addChild(createNonSemanticInfoGroup(testCtx));
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITHOUT_NAN));
 	computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITH_NAN));

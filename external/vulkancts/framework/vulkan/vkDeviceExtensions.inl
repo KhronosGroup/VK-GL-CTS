@@ -61,5 +61,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_pipeline_executable_properties",
 	"VK_KHR_shader_clock",
 	"VK_KHR_performance_query",
+	"VK_KHR_shader_non_semantic_info",
 };
 
