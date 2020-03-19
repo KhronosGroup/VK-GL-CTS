@@ -56,6 +56,14 @@ enum FloatType
 	FP64
 };
 
+enum class BufferDataType
+{
+	DATA_UNKNOWN	= 0,
+	DATA_FP16		= 1,
+	DATA_FP32		= 2,
+	DATA_FP64		= 3,
+};
+
 enum FloatUsage
 {
 	// If the float type is 16bit, then the use of the type is supported by
@@ -409,7 +417,10 @@ BufferSp TypeValues<FLOAT_TYPE>::constructOutputBuffer(ValueId result) const
 	typedef typename GetCoresponding<FLOAT_TYPE>::uint_type uint_t;
 	uint_t value = static_cast<uint_t>(result);
 
-	std::vector<FLOAT_TYPE> outputData(1, exactByteEquivalent<uint_t>(value));
+	// For FP16 we increase the buffer size to hold an unsigned integer, as
+	// we can be in the no 16bit_storage case.
+	const uint_t outputSize = sizeof(FLOAT_TYPE) == 2u ? 2u : 1u;
+	std::vector<FLOAT_TYPE> outputData(outputSize, exactByteEquivalent<uint_t>(value));
 	return BufferSp(new Buffer<FLOAT_TYPE>(outputData));
 }
 
@@ -639,6 +650,8 @@ public: // Type specific data:
 
 	string capabilities;
 	string extensions;
+	string capabilitiesFp16Without16BitStorage;
+	string extensionsFp16Without16BitStorage;
 	string arrayStride;
 
 	bool loadStoreRequiresShaderFloat16;
@@ -686,6 +699,17 @@ public: // Type specific spir-v snippets:
 
 	string storeResultsSnippet;
 	string multiStoreResultsSnippet;
+
+	string argumentsFromInputFp16Snippet;
+	string storeResultsFp16Snippet;
+	string multiArgumentsFromInputFp16Snippet;
+	string multiOutputAnnotationsFp16Snippet;
+	string multiStoreResultsFp16Snippet;
+	string multiOutputDefinitionsFp16Snippet;
+	string inputDefinitionsFp16Snippet;
+	string outputDefinitionsFp16Snippet;
+	string typeAnnotationsFp16Snippet;
+	string typeDefinitionsFp16Snippet;
 };
 
 void TypeSnippetsBase::updateSpirvSnippets()
@@ -802,6 +826,71 @@ void TypeSnippetsBase::updateSpirvSnippets()
 	storeResultsSnippet				= replace(storeResultsTemplate, typeToken, typeName);
 	multiStoreResultsSnippet		= replace(multiStoreResultsTemplate, typeToken, typeName);
 
+	argumentsFromInputFp16Snippet		= "";
+	storeResultsFp16Snippet				= "";
+	multiArgumentsFromInputFp16Snippet	= "";
+	multiOutputAnnotationsFp16Snippet	= "";
+	multiStoreResultsFp16Snippet		= "";
+	multiOutputDefinitionsFp16Snippet	= "";
+	inputDefinitionsFp16Snippet			= "";
+	typeAnnotationsFp16Snippet			= "";
+	outputDefinitionsFp16Snippet		= "";
+	typeDefinitionsFp16Snippet			= "";
+
+	if (bitWidth.compare("16") == 0)
+	{
+		typeDefinitionsFp16Snippet		=
+			"%type_u32_uptr       = OpTypePointer Uniform %type_u32\n"
+			"%type_u32_arr_1      = OpTypeArray %type_u32 %c_i32_1\n";
+
+		typeAnnotationsFp16Snippet		= "OpDecorate %type_u32_arr_1 ArrayStride 4\n";
+		const string inputToken			= "_f16_arr_2";
+		const string inputName			= "_u32_arr_1";
+		inputDefinitionsFp16Snippet		= replace(inputDefinitionsSnippet, inputToken, inputName);
+
+		argumentsFromInputFp16Snippet	=
+			"%argloc            = OpAccessChain %type_u32_uptr %ssbo_in %c_i32_0 %c_i32_0\n"
+			"%inval             = OpLoad %type_u32 %argloc\n"
+			"%arg               = OpBitcast %type_f16_vec2 %inval\n"
+			"%arg1              = OpCompositeExtract %type_f16 %arg 0\n"
+			"%arg2              = OpCompositeExtract %type_f16 %arg 1\n";
+
+		const string outputToken		= "_f16_arr_1";
+		const string outputName			= "_u32_arr_1";
+		outputDefinitionsFp16Snippet	= replace(outputDefinitionsSnippet, outputToken, outputName);
+
+		storeResultsFp16Snippet	=
+			"%result_f16_vec2   = OpCompositeConstruct %type_f16_vec2 %result %c_f16_0\n"
+			"%result_u32		= OpBitcast %type_u32 %result_f16_vec2\n"
+			"%outloc            = OpAccessChain %type_u32_uptr %ssbo_out %c_i32_0 %c_i32_0\n"
+			"OpStore %outloc %result_u32\n";
+
+		multiArgumentsFromInputFp16Snippet	=
+			"%arg_u32_loc         = OpAccessChain %type_u32_uptr %ssbo_in %c_i32_${attr} %c_i32_0\n"
+			"%arg_u32             = OpLoad %type_u32 %arg_u32_loc\n"
+			"%arg_f16_vec2        = OpBitcast %type_f16_vec2 %arg_u32\n"
+			"%arg1_f16            = OpCompositeExtract %type_f16 %arg_f16_vec2 0\n"
+			"%arg2_f16            = OpCompositeExtract %type_f16 %arg_f16_vec2 1\n";
+
+		multiOutputAnnotationsFp16Snippet	=
+			"OpMemberDecorate %SSBO_u32_out 0 Offset 0\n"
+			"OpDecorate %type_u32_arr_1 ArrayStride 4\n"
+			"OpDecorate %SSBO_u32_out BufferBlock\n"
+			"OpDecorate %ssbo_u32_out DescriptorSet 0\n";
+
+		multiStoreResultsFp16Snippet		=
+			"%outloc_u32            = OpAccessChain %type_u32_uptr %ssbo_u32_out %c_i32_0\n"
+			"%result16_vec2			= OpCompositeConstruct %type_f16_vec2 %result16 %c_f16_0\n"
+			"%result_u32            = OpBitcast %type_u32 %result16_vec2\n"
+			"                        OpStore %outloc_u32 %result_u32\n";
+
+		multiOutputDefinitionsFp16Snippet	=
+			"%c_f16_0              = OpConstant %type_f16 0.0\n"
+			"%SSBO_u32_out         = OpTypeStruct %type_u32\n"
+			"%up_SSBO_u32_out      = OpTypePointer Uniform %SSBO_u32_out\n"
+			"%ssbo_u32_out         = OpVariable %up_SSBO_u32_out Uniform\n";
+	}
+
 	// NOTE: only values used as _generated_ arguments in test operations
 	// need to be in this map, arguments that are only used by tests,
 	// that grab arguments from input, do need to be in this map
@@ -845,6 +934,10 @@ TypeSnippets<deFloat16>::TypeSnippets()
 
 	capabilities	= "OpCapability StorageUniform16\n";
 	extensions		= "OpExtension \"SPV_KHR_16bit_storage\"\n";
+
+	capabilitiesFp16Without16BitStorage	= "OpCapability Float16\n";
+	extensionsFp16Without16BitStorage	= "";
+
 	arrayStride		= "2";
 
 	varyingsTypesSnippet =
@@ -876,6 +969,8 @@ TypeSnippets<float>::TypeSnippets()
 	denormBase		= "1.1756356e-38";
 	capabilities	= "";
 	extensions		= "";
+	capabilitiesFp16Without16BitStorage	= "";
+	extensionsFp16Without16BitStorage	= "";
 	arrayStride		= "4";
 
 	varyingsTypesSnippet =
@@ -905,6 +1000,8 @@ TypeSnippets<double>::TypeSnippets()
 	denormBase		= "2.2250738585076994e-308"; // 0x00100000000003F0
 	capabilities	= "OpCapability Float64\n";
 	extensions		= "";
+	capabilitiesFp16Without16BitStorage	= "";
+	extensionsFp16Without16BitStorage	= "";
 	arrayStride		= "8";
 
 	varyingsTypesSnippet =
@@ -1461,11 +1558,13 @@ public:
 					  OperationId	_operatinId,
 					  ValueId		_input1,
 					  ValueId		_input2,
-					  ValueId		_expectedOutput)
+					  ValueId		_expectedOutput,
+					  deBool		_fp16Without16BitStorage = DE_FALSE)
 		: baseName(_baseName)
 		, behaviorFlags(_behaviorFlags)
 		, operationId(_operatinId)
 		, expectedOutput(_expectedOutput)
+		, fp16Without16BitStorage(_fp16Without16BitStorage)
 	{
 		input[0] = _input1;
 		input[1] = _input2;
@@ -1478,6 +1577,7 @@ public:
 	OperationId				operationId;
 	ValueId					input[2];
 	ValueId					expectedOutput;
+	deBool					fp16Without16BitStorage;
 };
 
 // Helper structure used to store specialized operation
@@ -1515,7 +1615,8 @@ private:
 	void createUnaryTestCases(vector<OperationTestCase>& testCases,
 							  OperationId operationId,
 							  ValueId denormPreserveResult,
-							  ValueId denormFTZResult) const;
+							  ValueId denormFTZResult,
+							  deBool fp16WithoutStorage = DE_FALSE) const;
 
 private:
 
@@ -2029,6 +2130,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 
 	testCases.reserve(750);
 
+	bool isFP16 = typeTestResults->floatType() == FP16;
+
 	// Denorm - FlushToZero - binary operations
 	for (size_t i = 0 ; i < typeTestResults->binaryOpFTZ.size() ; ++i)
 	{
@@ -2038,6 +2141,14 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult));
 		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
 		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
+
+		if (isFP16)
+		{
+			testCases.push_back(OTC("denorm_op_var_flush_to_zero_nostorage",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_inf_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_nan_flush_to_zero_nostorage",		B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult, DE_TRUE));
+		}
 	}
 
 	// Denorm - FlushToZero - unary operations
@@ -2046,6 +2157,9 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		const UnaryCase&	unaryCase = typeTestResults->unaryOpFTZ[i];
 		OperationId			operation = unaryCase.operationId;
 		testCases.push_back(OTC("op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result));
+		if (isFP16)
+			testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage", B_DENORM_FLUSH, operation, V_DENORM, V_UNUSED, unaryCase.result, DE_TRUE));
+
 	}
 
 	// Denom - Preserve - binary operations
@@ -2057,6 +2171,14 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
 		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
 		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
+
+		if (isFP16)
+		{
+			testCases.push_back(OTC("denorm_op_var_preserve_nostorage",			B_DENORM_PRESERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_inf_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult, DE_TRUE));
+			testCases.push_back(OTC("denorm_op_nan_preserve_nostorage",			B_DENORM_PRESERVE | B_ZIN_PRESERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult, DE_TRUE));
+		}
 	}
 
 	// Denom - Preserve - unary operations
@@ -2065,6 +2187,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		const UnaryCase&	unaryCase	= typeTestResults->unaryOpDenormPreserve[i];
 		OperationId			operation	= unaryCase.operationId;
 		testCases.push_back(OTC("op_denorm_preserve", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result));
+		if (isFP16)
+			testCases.push_back(OTC("op_denorm_preserve_nostorage", B_DENORM_PRESERVE, operation, V_DENORM, V_UNUSED, unaryCase.result, DE_TRUE));
 	}
 
 	struct ZINCase
@@ -2115,6 +2239,15 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		testCases.push_back(OTC("inf_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult));
 		testCases.push_back(OTC("signed_inf_op_var_preserve",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult));
 		testCases.push_back(OTC("nan_op_var_preserve",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult));
+
+		if (isFP16)
+		{
+			testCases.push_back(OTC("zero_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_ZERO,			zc.secondArgument,	zc.preserveZeroResult, DE_TRUE));
+			testCases.push_back(OTC("signed_zero_op_var_preserve_nostorage",		B_ZIN_PRESERVE, zc.operationId, V_MINUS_ZERO,	zc.secondArgument,	zc.preserveSZeroResult, DE_TRUE));
+			testCases.push_back(OTC("inf_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_INF,			zc.secondArgument,	zc.preserveInfResult, DE_TRUE));
+			testCases.push_back(OTC("signed_inf_op_var_preserve_nostorage",			B_ZIN_PRESERVE, zc.operationId, V_MINUS_INF,	zc.secondArgument,	zc.preserveSInfResult, DE_TRUE));
+			testCases.push_back(OTC("nan_op_var_preserve_nostorage",				B_ZIN_PRESERVE, zc.operationId, V_NAN,			zc.secondArgument,	zc.preserveNanResult, DE_TRUE));
+		}
 	}
 
 	// Signed Zero Inf Nan - Preserve - unary operations
@@ -2129,6 +2262,15 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult));
 		testCases.push_back(OTC("op_signed_inf_preserve",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult));
 		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult));
+
+		if (isFP16)
+		{
+			testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_ZERO,			V_UNUSED,	zc.preserveZeroResult, DE_TRUE));
+			testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,zc.operationId, V_MINUS_ZERO,	V_UNUSED,	zc.preserveSZeroResult, DE_TRUE));
+			testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_INF,			V_UNUSED,	zc.preserveInfResult, DE_TRUE));
+			testCases.push_back(OTC("op_signed_inf_preserve_nostorage",		B_ZIN_PRESERVE,zc.operationId, V_MINUS_INF,		V_UNUSED,	zc.preserveSInfResult, DE_TRUE));
+			testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,zc.operationId, V_NAN,			V_UNUSED,	zc.preserveNanResult, DE_TRUE));
+		}
 	}
 
 	// comparison operations - tested differently because they return true/false
@@ -2157,6 +2299,8 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		const ComparisonCase& cc = comparisonCases[op];
 		testCases.push_back(OTC("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult));
+		if (isFP16)
+			testCases.push_back(OTC("denorm_op_var_preserve_nostorage", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE, cc.denormPreserveResult, DE_TRUE));
 	}
 
 	if (argumentsFromInput)
@@ -2197,6 +2341,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			const RoundingModeCase& rmc = roundingCases[c];
 			testCases.push_back(OTC("rounding_rte_op", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult));
 			testCases.push_back(OTC("rounding_rtz_op", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult));
+			if (isFP16)
+			{
+				testCases.push_back(OTC("rounding_rte_op_nostorage", B_RTE_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTEResult, DE_TRUE));
+				testCases.push_back(OTC("rounding_rtz_op_nostorage", B_RTZ_ROUNDING, rmc.operationId, rmc.arg1, rmc.arg2, rmc.expectedRTZResult, DE_TRUE));
+			}
 		}
 	}
 
@@ -2215,13 +2364,27 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
 			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 
-			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration
+			testCases.push_back(OTC("rounding_rte_conv_from_fp32_nostorage", B_RTE_ROUNDING, O_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp32_nostorage", B_RTZ_ROUNDING, O_CONV_FROM_FP32, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_conv_from_fp64_nostorage", B_RTE_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_conv_from_fp64_nostorage", B_RTZ_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32_nostorage", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32_nostorage", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64_nostorage", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT, DE_TRUE));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64_nostorage", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT, DE_TRUE));
+
+			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration.
+			// FPRoundingMode decoration requires VK_KHR_16bit_storage.
 			testCases.push_back(OTC("rounding_rte_override", B_RTE_ROUNDING, O_ORTZ_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 			testCases.push_back(OTC("rounding_rtz_override", B_RTZ_ROUNDING, O_ORTE_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
 		}
 
 		createUnaryTestCases(testCases, O_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO);
 		createUnaryTestCases(testCases, O_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
+		createUnaryTestCases(testCases, O_CONV_FROM_FP32, V_CONV_DENORM_SMALLER, V_ZERO, DE_TRUE);
+		createUnaryTestCases(testCases, O_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO, DE_TRUE);
+
 	}
 	else if (typeTestResults->floatType() == FP32)
 	{
@@ -2245,6 +2408,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		}
 
 		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32);
+		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP32, DE_TRUE);
 		createUnaryTestCases(testCases, O_CONV_FROM_FP64, V_CONV_DENORM_BIGGER, V_ZERO);
 	}
 	else // FP64
@@ -2260,6 +2424,7 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 		}
 
 		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64);
+		createUnaryTestCases(testCases, O_CONV_FROM_FP16, V_CONV_DENORM_SMALLER, V_ZERO_OR_FP16_DENORM_TO_FP64, DE_TRUE);
 		createUnaryTestCases(testCases, O_CONV_FROM_FP32, V_CONV_DENORM_BIGGER, V_ZERO_OR_FP32_DENORM_TO_FP64);
 	}
 }
@@ -2269,19 +2434,36 @@ const Operation& TestCasesBuilder::getOperation(OperationId id) const
 	return m_operations.at(id);
 }
 
-void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult) const
+void TestCasesBuilder::createUnaryTestCases(vector<OperationTestCase>& testCases, OperationId operationId, ValueId denormPreserveResult, ValueId denormFTZResult, deBool fp16WithoutStorage) const
 {
-	// Denom - Preserve
-	testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult));
+	if (fp16WithoutStorage)
+	{
+		// Denom - Preserve
+		testCases.push_back(OTC("op_denorm_preserve_nostorage",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult, DE_TRUE));
 
-	// Denorm - FlushToZero
-	testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult));
+		// Denorm - FlushToZero
+		testCases.push_back(OTC("op_denorm_flush_to_zero_nostorage",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult, DE_TRUE));
 
-	// Signed Zero Inf Nan - Preserve
-	testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO));
-	testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO));
-	testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF));
-	testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN));
+		// Signed Zero Inf Nan - Preserve
+		testCases.push_back(OTC("op_zero_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO, DE_TRUE));
+		testCases.push_back(OTC("op_signed_zero_preserve_nostorage",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO, DE_TRUE));
+		testCases.push_back(OTC("op_inf_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF, DE_TRUE));
+		testCases.push_back(OTC("op_nan_preserve_nostorage",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN, DE_TRUE));
+	}
+	else
+	{
+		// Denom - Preserve
+		testCases.push_back(OTC("op_denorm_preserve",		B_DENORM_PRESERVE,	operationId, V_DENORM,	V_UNUSED, denormPreserveResult));
+
+		// Denorm - FlushToZero
+		testCases.push_back(OTC("op_denorm_flush_to_zero",	B_DENORM_FLUSH,		operationId, V_DENORM,	V_UNUSED, denormFTZResult));
+
+		// Signed Zero Inf Nan - Preserve
+		testCases.push_back(OTC("op_zero_preserve",			B_ZIN_PRESERVE,		operationId, V_ZERO,		V_UNUSED, V_ZERO));
+		testCases.push_back(OTC("op_signed_zero_preserve",	B_ZIN_PRESERVE,		operationId, V_MINUS_ZERO,	V_UNUSED, V_MINUS_ZERO));
+		testCases.push_back(OTC("op_inf_preserve",			B_ZIN_PRESERVE,		operationId, V_INF,			V_UNUSED, V_INF));
+		testCases.push_back(OTC("op_nan_preserve",			B_ZIN_PRESERVE,		operationId, V_NAN,			V_UNUSED, V_NAN));
+	}
 }
 
 template <typename TYPE, typename FLOAT_TYPE>
@@ -2451,7 +2633,12 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 	const TYPE* fValueId	= reinterpret_cast<const TYPE*>(&expectedBytes.front());
 
 	// all test return single value
-	DE_ASSERT((expectedBytes.size() / sizeof(TYPE)) == 1);
+	// Fp16 nostorage tests get their values from a deUint32 value, but we create the
+	// buffer with the same size for both cases: 4 bytes.
+	if (sizeof(TYPE) == 2u)
+		DE_ASSERT((expectedBytes.size() / sizeof(TYPE)) == 2);
+	else
+		DE_ASSERT((expectedBytes.size() / sizeof(TYPE)) == 1);
 
 	// during test setup we do not store expected value but id that can be used to
 	// retrieve actual value - this is done to handle special cases like multiple
@@ -2578,14 +2765,13 @@ bool checkMixedFloats (const vector<Resource>&		,
 	if (outputAllocs.size() != expectedOutputs.size())
 		return false;
 
-	// create map storing functions that should be used for comparision
-	// depending on float width in bytes; this lets us later to avoid switch in while
-	typedef bool (*compareFun)(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, TestLog& log);
-	const map<size_t, compareFun> compareMap =
+	// The comparison function depends on the data type stored in the resource.
+	using compareFun = bool (*)(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, TestLog& log);
+	const map<BufferDataType, compareFun> compareMap =
 	{
-		{ 2, compareBytes<Float16, deFloat16> },
-		{ 4, compareBytes<Float32, float> },
-		{ 8, compareBytes<Float64, double>},
+		{ BufferDataType::DATA_FP16, compareBytes<Float16, deFloat16> },
+		{ BufferDataType::DATA_FP32, compareBytes<Float32, float> },
+		{ BufferDataType::DATA_FP64, compareBytes<Float64, double>},
 	};
 
 	vector<deUint8> expectedBytes;
@@ -2595,8 +2781,8 @@ bool checkMixedFloats (const vector<Resource>&		,
 	while (resultIndex--)
 	{
 		expectedOutputs[resultIndex].getBytes(expectedBytes);
-		size_t byteWidth		 = expectedOutputs[resultIndex].getByteSize();
-		allResultsAreCorrect	&= compareMap.at(byteWidth)(expectedBytes, outputAllocs[resultIndex], log);
+		BufferDataType type		 = static_cast<BufferDataType>(reinterpret_cast<std::uintptr_t>(expectedOutputs[resultIndex].getUserData()));
+		allResultsAreCorrect	&= compareMap.at(type)(expectedBytes, outputAllocs[resultIndex], log);
 	}
 
 	return allResultsAreCorrect;
@@ -2660,6 +2846,7 @@ protected:
 		SettingsOption							fp16Option;
 		SettingsOption							fp32Option;
 		SettingsOption							fp64Option;
+		deBool									fp16Without16BitStorage;
 	};
 
 	void specializeOperation(const OperationTestCaseInfo&	testCaseInfo,
@@ -2757,6 +2944,9 @@ void TestGroupBuilderBase::specializeOperation (const OperationTestCaseInfo&	tes
 	{
 		// read arguments from input SSBO in main function
 		specializedOperation.arguments = inTypeSnippets->argumentsFromInputSnippet;
+
+		if (inFloatType == FP16 && testCaseInfo.testCase.fp16Without16BitStorage)
+			specializedOperation.arguments = inTypeSnippets->argumentsFromInputFp16Snippet;
 	}
 	else
 	{
@@ -3156,51 +3346,88 @@ void ComputeTestGroupBuilder::createSettingsTests(TestCaseGroup* parentGroup)
 
 	vector<SettingsTestCaseInfo> testCases =
 	{
-		// name															mode			independenceSetting		fp16Option		fp32Option		fp64Option
+		// name															mode			independenceSetting		fp16Option		fp32Option		fp64Option		fp16Without16bitstorage
 
 		// test rounding modes when only two float widths are available
-		{ "rounding_ind_all_fp16_rte_fp32_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED },
-		{ "rounding_ind_all_fp16_rtz_fp32_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED },
-		{ "rounding_ind_32_fp16_rte_fp32_rtz",							SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED },
-		{ "rounding_ind_32_fp16_rtz_fp32_rte",							SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED },
-		{ "rounding_ind_all_fp16_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ },
-		{ "rounding_ind_all_fp16_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE },
-		{ "rounding_ind_all_fp32_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTE,			SO_RTZ },
-		{ "rounding_ind_all_fp32_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTZ,			SO_RTE },
-		{ "rounding_ind_32_fp32_rte_fp64_rtz",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTE,			SO_RTZ },
-		{ "rounding_ind_32_fp32_rtz_fp64_rte",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTZ,			SO_RTE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_FALSE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_FALSE },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz",							SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_FALSE },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte",							SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_FALSE },
+		{ "rounding_ind_all_fp16_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE,			DE_FALSE },
+		{ "rounding_ind_all_fp32_rte_fp64_rtz",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTE,			SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_all_fp32_rtz_fp64_rte",							SM_ROUNDING,	independenceAll,		SO_UNUSED,		SO_RTZ,			SO_RTE,			DE_FALSE },
+		{ "rounding_ind_32_fp32_rte_fp64_rtz",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTE,			SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_32_fp32_rtz_fp64_rte",							SM_ROUNDING,	independence32,			SO_UNUSED,		SO_RTZ,			SO_RTE,			DE_FALSE },
 
 		// test rounding modes when three widths are available
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ },
-		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz",					SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ },
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE },
-		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte",					SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE },
-		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE },
-		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ },
-		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz",					SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE,			DE_FALSE },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte",					SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ,			DE_FALSE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ,			DE_FALSE },
 
 		// test denorm settings when only two float widths are available
-		{ "denorm_ind_all_fp16_flush_fp32_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED },
-		{ "denorm_ind_all_fp16_preserve_fp32_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED },
-		{ "denorm_ind_32_fp16_flush_fp32_preserve",						SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED },
-		{ "denorm_ind_32_fp16_preserve_fp32_flush",						SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED },
-		{ "denorm_ind_all_fp16_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE },
-		{ "denorm_ind_all_fp16_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH },
-		{ "denorm_ind_all_fp32_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_FLUSH,		SO_PRESERVE },
-		{ "denorm_ind_all_fp32_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_PRESERVE,	SO_FLUSH },
-		{ "denorm_ind_32_fp32_flush_fp64_preserve",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_FLUSH,		SO_PRESERVE },
-		{ "denorm_ind_32_fp32_preserve_fp64_flush",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_PRESERVE,	SO_FLUSH },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_FALSE },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_FALSE },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve",						SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_FALSE },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush",						SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_FALSE },
+		{ "denorm_ind_all_fp16_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_all_fp16_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_all_fp32_flush_fp64_preserve",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_all_fp32_preserve_fp64_flush",					SM_DENORMS,		independenceAll,		SO_UNUSED,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_32_fp32_flush_fp64_preserve",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_32_fp32_preserve_fp64_flush",						SM_DENORMS,		independence32,			SO_UNUSED,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
 
 		// test denorm settings when three widths are available
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE },
-		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE },
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH },
-		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH },
-		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH },
-		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH },
-		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE },
-		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE }
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH,		DE_FALSE },
+		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE,	DE_FALSE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE,	DE_FALSE },
+
+		// Same fp16 tests but without requiring VK_KHR_16bit_storage
+		// test rounding modes when only two float widths are available
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_TRUE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_TRUE },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_nostorage",				SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_UNUSED,		DE_TRUE },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_nostorage",				SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_UNUSED,		DE_TRUE },
+		{ "rounding_ind_all_fp16_rte_fp64_rtz_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTE,			SO_UNUSED,		SO_RTZ,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rtz_fp64_rte_nostorage",				SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_UNUSED,		SO_RTE,			DE_TRUE },
+
+		// test rounding modes when three widths are available
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTZ,			DE_TRUE },
+		{ "rounding_ind_32_fp16_rtz_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independence32,			SO_RTZ,			SO_RTE,			SO_RTZ,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTE,			DE_TRUE },
+		{ "rounding_ind_32_fp16_rte_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independence32,			SO_RTE,			SO_RTZ,			SO_RTE,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rtz_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTZ,			SO_RTE,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rtz_fp32_rte_fp64_rte_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTZ,			SO_RTE,			SO_RTE,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rte_fp32_rte_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTE,			SO_RTZ,			DE_TRUE },
+		{ "rounding_ind_all_fp16_rte_fp32_rtz_fp64_rtz_nostorage",		SM_ROUNDING,	independenceAll,		SO_RTE,			SO_RTZ,			SO_RTZ,			DE_TRUE },
+
+		// test denorm settings when only two float widths are available
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_nostorage",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_TRUE },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_nostorage",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_TRUE },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_nostorage",			SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_UNUSED,		DE_TRUE },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_nostorage",			SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_UNUSED,		DE_TRUE },
+		{ "denorm_ind_all_fp16_flush_fp64_preserve_nostorage",			SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_UNUSED,		SO_PRESERVE,	DE_TRUE },
+		{ "denorm_ind_all_fp16_preserve_fp64_flush_nostorage",			SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_UNUSED,		SO_FLUSH,		DE_TRUE },
+
+		// test denorm settings when three widths are available
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_preserve_nostorage",	SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_TRUE },
+		{ "denorm_ind_32_fp16_preserve_fp32_flush_fp64_preserve_nostorage",		SM_DENORMS,		independence32,			SO_PRESERVE,	SO_FLUSH,		SO_PRESERVE,	DE_TRUE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_flush_nostorage",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_TRUE },
+		{ "denorm_ind_32_fp16_flush_fp32_preserve_fp64_flush_nostorage",		SM_DENORMS,		independence32,			SO_FLUSH,		SO_PRESERVE,	SO_FLUSH,		DE_TRUE },
+		{ "denorm_ind_all_fp16_preserve_fp32_preserve_fp64_flush_nostorage",	SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_PRESERVE,	SO_FLUSH,		DE_TRUE },
+		{ "denorm_ind_all_fp16_preserve_fp32_flush_fp64_flush_nostorage",		SM_DENORMS,		independenceAll,		SO_PRESERVE,	SO_FLUSH,		SO_FLUSH,		DE_TRUE },
+		{ "denorm_ind_all_fp16_flush_fp32_flush_fp64_preserve_nostorage",		SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_FLUSH,		SO_PRESERVE,	DE_TRUE },
+		{ "denorm_ind_all_fp16_flush_fp32_preserve_fp64_preserve_nostorage",	SM_DENORMS,		independenceAll,		SO_FLUSH,		SO_PRESERVE,	SO_PRESERVE,	DE_TRUE },
 	};
 
 	for(const auto& testCase : testCases)
@@ -3235,6 +3462,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
 	FloatType		inFloatType			= specOpData.inFloatType;
 
+	deBool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
+	deBool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
+
 	// UnpackHalf2x16 is a corner case - it returns two 32-bit floats but
 	// internaly operates on fp16 and this type should be used by float controls
 	FloatType		inFloatTypeForCaps		= inFloatType;
@@ -3255,11 +3485,35 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 
 	string capabilities		= behaviorCapability + outTypeSnippets->capabilities;
 	string extensions		= outTypeSnippets->extensions;
-	string annotations		= inTypeSnippets->inputAnnotationsSnippet + outTypeSnippets->outputAnnotationsSnippet +
-							  outTypeSnippets->typeAnnotationsSnippet;
+	string annotations		= inTypeSnippets->inputAnnotationsSnippet + outTypeSnippets->outputAnnotationsSnippet + outTypeSnippets->typeAnnotationsSnippet;
 	string types			= outTypeSnippets->typeDefinitionsSnippet;
 	string constants		= outTypeSnippets->constantsDefinitionsSnippet;
-	string ioDefinitions	= inTypeSnippets->inputDefinitionsSnippet + outTypeSnippets->outputDefinitionsSnippet;
+	string ioDefinitions	= "";
+
+	// Getting rid of 16bit_storage dependency imply replacing lots of snippets.
+	{
+		if (inFp16WithoutStorage)
+		{
+			ioDefinitions	= inTypeSnippets->inputDefinitionsFp16Snippet;
+		}
+		else
+		{
+			ioDefinitions	= inTypeSnippets->inputDefinitionsSnippet;
+		}
+
+		if (outFp16WithoutStorage)
+		{
+			extensions		= outTypeSnippets->extensionsFp16Without16BitStorage;
+			capabilities	= behaviorCapability + outTypeSnippets->capabilitiesFp16Without16BitStorage;
+			types			+= outTypeSnippets->typeDefinitionsFp16Snippet;
+			annotations	+= outTypeSnippets->typeAnnotationsFp16Snippet;
+			ioDefinitions	+= outTypeSnippets->outputDefinitionsFp16Snippet;
+		}
+		else
+		{
+			ioDefinitions	+= outTypeSnippets->outputDefinitionsSnippet;
+		}
+	}
 
 	bool outFp16TypeUsage	= outTypeSnippets->loadStoreRequiresShaderFloat16;
 	bool inFp16TypeUsage	= false;
@@ -3267,10 +3521,21 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	if (testOperation.isInputTypeRestricted)
 	{
 		annotations		+= inTypeSnippets->typeAnnotationsSnippet;
-		capabilities	+= inTypeSnippets->capabilities;
-		extensions		+= inTypeSnippets->extensions;
 		types			+= inTypeSnippets->typeDefinitionsSnippet;
 		constants		+= inTypeSnippets->constantsDefinitionsSnippet;
+
+		if (inFp16WithoutStorage)
+		{
+			annotations		+= inTypeSnippets->typeAnnotationsFp16Snippet;
+			types			+= inTypeSnippets->typeDefinitionsFp16Snippet;
+			capabilities	+= inTypeSnippets->capabilitiesFp16Without16BitStorage;
+			extensions		+= inTypeSnippets->extensionsFp16Without16BitStorage;
+		}
+		else
+		{
+			capabilities	+= inTypeSnippets->capabilities;
+			extensions		+= inTypeSnippets->extensions;
+		}
 
 		inFp16TypeUsage	= inTypeSnippets->loadStoreRequiresShaderFloat16;
 	}
@@ -3283,7 +3548,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	specializations["io_definitions"]	= ioDefinitions;
 	specializations["variables"]		= specOpData.variables;
 	specializations["functions"]		= specOpData.functions;
-	specializations["save_result"]		= outTypeSnippets->storeResultsSnippet;
+	specializations["save_result"]		= (outFp16WithoutStorage ? outTypeSnippets->storeResultsFp16Snippet : outTypeSnippets->storeResultsSnippet);
 	specializations["arguments"]		= specOpData.arguments;
 	specializations["commands"]			= specOpData.commands;
 
@@ -3299,7 +3564,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	const bool						usesFP16Constants					= constsUsesFP16Type || (needConstants && loadStoreRequiresShaderFloat16);
 
 	specializations["constants"]		= "";
-	if (needConstants)
+	if (needConstants || outFp16WithoutStorage)
 	{
 		specializations["constants"]	= constants;
 	}
@@ -3310,7 +3575,8 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	bool float64FeatureRequired = (outFloatType == FP64) || (inFloatType == FP64);
 
 	// Determine required capabilities.
-	if ((testOperation.floatUsage == FLOAT_ARITHMETIC && float16FeatureRequired) || usesFP16Constants)
+	bool float16CapabilityAlreadyAdded = inFp16WithoutStorage || outFp16WithoutStorage;
+	if ((testOperation.floatUsage == FLOAT_ARITHMETIC && float16FeatureRequired && !float16CapabilityAlreadyAdded) || usesFP16Constants)
 	{
 		capabilities += "OpCapability Float16\n";
 	}
@@ -3339,8 +3605,9 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo&	testCa
 	csSpec.verifyIO			= checkFloatsLUT[outFloatType];
 
 	csSpec.extensions.push_back("VK_KHR_shader_float_controls");
-	bool needShaderFloat16 = false;
-	if (float16FeatureRequired)
+	bool needShaderFloat16 = float16CapabilityAlreadyAdded;
+
+	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
 	{
 		csSpec.extensions.push_back("VK_KHR_16bit_storage");
 		csSpec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
@@ -3496,7 +3763,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 
 		// construct separate buffers for outputs to make validation easier
 		BufferSp fp64OutBufferSp = fp64Data.values->constructOutputBuffer(fp64resultValue);
-		csSpec.outputs.push_back(Resource(fp64OutBufferSp));
+		csSpec.outputs.push_back(Resource(fp64OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, reinterpret_cast<void*>(BufferDataType::DATA_FP64)));
 
 		csSpec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
 	}
@@ -3519,32 +3786,54 @@ void ComputeTestGroupBuilder::fillShaderSpec(const SettingsTestCaseInfo&	testCas
 		fp32Data.values->fillInputData(addArgs, inputData, inputOffset);
 
 		BufferSp fp32OutBufferSp = fp32Data.values->constructOutputBuffer(fp32resultValue);
-		csSpec.outputs.push_back(Resource(fp32OutBufferSp));
+		csSpec.outputs.push_back(Resource(fp32OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, reinterpret_cast<void*>(BufferDataType::DATA_FP32)));
 	}
 	if (fp16Required)
 	{
-		capabilities	+= fp16Data.snippets->capabilities +
-						   "OpCapability Float16\n";
-		extensions		+= fp16Data.snippets->extensions;
-		executionModes	+= "OpExecutionMode %main " + fp16behaviorName + " 16\n";
-		attribute		 = to_string(attributeIndex);
-		ioAnnotations	+= "OpMemberDecorate %SSBO_in " + attribute + " Offset " + to_string(attributeOffset) +"\n" +
-						   fp16Data.snippets->multiOutputAnnotationsSnippet +
-						   "OpDecorate %ssbo_f16_out Binding " + to_string(attributeIndex+1) + "\n";
-		types			+= fp16Data.snippets->minTypeDefinitionsSnippet;
-		inStruct		+= " %type_f16_arr_2";
-		outDefinitions	+= fp16Data.snippets->multiOutputDefinitionsSnippet;
-		commands		+= replace(fp16Data.snippets->multiArgumentsFromInputSnippet, "${attr}", attribute) +
-						   "%result16             = OpFAdd %type_f16 %arg1_f16 %arg2_f16\n";
-		saveResult		+= fp16Data.snippets->multiStoreResultsSnippet;
+		if (testCaseInfo.fp16Without16BitStorage)
+		{
+			capabilities	+= fp16Data.snippets->capabilitiesFp16Without16BitStorage;
+			extensions		+= fp16Data.snippets->extensionsFp16Without16BitStorage;
+			executionModes	+= "OpExecutionMode %main " + fp16behaviorName + " 16\n";
+			attribute		 = to_string(attributeIndex);
+			ioAnnotations	+= "OpMemberDecorate %SSBO_in " + attribute + " Offset " + to_string(attributeOffset) +"\n" +
+							   fp16Data.snippets->multiOutputAnnotationsFp16Snippet +
+							   "OpDecorate %ssbo_u32_out Binding " + to_string(attributeIndex+1) + "\n";
+			types			+= fp16Data.snippets->minTypeDefinitionsSnippet + fp16Data.snippets->typeDefinitionsFp16Snippet + "%type_f16_vec2        = OpTypeVector %type_f16 2\n";
+			inStruct		+= " %type_u32_arr_1";
+			outDefinitions	+= fp16Data.snippets->multiOutputDefinitionsFp16Snippet;
+			commands		+= replace(fp16Data.snippets->multiArgumentsFromInputFp16Snippet, "${attr}", attribute) +
+							   "%result16             = OpFAdd %type_f16 %arg1_f16 %arg2_f16\n";
+			saveResult		+= fp16Data.snippets->multiStoreResultsFp16Snippet;
+
+			csSpec.extensions.push_back("VK_KHR_shader_float16_int8");
+			csSpec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
+		}
+		else
+		{
+			capabilities	+= fp16Data.snippets->capabilities +
+							   "OpCapability Float16\n";
+			extensions		+= fp16Data.snippets->extensions;
+			executionModes	+= "OpExecutionMode %main " + fp16behaviorName + " 16\n";
+			attribute		= to_string(attributeIndex);
+			ioAnnotations	+= "OpMemberDecorate %SSBO_in " + attribute + " Offset " + to_string(attributeOffset) +"\n" +
+							   fp16Data.snippets->multiOutputAnnotationsSnippet +
+							   "OpDecorate %ssbo_f16_out Binding " + to_string(attributeIndex+1) + "\n";
+			types			+= fp16Data.snippets->minTypeDefinitionsSnippet;
+			inStruct		+= " %type_f16_arr_2";
+			outDefinitions	+= fp16Data.snippets->multiOutputDefinitionsSnippet;
+			commands		+= replace(fp16Data.snippets->multiArgumentsFromInputSnippet, "${attr}", attribute) +
+							   "%result16             = OpFAdd %type_f16 %arg1_f16 %arg2_f16\n";
+			saveResult		+= fp16Data.snippets->multiStoreResultsSnippet;
+
+			csSpec.extensions.push_back("VK_KHR_16bit_storage");
+			csSpec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		}
 
 		fp16Data.values->fillInputData(addArgs, inputData, inputOffset);
 
 		BufferSp fp16OutBufferSp = fp16Data.values->constructOutputBuffer(fp16resultValue);
-		csSpec.outputs.push_back(Resource(fp16OutBufferSp));
-
-		csSpec.extensions.push_back("VK_KHR_16bit_storage");
-		csSpec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		csSpec.outputs.push_back(Resource(fp16OutBufferSp, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, reinterpret_cast<void*>(BufferDataType::DATA_FP16)));
 	}
 
 	BufferSp inBufferSp(new Buffer<deUint8>(inputData));
@@ -3920,8 +4209,11 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 	TypeSnippetsSP	outTypeSnippets		= specOpData.outTypeSnippets;
 	FloatType		inFloatType			= specOpData.inFloatType;
 
+	deBool			outFp16WithoutStorage	= (outFloatType == FP16) && testCase.fp16Without16BitStorage;
+	deBool			inFp16WithoutStorage	= (inFloatType == FP16) && testCase.fp16Without16BitStorage;
+
 	// There may be several reasons why we need the shaderFloat16 Vulkan feature.
-	bool needsShaderFloat16 = false;
+	bool needsShaderFloat16 = inFp16WithoutStorage || outFp16WithoutStorage;
 	// There are some weird cases where we need the constants, but would otherwise drop them.
 	bool needsSpecialConstants = false;
 
@@ -3987,6 +4279,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 			vertExtensions		= inTypeSnippets->extensions + outTypeSnippets->extensions;
 			fragExtensions		= outTypeSnippets->extensions;
 			vertTypes			= inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
+			if (inFp16WithoutStorage)
+				vertTypes			+= inTypeSnippets->typeDefinitionsFp16Snippet;
+
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->varyingsTypesSnippet;
 			vertConstants		= inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
@@ -4019,7 +4314,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		vertExecutionMode		= behaviorExecutionMode;
 		fragExecutionMode		= "";
 		vertIODefinitions		= inTypeSnippets->inputDefinitionsSnippet + outTypeSnippets->outputVaryingsSnippet;
-		fragIODefinitions		= outTypeSnippets->outputDefinitionsSnippet + outTypeSnippets->inputVaryingsSnippet;
+		fragIODefinitions		= outTypeSnippets->inputVaryingsSnippet + outTypeSnippets->outputDefinitionsSnippet;
 		vertArguments			= specOpData.arguments;
 		fragArguments			= "";
 		vertVariables			= specOpData.variables;
@@ -4028,6 +4323,23 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		fragCommands			= "";
 		vertProcessResult		= outTypeSnippets->storeVertexResultSnippet;
 		fragProcessResult		= outTypeSnippets->loadVertexResultSnippet + outTypeSnippets->storeResultsSnippet;
+
+		if (inFp16WithoutStorage)
+		{
+			vertAnnotations		+= inTypeSnippets->typeAnnotationsFp16Snippet;
+			vertIODefinitions	= inTypeSnippets->inputDefinitionsFp16Snippet + outTypeSnippets->outputVaryingsSnippet;
+		}
+
+		if (outFp16WithoutStorage)
+		{
+			vertTypes			+= outTypeSnippets->typeDefinitionsFp16Snippet;
+			fragTypes			+= outTypeSnippets->typeDefinitionsFp16Snippet;
+			fragAnnotations		+= outTypeSnippets->typeAnnotationsFp16Snippet;
+			fragIODefinitions	= outTypeSnippets->inputVaryingsSnippet + outTypeSnippets->outputDefinitionsFp16Snippet;
+			fragProcessResult	= outTypeSnippets->loadVertexResultSnippet + outTypeSnippets->storeResultsFp16Snippet;
+
+		}
+
 		needsShaderFloat16		|= outTypeSnippets->loadStoreRequiresShaderFloat16;
 	}
 	else // perform test in fragment stage - vertex stage is empty
@@ -4038,8 +4350,12 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		{
 			fragAnnotations		= inTypeSnippets->inputAnnotationsSnippet + inTypeSnippets->typeAnnotationsSnippet +
 								  outTypeSnippets->outputAnnotationsSnippet + outTypeSnippets->typeAnnotationsSnippet;
-			fragCapabilities	= behaviorCapability + inTypeSnippets->capabilities + outTypeSnippets->capabilities;
-			fragExtensions		= inTypeSnippets->extensions + outTypeSnippets->extensions;
+			fragCapabilities	= behaviorCapability +
+				(inFp16WithoutStorage ? inTypeSnippets->capabilitiesFp16Without16BitStorage : inTypeSnippets->capabilities) +
+				(outFp16WithoutStorage ? outTypeSnippets->capabilitiesFp16Without16BitStorage : outTypeSnippets->capabilities);
+			fragExtensions		=
+				(inFp16WithoutStorage ? inTypeSnippets->extensionsFp16Without16BitStorage : inTypeSnippets->extensions) +
+				(outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage : outTypeSnippets->extensions);
 			fragTypes			= inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet;
 			fragConstants		= inTypeSnippets->constantsDefinitionsSnippet + outTypeSnippets->constantsDefinitionsSnippet;
 		}
@@ -4049,8 +4365,9 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 			fragAnnotations		= inTypeSnippets->inputAnnotationsSnippet + inTypeSnippets->typeAnnotationsSnippet +
 								  outTypeSnippets->outputAnnotationsSnippet;
-			fragCapabilities	= behaviorCapability + outTypeSnippets->capabilities;
-			fragExtensions		= outTypeSnippets->extensions;
+			fragCapabilities	= behaviorCapability +
+				(outFp16WithoutStorage ? outTypeSnippets->capabilitiesFp16Without16BitStorage : outTypeSnippets->capabilities);
+			fragExtensions		= (outFp16WithoutStorage ? outTypeSnippets->extensionsFp16Without16BitStorage : outTypeSnippets->extensions);
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet;
 			fragConstants		= outTypeSnippets->constantsDefinitionsSnippet;
 		}
@@ -4075,8 +4392,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		vertExecutionMode	= "";
 		fragExecutionMode	= behaviorExecutionMode;
 		vertIODefinitions	= dummyVertVarying;
-		fragIODefinitions	= inTypeSnippets->inputDefinitionsSnippet +
-							  outTypeSnippets->outputDefinitionsSnippet + dummyFragVarying;
+		fragIODefinitions	= dummyFragVarying;
+
 		vertArguments		= "";
 		fragArguments		= specOpData.arguments;
 		vertVariables		= "";
@@ -4085,6 +4402,35 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		fragCommands		= specOpData.commands;
 		vertProcessResult	= "";
 		fragProcessResult	= outTypeSnippets->storeResultsSnippet;
+
+		if (inFp16WithoutStorage)
+		{
+			fragAnnotations		+= inTypeSnippets->typeAnnotationsFp16Snippet;
+			if (testOperation.isInputTypeRestricted)
+			{
+				fragTypes			+= inTypeSnippets->typeDefinitionsFp16Snippet;
+			}
+			fragIODefinitions	+= inTypeSnippets->inputDefinitionsFp16Snippet;
+		}
+		else
+		{
+			fragIODefinitions	+= inTypeSnippets->inputDefinitionsSnippet;
+		}
+
+		if (outFp16WithoutStorage)
+		{
+			if (testOperation.isInputTypeRestricted)
+			{
+				fragAnnotations		+= outTypeSnippets->typeAnnotationsFp16Snippet;
+			}
+			fragTypes			+= outTypeSnippets->typeDefinitionsFp16Snippet;
+			fragIODefinitions	+= outTypeSnippets->outputDefinitionsFp16Snippet;
+			fragProcessResult	= outTypeSnippets->storeResultsFp16Snippet;
+		}
+		else
+		{
+			fragIODefinitions	+= outTypeSnippets->outputDefinitionsSnippet;
+		}
 
 		if (!testCaseInfo.argumentsFromInput)
 		{
@@ -4106,7 +4452,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 
 	// Constants are only needed sometimes.  Drop them in the fp16 case if the code doesn't need
 	// them, and if we don't otherwise need shaderFloat16.
-	bool needsFP16Constants = needsShaderFloat16 || needsSpecialConstants;
+	bool needsFP16Constants = needsShaderFloat16 || needsSpecialConstants || outFp16WithoutStorage;
 
 	if (!needsFP16Constants && float16FeatureRequired)
 	{
@@ -4192,7 +4538,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const OperationT
 		extensions.push_back("VK_KHR_shader_float16_int8");
 		vulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 	}
-	if (float16FeatureRequired)
+	if (float16FeatureRequired && !testCase.fp16Without16BitStorage)
 	{
 		extensions.push_back("VK_KHR_16bit_storage");
 		vulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;

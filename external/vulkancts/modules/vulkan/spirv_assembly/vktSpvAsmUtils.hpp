@@ -146,9 +146,10 @@ typedef de::SharedPtr<vk::Allocation>	AllocationSp;
 class Resource
 {
 public:
-	Resource(const BufferSp& buffer_, vk::VkDescriptorType descriptorType_ = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+	Resource(const BufferSp& buffer_, vk::VkDescriptorType descriptorType_ = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, void* userData_ = NULL)
 		: buffer(buffer_)
 		, descriptorType(descriptorType_)
+		, userData(userData_)
 	{
 	}
 
@@ -159,9 +160,13 @@ public:
 	virtual void					setDescriptorType	(vk::VkDescriptorType type)		{ descriptorType = type; }
 	virtual vk::VkDescriptorType	getDescriptorType	()	const						{ return descriptorType; }
 
+	virtual void					setUserData			(void* data)					{ userData = data; }
+	virtual void*					getUserData			() const						{ return userData; }
+
 private:
 	BufferSp				buffer;
 	vk::VkDescriptorType	descriptorType;
+	void*					userData;
 };
 
 typedef bool (*VerifyIOFunc) (const std::vector<Resource>&		inputs,
