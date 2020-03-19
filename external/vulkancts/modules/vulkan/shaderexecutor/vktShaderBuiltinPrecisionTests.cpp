@@ -4285,6 +4285,17 @@ typedef Modf< Signature<deFloat16, deFloat16, deFloat16> >	Modf16Bit;
 typedef Modf< Signature<double, double, double> >			Modf64Bit;
 
 template <class T>
+class ModfStruct : public Modf<T>
+{
+public:
+	virtual string		getName			(void) const	{ return "modfstruct"; }
+	virtual SpirVCaseT	getSpirvCase	(void) const	{ return SPIRV_CASETYPE_MODFSTRUCT; }
+};
+typedef ModfStruct< Signature<float, float, float> >				ModfStruct32Bit;
+typedef ModfStruct< Signature<deFloat16, deFloat16, deFloat16> >	ModfStruct16Bit;
+typedef ModfStruct< Signature<double, double, double> >				ModfStruct64Bit;
+
+template <class T>
 class Min : public PreciseFunc2<T> { public: Min (void) : PreciseFunc2<T> ("min", deMin) {} };
 template <class T>
 class Max : public PreciseFunc2<T> { public: Max (void) : PreciseFunc2<T> ("max", deMax) {} };
@@ -4491,6 +4502,20 @@ protected:
 		return 1;
 	}
 };
+typedef FrExp< Signature<float, float, int> >			Frexp32Bit;
+typedef FrExp< Signature<deFloat16, deFloat16, int> >	Frexp16Bit;
+typedef FrExp< Signature<double, double, int> >			Frexp64Bit;
+
+template <class T>
+class FrexpStruct : public FrExp<T>
+{
+public:
+	virtual string		getName			(void) const	{ return "frexpstruct"; }
+	virtual SpirVCaseT	getSpirvCase	(void) const	{ return SPIRV_CASETYPE_FREXPSTRUCT; }
+};
+typedef FrexpStruct< Signature<float, float, int> >				FrexpStruct32Bit;
+typedef FrexpStruct< Signature<deFloat16, deFloat16, int> >		FrexpStruct16Bit;
+typedef FrexpStruct< Signature<double, double, int> >			FrexpStruct64Bit;
 
 //Signature<float, float, int>
 //Signature<deFloat16, deFloat16, int>
@@ -6983,7 +7008,8 @@ MovePtr<const CaseFactories> createBuiltinCases ()
 	addScalarFactory<Mod32Bit>(*funcs, "mod", true);
 	addScalarFactory<FRem32Bit>(*funcs);
 
-	funcs->addFactory(createSimpleFuncCaseFactory<Modf32Bit>());
+	addScalarFactory<Modf32Bit>(*funcs);
+	addScalarFactory<ModfStruct32Bit>(*funcs);
 	addScalarFactory<Min< Signature<float, float, float> > >(*funcs);
 	addScalarFactory<Max< Signature<float, float, float> > >(*funcs);
 	addScalarFactory<Clamp< Signature<float, float, float, float> > >(*funcs);
@@ -7006,7 +7032,8 @@ MovePtr<const CaseFactories> createBuiltinCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse>()));
 
-	addScalarFactory<FrExp <Signature<float, float, int> > >(*funcs);
+	addScalarFactory<Frexp32Bit>(*funcs);
+	addScalarFactory<FrexpStruct32Bit>(*funcs);
 	addScalarFactory<LdExp <Signature<float, float, int> > >(*funcs);
 	addScalarFactory<Fma  <Signature<float, float, float, float> > >(*funcs);
 
@@ -7064,7 +7091,8 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 	addScalarFactory<Mod64Bit>(*funcs, "mod", true);
 	addScalarFactory<FRem64Bit>(*funcs);
 
-	funcs->addFactory(createSimpleFuncCaseFactory<Modf64Bit>());
+	addScalarFactory<Modf64Bit>(*funcs);
+	addScalarFactory<ModfStruct64Bit>(*funcs);
 	addScalarFactory<Min<Signature<double, double, double>>>(*funcs);
 	addScalarFactory<Max<Signature<double, double, double>>>(*funcs);
 	addScalarFactory<Clamp<Signature<double, double, double, double>>>(*funcs);
@@ -7087,7 +7115,8 @@ MovePtr<const CaseFactories> createBuiltinDoubleCases ()
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant64bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse64bit>()));
 
-	addScalarFactory<FrExp<Signature<double, double, int>>>(*funcs);
+	addScalarFactory<Frexp64Bit>(*funcs);
+	addScalarFactory<FrexpStruct64Bit>(*funcs);
 	addScalarFactory<LdExp<Signature<double, double, int>>>(*funcs);
 	addScalarFactory<Fma<Signature<double, double, double, double>>>(*funcs);
 
@@ -7142,7 +7171,8 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 	addScalarFactory<Mod16Bit>(*funcs, "mod", true);
 	addScalarFactory<FRem16Bit>(*funcs);
 
-	funcs->addFactory(createSimpleFuncCaseFactory<Modf16Bit>());
+	addScalarFactory<Modf16Bit>(*funcs);
+	addScalarFactory<ModfStruct16Bit>(*funcs);
 	addScalarFactory<Min< Signature<deFloat16, deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Max< Signature<deFloat16, deFloat16, deFloat16> > >(*funcs);
 	addScalarFactory<Clamp< Signature<deFloat16, deFloat16, deFloat16, deFloat16> > >(*funcs);
@@ -7164,7 +7194,8 @@ MovePtr<const CaseFactories> createBuiltinCases16Bit(void)
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Determinant16bit>()));
 	funcs->addFactory(SharedPtr<const CaseFactory>(new SquareMatrixFuncCaseFactory<Inverse16bit>()));
 
-	addScalarFactory<FrExp <Signature<deFloat16, deFloat16, int> > >(*funcs);
+	addScalarFactory<Frexp16Bit>(*funcs);
+	addScalarFactory<FrexpStruct16Bit>(*funcs);
 	addScalarFactory<LdExp <Signature<deFloat16, deFloat16, int> > >(*funcs);
 	addScalarFactory<Fma <Signature<deFloat16, deFloat16, deFloat16, deFloat16> > >(*funcs);
 
