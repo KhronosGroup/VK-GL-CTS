@@ -10606,6 +10606,61 @@ const map<string, string> getConvertCaseFragments (string instruction, const Con
 	return fragments;
 }
 
+const map<string, string> getConvertCaseFragmentsNoStorage(string instruction, const ConvertCase& convertCase)
+{
+	map<string, string> params = convertCase.m_asmTypes;
+	map<string, string> fragments;
+
+	params["instruction"] = instruction;
+	params["inDecorator"] = getByteWidthStr(convertCase.m_fromType);
+
+	const StringTemplate decoration(
+		"      OpDecorate %SSBOi DescriptorSet 0\n"
+		"      OpDecorate %SSBOo DescriptorSet 0\n"
+		"      OpDecorate %SSBOi Binding 0\n"
+		"      OpDecorate %SSBOo Binding 1\n"
+		"      OpDecorate %s_SSBOi Block\n"
+		"      OpDecorate %s_SSBOo Block\n"
+		"OpMemberDecorate %s_SSBOi 0 Offset 0\n"
+		"OpMemberDecorate %s_SSBOo 0 Offset 0\n");
+
+	const StringTemplate pre_main(
+		"${datatype_additional_decl:opt}"
+		"    %ptr_in = OpTypePointer StorageBuffer %${inStorageType}\n"
+		"   %ptr_out = OpTypePointer StorageBuffer %${outStorageType}\n"
+		"   %s_SSBOi = OpTypeStruct %${inStorageType}\n"
+		"   %s_SSBOo = OpTypeStruct %${outStorageType}\n"
+		" %ptr_SSBOi = OpTypePointer StorageBuffer %s_SSBOi\n"
+		" %ptr_SSBOo = OpTypePointer StorageBuffer %s_SSBOo\n"
+		"     %SSBOi = OpVariable %ptr_SSBOi StorageBuffer\n"
+		"     %SSBOo = OpVariable %ptr_SSBOo StorageBuffer\n");
+
+	const StringTemplate testfun(
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%iLoc      = OpAccessChain %ptr_in %SSBOi %c_u32_0\n"
+		"%oLoc      = OpAccessChain %ptr_out %SSBOo %c_u32_0\n"
+		"%inval      = OpLoad %${inStorageType} %iLoc\n"
+		"%in_cast    = ${inCast} %${inputType} %inval\n"
+		"%conv       = ${instruction} %${outputType} %in_cast\n"
+		"%out_cast   = ${outCast} %${outStorageType} %conv\n"
+		"              OpStore %oLoc %out_cast\n"
+		"              OpReturnValue %param\n"
+		"              OpFunctionEnd\n");
+
+	params["datatype_extensions"] =
+		params["datatype_extensions"] +
+		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n";
+
+	fragments["capability"] = params["datatype_capabilities"];
+	fragments["extension"] = params["datatype_extensions"];
+	fragments["decoration"] = decoration.specialize(params);
+	fragments["pre_main"] = pre_main.specialize(params);
+	fragments["testfun"] = testfun.specialize(params);
+	return fragments;
+}
+
 // Test for OpSConvert, OpUConvert, OpFConvert and OpConvert* in compute shaders
 tcu::TestCaseGroup* createConvertComputeTests (tcu::TestContext& testCtx, const string& instruction, const string& name)
 {
@@ -10637,7 +10692,7 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 
 	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
 	{
-		map<string, string>	fragments		= getConvertCaseFragments(instruction, *test);
+		map<string, string>	fragments		= (test->m_useStorageExt) ? getConvertCaseFragments(instruction, *test) : getConvertCaseFragmentsNoStorage(instruction,*test);
 		VulkanFeatures		vulkanFeatures;
 		GraphicsResources	resources;
 		vector<string>		extensions;
