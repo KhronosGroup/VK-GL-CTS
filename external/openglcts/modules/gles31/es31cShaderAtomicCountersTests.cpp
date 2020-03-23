@@ -722,8 +722,8 @@ public:
 		if (ptr != map_pointer_)
 		{
 			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "BUFFER_MAP_POINTER is " << reinterpret_cast<long>(static_cast<int*>(ptr))
-				<< " should be " << reinterpret_cast<long>(static_cast<int*>(map_pointer_)) << tcu::TestLog::EndMessage;
+				<< tcu::TestLog::Message << "BUFFER_MAP_POINTER is " << reinterpret_cast<deUintptr>(static_cast<int*>(ptr))
+				<< " should be " << reinterpret_cast<deUintptr>(static_cast<int*>(map_pointer_)) << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		return NO_ERROR;
