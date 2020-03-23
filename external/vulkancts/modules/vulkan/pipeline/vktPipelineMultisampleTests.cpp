@@ -43,6 +43,9 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "deUniquePtr.hpp"
@@ -53,6 +56,9 @@
 #include <sstream>
 #include <vector>
 #include <map>
+#include <memory>
+#include <algorithm>
+#include <set>
 
 namespace vkt
 {
@@ -3556,6 +3562,589 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::getSingleSampledImage (deUin
 	return readColorAttachment(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), *m_perSampleImages[sampleId]->m_image, m_colorFormat, m_renderSize.cast<deUint32>());
 }
 
+// Multisample tests with no attachments.
+class VariableRateTestCase : public vkt::TestCase
+{
+public:
+	using Params = std::vector<vk::VkSampleCountFlagBits>;
+
+	struct PushConstants
+	{
+		int width;
+		int height;
+		int samples;
+	};
+
+	static const deInt32 kWidth		= 256u;
+	static const deInt32 kHeight	= 256u;
+
+							VariableRateTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params);
+	virtual					~VariableRateTestCase		(void) {}
+
+	virtual void			initPrograms				(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance				(Context& context) const;
+	virtual void			checkSupport				(Context& context) const;
+
+private:
+	Params m_params;
+};
+
+class VariableRateTestInstance : public vkt::TestInstance
+{
+public:
+	using Params = VariableRateTestCase::Params;
+
+								VariableRateTestInstance	(Context& context, const Params& params);
+	virtual						~VariableRateTestInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate						(void);
+private:
+	Params m_params;
+};
+
+VariableRateTestCase::VariableRateTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
+	: vkt::TestCase	(testCtx, name, description)
+	, m_params		(params)
+{}
+
+void VariableRateTestCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::stringstream vertSrc;
+
+	vertSrc	<< "#version 450\n"
+			<< "\n"
+			<< "layout(location=0) in vec2 inPos;\n"
+			<< "\n"
+			<< "void main() {\n"
+			<< "    gl_Position = vec4(inPos, 0.0, 1.0);\n"
+			<< "}\n"
+			;
+
+	std::stringstream fragSrc;
+
+	fragSrc	<< "#version 450\n"
+			<< "\n"
+			<< "layout(set=0, binding=0, std430) buffer OutBuffer {\n"
+			<< "    int coverage[];\n"
+			<< "} out_buffer;\n"
+			<< "\n"
+			<< "layout(push_constant) uniform PushConstants {\n"
+			<< "    int width;\n"
+			<< "    int height;\n"
+			<< "    int samples;\n"
+			<< "} push_constants;\n"
+			<< "\n"
+			<< "void main() {\n"
+			<< "   ivec2 coord = ivec2(floor(gl_FragCoord.xy));\n"
+			<< "   int pos = ((coord.y * push_constants.width) + coord.x) * push_constants.samples + int(gl_SampleID);\n"
+			<< "   out_buffer.coverage[pos] = 1;\n"
+			<< "}\n"
+			;
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(vertSrc.str());
+	programCollection.glslSources.add("frag") << glu::FragmentSource(fragSrc.str());
+}
+
+TestInstance* VariableRateTestCase::createInstance (Context& context) const
+{
+	return new VariableRateTestInstance(context, m_params);
+}
+
+void VariableRateTestCase::checkSupport (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	const auto	features		= vk::getPhysicalDeviceFeatures(vki, physicalDevice);
+	if (!features.variableMultisampleRate)
+		TCU_THROW(NotSupportedError, "Variable multisample rate not supported");
+
+	// Make sure all sample counts are supported.
+	const auto	properties		= vk::getPhysicalDeviceProperties(vki, physicalDevice);
+	const auto&	supportedCounts	= properties.limits.framebufferNoAttachmentsSampleCounts;
+
+	for (const auto count : m_params)
+	{
+		if ((supportedCounts & count) == 0u)
+			TCU_THROW(NotSupportedError, "Sample count combination not supported");
+	}
+}
+
+VariableRateTestInstance::VariableRateTestInstance (Context& context, const Params& params)
+	: vkt::TestInstance(context)
+	, m_params(params)
+{
+}
+
+void zeroOutAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, vk::VkDeviceSize size)
+{
+	auto& alloc = buffer.getAllocation();
+	deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(size));
+	vk::flushAlloc(vkd, device, alloc);
+}
+
+tcu::TestStatus VariableRateTestInstance::iterate (void)
+{
+	using PushConstants = VariableRateTestCase::PushConstants;
+
+	const auto&	vkd			= m_context.getDeviceInterface();
+	const auto	device		= m_context.getDevice();
+	auto&		allocator	= m_context.getDefaultAllocator();
+	const auto&	queue		= m_context.getUniversalQueue();
+	const auto	queueIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const vk::VkDeviceSize kWidth	= static_cast<vk::VkDeviceSize>(VariableRateTestCase::kWidth);
+	const vk::VkDeviceSize kHeight	= static_cast<vk::VkDeviceSize>(VariableRateTestCase::kHeight);
+
+	const auto kWidth32		= static_cast<deUint32>(kWidth);
+	const auto kHeight32	= static_cast<deUint32>(kHeight);
+
+	std::vector<std::unique_ptr<vk::BufferWithMemory>>	referenceBuffers;
+	std::vector<std::unique_ptr<vk::BufferWithMemory>>	outputBuffers;
+	std::vector<size_t>									bufferNumElements;
+	std::vector<vk::VkDeviceSize>						bufferSizes;
+
+	// Create reference and output buffers.
+	for (const auto count : m_params)
+	{
+		bufferNumElements.push_back(static_cast<size_t>(kWidth * kHeight * count));
+		bufferSizes.push_back(bufferNumElements.back() * sizeof(deInt32));
+		const auto bufferCreateInfo = vk::makeBufferCreateInfo(bufferSizes.back(), vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+		referenceBuffers.emplace_back	(new vk::BufferWithMemory{vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible});
+		outputBuffers.emplace_back		(new vk::BufferWithMemory{vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible});
+	}
+
+	// Descriptor set layout.
+	vk::DescriptorSetLayoutBuilder builder;
+	builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto descriptorSetLayout = builder.build(vkd, device);
+
+	// Pipeline layout.
+	const vk::VkPushConstantRange pushConstantRange =
+	{
+		vk::VK_SHADER_STAGE_FRAGMENT_BIT,				//	VkShaderStageFlags	stageFlags;
+		0u,												//	deUint32			offset;
+		static_cast<deUint32>(sizeof(PushConstants)),	//	deUint32			size;
+	};
+
+	const vk::VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,											//	const void*						pNext;
+		0u,													//	VkPipelineLayoutCreateFlags		flags;
+		1u,													//	deUint32						setLayoutCount;
+		&descriptorSetLayout.get(),							//	const VkDescriptorSetLayout*	pSetLayouts;
+		1u,													//	deUint32						pushConstantRangeCount;
+		&pushConstantRange,									//	const VkPushConstantRange*		pPushConstantRanges;
+	};
+	const auto pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
+
+	// Empty render pass with single subpass.
+	const vk::VkSubpassDescription emptySubpassDescription =
+	{
+		0u,										//	VkSubpassDescriptionFlags		flags;
+		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,	//	VkPipelineBindPoint				pipelineBindPoint;
+		0u,										//	deUint32						inputAttachmentCount;
+		nullptr,								//	const VkAttachmentReference*	pInputAttachments;
+		0u,										//	deUint32						colorAttachmentCount;
+		nullptr,								//	const VkAttachmentReference*	pColorAttachments;
+		nullptr,								//	const VkAttachmentReference*	pResolveAttachments;
+		nullptr,								//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,										//	deUint32						preserveAttachmentCount;
+		nullptr,								//	const deUint32*					pPreserveAttachments;
+	};
+
+	vk::VkRenderPassCreateInfo renderPassCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,										//	const void*						pNext;
+		0u,												//	VkRenderPassCreateFlags			flags;
+		0u,												//	deUint32						attachmentCount;
+		nullptr,										//	const VkAttachmentDescription*	pAttachments;
+		1u,												//	deUint32						subpassCount;
+		&emptySubpassDescription,						//	const VkSubpassDescription*		pSubpasses;
+		0u,												//	deUint32						dependencyCount;
+		nullptr,										//	const VkSubpassDependency*		pDependencies;
+	};
+	const auto emptyRenderPassSingleSubpass = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
+
+	// Renderpass with multiple subpasses.
+	std::vector<vk::VkSubpassDescription> emptySubpasses;
+
+	for (size_t i = 0; i < m_params.size(); ++i)
+		emptySubpasses.push_back(emptySubpassDescription);
+
+	renderPassCreateInfo.subpassCount = static_cast<deUint32>(emptySubpasses.size());
+	renderPassCreateInfo.pSubpasses = emptySubpasses.data();
+
+	const auto emptyRenderPassMultiplePasses = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
+
+	// Framebuffers.
+	vk::VkFramebufferCreateInfo framebufferCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	//	VkStructureType				sType;
+		nullptr,										//	const void*					pNext;
+		0u,												//	VkFramebufferCreateFlags	flags;
+		emptyRenderPassSingleSubpass.get(),				//	VkRenderPass				renderPass;
+		0u,												//	deUint32					attachmentCount;
+		nullptr,										//	const VkImageView*			pAttachments;
+		kWidth32,										//	deUint32					width;
+		kHeight32,										//	deUint32					height;
+		1u,												//	deUint32					layers;
+	};
+	const auto emptyFramebufferSingleSubpass = vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+
+	framebufferCreateInfo.renderPass = emptyRenderPassMultiplePasses.get();
+	const auto emptyFramebufferMultiplePasses = vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+
+	// Shader modules and stages.
+	const auto vertModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+	std::vector<vk::VkPipelineShaderStageCreateInfo> shaderStages;
+
+	vk::VkPipelineShaderStageCreateInfo shaderStageCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineShaderStageCreateFlags	flags;
+		vk::VK_SHADER_STAGE_VERTEX_BIT,								//	VkShaderStageFlagBits				stage;
+		vertModule.get(),											//	VkShaderModule						module;
+		"main",														//	const char*							pName;
+		nullptr,													//	const VkSpecializationInfo*			pSpecializationInfo;
+	};
+
+	shaderStages.push_back(shaderStageCreateInfo);
+	shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	shaderStageCreateInfo.module = fragModule.get();
+	shaderStages.push_back(shaderStageCreateInfo);
+
+	// Vertices, input state and assembly.
+	const std::vector<tcu::Vec2> vertices =
+	{
+		{ -0.987f, -0.964f },
+		{  0.982f, -0.977f },
+		{  0.005f,  0.891f },
+	};
+
+	const auto vertexBinding	= vk::makeVertexInputBindingDescription(0u, static_cast<deUint32>(sizeof(decltype(vertices)::value_type)), vk::VK_VERTEX_INPUT_RATE_VERTEX);
+	const auto vertexAttribute	= vk::makeVertexInputAttributeDescription(0u, 0u, vk::VK_FORMAT_R32G32_SFLOAT, 0u);
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,														//	const void*									pNext;
+		0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+		1u,																//	deUint32									vertexBindingDescriptionCount;
+		&vertexBinding,													//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		1u,																//	deUint32									vertexAttributeDescriptionCount;
+		&vertexAttribute,												//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	const vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,															//	const void*								pNext;
+		0u,																	//	VkPipelineInputAssemblyStateCreateFlags	flags;
+		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							//	VkPrimitiveTopology						topology;
+		VK_FALSE,															//	VkBool32								primitiveRestartEnable;
+	};
+
+	// Graphics pipelines to create output buffers.
+	const auto viewport	= vk::makeViewport(kWidth32, kHeight32);
+	const auto scissor	= vk::makeRect2D(kWidth32, kHeight32);
+
+	const vk::VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	//	VkStructureType						sType;
+		nullptr,													//	const void*							pNext;
+		0u,															//	VkPipelineViewportStateCreateFlags	flags;
+		1u,															//	deUint32							viewportCount;
+		&viewport,													//	const VkViewport*					pViewports;
+		1u,															//	deUint32							scissorCount;
+		&scissor,													//	const VkRect2D*						pScissors;
+	};
+
+	const vk::VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineRasterizationStateCreateFlags	flags;
+		VK_FALSE,														//	VkBool32								depthClampEnable;
+		VK_FALSE,														//	VkBool32								rasterizerDiscardEnable;
+		vk::VK_POLYGON_MODE_FILL,										//	VkPolygonMode							polygonMode;
+		vk::VK_CULL_MODE_NONE,											//	VkCullModeFlags							cullMode;
+		vk::VK_FRONT_FACE_CLOCKWISE,									//	VkFrontFace								frontFace;
+		VK_FALSE,														//	VkBool32								depthBiasEnable;
+		0.0f,															//	float									depthBiasConstantFactor;
+		0.0f,															//	float									depthBiasClamp;
+		0.0f,															//	float									depthBiasSlopeFactor;
+		1.0f,															//	float									lineWidth;
+	};
+
+	vk::VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	//	VkStructureType							sType;
+		nullptr,														//	const void*								pNext;
+		0u,																//	VkPipelineMultisampleStateCreateFlags	flags;
+		vk::VK_SAMPLE_COUNT_1_BIT,										//	VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,														//	VkBool32								sampleShadingEnable;
+		0.0f,															//	float									minSampleShading;
+		nullptr,														//	const VkSampleMask*						pSampleMask;
+		VK_FALSE,														//	VkBool32								alphaToCoverageEnable;
+		VK_FALSE,														//	VkBool32								alphaToOneEnable;
+	};
+
+	std::vector<vk::Move<vk::VkPipeline>> outputPipelines;
+
+	for (const auto samples : m_params)
+	{
+		multisampleStateCreateInfo.rasterizationSamples = samples;
+
+		const vk::VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	//	VkStructureType									sType;
+			nullptr,												//	const void*										pNext;
+			0u,														//	VkPipelineCreateFlags							flags;
+			static_cast<deUint32>(shaderStages.size()),				//	deUint32										stageCount;
+			shaderStages.data(),									//	const VkPipelineShaderStageCreateInfo*			pStages;
+			&vertexInputStateCreateInfo,							//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+			&inputAssemblyStateCreateInfo,							//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+			nullptr,												//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
+			&viewportStateCreateInfo,								//	const VkPipelineViewportStateCreateInfo*		pViewportState;
+			&rasterizationStateCreateInfo,							//	const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
+			&multisampleStateCreateInfo,							//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+			nullptr,												//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
+			nullptr,												//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+			nullptr,												//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			pipelineLayout.get(),									//	VkPipelineLayout								layout;
+			emptyRenderPassSingleSubpass.get(),						//	VkRenderPass									renderPass;
+			0u,														//	deUint32										subpass;
+			DE_NULL,												//	VkPipeline										basePipelineHandle;
+			0,														//	deInt32											basePipelineIndex;
+		};
+
+		outputPipelines.push_back(vk::createGraphicsPipeline(vkd, device, DE_NULL, &graphicsPipelineCreateInfo));
+	}
+
+	// Graphics pipelines with variable rate but using several subpasses.
+	std::vector<vk::Move<vk::VkPipeline>> referencePipelines;
+
+	for (size_t i = 0; i < m_params.size(); ++i)
+	{
+		multisampleStateCreateInfo.rasterizationSamples = m_params[i];
+
+		const vk::VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	//	VkStructureType									sType;
+			nullptr,												//	const void*										pNext;
+			0u,														//	VkPipelineCreateFlags							flags;
+			static_cast<deUint32>(shaderStages.size()),				//	deUint32										stageCount;
+			shaderStages.data(),									//	const VkPipelineShaderStageCreateInfo*			pStages;
+			&vertexInputStateCreateInfo,							//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+			&inputAssemblyStateCreateInfo,							//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+			nullptr,												//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
+			&viewportStateCreateInfo,								//	const VkPipelineViewportStateCreateInfo*		pViewportState;
+			&rasterizationStateCreateInfo,							//	const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
+			&multisampleStateCreateInfo,							//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+			nullptr,												//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
+			nullptr,												//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+			nullptr,												//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+			pipelineLayout.get(),									//	VkPipelineLayout								layout;
+			emptyRenderPassMultiplePasses.get(),					//	VkRenderPass									renderPass;
+			static_cast<deUint32>(i),								//	deUint32										subpass;
+			DE_NULL,												//	VkPipeline										basePipelineHandle;
+			0,														//	deInt32											basePipelineIndex;
+		};
+
+		referencePipelines.push_back(vk::createGraphicsPipeline(vkd, device, DE_NULL, &graphicsPipelineCreateInfo));
+	}
+
+	// Prepare vertex, reference and output buffers.
+	const auto				vertexBufferSize		= vertices.size() * sizeof(decltype(vertices)::value_type);
+	const auto				vertexBufferCreateInfo	= vk::makeBufferCreateInfo(static_cast<VkDeviceSize>(vertexBufferSize), vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	vk::BufferWithMemory	vertexBuffer			{vkd, device, allocator, vertexBufferCreateInfo, MemoryRequirement::HostVisible};
+	auto&					vertexAlloc				= vertexBuffer.getAllocation();
+
+	deMemcpy(vertexAlloc.getHostPtr(), vertices.data(), vertexBufferSize);
+	vk::flushAlloc(vkd, device, vertexAlloc);
+
+	for (size_t i = 0; i < referenceBuffers.size(); ++i)
+	{
+		zeroOutAndFlush(vkd, device, *referenceBuffers[i], bufferSizes[i]);
+		zeroOutAndFlush(vkd, device, *outputBuffers[i], bufferSizes[i]);
+	}
+
+	// Prepare descriptor sets.
+	const deUint32				totalSets		= static_cast<deUint32>(referenceBuffers.size() * 2u);
+	vk::DescriptorPoolBuilder	poolBuilder;
+	poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, static_cast<deUint32>(referenceBuffers.size() * 2u));
+	const auto descriptorPool = poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, totalSets);
+
+	std::vector<vk::Move<vk::VkDescriptorSet>> referenceSets	(referenceBuffers.size());
+	std::vector<vk::Move<vk::VkDescriptorSet>> outputSets		(outputBuffers.size());
+
+	for (auto& set : referenceSets)
+		set = vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+	for (auto& set : outputSets)
+		set = vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	vk::DescriptorSetUpdateBuilder updateBuilder;
+
+	for (size_t i = 0; i < referenceSets.size(); ++i)
+	{
+		const auto descriptorBufferInfo = vk::makeDescriptorBufferInfo(referenceBuffers[i]->get(), 0u, bufferSizes[i]);
+		updateBuilder.writeSingle(referenceSets[i].get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorBufferInfo);
+	}
+	for (size_t i = 0; i < outputSets.size(); ++i)
+	{
+		const auto descriptorBufferInfo = vk::makeDescriptorBufferInfo(outputBuffers[i]->get(), 0u, bufferSizes[i]);
+		updateBuilder.writeSingle(outputSets[i].get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorBufferInfo);
+	}
+
+	updateBuilder.update(vkd, device);
+
+	// Prepare command pool.
+	const auto cmdPool		= vk::makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr	= vk::allocateCommandBuffer(vkd , device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	vk::VkBufferMemoryBarrier storageBufferDevToHostBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//	VkStructureType	sType;
+		nullptr,										//	const void*		pNext;
+		vk::VK_ACCESS_SHADER_WRITE_BIT,					//	VkAccessFlags	srcAccessMask;
+		vk::VK_ACCESS_HOST_READ_BIT,					//	VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,						//	deUint32		srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,						//	deUint32		dstQueueFamilyIndex;
+		DE_NULL,										//	VkBuffer		buffer;
+		0u,												//	VkDeviceSize	offset;
+		VK_WHOLE_SIZE,									//	VkDeviceSize	size;
+	};
+
+	// Record command buffer.
+	const vk::VkDeviceSize	vertexBufferOffset	= 0u;
+	const auto				renderArea			= vk::makeRect2D(kWidth32, kHeight32);
+	PushConstants			pushConstants		= { static_cast<int>(kWidth), static_cast<int>(kHeight), 0 };
+
+	vk::beginCommandBuffer(vkd, cmdBuffer);
+
+	// Render output buffers.
+	vk::beginRenderPass(vkd, cmdBuffer, emptyRenderPassSingleSubpass.get(), emptyFramebufferSingleSubpass.get(), renderArea);
+	for (size_t i = 0; i < outputBuffers.size(); ++i)
+	{
+		vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, outputPipelines[i].get());
+		vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &outputSets[i].get(), 0u, nullptr);
+		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+		pushConstants.samples = static_cast<int>(m_params[i]);
+		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size, &pushConstants);
+		vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
+	}
+	vk::endRenderPass(vkd, cmdBuffer);
+	for (size_t i = 0; i < outputBuffers.size(); ++i)
+	{
+		storageBufferDevToHostBarrier.buffer = outputBuffers[i]->get();
+		vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &storageBufferDevToHostBarrier, 0u, nullptr);
+	}
+
+	// Render reference buffers.
+	vk::beginRenderPass(vkd, cmdBuffer, emptyRenderPassMultiplePasses.get(), emptyFramebufferMultiplePasses.get(), renderArea);
+	for (size_t i = 0; i < referenceBuffers.size(); ++i)
+	{
+		if (i > 0)
+			vkd.cmdNextSubpass(cmdBuffer, vk::VK_SUBPASS_CONTENTS_INLINE);
+		vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, referencePipelines[i].get());
+		vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &referenceSets[i].get(), 0u, nullptr);
+		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+		pushConstants.samples = static_cast<int>(m_params[i]);
+		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size, &pushConstants);
+		vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
+	}
+	vk::endRenderPass(vkd, cmdBuffer);
+	for (size_t i = 0; i < referenceBuffers.size(); ++i)
+	{
+		storageBufferDevToHostBarrier.buffer = referenceBuffers[i]->get();
+		vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &storageBufferDevToHostBarrier, 0u, nullptr);
+	}
+
+	vk::endCommandBuffer(vkd, cmdBuffer);
+
+	// Run all pipelines.
+	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Invalidate reference allocs.
+#undef LOG_BUFFER_CONTENTS
+#ifdef LOG_BUFFER_CONTENTS
+	auto& log = m_context.getTestContext().getLog();
+#endif
+	for (size_t i = 0; i < referenceBuffers.size(); ++i)
+	{
+		auto& buffer	= referenceBuffers[i];
+		auto& alloc		= buffer->getAllocation();
+		vk::invalidateAlloc(vkd, device, alloc);
+
+#ifdef LOG_BUFFER_CONTENTS
+		std::vector<deInt32> bufferValues(bufferNumElements[i]);
+		deMemcpy(bufferValues.data(), alloc.getHostPtr(), bufferSizes[i]);
+
+		std::ostringstream msg;
+		for (const auto value : bufferValues)
+			msg << " " << value;
+		log << tcu::TestLog::Message << "Reference buffer values with " << m_params[i] << " samples:" << msg.str() << tcu::TestLog::EndMessage;
+#endif
+	}
+
+	for (size_t i = 0; i < outputBuffers.size(); ++i)
+	{
+		auto& buffer	= outputBuffers[i];
+		auto& alloc		= buffer->getAllocation();
+		vk::invalidateAlloc(vkd, device, alloc);
+
+#ifdef LOG_BUFFER_CONTENTS
+		std::vector<deInt32> bufferValues(bufferNumElements[i]);
+		deMemcpy(bufferValues.data(), alloc.getHostPtr(), bufferSizes[i]);
+
+		std::ostringstream msg;
+		for (const auto value : bufferValues)
+			msg << " " << value;
+		log << tcu::TestLog::Message << "Output buffer values with " << m_params[i] << " samples:" << msg.str() << tcu::TestLog::EndMessage;
+#endif
+
+		if (deMemCmp(alloc.getHostPtr(), referenceBuffers[i]->getAllocation().getHostPtr(), static_cast<size_t>(bufferSizes[i])) != 0)
+			return tcu::TestStatus::fail("Buffer mismatch in output buffer " + de::toString(i));
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+using ElementsVector	= std::vector<vk::VkSampleCountFlagBits>;
+using CombinationVector	= std::vector<ElementsVector>;
+
+void combinationsRecursive(const ElementsVector& elements, size_t requestedSize, CombinationVector& solutions, ElementsVector& partial)
+{
+	if (partial.size() == requestedSize)
+		solutions.push_back(partial);
+	else
+	{
+		for (const auto& elem : elements)
+		{
+			partial.push_back(elem);
+			combinationsRecursive(elements, requestedSize, solutions, partial);
+			partial.pop_back();
+		}
+	}
+}
+
+CombinationVector combinations(const ElementsVector& elements, size_t requestedSize)
+{
+	CombinationVector solutions;
+	ElementsVector partial;
+
+	combinationsRecursive(elements, requestedSize, solutions, partial);
+	return solutions;
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
@@ -3918,6 +4507,51 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 		}
 		multisampleTests->addChild(sampleMaskWithDepthTestGroup.release());
+	}
+
+	{
+		static const std::vector<vk::VkSampleCountFlagBits> kSampleCounts =
+		{
+			vk::VK_SAMPLE_COUNT_1_BIT,
+			vk::VK_SAMPLE_COUNT_2_BIT,
+			vk::VK_SAMPLE_COUNT_4_BIT,
+			vk::VK_SAMPLE_COUNT_8_BIT,
+			vk::VK_SAMPLE_COUNT_16_BIT,
+			vk::VK_SAMPLE_COUNT_32_BIT,
+			vk::VK_SAMPLE_COUNT_64_BIT,
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> variableRateGroup(new tcu::TestCaseGroup(testCtx, "variable_rate", "Tests for multisample variable rate in subpasses"));
+
+		// 2 and 3 subpasses should be good enough.
+		static const std::vector<size_t> combinationSizes = { 2, 3 };
+
+		for (const auto size : combinationSizes)
+		{
+			const auto combs = combinations(kSampleCounts, size);
+			for (const auto& comb : combs)
+			{
+				// Check sample counts actually vary between some of the subpasses.
+				std::set<vk::VkSampleCountFlagBits> uniqueVals(begin(comb), end(comb));
+				if (uniqueVals.size() < 2)
+					continue;
+
+				std::ostringstream name;
+				std::ostringstream desc;
+
+				bool first = true;
+				for (const auto& count : comb)
+				{
+					name << (first ? "" : "_") << count;
+					desc << (first ? "Subpasses with counts " : ", ") << count;
+					first = false;
+				}
+
+				variableRateGroup->addChild(new VariableRateTestCase(testCtx, name.str(), desc.str(), comb));
+			}
+		}
+
+		multisampleTests->addChild(variableRateGroup.release());
 	}
 
 	return multisampleTests.release();
