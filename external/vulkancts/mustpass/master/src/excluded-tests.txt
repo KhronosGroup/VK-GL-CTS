@@ -17,10 +17,6 @@ dEQP-VK.pipeline.multisample.*.primitive_point_1px_sparse
 # Test shader length is excessive, excluding until such time as the test case can be re-visited.
 dEQP-VK.ssbo.layout.random.scalar.75
 
-# VK-GL-CTS 1024
-dEQP-VK.rasterization.interpolation_multisample_16_bit.lines_wide
-dEQP-VK.rasterization.interpolation_multisample_16_bit.non_strict_lines_wide
-dEQP-VK.rasterization.primitives_multisample_16_bit.no_stipple.non_strict_lines_wide
 
 # VK-GL-CTS 2157, CL 5278
 # Excluded them as Intel HW is failing these tests.
