@@ -177,7 +177,7 @@ Test log will be written into TestResults.qpa
 ### Linux
 
 	cd <builddir>/external/vulkancts/modules/vulkan
-	./deqp-vk --deqp-vk-caselist-file=...
+	./deqp-vk --deqp-caselist-file=...
 
 ### Android
 
