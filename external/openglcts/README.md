@@ -507,7 +507,7 @@ In addition to the detailed `*.qpa` output files, the Android port of the CTS
 logs a summary of the test run, including the pass/fail status of each test.
 This summary can be viewed using the Android *logcat* utility.
 
-See Section [Running Subsets](#running-subsets) above for details on command
+See Section [Running Subsets](#running-subsets) below for details on command
 line parameters.
 
 ### Running Subsets
@@ -634,7 +634,7 @@ Full list of parameters for the `glcts` binary:
     Enable or disable logging of result images
     default: 'enable'
 
-  --deqp-log-shaders=[enable|disable]
+  --deqp-log-shader-sources=[enable|disable]
     Enable or disable logging of shaders
     default: 'enable'
 
