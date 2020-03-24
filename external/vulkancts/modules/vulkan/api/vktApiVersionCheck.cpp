@@ -127,8 +127,8 @@ public:
 								APIEntryPointsTestInstance	(Context&				ctx)
 									: TestInstance	(ctx)
 	{
-
 	}
+
 	virtual tcu::TestStatus		iterate						(void)
 	{
 		tcu::TestLog&						log				= m_context.getTestContext().getLog();
@@ -450,7 +450,7 @@ private:
 		const deUint32 startingQuantity = failsQuantity;
 		for (deUint32 ndx = 0u; ndx < testsArr.size(); ++ndx)
 		{
-			if (deStringEqual(testsArr[ndx].first, "vkGetInstanceProcAddr") || deStringEqual(testsArr[ndx].first, "vkEnumerateInstanceVersion"))
+			if (deStringEqual(testsArr[ndx].first, "vkGetInstanceProcAddr") && m_context.getUsedApiVersion() < VK_API_VERSION_1_2)
 				continue;
 
 			const deUint32 functionType	= testsArr[ndx].second;
