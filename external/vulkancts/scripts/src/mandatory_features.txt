@@ -35,6 +35,7 @@ VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR	pipelineExecutableInfo		
 VkPhysicalDeviceSubgroupSizeControlFeaturesEXT			subgroupSizeControl									REQUIREMENTS ( VK_EXT_subgroup_size_control )
 VkPhysicalDeviceSubgroupSizeControlFeaturesEXT			computeFullSubgroups								REQUIREMENTS ( VK_EXT_subgroup_size_control )
 VkPhysicalDeviceVulkan12Features						subgroupBroadcastDynamicId							REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
+VkPhysicalDeviceVulkan12Features						shaderSubgroupExtendedTypes							REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features						imagelessFramebuffer								REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features						uniformBufferStandardLayout							REQUIREMENTS ( "ApiVersion(1, 2, 0)" )
 VkPhysicalDeviceVulkan12Features						separateDepthStencilLayouts							REQUIREMENTS ( "ApiVersion(1, 2, 0)" )

@@ -401,6 +401,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 
 	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
 	{
+		if ( physicalDeviceVulkan12Features.shaderSubgroupExtendedTypes == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderSubgroupExtendedTypes not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( context.contextSupports(vk::ApiVersion(1, 2, 0)) )
+	{
 		if ( physicalDeviceVulkan12Features.imagelessFramebuffer == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature imagelessFramebuffer not supported" << tcu::TestLog::EndMessage;
