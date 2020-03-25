@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayTracingTests.hpp"
+#include "vktRayTracingCallableShadersTests.hpp"
 #include "vktRayTracingTraceRaysIndirectTests.hpp"
 
 #include "deUniquePtr.hpp"
@@ -37,6 +38,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing", "Ray tracing tests"));
 
+	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysIndirectTests(testCtx));
 
 	return group.release();
