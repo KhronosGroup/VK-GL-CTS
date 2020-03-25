@@ -1,0 +1,53 @@
+#!amber
+# Copyright 2020 The Amber Authors.
+# Copyright 2020 The Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vert_shader GLSL
+#version 430
+
+layout(location = 0) in vec4 position;
+layout(location = 1) out vec4 frag_color;
+
+void main() {
+  gl_Position = position;
+  frag_color = position * 0.5;
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) out vec4 color_out;
+layout(location = 1) in vec4 frag_color;
+void main() {
+  ivec2 iv = ivec2(frag_color.xy * 256);
+  if (((iv.y / 2) & 64) == 64)
+    color_out = vec4(1, 0, 0, 1);
+  else
+    color_out = vec4(0, 1, 1, 1);
+}
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics my_pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+RUN my_pipeline DRAW_RECT POS 0 0 SIZE 250 250
+EXPECT framebuffer IDX 0 220 SIZE 30 30 EQ_RGBA 0 255 255 255
+EXPECT framebuffer IDX 0 0 SIZE 30 30 EQ_RGBA 255 0 0 255
+

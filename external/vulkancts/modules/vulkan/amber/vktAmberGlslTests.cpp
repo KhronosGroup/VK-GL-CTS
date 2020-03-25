@@ -39,7 +39,8 @@ tcu::TestCaseGroup*	createCombinedOperationsGroup (tcu::TestContext& testCtx)
 	static const std::string										kGroupName				= "combined_operations";
 	static const std::vector<std::pair<std::string, std::string>>	combinedOperationsTests	=
 	{
-		{ "notxor",	"Bitwise negation of a bitwise xor operation"	},
+		{ "notxor",			"Bitwise negation of a bitwise xor operation"		},
+		{ "negintdivand",	"Bitwise and of a negative value that was divided"	},
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str(), "Combined operations test group"}};
