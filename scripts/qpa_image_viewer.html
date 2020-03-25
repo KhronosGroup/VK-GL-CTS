@@ -1,0 +1,288 @@
+<!--
+--------------------------------------
+HTML QPA Image Viewer
+--------------------------------------
+
+Copyright (c) 2020 The Khronos Group Inc.
+Copyright (c) 2020 Valve Corporation.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Load PNGs from QPA output</title>
+        <style>
+            body {
+                background: white;
+                text-align: left;
+                font-family: sans-serif;
+            }
+            h1 {
+                margin-top: 2ex;
+            }
+            h2 {
+                font-size: large;
+            }
+            figure {
+                display: flex;
+                flex-direction: column;
+            }
+            img {
+                margin-right: 1ex;
+                margin-bottom: 1ex;
+                /* Attempt to zoom images using the nearest-neighbor scaling
+                algorithm. Unfortunately, not supported under Firefox at the
+                time this text is being written. */
+                image-rendering: pixelated;
+                /* Use a black background color for images in case some pixels
+                are transparent to some degree. In the worst case, the image
+                could appear to be missing. */
+                background: black;
+            }
+            button {
+                margin: 1ex;
+                border: none;
+                border-radius: .5ex;
+                padding: 1ex;
+                background-color: steelblue;
+                color: white;
+                font-size: large;
+            }
+            button:hover {
+                opacity: .8;
+            }
+            #clearimagesbutton {
+                background-color: seagreen;
+            }
+            select {
+                font-size: large;
+                padding: 1ex;
+                border-radius: .5ex;
+                border: 1px solid darkgrey;
+            }
+            select:hover {
+                opacity: .8;
+            }
+            .loadoption {
+                text-align: center;
+                margin: 1ex;
+                padding: 2ex;
+                border: 1px solid darkgrey;
+                border-radius: 1ex;
+            }
+            #options {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            #qpatext {
+                display: block;
+                min-width: 80ex;
+                max-width: 132ex;
+                min-height: 25ex;
+                max-height: 25ex;
+                margin: 1ex auto;
+            }
+            #fileselector {
+                display: none;
+            }
+            #zoomandclear {
+                margin: 2ex;
+            }
+            #images {
+                margin: 2ex;
+                display: flex;
+                flex-direction: column;
+            }
+            .imagesblock {
+                display: flex;
+                flex-wrap: wrap;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Load PNGs from QPA output</h1>
+
+        <div id="options">
+            <div class="loadoption">
+                <h2>Option 1: Load local QPA files</h2>
+                <!-- The file selector text cannot be changed, so we use a hidden selector trick. -->
+                <button id="fileselectorbutton">&#x1F4C2; Load files</button>
+                <input id="fileselector" type="file" multiple>
+            </div>
+
+            <div class="loadoption">
+                <h2>Option 2: Paste QPA text or text extract containing &lt;Image&gt; elements below and click "Load images"</h2>
+                <textarea id="qpatext"></textarea>
+                <button id="loadimagesbutton">&#x1F4C3; Load images</button>
+            </div>
+        </div>
+
+        <div id="zoomandclear">
+            &#x1F50E; Image zoom
+            <select id="zoomselect">
+                <option value="1" selected>1x</option>
+                <option value="2">2x</option>
+                <option value="4">4x</option>
+                <option value="8">8x</option>
+                <option value="16">16x</option>
+                <option value="32">32x</option>
+            </select>
+            <button id="clearimagesbutton">&#x267B; Clear images</button>
+        </div>
+
+        <div id="images"></div>
+
+        <script>
+            // Returns zoom factor as a number.
+            var getSelectedZoom = function () {
+                return new Number(document.getElementById("zoomselect").value);
+            }
+
+            // Scales a given image with the selected zoom factor.
+            var scaleSingleImage = function (img) {
+                var factor = getSelectedZoom();
+                img.style.width = (img.naturalWidth * factor) + "px";
+                img.style.height = (img.naturalHeight * factor) + "px";
+            }
+
+            // Rescales all <img> elements in the page. Used after changing the selected zoom.
+            var rescaleImages = function () {
+                var imageList = document.getElementsByTagName("img");
+                for (var i = 0; i < imageList.length; i++) {
+                    scaleSingleImage(imageList[i])
+                }
+            }
+
+            // Removes everything contained in the images <div>.
+            var clearImages = function () {
+                var imagesNode = document.getElementById("images");
+                while (imagesNode.hasChildNodes()) {
+                    imagesNode.removeChild(imagesNode.lastChild);
+                }
+            }
+
+            // Returns a properly sized image with the given base64-encoded PNG data.
+            var createImage = function (pngData, imageName) {
+                var imageContainer = document.createElement("figure");
+                if (imageName.length > 0) {
+                    var newFileNameHeader = document.createElement("figcaption");
+                    newFileNameHeader.textContent = escape(imageName);
+                    imageContainer.appendChild(newFileNameHeader);
+                }
+                var newImage = document.createElement("img");
+                newImage.src = "data:image/png;base64," + pngData;
+                newImage.onload = (function () {
+                    // Grab the image for the callback. We need to wait until
+                    // the image has been properly loaded to access its
+                    // naturalWidth and naturalHeight properties, needed for
+                    // scaling.
+                    var cbImage = newImage;
+                    return function () {
+                        scaleSingleImage(cbImage);
+                    };
+                })();
+                imageContainer.appendChild(newImage);
+                return imageContainer;
+            }
+
+            // Returns a new h3 header with the given file name.
+            var createFileNameHeader = function (fileName) {
+                var newHeader = document.createElement("h3");
+                newHeader.textContent = fileName;
+                return newHeader;
+            }
+
+            // Returns a new image block to contain images from a file.
+            var createImagesBlock = function () {
+                var imagesBlock = document.createElement("div");
+                imagesBlock.className = "imagesblock";
+                return imagesBlock;
+            }
+
+            // Processes a chunk of QPA text from the given file name. Creates
+            // the file name header and a list of images in the images <div>, as
+            // found in the text.
+            var processText = function(textString, fileName) {
+                var imagesNode = document.getElementById("images");
+                var newHeader = createFileNameHeader(fileName);
+                imagesNode.appendChild(newHeader);
+                var imagesBlock = createImagesBlock();
+                // [\s\S] is a match-anything regexp like the dot, except it
+                // also matches newlines. Ideally, browsers would need to widely
+                // support the "dotall" regexp modifier, but that's not the case
+                // yet and this does the trick.
+                // Group 1 are the image element properties, if any.
+                // Group 2 is the base64 PNG data.
+                var imageRegexp = /<Image\b(.*?)>([\s\S]*?)<\/Image>/g;
+                var imageNameRegexp = /\bName="(.*?)"/;
+                var result;
+                var innerResult;
+                var imageName;
+                while ((result = imageRegexp.exec(textString)) !== null) {
+                    innerResult = result[1].match(imageNameRegexp);
+                    imageName = ((innerResult !== null) ? innerResult[1] : "");
+                    // Blanks need to be removed from the base64 string.
+                    var pngData = result[2].replace(/\s+/g, "");
+                    imagesBlock.appendChild(createImage(pngData, imageName));
+                }
+                imagesNode.appendChild(imagesBlock);
+            }
+
+            // Loads images from the text in the text area.
+            var loadImages = function () {
+                processText(document.getElementById("qpatext").value, "<Pasted Text>");
+            }
+
+            // Loads images from the files in the file selector.
+            var handleFileSelect = function (evt) {
+                var files = evt.target.files;
+                for (var i = 0; i < files.length; i++) {
+                    // Creates a reader per file.
+                    var reader = new FileReader();
+                    // Grab the needed objects to use them after the file has
+                    // been read, in order to process its contents and add
+                    // images, if found, in the images <div>.
+                    reader.onload = (function () {
+                        var cbFileName = files[i].name;
+                        var cbReader = reader;
+                        return function () {
+                            processText(cbReader.result, cbFileName);
+                        };
+                    })();
+                    // Reads file contents. This will trigger the event above.
+                    reader.readAsText(files[i]);
+                }
+            }
+
+            // File selector trick: click on the selector when clicking on the
+            // custom button.
+            var clickFileSelector = function () {
+                document.getElementById("fileselector").click();
+            }
+
+            // Clears selected files to be able to select them again if needed.
+            var clearSelectedFiles = function() {
+                document.getElementById("fileselector").value = "";
+            }
+
+            // Set event handlers for interactive elements in the page.
+            document.getElementById("fileselector").onclick = clearSelectedFiles;
+            document.getElementById("fileselector").addEventListener("change", handleFileSelect, false);
+            document.getElementById("fileselectorbutton").onclick = clickFileSelector;
+            document.getElementById("loadimagesbutton").onclick = loadImages;
+            document.getElementById("zoomselect").onchange = rescaleImages;
+            document.getElementById("clearimagesbutton").onclick = clearImages;
+        </script>
+    </body>
+</html>
