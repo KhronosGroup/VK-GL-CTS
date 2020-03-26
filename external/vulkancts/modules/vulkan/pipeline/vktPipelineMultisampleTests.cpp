@@ -44,6 +44,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
@@ -59,6 +60,7 @@
 #include <memory>
 #include <algorithm>
 #include <set>
+#include <array>
 
 namespace vkt
 {
@@ -3562,11 +3564,11 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::getSingleSampledImage (deUin
 	return readColorAttachment(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), *m_perSampleImages[sampleId]->m_image, m_colorFormat, m_renderSize.cast<deUint32>());
 }
 
-// Multisample tests with no attachments.
+// Multisample tests with subpasses using no attachments.
 class VariableRateTestCase : public vkt::TestCase
 {
 public:
-	using Params = std::vector<vk::VkSampleCountFlagBits>;
+	using SampleCounts = std::vector<vk::VkSampleCountFlagBits>;
 
 	struct PushConstants
 	{
@@ -3575,37 +3577,49 @@ public:
 		int samples;
 	};
 
+	struct TestParams
+	{
+		bool						nonEmptyFramebuffer;	// Empty framebuffer or not.
+		vk::VkSampleCountFlagBits	fbCount;				// If not empty, framebuffer sample count.
+		bool						unusedAttachment;		// If not empty, create unused attachment or not.
+		SampleCounts				subpassCounts;			// Counts for the different subpasses.
+	};
+
 	static const deInt32 kWidth		= 256u;
 	static const deInt32 kHeight	= 256u;
 
-							VariableRateTestCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params);
-	virtual					~VariableRateTestCase		(void) {}
+									VariableRateTestCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params);
+	virtual							~VariableRateTestCase	(void) {}
 
-	virtual void			initPrograms				(vk::SourceCollections& programCollection) const;
-	virtual TestInstance*	createInstance				(Context& context) const;
-	virtual void			checkSupport				(Context& context) const;
+	virtual void					initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*			createInstance			(Context& context) const;
+	virtual void					checkSupport			(Context& context) const;
+
+	static constexpr vk::VkFormat	kColorFormat			= vk::VK_FORMAT_R8G8B8A8_UNORM;
 
 private:
-	Params m_params;
+	TestParams m_params;
 };
 
 class VariableRateTestInstance : public vkt::TestInstance
 {
 public:
-	using Params = VariableRateTestCase::Params;
+	using TestParams = VariableRateTestCase::TestParams;
 
-								VariableRateTestInstance	(Context& context, const Params& params);
+								VariableRateTestInstance	(Context& context, const TestParams& counts);
 	virtual						~VariableRateTestInstance	(void) {}
 
 	virtual tcu::TestStatus		iterate						(void);
+
 private:
-	Params m_params;
+	TestParams m_params;
 };
 
-VariableRateTestCase::VariableRateTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
+VariableRateTestCase::VariableRateTestCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
 	: vkt::TestCase	(testCtx, name, description)
 	, m_params		(params)
-{}
+{
+}
 
 void VariableRateTestCase::initPrograms (vk::SourceCollections& programCollection) const
 {
@@ -3655,25 +3669,30 @@ void VariableRateTestCase::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
-	const auto	features		= vk::getPhysicalDeviceFeatures(vki, physicalDevice);
-	if (!features.variableMultisampleRate)
-		TCU_THROW(NotSupportedError, "Variable multisample rate not supported");
+	// When using multiple subpasses, require variableMultisampleRate.
+	if (m_params.subpassCounts.size() > 1)
+	{
+		if (!vk::getPhysicalDeviceFeatures(vki, physicalDevice).variableMultisampleRate)
+			TCU_THROW(NotSupportedError, "Variable multisample rate not supported");
+	}
 
-	// Make sure all sample counts are supported.
+	// Make sure all subpass sample counts are supported.
 	const auto	properties		= vk::getPhysicalDeviceProperties(vki, physicalDevice);
 	const auto&	supportedCounts	= properties.limits.framebufferNoAttachmentsSampleCounts;
 
-	for (const auto count : m_params)
+	for (const auto count : m_params.subpassCounts)
 	{
 		if ((supportedCounts & count) == 0u)
 			TCU_THROW(NotSupportedError, "Sample count combination not supported");
 	}
-}
 
-VariableRateTestInstance::VariableRateTestInstance (Context& context, const Params& params)
-	: vkt::TestInstance(context)
-	, m_params(params)
-{
+	if (m_params.nonEmptyFramebuffer)
+	{
+		// Check the framebuffer sample count is supported.
+		const auto formatProperties = vk::getPhysicalDeviceImageFormatProperties(vki, physicalDevice, kColorFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0u);
+		if ((formatProperties.sampleCounts & m_params.fbCount) == 0u)
+			TCU_THROW(NotSupportedError, "Sample count of " + de::toString(m_params.fbCount) + " not supported for color attachment");
+	}
 }
 
 void zeroOutAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::BufferWithMemory& buffer, vk::VkDeviceSize size)
@@ -3681,6 +3700,12 @@ void zeroOutAndFlush(const vk::DeviceInterface& vkd, vk::VkDevice device, vk::Bu
 	auto& alloc = buffer.getAllocation();
 	deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(size));
 	vk::flushAlloc(vkd, device, alloc);
+}
+
+VariableRateTestInstance::VariableRateTestInstance (Context& context, const TestParams& params)
+	: vkt::TestInstance	(context)
+	, m_params			(params)
+{
 }
 
 tcu::TestStatus VariableRateTestInstance::iterate (void)
@@ -3693,8 +3718,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	const auto&	queue		= m_context.getUniversalQueue();
 	const auto	queueIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	const vk::VkDeviceSize kWidth	= static_cast<vk::VkDeviceSize>(VariableRateTestCase::kWidth);
-	const vk::VkDeviceSize kHeight	= static_cast<vk::VkDeviceSize>(VariableRateTestCase::kHeight);
+	const vk::VkDeviceSize	kWidth			= static_cast<vk::VkDeviceSize>(VariableRateTestCase::kWidth);
+	const vk::VkDeviceSize	kHeight			= static_cast<vk::VkDeviceSize>(VariableRateTestCase::kHeight);
+	constexpr auto			kColorFormat	= VariableRateTestCase::kColorFormat;
 
 	const auto kWidth32		= static_cast<deUint32>(kWidth);
 	const auto kHeight32	= static_cast<deUint32>(kHeight);
@@ -3705,7 +3731,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	std::vector<vk::VkDeviceSize>						bufferSizes;
 
 	// Create reference and output buffers.
-	for (const auto count : m_params)
+	for (const auto count : m_params.subpassCounts)
 	{
 		bufferNumElements.push_back(static_cast<size_t>(kWidth * kHeight * count));
 		bufferSizes.push_back(bufferNumElements.back() * sizeof(deInt32));
@@ -3740,7 +3766,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	};
 	const auto pipelineLayout = vk::createPipelineLayout(vkd, device, &pipelineLayoutCreateInfo);
 
-	// Empty render pass with single subpass.
+	// Subpass with no attachments.
 	const vk::VkSubpassDescription emptySubpassDescription =
 	{
 		0u,										//	VkSubpassDescriptionFlags		flags;
@@ -3755,6 +3781,29 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		nullptr,								//	const deUint32*					pPreserveAttachments;
 	};
 
+	// Unused attachment reference.
+	const vk::VkAttachmentReference unusedAttachmentReference =
+	{
+		VK_ATTACHMENT_UNUSED,							//	deUint32		attachment;
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout	layout;
+	};
+
+	// Subpass with unused attachment.
+	const vk::VkSubpassDescription unusedAttachmentSubpassDescription =
+	{
+		0u,										//	VkSubpassDescriptionFlags		flags;
+		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,	//	VkPipelineBindPoint				pipelineBindPoint;
+		0u,										//	deUint32						inputAttachmentCount;
+		nullptr,								//	const VkAttachmentReference*	pInputAttachments;
+		1u,										//	deUint32						colorAttachmentCount;
+		&unusedAttachmentReference,				//	const VkAttachmentReference*	pColorAttachments;
+		nullptr,								//	const VkAttachmentReference*	pResolveAttachments;
+		nullptr,								//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,										//	deUint32						preserveAttachmentCount;
+		nullptr,								//	const deUint32*					pPreserveAttachments;
+	};
+
+	// Renderpass with multiple subpasses.
 	vk::VkRenderPassCreateInfo renderPassCreateInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	//	VkStructureType					sType;
@@ -3762,23 +3811,42 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		0u,												//	VkRenderPassCreateFlags			flags;
 		0u,												//	deUint32						attachmentCount;
 		nullptr,										//	const VkAttachmentDescription*	pAttachments;
-		1u,												//	deUint32						subpassCount;
-		&emptySubpassDescription,						//	const VkSubpassDescription*		pSubpasses;
+		0u,												//	deUint32						subpassCount;
+		nullptr,										//	const VkSubpassDescription*		pSubpasses;
 		0u,												//	deUint32						dependencyCount;
 		nullptr,										//	const VkSubpassDependency*		pDependencies;
 	};
-	const auto emptyRenderPassSingleSubpass = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
 
-	// Renderpass with multiple subpasses.
-	std::vector<vk::VkSubpassDescription> emptySubpasses;
+	std::vector<vk::VkSubpassDescription> subpassesVector;
 
-	for (size_t i = 0; i < m_params.size(); ++i)
-		emptySubpasses.push_back(emptySubpassDescription);
+	for (size_t i = 0; i < m_params.subpassCounts.size(); ++i)
+		subpassesVector.push_back(emptySubpassDescription);
+	renderPassCreateInfo.subpassCount	= static_cast<deUint32>(subpassesVector.size());
+	renderPassCreateInfo.pSubpasses		= subpassesVector.data();
+	const auto renderPassMultiplePasses = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
 
-	renderPassCreateInfo.subpassCount = static_cast<deUint32>(emptySubpasses.size());
-	renderPassCreateInfo.pSubpasses = emptySubpasses.data();
+	// Render pass with single subpass.
+	const vk::VkAttachmentDescription colorAttachmentDescription =
+	{
+		0u,												//	VkAttachmentDescriptionFlags	flags;
+		kColorFormat,									//	VkFormat						format;
+		m_params.fbCount,								//	VkSampleCountFlagBits			samples;
+		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//	VkAttachmentLoadOp				loadOp;
+		vk::VK_ATTACHMENT_STORE_OP_STORE,				//	VkAttachmentStoreOp				storeOp;
+		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//	VkAttachmentLoadOp				stencilLoadOp;
+		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,			//	VkAttachmentStoreOp				stencilStoreOp;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout					initialLayout;
+		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout					finalLayout;
+	};
 
-	const auto emptyRenderPassMultiplePasses = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
+	if (m_params.nonEmptyFramebuffer)
+	{
+		renderPassCreateInfo.attachmentCount = 1u;
+		renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
+	}
+	renderPassCreateInfo.subpassCount	= 1u;
+	renderPassCreateInfo.pSubpasses		= ((m_params.nonEmptyFramebuffer && m_params.unusedAttachment) ? &unusedAttachmentSubpassDescription : &emptySubpassDescription);
+	const auto renderPassSingleSubpass	= vk::createRenderPass(vkd, device, &renderPassCreateInfo);
 
 	// Framebuffers.
 	vk::VkFramebufferCreateInfo framebufferCreateInfo =
@@ -3786,17 +3854,52 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	//	VkStructureType				sType;
 		nullptr,										//	const void*					pNext;
 		0u,												//	VkFramebufferCreateFlags	flags;
-		emptyRenderPassSingleSubpass.get(),				//	VkRenderPass				renderPass;
+		DE_NULL,										//	VkRenderPass				renderPass;
 		0u,												//	deUint32					attachmentCount;
 		nullptr,										//	const VkImageView*			pAttachments;
 		kWidth32,										//	deUint32					width;
 		kHeight32,										//	deUint32					height;
 		1u,												//	deUint32					layers;
 	};
-	const auto emptyFramebufferSingleSubpass = vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
 
-	framebufferCreateInfo.renderPass = emptyRenderPassMultiplePasses.get();
-	const auto emptyFramebufferMultiplePasses = vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+	// Framebuffer for multiple-subpasses render pass.
+	framebufferCreateInfo.renderPass		= renderPassMultiplePasses.get();
+	const auto framebufferMultiplePasses	= vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+
+	// Framebuffer for single-subpass render pass.
+	std::unique_ptr<vk::ImageWithMemory>	imagePtr;
+	vk::Move<vk::VkImageView>				imageView;
+
+	if (m_params.nonEmptyFramebuffer)
+	{
+		const vk::VkImageCreateInfo imageCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+			nullptr,									//	const void*				pNext;
+			0u,											//	VkImageCreateFlags		flags;
+			vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+			kColorFormat,								//	VkFormat				format;
+			vk::makeExtent3D(kWidth32, kHeight32, 1u),	//	VkExtent3D				extent;
+			1u,											//	deUint32				mipLevels;
+			1u,											//	deUint32				arrayLayers;
+			m_params.fbCount,							//	VkSampleCountFlagBits	samples;
+			vk::VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+			vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,	//	VkImageUsageFlags		usage;
+			vk::VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+			0u,											//	deUint32				queueFamilyIndexCount;
+			nullptr,									//	const deUint32*			pQueueFamilyIndices;
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+		};
+		imagePtr.reset(new vk::ImageWithMemory{vkd, device, allocator, imageCreateInfo, MemoryRequirement::Any});
+
+		const auto subresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+		imageView					= vk::makeImageView(vkd, device, imagePtr->get(), vk::VK_IMAGE_VIEW_TYPE_2D, kColorFormat, subresourceRange);
+
+		framebufferCreateInfo.attachmentCount	= 1u;
+		framebufferCreateInfo.pAttachments		= &imageView.get();
+	}
+	framebufferCreateInfo.renderPass	= renderPassSingleSubpass.get();
+	const auto framebufferSingleSubpass	= vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
 
 	// Shader modules and stages.
 	const auto vertModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
@@ -3816,8 +3919,8 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	};
 
 	shaderStages.push_back(shaderStageCreateInfo);
-	shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderStageCreateInfo.module = fragModule.get();
+	shaderStageCreateInfo.stage		= vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+	shaderStageCreateInfo.module	= fragModule.get();
 	shaderStages.push_back(shaderStageCreateInfo);
 
 	// Vertices, input state and assembly.
@@ -3898,7 +4001,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 
 	std::vector<vk::Move<vk::VkPipeline>> outputPipelines;
 
-	for (const auto samples : m_params)
+	for (const auto samples : m_params.subpassCounts)
 	{
 		multisampleStateCreateInfo.rasterizationSamples = samples;
 
@@ -3919,7 +4022,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 			nullptr,												//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			nullptr,												//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			pipelineLayout.get(),									//	VkPipelineLayout								layout;
-			emptyRenderPassSingleSubpass.get(),						//	VkRenderPass									renderPass;
+			renderPassSingleSubpass.get(),							//	VkRenderPass									renderPass;
 			0u,														//	deUint32										subpass;
 			DE_NULL,												//	VkPipeline										basePipelineHandle;
 			0,														//	deInt32											basePipelineIndex;
@@ -3931,9 +4034,9 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	// Graphics pipelines with variable rate but using several subpasses.
 	std::vector<vk::Move<vk::VkPipeline>> referencePipelines;
 
-	for (size_t i = 0; i < m_params.size(); ++i)
+	for (size_t i = 0; i < m_params.subpassCounts.size(); ++i)
 	{
-		multisampleStateCreateInfo.rasterizationSamples = m_params[i];
+		multisampleStateCreateInfo.rasterizationSamples = m_params.subpassCounts[i];
 
 		const vk::VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo =
 		{
@@ -3952,7 +4055,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 			nullptr,												//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
 			nullptr,												//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 			pipelineLayout.get(),									//	VkPipelineLayout								layout;
-			emptyRenderPassMultiplePasses.get(),					//	VkRenderPass									renderPass;
+			renderPassMultiplePasses.get(),							//	VkRenderPass									renderPass;
 			static_cast<deUint32>(i),								//	deUint32										subpass;
 			DE_NULL,												//	VkPipeline										basePipelineHandle;
 			0,														//	deInt32											basePipelineIndex;
@@ -4031,13 +4134,13 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	vk::beginCommandBuffer(vkd, cmdBuffer);
 
 	// Render output buffers.
-	vk::beginRenderPass(vkd, cmdBuffer, emptyRenderPassSingleSubpass.get(), emptyFramebufferSingleSubpass.get(), renderArea);
+	vk::beginRenderPass(vkd, cmdBuffer, renderPassSingleSubpass.get(), framebufferSingleSubpass.get(), renderArea);
 	for (size_t i = 0; i < outputBuffers.size(); ++i)
 	{
 		vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, outputPipelines[i].get());
 		vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &outputSets[i].get(), 0u, nullptr);
 		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-		pushConstants.samples = static_cast<int>(m_params[i]);
+		pushConstants.samples = static_cast<int>(m_params.subpassCounts[i]);
 		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size, &pushConstants);
 		vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 	}
@@ -4049,7 +4152,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 	}
 
 	// Render reference buffers.
-	vk::beginRenderPass(vkd, cmdBuffer, emptyRenderPassMultiplePasses.get(), emptyFramebufferMultiplePasses.get(), renderArea);
+	vk::beginRenderPass(vkd, cmdBuffer, renderPassMultiplePasses.get(), framebufferMultiplePasses.get(), renderArea);
 	for (size_t i = 0; i < referenceBuffers.size(); ++i)
 	{
 		if (i > 0)
@@ -4057,7 +4160,7 @@ tcu::TestStatus VariableRateTestInstance::iterate (void)
 		vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, referencePipelines[i].get());
 		vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &referenceSets[i].get(), 0u, nullptr);
 		vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-		pushConstants.samples = static_cast<int>(m_params[i]);
+		pushConstants.samples = static_cast<int>(m_params.subpassCounts[i]);
 		vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), pushConstantRange.stageFlags, pushConstantRange.offset, pushConstantRange.size, &pushConstants);
 		vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 	}
@@ -4521,37 +4624,87 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			vk::VK_SAMPLE_COUNT_64_BIT,
 		};
 
-		de::MovePtr<tcu::TestCaseGroup> variableRateGroup(new tcu::TestCaseGroup(testCtx, "variable_rate", "Tests for multisample variable rate in subpasses"));
+		static const std::array<bool, 2> unusedAttachmentFlag = {{ false, true }};
 
-		// 2 and 3 subpasses should be good enough.
-		static const std::vector<size_t> combinationSizes = { 2, 3 };
-
-		for (const auto size : combinationSizes)
 		{
-			const auto combs = combinations(kSampleCounts, size);
-			for (const auto& comb : combs)
+			de::MovePtr<tcu::TestCaseGroup> variableRateGroup(new tcu::TestCaseGroup(testCtx, "variable_rate", "Tests for multisample variable rate in subpasses"));
+
+			// 2 and 3 subpasses should be good enough.
+			static const std::vector<size_t> combinationSizes = { 2, 3 };
+
+			// Basic cases.
+			for (const auto size : combinationSizes)
 			{
-				// Check sample counts actually vary between some of the subpasses.
-				std::set<vk::VkSampleCountFlagBits> uniqueVals(begin(comb), end(comb));
-				if (uniqueVals.size() < 2)
-					continue;
-
-				std::ostringstream name;
-				std::ostringstream desc;
-
-				bool first = true;
-				for (const auto& count : comb)
+				const auto combs = combinations(kSampleCounts, size);
+				for (const auto& comb : combs)
 				{
-					name << (first ? "" : "_") << count;
-					desc << (first ? "Subpasses with counts " : ", ") << count;
-					first = false;
-				}
+					// Check sample counts actually vary between some of the subpasses.
+					std::set<vk::VkSampleCountFlagBits> uniqueVals(begin(comb), end(comb));
+					if (uniqueVals.size() < 2)
+						continue;
 
-				variableRateGroup->addChild(new VariableRateTestCase(testCtx, name.str(), desc.str(), comb));
+					std::ostringstream name;
+					std::ostringstream desc;
+
+					bool first = true;
+					for (const auto& count : comb)
+					{
+						name << (first ? "" : "_") << count;
+						desc << (first ? "Subpasses with counts " : ", ") << count;
+						first = false;
+					}
+
+					const VariableRateTestCase::TestParams params =
+					{
+						false,						//	bool						nonEmptyFramebuffer;
+						vk::VK_SAMPLE_COUNT_1_BIT,	//	vk::VkSampleCountFlagBits	fbCount;
+						false,						//	bool						unusedAttachment;
+						comb,						//	SampleCounts				subpassCounts;
+					};
+					variableRateGroup->addChild(new VariableRateTestCase(testCtx, name.str(), desc.str(), params));
+				}
 			}
+
+			multisampleTests->addChild(variableRateGroup.release());
 		}
 
-		multisampleTests->addChild(variableRateGroup.release());
+		{
+			de::MovePtr<tcu::TestCaseGroup> mixedCountGroup(new tcu::TestCaseGroup(testCtx, "mixed_count", "Tests for mixed sample count in empty subpass and framebuffer"));
+
+			const auto combs = combinations(kSampleCounts, 2);
+			for (const auto& comb : combs)
+			{
+				// Check different sample count.
+				DE_ASSERT(comb.size() == 2u);
+				const auto& fbCount		= comb[0];
+				const auto& emptyCount	= comb[1];
+
+				if (fbCount == emptyCount)
+					continue;
+
+				const std::string fbCountStr	= de::toString(fbCount);
+				const std::string emptyCountStr	= de::toString(emptyCount);
+
+				for (const auto flag : unusedAttachmentFlag)
+				{
+					const std::string nameSuffix	= (flag ? "unused" : "");
+					const std::string descSuffix	= (flag ? "one unused attachment reference" : "no attachment references");
+					const std::string name			= fbCountStr + "_" + emptyCountStr + (nameSuffix.empty() ? "" : "_") + nameSuffix;
+					const std::string desc			= "Framebuffer with " + fbCountStr + " samples, subpass with " + emptyCountStr + " samples and " + descSuffix;
+
+					const VariableRateTestCase::TestParams params =
+					{
+						true,												//	bool						nonEmptyFramebuffer;
+						fbCount,											//	vk::VkSampleCountFlagBits	fbCount;
+						flag,												//	bool						unusedAttachment;
+						VariableRateTestCase::SampleCounts(1u, emptyCount),	//	SampleCounts				subpassCounts;
+					};
+					mixedCountGroup->addChild(new VariableRateTestCase(testCtx, name, desc, params));
+				}
+			}
+
+			multisampleTests->addChild(mixedCountGroup.release());
+		}
 	}
 
 	return multisampleTests.release();
