@@ -37,9 +37,9 @@ static const RunParams aosp_mustpass_es_first_cfg[] = {
 	{ glu::ApiType::es(3, 0), "rotate-reverse-landscape", "rgba8888d24s8ms0", "270", -1, DE_NULL, 256, 256 },
 #endif // DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 0), "multisample", "rgba8888d24s8ms4", "unspecified", -1, DE_NULL, 256, 256 },
-#ifndef DEQP_SUPPORT_X11
+#if DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 0), "565-no-depth-no-stencil", "rgb565d0s0ms0", "unspecified", -1, DE_NULL, 256, 256 },
-#endif // DEQP_SUPPORT_X11
+#endif // DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 1), "master", "rgba8888d24s8ms0", "unspecified", -1, DE_NULL, 256, 256 },
 #if DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 1), "rotate-portrait", "rgba8888d24s8ms0", "0", -1, DE_NULL, 256, 256 },
@@ -54,9 +54,9 @@ static const RunParams aosp_mustpass_es_first_cfg[] = {
 	{ glu::ApiType::es(3, 1), "rotate-reverse-landscape", "rgba8888d24s8ms0", "270", -1, DE_NULL, 256, 256 },
 #endif // DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 1), "multisample", "rgba8888d24s8ms4", "unspecified", -1, DE_NULL, 256, 256 },
-#ifndef DEQP_SUPPORT_X11
+#if DE_OS == DE_OS_ANDROID
 	{ glu::ApiType::es(3, 1), "565-no-depth-no-stencil", "rgb565d0s0ms0", "unspecified", -1, DE_NULL, 256, 256 },
-#endif // DEQP_SUPPORT_X11
+#endif // DE_OS == DE_OS_ANDROID
 };
 
 #endif // _GLCAOSPMUSTPASSES_HPP

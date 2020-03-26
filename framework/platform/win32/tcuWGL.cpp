@@ -97,6 +97,11 @@
 #define WGL_SAMPLE_BUFFERS_ARB						0x2041
 #define WGL_SAMPLES_ARB								0x2042
 
+// WGL_EXT_colorspace
+#define WGL_COLORSPACE_EXT							0x309D
+#define WGL_COLORSPACE_SRGB_EXT						0x3089
+#define WGL_COLORSPACE_LINEAR_EXT					0x308A
+
 // WGL_ARB_create_context
 #define WGL_CONTEXT_MAJOR_VERSION_ARB				0x2091
 #define WGL_CONTEXT_MINOR_VERSION_ARB				0x2092
@@ -372,6 +377,7 @@ PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 		WGL_AUX_BUFFERS_ARB,
 		WGL_SAMPLE_BUFFERS_ARB,
 		WGL_SAMPLES_ARB,
+		WGL_COLORSPACE_EXT
 	};
 	const Functions&	wgl			= m_library->getFunctions();
 	std::map<int, int>	values;
@@ -403,6 +409,7 @@ PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 	info.numAuxBuffers		= values[WGL_AUX_BUFFERS_ARB];
 	info.sampleBuffers		= values[WGL_SAMPLE_BUFFERS_ARB];
 	info.samples			= values[WGL_SAMPLES_ARB];
+	info.sRGB				= values[WGL_COLORSPACE_EXT] == WGL_COLORSPACE_SRGB_EXT;
 
 	return info;
 }
