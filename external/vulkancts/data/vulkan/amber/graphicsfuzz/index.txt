@@ -2,6 +2,7 @@
 {	"always-discarding-function.amber",				"always-discarding-function",			"A fragment shader with an always discarding main function"								},
 {	"always-false-if-in-do-while.amber",			"always-false-if-in-do-while",			"A fragment shader with an always false if."											},
 {	"always-false-if-with-discard-return.amber",	"always-false-if-with-discard-return",	"A fragment shader with discard keyword and a return"									},
+{	"arr-value-set-to-arr-value-squared.amber",													"arr-value-set-to-arr-value-squared",												"A fragment shader with an arr value set to itself squared"							},
 {	"array-idx-multiplied-by-for-loop-idx.amber",												"array-idx-multiplied-by-for-loop-idx",												"A fragment shader with array index multiplied"										},
 {	"assign-array-value-to-another-array.amber",												"assign-array-value-to-another-array",												"A fragment shader that assigns array values to other array"						},
 {	"assign-array-value-to-another-array-2.amber",												"assign-array-value-to-another-array-2",											"A fragment shader that assigns array values to other array"						},
