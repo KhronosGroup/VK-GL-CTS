@@ -22,7 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestContext.hpp"
-
+#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
 namespace tcu
@@ -44,6 +44,12 @@ TestContext::TestContext (
 	, m_terminateAfter	(false)
 {
 	setCurrentArchive(m_rootArchive);
+}
+
+void TestContext::writeSessionInfo(void)
+{
+	const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
+	m_log.writeSessionInfo(sessionInfo + m_cmdLine.getInitialCmdLine() + "\"\n");
 }
 
 void TestContext::touchWatchdog (void)

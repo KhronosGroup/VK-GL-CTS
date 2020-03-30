@@ -249,8 +249,15 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	, m_deviceProperties	(getPhysicalDeviceProperties(m_context))
 	, m_instance			(DE_NULL)
 {
-	m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(), "dEQP-VK",
-							m_deviceProperties.vendorID, m_deviceProperties.deviceID);
+	tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID,
+								 m_deviceProperties.deviceID,
+								 testCtx.getCommandLine().getInitialCmdLine());
+	m_waiverMechanism.setup(testCtx.getCommandLine().getWaiverFileName(),
+							"dEQP-VK",
+							m_deviceProperties.vendorID,
+							m_deviceProperties.deviceID,
+							sessionInfo);
+	testCtx.getLog().writeSessionInfo(sessionInfo.get());
 }
 
 TestCaseExecutor::~TestCaseExecutor (void)

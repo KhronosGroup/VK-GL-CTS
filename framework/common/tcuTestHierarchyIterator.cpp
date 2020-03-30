@@ -64,6 +64,9 @@ void DefaultHierarchyInflater::enterTestPackage (TestPackage* testPackage, vecto
 
 	testPackage->init();
 	testPackage->getChildren(children);
+
+	// write default session info if it was not done by package
+	m_testCtx.writeSessionInfo();
 }
 
 void DefaultHierarchyInflater::leaveTestPackage (TestPackage* testPackage)

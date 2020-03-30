@@ -25,6 +25,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include "deString.h"
 #include "deStringUtil.hpp"
 #include "xeXMLParser.hpp"
@@ -32,6 +33,40 @@
 
 namespace tcu
 {
+
+SessionInfo::SessionInfo(deUint32				vendorId,
+						 deUint32				deviceId,
+						 const std::string&		cmdLine)
+	: m_cmdLine	(cmdLine)
+{
+	m_info << std::hex
+		   << "#sessionInfo vendorID 0x" << vendorId << "\n"
+		   << "#sessionInfo deviceID 0x" << deviceId << "\n";
+}
+
+SessionInfo::SessionInfo(std::string			vendor,
+						 std::string			renderer,
+						 const std::string&		cmdLine)
+	: m_cmdLine	(cmdLine)
+{
+	m_info << "#sessionInfo vendor \"" << vendor << "\"\n"
+		   << "#sessionInfo renderer \"" << renderer << "\"\n";
+}
+
+std::string SessionInfo::get()
+{
+	if (!m_waiverUrls.empty())
+	{
+		m_info << "#sessionInfo waiverUrls \"" << m_waiverUrls << "\"\n";
+		m_waiverUrls.clear();
+	}
+	if (!m_cmdLine.empty())
+	{
+		m_info << "#sessionInfo commandLineParameters \"" << m_cmdLine << "\"\n";
+		m_cmdLine.clear();
+	}
+	return m_info.str();
+}
 
 // Base class for GL and VK waiver tree builders
 class WaiverTreeBuilder
@@ -45,6 +80,7 @@ public:
 																 const std::string&				packageName,
 																 const char*					vendorTag,
 																 const char*					deviceTag,
+																 SessionInfo&					sessionInfo,
 																 std::vector<WaiverComponent>&	waiverTree);
 
 	virtual								~WaiverTreeBuilder();
@@ -68,27 +104,27 @@ protected:
 
 	// parse waiver.xml and read list of waived tests defined
 	// specificly for current device id and current vendor id
-	void			readWaivedTestsFromXML	(void);
+	void				readWaivedTestsFromXML	(void);
 
 	// use list of paths to build a temporary tree which
 	// consists of BuilComponents that help with tree construction
-	void			buildTreeFromPathList	(void);
+	void				buildTreeFromPathList	(void);
 
 	// use temporary tree to create final tree containing
 	// only things that are needed during searches
-	void			constructFinalTree		(void);
+	void				constructFinalTree		(void);
 
 	// helper methods used to identify if proper waiver for vendor was found
-	virtual bool	matchVendor				(const std::string& vendor) const = 0;
+	virtual bool		matchVendor				(const std::string& vendor) const = 0;
 
 	// helper methods used after waiver for current vendor was found to check
 	// if it is defined also for currend deviceId/renderer
-	virtual bool	matchDevice				(const std::string& device) const = 0;
+	virtual bool		matchDevice				(const std::string& device) const = 0;
 
 	// helper method used in buildTreeFromPathList; returns index
 	// of component having same ancestors as the component specified
 	// in the argument or 0 when build tree does not include this component
-	deUint32		findComponentInBuildTree(const std::vector<std::string>& pathComponents, deUint32 index) const;
+	deUint32			findComponentInBuildTree(const std::vector<std::string>& pathComponents, deUint32 index) const;
 
 private:
 	const std::string&				m_waiverFile;
@@ -101,6 +137,9 @@ private:
 	std::vector<std::string>		m_testList;
 	std::vector<BuilComponent>		m_buildTree;
 
+	// reference to object containing information about used waivers
+	SessionInfo&					m_sessionInfo;
+
 	// reference to vector containing final tree
 	std::vector<WaiverComponent>&	m_finalTree;
 };
@@ -109,11 +148,13 @@ WaiverTreeBuilder::WaiverTreeBuilder(const std::string&				waiverFile,
 									 const std::string&				packageName,
 									 const char*					vendorTag,
 									 const char*					deviceTag,
+									 SessionInfo&					sessionInfo,
 									 std::vector<WaiverComponent>&	waiverTree)
 	: m_waiverFile		(waiverFile)
 	, m_packageName		(packageName)
 	, m_vendorTag		(vendorTag)
 	, m_deviceTag		(deviceTag)
+	, m_sessionInfo		(sessionInfo)
 	, m_finalTree		(waiverTree)
 {
 }
@@ -150,6 +191,7 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
 	bool						deviceFound		= false;
 	bool						scanDevice		= false;
 	bool						memorizeCase	= false;
+	std::string					waiverUrl;
 	std::vector<std::string>	waiverTestList;
 
 	while (true)
@@ -190,7 +232,13 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
 			// we found waiver tag, check if it is deffined for current vendor
 			waiverTestList.clear();
 			if (xmlParser.hasAttribute(m_vendorTag))
+			{
 				vendorFound = matchVendor(xmlParser.getAttribute(m_vendorTag));
+				// if waiver vendor matches current one then memorize waiver url
+				// it will be needed when deviceId/renderer will match current one
+				if (vendorFound)
+					waiverUrl = xmlParser.getAttribute("url");
+			}
 			break;
 
 		case xe::xml::ELEMENT_DATA:
@@ -217,9 +265,21 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
 			scanDevice		= false;
 			if (deStringEqual(elemName, "waiver"))
 			{
-				// when we found proper waiver we can copy memorized cases
-				if(vendorFound && deviceFound)
+				// when we found proper waiver we can copy memorized cases and update waiver info
+				if (vendorFound && deviceFound)
+				{
+					DE_ASSERT(m_testList.empty() || waiverUrl.empty());
+
+					std::string& urls = m_sessionInfo.m_waiverUrls;
 					m_testList.insert(m_testList.end(), waiverTestList.begin(), waiverTestList.end());
+
+					// if m_waiverUrls is not empty then we found another waiver
+					// definition that should be applyed for this device; we need to
+					// add space to urls attribute to separate new url from previous one
+					if (!urls.empty())
+						urls.append(" ");
+					urls.append(waiverUrl);
+				}
 				vendorFound = false;
 				deviceFound = false;
 			}
@@ -352,6 +412,7 @@ public:
 												 const std::string&				packageName,
 												 const std::string&				currentVendor,
 												 const std::string&				currentRenderer,
+												 SessionInfo&					sessionInfo,
 												 std::vector<WaiverComponent>&	waiverTree);
 
 	bool				matchVendor				(const std::string& vendor) const override;
@@ -367,8 +428,9 @@ GLWaiverTreeBuilder::GLWaiverTreeBuilder(const std::string&				waiverFile,
 										 const std::string&				packageName,
 										 const std::string&				currentVendor,
 										 const std::string&				currentRenderer,
+										 SessionInfo&					sessionInfo,
 										 std::vector<WaiverComponent>&	waiverTree)
-	: WaiverTreeBuilder	(waiverFile, packageName, "vendor", "r", waiverTree)
+	: WaiverTreeBuilder	(waiverFile, packageName, "vendor", "r", sessionInfo, waiverTree)
 	, m_currentVendor	(currentVendor)
 	, m_currentRenderer	(currentRenderer)
 {
@@ -401,6 +463,7 @@ public:
 												 const std::string&				packageName,
 												 const deUint32					currentVendor,
 												 const deUint32					currentRenderer,
+												 SessionInfo&					sessionInfo,
 												 std::vector<WaiverComponent>&	waiverTree);
 
 	bool				matchVendor				(const std::string& vendor) const override;
@@ -416,8 +479,9 @@ VKWaiverTreeBuilder::VKWaiverTreeBuilder(const std::string&				waiverFile,
 										 const std::string&				packageName,
 										 const deUint32					currentVendor,
 										 const deUint32					currentRenderer,
+										 SessionInfo&					sessionInfo,
 										 std::vector<WaiverComponent>&	waiverTree)
-	: WaiverTreeBuilder(waiverFile, packageName, "vendorId", "d", waiverTree)
+	: WaiverTreeBuilder(waiverFile, packageName, "vendorId", "d", sessionInfo, waiverTree)
 	, m_currentVendorId(currentVendor)
 	, m_currentDeviceId(currentRenderer)
 {
@@ -433,14 +497,14 @@ bool VKWaiverTreeBuilder::matchDevice(const std::string& device) const
 	return (m_currentDeviceId == static_cast<deUint32>(std::stoul(device, 0, 0)));
 }
 
-void WaiverUtil::setup(const std::string waiverFile, std::string packageName, deUint32 vendorId, deUint32 deviceId)
+void WaiverUtil::setup(const std::string waiverFile, std::string packageName, deUint32 vendorId, deUint32 deviceId, SessionInfo& sessionInfo)
 {
-	VKWaiverTreeBuilder(waiverFile, packageName, vendorId, deviceId, m_waiverTree).build();
+	VKWaiverTreeBuilder(waiverFile, packageName, vendorId, deviceId, sessionInfo, m_waiverTree).build();
 }
 
-void WaiverUtil::setup(const std::string waiverFile, std::string packageName, std::string vendor, std::string renderer)
+void WaiverUtil::setup(const std::string waiverFile, std::string packageName, std::string vendor, std::string renderer, SessionInfo& sessionInfo)
 {
-	GLWaiverTreeBuilder(waiverFile, packageName, vendor, renderer, m_waiverTree).build();
+	GLWaiverTreeBuilder(waiverFile, packageName, vendor, renderer, sessionInfo, m_waiverTree).build();
 }
 
 bool WaiverUtil::isOnWaiverList(const std::string& casePath) const

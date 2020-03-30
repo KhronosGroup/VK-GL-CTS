@@ -141,6 +141,8 @@ public:
 	bool							parse							(int argc, const char* const* argv);
 	bool							parse							(const std::string& cmdLine);
 
+	const std::string&				getInitialCmdLine				(void) const;
+
 	//! Get log file name (--deqp-log-filename)
 	const char*						getLogFileName					(void) const;
 
@@ -282,6 +284,8 @@ private:
 
 	de::cmdline::CommandLine		m_cmdLine;
 	deUint32						m_logFlags;
+
+	std::string						m_initialCmdLine;
 };
 
 } // tcu

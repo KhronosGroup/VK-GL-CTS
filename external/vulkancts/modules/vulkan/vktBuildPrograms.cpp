@@ -674,11 +674,13 @@ int main (int argc, const char* argv[])
 	try
 	{
 		tcu::DirArchive			archive					(".");
-		tcu::TestLog			log					(deqpCmdLine.getLogFileName(), (argc - 1), (char **)(argv + 1), deqpCmdLine.getLogFlags());
+		tcu::TestLog			log						(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
 		tcu::Platform			platform;
 		tcu::TestContext		testCtx					(platform, archive, log, deqpCmdLine, DE_NULL);
 		vk::SpirvVersion		baselineSpirvVersion	= vk::getBaselineSpirvVersion(cmdLine.getOption<opt::VulkanVersion>());
 		vk::SpirvVersion		maxSpirvVersion			= vk::getMaxSpirvVersionForGlsl(cmdLine.getOption<opt::VulkanVersion>());
+
+		testCtx.writeSessionInfo();
 
 		tcu::print("SPIR-V versions: baseline: %s, max supported: %s\n",
 					getSpirvVersionName(baselineSpirvVersion).c_str(),

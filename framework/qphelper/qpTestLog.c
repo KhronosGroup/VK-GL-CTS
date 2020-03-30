@@ -297,40 +297,14 @@ DE_INLINE void doubleToString (double value, char* buf, size_t bufSize)
 	deSprintf(buf, bufSize, "%f", value);
 }
 
-static deBool beginSession (qpTestLog* log, int argc, char** argv)
-{
-	DE_ASSERT(log && !log->isSessionOpen);
-
-	/* Write session info. */
-	fprintf(log->outputFile, "#sessionInfo releaseName %s\n", qpGetReleaseName());
-	fprintf(log->outputFile, "#sessionInfo releaseId 0x%08x\n", qpGetReleaseId());
-	fprintf(log->outputFile, "#sessionInfo targetName \"%s\"\n", qpGetTargetName());
-	fprintf(log->outputFile, "#sessionInfo commandLineParameters \"");
-	for (int i = 0; i < argc && argv != NULL; ++i)
-	{
-		fprintf(log->outputFile, "%s", argv[i]);
-		if (i < argc-1)
-			fprintf(log->outputFile, " ");
-	}
-	fprintf(log->outputFile, "\"\n");
-
-    /* Write out #beginSession. */
-	fprintf(log->outputFile, "#beginSession\n");
-	qpTestLog_flushFile(log);
-
-	log->isSessionOpen = DE_TRUE;
-
-	return DE_TRUE;
-}
-
 static deBool endSession (qpTestLog* log)
 {
 	DE_ASSERT(log && log->isSessionOpen);
 
-    /* Make sure xml is flushed. */
-    qpXmlWriter_flush(log->writer);
+	/* Make sure xml is flushed. */
+	qpXmlWriter_flush(log->writer);
 
-    /* Write out #endSession. */
+	/* Write out #endSession. */
 	fprintf(log->outputFile, "\n#endSession\n");
 	qpTestLog_flushFile(log);
 
@@ -344,7 +318,7 @@ static deBool endSession (qpTestLog* log)
  * \param fileName Name of the file where to put logs
  * \return qpTestLog instance, or DE_NULL if cannot create file
  *//*--------------------------------------------------------------------*/
-qpTestLog* qpTestLog_createFileLog (const char* fileName, int argc, char** argv, deUint32 flags)
+qpTestLog* qpTestLog_createFileLog (const char* fileName, deUint32 flags)
 {
 	qpTestLog* log = (qpTestLog*)deCalloc(sizeof(qpTestLog));
 	if (!log)
@@ -387,14 +361,42 @@ qpTestLog* qpTestLog_createFileLog (const char* fileName, int argc, char** argv,
 		return DE_NULL;
 	}
 
-	beginSession(log, argc, argv);
-
 	return log;
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Log information about test session
+ * \param log qpTestLog instance
+ * \param additionalSessionInfo string contatining additional sessionInfo data
+ *//*--------------------------------------------------------------------*/
+deBool qpTestLog_beginSession(qpTestLog* log, const char* additionalSessionInfo)
+{
+	DE_ASSERT(log);
+
+	/* Make sure this function is called once*/
+	if (log->isSessionOpen)
+		return DE_TRUE;
+
+	/* Write session info. */
+	fprintf(log->outputFile, "#sessionInfo releaseName %s\n", qpGetReleaseName());
+	fprintf(log->outputFile, "#sessionInfo releaseId 0x%08x\n", qpGetReleaseId());
+	fprintf(log->outputFile, "#sessionInfo targetName \"%s\"\n", qpGetTargetName());
+
+	if (strlen(additionalSessionInfo) > 1)
+		fprintf(log->outputFile, "%s\n", additionalSessionInfo);
+
+	/* Write out #beginSession. */
+	fprintf(log->outputFile, "#beginSession\n");
+	qpTestLog_flushFile(log);
+
+	log->isSessionOpen = DE_TRUE;
+
+	return DE_TRUE;
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Destroy a logger instance
- * \param a	qpTestLog instance
+ * \param log qpTestLog instance
  *//*--------------------------------------------------------------------*/
 void qpTestLog_destroy (qpTestLog* log)
 {

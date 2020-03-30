@@ -24,19 +24,60 @@
  *//*--------------------------------------------------------------------*/
 
 #include "deDefs.h"
-#include <string>
+#include <sstream>
 #include <vector>
 
 namespace tcu
 {
 
+// Class containing information about session that are printed at the beginning of log.
+class SessionInfo
+{
+public:
+
+					SessionInfo		(deUint32				vendorId,
+									 deUint32				deviceId,
+									 const std::string&		cmdLine);
+					SessionInfo		(std::string			vendor,
+									 std::string			renderer,
+									 const std::string&		cmdLine);
+
+	std::string		get				();
+
+private:
+
+	// WaiverTreeBuilder fills private fields of this class.
+	friend class WaiverTreeBuilder;
+
+	// String containing urls to gitlab issues
+	// that enable currently used waivers
+	std::string			m_waiverUrls;
+
+	// String containing command line
+	std::string			m_cmdLine;
+
+	// Stream containing all info
+	std::stringstream	m_info;
+};
+
+// Class that uses paths to waived tests represented in a form of tree.
+// Main functionality of this class is to quickly test test paths in
+// order to verify if it is on waived tests list that was read from xml.
 class WaiverUtil
 {
 public:
 			WaiverUtil		() = default;
 
-	void	setup			(const std::string waiverFile, std::string packageName, deUint32 vendorId, deUint32 deviceId);
-	void	setup			(const std::string waiverFile, std::string packageName, std::string vendor, std::string renderer);
+	void	setup			(const std::string	waiverFile,
+							 std::string		packageName,
+							 deUint32			vendorId,
+							 deUint32			deviceId,
+							 SessionInfo&		sessionInfo);
+	void	setup			(const std::string	waiverFile,
+							 std::string		packageName,
+							 std::string		vendor,
+							 std::string		renderer,
+							 SessionInfo&		sessionInfo);
 
 	bool	isOnWaiverList	(const std::string& casePath) const;
 
