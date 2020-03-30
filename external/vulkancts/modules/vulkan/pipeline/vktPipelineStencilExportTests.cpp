@@ -327,9 +327,9 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	};
 
 	const VkStencilOpState stencilOpState = makeStencilOpState(
-		VK_STENCIL_OP_REPLACE,											// stencil fail
-		VK_STENCIL_OP_REPLACE,											// depth & stencil pass
-		VK_STENCIL_OP_REPLACE,											// depth only fail
+		useColor ? VK_STENCIL_OP_KEEP : VK_STENCIL_OP_REPLACE,			// stencil fail
+		useColor ? VK_STENCIL_OP_KEEP : VK_STENCIL_OP_REPLACE,			// depth & stencil pass
+		useColor ? VK_STENCIL_OP_KEEP : VK_STENCIL_OP_REPLACE,			// depth only fail
 		useColor ? VK_COMPARE_OP_EQUAL : VK_COMPARE_OP_NEVER,			// compare op
 		useColor ? 0xffu : 0u,											// compare mask
 		useColor ? 0u : 0xffu,											// write mask
