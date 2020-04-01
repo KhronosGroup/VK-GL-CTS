@@ -2847,7 +2847,7 @@ tcu::TestStatus deviceMandatoryFeatures(Context& context)
 {
 	if( checkMandatoryFeatures(context) )
 		return tcu::TestStatus::pass("Passed");
-	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: chapter 35.1 )");
+	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
 }
 
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
