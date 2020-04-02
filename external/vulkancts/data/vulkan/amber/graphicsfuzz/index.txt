@@ -165,6 +165,7 @@
 {	"set-color-in-one-iteration-while-loop.amber",												"set-color-in-one-iteration-while-loop",											"A frag shader that sets the color in one iter while loop"							},
 {	"similar-nested-ifs.amber",						"similar-nested-ifs",					"A fragment shader with similar nested ifs and loops"									},
 {	"smoothstep-after-loop.amber",					"smoothstep-after-loop",				"Fragment shader with 1-iteration loop and smoothstep"									},
+{	"stable-binarysearch-tree-with-loop-read-write-global.amber",								"stable-binarysearch-tree-with-loop-read-write-global",								"A pair of fragment shaders that both render red"									},
 {	"struct-and-unreachable-infinite-loop.amber",	"struct-and-unreachable-infinite-loop",	"Fragment shader with struct and unreachable infinite loop"								},
 {	"struct-array-data-as-loop-iterator.amber",													"struct-array-data-as-loop-iterator",												"A fragment shader that uses struct array data for loop iterator value"				},
 {	"struct-controlled-loop.amber",					"struct-controlled-loop",				"Shader with loop controlled by struct"													},
