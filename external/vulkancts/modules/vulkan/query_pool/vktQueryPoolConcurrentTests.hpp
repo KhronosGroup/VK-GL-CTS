@@ -40,7 +40,6 @@ public:
 
 private:
 	QueryPoolConcurrentTests				(const QueryPoolConcurrentTests &other);
-	// TODO: Do I need this operator?
 	QueryPoolConcurrentTests&	operator=	(const QueryPoolConcurrentTests &other);
 };
 

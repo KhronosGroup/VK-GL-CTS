@@ -221,7 +221,6 @@ public:
 		m_inputs[1].type	= rr::GENERICVECTYPE_FLOAT;
 		m_inputs[2].type	= rr::GENERICVECTYPE_FLOAT;
 
-		// XXX: Should m_outputs[1] need to be added?
 		m_outputs[0].type	= (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)? rr::GENERICVECTYPE_INT32 :
 							  (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)? rr::GENERICVECTYPE_UINT32
 							  : rr::GENERICVECTYPE_FLOAT;

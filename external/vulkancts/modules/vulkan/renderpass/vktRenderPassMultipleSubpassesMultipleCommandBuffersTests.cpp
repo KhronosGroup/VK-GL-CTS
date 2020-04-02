@@ -101,7 +101,6 @@ private:
 	static constexpr deUint32				kImageHeight		= 32;
 	const tcu::UVec2						m_renderSize		= { kImageWidth, kImageHeight };
 
-	// FIXME: check if I need all of this.
 	VkClearValue							m_initialColor;
 	VkClearValue							m_clearColor;
 
@@ -180,7 +179,6 @@ void MultipleSubpassesMultipleCommandBuffersTest::initPrograms (SourceCollection
 // Create a render pass for this use case.
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk, VkDevice vkDevice)
 {
-	// XXX: Add more code to this
 	// Create attachment descriptions.
 	const VkAttachmentDescription		attachmentDescription	=
 	{
@@ -195,7 +193,6 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk, VkDevice vkDevic
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
 	};
 
-	// XXX: Review this parameters, I think I am doing it wrong.
 	// Mark attachments as used or not depending on the test parameters.
 	const VkAttachmentReference			attachmentReference
 	{
@@ -820,7 +817,6 @@ tcu::TestStatus	MultipleSubpassesMultipleCommandBuffersTestInstance::iterate (vo
 		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
-	// XXX: Add code for image verification for both color attachments
 	{
 		// Colors to compare to.
 		const tcu::Vec4			red			= {1.0f, 0.0f, 0.0f, 1.0f};
