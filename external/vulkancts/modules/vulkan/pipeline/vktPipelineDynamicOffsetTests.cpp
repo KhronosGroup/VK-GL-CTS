@@ -242,7 +242,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	}
 
 	// Create render passes
-	for (deUint32 renderPassIdx = 0; renderPassIdx < 2; renderPassIdx++)
+	for (deUint32 renderPassIdx = 0; renderPassIdx < m_params.numCmdBuffers; renderPassIdx++)
 	{
 		// The first pass clears the output image, and the second one draws on top of the first pass.
 		const VkAttachmentLoadOp		loadOps[]				=
@@ -307,7 +307,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	}
 
 	// Create framebuffers
-	for (deUint32 framebufferIdx = 0; framebufferIdx < 2; framebufferIdx++)
+	for (deUint32 framebufferIdx = 0; framebufferIdx < m_params.numCmdBuffers; framebufferIdx++)
 	{
 		const VkImageView				attachmentBindInfos[]	=
 		{
@@ -523,7 +523,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 	}
 
 	// Create pipelines
-	for (deUint32 pipelineIdx = 0; pipelineIdx < 2; pipelineIdx++)
+	for (deUint32 pipelineIdx = 0; pipelineIdx < m_params.numCmdBuffers; pipelineIdx++)
 	{
 		const VkVertexInputBindingDescription		vertexInputBindingDescription		=
 		{
