@@ -51,6 +51,7 @@
 #include "deInt32.h"
 
 #include <limits>
+#include <algorithm>
 
 #define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
 
@@ -2554,8 +2555,8 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 	return tcu::TestStatus::pass("Ok");
 }
 
-template<typename Object>	deUint32	getOomIterLimit					(void) { return 1024;	}
-template<>					deUint32	getOomIterLimit<Device>         (void) { return 20;		}
+template<typename Object>	deUint32	getOomIterLimit					(void) { return 40;		}
+template<>					deUint32	getOomIterLimit<Device>			(void) { return 20;		}
 template<>					deUint32	getOomIterLimit<DeviceGroup>	(void) { return 20;		}
 
 template<typename Object>
@@ -2576,13 +2577,15 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 	deUint32							numPassingAllocs	= 0;
 	const deUint32						cmdLineIterCount	= (deUint32)context.getTestContext().getCommandLine().getTestIterationCount();
 	const deUint32						maxTries			= cmdLineIterCount != 0 ? cmdLineIterCount : getOomIterLimit<Object>();
+	const deUint32						finalLimit			= std::max(maxTries, 10000u);
+	bool								createOk			= false;
 
 	{
 		const EnvClone						resEnv	(rootEnv, getDefaulDeviceParameters(context), 1u);
 		const typename Object::Resources	res		(resEnv.env, params);
 
 		// Iterate over test until object allocation succeeds
-		for (; numPassingAllocs < maxTries; ++numPassingAllocs)
+		while(true)
 		{
 			DeterministicFailAllocator			objAllocator(getSystemAllocator(),
 															 DeterministicFailAllocator::MODE_COUNT_AND_FAIL,
@@ -2599,13 +2602,13 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 recorder.getCallbacks(),
 															 resEnv.env.maxResourceConsumers,
 															 resEnv.env.commandLine);
-			bool								createOk	= false;
 
 			context.getTestContext().getLog()
 				<< TestLog::Message
 				<< "Trying to create object with " << numPassingAllocs << " allocation" << (numPassingAllocs != 1 ? "s" : "") << " passing"
 				<< TestLog::EndMessage;
 
+			createOk = false;
 			try
 			{
 				Unique<typename Object::Type>	obj	(Object::create(objEnv, res, params));
@@ -2629,6 +2632,14 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 					<< TestLog::Message << "Object construction succeeded! " << TestLog::EndMessage;
 				break;
 			}
+
+			++numPassingAllocs;
+			// if allocation didn't succeed with huge limit then stop trying
+			if (numPassingAllocs >= finalLimit)
+				break;
+			// if we reached maxTries but didn't create object, try doing it with huge limit
+			if (numPassingAllocs >= maxTries)
+				numPassingAllocs = finalLimit;
 		}
 	}
 
@@ -2637,11 +2648,19 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 
 	if (numPassingAllocs == 0)
 		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
-	else if (numPassingAllocs == maxTries)
+	else if (numPassingAllocs >= finalLimit)
 	{
+		if (createOk)
+		{
+			context.getTestContext().getLog()
+				<< TestLog::Message << "Maximum iteration count (" << maxTries << ") reached without object construction passing. "
+				<< "Object was succesfully constructed with " << numPassingAllocs << " iterations limit." << TestLog::EndMessage;
+			return tcu::TestStatus(QP_TEST_RESULT_PASS, "Construction passed but not all iterations were checked");
+		}
+
 		context.getTestContext().getLog()
-			<< TestLog::Message << "WARNING: Maximum iteration count (" << maxTries << ") reached without object construction passing. "
-								<< "OOM testing incomplete, use --deqp-test-iteration-count= to test with higher limit." << TestLog::EndMessage;
+			<< TestLog::Message << "WARNING: Maximum iteration count (" << finalLimit << ") reached without object construction passing. "
+			<< "OOM testing incomplete, use --deqp-test-iteration-count= to test with higher limit." << TestLog::EndMessage;
 		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Max iter count reached");
 	}
 	else

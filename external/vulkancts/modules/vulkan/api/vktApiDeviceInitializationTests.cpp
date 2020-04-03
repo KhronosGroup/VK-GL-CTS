@@ -34,6 +34,7 @@
 #include "vkMemUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkApiVersion.hpp"
+#include "vkAllocationCallbackUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResultCollector.hpp"
@@ -553,6 +554,58 @@ tcu::TestStatus createInstanceWithLayerNameAbuseTest (Context& context)
 		return tcu::TestStatus::fail("Fail, creating instances with unsupported layers succeeded.");
 
 	return tcu::TestStatus::pass("Pass, creating instances with unsupported layers were rejected.");
+}
+
+tcu::TestStatus enumerateDevicesAllocLeakTest(Context& context)
+{
+	// enumeratePhysicalDevices uses instance-provided allocator
+	// and this test checks if all alocated memory is freed
+
+	typedef AllocationCallbackRecorder::RecordIterator RecordIterator;
+
+	const PlatformInterface&	vkp				(context.getPlatformInterface());
+	const deUint32				apiVersion		(context.getUsedApiVersion());
+	DeterministicFailAllocator	objAllocator	(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT, 0);
+	AllocationCallbackRecorder	recorder		(objAllocator.getCallbacks(), 128);
+	Move<VkInstance>			instance		(vk::createDefaultInstance(vkp, apiVersion, {}, {}, recorder.getCallbacks()));
+	InstanceDriver				vki				(vkp, *instance);
+	vector<VkPhysicalDevice>	devices			(enumeratePhysicalDevices(vki, *instance));
+	RecordIterator				recordToCheck	(recorder.getRecordsEnd());
+
+	try
+	{
+		devices = enumeratePhysicalDevices(vki, *instance);
+	}
+	catch (const vk::OutOfMemoryError& e)
+	{
+		if (e.getError() != VK_ERROR_OUT_OF_HOST_MEMORY)
+			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Got out of memory error - leaks in enumeratePhysicalDevices not tested.");
+	}
+
+	// make sure that same number of allocations and frees was done
+	deInt32			allocationRecords	(0);
+	RecordIterator	lastRecordToCheck	(recorder.getRecordsEnd());
+	while (recordToCheck != lastRecordToCheck)
+	{
+		const AllocationCallbackRecord& record = *recordToCheck;
+		switch (record.type)
+		{
+		case AllocationCallbackRecord::TYPE_ALLOCATION:
+			++allocationRecords;
+			break;
+		case AllocationCallbackRecord::TYPE_FREE:
+			if (record.data.free.mem != DE_NULL)
+				--allocationRecords;
+			break;
+		default:
+			break;
+		}
+		++recordToCheck;
+	}
+
+	if (allocationRecords)
+		return tcu::TestStatus::fail("enumeratePhysicalDevices leaked memory");
+	return tcu::TestStatus::pass("Ok");
 }
 
 tcu::TestStatus createDeviceTest (Context& context)
@@ -1569,6 +1622,7 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",			"", createInstanceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_extension_name_abuse",			"", createInstanceWithExtensionNameAbuseTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_instance_layer_name_abuse",				"", createInstanceWithLayerNameAbuseTest);
+	addFunctionCase(deviceInitializationTests.get(), "enumerate_devices_alloc_leak",					"", enumerateDevicesAllocLeakTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device",									"", createDeviceTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",							"", createMultipleDevicesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
