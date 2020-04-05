@@ -1164,6 +1164,22 @@ def writeStrUtilImpl (api, filename):
 				yield "}"
 	writeInlFile(filename, INL_HEADER, makeStrUtilImpl())
 
+
+def writeObjTypeImpl (api, filename):
+	def makeObjTypeImpl ():
+
+		yield "namespace vk"
+		yield "{"
+
+		yield "template<typename T> VkObjectType getObjectType	(void);"
+
+		for line in indentLines(["template<> inline VkObjectType\tgetObjectType<%s>\t(void) { return %s;\t}" % (handle.name, prefixName("VK_OBJECT_TYPE_", handle.name)) for handle in api.handles if not handle.isAlias]):
+			yield line
+
+		yield "}"
+
+	writeInlFile(filename, INL_HEADER, makeObjTypeImpl())
+
 class ConstructorFunction:
 	def __init__ (self, type, name, objectType, ifaceArgs, arguments):
 		self.type		= type
@@ -2246,10 +2262,9 @@ if __name__ == "__main__":
 	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
-
 	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR, "vkDeviceFeatures2.inl"))
-
 	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
 	writeDriverIds							(     os.path.join(VULKAN_DIR, "vkKnownDriverIds.inl"))
+	writeObjTypeImpl						(api, os.path.join(VULKAN_DIR, "vkObjTypeImpl.inl"))
