@@ -25,6 +25,7 @@
 #include "vktRayTracingCallableShadersTests.hpp"
 #include "vktRayTracingTraceRaysIndirectTests.hpp"
 #include "vktRayTracingShaderBindingTableTests.hpp"
+#include "vktRayTracingTraversalControlTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -42,6 +43,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createCallableShadersTests(testCtx));
 	group->addChild(createTraceRaysIndirectTests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
+	group->addChild(createTraversalControlTests(testCtx));
 
 	return group.release();
 }
