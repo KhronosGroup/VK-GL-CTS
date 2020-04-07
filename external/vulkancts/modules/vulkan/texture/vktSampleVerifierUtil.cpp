@@ -653,7 +653,7 @@ void convertNormalizedInt (deInt64		num,
 
 bool isPackedType (const TextureFormat::ChannelType type)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 42);
 
 	switch (type)
 	{
@@ -678,7 +678,7 @@ void getPackInfo (const TextureFormat texFormat,
 				  IVec4& bitOffsets,
 				  int& baseTypeBytes)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 42);
 
 	switch (texFormat.type)
 	{

@@ -879,6 +879,42 @@ static const deUint32 s_unsignedInt32IntRef[] =
 	0x0e659f16, 0x6d8499b2, 0xf09486ef, 0x67f99d25,
 };
 
+static const deUint8 s_Int64In[] =
+{
+	0x90, 0xb0, 0x00, 0x78, 0x01, 0x00, 0x00, 0x00,
+	0x40, 0x70, 0x38, 0x2a, 0x01, 0x01, 0x00, 0x00,
+	0x04, 0x0d, 0x67, 0x87, 0x01, 0x01, 0x01, 0x00,
+	0xfc, 0x37, 0xe6, 0x40, 0x01, 0x01, 0x01, 0x01,
+	0x09, 0x0e, 0xb6, 0x2f, 0x02, 0x01, 0x01, 0x01,
+	0x24, 0xde, 0x70, 0x2a, 0x01, 0x02, 0x01, 0x01,
+	0x16, 0x9f, 0x65, 0x0e, 0x01, 0x01, 0x02, 0x01,
+	0xef, 0x86, 0x94, 0x72, 0x01, 0x01, 0x01, 0x02,
+	0xc6, 0x7e, 0x50, 0x2a, 0x01, 0x00, 0x00, 0x00,
+	0x4d, 0xa9, 0x77, 0x0d, 0x01, 0x01, 0x00, 0x00,
+	0xf0, 0xb7, 0xde, 0x6b, 0x01, 0x01, 0x01, 0x00,
+	0xa8, 0x9c, 0xfc, 0x6d, 0x01, 0x01, 0x01, 0x01,
+	0xf3, 0x19, 0x14, 0x97, 0x02, 0x01, 0x01, 0x01,
+	0x95, 0x32, 0xab, 0x7a, 0x01, 0x02, 0x01, 0x01,
+	0x68, 0x84, 0xd9, 0x71, 0x01, 0x01, 0x02, 0x01,
+	0xf7, 0x73, 0x8f, 0x0a, 0x01, 0x01, 0x01, 0x02,
+};
+
+static const deUint32 s_Int64FloatRef[] =
+{
+	0x4fbc0058, 0x5380951c, 0x578080c4, 0x5b808081,
+	0x5b808081, 0x5b808101, 0x5b810081, 0x5c004040,
+	0x4f95283f, 0x538086bc, 0x578080b6, 0x5b808081,
+	0x5b808081, 0x5b808101, 0x5b810081, 0x5c004040,
+};
+
+static const deUint32 s_Int64IntRef[] =
+{
+	0x7800b090, 0x2a387040, 0x87670d04, 0x40e637fc,
+	0x2fb60e09, 0x2a70de24, 0x0e659f16, 0x729486ef,
+	0x2a507ec6, 0x0d77a94d, 0x6bdeb7f0, 0x6dfc9ca8,
+	0x971419f3, 0x7aab3295, 0x71d98468, 0x0a8f73f7,
+};
+
 static const deUint8 s_halfFloatIn[] =
 {
 	0x2b, 0x74, 0x6a, 0x5d,
@@ -1159,10 +1195,13 @@ static const struct
 	{ s_signedInt8In,				DE_LENGTH_OF_ARRAY(s_signedInt8In),					s_signedInt8FloatRef,				s_signedInt8IntRef,				s_signedInt8UintRef				},
 	{ s_signedInt16In,				DE_LENGTH_OF_ARRAY(s_signedInt16In),				s_signedInt16FloatRef,				s_signedInt16IntRef,			s_signedInt16UintRef			},
 	{ s_signedInt32In,				DE_LENGTH_OF_ARRAY(s_signedInt32In),				s_signedInt32FloatRef,				s_signedInt32IntRef,			s_signedInt32UintRef			},
+	{ s_Int64In,					DE_LENGTH_OF_ARRAY(s_Int64In),						s_Int64FloatRef,					s_Int64IntRef,					s_Int64IntRef					},
 	{ s_unsignedInt8In,				DE_LENGTH_OF_ARRAY(s_unsignedInt8In),				s_unsignedInt8FloatRef,				s_unsignedInt8IntRef,			s_unsignedInt8UintRef			},
 	{ s_unsignedInt16In,			DE_LENGTH_OF_ARRAY(s_unsignedInt16In),				s_unsignedInt16FloatRef,			s_unsignedInt16IntRef,			s_unsignedInt16UintRef			},
 	{ s_unsignedInt24In,			DE_LENGTH_OF_ARRAY(s_unsignedInt24In),				s_unsignedInt24FloatRef,			s_unsignedInt24IntRef,			s_unsignedInt24UintRef			},
 	{ s_unsignedInt32In,			DE_LENGTH_OF_ARRAY(s_unsignedInt32In),				s_unsignedInt32FloatRef,			s_unsignedInt32IntRef,			s_unsignedInt32UintRef			},
+	{ s_Int64In,					DE_LENGTH_OF_ARRAY(s_Int64In),						s_Int64FloatRef,					s_Int64IntRef,					s_Int64IntRef					},
+
 	{ s_halfFloatIn,				DE_LENGTH_OF_ARRAY(s_halfFloatIn),					s_halfFloatFloatRef,				s_halfFloatIntRef,				s_halfFloatUintRef				},
 	{ s_floatIn,					DE_LENGTH_OF_ARRAY(s_floatIn),						s_floatFloatRef,					s_floatIntRef,					s_floatUintRef					},
 	{ s_float64In,					DE_LENGTH_OF_ARRAY(s_float64In),					s_float64FloatRef,					s_float64IntRef,				s_float64IntRef					},
@@ -1670,6 +1709,10 @@ tcu::TestCaseGroup* createTextureFormatTests (tcu::TestContext& testCtx)
 
 	for (int channelType = 0; channelType < TextureFormat::CHANNELTYPE_LAST; channelType++)
 	{
+		// \todo [2020-04-08] Missing tests for SIGNED_INT64 and UNSIGNED_INT64
+		if (TextureFormat::SIGNED_INT64 == channelType || channelType == TextureFormat::UNSIGNED_INT64)
+			continue;
+
 		for (int channelOrder = 0; channelOrder < TextureFormat::CHANNELORDER_LAST; channelOrder++)
 		{
 			const TextureFormat		format		((TextureFormat::ChannelOrder)channelOrder, (TextureFormat::ChannelType)channelType);
