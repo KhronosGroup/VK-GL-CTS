@@ -631,6 +631,7 @@ tcu::TestStatus	SecondaryCommandBufferConcurrentTestInstance::iterate (void)
 	const vk::VkDevice device		= m_context.getDevice();
 	const vk::VkQueue queue			= m_context.getUniversalQueue();
 	const vk::DeviceInterface& vk	= m_context.getDeviceInterface();
+	const deBool inheritedQueries	= m_context.getDeviceFeatures().inheritedQueries;
 
 	const CmdPoolCreateInfo			cmdPoolCreateInfo	(m_context.getUniversalQueueFamilyIndex());
 	vk::Move<vk::VkCommandPool>		cmdPool				= vk::createCommandPool(vk, device, &cmdPoolCreateInfo);
@@ -648,7 +649,7 @@ tcu::TestStatus	SecondaryCommandBufferConcurrentTestInstance::iterate (void)
 			*m_stateObjects->m_renderPass,								// renderPass
 			0u,															// subpass
 			*m_stateObjects->m_framebuffer,								// framebuffer
-			VK_TRUE,													// occlusionQueryEnable
+			inheritedQueries ? VK_TRUE : VK_FALSE,						// occlusionQueryEnable
 			(vk::VkQueryControlFlags)0u,								// queryFlags
 			(vk::VkQueryPipelineStatisticFlags)0u,						// pipelineStatistics
 		};
@@ -658,6 +659,9 @@ tcu::TestStatus	SecondaryCommandBufferConcurrentTestInstance::iterate (void)
 		vk::VkBuffer vertexBuffer = m_stateObjects->m_vertexBuffer->object();
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		vk.cmdBindVertexBuffers(*cmdBufferSecondary, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+		if (!inheritedQueries && m_supportedQueryType[QUERY_TYPE_OCCLUSION])
+			vk.cmdBeginQuery(*cmdBufferSecondary, *m_queryPools[QUERY_TYPE_OCCLUSION], QUERY_INDEX_CAPTURE_DRAWCALL, 0u);
 
 		// Run pipeline statistics queries capture in the second command buffer
 		if (m_supportedQueryType[QUERY_TYPE_PIPELINE_STATISTICS])
@@ -671,6 +675,9 @@ tcu::TestStatus	SecondaryCommandBufferConcurrentTestInstance::iterate (void)
 
 		if (m_supportedQueryType[QUERY_TYPE_PIPELINE_STATISTICS])
 			vk.cmdEndQuery(*cmdBufferSecondary, *m_queryPools[QUERY_TYPE_PIPELINE_STATISTICS], QUERY_INDEX_CAPTURE_DRAWCALL);
+
+		if (!inheritedQueries && m_supportedQueryType[QUERY_TYPE_OCCLUSION])
+			vk.cmdEndQuery(*cmdBufferSecondary, *m_queryPools[QUERY_TYPE_OCCLUSION], QUERY_INDEX_CAPTURE_DRAWCALL);
 
 		endCommandBuffer(vk, *cmdBufferSecondary);
 	}
@@ -706,7 +713,7 @@ tcu::TestStatus	SecondaryCommandBufferConcurrentTestInstance::iterate (void)
 		}
 
 		// Run oclussion queries capture in the primary command buffer, inherit the counters for the secondary command buffer
-		if (m_supportedQueryType[QUERY_TYPE_OCCLUSION])
+		if (inheritedQueries && m_supportedQueryType[QUERY_TYPE_OCCLUSION])
 			vk.cmdBeginQuery(*cmdBufferPrimary, *m_queryPools[QUERY_TYPE_OCCLUSION], QUERY_INDEX_CAPTURE_DRAWCALL, 0u);
 
 		beginRenderPass(vk, *cmdBufferPrimary, *m_stateObjects->m_renderPass, *m_stateObjects->m_framebuffer, vk::makeRect2D(0, 0, StateObjects::WIDTH, StateObjects::HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -715,7 +722,7 @@ tcu::TestStatus	SecondaryCommandBufferConcurrentTestInstance::iterate (void)
 
 		endRenderPass(vk, *cmdBufferPrimary);
 
-		if (m_supportedQueryType[QUERY_TYPE_OCCLUSION])
+		if (inheritedQueries && m_supportedQueryType[QUERY_TYPE_OCCLUSION])
 			vk.cmdEndQuery(*cmdBufferPrimary, *m_queryPools[QUERY_TYPE_OCCLUSION], QUERY_INDEX_CAPTURE_DRAWCALL);
 
 		transition2DImage(vk, *cmdBufferPrimary,
