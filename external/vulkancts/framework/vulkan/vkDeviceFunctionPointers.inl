@@ -186,6 +186,7 @@ CmdBeginQueryIndexedEXTFunc							cmdBeginQueryIndexedEXT;
 CmdEndQueryIndexedEXTFunc							cmdEndQueryIndexedEXT;
 CmdDrawIndirectByteCountEXTFunc						cmdDrawIndirectByteCountEXT;
 GetImageViewHandleNVXFunc							getImageViewHandleNVX;
+GetImageViewAddressNVXFunc							getImageViewAddressNVX;
 CmdDrawIndirectCountAMDFunc							cmdDrawIndirectCountAMD;
 CmdDrawIndexedIndirectCountAMDFunc					cmdDrawIndexedIndirectCountAMD;
 GetShaderInfoAMDFunc								getShaderInfoAMD;

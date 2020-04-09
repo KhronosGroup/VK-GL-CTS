@@ -694,6 +694,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedba
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedbackPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateStreamCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewHandleInfoNVX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageViewAddressPropertiesNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTextureLODGatherFormatPropertiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkShaderResourceUsageAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkShaderStatisticsInfoAMD& value);

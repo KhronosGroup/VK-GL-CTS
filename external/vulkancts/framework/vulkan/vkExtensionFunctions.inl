@@ -1222,6 +1222,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	if (extName == "VK_NVX_image_view_handle")
 	{
 		functions.push_back("vkGetImageViewHandleNVX");
+		functions.push_back("vkGetImageViewAddressNVX");
 		return;
 	}
 	if (extName == "VK_AMD_draw_indirect_count")

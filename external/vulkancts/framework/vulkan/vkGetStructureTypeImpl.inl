@@ -1091,6 +1091,11 @@ template<> VkStructureType getStructureType<VkImageViewHandleInfoNVX> (void)
 	return VK_STRUCTURE_TYPE_IMAGE_VIEW_HANDLE_INFO_NVX;
 }
 
+template<> VkStructureType getStructureType<VkImageViewAddressPropertiesNVX> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX;
+}
+
 template<> VkStructureType getStructureType<VkTextureLODGatherFormatPropertiesAMD> (void)
 {
 	return VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD;

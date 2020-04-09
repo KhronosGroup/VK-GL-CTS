@@ -186,6 +186,7 @@ virtual void				cmdBeginQueryIndexedEXT							(VkCommandBuffer commandBuffer, Vk
 virtual void				cmdEndQueryIndexedEXT							(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index) const = 0;
 virtual void				cmdDrawIndirectByteCountEXT						(VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride) const = 0;
 virtual uint32_t			getImageViewHandleNVX							(VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const = 0;
+virtual VkResult			getImageViewAddressNVX							(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const = 0;
 virtual void				cmdDrawIndirectCountAMD							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
 virtual void				cmdDrawIndexedIndirectCountAMD					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
 virtual VkResult			getShaderInfoAMD								(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo) const = 0;

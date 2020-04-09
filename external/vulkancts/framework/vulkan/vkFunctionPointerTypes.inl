@@ -276,6 +276,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginQueryIndexedEXTFunc)											
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndQueryIndexedEXTFunc)												(VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectByteCountEXTFunc)										(VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride);
 typedef VKAPI_ATTR uint32_t				(VKAPI_CALL* GetImageViewHandleNVXFunc)												(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetImageViewAddressNVXFunc)											(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndirectCountAMDFunc)											(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCountAMDFunc)									(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetShaderInfoAMDFunc)													(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, deUintptr* pInfoSize, void* pInfo);

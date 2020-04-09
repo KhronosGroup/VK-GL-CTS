@@ -1759,6 +1759,14 @@ VKAPI_ATTR uint32_t VKAPI_CALL getImageViewHandleNVX (VkDevice device, const VkI
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(imageView);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
 {
 	DE_UNREF(commandBuffer);
@@ -2981,6 +2989,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,								cmdEndQueryIndexedEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCountEXT,						cmdDrawIndirectByteCountEXT),
 	VK_NULL_FUNC_ENTRY(vkGetImageViewHandleNVX,								getImageViewHandleNVX),
+	VK_NULL_FUNC_ENTRY(vkGetImageViewAddressNVX,							getImageViewAddressNVX),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,							cmdDrawIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,					cmdDrawIndexedIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkGetShaderInfoAMD,									getShaderInfoAMD),

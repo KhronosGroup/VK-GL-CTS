@@ -927,6 +927,11 @@ uint32_t DeviceDriver::getImageViewHandleNVX (VkDevice device, const VkImageView
 	return m_vk.getImageViewHandleNVX(device, pInfo);
 }
 
+VkResult DeviceDriver::getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const
+{
+	return m_vk.getImageViewAddressNVX(device, imageView, pProperties);
+}
+
 void DeviceDriver::cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const
 {
 	m_vk.cmdDrawIndirectCountAMD(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);

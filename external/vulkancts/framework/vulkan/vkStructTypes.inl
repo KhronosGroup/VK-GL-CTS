@@ -2935,6 +2935,14 @@ struct VkImageViewHandleInfoNVX
 	VkSampler			sampler;
 };
 
+struct VkImageViewAddressPropertiesNVX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceAddress	deviceAddress;
+	VkDeviceSize	size;
+};
+
 struct VkTextureLODGatherFormatPropertiesAMD
 {
 	VkStructureType	sType;

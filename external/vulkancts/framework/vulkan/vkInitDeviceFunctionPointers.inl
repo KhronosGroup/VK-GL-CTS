@@ -242,6 +242,7 @@ m_vk.cmdBeginQueryIndexedEXT							= (CmdBeginQueryIndexedEXTFunc)							GET_PRO
 m_vk.cmdEndQueryIndexedEXT								= (CmdEndQueryIndexedEXTFunc)							GET_PROC_ADDR("vkCmdEndQueryIndexedEXT");
 m_vk.cmdDrawIndirectByteCountEXT						= (CmdDrawIndirectByteCountEXTFunc)						GET_PROC_ADDR("vkCmdDrawIndirectByteCountEXT");
 m_vk.getImageViewHandleNVX								= (GetImageViewHandleNVXFunc)							GET_PROC_ADDR("vkGetImageViewHandleNVX");
+m_vk.getImageViewAddressNVX								= (GetImageViewAddressNVXFunc)							GET_PROC_ADDR("vkGetImageViewAddressNVX");
 m_vk.cmdDrawIndirectCountAMD							= (CmdDrawIndirectCountAMDFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCountAMD");
 m_vk.cmdDrawIndexedIndirectCountAMD						= (CmdDrawIndexedIndirectCountAMDFunc)					GET_PROC_ADDR("vkCmdDrawIndexedIndirectCountAMD");
 m_vk.getShaderInfoAMD									= (GetShaderInfoAMDFunc)								GET_PROC_ADDR("vkGetShaderInfoAMD");
