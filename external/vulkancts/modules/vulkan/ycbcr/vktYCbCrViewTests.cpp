@@ -399,7 +399,32 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 	const vector<AllocationSp>		allocations		(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags));
 
 	if (imageAlias)
-		VK_CHECK(vkd.bindImageMemory(device, *imageAlias, allocations[params.planeNdx]->getMemory(), allocations[params.planeNdx]->getOffset()));
+	{
+		if ((createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
+		{
+			VkBindImagePlaneMemoryInfo	planeInfo	=
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
+				DE_NULL,
+				VK_IMAGE_ASPECT_PLANE_0_BIT_KHR
+			};
+
+			VkBindImageMemoryInfo coreInfo	=
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
+				&planeInfo,
+				*imageAlias,
+				allocations[params.planeNdx]->getMemory(),
+				allocations[params.planeNdx]->getOffset(),
+			};
+
+			VK_CHECK(vkd.bindImageMemory2(device, 1, &coreInfo));
+		}
+		else
+		{
+			VK_CHECK(vkd.bindImageMemory(device, *imageAlias, allocations[params.planeNdx]->getMemory(), allocations[params.planeNdx]->getOffset()));
+		}
+	}
 
 	const VkSamplerYcbcrConversionCreateInfo	conversionInfo	=
 	{

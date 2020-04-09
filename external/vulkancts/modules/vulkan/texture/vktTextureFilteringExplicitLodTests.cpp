@@ -614,7 +614,7 @@ TestStatus TextureFilteringTestInstance::verify (void)
 	int												warningCount		= 0;
 	const tcu::TextureFormat						tcuFormat			= mapVkFormat(m_imParams.format);
 	std::vector<de::SharedPtr<tcu::FloatFormat>>	strictPrecision		= getPrecision(m_imParams.format, 0);
-	std::vector<de::SharedPtr<tcu::FloatFormat>>	relaxedPrecision	= tcuFormat.type == tcu::TextureFormat::HALF_FLOAT ? getPrecision(m_imParams.format, -3) : getPrecision(m_imParams.format, -2);
+	std::vector<de::SharedPtr<tcu::FloatFormat>>	relaxedPrecision	= tcuFormat.type == tcu::TextureFormat::HALF_FLOAT ? getPrecision(m_imParams.format, -6) : getPrecision(m_imParams.format, -2);
 	const bool										allowRelaxedPrecision	= (tcuFormat.type == tcu::TextureFormat::HALF_FLOAT || tcuFormat.type == tcu::TextureFormat::SNORM_INT8) &&
 		(m_samplerParams.minFilter == VK_FILTER_LINEAR || m_samplerParams.magFilter == VK_FILTER_LINEAR);
 
