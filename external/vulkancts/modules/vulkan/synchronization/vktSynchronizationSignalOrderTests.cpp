@@ -232,11 +232,9 @@ SimpleAllocation::~SimpleAllocation (void)
 	m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
 }
 
-MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface&				vkd,
-										   VkDevice								device,
-										   VkBuffer								buffer,
-										   VkExternalMemoryHandleTypeFlagBits	externalType,
-										   deUint32&							memoryIndex)
+vk::VkMemoryRequirements getMemoryRequirements (const DeviceInterface&				vkd,
+												 VkDevice							device,
+												 VkBuffer							buffer)
 {
 	const VkBufferMemoryRequirementsInfo2	requirementInfo =
 	{
@@ -251,20 +249,13 @@ MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface&				vkd,
 		{ 0u, 0u, 0u, }
 	};
 	vkd.getBufferMemoryRequirements2(device, &requirementInfo, &requirements);
-
-	Move<VkDeviceMemory>					memory			= allocateExportableMemory(vkd, device, requirements.memoryRequirements, externalType, buffer, memoryIndex);
-	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
-
-	return MovePtr<Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
+	return requirements.memoryRequirements;
 }
 
-MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface&				vkd,
-										   VkDevice								device,
-										   VkImage								image,
-										   VkExternalMemoryHandleTypeFlagBits	externalType,
-										   deUint32&							exportedMemoryTypeIndex)
+vk::VkMemoryRequirements getMemoryRequirements(const DeviceInterface&				vkd,
+												VkDevice							device,
+												VkImage								image)
 {
-	VkMemoryRequirements memoryRequirements = { 0u, 0u, 0u, };
 	const VkImageMemoryRequirementsInfo2	requirementInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
@@ -279,14 +270,8 @@ MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface&				vkd,
 	};
 	vkd.getImageMemoryRequirements2(device, &requirementInfo, &requirements);
 
-	memoryRequirements = requirements.memoryRequirements;
-
-	Move<VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, image, exportedMemoryTypeIndex);
-	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
-
-	return MovePtr<Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
+	return requirements.memoryRequirements;
 }
-
 
 MovePtr<Allocation> importAndBindMemory (const DeviceInterface&					vkd,
 										 VkDevice								device,
@@ -349,100 +334,6 @@ struct QueueTimelineIteration
 	deUint64					timelineValue;
 	SharedPtr<Operation>		op;
 };
-
-de::MovePtr<Resource> createResource (const DeviceInterface&				vkd,
-									  VkDevice								device,
-									  const ResourceDescription&			resourceDesc,
-									  const deUint32						queueFamilyIndex,
-									  const OperationSupport&				readOp,
-									  const OperationSupport&				writeOp,
-									  VkExternalMemoryHandleTypeFlagBits	externalType,
-									  deUint32&								exportedMemoryTypeIndex)
-{
-	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
-	{
-		const VkExtent3D				extent					=
-		{
-			(deUint32)resourceDesc.size.x(),
-			de::max(1u, (deUint32)resourceDesc.size.y()),
-			de::max(1u, (deUint32)resourceDesc.size.z())
-		};
-		const VkImageSubresourceRange	subresourceRange		=
-		{
-			resourceDesc.imageAspect,
-			0u,
-			1u,
-			0u,
-			1u
-		};
-		const VkImageSubresourceLayers	subresourceLayers		=
-		{
-			resourceDesc.imageAspect,
-			0u,
-			0u,
-			1u
-		};
-		const VkExternalMemoryImageCreateInfo externalInfo		=
-		{
-			VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
-			DE_NULL,
-			(VkExternalMemoryHandleTypeFlags)externalType
-		};
-		const VkImageCreateInfo			createInfo				=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-			&externalInfo,
-			0u,
-
-			resourceDesc.imageType,
-			resourceDesc.imageFormat,
-			extent,
-			1u,
-			1u,
-			VK_SAMPLE_COUNT_1_BIT,
-			VK_IMAGE_TILING_OPTIMAL,
-			readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags(),
-			VK_SHARING_MODE_EXCLUSIVE,
-
-			1u,
-			&queueFamilyIndex,
-			VK_IMAGE_LAYOUT_UNDEFINED
-		};
-
-		Move<VkImage>			image		= createImage(vkd, device, &createInfo);
-		MovePtr<Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType, exportedMemoryTypeIndex);
-
-		return MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
-	}
-	else
-	{
-		const VkDeviceSize						offset			= 0u;
-		const VkDeviceSize						size			= static_cast<VkDeviceSize>(resourceDesc.size.x());
-		const VkBufferUsageFlags				usage			= readOp.getInResourceUsageFlags() | writeOp.getOutResourceUsageFlags();
-		const VkExternalMemoryBufferCreateInfo	externalInfo	=
-		{
-			VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-			DE_NULL,
-			(VkExternalMemoryHandleTypeFlags)externalType
-		};
-		const VkBufferCreateInfo				createInfo		=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			&externalInfo,
-			0u,
-
-			size,
-			usage,
-			VK_SHARING_MODE_EXCLUSIVE,
-			1u,
-			&queueFamilyIndex
-		};
-		Move<VkBuffer>							buffer		= createBuffer(vkd, device, &createInfo);
-		MovePtr<Allocation>						allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType, exportedMemoryTypeIndex);
-
-		return MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
-	}
-}
 
 de::MovePtr<Resource> importResource (const DeviceInterface&				vkd,
 									  VkDevice								device,
@@ -626,6 +517,67 @@ public:
 
 	}
 
+	Move<VkImage> createImage (const vk::DeviceInterface&	vkd,
+							   vk::VkDevice					device,
+							   const vk::VkExtent3D&		extent,
+							   deUint32						queueFamilyIndex)
+	{
+		const VkExternalMemoryImageCreateInfo externalInfo =
+		{
+			VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
+			DE_NULL,
+			(VkExternalMemoryHandleTypeFlags)m_memoryHandleType
+		};
+		const VkImageCreateInfo createInfo =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+			&externalInfo,
+			0u,
+
+			m_resourceDesc.imageType,
+			m_resourceDesc.imageFormat,
+			extent,
+			1u,
+			1u,
+			VK_SAMPLE_COUNT_1_BIT,
+			VK_IMAGE_TILING_OPTIMAL,
+			m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
+			VK_SHARING_MODE_EXCLUSIVE,
+
+			1u,
+			&queueFamilyIndex,
+			VK_IMAGE_LAYOUT_UNDEFINED
+		};
+
+		return vk::createImage(vkd, device, &createInfo);
+	}
+
+	Move<VkBuffer> createBuffer (const vk::DeviceInterface&		vkd,
+								 vk::VkDevice					device,
+								 const vk::VkDeviceSize&		size,
+								 deUint32						queueFamilyIndex)
+	{
+		const VkExternalMemoryBufferCreateInfo	externalInfo =
+		{
+			VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+			DE_NULL,
+			(VkExternalMemoryHandleTypeFlags)m_memoryHandleType
+		};
+		const VkBufferCreateInfo				createInfo =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			&externalInfo,
+			0u,
+
+			size,
+			m_readOpSupport->getInResourceUsageFlags() | m_writeOpSupport->getOutResourceUsageFlags(),
+			VK_SHARING_MODE_EXCLUSIVE,
+			1u,
+			&queueFamilyIndex
+		};
+		return vk::createBuffer(vkd, device, &createInfo);
+	}
+
 	tcu::TestStatus iterate (void)
 	{
 		// We're using 2 devices to make sure we have 2 queues even on
@@ -657,24 +609,65 @@ public:
 		std::vector<VkSemaphore>							semaphoreHandlesB;
 		std::vector<deUint64>								timelineValuesA;
 		std::vector<deUint64>								timelineValuesB;
-		std::vector<QueueSubmitOrderSharedIteration>		iterations;
+		std::vector<QueueSubmitOrderSharedIteration>		iterations(12);
 		std::vector<VkPipelineStageFlags>					stageBits;
 
 		// Create a dozen of set of write/read operations.
-		iterations.resize(12);
 		for (deUint32 iterIdx = 0; iterIdx < iterations.size(); iterIdx++)
 		{
 			QueueSubmitOrderSharedIteration&	iter				= iterations[iterIdx];
 			deUint32							memoryTypeIndex;
 			NativeHandle						nativeMemoryHandle;
 
-			iter.resourceA	= makeSharedPtr(createResource(vkA, deviceA,
-														   m_resourceDesc,
-														   universalQueueFamilyIndex,
-														   *m_readOpSupport,
-														   *m_writeOpSupport,
-														   m_memoryHandleType,
-														   memoryTypeIndex));
+			if (m_resourceDesc.type == RESOURCE_TYPE_IMAGE)
+			{
+				const VkExtent3D				extent =
+				{
+					(deUint32)m_resourceDesc.size.x(),
+					de::max(1u, (deUint32)m_resourceDesc.size.y()),
+					de::max(1u, (deUint32)m_resourceDesc.size.z())
+				};
+				const VkImageSubresourceRange	subresourceRange =
+				{
+					m_resourceDesc.imageAspect,
+					0u,
+					1u,
+					0u,
+					1u
+				};
+				const VkImageSubresourceLayers	subresourceLayers =
+				{
+					m_resourceDesc.imageAspect,
+					0u,
+					0u,
+					1u
+				};
+
+				Move<VkImage>							image			= createImage(vkA, deviceA, extent, universalQueueFamilyIndex);
+				const vk::VkMemoryRequirements			requirements	= getMemoryRequirements(vkA, deviceA, *image);
+														memoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
+				vk::Move<vk::VkDeviceMemory>			memory			= allocateExportableMemory(vkA, deviceA, requirements.size, memoryTypeIndex, m_memoryHandleType, *image);
+
+				VK_CHECK(vkA.bindImageMemory(deviceA, *image, *memory, 0u));
+
+				MovePtr<Allocation> allocation(new SimpleAllocation(vkA, deviceA, memory.disown()));
+				iter.resourceA = makeSharedPtr(new Resource(image, allocation, extent, m_resourceDesc.imageType, m_resourceDesc.imageFormat, subresourceRange, subresourceLayers));
+			}
+			else
+			{
+				const VkDeviceSize						offset			= 0u;
+				const VkDeviceSize						size			= static_cast<VkDeviceSize>(m_resourceDesc.size.x());
+				Move<VkBuffer>							buffer			= createBuffer(vkA, deviceA, size, universalQueueFamilyIndex);
+				const vk::VkMemoryRequirements			requirements	= getMemoryRequirements(vkA, deviceA, *buffer);
+														memoryTypeIndex	= chooseMemoryType(requirements.memoryTypeBits);
+				vk::Move<vk::VkDeviceMemory>			memory			= allocateExportableMemory(vkA, deviceA, requirements.size, memoryTypeIndex, m_memoryHandleType, *buffer);
+
+				VK_CHECK(vkA.bindBufferMemory(deviceA, *buffer, *memory, 0u));
+
+				MovePtr<Allocation> allocation(new SimpleAllocation(vkA, deviceA, memory.disown()));
+				iter.resourceA = makeSharedPtr(new Resource(m_resourceDesc.type, buffer, allocation, offset, size));
+			}
+
 			getMemoryNative(vkA, deviceA, iter.resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
 			iter.resourceB	= makeSharedPtr(importResource(vkB, *deviceB,
 														   m_resourceDesc,
