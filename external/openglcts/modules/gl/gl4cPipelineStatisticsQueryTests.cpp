@@ -2089,7 +2089,7 @@ void PipelineStatisticsQueryTestFunctionalBase::initVBO(
 	const unsigned int indirect_arrays_draw_call_arguments_size   = sizeof(unsigned int) * 4; /* as per spec */
 	const unsigned int indirect_elements_draw_call_arguments_size = sizeof(unsigned int) * 5; /* as per spec */
 
-	m_vbo_n_indices						  = sizeof(raw_index_data_size) / sizeof(unsigned int);
+	m_vbo_n_indices						  = raw_index_data_size / sizeof(unsigned int);
 	m_vbo_vertex_data_offset			  = 0;
 	m_vbo_index_data_offset				  = raw_vertex_data_size;
 	m_vbo_indirect_arrays_argument_offset = m_vbo_index_data_offset + raw_index_data_size;
