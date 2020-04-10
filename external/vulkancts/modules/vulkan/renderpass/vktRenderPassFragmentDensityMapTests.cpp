@@ -816,7 +816,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context&			contex
 	// create a sampler that is able to read from subsampled image
 	{
 #if !DRY_RUN_WITHOUT_FDM_EXTENSION
-		deUint32 samplerCreateFlags = (deUint32)VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT;
+		deUint32 samplerCreateFlags = m_testParams.nonSubsampledImages ? 0u : (deUint32)VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT;
 #else
 		deUint32 samplerCreateFlags = 0u;
 #endif
