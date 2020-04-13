@@ -62,6 +62,12 @@ template<typename T> inline T		leftSetMask		(T n)		{ const T tlen = T(sizeof(T) 
 //! Return T with high n bits reset
 template<typename T> inline T		leftZeroMask	(T n)		{ return T(~leftSetMask(n)); }
 
+//! Round x up to a multiple of y.
+template<typename T> inline T		roundUp			(T x, T y)	{ DE_ASSERT(y != T(0)); const T mod = x % y; return x + ((mod == T(0)) ? T(0) : (y - mod)); }
+
+//! Round x down to a multiple of y.
+template<typename T> inline T		roundDown		(T x, T y)	{ DE_ASSERT(y != T(0)); return (x / y) * y; }
+
 //! Helper for DE_CHECK() macros.
 void throwRuntimeError (const char* message, const char* expr, const char* file, int line);
 
