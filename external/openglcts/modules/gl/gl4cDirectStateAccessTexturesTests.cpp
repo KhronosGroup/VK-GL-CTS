@@ -8622,7 +8622,7 @@ tcu::TestNode::IterateResult BufferErrorsTest::iterate()
 		{
 			gl.textureBuffer(texture_1D, GL_RGBA8, buffer);
 
-			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureBuffer",
+			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureBuffer",
 									  "the effective target of texture is not TEXTURE_BUFFER.");
 		}
 
@@ -8775,7 +8775,7 @@ tcu::TestNode::IterateResult BufferRangeErrorsTest::iterate()
 		{
 			gl.textureBufferRange(texture_1D, GL_RGBA8, buffer, 0, data_size);
 
-			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureBufferRange",
+			is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureBufferRange",
 									  "the effective target of texture is not TEXTURE_BUFFER.");
 		}
 
@@ -12138,7 +12138,7 @@ bool ParameterSetupErrorsTest::Testf()
 	{
 		gl.textureParameterf(m_to_2D_ms, GL_TEXTURE_LOD_BIAS, 1.f);
 
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureParameterf",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureParameterf",
 								  "the  effective target is either TEXTURE_2D_MULTISAMPLE or  "
 								  "TEXTURE_2D_MULTISAMPLE_ARRAY, and pname is any of the sampler states.");
 	}
@@ -12266,7 +12266,7 @@ bool ParameterSetupErrorsTest::Testi()
 	{
 		gl.textureParameteri(m_to_2D_ms, GL_TEXTURE_LOD_BIAS, 1);
 
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureParameteri",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureParameteri",
 								  "the  effective target is either TEXTURE_2D_MULTISAMPLE or  "
 								  "TEXTURE_2D_MULTISAMPLE_ARRAY, and pname is any of the sampler states.");
 	}
@@ -12390,7 +12390,7 @@ bool ParameterSetupErrorsTest::Testfv()
 	{
 		gl.textureParameterfv(m_to_2D_ms, GL_TEXTURE_LOD_BIAS, &one);
 
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureParameterfv",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureParameterfv",
 								  "the  effective target is either TEXTURE_2D_MULTISAMPLE or  "
 								  "TEXTURE_2D_MULTISAMPLE_ARRAY, and pname is any of the sampler states.");
 	}
@@ -12514,7 +12514,7 @@ bool ParameterSetupErrorsTest::Testiv()
 	{
 		gl.textureParameteriv(m_to_2D_ms, GL_TEXTURE_LOD_BIAS, &one);
 
-		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glTextureParameteriv",
+		is_ok &= CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glTextureParameteriv",
 								  "the  effective target is either TEXTURE_2D_MULTISAMPLE or  "
 								  "TEXTURE_2D_MULTISAMPLE_ARRAY, and pname is any of the sampler states.");
 	}
