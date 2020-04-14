@@ -1891,6 +1891,16 @@ template<> VkStructureType getStructureType<VkDeviceDiagnosticsConfigCreateInfoN
 	return VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;

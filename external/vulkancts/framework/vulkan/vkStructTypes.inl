@@ -4552,6 +4552,23 @@ struct VkDeviceDiagnosticsConfigCreateInfoNV
 	VkDeviceDiagnosticsConfigFlagsNV	flags;
 };
 
+struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapDeferred;
+};
+
+struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		subsampledLoads;
+	VkBool32		subsampledCoarseReconstructionEarlyAccess;
+	deUint32		maxSubsampledArrayLayers;
+	deUint32		maxDescriptorSetSubsampledSamplers;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;

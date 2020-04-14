@@ -22,6 +22,7 @@ const vk::VkPhysicalDeviceDiagnosticsConfigFeaturesNV&					Context::getDiagnosti
 const vk::VkPhysicalDeviceExclusiveScissorFeaturesNV&					Context::getExclusiveScissorFeatures					(void) const { return m_device->getExclusiveScissorFeatures();					}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&				Context::getExtendedDynamicStateFeaturesEXT				(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&				Context::getFragmentDensityMapFeaturesEXT				(void) const { return m_device->getFragmentDensityMapFeaturesEXT();				}
+const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&				Context::getFragmentDensityMap2FeaturesEXT				(void) const { return m_device->getFragmentDensityMap2FeaturesEXT();			}
 const vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&			Context::getFragmentShaderBarycentricFeatures			(void) const { return m_device->getFragmentShaderBarycentricFeatures();			}
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&			Context::getFragmentShaderInterlockFeaturesEXT			(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();		}
 const vk::VkPhysicalDeviceHostQueryResetFeatures&						Context::getHostQueryResetFeatures						(void) const { return m_device->getHostQueryResetFeatures();					}
@@ -55,6 +56,7 @@ const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&			Context::getSha
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					Context::getShadingRateImageFeatures					(void) const { return m_device->getShadingRateImageFeatures();					}
 const vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&				Context::getSubgroupSizeControlFeaturesEXT				(void) const { return m_device->getSubgroupSizeControlFeaturesEXT();			}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&				Context::getTexelBufferAlignmentFeaturesEXT				(void) const { return m_device->getTexelBufferAlignmentFeaturesEXT();			}
+const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&			Context::getTextureCompressionASTCHDRFeaturesEXT		(void) const { return m_device->getTextureCompressionASTCHDRFeaturesEXT();		}
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&					Context::getTimelineSemaphoreFeatures					(void) const { return m_device->getTimelineSemaphoreFeatures();					}
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&					Context::getTransformFeedbackFeaturesEXT				(void) const { return m_device->getTransformFeedbackFeaturesEXT();				}
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&			Context::getUniformBufferStandardLayoutFeatures			(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}

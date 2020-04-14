@@ -16,6 +16,8 @@ VkPhysicalDeviceBufferDeviceAddressFeaturesEXT		deviceBufferDeviceAddressFeature
 VkPhysicalDeviceBufferDeviceAddressFeatures			deviceBufferDeviceAddressFeatures[count];
 VkPhysicalDeviceDescriptorIndexingFeatures			deviceDescriptorIndexingFeatures[count];
 VkPhysicalDeviceTimelineSemaphoreFeatures			deviceTimelineSemaphoreFeatures[count];
+VkPhysicalDeviceFragmentDensityMapFeaturesEXT		deviceFragmentDensityMapFeaturesEXT[count];
+VkPhysicalDeviceFragmentDensityMap2FeaturesEXT		deviceFragmentDensityMap2FeaturesEXT[count];
 
 const bool isConditionalRenderingFeaturesEXT	= checkExtension(properties, "VK_EXT_conditional_rendering");
 const bool isScalarBlockLayoutFeatures			= checkExtension(properties, "VK_EXT_scalar_block_layout")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
@@ -32,6 +34,8 @@ const bool isBufferDeviceAddressFeaturesEXT		= checkExtension(properties, "VK_EX
 const bool isBufferDeviceAddressFeatures		= checkExtension(properties, "VK_KHR_buffer_device_address")		|| context.contextSupports(vk::ApiVersion(1, 2, 0));
 const bool isDescriptorIndexingFeatures			= checkExtension(properties, "VK_EXT_descriptor_indexing")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
 const bool isTimelineSemaphoreFeatures			= checkExtension(properties, "VK_KHR_timeline_semaphore")			|| context.contextSupports(vk::ApiVersion(1, 2, 0));
+const bool isFragmentDensityMapFeaturesEXT		= checkExtension(properties, "VK_EXT_fragment_density_map");
+const bool isFragmentDensityMap2FeaturesEXT		= checkExtension(properties, "VK_EXT_fragment_density_map2");
 
 for (int ndx = 0; ndx < count; ++ndx)
 {
@@ -50,6 +54,8 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deMemset(&deviceBufferDeviceAddressFeatures[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceBufferDeviceAddressFeatures));
 	deMemset(&deviceDescriptorIndexingFeatures[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
 	deMemset(&deviceTimelineSemaphoreFeatures[ndx],			0xFF * ndx, sizeof(VkPhysicalDeviceTimelineSemaphoreFeatures));
+	deMemset(&deviceFragmentDensityMapFeaturesEXT[ndx],		0xFF * ndx, sizeof(VkPhysicalDeviceFragmentDensityMapFeaturesEXT));
+	deMemset(&deviceFragmentDensityMap2FeaturesEXT[ndx],	0xFF * ndx, sizeof(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT));
 
 	deviceConditionalRenderingFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 	deviceConditionalRenderingFeaturesEXT[ndx].pNext = &deviceScalarBlockLayoutFeatures[ndx];
@@ -94,7 +100,13 @@ for (int ndx = 0; ndx < count; ++ndx)
 	deviceDescriptorIndexingFeatures[ndx].pNext = &deviceTimelineSemaphoreFeatures[ndx];
 
 	deviceTimelineSemaphoreFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-	deviceTimelineSemaphoreFeatures[ndx].pNext = DE_NULL;
+	deviceTimelineSemaphoreFeatures[ndx].pNext = &deviceFragmentDensityMapFeaturesEXT[ndx];
+
+	deviceFragmentDensityMapFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT;
+	deviceFragmentDensityMapFeaturesEXT[ndx].pNext = &deviceFragmentDensityMap2FeaturesEXT[ndx];
+
+	deviceFragmentDensityMap2FeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT;
+	deviceFragmentDensityMap2FeaturesEXT[ndx].pNext = DE_NULL;
 
 	deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 	extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -132,6 +144,10 @@ if (isDescriptorIndexingFeatures)
 	log << TestLog::Message << deviceDescriptorIndexingFeatures[0] << TestLog::EndMessage;
 if (isTimelineSemaphoreFeatures)
 	log << TestLog::Message << deviceTimelineSemaphoreFeatures[0] << TestLog::EndMessage;
+if (isFragmentDensityMapFeaturesEXT)
+	log << TestLog::Message << deviceFragmentDensityMapFeaturesEXT[0] << TestLog::EndMessage;
+if (isFragmentDensityMap2FeaturesEXT)
+	log << TestLog::Message << deviceFragmentDensityMap2FeaturesEXT[0] << TestLog::EndMessage;
 
 if (isConditionalRenderingFeaturesEXT &&
 	(deviceConditionalRenderingFeaturesEXT[0].conditionalRendering != deviceConditionalRenderingFeaturesEXT[1].conditionalRendering ||
@@ -242,4 +258,16 @@ if (isTimelineSemaphoreFeatures &&
 	(deviceTimelineSemaphoreFeatures[0].timelineSemaphore != deviceTimelineSemaphoreFeatures[1].timelineSemaphore))
 {
 		TCU_FAIL("Mismatch between VkPhysicalDeviceTimelineSemaphoreFeatures");
+}
+if (isFragmentDensityMapFeaturesEXT &&
+	(deviceFragmentDensityMapFeaturesEXT[0].fragmentDensityMap != deviceFragmentDensityMapFeaturesEXT[1].fragmentDensityMap ||
+	 deviceFragmentDensityMapFeaturesEXT[0].fragmentDensityMapDynamic != deviceFragmentDensityMapFeaturesEXT[1].fragmentDensityMapDynamic ||
+	 deviceFragmentDensityMapFeaturesEXT[0].fragmentDensityMapNonSubsampledImages != deviceFragmentDensityMapFeaturesEXT[1].fragmentDensityMapNonSubsampledImages))
+{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceFragmentDensityMapFeaturesEXT");
+}
+if (isFragmentDensityMap2FeaturesEXT &&
+	(deviceFragmentDensityMap2FeaturesEXT[0].fragmentDensityMapDeferred != deviceFragmentDensityMap2FeaturesEXT[1].fragmentDensityMapDeferred))
+{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceFragmentDensityMap2FeaturesEXT");
 }

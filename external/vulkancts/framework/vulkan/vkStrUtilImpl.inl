@@ -568,6 +568,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -2484,8 +2486,9 @@ tcu::Format::Bitfield<32> getImageViewCreateFlagsStr (VkImageViewCreateFlags val
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT,	"VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT"),
-		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM,					"VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT,		"VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT,	"VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM,						"VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -9586,6 +9589,29 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getDeviceDiagnosticsConfigFlagsNVStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMap2FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentDensityMapDeferred = " << value.fragmentDensityMapDeferred << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMap2PropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubsampledLoads = " << value.subsampledLoads << '\n';
+	s << "\tsubsampledCoarseReconstructionEarlyAccess = " << value.subsampledCoarseReconstructionEarlyAccess << '\n';
+	s << "\tmaxSubsampledArrayLayers = " << value.maxSubsampledArrayLayers << '\n';
+	s << "\tmaxDescriptorSetSubsampledSamplers = " << value.maxDescriptorSetSubsampledSamplers << '\n';
 	s << '}';
 	return s;
 }
