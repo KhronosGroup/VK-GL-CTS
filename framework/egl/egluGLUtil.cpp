@@ -67,7 +67,7 @@ EGLint apiRenderableType (glu::ApiType apiType)
 				case 1:		return EGL_OPENGL_ES_BIT;
 				case 2:		return EGL_OPENGL_ES2_BIT;
 				case 3:		return EGL_OPENGL_ES3_BIT_KHR;
-				default:	DE_FATAL("Unknown OpenGL ES version");
+				default:	DE_FATAL("Unknown OpenGL ES version"); break;
 			}
 			break;
 		default:
