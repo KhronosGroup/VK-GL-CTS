@@ -329,7 +329,8 @@ public:
 
 	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR	buildType) = DE_NULL;
 	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR	flags) = DE_NULL;
-	virtual void										setDeferredOperation					(const bool									deferredOperation) = DE_NULL;
+	virtual void										setDeferredOperation					(const bool									deferredOperation,
+																								 const deUint32								workerThreadCount = 0) = DE_NULL;
 	virtual void										setUseArrayOfPointers					(const bool									useArrayOfPointers) = DE_NULL;
 	virtual void										setIndirectBuildParameters				(const VkBuffer								indirectBuffer,
 																								 const VkDeviceSize							indirectBufferOffset,
@@ -423,7 +424,8 @@ public:
 
 	virtual void													setBuildType						(const VkAccelerationStructureBuildTypeKHR			buildType) = DE_NULL;
 	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			flags) = DE_NULL;
-	virtual void													setDeferredOperation				(const bool											deferredOperation) = DE_NULL;
+	virtual void													setDeferredOperation				(const bool											deferredOperation,
+																										 const deUint32										workerThreadCount = 0) = DE_NULL;
 	virtual void													setUseArrayOfPointers				(const bool											useArrayOfPointers) = DE_NULL;
 	virtual void													setIndirectBuildParameters			(const VkBuffer										indirectBuffer,
 																										 const VkDeviceSize									indirectBufferOffset,
@@ -529,7 +531,8 @@ public:
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);
 	void														setMaxAttributeSize			(const deUint32&										maxAttributeSize);
 	void														setMaxCallableSize			(const deUint32&										maxCallableSize);
-	void														setDeferredOperation		(const bool												deferredOperation);
+	void														setDeferredOperation		(const bool												deferredOperation,
+																							 const deUint32											workerThreadCount = 0);
 
 protected:
 	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&									vk,
@@ -547,6 +550,7 @@ protected:
 	deUint32													m_maxAttributeSize;
 	deUint32													m_maxCallableSize;
 	bool														m_deferredOperation;
+	deUint32													m_workerThreadCount;
 };
 
 class RayTracingProperties

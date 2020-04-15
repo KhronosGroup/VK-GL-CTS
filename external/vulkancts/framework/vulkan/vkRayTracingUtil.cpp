@@ -34,6 +34,13 @@
 
 namespace vk
 {
+struct DeferredThreadParams
+{
+	const DeviceInterface&	vk;
+	VkDevice				device;
+	VkDeferredOperationKHR	deferredOperation;
+	VkResult				result;
+};
 
 std::string getCommonRayGenerationShader (void)
 {
@@ -339,6 +346,60 @@ VkResult finishDeferredOperation (const DeviceInterface&	vk,
 	return result;
 }
 
+void finishDeferredOperationThreaded (DeferredThreadParams* deferredThreadParams)
+{
+	deferredThreadParams->result = finishDeferredOperation(deferredThreadParams->vk, deferredThreadParams->device, deferredThreadParams->deferredOperation);
+}
+
+void finishDeferredOperation (const DeviceInterface&	vk,
+							  VkDevice					device,
+							  VkDeferredOperationKHR	deferredOperation,
+							  const deUint32			workerThreadCount)
+{
+	if (workerThreadCount == 0)
+	{
+		VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
+	}
+	else
+	{
+		const deUint32							maxThreadCountSupported	= deMinu32(256u, vk.getDeferredOperationMaxConcurrencyKHR(device, deferredOperation));
+		const deUint32							requestedThreadCount	= workerThreadCount;
+		const deUint32							testThreadCount			= requestedThreadCount == std::numeric_limits<deUint32>::max() ? maxThreadCountSupported : requestedThreadCount;
+
+		if (maxThreadCountSupported == 0)
+			TCU_FAIL("vkGetDeferredOperationMaxConcurrencyKHR must not return 0");
+
+		if (testThreadCount > maxThreadCountSupported)
+			TCU_THROW(NotSupportedError, "Requested number of threads is greater than allowed maximum");
+
+		const DeferredThreadParams				deferredThreadParams	=
+		{
+			vk,					//  const DeviceInterface&	vk;
+			device,				//  VkDevice				device;
+			deferredOperation,	//  VkDeferredOperationKHR	deferredOperation;
+			VK_RESULT_MAX_ENUM,	//  VResult					result;
+		};
+		std::vector<DeferredThreadParams>		threadParams	(testThreadCount, deferredThreadParams);
+		std::vector<de::MovePtr<std::thread> >	threads			(testThreadCount);
+		bool									executionResult	= false;
+
+		DE_ASSERT(threads.size() > 0 && threads.size() == testThreadCount);
+
+		for (deUint32 threadNdx = 0; threadNdx < testThreadCount; ++threadNdx)
+			threads[threadNdx] = de::MovePtr<std::thread>(new std::thread(finishDeferredOperationThreaded, &threadParams[threadNdx]));
+
+		for (deUint32 threadNdx = 0; threadNdx < testThreadCount; ++threadNdx)
+			threads[threadNdx]->join();
+
+		for (deUint32 threadNdx = 0; threadNdx < testThreadCount; ++threadNdx)
+			if (threadParams[threadNdx].result == VK_SUCCESS)
+				executionResult = true;
+
+		if (!executionResult)
+			TCU_FAIL("Neither reported VK_SUCCESS");
+	}
+}
+
 SerialStorage::SerialStorage (const DeviceInterface&									vk,
 							  const VkDevice											device,
 							  Allocator&												allocator,
@@ -560,7 +621,8 @@ public:
 
 	void													setBuildType									(const VkAccelerationStructureBuildTypeKHR	buildType) override;
 	void													setBuildFlags									(const VkBuildAccelerationStructureFlagsKHR	flags) override;
-	void													setDeferredOperation							(const bool									deferredOperation) override;
+	void													setDeferredOperation							(const bool									deferredOperation,
+																											 const deUint32								workerThreadCount) override;
 	void													setUseArrayOfPointers							(const bool									useArrayOfPointers) override;
 	void													setIndirectBuildParameters						(const VkBuffer								indirectBuffer,
 																											 const VkDeviceSize							indirectBufferOffset,
@@ -596,6 +658,7 @@ protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_deferredOperation;
+	deUint32												m_workerThreadCount;
 	bool													m_useArrayOfPointers;
 	de::MovePtr<BufferWithMemory>							m_vertexBuffer;
 	de::MovePtr<BufferWithMemory>							m_indexBuffer;
@@ -626,6 +689,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	, m_buildType						(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_buildFlags						(0u)
 	, m_deferredOperation				(false)
+	, m_workerThreadCount				(0)
 	, m_useArrayOfPointers				(false)
 	, m_vertexBuffer					()
 	, m_indexBuffer						()
@@ -648,9 +712,11 @@ void BottomLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerati
 	m_buildFlags = flags;
 }
 
-void BottomLevelAccelerationStructureKHR::setDeferredOperation (const bool	deferredOperation)
+void BottomLevelAccelerationStructureKHR::setDeferredOperation (const bool		deferredOperation,
+																const deUint32	workerThreadCount)
 {
 	m_deferredOperation = deferredOperation;
+	m_workerThreadCount = workerThreadCount;
 }
 
 void BottomLevelAccelerationStructureKHR::setUseArrayOfPointers (const bool	useArrayOfPointers)
@@ -898,7 +964,7 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
 			DE_UNREF(result);
 
-			VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
+			finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
 
 			accelerationStructureBuildGeometryInfoKHR.pNext = DE_NULL;
 		}
@@ -956,7 +1022,7 @@ void BottomLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&						
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
 		DE_UNREF(result);
 
-		VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -973,10 +1039,18 @@ void BottomLevelAccelerationStructureKHR::serialize (const DeviceInterface&		vk,
 													 const VkCommandBuffer		cmdBuffer,
 													 SerialStorage*				storage)
 {
-	VkCopyAccelerationStructureToMemoryInfoKHR copyAccelerationStructureInfo =
+	Move<VkDeferredOperationKHR>						deferredOperation				= (m_deferredOperation ? createDeferredOperationKHR(vk, device) : Move<VkDeferredOperationKHR>());
+	VkDeferredOperationInfoKHR							deferredOperationInfoKHR		=
+	{
+		VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR,	//  VkStructureType			sType;
+		DE_NULL,										//  const void*				pNext;
+		*deferredOperation								//  VkDeferredOperationKHR	operationHandle;
+	};
+	const VkDeferredOperationInfoKHR*					deferredOperationInfoPtr		= m_deferredOperation ? &deferredOperationInfoKHR : DE_NULL;
+	const VkCopyAccelerationStructureToMemoryInfoKHR	copyAccelerationStructureInfo	=
 	{
 		VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR,	// VkStructureType						sType;
-		DE_NULL,															// const void*							pNext;
+		deferredOperationInfoPtr,											// const void*							pNext;
 		*(getPtr()),														// VkAccelerationStructureKHR			src;
 		storage->getAddress(vk,device),										// VkDeviceOrHostAddressKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR	mode;
@@ -988,9 +1062,19 @@ void BottomLevelAccelerationStructureKHR::serialize (const DeviceInterface&		vk,
 	}
 	else
 	{
-		VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, &copyAccelerationStructureInfo));
+		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, &copyAccelerationStructureInfo);
+
+		if (!m_deferredOperation)
+		{
+			VK_CHECK(result);
+		}
+		else
+		{
+			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
+
+			finishDeferredOperation(vk, device, *deferredOperation, m_workerThreadCount);
+		}
 	}
-	// There is no deferred operation for vkCopyAccelerationStructureToMemoryKHR
 }
 
 void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
@@ -998,10 +1082,18 @@ void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk
 													   const VkCommandBuffer	cmdBuffer,
 													   SerialStorage*			storage)
 {
-	VkCopyMemoryToAccelerationStructureInfoKHR copyAccelerationStructureInfo =
+	const Move<VkDeferredOperationKHR>					deferredOperation				= (m_deferredOperation ? createDeferredOperationKHR(vk, device) : Move<VkDeferredOperationKHR>());
+	const VkDeferredOperationInfoKHR					deferredOperationInfoKHR		=
+	{
+		VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR,	//  VkStructureType			sType;
+		DE_NULL,										//  const void*				pNext;
+		*deferredOperation								//  VkDeferredOperationKHR	operationHandle;
+	};
+	const VkDeferredOperationInfoKHR*					deferredOperationInfoPtr		= m_deferredOperation ? &deferredOperationInfoKHR : DE_NULL;
+	const VkCopyMemoryToAccelerationStructureInfoKHR	copyAccelerationStructureInfo	=
 	{
 		VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR,	// VkStructureType							sType;
-		DE_NULL,															// const void*								pNext;
+		deferredOperationInfoPtr,											// const void*								pNext;
 		storage->getAddressConst(vk,device),								// VkDeviceOrHostAddressConstKHR			src;
 		*(getPtr()),														// VkAccelerationStructureKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_DESERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR		mode;
@@ -1013,7 +1105,18 @@ void BottomLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk
 	}
 	else
 	{
-		VK_CHECK(vk.copyMemoryToAccelerationStructureKHR(device, &copyAccelerationStructureInfo));
+		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, &copyAccelerationStructureInfo);
+
+		if (!m_deferredOperation)
+		{
+			VK_CHECK(result);
+		}
+		else
+		{
+			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
+
+			finishDeferredOperation(vk, device, *deferredOperation, m_workerThreadCount);
+		}
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1213,7 +1316,8 @@ public:
 
 	void													setBuildType										(const VkAccelerationStructureBuildTypeKHR	buildType) override;
 	void													setBuildFlags										(const VkBuildAccelerationStructureFlagsKHR	flags) override;
-	void													setDeferredOperation								(const bool									deferredOperation) override;
+	void													setDeferredOperation								(const bool									deferredOperation,
+																												 const deUint32								workerThreadCount) override;
 	void													setUseArrayOfPointers								(const bool									useArrayOfPointers) override;
 	void													setIndirectBuildParameters							(const VkBuffer								indirectBuffer,
 																												 const VkDeviceSize							indirectBufferOffset,
@@ -1249,6 +1353,7 @@ protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_deferredOperation;
+	deUint32												m_workerThreadCount;
 	bool													m_useArrayOfPointers;
 	de::MovePtr<BufferWithMemory>							m_instanceBuffer;
 	de::MovePtr<BufferWithMemory>							m_instanceAddressBuffer;
@@ -1275,6 +1380,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_buildType					(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_buildFlags					(0u)
 	, m_deferredOperation			(false)
+	, m_workerThreadCount			(0)
 	, m_useArrayOfPointers			(false)
 	, m_instanceBuffer				()
 	, m_instanceAddressBuffer		()
@@ -1301,9 +1407,11 @@ void TopLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationS
 	m_buildFlags = flags;
 }
 
-void TopLevelAccelerationStructureKHR::setDeferredOperation (const bool	deferredOperation)
+void TopLevelAccelerationStructureKHR::setDeferredOperation (const bool		deferredOperation,
+															 const deUint32	workerThreadCount)
 {
 	m_deferredOperation = deferredOperation;
+	m_workerThreadCount = workerThreadCount;
 }
 
 void TopLevelAccelerationStructureKHR::setUseArrayOfPointers (const bool	useArrayOfPointers)
@@ -1531,7 +1639,7 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
 		DE_UNREF(result);
 
-		VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
 
 		accelerationStructureBuildGeometryInfoKHR.pNext = DE_NULL;
 	}
@@ -1588,7 +1696,7 @@ void TopLevelAccelerationStructureKHR::copyFrom (const DeviceInterface&				vk,
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
 		DE_UNREF(result);
 
-		VK_CHECK(finishDeferredOperation(vk, device, deferredOperation));
+		finishDeferredOperation(vk, device, deferredOperation, m_workerThreadCount);
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1606,10 +1714,18 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 												  const VkCommandBuffer		cmdBuffer,
 												  SerialStorage*			storage)
 {
-	VkCopyAccelerationStructureToMemoryInfoKHR copyAccelerationStructureInfo =
+	Move<VkDeferredOperationKHR>						deferredOperation				= (m_deferredOperation ? createDeferredOperationKHR(vk, device) : Move<VkDeferredOperationKHR>());
+	VkDeferredOperationInfoKHR							deferredOperationInfoKHR		=
+	{
+		VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR,	//  VkStructureType			sType;
+		DE_NULL,										//  const void*				pNext;
+		*deferredOperation								//  VkDeferredOperationKHR	operationHandle;
+	};
+	const VkDeferredOperationInfoKHR*					deferredOperationInfoPtr		= m_deferredOperation ? &deferredOperationInfoKHR : DE_NULL;
+	const VkCopyAccelerationStructureToMemoryInfoKHR	copyAccelerationStructureInfo	=
 	{
 		VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR,	// VkStructureType						sType;
-		DE_NULL,															// const void*							pNext;
+		deferredOperationInfoPtr,											// const void*							pNext;
 		*(getPtr()),														// VkAccelerationStructureKHR			src;
 		storage->getAddress(vk,device),										// VkDeviceOrHostAddressKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_SERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR	mode;
@@ -1621,9 +1737,19 @@ void TopLevelAccelerationStructureKHR::serialize (const DeviceInterface&	vk,
 	}
 	else
 	{
-		VK_CHECK(vk.copyAccelerationStructureToMemoryKHR(device, &copyAccelerationStructureInfo));
+		const VkResult result = vk.copyAccelerationStructureToMemoryKHR(device, &copyAccelerationStructureInfo);
+
+		if (!m_deferredOperation)
+		{
+			VK_CHECK(result);
+		}
+		else
+		{
+			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
+
+			finishDeferredOperation(vk, device, *deferredOperation, m_workerThreadCount);
+		}
 	}
-	// There is no deferred operation for vkCopyAccelerationStructureToMemoryKHR
 }
 
 void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
@@ -1631,10 +1757,18 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 													const VkCommandBuffer	cmdBuffer,
 													SerialStorage*			storage)
 {
-	VkCopyMemoryToAccelerationStructureInfoKHR copyAccelerationStructureInfo =
+	const Move<VkDeferredOperationKHR>					deferredOperation				= (m_deferredOperation ? createDeferredOperationKHR(vk, device) : Move<VkDeferredOperationKHR>());
+	const VkDeferredOperationInfoKHR					deferredOperationInfoKHR		=
+	{
+		VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR,	//  VkStructureType			sType;
+		DE_NULL,										//  const void*				pNext;
+		*deferredOperation								//  VkDeferredOperationKHR	operationHandle;
+	};
+	const VkDeferredOperationInfoKHR*					deferredOperationInfoPtr		= m_deferredOperation ? &deferredOperationInfoKHR : DE_NULL;
+	const VkCopyMemoryToAccelerationStructureInfoKHR	copyAccelerationStructureInfo	=
 	{
 		VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR,	// VkStructureType							sType;
-		DE_NULL,															// const void*								pNext;
+		deferredOperationInfoPtr,											// const void*								pNext;
 		storage->getAddressConst(vk,device),								// VkDeviceOrHostAddressConstKHR			src;
 		*(getPtr()),														// VkAccelerationStructureKHR				dst;
 		VK_COPY_ACCELERATION_STRUCTURE_MODE_DESERIALIZE_KHR					// VkCopyAccelerationStructureModeKHR		mode;
@@ -1646,7 +1780,18 @@ void TopLevelAccelerationStructureKHR::deserialize (const DeviceInterface&	vk,
 	}
 	else
 	{
-		VK_CHECK(vk.copyMemoryToAccelerationStructureKHR(device, &copyAccelerationStructureInfo));
+		const VkResult result = vk.copyMemoryToAccelerationStructureKHR(device, &copyAccelerationStructureInfo);
+
+		if (!m_deferredOperation)
+		{
+			VK_CHECK(result);
+		}
+		else
+		{
+			DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
+
+			finishDeferredOperation(vk, device, *deferredOperation, m_workerThreadCount);
+		}
 	}
 
 	if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
@@ -1725,6 +1870,7 @@ RayTracingPipeline::RayTracingPipeline ()
 	, m_maxAttributeSize		(0U)
 	, m_maxCallableSize			(0U)
 	, m_deferredOperation		(false)
+	, m_workerThreadCount		(0)
 {
 }
 
@@ -1888,7 +2034,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		DE_ASSERT(result == VK_OPERATION_DEFERRED_KHR || result == VK_OPERATION_NOT_DEFERRED_KHR || result == VK_SUCCESS);
 		DE_UNREF(result);
 
-		VK_CHECK(finishDeferredOperation(vk, device, *deferredOperation));
+		finishDeferredOperation(vk, device, *deferredOperation, m_workerThreadCount);
 	}
 
 	return pipeline;
@@ -2004,9 +2150,11 @@ void RayTracingPipeline::setMaxCallableSize (const deUint32& maxCallableSize)
 	m_maxCallableSize = maxCallableSize;
 }
 
-void RayTracingPipeline::setDeferredOperation (const bool deferredOperation)
+void RayTracingPipeline::setDeferredOperation (const bool		deferredOperation,
+											   const deUint32	workerThreadCount)
 {
 	m_deferredOperation = deferredOperation;
+	m_workerThreadCount = workerThreadCount;
 }
 
 class RayTracingPropertiesKHR : public RayTracingProperties

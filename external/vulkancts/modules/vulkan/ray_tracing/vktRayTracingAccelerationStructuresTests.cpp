@@ -24,6 +24,7 @@
 #include "vktRayTracingAccelerationStructuresTests.hpp"
 
 #include "vkDefs.hpp"
+#include "deClock.h"
 
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -132,6 +133,7 @@ struct TestParams
 	deUint32								width;
 	deUint32								height;
 	de::SharedPtr<TestConfiguration>		testConfiguration;
+	deUint32								workerThreadsCount;
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -653,7 +655,9 @@ public:
 	tcu::TestStatus													iterate								(void) override;
 
 protected:
-	de::MovePtr<BufferWithMemory>									runTest								();
+	bool															iterateNoWorkers					(void);
+	bool															iterateWithWorkers					(void);
+	de::MovePtr<BufferWithMemory>									runTest								(const deUint32 workerThreadsCount);
 private:
 	TestParams														m_data;
 };
@@ -819,7 +823,7 @@ RayTracingASBasicTestInstance::~RayTracingASBasicTestInstance (void)
 {
 }
 
-de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
+de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUint32 workerThreadsCount)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
 	const DeviceInterface&				vkd									= m_context.getDeviceInterface();
@@ -831,6 +835,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 	const deUint32						pixelCount							= m_data.width * m_data.height;
 	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
 	const deUint32						shaderGroupBaseAlignment			= getShaderGroupBaseAlignment(vki, physicalDevice);
+	const bool							htCopy								= (workerThreadsCount != 0) && (m_data.operationType == OP_COPY);
+	const bool							htSerialize							= (workerThreadsCount != 0) && (m_data.operationType == OP_SERIALIZE);
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout					= DescriptorSetLayoutBuilder()
 																					.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, ALL_RAY_TRACING_STAGES)
@@ -961,6 +967,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 				bottomLevelAccelerationStructureCopies = m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
 				for (size_t i = 0; i < bottomLevelAccelerationStructures.size(); ++i)
 				{
+					bottomLevelAccelerationStructureCopies[i]->setDeferredOperation(htCopy, workerThreadsCount);
 					bottomLevelAccelerationStructureCopies[i]->setBuildType(m_data.buildType);
 					bottomLevelAccelerationStructureCopies[i]->setBuildFlags(m_data.buildFlags);
 					bottomLevelAccelerationStructureCopies[i]->setUseArrayOfPointers(m_data.bottomUsesAOP);
@@ -987,6 +994,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 				for (size_t i = 0; i < bottomLevelAccelerationStructures.size(); ++i)
 				{
 					de::SharedPtr<SerialStorage> storage ( new SerialStorage(vkd, device, allocator, m_data.buildType, bottomBlasSerialSize[i]));
+
+					bottomLevelAccelerationStructures[i]->setDeferredOperation(htSerialize, workerThreadsCount);
 					bottomLevelAccelerationStructures[i]->serialize(vkd, device, *cmdBuffer, storage.get());
 					bottomSerialized.push_back(storage);
 
@@ -999,6 +1008,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 					bottomLevelAccelerationStructureCopies[i]->setBuildType(m_data.buildType);
 					bottomLevelAccelerationStructureCopies[i]->setBuildFlags(m_data.buildFlags);
 					bottomLevelAccelerationStructureCopies[i]->setUseArrayOfPointers(m_data.bottomUsesAOP);
+					bottomLevelAccelerationStructureCopies[i]->setDeferredOperation(htSerialize, workerThreadsCount);
 					bottomLevelAccelerationStructureCopies[i]->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, 0u, storage.get());
 				}
 				break;
@@ -1054,6 +1064,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 				case OP_COPY:
 				{
 					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
+					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
@@ -1074,6 +1085,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
 
 					de::SharedPtr<SerialStorage> storage( new SerialStorage(vkd, device, allocator, m_data.buildType, topBlasSerialSize[0]));
+
+					topLevelAccelerationStructure->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructure->serialize(vkd, device, *cmdBuffer, storage.get());
 					topSerialized.push_back(storage);
 
@@ -1086,6 +1099,7 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, 0u, storage.get());
 					break;
 				}
@@ -1137,14 +1151,53 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest()
 	return resultBuffer;
 }
 
-tcu::TestStatus RayTracingASBasicTestInstance::iterate (void)
+bool RayTracingASBasicTestInstance::iterateNoWorkers (void)
 {
 	// run test using arrays of pointers
-	const de::MovePtr<BufferWithMemory>	buffer		= runTest();
+	const de::MovePtr<BufferWithMemory>	buffer		= runTest(0);
 
-	if (!m_data.testConfiguration->verifyImage(buffer.get(), m_context, m_data))
+	return m_data.testConfiguration->verifyImage(buffer.get(), m_context, m_data);
+}
+
+bool RayTracingASBasicTestInstance::iterateWithWorkers (void)
+{
+	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
+	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(0);
+	const bool						singleThreadValidation	= m_data.testConfiguration->verifyImage(singleThreadBufferCPU.get(), m_context, m_data);
+	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
+
+	deUint64						multiThreadTimeStart	= deGetMicroseconds();
+	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(m_data.workerThreadsCount);
+	const bool						multiThreadValidation	= m_data.testConfiguration->verifyImage(multiThreadBufferCPU.get(), m_context, m_data);
+	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
+	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
+
+	const deUint32					result					= singleThreadValidation && multiThreadValidation;
+
+	if (multiThreadTime > multiThreadTimeOut)
+	{
+		std::string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
+							  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
+
+		TCU_FAIL(failMsg);
+	}
+
+	return result;
+}
+
+tcu::TestStatus RayTracingASBasicTestInstance::iterate (void)
+{
+	bool result;
+
+	if (m_data.workerThreadsCount != 0)
+		result = iterateWithWorkers();
+	else
+		result = iterateNoWorkers();
+
+	if (result)
+		return tcu::TestStatus::pass("Pass");
+	else
 		return tcu::TestStatus::fail("Fail");
-	return tcu::TestStatus::pass("Pass");
 }
 
 }	// anonymous
@@ -1382,7 +1435,8 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 									OP_NONE,
 									RTAS_DEFAULT_SIZE,
 									RTAS_DEFAULT_SIZE,
-									de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration())
+									de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+									0
 								};
 								topGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 							}
@@ -1445,7 +1499,8 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 				OP_NONE,
 				RTAS_DEFAULT_SIZE,
 				RTAS_DEFAULT_SIZE,
-				de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration())
+				de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+				0
 			};
 			vertexFormatGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
 		}
@@ -1453,7 +1508,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 	}
 }
 
-void addOperationTests(tcu::TestCaseGroup* group)
+void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThreads)
 {
 	struct
 	{
@@ -1498,10 +1553,17 @@ void addOperationTests(tcu::TestCaseGroup* group)
 
 	for (size_t operationTypeNdx = 0; operationTypeNdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeNdx)
 	{
+		if (workerThreads > 0)
+			if (operationTypes[operationTypeNdx].operationType != OP_COPY && operationTypes[operationTypeNdx].operationType != OP_SERIALIZE)
+				continue;
+
 		de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), operationTypes[operationTypeNdx].name, ""));
 
 		for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 		{
+			if (workerThreads > 0 && buildTypes[buildTypeNdx].buildType != VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
+				continue;
+
 			de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
 
 			for (size_t operationTargetNdx = 0; operationTargetNdx < DE_LENGTH_OF_ARRAY(operationTargets); ++operationTargetNdx)
@@ -1526,7 +1588,8 @@ void addOperationTests(tcu::TestCaseGroup* group)
 						operationTypes[operationTypeNdx].operationType,
 						RTAS_DEFAULT_SIZE,
 						RTAS_DEFAULT_SIZE,
-						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration())
+						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+						workerThreads
 					};
 					operationTargetGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
 				}
@@ -1544,6 +1607,28 @@ void addRequirementsTests(tcu::TestCaseGroup* group)
 	group->addChild(new RayTracingASMemoryRequirementsTestCase(group->getTestContext(), "memory_update_scratch", "", MemoryRequirementsTestParams{ VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_KHR }));
 }
 
+void addOperationTests (tcu::TestCaseGroup* group)
+{
+	addOperationTestsImpl(group, 0);
+}
+
+void addHostThreadingOperationTests (tcu::TestCaseGroup* group)
+{
+	const deUint32	threads[]	= { 1, 2, 3, 4, 8, std::numeric_limits<deUint32>::max() };
+
+	for (size_t threadsNdx = 0; threadsNdx < DE_LENGTH_OF_ARRAY(threads); ++threadsNdx)
+	{
+		const std::string groupName = threads[threadsNdx] != std::numeric_limits<deUint32>::max()
+									? de::toString(threads[threadsNdx])
+									: "max";
+
+		de::MovePtr<tcu::TestCaseGroup> threadGroup(new tcu::TestCaseGroup(group->getTestContext(), groupName.c_str(), ""));
+
+		addOperationTestsImpl(threadGroup.get(), threads[threadsNdx]);
+
+		group->addChild(threadGroup.release());
+	}
+}
 
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
@@ -1553,6 +1638,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "format", "Test building AS with different vertex and index formats", addVertexIndexFormatsTests);
 	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
 	addTestGroup(group.get(), "requirements", "Test other requirements", addRequirementsTests);
+	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 
 	return group.release();
 }

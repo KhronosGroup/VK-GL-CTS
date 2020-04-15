@@ -36,6 +36,8 @@
 
 #include "vkRayTracingUtil.hpp"
 
+#include "deClock.h"
+
 namespace vkt
 {
 namespace RayTracing
@@ -68,6 +70,7 @@ struct CaseDef
 	deUint32	geometriesGroupCount;
 	deUint32	instancesGroupCount;
 	bool		deferredOperation;
+	deUint32	workerThreadsCount;
 };
 
 enum ShaderGroups
@@ -154,17 +157,24 @@ public:
 	tcu::TestStatus												iterate								(void);
 
 protected:
+	deUint32													iterateNoWorkers					(void);
+	deUint32													iterateWithWorkers					(void);
 	void														checkSupportInInstance				(void) const;
-	de::MovePtr<BufferWithMemory>								runTest								(bool useGpuBuild);
+	deUint32													validateBuffer						(de::MovePtr<BufferWithMemory>								buffer);
+	de::MovePtr<BufferWithMemory>								runTest								(bool														useGpuBuild,
+																									 deUint32													workerThreadsCount);
 	de::MovePtr<TopLevelAccelerationStructure>					initTopAccelerationStructure		(VkCommandBuffer											cmdBuffer,
 																									 bool														useGpuBuild,
+																									 deUint32													workerThreadsCount,
 																									 vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures);
-	vector<de::SharedPtr<BottomLevelAccelerationStructure>	>	initBottomAccelerationStructures	(VkCommandBuffer	cmdBuffer,
-																									 bool				useGpuBuild);
-	de::MovePtr<BottomLevelAccelerationStructure>				initBottomAccelerationStructure		(VkCommandBuffer	cmdBuffer,
-																									 bool				useGpuBuild,
-																									 tcu::UVec2&		startPos,
-																									 bool				triangles);
+	vector<de::SharedPtr<BottomLevelAccelerationStructure>	>	initBottomAccelerationStructures	(VkCommandBuffer											cmdBuffer,
+																									 bool														useGpuBuild,
+																									 deUint32													workerThreadsCount);
+	de::MovePtr<BottomLevelAccelerationStructure>				initBottomAccelerationStructure		(VkCommandBuffer											cmdBuffer,
+																									 bool														useGpuBuild,
+																									 deUint32													workerThreadsCount,
+																									 tcu::UVec2&												startPos,
+																									 bool														triangles);
 
 private:
 	CaseDef														m_data;
@@ -283,6 +293,7 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 
 de::MovePtr<TopLevelAccelerationStructure> RayTracingBuildTestInstance::initTopAccelerationStructure (VkCommandBuffer											cmdBuffer,
 																									  bool														useGpuBuild,
+																									  deUint32													workerThreadsCount,
 																									  vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures)
 {
 	const DeviceInterface&						vkd			= m_context.getDeviceInterface();
@@ -292,7 +303,7 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuildTestInstance::initTopA
 
 	result->setInstanceCount(bottomLevelAccelerationStructures.size());
 	result->setBuildType(useGpuBuild ? VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR : VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR);
-	result->setDeferredOperation(m_data.deferredOperation);
+	result->setDeferredOperation(m_data.deferredOperation, workerThreadsCount);
 
 	for (size_t structNdx = 0; structNdx < bottomLevelAccelerationStructures.size(); ++structNdx)
 		result->addInstance(bottomLevelAccelerationStructures[structNdx]);
@@ -304,6 +315,7 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuildTestInstance::initTopA
 
 de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuildTestInstance::initBottomAccelerationStructure (VkCommandBuffer	cmdBuffer,
 																											bool			useGpuBuild,
+																											deUint32		workerThreadsCount,
 																											tcu::UVec2&		startPos,
 																											bool			triangles)
 {
@@ -313,7 +325,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuildTestInstance::initB
 	de::MovePtr<BottomLevelAccelerationStructure>	result		= makeBottomLevelAccelerationStructure();
 
 	result->setBuildType(useGpuBuild ? VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR : VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR);
-	result->setDeferredOperation(m_data.deferredOperation);
+	result->setDeferredOperation(m_data.deferredOperation, workerThreadsCount);
 	result->setGeometryCount(m_data.geometriesGroupCount);
 
 	for (size_t geometryNdx = 0; geometryNdx < m_data.geometriesGroupCount; ++geometryNdx)
@@ -367,7 +379,8 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuildTestInstance::initB
 }
 
 vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingBuildTestInstance::initBottomAccelerationStructures (VkCommandBuffer	cmdBuffer,
-																														bool			useGpuBuild)
+																														bool			useGpuBuild,
+																														deUint32		workerThreadsCount)
 {
 	tcu::UVec2													startPos;
 	vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
@@ -375,7 +388,7 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingBuildTestInst
 	for (size_t instanceNdx = 0; instanceNdx < m_data.instancesGroupCount; ++instanceNdx)
 	{
 		const bool	triangles	= (m_data.testType == TEST_TYPE_TRIANGLES) || (m_data.testType == TEST_TYPE_MIXED && (instanceNdx & 1) == 0);
-		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure	= initBottomAccelerationStructure(cmdBuffer, useGpuBuild, startPos, triangles);
+		de::MovePtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure	= initBottomAccelerationStructure(cmdBuffer, useGpuBuild, workerThreadsCount, startPos, triangles);
 
 		result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
 	}
@@ -383,7 +396,7 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingBuildTestInst
 	return result;
 }
 
-de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (bool useGpuBuild)
+de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (bool useGpuBuild, deUint32 workerThreadsCount)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
 	const DeviceInterface&				vkd									= m_context.getDeviceInterface();
@@ -452,8 +465,8 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (bool useGpuB
 		vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
 		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, ALL_RAY_TRACING_STAGES, &postImageBarrier);
 
-		bottomLevelAccelerationStructures = initBottomAccelerationStructures(*cmdBuffer, useGpuBuild);
-		topLevelAccelerationStructure = initTopAccelerationStructure(*cmdBuffer, useGpuBuild, bottomLevelAccelerationStructures);
+		bottomLevelAccelerationStructures = initBottomAccelerationStructures(*cmdBuffer, useGpuBuild, workerThreadsCount);
+		topLevelAccelerationStructure = initTopAccelerationStructure(*cmdBuffer, useGpuBuild, workerThreadsCount, bottomLevelAccelerationStructures);
 
 		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, ALL_RAY_TRACING_STAGES, &preTraceMemoryBarrier);
 
@@ -521,16 +534,11 @@ void RayTracingBuildTestInstance::checkSupportInInstance (void) const
 		TCU_THROW(NotSupportedError, "Test requires more allocations allowed");
 }
 
-tcu::TestStatus RayTracingBuildTestInstance::iterate (void)
+deUint32 RayTracingBuildTestInstance::validateBuffer (de::MovePtr<BufferWithMemory>	buffer)
 {
-	checkSupportInInstance();
-
-	const de::MovePtr<BufferWithMemory>	bufferGPU		= runTest(true);
-	const deUint32*						bufferPtrGPU	= (deUint32*)bufferGPU->getAllocation().getHostPtr();
-	const de::MovePtr<BufferWithMemory>	bufferCPU		= runTest(false);
-	const deUint32*						bufferPtrCPU	= (deUint32*)bufferCPU->getAllocation().getHostPtr();
-	deUint32							failures		= 0;
-	deUint32							pos				= 0;
+	const deUint32*	bufferPtr	= (deUint32*)buffer->getAllocation().getHostPtr();
+	deUint32		failures	= 0;
+	deUint32		pos			= 0;
 
 	for (deUint32 y = 0; y < m_data.height; ++y)
 	for (deUint32 x = 0; x < m_data.width; ++x)
@@ -538,16 +546,66 @@ tcu::TestStatus RayTracingBuildTestInstance::iterate (void)
 		const deUint32	n				= m_data.width * y + x;
 		const deUint32	expectedValue	= (n % 7 == 0) ? 2 : 1;
 
-		if (bufferPtrGPU[pos] != expectedValue || bufferPtrCPU[pos] != expectedValue)
+		if (bufferPtr[pos] != expectedValue)
 			failures++;
 
 		++pos;
 	}
 
+	return failures;
+}
+
+deUint32 RayTracingBuildTestInstance::iterateWithWorkers (void)
+{
+	const deUint64					singleThreadTimeStart	= deGetMicroseconds();
+	de::MovePtr<BufferWithMemory>	singleThreadBufferCPU	= runTest(false, 0);
+	const deUint32					singleThreadFailures	= validateBuffer(singleThreadBufferCPU);
+	const deUint64					singleThreadTime		= deGetMicroseconds() - singleThreadTimeStart;
+
+	deUint64						multiThreadTimeStart	= deGetMicroseconds();
+	de::MovePtr<BufferWithMemory>	multiThreadBufferCPU	= runTest(false, m_data.workerThreadsCount);
+	const deUint32					multiThreadFailures		= validateBuffer(multiThreadBufferCPU);
+	deUint64						multiThreadTime			= deGetMicroseconds() - multiThreadTimeStart;
+	const deUint64					multiThreadTimeOut		= 10 * singleThreadTime;
+
+	const deUint32					failures				= singleThreadFailures + multiThreadFailures;
+
+	DE_ASSERT(multiThreadTimeOut > singleThreadTime);
+
+	if (multiThreadTime > multiThreadTimeOut)
+	{
+		string failMsg	= "Time of multithreaded test execution " + de::toString(multiThreadTime) +
+						  " that is longer than expected execution time " + de::toString(multiThreadTimeOut);
+
+		TCU_FAIL(failMsg);
+	}
+
+	return failures;
+}
+
+deUint32 RayTracingBuildTestInstance::iterateNoWorkers (void)
+{
+	de::MovePtr<BufferWithMemory>	bufferGPU		= runTest(true, 0);
+	de::MovePtr<BufferWithMemory>	bufferCPU		= runTest(false, 0);
+	const deUint32					failuresGPU		= validateBuffer(bufferGPU);
+	const deUint32					failuresCPU		= validateBuffer(bufferCPU);
+	const deUint32					failures		= failuresGPU + failuresCPU;
+
+	return failures;
+}
+
+tcu::TestStatus RayTracingBuildTestInstance::iterate (void)
+{
+	checkSupportInInstance();
+
+	const deUint32	failures	= m_data.workerThreadsCount == 0
+								? iterateNoWorkers()
+								: iterateWithWorkers();
+
 	if (failures == 0)
 		return tcu::TestStatus::pass("Pass");
 	else
-		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
+		return tcu::TestStatus::fail("failures=" + de::toString(failures));
 }
 
 }	// anonymous
@@ -555,8 +613,6 @@ tcu::TestStatus RayTracingBuildTestInstance::iterate (void)
 tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(testCtx, "build", "Ray tracing build tests"));
-	de::MovePtr<tcu::TestCaseGroup> cpuGroup(new tcu::TestCaseGroup(testCtx, "gpu_cpu", "Compare results of run with acceleration structures build on GPU and CPU"));
-	de::MovePtr<tcu::TestCaseGroup> mtGroup(new tcu::TestCaseGroup(testCtx, "gpu_cpuht", "Compare results of run with acceleration structures build on GPU and using host threading"));
 
 	const char*		tests[]	=
 	{
@@ -566,10 +622,20 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 	};
 	const deUint32	sizes[]		= { 4, 16, 64, 256, 1024 };
 	const deUint32	factors[]	= { 1, 4 };
+	const deUint32	threads[]	= { 0, 1, 2, 3, 4, 8, std::numeric_limits<deUint32>::max() };
 
-	for (size_t targetNdx = 0; targetNdx < 2; ++targetNdx)
+	for (size_t threadNdx = 0; threadNdx <= DE_LENGTH_OF_ARRAY(threads); ++threadNdx)
 	{
-		const bool	defferedOperation	= (targetNdx == 1);
+		const bool						defferedOperation	= threadNdx != DE_LENGTH_OF_ARRAY(threads);
+		const deUint32					threadsCount		= threadNdx < DE_LENGTH_OF_ARRAY(threads) ? threads[threadNdx] : 0;
+		const string					groupName			= !defferedOperation ? "gpu_cpu"
+															: threadsCount == 0 ? "gpu_cpuht"
+															: threadsCount == std::numeric_limits<deUint32>::max() ? "cpuht_max"
+															: "cpuht_" + de::toString(threadsCount);
+		const string					groupDesc			= !defferedOperation ? "Compare results of run with acceleration structures build on GPU and CPU"
+															: threadsCount > 0 ? "Compare results of run with acceleration structures build on GPU and using host threading"
+															: "Run acceleration structures build using host threading";
+		de::MovePtr<tcu::TestCaseGroup>	groupGpuCpuHt		(new tcu::TestCaseGroup(testCtx, groupName.c_str(), groupDesc.c_str()));
 
 		for (size_t testsNdx = 0; testsNdx < DE_LENGTH_OF_ARRAY(tests); ++testsNdx)
 		{
@@ -585,13 +651,14 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 				const deUint32	instancesGroupCount		= testsNdx == 2 ? largestGroup : factor;
 				const CaseDef	caseDef					=
 				{
-					TEST_TYPE_TRIANGLES,
-					sizes[sizesNdx],
-					sizes[sizesNdx],
-					squaresGroupCount,
-					geometriesGroupCount,
-					instancesGroupCount,
-					defferedOperation
+					TEST_TYPE_TRIANGLES,	//  TestType	testType;
+					sizes[sizesNdx],		//  deUint32	width;
+					sizes[sizesNdx],		//  deUint32	height;
+					squaresGroupCount,		//  deUint32	squaresGroupCount;
+					geometriesGroupCount,	//  deUint32	geometriesGroupCount;
+					instancesGroupCount,	//  deUint32	instancesGroupCount;
+					defferedOperation,		//  bool		deferredOperation;
+					threadsCount			//  deUint32	workerThreadsCount;
 				};
 				const std::string	suffix		= de::toString(caseDef.instancesGroupCount) + '_' + de::toString(caseDef.geometriesGroupCount) + '_' + de::toString(caseDef.squaresGroupCount);
 				const std::string	testName	= "triangles_" + suffix;
@@ -612,13 +679,14 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 				const deUint32	instancesGroupCount		= testsNdx == 2 ? largestGroup : factor;
 				const CaseDef	caseDef					=
 				{
-					TEST_TYPE_AABBS,
-					sizes[sizesNdx],
-					sizes[sizesNdx],
-					squaresGroupCount,
-					geometriesGroupCount,
-					instancesGroupCount,
-					defferedOperation
+					TEST_TYPE_AABBS,		//  TestType	testType;
+					sizes[sizesNdx],		//  deUint32	width;
+					sizes[sizesNdx],		//  deUint32	height;
+					squaresGroupCount,		//  deUint32	squaresGroupCount;
+					geometriesGroupCount,	//  deUint32	geometriesGroupCount;
+					instancesGroupCount,	//  deUint32	instancesGroupCount;
+					defferedOperation,		//  bool		deferredOperation;
+					threadsCount			//  deUint32	workerThreadsCount;
 				};
 				const std::string	suffix		= de::toString(caseDef.instancesGroupCount) + '_' + de::toString(caseDef.geometriesGroupCount) + '_' + de::toString(caseDef.squaresGroupCount);
 				const std::string	testName	= "aabbs_" + suffix;
@@ -639,13 +707,14 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 				const deUint32	instancesGroupCount		= testsNdx == 2 ? largestGroup : factor;
 				const CaseDef	caseDef					=
 				{
-					TEST_TYPE_MIXED,
-					sizes[sizesNdx],
-					sizes[sizesNdx],
-					squaresGroupCount,
-					geometriesGroupCount,
-					instancesGroupCount,
-					defferedOperation
+					TEST_TYPE_MIXED,		//  TestType	testType;
+					sizes[sizesNdx],		//  deUint32	width;
+					sizes[sizesNdx],		//  deUint32	height;
+					squaresGroupCount,		//  deUint32	squaresGroupCount;
+					geometriesGroupCount,	//  deUint32	geometriesGroupCount;
+					instancesGroupCount,	//  deUint32	instancesGroupCount;
+					defferedOperation,		//  bool		deferredOperation;
+					threadsCount			//  deUint32	workerThreadsCount;
 				};
 				const std::string	suffix		= de::toString(caseDef.instancesGroupCount) + '_' + de::toString(caseDef.geometriesGroupCount) + '_' + de::toString(caseDef.squaresGroupCount);
 				const std::string	testName	= "mixed_" + suffix;
@@ -656,15 +725,11 @@ tcu::TestCaseGroup*	createBuildTests (tcu::TestContext& testCtx)
 				group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
 			}
 
-			if (defferedOperation)
-				mtGroup->addChild(group.release());
-			else
-				cpuGroup->addChild(group.release());
+			groupGpuCpuHt->addChild(group.release());
 		}
-	}
 
-	buildGroup->addChild(cpuGroup.release());
-	buildGroup->addChild(mtGroup.release());
+		buildGroup->addChild(groupGpuCpuHt.release());
+	}
 
 	return buildGroup.release();
 }
