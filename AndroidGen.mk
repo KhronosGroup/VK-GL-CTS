@@ -262,6 +262,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryBuiltinTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ray_query/vktRayQueryTraversalControlTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingAccelerationStructuresTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildIndirectTests.cpp \
 	external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingBuildLargeTests.cpp \

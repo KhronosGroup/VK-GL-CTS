@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayQueryTests.hpp"
+#include "vktRayQueryTraversalControlTests.hpp"
 
 #include "vktRayQueryBuiltinTests.hpp"
 
@@ -39,6 +40,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_query", "Ray query tests"));
 
 	group->addChild(createBuiltinTests(testCtx));
+	group->addChild(createTraversalControlTests(testCtx));
 
 	return group.release();
 }
