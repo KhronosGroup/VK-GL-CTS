@@ -3492,7 +3492,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 	}
 
 	DE_FATAL("Unsupported border color");
-	return VK_BORDER_COLOR_LAST;
+	return VK_BORDER_COLOR_MAX_ENUM;
 }
 
 VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod, float maxLod, bool unnormal)
