@@ -4547,30 +4547,42 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 			if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
 			{
-				// Some *variable_pointers* tests store counters in buffer
-				// whose value may vary if the same vertex shader may be executed for multiple times
-				// in this case the output value can be expected value + non-negative integer N
-				if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
-				{
-					const size_t	numExpectedEntries	= expectedBytes.size() / sizeof(float);
-					const float*	expectedFloats		= reinterpret_cast<const float*>(&expectedBytes.front());
-					const float*	outputFloats		= reinterpret_cast<const float*>(outResourceMemories[outputNdx]->getHostPtr());
-					float			diff				= 0.0f;
+				const size_t	numExpectedEntries	= expectedBytes.size() / sizeof(float);
+				float*			expectedFloats		= reinterpret_cast<float*>(&expectedBytes.front());
+				float*			outputFloats		= reinterpret_cast<float*>(outResourceMemories[outputNdx]->getHostPtr());
+				float			diff				= 0.0f;
+				deUint32		bitDiff				= 0;
 
-					for (size_t expectedNdx = 0; expectedNdx < numExpectedEntries; ++expectedNdx)
+				for (size_t expectedNdx = 0; expectedNdx < numExpectedEntries; ++expectedNdx)
+				{
+					// RTZ and RNE can introduce a difference of a single ULP
+					// The RTZ output will always be either equal or lower than the RNE expected,
+					// so perform a bitwise subtractraction and check for the ULP difference
+					bitDiff = *reinterpret_cast<deUint32*>(&expectedFloats[expectedNdx]) - *reinterpret_cast<deUint32*>(&outputFloats[expectedNdx]);
+
+					// Allow a maximum of 1 ULP difference to account for RTZ rounding
+					if (bitDiff & (~0x1))
 					{
-						if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
-							return tcu::TestStatus::fail("Value returned is invalid");
+						// Note: RTZ/RNE rounding leniency isn't applied for the checks below:
 
-						diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+						// Some *variable_pointers* tests store counters in buffer
+						// whose value may vary if the same vertex shader may be executed for multiple times
+						// in this case the output value can be expected value + non-negative integer N
+						if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
+						{
+							if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
+								return tcu::TestStatus::fail("Value returned is invalid");
 
-						if ((diff < 0.0f) || (deFloatFloor(diff) != diff))
-							return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
+							diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+
+							if ((diff < 0.0f) || (deFloatFloor(diff) != diff))
+								return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
+						}
+						else
+						{
+							return tcu::TestStatus::fail("Resource returned should be equal to expected, allowing for RTZ/RNE rounding");
+						}
 					}
-				}
-				else
-				{
-					return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
 				}
 			}
 
