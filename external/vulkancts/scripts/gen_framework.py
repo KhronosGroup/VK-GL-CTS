@@ -1847,14 +1847,14 @@ def splitWithQuotation(line):
 
 def writeMandatoryFeatures(filename):
 	stream = []
-	pattern = r'\s*([\w]+)\s+([\w]+)\s+REQUIREMENTS\s+\((.*)\)'
+	pattern = r'\s*([\w]+)\s+FEATURES\s+\((.*)\)\s+REQUIREMENTS\s+\((.*)\)'
 	mandatoryFeatures = readFile(os.path.join(VULKAN_H_DIR, "mandatory_features.txt"))
 	matches = re.findall(pattern, mandatoryFeatures)
 	dictStructs = {}
 	dictData = []
 	for m in matches:
 		allRequirements = splitWithQuotation(m[2])
-		dictData.append( [ m[0], m[1], allRequirements ] )
+		dictData.append( [ m[0], m[1].strip(), allRequirements ] )
 		if m[0] != 'VkPhysicalDeviceFeatures' :
 			if (m[0] not in dictStructs):
 				dictStructs[m[0]] = [m[0][2:3].lower() + m[0][3:]]
@@ -1926,10 +1926,21 @@ def writeMandatoryFeatures(filename):
 					condition = condition + ' && '
 			condition = condition + ' )'
 			stream.append('\t' + condition)
-		stream.extend(['\t{',
-					   '\t\tif ( ' + structName + '.' + v[1] + ' == VK_FALSE )',
-					   '\t\t{',
-					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + v[1] + ' not supported" << tcu::TestLog::EndMessage;',
+		stream.append('\t{')
+		# Don't need to support an AND case since that would just be another line in the .txt
+		if len(v[1].split(" ")) == 1:
+			stream.append('\t\tif ( ' + structName + '.' + v[1] + ' == VK_FALSE )')
+		else:
+			condition = 'if ( '
+			for i, feature in enumerate(v[1].split(" ")):
+				if i != 0:
+					condition = condition + ' && '
+				condition = condition + '( ' + structName + '.' + feature + ' == VK_FALSE )'
+			condition = condition + ' )'
+			stream.append('\t\t' + condition)
+		featureSet = v[1].replace(" ", " or ")
+		stream.extend(['\t\t{',
+					   '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;',
 					   '\t\t\tresult = false;',
 					   '\t\t}',
 					   '\t}',

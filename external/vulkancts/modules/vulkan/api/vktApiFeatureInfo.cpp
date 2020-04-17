@@ -2847,7 +2847,7 @@ tcu::TestStatus deviceMandatoryFeatures(Context& context)
 {
 	if( checkMandatoryFeatures(context) )
 		return tcu::TestStatus::pass("Passed");
-	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: chapter 35.1 )");
+	return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
 }
 
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
@@ -3312,8 +3312,7 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 			const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
 													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-													| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT
-													| VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT;
+													| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
 
 			if ((supported & required) != required)
 			{
