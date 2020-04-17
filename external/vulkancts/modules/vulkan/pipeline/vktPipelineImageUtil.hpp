@@ -46,6 +46,7 @@ enum BorderColor
 	BORDER_COLOR_OPAQUE_BLACK,
 	BORDER_COLOR_OPAQUE_WHITE,
 	BORDER_COLOR_TRANSPARENT_BLACK,
+	BORDER_COLOR_CUSTOM,
 
 	BORDER_COLOR_COUNT
 };
@@ -64,6 +65,8 @@ bool							isMinMaxFilteringSupported	(const vk::InstanceInterface&	instanceInte
 															 vk::VkImageTiling				tiling);
 
 vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format);
+
+rr::GenericVec4					getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format);
 
 void							getLookupScaleBias			(vk::VkFormat					format,
 															 tcu::Vec4&						lookupScale,

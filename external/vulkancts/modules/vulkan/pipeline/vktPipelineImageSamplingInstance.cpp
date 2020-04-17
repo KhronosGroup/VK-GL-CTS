@@ -275,6 +275,15 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 
 				pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfo*>(pNext)->pNext;
 				break;
+			case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
+				pNext = reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT*>(pNext)->pNext;
+
+				if (!context.getCustomBorderColorFeaturesEXT().customBorderColors)
+				{
+					throw tcu::NotSupportedError("customBorderColors feature is not supported");
+				}
+
+				break;
 			default:
 				TCU_FAIL("Unrecognized sType in chained sampler create info");
 		}
@@ -387,6 +396,37 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
 				pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfo*>(pNext)->pNext;
 				break;
+			case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
+			{
+				const VkSamplerCustomBorderColorCreateInfoEXT customBorderColorCreateInfo = *reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT*>(pNext);
+
+				VkPhysicalDeviceCustomBorderColorFeaturesEXT	physicalDeviceCustomBorderColorFeatures =
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT,
+					DE_NULL,
+					DE_FALSE,
+					DE_FALSE
+				};
+				VkPhysicalDeviceFeatures2						physicalDeviceFeatures;
+				physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+				physicalDeviceFeatures.pNext = &physicalDeviceCustomBorderColorFeatures;
+
+				vki.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &physicalDeviceFeatures);
+
+				if (physicalDeviceCustomBorderColorFeatures.customBorderColors != VK_TRUE)
+				{
+					TCU_THROW(NotSupportedError, "customBorderColors are not supported");
+				}
+
+				if (physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat != VK_TRUE &&
+					customBorderColorCreateInfo.format == VK_FORMAT_UNDEFINED)
+				{
+					TCU_THROW(NotSupportedError, "customBorderColorWithoutFormat is not supported");
+				}
+
+				pNext = reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT*>(pNext)->pNext;
+			}
+			break;
 			default:
 				TCU_FAIL("Unrecognized sType in chained sampler create info");
 		}

@@ -3480,6 +3480,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 		if (uColor		== tcu::UVec4(0, 0, 0, 0)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
 		else if (uColor	== tcu::UVec4(0, 0, 0, 1)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		else if (uColor == tcu::UVec4(1, 1, 1, 1)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+		else									   return VK_BORDER_COLOR_INT_CUSTOM_EXT;
 	}
 	else if (channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
 	{
@@ -3488,6 +3489,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 		if (sColor		== tcu::IVec4(0, 0, 0, 0)) return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
 		else if (sColor	== tcu::IVec4(0, 0, 0, 1)) return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		else if (sColor == tcu::IVec4(1, 1, 1, 1)) return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+		else									   return	VK_BORDER_COLOR_INT_CUSTOM_EXT;
 	}
 	else
 	{
@@ -3496,6 +3498,7 @@ static VkBorderColor mapBorderColor (tcu::TextureChannelClass channelClass, cons
 		if (fColor		== tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f)) return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		else if (fColor == tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
 		else if (fColor == tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)) return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		else												  return VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
 	}
 
 	DE_FATAL("Unsupported border color");
@@ -3534,12 +3537,31 @@ VkSamplerCreateInfo mapSampler (const tcu::Sampler& sampler, const tcu::TextureF
 	return createInfo;
 }
 
+rr::GenericVec4 mapVkColor (const VkClearColorValue& color)
+{
+	rr::GenericVec4 value;
+
+	static_assert(sizeof(rr::GenericVec4) == sizeof(VkClearColorValue), "GenericVec4 and VkClearColorValue size mismatch");
+	deMemcpy(&value, &color, sizeof(rr::GenericVec4));
+	return value;
+}
+
+VkClearColorValue mapVkColor(const rr::GenericVec4& color)
+{
+	VkClearColorValue value;
+
+	static_assert(sizeof(rr::GenericVec4) == sizeof(VkClearColorValue), "GenericVec4 and VkClearColorValue size mismatch");
+	deMemcpy(&value, &color, sizeof(VkClearColorValue));
+	return value;
+}
+
 tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 {
 	// \note minLod & maxLod are not supported by tcu::Sampler. LOD must be clamped
 	//       before passing it to tcu::Texture*::sample*()
 
 	tcu::Sampler::ReductionMode reductionMode = tcu::Sampler::WEIGHTED_AVERAGE;
+	rr::GenericVec4 borderColorValue;
 
 	void const *pNext = samplerCreateInfo.pNext;
 	while (pNext != DE_NULL)
@@ -3557,6 +3579,13 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
 				pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfo*>(pNext)->pNext;
 				break;
+			case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
+			{
+				const VkSamplerCustomBorderColorCreateInfoEXT customBorderColorCreateInfo = *reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT*>(pNext);
+				borderColorValue = mapVkColor(customBorderColorCreateInfo.customBorderColor);
+				pNext = reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT*>(pNext)->pNext;
+				break;
+			}
 			default:
 				TCU_FAIL("Unrecognized sType in chained sampler create info");
 		}
@@ -3601,6 +3630,10 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 			break;
 		case VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK:
 			sampler.borderColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			break;
+		case VK_BORDER_COLOR_FLOAT_CUSTOM_EXT:
+		case VK_BORDER_COLOR_INT_CUSTOM_EXT:
+			sampler.borderColor = borderColorValue;
 			break;
 
 		default:

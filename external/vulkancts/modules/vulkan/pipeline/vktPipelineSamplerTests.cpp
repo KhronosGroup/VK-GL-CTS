@@ -243,17 +243,23 @@ public:
 																	 VkSamplerAddressMode	addressV,
 																	 VkSamplerAddressMode	addressW,
 																	 VkBorderColor			borderColor,
+																	 rr::GenericVec4		customBorderColorValue,
+																	 bool					customBorderColorFormatless,
 																	 bool					separateStencilUsage);
 	virtual								~SamplerAddressModesTest	(void) {}
 	virtual tcu::UVec2					getRenderSize				(SamplerViewType viewType) const;
 	virtual std::vector<Vertex4Tex4>	createVertices				(void) const;
 	virtual VkSamplerCreateInfo			getSamplerCreateInfo		(void) const;
 
+	VkSamplerCustomBorderColorCreateInfoEXT	getSamplerCustomBorderColorCreateInfo	(VkFormat format, rr::GenericVec4 customBorderColorValue, bool customBorderColorFormatless) const;
+
 private:
 	VkSamplerAddressMode				m_addressU;
 	VkSamplerAddressMode				m_addressV;
 	VkSamplerAddressMode				m_addressW;
 	VkBorderColor						m_borderColor;
+
+	const VkSamplerCustomBorderColorCreateInfoEXT	m_customBorderColorCreateInfo;
 };
 
 
@@ -738,12 +744,15 @@ SamplerAddressModesTest::SamplerAddressModesTest (tcu::TestContext&		testContext
 												  VkSamplerAddressMode	addressV,
 												  VkSamplerAddressMode	addressW,
 												  VkBorderColor			borderColor,
+												  rr::GenericVec4		customBorderColorValue,
+												  bool					customBorderColorFormatless,
 												  bool					separateStencilUsage)
 	: SamplerTest	(testContext, name, description, imageViewType, imageFormat, 8, 0.0f, separateStencilUsage)
 	, m_addressU	(addressU)
 	, m_addressV	(addressV)
 	, m_addressW	(addressW)
 	, m_borderColor	(borderColor)
+	, m_customBorderColorCreateInfo	(getSamplerCustomBorderColorCreateInfo(imageFormat, customBorderColorValue, customBorderColorFormatless))
 {
 }
 
@@ -796,7 +805,26 @@ VkSamplerCreateInfo SamplerAddressModesTest::getSamplerCreateInfo (void) const
 	samplerParams.addressModeW	= m_addressW;
 	samplerParams.borderColor	= m_borderColor;
 
+	if (m_borderColor == VK_BORDER_COLOR_FLOAT_CUSTOM_EXT ||
+		m_borderColor == VK_BORDER_COLOR_INT_CUSTOM_EXT)
+	{
+		samplerParams.pNext = &m_customBorderColorCreateInfo;
+	}
+
 	return samplerParams;
+}
+
+VkSamplerCustomBorderColorCreateInfoEXT	SamplerAddressModesTest::getSamplerCustomBorderColorCreateInfo	(VkFormat format, rr::GenericVec4 customBorderColorValue, bool customBorderColorFormatless) const
+{
+	const VkSamplerCustomBorderColorCreateInfoEXT defaultSamplerCustomBorderColorParams =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
+		DE_NULL,
+		mapVkColor(customBorderColorValue),
+		customBorderColorFormatless ? VK_FORMAT_UNDEFINED : format
+	};
+
+	return defaultSamplerCustomBorderColorParams;
 }
 
 
@@ -966,13 +994,14 @@ MovePtr<tcu::TestCaseGroup> createSamplerMipmapTests (tcu::TestContext& testCtx,
 	return samplerMipmapTests;
 }
 
-std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w, BorderColor border)
+std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w, BorderColor border, tcu::IVec4 customIntValue, bool formatless)
 {
 	static const char* borderColorNames[BORDER_COLOR_COUNT] =
 	{
 		"opaque_black",
 		"opaque_white",
 		"transparent_black",
+		"custom"
 	};
 
 	std::ostringstream caseName;
@@ -1006,6 +1035,16 @@ std::string getAddressModesCaseName (VkSamplerAddressMode u, VkSamplerAddressMod
 				 << "_" << de::toLower(fullNameW.substr(19));
 	}
 
+	if (border == BORDER_COLOR_CUSTOM)
+	{
+		caseName << "_";
+		for (int i = 0; i < 4; i++)
+			caseName << customIntValue[i];
+
+		if (formatless)
+			caseName << "_formatless";
+
+	}
 	return caseName.str();
 }
 
@@ -1013,10 +1052,26 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 {
 	struct TestCaseConfig
 	{
+		TestCaseConfig	(VkSamplerAddressMode	_u,
+						 VkSamplerAddressMode	_v,
+						 VkSamplerAddressMode	_w,
+						 BorderColor			_border,
+						 bool					_customColorFormatless	= false,
+						 tcu::Vec4				_customColorValueFloat	= tcu::Vec4(),
+						 tcu::IVec4				_customColorValueInt	= tcu::IVec4())
+			: u(_u), v(_v), w(_w), border(_border), customColorFormatless(_customColorFormatless)
+			, customColorValueFloat(_customColorValueFloat), customColorValueInt(_customColorValueInt)
+		{
+
+		}
+
 		VkSamplerAddressMode	u;
 		VkSamplerAddressMode	v;
 		VkSamplerAddressMode	w;
 		BorderColor				border;
+		bool					customColorFormatless;
+		tcu::Vec4				customColorValueFloat;
+		tcu::IVec4				customColorValueInt;
 	};
 
 	const TestCaseConfig testCaseConfigs[] =
@@ -1055,6 +1110,26 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_REPEAT,					VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	BORDER_COLOR_OPAQUE_WHITE },
 		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,			BORDER_COLOR_OPAQUE_WHITE },
 		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,	VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,		BORDER_COLOR_OPAQUE_WHITE },
+
+		// Custom border color tests
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			false,	tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),	tcu::IVec4(0, 0, 0, 0) },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			false,	tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),	tcu::IVec4(0, 0, 1, 1) },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			false,	tcu::Vec4(1.0f, 0.0f, 0.0f, 0.0f),	tcu::IVec4(1, 0, 0, 0) },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			false,	tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),	tcu::IVec4(1, 0, 0, 1) },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			false,	tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),	tcu::IVec4(1, 0, 1, 1) },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			false,	tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),	tcu::IVec4(1, 1, 0, 1) },
+
+		// Custom border color formatless
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			true,	tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),	tcu::IVec4(1, 0, 1, 1) },
+		{ VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,		BORDER_COLOR_CUSTOM,
+			true,	tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),	tcu::IVec4(1, 1, 0, 1) },
 	};
 
 	MovePtr<tcu::TestCaseGroup> samplerAddressModesTests (new tcu::TestCaseGroup(testCtx, "address_modes", "Tests for address modes"));
@@ -1068,13 +1143,22 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests (tcu::TestContext& te
 			 (config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE && config.v != VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)))
 			 continue;
 
+		// VK_FORMAT_B4G4R4A4_UNORM_PACK16, VK_FORMAT_B5G6R5_UNORM_PACK16 and VK_FORMAT_B5G5R5A1_UNORM_PACK16 are forbidden
+		// for non-formatless custom border color.
+		if ((imageFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
+			 imageFormat == VK_FORMAT_B5G6R5_UNORM_PACK16   ||
+			 imageFormat == VK_FORMAT_B5G5R5A1_UNORM_PACK16)  && config.border == BORDER_COLOR_CUSTOM && config.customColorFormatless)
+			continue;
+
 		samplerAddressModesTests->addChild(new SamplerAddressModesTest(testCtx,
-																	   getAddressModesCaseName(config.u, config.v, config.w, config.border).c_str(),
+																	   getAddressModesCaseName(config.u, config.v, config.w, config.border, config.customColorValueInt, config.customColorFormatless).c_str(),
 																	   "",
 																	   imageViewType,
 																	   imageFormat,
 																	   config.u, config.v, config.w,
 																	   getFormatBorderColor(config.border, imageFormat),
+																	   getFormatCustomBorderColor(config.customColorValueFloat, config.customColorValueInt, imageFormat),
+																	   config.customColorFormatless,
 																	   separateStencilUsage));
 	}
 

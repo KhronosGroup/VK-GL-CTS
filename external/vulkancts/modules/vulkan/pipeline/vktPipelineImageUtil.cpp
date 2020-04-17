@@ -134,6 +134,7 @@ VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
 			case BORDER_COLOR_OPAQUE_BLACK:			return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 			case BORDER_COLOR_OPAQUE_WHITE:			return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
 			case BORDER_COLOR_TRANSPARENT_BLACK:	return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+			case BORDER_COLOR_CUSTOM:				return VK_BORDER_COLOR_INT_CUSTOM_EXT;
 			default:
 				break;
 		}
@@ -145,6 +146,7 @@ VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
 			case BORDER_COLOR_OPAQUE_BLACK:			return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
 			case BORDER_COLOR_OPAQUE_WHITE:			return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 			case BORDER_COLOR_TRANSPARENT_BLACK:	return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+			case BORDER_COLOR_CUSTOM:				return VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
 			default:
 				break;
 		}
@@ -152,6 +154,18 @@ VkBorderColor getFormatBorderColor (BorderColor color, VkFormat format)
 
 	DE_ASSERT(false);
 	return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+}
+
+rr::GenericVec4 getFormatCustomBorderColor	(tcu::Vec4 floatValue, tcu::IVec4 intValue, vk::VkFormat format)
+{
+	if (!isCompressedFormat(format) && (isIntFormat(format) || isUintFormat(format)))
+	{
+		return rr::GenericVec4(intValue);
+	}
+	else
+	{
+		return rr::GenericVec4(floatValue);
+	}
 }
 
 void getLookupScaleBias (vk::VkFormat format, tcu::Vec4& lookupScale, tcu::Vec4& lookupBias)
