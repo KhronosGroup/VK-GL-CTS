@@ -254,16 +254,29 @@ void checkSupportImageSamplingInstance (Context& context, ImageSamplingInstanceP
 		}
 	}
 
-	if (params.samplerParams.pNext != DE_NULL)
+	void const* pNext = params.samplerParams.pNext;
+	while (pNext != DE_NULL)
 	{
-		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(params.samplerParams.pNext);
-
-		if (nextType == VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT)
+		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
+		switch (nextType)
 		{
-			context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
+			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
+			{
+				context.requireDeviceFunctionality("VK_EXT_sampler_filter_minmax");
 
-			if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
-				throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
+				if (!isMinMaxFilteringSupported(context.getInstanceInterface(), context.getPhysicalDevice(), params.imageFormat, VK_IMAGE_TILING_OPTIMAL))
+					throw tcu::NotSupportedError(std::string("Unsupported format for min/max filtering: ") + getFormatName(params.imageFormat));
+
+				pNext = reinterpret_cast<const VkSamplerReductionModeCreateInfo*>(pNext)->pNext;
+				break;
+			}
+			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
+				context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
+
+				pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfo*>(pNext)->pNext;
+				break;
+			default:
+				TCU_FAIL("Unrecognized sType in chained sampler create info");
 		}
 	}
 
