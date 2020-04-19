@@ -274,7 +274,7 @@ inline deUint16 convertSatRteUint12 (float f)
 inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
@@ -310,7 +310,7 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
@@ -346,7 +346,7 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
@@ -437,7 +437,7 @@ static inline deUint16 convertSatUint12 (S src)
 void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
@@ -638,6 +638,7 @@ bool isValid (TextureFormat format)
 		case TextureFormat::SIGNED_INT32:
 		case TextureFormat::SSCALED_INT8:
 		case TextureFormat::SSCALED_INT16:
+		case TextureFormat::SIGNED_INT64:
 			return isColor;
 
 		case TextureFormat::UNSIGNED_INT8:
@@ -646,6 +647,7 @@ bool isValid (TextureFormat format)
 		case TextureFormat::UNSIGNED_INT32:
 		case TextureFormat::USCALED_INT8:
 		case TextureFormat::USCALED_INT16:
+		case TextureFormat::UNSIGNED_INT64:
 			return isColor || format.order == TextureFormat::S;
 
 		case TextureFormat::HALF_FLOAT:
@@ -665,7 +667,7 @@ bool isValid (TextureFormat format)
 			return 0u;
 	}
 
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 }
 
 int getNumUsedChannels (TextureFormat::ChannelOrder order)
@@ -705,7 +707,7 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 int getChannelSize (TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
@@ -719,10 +721,12 @@ int getChannelSize (TextureFormat::ChannelType type)
 		case TextureFormat::SIGNED_INT8:		return 1;
 		case TextureFormat::SIGNED_INT16:		return 2;
 		case TextureFormat::SIGNED_INT32:		return 4;
+		case TextureFormat::SIGNED_INT64:		return 8;
 		case TextureFormat::UNSIGNED_INT8:		return 1;
 		case TextureFormat::UNSIGNED_INT16:		return 2;
 		case TextureFormat::UNSIGNED_INT24:		return 3;
 		case TextureFormat::UNSIGNED_INT32:		return 4;
+		case TextureFormat::UNSIGNED_INT64:		return 8;
 		case TextureFormat::HALF_FLOAT:			return 2;
 		case TextureFormat::FLOAT:				return 4;
 		case TextureFormat::FLOAT64:			return 8;
@@ -747,7 +751,7 @@ int getPixelSize (TextureFormat format)
 	DE_ASSERT(isValid(format));
 
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	switch (type)
 	{
@@ -3887,7 +3891,7 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelOrder order)
 
 std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 46);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 48);
 
 	const char* const typeStrings[] =
 	{
@@ -3921,10 +3925,12 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 		"SIGNED_INT8",
 		"SIGNED_INT16",
 		"SIGNED_INT32",
+		"SIGNED_INT64",
 		"UNSIGNED_INT8",
 		"UNSIGNED_INT16",
 		"UNSIGNED_INT24",
 		"UNSIGNED_INT32",
+		"UNSIGNED_INT64",
 		"HALF_FLOAT",
 		"FLOAT",
 		"FLOAT64",
