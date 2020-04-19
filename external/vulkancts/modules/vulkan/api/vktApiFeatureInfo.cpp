@@ -5715,6 +5715,8 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 	// allowedExtensions.insert("VK_GOOGLE_extension1");
 	allowedDeviceExtensions.insert("VK_ANDROID_external_memory_android_hardware_buffer");
 	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
+	allowedDeviceExtensions.insert("VK_GOOGLE_decorate_string");
+	allowedDeviceExtensions.insert("VK_GOOGLE_hlsl_functionality1");
 
 	// Instance extensions
 	checkExtensions(results,
