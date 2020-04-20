@@ -347,7 +347,7 @@ void bindImage (const DeviceInterface& vkd,
 
 UVec2 getMaxPlaneDivisor (const PlanarFormatDescription& formatDesc)
 {
-	UVec2	maxDivisor	(1u, 1u);
+	UVec2	maxDivisor	(formatDesc.blockWidth, formatDesc.blockHeight);
 
 	for (deUint32 ndx = 0; ndx < formatDesc.numPlanes; ++ndx)
 	{
