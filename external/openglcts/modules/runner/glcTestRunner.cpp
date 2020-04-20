@@ -48,9 +48,11 @@ class RunSession
 public:
 	RunSession(tcu::Platform& platform, tcu::Archive& archive, const int numArgs, const char* const* args)
 		: m_cmdLine(numArgs, args)
-		, m_log(m_cmdLine.getLogFileName(), (numArgs - 1), (char**)(args + 1), m_cmdLine.getLogFlags())
+		, m_log(m_cmdLine.getLogFileName(), m_cmdLine.getLogFlags())
 		, m_app(platform, archive, m_log, m_cmdLine)
 	{
+		const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
+		m_log.writeSessionInfo(sessionInfo + m_cmdLine.getInitialCmdLine() + "\"\n");
 	}
 
 	inline bool iterate(void)

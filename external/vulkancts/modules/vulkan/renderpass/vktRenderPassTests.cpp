@@ -1580,8 +1580,8 @@ void uploadBufferData (const DeviceInterface&	vk,
 					   VkDeviceSize				nonCoherentAtomSize)
 {
 	// Expand the range to flush to account for the nonCoherentAtomSize
-	VkDeviceSize roundedOffset = (VkDeviceSize)deAlignSize(deUint32(memory.getOffset()), deUint32(nonCoherentAtomSize));
-	VkDeviceSize roundedSize = (VkDeviceSize)deAlignSize(deUint32(memory.getOffset() + size - roundedOffset), deUint32(nonCoherentAtomSize));
+	const VkDeviceSize roundedOffset	= de::roundDown(memory.getOffset(), nonCoherentAtomSize);
+	const VkDeviceSize roundedSize		= de::roundUp(memory.getOffset() - roundedOffset + static_cast<VkDeviceSize>(size), nonCoherentAtomSize);
 
 	const VkMappedMemoryRange range =
 	{
@@ -2112,13 +2112,16 @@ public:
 			m_pipelineLayout		= createPipelineLayout(vk, device, &pipelineLayoutParams);
 			m_pipeline				= createSubpassPipeline(vk, device, renderPass, *m_vertexShaderModule, *m_fragmentShaderModule, *m_pipelineLayout, m_renderInfo);
 
-			m_vertexBuffer			= createBuffer(vk, device, 0u, (VkDeviceSize)renderQuad.getVertexDataSize(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, 1u, &queueFamilyIndex);
+			// Round up the vertex buffer size to honor nonCoherentAtomSize.
+			const auto	properties			= vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+			const auto	vertexBufferSize	= de::roundUp(static_cast<VkDeviceSize>(renderQuad.getVertexDataSize()), properties.limits.nonCoherentAtomSize);
+
+			m_vertexBuffer			= createBuffer(vk, device, 0u, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, 1u, &queueFamilyIndex);
 			m_vertexBufferMemory	= allocateBuffer(vki, vk, physDevice, device, *m_vertexBuffer, MemoryRequirement::HostVisible, allocator, allocationKind);
 
 			bindBufferMemory(vk, device, *m_vertexBuffer, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset());
 
-			const vk::VkPhysicalDeviceProperties properties = vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
-			uploadBufferData(vk, device, *m_vertexBufferMemory, renderQuad.getVertexDataSize(), renderQuad.getVertexPointer(), properties.limits.nonCoherentAtomSize);
+			uploadBufferData(vk, device, *m_vertexBufferMemory, static_cast<size_t>(vertexBufferSize), renderQuad.getVertexPointer(), properties.limits.nonCoherentAtomSize);
 
 			if (renderInfo.getInputAttachmentCount() > 0)
 			{

@@ -102,9 +102,10 @@ public:
 	typedef LogNumber<float>		Float;
 	typedef LogNumber<deInt64>		Integer;
 
-	explicit			TestLog					(const char* fileName, int argc = 0, char** argv = DE_NULL, deUint32 flags = 0);
-	explicit			TestLog					(const char* fileName, const std::string& cmdLine, deUint32 flags = 0);
+	explicit			TestLog					(const char* fileName, deUint32 flags = 0);
 						~TestLog				(void);
+
+	void				writeSessionInfo		(std::string additionalInfo = "");
 
 	MessageBuilder		operator<<				(const BeginMessageToken&);
 	MessageBuilder		message					(void);

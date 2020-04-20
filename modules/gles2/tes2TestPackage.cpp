@@ -146,8 +146,12 @@ void TestPackage::init (void)
 		if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
 		{
 			const glu::ContextInfo& contextInfo = m_context->getContextInfo();
-			m_waiverMechanism->setup(m_context->getTestContext().getCommandLine().getWaiverFileName(), m_name,
-									 contextInfo.getString(GL_VENDOR), contextInfo.getString(GL_RENDERER));
+			std::string				vendor		= contextInfo.getString(GL_VENDOR);
+			std::string				renderer	= contextInfo.getString(GL_RENDERER);
+			const tcu::CommandLine&	commandLine = m_context->getTestContext().getCommandLine();
+			tcu::SessionInfo		sessionInfo	(vendor, renderer, commandLine.getInitialCmdLine());
+			m_waiverMechanism->setup(commandLine.getWaiverFileName(), m_name, vendor, renderer, sessionInfo);
+			m_context->getTestContext().getLog().writeSessionInfo(sessionInfo.get());
 		}
 
 		// Add main test groups

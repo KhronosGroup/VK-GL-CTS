@@ -2839,7 +2839,7 @@ struct MemoryTestConfig
 };
 
 #if (DE_OS == DE_OS_WIN32)
-deUint32 chooseMemoryType (deUint32 bits)
+deUint32 chooseWin32MemoryType(deUint32 bits)
 {
 	if (bits == 0)
 		TCU_THROW(NotSupportedError, "No compatible memory type found");
@@ -2869,7 +2869,6 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
 	// \note Buffer is only allocated to get memory requirements
-	deUint32									exportedMemoryTypeIndex	= ~0U;
 	const vk::Unique<vk::VkBuffer>				buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements				requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
 	const vk::VkExportMemoryWin32HandleInfoKHR	win32Info				=
@@ -2888,15 +2887,15 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 		(vk::VkExternalMemoryHandleTypeFlags)config.externalType
 	};
 
-	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits & compatibleMemTypes);
-	const vk::VkMemoryAllocateInfo				info				=
+	const deUint32								exportedMemoryTypeIndex	= chooseWin32MemoryType(requirements.memoryTypeBits & compatibleMemTypes);
+	const vk::VkMemoryAllocateInfo				info					=
 	{
 		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		&exportInfo,
 		requirements.size,
 		exportedMemoryTypeIndex
 	};
-	const vk::Unique<vk::VkDeviceMemory>		memory				(vk::allocateMemory(vkd, *device, &info));
+	const vk::Unique<vk::VkDeviceMemory>		memory					(vk::allocateMemory(vkd, *device, &info));
 	NativeHandle								handleA;
 
 	if (config.hostVisible)
@@ -2931,6 +2930,17 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 #endif
 }
 
+deUint32 getExportedMemoryTypeIndex(const vk::InstanceDriver& vki, const vk::VkPhysicalDevice physicalDevice, bool hostVisible, deUint32 memoryBits)
+{
+	if (hostVisible)
+	{
+		const vk::VkPhysicalDeviceMemoryProperties properties(vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice));
+		return chooseHostVisibleMemoryType(memoryBits, properties);
+	}
+
+	return chooseMemoryType(memoryBits);
+}
+
 tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
@@ -2947,12 +2957,12 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
-	const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
-	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
-	NativeHandle							handleA;
+	const vk::Unique<vk::VkBuffer>				buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+	const vk::VkMemoryRequirements				requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const deUint32								exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>		memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
+	NativeHandle								handleA;
 
 	if (config.hostVisible)
 		writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3004,11 +3014,11 @@ tcu::TestStatus testMemoryMultipleImports (Context& context, MemoryTestConfig co
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 	NativeHandle							handleA;
 
 	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
@@ -3040,11 +3050,11 @@ tcu::TestStatus testMemoryMultipleExports (Context& context, MemoryTestConfig co
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 	for (size_t ndx = 0; ndx < count; ndx++)
 	{
@@ -3069,11 +3079,11 @@ tcu::TestStatus testMemoryFdProperties (Context& context, MemoryTestConfig confi
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 	vk::VkMemoryFdPropertiesKHR	properties;
 	NativeHandle				handle;
@@ -3117,11 +3127,11 @@ tcu::TestStatus testMemoryFdDup (Context& context, MemoryTestConfig config)
 
 		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-		deUint32								exportedMemoryTypeIndex	= ~0U;
 		// \note Buffer is only allocated to get memory requirements
 		const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 		const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+		const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3181,11 +3191,11 @@ tcu::TestStatus testMemoryFdDup2 (Context& context, MemoryTestConfig config)
 
 		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-		deUint32								exportedMemoryTypeIndex	= ~0U;
 		// \note Buffer is only allocated to get memory requirements
 		const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 		const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+		const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3246,11 +3256,11 @@ tcu::TestStatus testMemoryFdDup3 (Context& context, MemoryTestConfig config)
 
 		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-		deUint32								exportedMemoryTypeIndex	= ~0U;
 		// \note Buffer is only allocated to get memory requirements
 		const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 		const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+		const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3311,11 +3321,11 @@ tcu::TestStatus testMemoryFdSendOverSocket (Context& context, MemoryTestConfig c
 
 		checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-		deUint32								exportedMemoryTypeIndex	= ~0U;
 		// \note Buffer is only allocated to get memory requirements
 		const vk::Unique<vk::VkBuffer>			buffer					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 		const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *buffer));
-		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vki, physicalDevice, vkd, *device, requirements, config.externalType, config.hostVisible, config.dedicated ? *buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+		const deUint32							exportedMemoryTypeIndex	(getExportedMemoryTypeIndex(vki, physicalDevice, config.hostVisible, requirements.memoryTypeBits));
+		const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *buffer : (vk::VkBuffer)0));
 
 		if (config.hostVisible)
 			writeHostMemory(vkd, *device, *memory, testData.size(), &testData[0]);
@@ -3463,11 +3473,11 @@ tcu::TestStatus testBufferBindExportImportBind (Context&				context,
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			bufferA					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
@@ -3501,11 +3511,11 @@ tcu::TestStatus testBufferExportBindImportBind (Context&				context,
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			bufferA					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -3538,11 +3548,11 @@ tcu::TestStatus testBufferExportImportBindBind (Context&				context,
 
 	checkBufferSupport(vki, physicalDevice, config.externalType, 0u, usage, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Buffer is only allocated to get memory requirements
 	const vk::Unique<vk::VkBuffer>			bufferA					(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getBufferMemoryRequirements(vkd, *device, *bufferA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *bufferA : (vk::VkBuffer)0));
 	NativeHandle							handle;
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -3742,10 +3752,10 @@ tcu::TestStatus testImageBindExportImportBind (Context&					context,
 
 	checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	const vk::Unique<vk::VkImage>			imageA					(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *imageA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0));
 	NativeHandle							handle;
 
 	VK_CHECK(vkd.bindImageMemory(*device, *imageA, *memoryA, 0u));
@@ -3782,10 +3792,10 @@ tcu::TestStatus testImageExportBindImportBind (Context&					context,
 
 	checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	const vk::Unique<vk::VkImage>			imageA					(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *imageA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0));
 	NativeHandle							handle;
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -3821,11 +3831,11 @@ tcu::TestStatus testImageExportImportBindBind (Context&					context,
 
 	checkImageSupport(vki, physicalDevice, config.externalType, 0u, usage, format, tiling, config.dedicated);
 
-	deUint32								exportedMemoryTypeIndex	= ~0U;
 	// \note Image is only allocated to get memory requirements
 	const vk::Unique<vk::VkImage>			imageA					(createExternalImage(vkd, *device, queueFamilyIndex, config.externalType, format, width, height, tiling, 0u, usage));
 	const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *imageA));
-	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0, exportedMemoryTypeIndex));
+	const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+	const vk::Unique<vk::VkDeviceMemory>	memoryA					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, config.externalType, config.dedicated ? *imageA : (vk::VkImage)0));
 	NativeHandle							handle;
 
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
@@ -4133,10 +4143,10 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			};
 			for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(sizes); i++)
 			{
-				deUint32								exportedMemoryTypeIndex	= ~0U;
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, sizes[i].width, sizes[i].height, tiling, createFlag, usage));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image));
-				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements, externalMemoryType, *image, exportedMemoryTypeIndex));
+				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
 				VK_CHECK(vkd.bindImageMemory(*device, *image, *memory, 0u));
@@ -4154,10 +4164,10 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 
 			if (properties.imageFormatProperties.maxMipLevels > 1u)
 			{
-				deUint32								exportedMemoryTypeIndex	= ~0U;
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, properties.imageFormatProperties.maxMipLevels));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image));
-				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements, externalMemoryType, *image, exportedMemoryTypeIndex));
+				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
 				VK_CHECK(vkd.bindImageMemory(*device, *image, *memory, 0u));
@@ -4172,10 +4182,10 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 
 			if ((properties.imageFormatProperties.maxArrayLayers > 1u) && enableMaxLayerTest)
 			{
-				deUint32								exportedMemoryTypeIndex	= ~0U;
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, 1u, properties.imageFormatProperties.maxArrayLayers));
 				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image));
-				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements, externalMemoryType, *image, exportedMemoryTypeIndex));
+				const deUint32							exportedMemoryTypeIndex	(chooseMemoryType(requirements.memoryTypeBits));
+				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements.size, exportedMemoryTypeIndex, externalMemoryType, *image));
 				NativeHandle							handle;
 
 				VK_CHECK(vkd.bindImageMemory(*device, *image, *memory, 0u));

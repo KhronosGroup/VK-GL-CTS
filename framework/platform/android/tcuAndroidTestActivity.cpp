@@ -43,10 +43,12 @@ TestThread::TestThread (NativeActivity& activity, const std::string& cmdLineStri
 	, m_cmdLine		(cmdLine)
 	, m_platform	(activity)
 	, m_archive		(activity.getNativeActivity()->assetManager)
-	, m_log			(m_cmdLine.getLogFileName(), cmdLineString, m_cmdLine.getLogFlags())
+	, m_log			(m_cmdLine.getLogFileName(), m_cmdLine.getLogFlags())
 	, m_app			(m_platform, m_archive, m_log, m_cmdLine)
 	, m_finished	(false)
 {
+	const std::string sessionInfo = "#sessionInfo commandLineParameters \"";
+	m_log.writeSessionInfo(sessionInfo + cmdLineString + "\"\n");
 }
 
 TestThread::~TestThread (void)

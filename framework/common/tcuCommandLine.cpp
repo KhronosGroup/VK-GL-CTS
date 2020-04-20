@@ -687,6 +687,18 @@ CommandLine::CommandLine (void)
 CommandLine::CommandLine (int argc, const char* const* argv)
 	: m_logFlags	(0)
 {
+	if (argc > 1)
+	{
+		int loop = 1;		// skip application name
+		while (true)
+		{
+			m_initialCmdLine += std::string(argv[loop++]);
+			if (loop >= argc)
+				break;
+			m_initialCmdLine += " ";
+		}
+	}
+
 	if (!parse(argc, argv))
 		throw Exception("Failed to parse command line");
 }
@@ -699,6 +711,7 @@ CommandLine::CommandLine (int argc, const char* const* argv)
  * \param cmdLine Full command line string.
  *//*--------------------------------------------------------------------*/
 CommandLine::CommandLine (const std::string& cmdLine)
+	: m_initialCmdLine	(cmdLine)
 {
 	if (!parse(cmdLine))
 		throw Exception("Failed to parse command line");
@@ -717,6 +730,11 @@ void CommandLine::clear (void)
 const de::cmdline::CommandLine& CommandLine::getCommandLine (void) const
 {
 	return m_cmdLine;
+}
+
+const std::string& CommandLine::getInitialCmdLine(void) const
+{
+	return m_initialCmdLine;
 }
 
 void CommandLine::registerExtendedOptions (de::cmdline::Parser& parser)

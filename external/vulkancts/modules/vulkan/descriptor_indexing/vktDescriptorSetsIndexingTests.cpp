@@ -1673,13 +1673,13 @@ std::string CommonDescriptorInstance::getColorAccess				(VkDescriptorType							
 		break;
 	case VK_DESCRIPTOR_TYPE_SAMPLER:
 		text = usesMipMaps
-			? "textureLod(sampler2D(tex[0], data[nonuniformEXT(${INDEX})]), normalpos, 1)"
-			: "texture(   sampler2D(tex[0], data[nonuniformEXT(${INDEX})]), normalpos   )";
+			? "textureLod(nonuniformEXT(sampler2D(tex[0], data[${INDEX}])), normalpos, 1)"
+			: "texture(   nonuniformEXT(sampler2D(tex[0], data[${INDEX}])), normalpos   )";
 		break;
 	case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		text = usesMipMaps
-			? "textureLod( sampler2D(data[nonuniformEXT(${INDEX})], samp[0]), vec2(0,0), textureQueryLevels(sampler2D(data[nonuniformEXT(${INDEX})], samp[0]))-1)"
-			: "texture(    sampler2D(data[nonuniformEXT(${INDEX})], samp[0]), vec2(0,0)   )";
+			? "textureLod( nonuniformEXT(sampler2D(data[${INDEX}], samp[0])), vec2(0,0), textureQueryLevels(nonuniformEXT(sampler2D(data[${INDEX}], samp[0])))-1)"
+			: "texture(    nonuniformEXT(sampler2D(data[${INDEX}], samp[0])), vec2(0,0)   )";
 		break;
 	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 		text = usesMipMaps

@@ -195,7 +195,8 @@ typedef struct qpEglConfigInfo_s
 } qpEglConfigInfo;
 
 
-qpTestLog*		qpTestLog_createFileLog			(const char* fileName, int argc, char** argv, deUint32 flags);
+qpTestLog*		qpTestLog_createFileLog			(const char* fileName, deUint32 flags);
+deBool			qpTestLog_beginSession			(qpTestLog* log, const char* additionalSessionInfo);
 void			qpTestLog_destroy				(qpTestLog* log);
 
 deBool			qpTestLog_startCase				(qpTestLog* log, const char* testCasePath, qpTestCaseType testCaseType);

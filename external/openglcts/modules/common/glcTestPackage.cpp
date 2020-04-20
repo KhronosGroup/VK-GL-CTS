@@ -71,8 +71,12 @@ void TestPackage::init(void)
 		{
 			Context&				context		= m_packageCtx->getContext();
 			const glu::ContextInfo&	contextInfo = context.getContextInfo();
-			m_waiverMechanism->setup(context.getTestContext().getCommandLine().getWaiverFileName(), m_name,
-									 contextInfo.getString(GL_VENDOR), contextInfo.getString(GL_RENDERER));
+			std::string				vendor		= contextInfo.getString(GL_VENDOR);
+			std::string				renderer	= contextInfo.getString(GL_RENDERER);
+			const tcu::CommandLine&	commandLine	= context.getTestContext().getCommandLine();
+			tcu::SessionInfo		sessionInfo	(vendor, renderer, commandLine.getInitialCmdLine());
+			m_waiverMechanism->setup(commandLine.getWaiverFileName(), m_name, vendor, renderer, sessionInfo);
+			context.getTestContext().getLog().writeSessionInfo(sessionInfo.get());
 		}
 	}
 	catch (...)

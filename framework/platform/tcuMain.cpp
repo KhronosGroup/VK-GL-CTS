@@ -37,7 +37,7 @@ tcu::Platform* createPlatform (void);
 
 int main (int argc, char** argv)
 {
-    int exitStatus = EXIT_SUCCESS;
+	int exitStatus = EXIT_SUCCESS;
 
 #if (DE_OS != DE_OS_WIN32)
 	// Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).
@@ -48,7 +48,7 @@ int main (int argc, char** argv)
 	{
 		tcu::CommandLine				cmdLine		(argc, argv);
 		tcu::DirArchive					archive		(cmdLine.getArchiveDir());
-		tcu::TestLog					log			(cmdLine.getLogFileName(), argc-1, argv+1, cmdLine.getLogFlags());
+		tcu::TestLog					log			(cmdLine.getLogFileName(), cmdLine.getLogFlags());
 		de::UniquePtr<tcu::Platform>	platform	(createPlatform());
 		de::UniquePtr<tcu::App>			app			(new tcu::App(*platform, archive, log, cmdLine));
 

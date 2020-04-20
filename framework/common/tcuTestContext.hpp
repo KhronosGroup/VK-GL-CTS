@@ -51,6 +51,8 @@ public:
 							TestContext			(Platform& platform, Archive& rootArchive, TestLog& log, const CommandLine& cmdLine, qpWatchDog* watchDog);
 							~TestContext		(void) {}
 
+	void					writeSessionInfo	(void);
+
 	// API for test cases
 	TestLog&				getLog				(void)			{ return m_log;			}
 	Archive&				getArchive			(void)			{ return *m_curArchive;	} //!< \note Do not access in TestNode constructors.
