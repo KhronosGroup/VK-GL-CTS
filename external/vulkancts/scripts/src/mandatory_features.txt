@@ -75,6 +75,7 @@ VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT			FEATURES ( vertexAttributeIn
 VkPhysicalDeviceFragmentDensityMapFeaturesEXT				FEATURES ( fragmentDensityMap )									REQUIREMENTS ( VK_EXT_fragment_density_map )
 VkPhysicalDeviceShaderClockFeaturesKHR						FEATURES ( shaderSubgroupClock )								REQUIREMENTS ( VK_KHR_shader_clock )
 VkPhysicalDeviceShaderAtomicInt64FeaturesKHR				FEATURES ( shaderBufferInt64Atomics )							REQUIREMENTS ( VK_KHR_shader_atomic_int64 )
+VkPhysicalDevice16BitStorageFeaturesKHR 					FEATURES ( storageBuffer16BitAccess )							REQUIREMENTS ( VK_KHR_16bit_storage )
 VkPhysicalDeviceShaderFloat16Int8Features					FEATURES ( shaderFloat16 shaderInt8 )							REQUIREMENTS ( VK_KHR_shader_float16_int8 )
 VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT			FEATURES ( fragmentShaderSampleInterlock fragmentShaderPixelInterlock fragmentShaderShadingRateInterlock )						REQUIREMENTS ( VK_EXT_fragment_shader_interlock )
 VkPhysicalDeviceLineRasterizationFeaturesEXT				FEATURES ( rectangularLines bresenhamLines smoothLines stippledRectangularLines stippledBresenhamLines stippledSmoothLines )	REQUIREMENTS ( VK_EXT_line_rasterization )
