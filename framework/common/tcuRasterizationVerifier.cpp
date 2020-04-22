@@ -41,6 +41,8 @@ namespace tcu
 namespace
 {
 
+bool verifyLineGroupInterpolationWithProjectedWeights (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log);
+
 bool lineLineIntersect (const tcu::Vector<deInt64, 2>& line0Beg, const tcu::Vector<deInt64, 2>& line0End, const tcu::Vector<deInt64, 2>& line1Beg, const tcu::Vector<deInt64, 2>& line1End)
 {
 	typedef tcu::Vector<deInt64, 2> I64Vec2;
@@ -1076,7 +1078,7 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface&						surface,
 	return verifyTriangleGroupRasterization(surface, triangleScene, args, log, scene.verificationMode, logStash, vulkanLinesTest);
 }
 
-bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						surface,
+static bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						surface,
 													  const LineSceneSpec&						scene,
 													  const RasterizationArguments&				args,
 													  VerifyTriangleGroupInterpolationLogStash&	logStash,
@@ -1091,11 +1093,15 @@ bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						s
 	triangleScene.triangles.resize(2 * scene.lines.size());
 	for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
 	{
+		// Need the w-coordinates a couple of times
+		const float		wa = scene.lines[lineNdx].positions[0].w();
+		const float		wb = scene.lines[lineNdx].positions[1].w();
+
 		// Transform to screen space, add pixel offsets, convert back to normalized device space, and test as triangles
 		const tcu::Vec2 lineNormalizedDeviceSpace[2] =
 		{
-			tcu::Vec2(scene.lines[lineNdx].positions[0].x() / scene.lines[lineNdx].positions[0].w(), scene.lines[lineNdx].positions[0].y() / scene.lines[lineNdx].positions[0].w()),
-			tcu::Vec2(scene.lines[lineNdx].positions[1].x() / scene.lines[lineNdx].positions[1].w(), scene.lines[lineNdx].positions[1].y() / scene.lines[lineNdx].positions[1].w()),
+			tcu::Vec2(scene.lines[lineNdx].positions[0].x() / wa, scene.lines[lineNdx].positions[0].y() / wa),
+			tcu::Vec2(scene.lines[lineNdx].positions[1].x() / wb, scene.lines[lineNdx].positions[1].y() / wb),
 		};
 		const tcu::Vec2 lineScreenSpace[2] =
 		{
@@ -1123,9 +1129,18 @@ bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						s
 			lineQuadScreenSpace[3] / viewportSize * 2.0f - tcu::Vec2(1.0f, 1.0f),
 		};
 
-		triangleScene.triangles[lineNdx*2 + 0].positions[0] = tcu::Vec4(lineQuadNormalizedDeviceSpace[0].x(), lineQuadNormalizedDeviceSpace[0].y(), 0.0f, 1.0f);
-		triangleScene.triangles[lineNdx*2 + 0].positions[1] = tcu::Vec4(lineQuadNormalizedDeviceSpace[1].x(), lineQuadNormalizedDeviceSpace[1].y(), 0.0f, 1.0f);
-		triangleScene.triangles[lineNdx*2 + 0].positions[2] = tcu::Vec4(lineQuadNormalizedDeviceSpace[2].x(), lineQuadNormalizedDeviceSpace[2].y(), 0.0f, 1.0f);
+		// Re-construct un-projected geometry using the quantised positions
+		const tcu::Vec4 lineQuadUnprojected[4] =
+		{
+			tcu::Vec4(lineQuadNormalizedDeviceSpace[0].x() * wa, lineQuadNormalizedDeviceSpace[0].y() * wa, 0.0f, wa),
+			tcu::Vec4(lineQuadNormalizedDeviceSpace[1].x() * wa, lineQuadNormalizedDeviceSpace[1].y() * wa, 0.0f, wa),
+			tcu::Vec4(lineQuadNormalizedDeviceSpace[2].x() * wb, lineQuadNormalizedDeviceSpace[2].y() * wb, 0.0f, wb),
+			tcu::Vec4(lineQuadNormalizedDeviceSpace[3].x() * wb, lineQuadNormalizedDeviceSpace[3].y() * wb, 0.0f, wb),
+		};
+
+		triangleScene.triangles[lineNdx*2 + 0].positions[0] = lineQuadUnprojected[0];
+		triangleScene.triangles[lineNdx*2 + 0].positions[1] = lineQuadUnprojected[1];
+		triangleScene.triangles[lineNdx*2 + 0].positions[2] = lineQuadUnprojected[2];
 
 		triangleScene.triangles[lineNdx*2 + 0].sharedEdge[0] = false;
 		triangleScene.triangles[lineNdx*2 + 0].sharedEdge[1] = false;
@@ -1135,9 +1150,9 @@ bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						s
 		triangleScene.triangles[lineNdx*2 + 0].colors[1] = scene.lines[lineNdx].colors[0];
 		triangleScene.triangles[lineNdx*2 + 0].colors[2] = scene.lines[lineNdx].colors[1];
 
-		triangleScene.triangles[lineNdx*2 + 1].positions[0] = tcu::Vec4(lineQuadNormalizedDeviceSpace[0].x(), lineQuadNormalizedDeviceSpace[0].y(), 0.0f, 1.0f);
-		triangleScene.triangles[lineNdx*2 + 1].positions[1] = tcu::Vec4(lineQuadNormalizedDeviceSpace[2].x(), lineQuadNormalizedDeviceSpace[2].y(), 0.0f, 1.0f);
-		triangleScene.triangles[lineNdx*2 + 1].positions[2] = tcu::Vec4(lineQuadNormalizedDeviceSpace[3].x(), lineQuadNormalizedDeviceSpace[3].y(), 0.0f, 1.0f);
+		triangleScene.triangles[lineNdx*2 + 1].positions[0] = lineQuadUnprojected[0];
+		triangleScene.triangles[lineNdx*2 + 1].positions[1] = lineQuadUnprojected[2];
+		triangleScene.triangles[lineNdx*2 + 1].positions[2] = lineQuadUnprojected[3];
 
 		triangleScene.triangles[lineNdx*2 + 1].sharedEdge[0] = true;
 		triangleScene.triangles[lineNdx*2 + 1].sharedEdge[1] = false;
@@ -1148,7 +1163,29 @@ bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&						s
 		triangleScene.triangles[lineNdx*2 + 1].colors[2] = scene.lines[lineNdx].colors[1];
 	}
 
-	return verifyTriangleGroupInterpolationWithInterpolator(surface, triangleScene, args, logStash, MultisampleLineInterpolator(scene));
+	if (strictMode)
+	{
+		// Strict mode interpolation should be purely in the direction of the line-segment
+		logStash.messages.push_back("Verify using line interpolator");
+		return verifyTriangleGroupInterpolationWithInterpolator(surface, triangleScene, args, logStash, MultisampleLineInterpolator(scene));
+	}
+	else
+	{
+		// For non-strict lines some allowance needs to be inplace for a few different styles of implementation.
+		//
+		// Some implementations duplicate the attributes at the endpoints to the corners of the triangle
+		// deconstruted parallelogram. Gradients along the line will be seen to travel in the major axis,
+		// with values effectively duplicated in the minor axis direction. In other cases, implementations
+		// will use the original parameters of the line to calculate attribute interpolation so it will
+		// follow the direction of the line-segment.
+		logStash.messages.push_back("Verify using trangle interpolator");
+		if (!verifyTriangleGroupInterpolationWithInterpolator(surface, triangleScene, args, logStash, TriangleInterpolator(triangleScene)))
+		{
+			logStash.messages.push_back("Verify using line interpolator");
+			return verifyTriangleGroupInterpolationWithInterpolator(surface, triangleScene, args, logStash, MultisampleLineInterpolator(scene));
+		}
+		return true;
+	}
 }
 
 static void logTriangleGroupnterpolationStash (const tcu::Surface& surface, tcu::TestLog& log, VerifyTriangleGroupInterpolationLogStash& logStash)
@@ -1215,6 +1252,24 @@ static bool verifyMultisampleLineGroupInterpolation (const tcu::Surface&			surfa
 			logTriangleGroupnterpolationStash(surface, log, nonStrictModeLogStash);
 			logTriangleGroupnterpolationStash(surface, log, strictModeLogStash);
 		}
+
+		// In the non-strict line case, bresenham is also permissable, though not specified. This is due
+		// to a change in how lines are specified in Vulkan versus GLES; in GLES bresenham lines using the
+		// diamond-exit rule were the preferred way to draw single pixel non-antialiased lines, and not all
+		// GLES implementations are able to disable this behaviour.
+		if (result == false)
+		{
+			log << tcu::TestLog::Message << "Checking line rasterisation using verifySinglesampleNarrowLineGroupInterpolation for nonStrict lines" << tcu::TestLog::EndMessage;
+			if (args.numSamples <= 1 &&
+				scene.lineWidth == 1.0f &&
+				verifyLineGroupInterpolationWithProjectedWeights(surface, scene, args, log))
+			{
+				log << tcu::TestLog::Message << "verifySinglesampleNarrowLineGroupInterpolation for nonStrict lines Passed" << tcu::TestLog::EndMessage;
+
+				result	= true;
+			}
+		}
+
 	}
 
 	return result;
