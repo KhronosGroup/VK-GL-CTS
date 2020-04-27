@@ -3,6 +3,8 @@ include_directories(..)
 set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryTests.cpp
 	vktRayQueryTests.hpp
+	vktRayQueryBuiltinTests.cpp
+	vktRayQueryBuiltinTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

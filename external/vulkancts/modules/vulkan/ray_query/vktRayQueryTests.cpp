@@ -23,6 +23,8 @@
 
 #include "vktRayQueryTests.hpp"
 
+#include "vktRayQueryBuiltinTests.hpp"
+
 #include "deUniquePtr.hpp"
 
 #include "tcuTestCase.hpp"
@@ -35,6 +37,8 @@ namespace RayQuery
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_query", "Ray query tests"));
+
+	group->addChild(createBuiltinTests(testCtx));
 
 	return group.release();
 }
