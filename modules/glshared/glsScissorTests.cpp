@@ -124,13 +124,27 @@ void clearEdges (const tcu::PixelBufferAccess& access, const T& color, const IVe
 	}
 }
 
-glu::ProgramSources genShaders(glu::GLSLVersion version)
+glu::ProgramSources genShaders(glu::GLSLVersion version, bool isPoint)
 {
-	const string vtxSource = "${VERSION}\n"
-							 "${IN} highp vec4 a_position;\n"
-							 "void main(){\n"
-							 "	gl_Position = a_position;\n"
-							 "}\n";
+	string vtxSource;
+
+	if (isPoint)
+	{
+		 vtxSource = "${VERSION}\n"
+					 "${IN} highp vec4 a_position;\n"
+					 "void main(){\n"
+					 "	gl_Position = a_position;\n"
+					 "	gl_PointSize = 1.0;\n"
+					 "}\n";
+	}
+	else
+	{
+		 vtxSource = "${VERSION}\n"
+					 "${IN} highp vec4 a_position;\n"
+					 "void main(){\n"
+					 "	gl_Position = a_position;\n"
+					 "}\n";
+	}
 
 	const string frgSource = "${VERSION}\n"
 							 "${OUT_DECL}"
@@ -177,6 +191,9 @@ public:
 protected:
 	virtual void			render			(GLuint program, const IVec4& viewport) const = 0;
 
+	// Initialize gl_PointSize to 1.0f when drawing points, or the point size is undefined according to spec.
+	virtual bool			isPoint			(void) const = 0;
+
 	glu::RenderContext&		m_renderCtx;
 	const Vec4				m_scissorArea;
 };
@@ -199,7 +216,7 @@ ScissorCase::IterateResult ScissorCase::iterate (void)
 																1u << de::max(0, 8 - renderFormat.greenBits),
 																1u << de::max(0, 8 - renderFormat.blueBits),
 																1u << de::max(0, 8 - renderFormat.alphaBits)).asFloat();
-	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType())));
+	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType()), isPoint()));
 
 	const RandomViewport		viewport		(m_renderCtx.getRenderTarget(), 256, 256, deStringHash(getName()));
 	const IVec4					relScissorArea	(int(m_scissorArea.x() * (float)viewport.width),
@@ -297,6 +314,7 @@ public:
 
 protected:
 	virtual void				render					(GLuint program, const IVec4& viewport) const;
+	virtual bool				isPoint					(void) const;
 
 private:
 	const Vec4					m_renderArea;
@@ -317,6 +335,11 @@ ScissorPrimitiveCase::ScissorPrimitiveCase	(tcu::TestContext&		testCtx,
 	, m_primitiveType	(type)
 	, m_primitiveCount	(primitiveCount)
 {
+}
+
+bool ScissorPrimitiveCase::isPoint (void) const
+{
+	return (m_primitiveType == POINT);
 }
 
 void ScissorPrimitiveCase::render (GLuint program, const IVec4&) const
@@ -410,6 +433,7 @@ public:
 
 protected:
 	virtual void	render				(GLuint program, const IVec4& viewport) const;
+	virtual bool	isPoint				(void) const;
 
 private:
 	const deUint32	m_clearMode; //!< Combination of the flags accepted by glClear
@@ -432,6 +456,11 @@ void ScissorClearCase::init (void)
 		throw tcu::NotSupportedError("Cannot clear depth; no depth buffer present", "", __FILE__, __LINE__);
 	else if ((m_clearMode & GL_STENCIL_BUFFER_BIT) && m_renderCtx.getRenderTarget().getStencilBits() == 0)
 		throw tcu::NotSupportedError("Cannot clear stencil; no stencil buffer present", "", __FILE__, __LINE__);
+}
+
+bool ScissorClearCase::isPoint (void) const
+{
+	return false;
 }
 
 void ScissorClearCase::render (GLuint program, const IVec4&) const
@@ -485,6 +514,7 @@ protected:
 	enum {SIZE = 64};
 
 	virtual void	render					(GLuint program, const IVec4& viewport) const;
+	virtual bool	isPoint					(void) const;
 
 	FramebufferP	m_fbo;
 };
@@ -518,6 +548,11 @@ void FramebufferBlitCase::init (void)
 void FramebufferBlitCase::deinit (void)
 {
 	m_fbo.clear();
+}
+
+bool FramebufferBlitCase::isPoint (void) const
+{
+	return false;
 }
 
 void FramebufferBlitCase::render(GLuint program, const IVec4& viewport) const
@@ -578,6 +613,7 @@ private:
 	static BufferFmtDesc	getBufferFormat			(ClearType type);
 
 	virtual void			render					(GLuint program) const;
+	virtual bool			isPoint					(void) const;
 
 	glu::RenderContext&		m_renderCtx;
 	const ClearType			m_clearType;
@@ -609,7 +645,7 @@ FramebufferClearCase::IterateResult FramebufferClearCase::iterate (void)
 {
 	TestLog&					log				= m_testCtx.getLog();
 	const glw::Functions&		gl				= m_renderCtx.getFunctions();
-	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType())));
+	const glu::ShaderProgram	shader			(m_renderCtx, genShaders(glu::getContextTypeGLSLVersion(m_renderCtx.getType()), isPoint()));
 
 	const glu::Framebuffer		fbo				(gl);
 	const glu::Renderbuffer		colorbuf		(gl);
@@ -832,6 +868,11 @@ void FramebufferClearCase::render (GLuint program) const
 		gl.uniform4fv(gl.getUniformLocation(program, "u_color"), 1, clearColor.f);
 		drawQuad(gl, program, tcu::Vec3(-1.0f, -1.0f, 0.6f), tcu::Vec3(1.0f, 1.0f, 0.6f));
 	}
+}
+
+bool FramebufferClearCase::isPoint (void) const
+{
+	return false;
 }
 
 } // Anonymous

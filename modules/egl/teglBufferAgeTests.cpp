@@ -390,6 +390,14 @@ void BufferAgeTest::init (void)
 	const Library&	egl	= m_eglTestCtx.getLibrary();
 
 	m_eglDisplay = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+	if (eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_buffer_age") == false)
+	{
+		egl.terminate(m_eglDisplay);
+		m_eglDisplay = EGL_NO_DISPLAY;
+		TCU_THROW(NotSupportedError, "EGL_EXT_buffer_age is not supported");
+	}
+
 	m_eglConfig	 = getEGLConfig(m_eglTestCtx.getLibrary(), m_eglDisplay, m_preserveColorBuffer);
 
 	if (m_eglConfig == DE_NULL)
@@ -400,9 +408,6 @@ void BufferAgeTest::init (void)
 	initEGLContext(m_eglConfig);
 
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
-
-	if (eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_buffer_age") == false)
-		TCU_THROW(NotSupportedError, "EGL_EXT_buffer_age is not supported");
 
 	m_gles2Renderer = new GLES2Renderer(m_gl);
 	m_refRenderer   = new ReferenceRenderer();

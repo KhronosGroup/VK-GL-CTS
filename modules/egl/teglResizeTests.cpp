@@ -195,14 +195,16 @@ void ResizeTest::init (void)
 
 void ResizeTest::deinit (void)
 {
-	if (m_display != EGL_NO_DISPLAY)
-		m_eglTestCtx.getLibrary().terminate(m_display);
-
 	m_config		= DE_NULL;
-	m_display		= EGL_NO_DISPLAY;
 	m_context.clear();
 	m_surface.clear();
 	m_nativeWindow.clear();
+
+	if (m_display != EGL_NO_DISPLAY)
+	{
+		m_eglTestCtx.getLibrary().terminate(m_display);
+		m_display	= EGL_NO_DISPLAY;
+	}
 }
 
 void ResizeTest::resize (IVec2 size)
