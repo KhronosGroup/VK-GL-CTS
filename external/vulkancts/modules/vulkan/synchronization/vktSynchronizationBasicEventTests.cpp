@@ -122,52 +122,6 @@ tcu::TestStatus deviceResetSetEventCase (Context& context)
 	return tcu::TestStatus::pass("Device set and reset event tests pass");
 }
 
-tcu::TestStatus deviceWaitForEventCase (Context& context)
-{
-	const DeviceInterface&			vk					= context.getDeviceInterface();
-	const VkDevice					device				= context.getDevice();
-	const VkQueue					queue				= context.getUniversalQueue();
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const Unique<VkFence>			fence				(createFence(vk, device));
-	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
-	const VkSubmitInfo				submitInfo			=
-														{
-															VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-															DE_NULL,						// const void*					pNext;
-															0u,								// deUint32						waitSemaphoreCount;
-															DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-															DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-															1u,								// deUint32						commandBufferCount;
-															&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
-															0u,								// deUint32						signalSemaphoreCount;
-															DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
-														};
-	const VkEventCreateInfo			eventInfo			=
-														{
-															VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
-															DE_NULL,
-															0
-														};
-	const Unique<VkEvent>			event				(createEvent(vk, device, &eventInfo, DE_NULL));
-
-	beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdWaitEvents(*cmdBuffer, 1u, &event.get(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);
-	endCommandBuffer(vk, *cmdBuffer);
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	if (VK_TIMEOUT != vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, SHORT_FENCE_WAIT))
-		return tcu::TestStatus::fail("Queue should not end execution");
-
-	if (VK_SUCCESS != vk.setEvent(device, *event))
-		return tcu::TestStatus::fail("Couldn't set event");
-
-	if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, LONG_FENCE_WAIT))
-		return tcu::TestStatus::fail("Queue should end execution");
-
-	return tcu::TestStatus::pass("Device wait for event tests pass");
-}
-
 tcu::TestStatus singleSubmissionCase (Context& context)
 {
 	enum {SET=0, WAIT, COUNT};
@@ -347,7 +301,6 @@ tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
 	addFunctionCase(basicTests.get(), "host_set_reset",   "Basic event tests set and reset on host", hostResetSetEventCase);
 	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", deviceResetSetEventCase);
-	addFunctionCase(basicTests.get(), "host_set_device_wait", "Wait for event on device test", deviceWaitForEventCase);
 	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", singleSubmissionCase);
 	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", multiSubmissionCase);
 	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", secondaryCommandBufferCase);
