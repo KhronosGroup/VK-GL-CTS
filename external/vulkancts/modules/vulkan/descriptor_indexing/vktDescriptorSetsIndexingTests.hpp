@@ -207,7 +207,8 @@ public:
 	inline const VkPhysicalDeviceFeatures&							physicalDeviceFeatures		(void) const;
 
 	deUint32 computeMaxPerStageDescriptorCount	(VkDescriptorType	descriptorType,
-												 bool				enableUpdateAfterBind) const;
+												 bool				enableUpdateAfterBind,
+												 bool				reserveUniformTexelBuffer) const;
 };
 
 inline const VkPhysicalDeviceDescriptorIndexingFeatures& DeviceProperties::descriptorIndexingFeatures (void) const
