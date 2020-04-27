@@ -1182,7 +1182,7 @@ void updateInstanceBuffer (const DeviceInterface&											vk,
 
 		const deUint64 structureReference	= (buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 											? deUint64(accelerationStructureAddress)
-											: deUint64(&accelerationStructureKHR);
+											: deUint64(accelerationStructureKHR.getInternal());
 
 		VkAccelerationStructureInstanceKHR	accelerationStructureInstanceKHR = makeVkAccelerationStructureInstanceKHR
 		(
