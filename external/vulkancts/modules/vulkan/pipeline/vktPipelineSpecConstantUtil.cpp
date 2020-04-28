@@ -300,6 +300,38 @@ void requireFeatures (Context& context, const FeatureFlags flags)
 
 	if (flags & FEATURE_FRAGMENT_STORES_AND_ATOMICS)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+
+	if (flags & FEATURE_SHADER_INT_64)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_INT64);
+
+	if (flags & FEATURE_SHADER_INT_16)
+		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_INT16);
+
+	if (flags & (FEATURE_SHADER_FLOAT_16 | FEATURE_SHADER_INT_8))
+	{
+		const auto extraFeatures = context.getShaderFloat16Int8Features();
+
+		if ((flags & FEATURE_SHADER_INT_8) != 0u && !extraFeatures.shaderInt8)
+			TCU_THROW(NotSupportedError, "8-bit integers not supported in shaders");
+
+		if ((flags & FEATURE_SHADER_FLOAT_16) != 0u && !extraFeatures.shaderFloat16)
+			TCU_THROW(NotSupportedError, "16-bit floats not supported in shaders");
+	}
+
+	// Check needed storage features.
+	if (flags & (FEATURE_SHADER_INT_16 | FEATURE_SHADER_FLOAT_16))
+	{
+		const auto features = context.get16BitStorageFeatures();
+		if (!features.storageBuffer16BitAccess)
+			TCU_THROW(NotSupportedError, "16-bit access in storage buffers not supported");
+	}
+
+	if (flags & FEATURE_SHADER_INT_8)
+	{
+		const auto features = context.get8BitStorageFeatures();
+		if (!features.storageBuffer8BitAccess)
+			TCU_THROW(NotSupportedError, "8-bit access in storage buffers not supported");
+	}
 }
 
 } // pipeline

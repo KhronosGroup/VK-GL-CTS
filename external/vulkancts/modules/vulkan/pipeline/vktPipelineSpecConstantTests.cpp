@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuTexture.hpp"
 #include "tcuFormatUtil.hpp"
+#include "tcuFloat.hpp"
 
 #include "gluShaderUtil.hpp"
 
@@ -43,6 +44,8 @@
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
+
+#include <limits>
 
 namespace vkt
 {
@@ -79,13 +82,18 @@ private:
 	void clear (void) { m_data = 0; }
 };
 
-inline GenericValue makeValueBool32	 (const bool a)		{ return GenericValue(&a, sizeof(a)); }
-inline GenericValue makeValueInt32	 (const deInt32 a)	{ return GenericValue(&a, sizeof(a)); }
-// \note deInt64 not tested
-inline GenericValue makeValueUint32	 (const deUint32 a)	{ return GenericValue(&a, sizeof(a)); }
-// \note deUint64 not tested
-inline GenericValue makeValueFloat32 (const float a)	{ return GenericValue(&a, sizeof(a)); }
-inline GenericValue makeValueFloat64 (const double a)	{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueBool32	 (const bool a)			{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueInt8    (const deInt8 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueUint8   (const deUint8 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueInt16   (const deInt16 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueUint16  (const deUint16 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueInt32	 (const deInt32 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueUint32	 (const deUint32 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueInt64   (const deInt64 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueUint64  (const deUint64 a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueFloat16 (const tcu::Float16 a)	{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueFloat32 (const float a)		{ return GenericValue(&a, sizeof(a)); }
+inline GenericValue makeValueFloat64 (const double a)		{ return GenericValue(&a, sizeof(a)); }
 
 struct SpecConstant
 {
@@ -184,43 +192,49 @@ struct CaseDefinition
 	std::string					mainCode;			//!< generic shader code to execute in main (e.g. assignments)
 	std::vector<OffsetValue>	expectedValues;		//!< list of values to check inside the ssbo buffer
 	FeatureFlags				requirements;		//!< features the implementation must support to allow this test to run
+	bool						packData;			//!< whether to tightly pack specialization constant data or not
 };
 
 //! Manages Vulkan structures to pass specialization data.
 class Specialization
 {
 public:
-											Specialization (const std::vector<SpecConstant>& specConstants);
+											Specialization (const std::vector<SpecConstant>& specConstants, bool packData);
 
 	//! Can return NULL if nothing is specialized
 	const VkSpecializationInfo*				getSpecializationInfo (void) const { return m_entries.size() > 0 ? &m_specialization : DE_NULL; }
 
 private:
-	std::vector<GenericValue>				m_data;
+	std::vector<deUint8>					m_data;
 	std::vector<VkSpecializationMapEntry>	m_entries;
 	VkSpecializationInfo					m_specialization;
 };
 
-Specialization::Specialization (const std::vector<SpecConstant>& specConstants)
+Specialization::Specialization (const std::vector<SpecConstant>& specConstants, bool packData)
 {
-	m_data.reserve(specConstants.size());
+	const auto kGenericValueSize = static_cast<deUint32>(sizeof(GenericValue));
+
+	// Reserve memory for the worst case in m_data.
+	m_data.resize(specConstants.size() * kGenericValueSize, std::numeric_limits<deUint8>::max());
 	m_entries.reserve(specConstants.size());
 
-	deUint32 offset = 0;
-	for (std::vector<SpecConstant>::const_iterator it = specConstants.begin(); it != specConstants.end(); ++it)
-		if (it->size != 0)
+	deUint32 offset = 0u;
+	for (const auto& sc : specConstants)
+	{
+		if (sc.size != 0u)
 		{
-			m_data.push_back(it->specValue);
-			m_entries.push_back(makeSpecializationMapEntry(it->specID, offset, it->size));
-			offset += (deUint32)sizeof(GenericValue);
+			deMemcpy(&m_data[offset], &sc.specValue, sc.size);
+			m_entries.push_back(makeSpecializationMapEntry(sc.specID, offset, sc.size));
+			offset += (packData ? sc.size : kGenericValueSize);
 		}
+	}
 
 	if (m_entries.size() > 0)
 	{
 		m_specialization.mapEntryCount = static_cast<deUint32>(m_entries.size());
-		m_specialization.pMapEntries   = &m_entries[0];
-		m_specialization.dataSize	   = sizeof(GenericValue) * m_data.size();
-		m_specialization.pData		   = &m_data[0];
+		m_specialization.pMapEntries   = m_entries.data();
+		m_specialization.dataSize	   = static_cast<deUintptr>(offset);
+		m_specialization.pData		   = m_data.data();
 	}
 	else
 		deMemset(&m_specialization, 0, sizeof(m_specialization));
@@ -291,11 +305,27 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 	// Either graphics or compute must be defined, but not both
 	DE_ASSERT(((requiredStages & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) != ((requiredStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0));
 
+	// Extensions needed for some tests.
+	std::ostringstream extStream;
+	if (m_caseDef.requirements & FEATURE_SHADER_INT_64)
+		extStream << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n";
+	if (m_caseDef.requirements & FEATURE_SHADER_INT_16)
+		extStream << "#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require\n";
+	if (m_caseDef.requirements & FEATURE_SHADER_INT_8)
+		extStream << "#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require\n";
+	if (m_caseDef.requirements & FEATURE_SHADER_FLOAT_16)
+		extStream << "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require\n";
+	const std::string extensions = extStream.str();
+
+	// This makes glslang avoid the UniformAndStorage* capabilities.
+	const vk::ShaderBuildOptions buildOptions (programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+
 	if (requiredStages & VK_SHADER_STAGE_VERTEX_BIT)
 	{
 		const bool useSpecConst = (m_stage == VK_SHADER_STAGE_VERTEX_BIT);
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< extensions
 			<< "layout(location = 0) in highp vec4 position;\n"
 			<< "\n"
 			<< "out " << s_perVertexBlock << ";\n"
@@ -309,14 +339,15 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 			<< "    gl_Position = position;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << buildOptions;
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_FRAGMENT_BIT)
 	{
 		const bool useSpecConst = (m_stage == VK_SHADER_STAGE_FRAGMENT_BIT);
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< extensions
 			<< "layout(location = 0) out highp vec4 fragColor;\n"
 			<< "\n"
 			<< (useSpecConst ? generateSpecConstantCode(m_caseDef.specConstants) : "")
@@ -328,14 +359,15 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 			<< "    fragColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str()) << buildOptions;
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
 	{
 		const bool useSpecConst = (m_stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< extensions
 			<< "layout(vertices = 3) out;\n"
 			<< "\n"
 			<< "in " << s_perVertexBlock << " gl_in[gl_MaxPatchVertices];\n"
@@ -358,14 +390,15 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 			<< "    }\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str()) << buildOptions;
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
 	{
 		const bool useSpecConst = (m_stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< extensions
 			<< "layout(triangles, equal_spacing, ccw) in;\n"
 			<< "\n"
 			<< "in " << s_perVertexBlock << " gl_in[gl_MaxPatchVertices];\n"
@@ -384,14 +417,15 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 			<< "    gl_Position = vec4(p0 + p1 + p2, 1.0);\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str()) << buildOptions;
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT)
 	{
 		const bool useSpecConst = (m_stage == VK_SHADER_STAGE_GEOMETRY_BIT);
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< extensions
 			<< "layout(triangles) in;\n"
 			<< "layout(triangle_strip, max_vertices = 3) out;\n"
 			<< "\n"
@@ -417,13 +451,14 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 			<< "    EndPrimitive();\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
+		programCollection.glslSources.add("geom") << glu::GeometrySource(src.str()) << buildOptions;
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_COMPUTE_BIT)
 	{
 		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< extensions
 			// Don't define work group size, use the default or specialization constants
 			<< "\n"
 			<< generateSpecConstantCode(m_caseDef.specConstants)
@@ -434,7 +469,7 @@ void SpecConstantTest::initPrograms (SourceCollections& programCollection) const
 			<< m_caseDef.mainCode
 			<< "}\n";
 
-		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
+		programCollection.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 	}
 }
 
@@ -444,7 +479,8 @@ public:
 									ComputeTestInstance	(Context&							context,
 														 const VkDeviceSize					ssboSize,
 														 const std::vector<SpecConstant>&	specConstants,
-														 const std::vector<OffsetValue>&	expectedValues);
+														 const std::vector<OffsetValue>&	expectedValues,
+														 bool								packData);
 
 	tcu::TestStatus					iterate				(void);
 
@@ -452,16 +488,19 @@ private:
 	const VkDeviceSize				m_ssboSize;
 	const std::vector<SpecConstant>	m_specConstants;
 	const std::vector<OffsetValue>	m_expectedValues;
+	const bool						m_packData;
 };
 
 ComputeTestInstance::ComputeTestInstance (Context&							context,
 										  const VkDeviceSize				ssboSize,
 										  const std::vector<SpecConstant>&	specConstants,
-										  const std::vector<OffsetValue>&	expectedValues)
+										  const std::vector<OffsetValue>&	expectedValues,
+										  bool								packData)
 	: TestInstance		(context)
 	, m_ssboSize		(ssboSize)
 	, m_specConstants	(specConstants)
 	, m_expectedValues	(expectedValues)
+	, m_packData		(packData)
 {
 }
 
@@ -494,7 +533,7 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 
 	// Specialization
 
-	const Specialization        specialization (m_specConstants);
+	const Specialization        specialization (m_specConstants, m_packData);
 	const VkSpecializationInfo* pSpecInfo      = specialization.getSpecializationInfo();
 
 	// Pipeline
@@ -541,7 +580,8 @@ public:
 														  const VkDeviceSize				ssboSize,
 														  const std::vector<SpecConstant>&	specConstants,
 														  const std::vector<OffsetValue>&	expectedValues,
-														  const VkShaderStageFlagBits		stage);
+														  const VkShaderStageFlagBits		stage,
+														  bool								packData);
 
 	tcu::TestStatus					iterate				 (void);
 
@@ -550,18 +590,21 @@ private:
 	const std::vector<SpecConstant>	m_specConstants;
 	const std::vector<OffsetValue>	m_expectedValues;
 	const VkShaderStageFlagBits		m_stage;
+	const bool						m_packData;
 };
 
 GraphicsTestInstance::GraphicsTestInstance (Context&							context,
 											const VkDeviceSize					ssboSize,
 											const std::vector<SpecConstant>&	specConstants,
 											const std::vector<OffsetValue>&		expectedValues,
-											const VkShaderStageFlagBits			stage)
+											const VkShaderStageFlagBits			stage,
+											bool								packData)
 	: TestInstance		(context)
 	, m_ssboSize		(ssboSize)
 	, m_specConstants	(specConstants)
 	, m_expectedValues	(expectedValues)
 	, m_stage			(stage)
+	, m_packData		(packData)
 {
 }
 
@@ -619,7 +662,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	// Specialization
 
-	const Specialization        specialization (m_specConstants);
+	const Specialization        specialization (m_specConstants, m_packData);
 	const VkSpecializationInfo* pSpecInfo      = specialization.getSpecializationInfo();
 
 	// Pipeline
@@ -727,9 +770,9 @@ void SpecConstantTest::checkSupport (Context& context) const
 TestInstance* SpecConstantTest::createInstance (Context& context) const
 {
 	if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
-		return new ComputeTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues);
+		return new ComputeTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_caseDef.packData);
 	else
-		return new GraphicsTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_stage);
+		return new GraphicsTestInstance(context, m_caseDef.ssboSize, m_caseDef.specConstants, m_caseDef.expectedValues, m_stage, m_caseDef.packData);
 }
 
 //! Declare specialization constants but use them with default values.
@@ -737,7 +780,7 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "default_value", "use default constant value"));
 
-	const CaseDefinition defs[] =
+	CaseDefinition defs[] =
 	{
 		{
 			"bool",
@@ -752,6 +795,71 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 			makeVector(OffsetValue(4, 0, makeValueBool32(true)),
 					   OffsetValue(4, 4, makeValueBool32(false))),
 			(FeatureFlags)0,
+			false,
+		},
+		{
+			"int8",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int8_t sc0 = int8_t(1);"),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int8_t sc1 = int8_t(-2);")),
+			2,
+			"    int8_t r0;\n"
+			"    int8_t r1;\n",
+			"",
+			"    int8_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(1, 0, makeValueInt8(1)),
+					   OffsetValue(1, 1, makeValueInt8(-2))),
+			FEATURE_SHADER_INT_8,
+			false,
+		},
+		{
+			"uint8",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint8_t sc0 = int8_t(15);"),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint8_t sc1 = int8_t(43);")),
+			2,
+			"    uint8_t r0;\n"
+			"    uint8_t r1;\n",
+			"",
+			"    uint8_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(1, 0, makeValueUint8(15)),
+					   OffsetValue(1, 1, makeValueUint8(43))),
+			FEATURE_SHADER_INT_8,
+			false,
+		},
+		{
+			"int16",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int16_t sc0 = 20000s;", 2, makeValueInt16(32000)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int16_t sc1 = -20000s;")),
+			4,
+			"    int16_t r0;\n"
+			"    int16_t r1;\n",
+			"",
+			"    int16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueInt16(32000)),
+					   OffsetValue(2, 2, makeValueInt16(-20000))),
+			FEATURE_SHADER_INT_16,
+			false,
+		},
+		{
+			"uint16",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint16_t sc0 = 64000us;"),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint16_t sc1 = 51829us;")),
+			4,
+			"    uint16_t r0;\n"
+			"    uint16_t r1;\n",
+			"",
+			"    uint16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueUint16(64000)),
+					   OffsetValue(2, 2, makeValueUint16(51829))),
+			FEATURE_SHADER_INT_16,
+			false,
 		},
 		{
 			"int",
@@ -766,6 +874,7 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 			makeVector(OffsetValue(4, 0, makeValueInt32(-3)),
 					   OffsetValue(4, 4, makeValueInt32(17))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"uint",
@@ -776,6 +885,53 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 			"    sb_out.r0 = sc0;\n",
 			makeVector(OffsetValue(4, 0, makeValueUint32(42u))),
 			(FeatureFlags)0,
+			false,
+		},
+		{
+			"int64",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int64_t sc0 = 9141386509785772560l;"),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int64_t sc1 = -9141386509785772560l;")),
+			16,
+			"    int64_t r0;\n"
+			"    int64_t r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueInt64(9141386509785772560ll)),
+					   OffsetValue(8, 8, makeValueInt64(-9141386509785772560ll))),
+			FEATURE_SHADER_INT_64,
+			false,
+		},
+		{
+			"uint64",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint64_t sc0 = 18364758544493064720ul;"),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint64_t sc1 = 17298946664678735070ul;")),
+			16,
+			"    uint64_t r0;\n"
+			"    uint64_t r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueUint64(18364758544493064720ull)),
+					   OffsetValue(8, 8, makeValueUint64(17298946664678735070ull))),
+			FEATURE_SHADER_INT_64,
+			false,
+		},
+		{
+			"float16",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const float16_t sc0 = 7.5hf;"),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const float16_t sc1 = 1.125hf;")),
+			4,
+			"    float16_t r0;\n"
+			"    float16_t r1;\n",
+			"",
+			"    float16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueFloat16(tcu::Float16(7.5))),
+					   OffsetValue(2, 2, makeValueFloat16(tcu::Float16(1.125)))),
+			FEATURE_SHADER_FLOAT_16,
+			false,
 		},
 		{
 			"float",
@@ -786,6 +942,7 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 			"    sb_out.r0 = sc0;\n",
 			makeVector(OffsetValue(4, 0, makeValueFloat32(7.5f))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"double",
@@ -796,11 +953,22 @@ tcu::TestCaseGroup* createDefaultValueTests (tcu::TestContext& testCtx, const Vk
 			"    sb_out.r0 = sc0;\n",
 			makeVector(OffsetValue(8, 0, makeValueFloat64(2.75))),
 			FEATURE_SHADER_FLOAT_64,
+			false,
 		},
 	};
 
-	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, defs[defNdx]));
+	for (int i = 0; i < 2; ++i)
+	{
+		const bool packData = (i > 0);
+		for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
+		{
+			auto& def = defs[defNdx];
+			def.packData = packData;
+			if (packData)
+				def.name += "_packed";
+			testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+		}
+	}
 
 	return testGroup.release();
 }
@@ -810,7 +978,7 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup (new tcu::TestCaseGroup(testCtx, "basic", "specialize a constant"));
 
-	const CaseDefinition defs[] =
+	CaseDefinition defs[] =
 	{
 		{
 			"bool",
@@ -833,6 +1001,135 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 					   OffsetValue(4,  8, makeValueBool32(false)),
 					   OffsetValue(4, 12, makeValueBool32(true))),
 			(FeatureFlags)0,
+			false,
+		},
+		{
+			"int8",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int8_t sc0 = int8_t(1);", 1, makeValueInt8(127)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int8_t sc1 = int8_t(-2);")),
+			2,
+			"    int8_t r0;\n"
+			"    int8_t r1;\n",
+			"",
+			"    int8_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(1, 0, makeValueInt8(127)),
+					   OffsetValue(1, 1, makeValueInt8(-2))),
+			FEATURE_SHADER_INT_8,
+			false,
+		},
+		{
+			"int8_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int8_t sc0 = int8_t(123);", 1, makeValueInt8(65)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int8_t sc1 = int8_t(-33);", 1, makeValueInt8(-128))),
+			2,
+			"    int8_t r0;\n"
+			"    int8_t r1;\n",
+			"",
+			"    int8_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(1, 0, makeValueInt8(65)),
+					   OffsetValue(1, 1, makeValueInt8(-128))),
+			FEATURE_SHADER_INT_8,
+			false,
+		},
+		{
+			"uint8",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint8_t sc0 = int8_t(15);", 1, makeValueUint8(254)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint8_t sc1 = int8_t(43);")),
+			2,
+			"    uint8_t r0;\n"
+			"    uint8_t r1;\n",
+			"",
+			"    uint8_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(1, 0, makeValueUint8(254)),
+					   OffsetValue(1, 1, makeValueUint8(43))),
+			FEATURE_SHADER_INT_8,
+			false,
+		},
+		{
+			"uint8_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint8_t sc0 = int8_t(99);", 1, makeValueUint8(254)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint8_t sc1 = int8_t(81);", 1, makeValueUint8(255))),
+			2,
+			"    uint8_t r0;\n"
+			"    uint8_t r1;\n",
+			"",
+			"    uint8_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(1, 0, makeValueUint8(254)),
+					   OffsetValue(1, 1, makeValueUint8(255))),
+			FEATURE_SHADER_INT_8,
+			false,
+		},
+		{
+			"int16",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int16_t sc0 = 20000s;", 2, makeValueInt16(32000)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int16_t sc1 = -20000s;")),
+			4,
+			"    int16_t r0;\n"
+			"    int16_t r1;\n",
+			"",
+			"    int16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueInt16(32000)),
+					   OffsetValue(2, 2, makeValueInt16(-20000))),
+			FEATURE_SHADER_INT_16,
+			false,
+		},
+		{
+			"int16_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int16_t sc0 = 20000s;", 2, makeValueInt16(32000)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int16_t sc1 = -20000s;", 2, makeValueInt16(-21000))),
+			4,
+			"    int16_t r0;\n"
+			"    int16_t r1;\n",
+			"",
+			"    int16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueInt16(32000)),
+					   OffsetValue(2, 2, makeValueInt16(-21000))),
+			FEATURE_SHADER_INT_16,
+			false,
+		},
+		{
+			"uint16",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint16_t sc0 = 64000us;", 2, makeValueUint16(65000)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint16_t sc1 = 51829us;")),
+			4,
+			"    uint16_t r0;\n"
+			"    uint16_t r1;\n",
+			"",
+			"    uint16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueUint16(65000)),
+					   OffsetValue(2, 2, makeValueUint16(51829))),
+			FEATURE_SHADER_INT_16,
+			false,
+		},
+		{
+			"uint16_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint16_t sc0 = 64000us;", 2, makeValueUint16(65000)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint16_t sc1 = 51829us;", 2, makeValueUint16(63000))),
+			4,
+			"    uint16_t r0;\n"
+			"    uint16_t r1;\n",
+			"",
+			"    uint16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueUint16(65000)),
+					   OffsetValue(2, 2, makeValueUint16(63000))),
+			FEATURE_SHADER_INT_16,
+			false,
 		},
 		{
 			"int",
@@ -851,6 +1148,7 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 					   OffsetValue(4, 4, makeValueInt32(91)),
 					   OffsetValue(4, 8, makeValueInt32(-15))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"uint",
@@ -865,6 +1163,123 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 			makeVector(OffsetValue(4, 0, makeValueUint32(97u)),
 					   OffsetValue(4, 4, makeValueUint32(7u))),
 			(FeatureFlags)0,
+			false,
+		},
+		{
+			"uint_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint sc0 = 305419896u;", 4, makeValueUint32(1985229328u)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint sc1 = 591751049u;"),
+					   SpecConstant(3u, "layout(constant_id = ${ID}) const uint sc2 = 878082202u;", 4, makeValueUint32(1698898186u))),
+			12,
+			"    uint r0;\n"
+			"    uint r1;\n"
+			"    uint r2;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n"
+			"    sb_out.r2 = sc2;\n",
+			makeVector(OffsetValue(4, 0, makeValueUint32(1985229328u)),
+					   OffsetValue(4, 4, makeValueUint32(591751049u)),
+					   OffsetValue(4, 8, makeValueUint32(1698898186u))),
+			(FeatureFlags)0,
+			false,
+		},
+		{
+			"int64",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int64_t sc0 = 9141386509785772560l;", 8, makeValueInt64(9137147825770275585ll)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int64_t sc1 = -9141386509785772560l;")),
+			16,
+			"    int64_t r0;\n"
+			"    int64_t r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueInt64(9137147825770275585ll)),
+					   OffsetValue(8, 8, makeValueInt64(-9141386509785772560ll))),
+			FEATURE_SHADER_INT_64,
+			false,
+		},
+		{
+			"int64_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const int64_t sc0 = 9141386509785772560l;", 8, makeValueInt64(9137147825770275585ll)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const int64_t sc1 = -9141386509785772560l;", 8, makeValueInt64(-9137164382869201665ll))),
+			16,
+			"    int64_t r0;\n"
+			"    int64_t r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueInt64(9137147825770275585ll)),
+					   OffsetValue(8, 8, makeValueInt64(-9137164382869201665ll))),
+			FEATURE_SHADER_INT_64,
+			false,
+		},
+		{
+			"uint64",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint64_t sc0 = 18364758544493064720ul;", 8, makeValueUint64(17279655951921914625ull)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint64_t sc1 = 17298946664678735070ul;")),
+			16,
+			"    uint64_t r0;\n"
+			"    uint64_t r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueUint64(17279655951921914625ull)),
+					   OffsetValue(8, 8, makeValueUint64(17298946664678735070ull))),
+			FEATURE_SHADER_INT_64,
+			false,
+		},
+		{
+			"uint64_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const uint64_t sc0 = 18364758544493064720ul;", 8, makeValueUint64(17279655951921914625ull)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const uint64_t sc1 = 17298946664678735070ul;", 8, makeValueUint64(17270123250533606145ull))),
+			16,
+			"    uint64_t r0;\n"
+			"    uint64_t r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueUint64(17279655951921914625ull)),
+					   OffsetValue(8, 8, makeValueUint64(17270123250533606145ull))),
+			FEATURE_SHADER_INT_64,
+			false,
+		},
+		// We create some floating point values below as unsigned integers to make sure all bytes are set to different values, avoiding special patterns and denormals.
+		{
+			"float16",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const float16_t sc0 = 7.5hf;", 2, makeValueFloat16(tcu::Float16(15.75))),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const float16_t sc1 = 1.125hf;")),
+			4,
+			"    float16_t r0;\n"
+			"    float16_t r1;\n",
+			"",
+			"    float16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(2, 0, makeValueFloat16(tcu::Float16(15.75))),
+					   OffsetValue(2, 2, makeValueFloat16(tcu::Float16(1.125)))),
+			FEATURE_SHADER_FLOAT_16,
+			false,
+		},
+		{
+			"float16_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const float16_t sc0 = 7.5hf;", 2, makeValueUint16(0x0123u)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const float16_t sc1 = 1.125hf;"),
+					   SpecConstant(3u, "layout(constant_id = ${ID}) const float16_t sc2 = 1.125hf;", 2, makeValueUint16(0xFEDCu))),
+			6,
+			"    float16_t r0;\n"
+			"    float16_t r1;\n"
+			"    float16_t r2;\n",
+			"",
+			"    float16_t aux = sc0 + sc1;\n"
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n"
+			"    sb_out.r2 = sc2;\n",
+			makeVector(OffsetValue(2, 0, makeValueUint16(0x0123u)),
+					   OffsetValue(2, 2, makeValueFloat16(tcu::Float16(1.125))),
+					   OffsetValue(2, 4, makeValueUint16(0xFEDCu))),
+			FEATURE_SHADER_FLOAT_16,
+			false,
 		},
 		{
 			"float",
@@ -879,10 +1294,30 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 			makeVector(OffsetValue(4, 0, makeValueFloat32(15.75f)),
 					   OffsetValue(4, 4, makeValueFloat32(1.125f))),
 			(FeatureFlags)0,
+			false,
+		},
+		{
+			"float_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const float sc0 = 7.5;", 4, makeValueUint32(0x01234567u)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const float sc1 = 1.125;"),
+					   SpecConstant(3u, "layout(constant_id = ${ID}) const float sc2 = 1.125;", 4, makeValueUint32(0xfedcba98u))),
+			12,
+			"    float r0;\n"
+			"    float r1;\n"
+			"    float r2;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n"
+			"    sb_out.r2 = sc2;\n",
+			makeVector(OffsetValue(4, 0, makeValueUint32(0x01234567u)),
+					   OffsetValue(4, 4, makeValueFloat32(1.125f)),
+					   OffsetValue(4, 8, makeValueUint32(0xfedcba98u))),
+			(FeatureFlags)0,
+			false,
 		},
 		{
 			"double",
-			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const double sc0 = 2.75LF;", 8, makeValueFloat64(22.5)),
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const double sc0 = 2.75LF;", 8, makeValueUint64(0xFEDCBA9876543210ull)),
 					   SpecConstant(2u, "layout(constant_id = ${ID}) const double sc1 = 9.25LF;")),
 			16,
 			"    double r0;\n"
@@ -890,14 +1325,98 @@ tcu::TestCaseGroup* createBasicSpecializationTests (tcu::TestContext& testCtx, c
 			"",
 			"    sb_out.r0 = sc0;\n"
 			"    sb_out.r1 = sc1;\n",
-			makeVector(OffsetValue(8, 0, makeValueFloat64(22.5)),
+			makeVector(OffsetValue(8, 0, makeValueUint64(0xFEDCBA9876543210ull)),
 					   OffsetValue(8, 8, makeValueFloat64(9.25))),
 			FEATURE_SHADER_FLOAT_64,
+			false,
+		},
+		{
+			"double_2",
+			makeVector(SpecConstant(1u, "layout(constant_id = ${ID}) const double sc0 = 2.75LF;", 8, makeValueUint64(0xFEDCBA9876543210ull)),
+					   SpecConstant(2u, "layout(constant_id = ${ID}) const double sc1 = 9.25LF;", 8, makeValueUint64(0xEFCDAB8967452301ull))),
+			16,
+			"    double r0;\n"
+			"    double r1;\n",
+			"",
+			"    sb_out.r0 = sc0;\n"
+			"    sb_out.r1 = sc1;\n",
+			makeVector(OffsetValue(8, 0, makeValueUint64(0xFEDCBA9876543210ull)),
+					   OffsetValue(8, 8, makeValueUint64(0xEFCDAB8967452301ull))),
+			FEATURE_SHADER_FLOAT_64,
+			false,
+		},
+		{
+			"mixed",
+			makeVector(
+				SpecConstant(1u, "layout(constant_id = ${ID}) const uint8_t  sc0 = uint8_t  (0);", 1, makeValueUint8(0x98)),
+				SpecConstant(2u, "layout(constant_id = ${ID}) const uint16_t sc1 = uint16_t (0);", 2, makeValueUint16(0x9876)),
+				SpecConstant(3u, "layout(constant_id = ${ID}) const uint     sc2 = uint     (0);", 4, makeValueUint32(0xba987654u)),
+				SpecConstant(4u, "layout(constant_id = ${ID}) const uint64_t sc3 = uint64_t (0);", 8, makeValueUint64(0xfedcba9876543210ull))),
+			8+4+2+1,
+			"    uint64_t r0;\n"
+			"    uint     r1;\n"
+			"    uint16_t r2;\n"
+			"    uint8_t  r3;\n",
+			"",
+			"    uint64_t i0 = sc3;\n"
+			"    uint     i1 = sc2;\n"
+			"    uint16_t i2 = sc1;\n"
+			"    uint8_t  i3 = sc0;\n"
+			"    sb_out.r0 = i0;\n"
+			"    sb_out.r1 = i1;\n"
+			"    sb_out.r2 = i2;\n"
+			"    sb_out.r3 = i3;\n",
+			makeVector(
+				OffsetValue(8, 0, makeValueUint64(0xfedcba9876543210ull)),
+				OffsetValue(4, 8, makeValueUint32(0xba987654u)),
+				OffsetValue(2, 12, makeValueUint16(0x9876)),
+				OffsetValue(1, 14, makeValueUint8(0x98))),
+			(FEATURE_SHADER_INT_8 | FEATURE_SHADER_INT_16 | FEATURE_SHADER_INT_64),
+			false,
+		},
+		{
+			"mixed_reversed",
+			makeVector(
+				SpecConstant(1u, "layout(constant_id = ${ID}) const uint64_t sc3 = uint64_t (0);", 8, makeValueUint64(0xfedcba9876543210ull)),
+				SpecConstant(2u, "layout(constant_id = ${ID}) const uint     sc2 = uint     (0);", 4, makeValueUint32(0xba987654u)),
+				SpecConstant(3u, "layout(constant_id = ${ID}) const uint16_t sc1 = uint16_t (0);", 2, makeValueUint16(0x9876)),
+				SpecConstant(4u, "layout(constant_id = ${ID}) const uint8_t  sc0 = uint8_t  (0);", 1, makeValueUint8(0x98))),
+			8+4+2+1,
+			"    uint64_t r0;\n"
+			"    uint     r1;\n"
+			"    uint16_t r2;\n"
+			"    uint8_t  r3;\n",
+			"",
+			"    uint64_t i0 = sc3;\n"
+			"    uint     i1 = sc2;\n"
+			"    uint16_t i2 = sc1;\n"
+			"    uint8_t  i3 = sc0;\n"
+			"    sb_out.r0 = i0;\n"
+			"    sb_out.r1 = i1;\n"
+			"    sb_out.r2 = i2;\n"
+			"    sb_out.r3 = i3;\n",
+			makeVector(
+				OffsetValue(8, 0, makeValueUint64(0xfedcba9876543210ull)),
+				OffsetValue(4, 8, makeValueUint32(0xba987654u)),
+				OffsetValue(2, 12, makeValueUint16(0x9876)),
+				OffsetValue(1, 14, makeValueUint8(0x98))),
+			(FEATURE_SHADER_INT_8 | FEATURE_SHADER_INT_16 | FEATURE_SHADER_INT_64),
+			false,
 		},
 	};
 
-	for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
-		testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, defs[defNdx]));
+	for (int i = 0; i < 2; ++i)
+	{
+		const bool packData = (i > 0);
+		for (int defNdx = 0; defNdx < DE_LENGTH_OF_ARRAY(defs); ++defNdx)
+		{
+			auto& def = defs[defNdx];
+			def.packData = packData;
+			if (packData)
+				def.name += "_packed";
+			testGroup->addChild(new SpecConstantTest(testCtx, shaderStage, def));
+		}
+	}
 
 	return testGroup.release();
 }
@@ -937,6 +1456,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(1u)),
 					   OffsetValue(4, 12, makeValueUint32(7u))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"y",
@@ -947,6 +1467,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(1u)),
 					   OffsetValue(4, 12, makeValueUint32(5u))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"z",
@@ -957,6 +1478,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(3u)),
 					   OffsetValue(4, 12, makeValueUint32(3u))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"xy",
@@ -968,6 +1490,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(1u)),
 					   OffsetValue(4, 12, makeValueUint32(6u * 4u))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"xz",
@@ -979,6 +1502,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(9u)),
 					   OffsetValue(4, 12, makeValueUint32(3u * 9u))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"yz",
@@ -990,6 +1514,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(5u)),
 					   OffsetValue(4, 12, makeValueUint32(2u * 5u))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"xyz",
@@ -1002,6 +1527,7 @@ tcu::TestCaseGroup* createWorkGroupSizeTests (tcu::TestContext& testCtx)
 					   OffsetValue(4,  8, makeValueUint32(7u)),
 					   OffsetValue(4, 12, makeValueUint32(3u * 5u * 7u))),
 			(FeatureFlags)0,
+			false,
 		},
 	};
 
@@ -1027,6 +1553,7 @@ tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const
 			"    sb_out.ok = (gl_MaxImageUnits >= 8);\n",	// implementation defined, 8 is the minimum
 			makeVector(OffsetValue(4,  0, makeValueBool32(true))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"specialized",
@@ -1037,6 +1564,7 @@ tcu::TestCaseGroup* createBuiltInOverrideTests (tcu::TestContext& testCtx, const
 			"    sb_out.maxImageUnits = gl_MaxImageUnits;\n",
 			makeVector(OffsetValue(4,  0, makeValueInt32(12))),
 			(FeatureFlags)0,
+			false,
 		},
 	};
 
@@ -1066,6 +1594,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 			"    sb_out.result = expr0 + expr1;\n",
 			makeVector(OffsetValue(4,  0, makeValueInt32(10))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"array_size",
@@ -1093,6 +1622,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 					   OffsetValue(4,  8, makeValueInt32(2)),
 					   OffsetValue(4, 12, makeValueInt32(1))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"array_size_expression",
@@ -1120,6 +1650,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 			makeVector(OffsetValue(4,  0, makeValueInt32(-2)),
 					   OffsetValue(4,  4, makeValueInt32(-4))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"array_size_spec_const_expression",
@@ -1147,6 +1678,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 			makeVector(OffsetValue(4,  0, makeValueInt32(-2)),
 					   OffsetValue(4,  4, makeValueInt32(-4))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"array_size_length",
@@ -1166,6 +1698,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 			makeVector(OffsetValue(4,  0, makeValueInt32(1)),
 					   OffsetValue(4,  4, makeValueInt32(4))),
 			(FeatureFlags)0,
+			false,
 		},
 		{
 			"array_size_pass_to_function",
@@ -1193,6 +1726,7 @@ tcu::TestCaseGroup* createExpressionTests (tcu::TestContext& testCtx, const VkSh
 			"    sb_out.result = sumArrays(a0, a1);\n",
 			makeVector(OffsetValue(4,  0, makeValueInt32(15))),
 			(FeatureFlags)0,
+			false,
 		},
 	};
 
@@ -1420,6 +1954,7 @@ CaseDefinition makeMatrixVectorCompositeCaseDefinition (const glu::DataType type
 		generateShaderChecksumComputationCode(scalarType, varName, accumType, size1, size2, numCombinations),
 		computeExpectedValues(specValue, scalarType, numCombinations),
 		(scalarType == glu::TYPE_DOUBLE ? (FeatureFlags)FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
+		false,
 	};
 	return def;
 }
@@ -1463,6 +1998,7 @@ CaseDefinition makeArrayCompositeCaseDefinition (const glu::DataType elemType, c
 		generateShaderChecksumComputationCode(elemType, varName, accumType, size1, size2, numCombinations),
 		computeExpectedValues(specValue, scalarType, numCombinations),
 		(scalarType == glu::TYPE_DOUBLE ? (FeatureFlags)FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
+		false,
 	};
 	return def;
 }
@@ -1518,6 +2054,7 @@ CaseDefinition makeStructCompositeCaseDefinition (const glu::DataType memberType
 		mainCode.str(),
 		makeVector(OffsetValue(getDataTypeScalarSizeBytes(memberType), 0, makeValue(scalarType, checksum))),
 		(scalarType == glu::TYPE_DOUBLE ? (FeatureFlags)FEATURE_SHADER_FLOAT_64 : (FeatureFlags)0),
+		false,
 	};
 	return def;
 }
@@ -1678,6 +2215,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 
 				makeVector(OffsetValue(4,  0, makeValueInt32(checksum))),
 				(FeatureFlags)0,
+				false,
 			};
 
 			group->addChild(new SpecConstantTest(testCtx, shaderStage, def));
@@ -1724,6 +2262,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 
 				makeVector(OffsetValue(4,  0, makeValueFloat32(static_cast<float>(checksum)))),
 				(FeatureFlags)0,
+				false,
 			};
 
 			group->addChild(new SpecConstantTest(testCtx, shaderStage, def));
@@ -1765,6 +2304,7 @@ tcu::TestCaseGroup* createCompositeTests (tcu::TestContext& testCtx, const VkSha
 
 				makeVector(OffsetValue(4,  0, makeValueInt32(checksum))),
 				(FeatureFlags)0,
+				false,
 			};
 
 			group->addChild(new SpecConstantTest(testCtx, shaderStage, def));
