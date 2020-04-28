@@ -83,3 +83,8 @@ VK_KHR_performance_query					DEVICE
 VK_KHR_shader_non_semantic_info				DEVICE
 VK_KHR_copy_commands2						DEVICE
 VK_KHR_shader_terminate_invocation			DEVICE
+VK_KHR_ray_tracing_pipeline					DEVICE
+VK_KHR_ray_query							DEVICE
+VK_KHR_acceleration_structure				DEVICE
+VK_KHR_pipeline_library						DEVICE
+VK_KHR_deferred_host_operations				DEVICE
