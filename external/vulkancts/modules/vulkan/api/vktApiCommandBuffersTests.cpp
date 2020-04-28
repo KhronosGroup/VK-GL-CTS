@@ -1087,7 +1087,6 @@ tcu::TestStatus recordSinglePrimaryBufferTest(Context& context)
 
 tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -1206,7 +1205,6 @@ tcu::TestStatus recordSingleSecondaryBufferTest(Context& context)
 
 tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -1232,6 +1230,35 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 	};
 	const Unique<VkCommandBuffer>			primCmdBuf				(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 
+	const VkCommandBufferAllocateInfo		secCmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				//	VkStructureType				sType;
+		DE_NULL,													//	const void*					pNext;
+		*cmdPool,													//	VkCommandPool				pool;
+		VK_COMMAND_BUFFER_LEVEL_SECONDARY,							//	VkCommandBufferLevel		level;
+		1u,															//	uint32_t					bufferCount;
+	};
+	const Unique<VkCommandBuffer>			secCmdBuf				(allocateCommandBuffer(vk, vkDevice, &secCmdBufParams));
+
+	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		DE_NULL,
+		(VkRenderPass)0u,											// renderPass
+		0u,															// subpass
+		(VkFramebuffer)0u,											// framebuffer
+		VK_FALSE,													// occlusionQueryEnable
+		(VkQueryControlFlags)0u,									// queryFlags
+		(VkQueryPipelineStatisticFlags)0u,							// pipelineStatistics
+	};
+	const VkCommandBufferBeginInfo			secCmdBufBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		0,															// flags
+		&secCmdBufInheritInfo,
+	};
+
 	// create event that will be used to check if secondary command buffer has been executed
 	const Unique<VkEvent>					event					(createEvent(vk, vkDevice));
 
@@ -1241,22 +1268,30 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 	// record primary command buffer
 	beginCommandBuffer(vk, *primCmdBuf, 0u);
 	{
-		// allow execution of event during every stage of pipeline
-		VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
-		// define minimal amount of commands to accept
-		const long long unsigned minNumCommands = 10000llu;
-
-		for ( long long unsigned currentCommands = 0; currentCommands < minNumCommands / 2; ++currentCommands )
+		// record secondary command buffer
+		VK_CHECK(vk.beginCommandBuffer(*secCmdBuf, &secCmdBufBeginInfo));
 		{
-			// record setting event
-			vk.cmdSetEvent(*primCmdBuf, *event,stageMask);
+			// allow execution of event during every stage of pipeline
+			VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
-			// record resetting event
-			vk.cmdResetEvent(*primCmdBuf, *event,stageMask);
-		};
+			// define minimal amount of commands to accept
+			const long long unsigned minNumCommands = 10000llu;
 
+			for ( long long unsigned currentCommands = 0; currentCommands < minNumCommands / 2; ++currentCommands )
+			{
+				// record setting event
+				vk.cmdSetEvent(*primCmdBuf, *event,stageMask);
 
+				// record resetting event
+				vk.cmdResetEvent(*primCmdBuf, *event,stageMask);
+			};
+		}
+
+		// end recording of secondary buffers
+		endCommandBuffer(vk, *secCmdBuf);
+
+		// execute secondary buffer
+		vk.cmdExecuteCommands(*primCmdBuf, 1, &secCmdBuf.get());
 	}
 	endCommandBuffer(vk, *primCmdBuf);
 
@@ -1267,7 +1302,6 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 
 tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -1332,7 +1366,6 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 
 tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -1452,7 +1485,6 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 
 tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -1525,7 +1557,6 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 
 tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -1711,7 +1742,6 @@ tcu::TestStatus renderPassContinueTest(Context& context, bool framebufferHint)
 
 tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 {
-
 	const VkDevice							vkDevice				= context.getDevice();
 	const DeviceInterface&					vk						= context.getDeviceInterface();
 	const VkQueue							queue					= context.getUniversalQueue();
@@ -3734,6 +3764,116 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	}
 }
 
+enum StateTransitionTest
+{
+	STT_RECORDING_TO_INITIAL	= 0,
+	STT_EXECUTABLE_TO_INITIAL,
+	STT_RECORDING_TO_INVALID,
+	STT_EXECUTABLE_TO_INVALID,
+};
+
+tcu::TestStatus executeStateTransitionTest(Context& context, StateTransitionTest type)
+{
+	const VkDevice					vkDevice			= context.getDevice();
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkQueue					queue				= context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer			(allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkEvent>			globalEvent			(createEvent(vk, vkDevice));
+
+	VK_CHECK(vk.resetEvent(vkDevice, *globalEvent));
+
+	switch (type)
+	{
+		case STT_RECORDING_TO_INITIAL:
+		{
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
+			vk.cmdSetEvent(*cmdBuffer, *globalEvent, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			break;
+			// command buffer is still in recording state
+		}
+		case STT_EXECUTABLE_TO_INITIAL:
+		{
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
+			vk.cmdSetEvent(*cmdBuffer, *globalEvent, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			endCommandBuffer(vk, *cmdBuffer);
+			break;
+			// command buffer is still in executable state
+		}
+		case STT_RECORDING_TO_INVALID:
+		{
+			VkSubpassDescription subpassDescription;
+			deMemset(&subpassDescription, 0, sizeof(VkSubpassDescription));
+			subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+			VkRenderPassCreateInfo renderPassCreateInfo
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+				DE_NULL, 0, 0, DE_NULL,
+				1, &subpassDescription, 0, DE_NULL
+			};
+
+			// Error here - renderpass and framebuffer were created localy
+			Move <VkRenderPass> renderPass = createRenderPass(vk, vkDevice, &renderPassCreateInfo);
+
+			VkFramebufferCreateInfo framebufferCreateInfo
+			{
+				VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, DE_NULL,
+				0, *renderPass, 0, DE_NULL, 16, 16, 1
+			};
+			Move <VkFramebuffer> framebuffer = createFramebuffer(vk, vkDevice, &framebufferCreateInfo);
+
+			VkRenderPassBeginInfo renderPassBeginInfo =
+			{
+				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				DE_NULL, *renderPass, *framebuffer, { { 0, 0 }, { 16, 16 } },
+				0, DE_NULL
+			};
+
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
+			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vk.cmdEndRenderPass(*cmdBuffer);
+
+			// not executing endCommandBuffer(vk, *cmdBuffer);
+			// command buffer is still in recording state
+			break;
+			// renderpass and framebuffer are destroyed; command buffer should be now in invalid state
+		}
+		case STT_EXECUTABLE_TO_INVALID:
+		{
+			// create event that will be used to check if command buffer has been executed
+			const Unique<VkEvent> localEvent(createEvent(vk, vkDevice));
+			VK_CHECK(vk.resetEvent(vkDevice, *localEvent));
+
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
+			vk.cmdSetEvent(*cmdBuffer, *localEvent, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+			endCommandBuffer(vk, *cmdBuffer);
+			// command buffer is in executable state
+			break;
+			// localEvent is destroyed; command buffer should be now in invalid state
+		}
+	}
+
+	VK_CHECK(vk.resetEvent(vkDevice, *globalEvent));
+
+	vk.resetCommandBuffer(*cmdBuffer, 0u);
+	// command buffer should now be back in initial state
+
+	// verify commandBuffer
+	beginCommandBuffer(vk, *cmdBuffer, 0u);
+	vk.cmdSetEvent(*cmdBuffer, *globalEvent, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+
+	// check if buffer has been executed
+	VkResult result = vk.getEventStatus(vkDevice, *globalEvent);
+	if (result != VK_EVENT_SET)
+		return tcu::TestStatus::fail("Submit failed");
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 // Shaders
 void genComputeSource (SourceCollections& programCollection)
 {
@@ -3867,6 +4007,11 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"",	executeSecondaryBufferTwiceTest);
 	/* 19.6. Commands Allowed Inside Command Buffers (? in VK 1.0 Spec) */
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "order_bind_pipeline",				"", genComputeSource, orderBindPipelineTest);
+	/* Verify untested transitions between command buffer states */
+	addFunctionCase				(commandBuffersTests.get(), "recording_to_ininitial",			"", executeStateTransitionTest, STT_RECORDING_TO_INITIAL);
+	addFunctionCase				(commandBuffersTests.get(), "executable_to_ininitial",			"", executeStateTransitionTest, STT_EXECUTABLE_TO_INITIAL);
+	addFunctionCase				(commandBuffersTests.get(), "recording_to_invalid",				"", executeStateTransitionTest, STT_RECORDING_TO_INVALID);
+	addFunctionCase				(commandBuffersTests.get(), "executable_to_invalid",			"", executeStateTransitionTest, STT_EXECUTABLE_TO_INVALID);
 
 	return commandBuffersTests.release();
 }
