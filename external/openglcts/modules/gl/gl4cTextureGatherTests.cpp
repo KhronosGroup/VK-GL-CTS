@@ -59,8 +59,8 @@ public:
 
 	TGBase() : renderTarget(m_context.getRenderContext().getRenderTarget()), pixelFormat(renderTarget.getPixelFormat())
 	{
-		g_color_eps = Vec4(1.f / (float)(1 << pixelFormat.redBits), 1.f / (float)(1 << pixelFormat.greenBits),
-						   1.f / (float)(1 << pixelFormat.blueBits), 1.f / (float)(1 << pixelFormat.alphaBits));
+		g_color_eps = Vec4(1.f / (float)(1 << deMin32(8, pixelFormat.redBits)), 1.f / (float)(1 << deMin32(8, pixelFormat.greenBits)),
+						   1.f / (float)(1 << deMin32(8, pixelFormat.blueBits)), 1.f / (float)(1 << pixelFormat.alphaBits));
 	}
 
 	const tcu::RenderTarget& renderTarget;
