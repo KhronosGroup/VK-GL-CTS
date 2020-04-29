@@ -98,6 +98,7 @@ enum RayFlagBits
 	RAY_FLAG_BIT_CULL_FRONT_FACING_TRIANGLES_EXT	= 5,	//  const uint gl_RayFlagsCullFrontFacingTrianglesEXT = 32U;
 	RAY_FLAG_BIT_CULL_OPAQUE_EXT					= 6,	//  const uint gl_RayFlagsCullOpaqueEXT = 64U;
 	RAY_FLAG_BIT_CULL_NO_OPAQUE_EXT					= 7,	//  const uint gl_RayFlagsCullNoOpaqueEXT = 128U;
+	RAY_FLAG_BIT_LAST_PER_TEST,
 	RAY_FLAG_BIT_SKIP_TRIANGLES_EXT					= 8,	//  const uint gl_RayFlagsSkipTrianglesEXT = 256U;
 	RAY_FLAG_BIT_SKIP_AABB_EXT						= 9,	//  const uint gl_RayFlagsSkipAABBEXT = 512U;
 	RAY_FLAG_BIT_LAST
@@ -120,7 +121,11 @@ struct CaseDef
 	deUint32				geometriesGroupCount;
 	deUint32				instancesGroupCount;
 	VkShaderStageFlagBits	stage;
-	bool					cullingFlags;
+	bool					rayFlagSkipTriangles;
+	bool					rayFlagSkipAABSs;
+	bool					opaque;
+	bool					frontFace;
+	VkPipelineCreateFlags	pipelineCreateFlags;
 };
 
 const deUint32	DEFAULT_UINT_CLEAR_VALUE	= 0x8000;
@@ -314,6 +319,13 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 
 void RayTracingTestCase::checkSupport(Context& context) const
 {
+	const bool	pipelineFlagSkipTriangles	= ((m_data.pipelineCreateFlags & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR) != 0);
+	const bool	pipelineFlagSkipAABSs		= ((m_data.pipelineCreateFlags & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR) != 0);
+	const bool	cullingFlags				=  m_data.rayFlagSkipTriangles
+											|| m_data.rayFlagSkipAABSs
+											|| pipelineFlagSkipTriangles
+											|| pipelineFlagSkipAABSs;
+
 	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
 
 	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
@@ -321,13 +333,8 @@ void RayTracingTestCase::checkSupport(Context& context) const
 	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
 
-	if (m_data.cullingFlags && rayTracingFeaturesKHR.rayTracingPrimitiveCulling == DE_FALSE)
+	if (cullingFlags && rayTracingFeaturesKHR.rayTracingPrimitiveCulling == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingPrimitiveCulling");
-
-	// TODO: 1. allow this when GLSLang implementation will support these flags
-	//       2. Uncomment adding flags in shader generator (RayTracingTestCase::initPrograms)
-	if (m_data.cullingFlags)
-		TCU_THROW(NotSupportedError, "GLSLang support of gl_RayFlagsSkipTrianglesEXT and gl_RayFlagsSkipAABBEXT is required, but not implemented");
 }
 
 const std::string RayTracingTestCase::getIntersectionPassthrough (void)
@@ -704,6 +711,10 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 	}
 	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_EXT)
 	{
+		const bool			cullingFlags			= m_data.rayFlagSkipTriangles || m_data.rayFlagSkipAABSs;
+		const std::string	cullingFlagsInit		= m_data.rayFlagSkipTriangles ? "gl_RayFlagsSkipTrianglesEXT"
+													: m_data.rayFlagSkipAABSs ? "gl_RayFlagsSkipAABBEXT"
+													: "gl_RayFlagsNoneEXT";
 		const std::string	updateImage				=
 			"  ivec3 p = ivec3(gl_LaunchIDEXT);\n"
 			"  int   r = int(gl_" + std::string(m_data.name) + ");\n"
@@ -717,40 +728,34 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"\n"
 			"void main()\n"
 			"{\n"
-			"  uint part = (4 * gl_LaunchIDEXT.y) / gl_LaunchSizeEXT.y;\n"
-			"  uint hitKind = ((part & 1) == 0) ? gl_HitKindFrontFacingTriangleEXT : gl_HitKindBackFacingTriangleEXT;\n"
+			"  uint hitKind = " + std::string(m_data.frontFace ? "gl_HitKindFrontFacingTriangleEXT" : "gl_HitKindBackFacingTriangleEXT") + ";\n"
 			"  reportIntersectionEXT(0.95f, hitKind);\n"
 			"}\n";
-		const std::string	cullingFlagsFragment	=
-			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_OPAQUE_EXT                   ) + "))) f = f | gl_RayFlagsCullOpaqueEXT;\n"
-			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_NO_OPAQUE_EXT                ) + "))) f = f | gl_RayFlagsCullNoOpaqueEXT;\n"
-			"\n"
-			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_BACK_FACING_TRIANGLES_EXT    ) + "))) f = f | gl_RayFlagsCullBackFacingTrianglesEXT;\n"
-			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_FRONT_FACING_TRIANGLES_EXT   ) + "))) f = f | gl_RayFlagsCullFrontFacingTrianglesEXT;\n";
 		const std::string	raygenFlagsFragment		=
 			"\n"
-			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_OPAQUE_EXT                        ) + "))) f = f | gl_RayFlagsOpaqueEXT;\n"
-			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_NO_OPAQUE_EXT                     ) + "))) f = f | gl_RayFlagsNoOpaqueEXT;\n"
-			+ (m_data.cullingFlags ? cullingFlagsFragment : "") +
+			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_OPAQUE_EXT                     ) + "))) f = f | gl_RayFlagsOpaqueEXT;\n"
+			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_NO_OPAQUE_EXT                  ) + "))) f = f | gl_RayFlagsNoOpaqueEXT;\n"
+			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_OPAQUE_EXT                ) + "))) f = f | gl_RayFlagsCullOpaqueEXT;\n"
+			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_NO_OPAQUE_EXT             ) + "))) f = f | gl_RayFlagsCullNoOpaqueEXT;\n"
 			"\n"
-			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_TERMINATE_ON_FIRST_HIT_EXT        ) + "))) f = f | gl_RayFlagsTerminateOnFirstHitEXT;\n"
-			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_SKIP_CLOSEST_HIT_SHADER_EXT       ) + "))) f = f | gl_RayFlagsSkipClosestHitShaderEXT;\n"
-			// TODO: allow this when GLSLang implementation will support these flags
-			//"\n"
-			//"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_SKIP_TRIANGLES_EXT                ) + "))) f = f | gl_RayFlagsSkipTrianglesEXT;\n"
-			//"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_SKIP_AABB_EXT                     ) + "))) f = f | gl_RayFlagsSkipAABBEXT;\n"
+			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_BACK_FACING_TRIANGLES_EXT ) + "))) f = f | gl_RayFlagsCullBackFacingTrianglesEXT;\n"
+			"  else if (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_CULL_FRONT_FACING_TRIANGLES_EXT) + "))) f = f | gl_RayFlagsCullFrontFacingTrianglesEXT;\n"
+			"\n"
+			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_TERMINATE_ON_FIRST_HIT_EXT     ) + "))) f = f | gl_RayFlagsTerminateOnFirstHitEXT;\n"
+			"  if      (0 != (n & (1<<" + de::toString(RAY_FLAG_BIT_SKIP_CLOSEST_HIT_SHADER_EXT    ) + "))) f = f | gl_RayFlagsSkipClosestHitShaderEXT;\n"
 			"\n";
 		const std::string	raygenShader			=
 			"#version 460 core\n"
 			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
+			+ (cullingFlags ? std::string("#extension GL_EXT_ray_flags_primitive_culling : require\n") : "") +
 			"layout(location = 0) rayPayloadEXT vec3 hitValue;\n"
 			"layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
 			"\n"
 			"void main()\n"
 			"{\n"
-			"  uint  n        = (gl_LaunchIDEXT.x + gl_LaunchSizeEXT.x * (gl_LaunchIDEXT.y + gl_LaunchSizeEXT.y * gl_LaunchIDEXT.z)) & 0xFF;\n"
-			"  uint  f        = gl_RayFlagsNoneEXT;\n"
+			"  uint  n        = gl_LaunchIDEXT.x + gl_LaunchSizeEXT.x * (gl_LaunchIDEXT.y + gl_LaunchSizeEXT.y * gl_LaunchIDEXT.z);\n"
+			"  uint  f        = " + cullingFlagsInit + ";\n"
 			+ raygenFlagsFragment +
 			"  uint  rayFlags = f;\n"
 			"  uint  cullMask = 0xFF;\n"
@@ -1337,7 +1342,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
 			result->addGeometry(geometryData, triangles);
 		}
 	}
-	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_EXT || m_data.id == TEST_ID_HIT_KIND_EXT)
+	else if (m_data.id == TEST_ID_HIT_KIND_EXT)
 	{
 		const bool	triangles	= (m_data.geomType == GEOM_TYPE_TRIANGLES);
 		const bool	missShader	= (m_data.stage == VK_SHADER_STAGE_MISS_BIT_KHR);
@@ -1399,6 +1404,61 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
 
 		result->addGeometry(geometryDataOpaque, triangles, (VkGeometryFlagsKHR)VK_GEOMETRY_OPAQUE_BIT_KHR);
 		result->addGeometry(geometryDataNonOpaque, triangles, (VkGeometryFlagsKHR)0);
+	}
+	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_EXT)
+	{
+		const bool					triangles		= (m_data.geomType == GEOM_TYPE_TRIANGLES);
+		const bool					missShader		= (m_data.stage == VK_SHADER_STAGE_MISS_BIT_KHR);
+		const float					z				= !missShader ? -1.0f : -100.0f;
+		const VkGeometryFlagsKHR	geometryFlags	= m_data.opaque ? static_cast<VkGeometryFlagsKHR>(VK_GEOMETRY_OPAQUE_BIT_KHR) : static_cast<VkGeometryFlagsKHR>(0);
+		const bool					cw				= m_data.frontFace;
+		std::vector<tcu::Vec3>		geometryData;
+
+		DE_ASSERT(m_data.geometriesGroupCount == 1);
+		DE_ASSERT(m_data.squaresGroupCount != 1);
+
+		geometryData.reserve(m_data.squaresGroupCount * (triangles ? 3u : 2u));
+
+		for (size_t squareNdx = 0; squareNdx < m_data.squaresGroupCount; ++squareNdx)
+		{
+			const deUint32	n	= m_data.width * startPos.y() + startPos.x();
+			const deUint32	m	= n + 1;
+			const float		x0	= float(startPos.x() + 0) / float(m_data.width);
+			const float		y0	= float(startPos.y() + 0) / float(m_data.height);
+			const float		x1	= float(startPos.x() + 1) / float(m_data.width);
+			const float		y1	= float(startPos.y() + 1) / float(m_data.height);
+
+			if (triangles)
+			{
+				const float	xm	= (x0 + x1) / 2.0f;
+				const float	ym	= (y0 + y1) / 2.0f;
+
+				if (cw)
+				{
+					geometryData.push_back(tcu::Vec3(x0, y0, z));
+					geometryData.push_back(tcu::Vec3(x1, ym, z));
+					geometryData.push_back(tcu::Vec3(xm, y1, z));
+				}
+				else
+				{
+					geometryData.push_back(tcu::Vec3(x0, y0, z));
+					geometryData.push_back(tcu::Vec3(xm, y1, z));
+					geometryData.push_back(tcu::Vec3(x1, ym, z));
+				}
+			}
+			else
+			{
+				geometryData.push_back(tcu::Vec3(x0, y0, z));
+				geometryData.push_back(tcu::Vec3(x1, y1, z * 0.9f));
+			}
+
+			startPos.y() = m / m_data.width;
+			startPos.x() = m % m_data.width;
+		}
+
+		DE_ASSERT(startPos.y() == m_data.height && startPos.x() == 0);
+
+		result->addGeometry(geometryData, triangles, geometryFlags);
 	}
 	else if (m_data.id == TEST_ID_HIT_T_EXT		||
 			 m_data.id == TEST_ID_RAY_T_MIN_EXT	||
@@ -1531,6 +1591,9 @@ Move<VkPipeline> RayTracingBuiltinLaunchTestInstance::makePipeline (de::MovePtr<
 	if (0 != (m_shaders & VK_SHADER_STAGE_MISS_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR			, createShaderModule(vkd, device, collection.get("miss"), 0), m_missShaderGroup);
 	if (0 != (m_shaders & VK_SHADER_STAGE_INTERSECTION_BIT_KHR))	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR	, createShaderModule(vkd, device, collection.get("sect"), 0), m_hitShaderGroup);
 	if (0 != (m_shaders & VK_SHADER_STAGE_CALLABLE_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR		, createShaderModule(vkd, device, collection.get("call"), 0), m_callableShaderGroup);
+
+	if (m_data.pipelineCreateFlags != 0)
+		rayTracingPipeline->setCreateFlags(m_data.pipelineCreateFlags);
 
 	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
 
@@ -1774,27 +1837,29 @@ std::vector<deInt32> RayTracingBuiltinLaunchTestInstance::expectedIntValuesBuffe
 	}
 	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_EXT)
 	{
-		DE_ASSERT(m_data.squaresGroupCount == (1<<RAY_FLAG_BIT_LAST));
-		DE_ASSERT(DEFAULT_UINT_CLEAR_VALUE != (1<<RAY_FLAG_BIT_LAST));
+		DE_ASSERT(m_data.squaresGroupCount == (1<<RAY_FLAG_BIT_LAST_PER_TEST));
+		DE_ASSERT(DEFAULT_UINT_CLEAR_VALUE != (1<<RAY_FLAG_BIT_LAST_PER_TEST));
 
 		for (deUint32 z = 0; z < m_data.depth; ++z)
 		for (deUint32 y = 0; y < m_data.height; ++y)
 		for (deUint32 x = 0; x < m_data.width; ++x)
 		{
 			const deUint32	n						= x + m_data.width * (y + m_data.height * z);
-			const bool		rayOpaque				=                        (0 != (n & (1<<RAY_FLAG_BIT_OPAQUE_EXT                     )));
-			const bool		rayNoOpaque				=                        (0 != (n & (1<<RAY_FLAG_BIT_NO_OPAQUE_EXT                  ))) && !rayOpaque;
-			const bool		rayTerminateOnFirstHit	=                        (0 != (n & (1<<RAY_FLAG_BIT_TERMINATE_ON_FIRST_HIT_EXT     )));
-			const bool		raySkipClosestHitShader	=                        (0 != (n & (1<<RAY_FLAG_BIT_SKIP_CLOSEST_HIT_SHADER_EXT    )));
-			const bool		rayCullBack				= m_data.cullingFlags && (0 != (n & (1<<RAY_FLAG_BIT_CULL_BACK_FACING_TRIANGLES_EXT )));
-			const bool		rayCullFront			= m_data.cullingFlags && (0 != (n & (1<<RAY_FLAG_BIT_CULL_FRONT_FACING_TRIANGLES_EXT))) && !rayCullBack;
-			const bool		rayCullOpaque			= m_data.cullingFlags && (0 != (n & (1<<RAY_FLAG_BIT_CULL_OPAQUE_EXT                ))) && !rayOpaque && !rayNoOpaque;
-			const bool		rayCullNoOpaque			= m_data.cullingFlags && (0 != (n & (1<<RAY_FLAG_BIT_CULL_NO_OPAQUE_EXT             ))) && !rayOpaque && !rayNoOpaque && !rayCullOpaque;
-			const bool		raySkipTriangles		= m_data.cullingFlags && (0 != (n & (1<<RAY_FLAG_BIT_SKIP_TRIANGLES_EXT             )));
-			const bool		raySkipAABBs			= m_data.cullingFlags && (0 != (n & (1<<RAY_FLAG_BIT_SKIP_AABB_EXT                  )));
-			const deUint32	geometryNdx				= n / m_data.squaresGroupCount;
-			const bool		geometryFrontFace		= ((geometryNdx & 1) == 0) ? true : false;
-			const bool		geometryOpaque			= ((geometryNdx & 2) == 0) ? true : false;
+			const bool		rayOpaque				= (0 != (n & (1<<RAY_FLAG_BIT_OPAQUE_EXT                     )));
+			const bool		rayNoOpaque				= (0 != (n & (1<<RAY_FLAG_BIT_NO_OPAQUE_EXT                  ))) && !rayOpaque;
+			const bool		rayTerminateOnFirstHit	= (0 != (n & (1<<RAY_FLAG_BIT_TERMINATE_ON_FIRST_HIT_EXT     )));
+			const bool		raySkipClosestHitShader	= (0 != (n & (1<<RAY_FLAG_BIT_SKIP_CLOSEST_HIT_SHADER_EXT    )));
+			const bool		rayCullBack				= (0 != (n & (1<<RAY_FLAG_BIT_CULL_BACK_FACING_TRIANGLES_EXT )));
+			const bool		rayCullFront			= (0 != (n & (1<<RAY_FLAG_BIT_CULL_FRONT_FACING_TRIANGLES_EXT))) && !rayCullBack;
+			const bool		rayCullOpaque			= (0 != (n & (1<<RAY_FLAG_BIT_CULL_OPAQUE_EXT                ))) && !rayOpaque && !rayNoOpaque;
+			const bool		rayCullNoOpaque			= (0 != (n & (1<<RAY_FLAG_BIT_CULL_NO_OPAQUE_EXT             ))) && !rayOpaque && !rayNoOpaque && !rayCullOpaque;
+			const bool		raySkipTriangles		= m_data.rayFlagSkipTriangles;
+			const bool		raySkipAABBs			= m_data.rayFlagSkipAABSs;
+			const bool		pipelineSkipTriangles	= (m_data.pipelineCreateFlags & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR) != 0;
+			const bool		pipelineSkipAABBs		= (m_data.pipelineCreateFlags & VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR) != 0;
+			const bool		cullingTest				= m_data.rayFlagSkipTriangles || m_data.rayFlagSkipAABSs || pipelineSkipTriangles || pipelineSkipAABBs;
+			const bool		geometryFrontFace		= m_data.frontFace;
+			const bool		geometryOpaque			= m_data.opaque;
 			const bool		geometryTriangles		= (m_data.geomType == GEOM_TYPE_TRIANGLES) ? true : false;
 			const bool		geometryAABBs			= (m_data.geomType == GEOM_TYPE_AABBS) ? true : false;
 			deUint32		v						= 0
@@ -1812,43 +1877,53 @@ std::vector<deInt32> RayTracingBuiltinLaunchTestInstance::expectedIntValuesBuffe
 			if (m_data.stage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR && raySkipClosestHitShader)
 				v = DEFAULT_UINT_CLEAR_VALUE;
 
-			if (m_data.stage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR && (rayOpaque || (!rayOpaque && !rayNoOpaque && geometryOpaque)))
+			if (m_data.stage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR && (rayOpaque || (geometryOpaque && !rayOpaque && !rayNoOpaque)))
 				v = DEFAULT_UINT_CLEAR_VALUE;
 
-			if (m_data.cullingFlags)
+			if (geometryOpaque)
 			{
-				if (geometryOpaque)
-				{
-					if (rayCullOpaque)
+				if (rayCullOpaque)
+					if (m_data.stage != VK_SHADER_STAGE_MISS_BIT_KHR)
 						v = DEFAULT_UINT_CLEAR_VALUE;
+			}
+			else
+			{
+				if (rayCullNoOpaque)
+					if (m_data.stage != VK_SHADER_STAGE_MISS_BIT_KHR)
+						v = DEFAULT_UINT_CLEAR_VALUE;
+			}
+
+			if (geometryTriangles)
+			{
+				if (geometryFrontFace)
+				{
+					if (rayCullFront)
+						if (m_data.stage != VK_SHADER_STAGE_MISS_BIT_KHR)
+							v = DEFAULT_UINT_CLEAR_VALUE;
 				}
 				else
 				{
-					if (rayCullNoOpaque)
-						v = DEFAULT_UINT_CLEAR_VALUE;
+					if (rayCullBack)
+						if (m_data.stage != VK_SHADER_STAGE_MISS_BIT_KHR)
+							v = DEFAULT_UINT_CLEAR_VALUE;
 				}
+			}
 
-				if (geometryTriangles)
+			if (cullingTest)
+			{
+				if (m_data.stage != VK_SHADER_STAGE_MISS_BIT_KHR)
 				{
 					if (geometryTriangles)
-						v = DEFAULT_UINT_CLEAR_VALUE;
-
-					if (geometryFrontFace)
 					{
-						if (rayCullFront)
+						if (raySkipTriangles || pipelineSkipTriangles)
 							v = DEFAULT_UINT_CLEAR_VALUE;
 					}
-					else
+
+					if (geometryAABBs)
 					{
-						if (rayCullBack)
+						if (raySkipAABBs || pipelineSkipAABBs)
 							v = DEFAULT_UINT_CLEAR_VALUE;
 					}
-				}
-
-				if (geometryAABBs)
-				{
-					if (raySkipAABBs)
-						v = DEFAULT_UINT_CLEAR_VALUE;
 				}
 			}
 
@@ -2344,7 +2419,7 @@ tcu::TestStatus RayTracingBuiltinLaunchTestInstance::iterate (void)
 		return tcu::TestStatus::fail("fail");
 }
 
-static const struct
+static const struct Stages
 {
 	const char*				name;
 	VkShaderStageFlagBits	stage;
@@ -2359,7 +2434,7 @@ stages[]
 	{ "call", VK_SHADER_STAGE_CALLABLE_BIT_KHR		},
 };
 
-static const struct
+static const struct GeomTypes
 {
 	const char*	name;
 	GeomType	geomType;
@@ -2412,22 +2487,26 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 			const deUint32	instancesGroupCount		= 1;
 			const CaseDef	caseDef					=
 			{
-				id,										//  TestId					id;
-				name,									//  const char*				name;
-				width,									//  deUint32				width;
-				height,									//  deUint32				height;
-				depth,									//  deUint32				depth;
-				depth,									//  deUint32				raysDepth;
-				VK_FORMAT_R32_SINT,						//  VkFormat				format;
-				false,									//  bool					fixedPointScalarOutput;
-				false,									//  bool					fixedPointVectorOutput;
-				false,									//  bool					fixedPointMatrixOutput;
-				GEOM_TYPE_TRIANGLES,					//  GeomType				geomType;
-				squaresGroupCount,						//  deUint32				squaresGroupCount;
-				geometriesGroupCount,					//  deUint32				geometriesGroupCount;
-				instancesGroupCount,					//  deUint32				instancesGroupCount;
-				stages[stageNdx].stage,					//  VkShaderStageFlagBits	stage;
-				false									//  bool					cullingFlags;
+				id,						//  TestId					id;
+				name,					//  const char*				name;
+				width,					//  deUint32				width;
+				height,					//  deUint32				height;
+				depth,					//  deUint32				depth;
+				depth,					//  deUint32				raysDepth;
+				VK_FORMAT_R32_SINT,		//  VkFormat				format;
+				false,					//  bool					fixedPointScalarOutput;
+				false,					//  bool					fixedPointVectorOutput;
+				false,					//  bool					fixedPointMatrixOutput;
+				GEOM_TYPE_TRIANGLES,	//  GeomType				geomType;
+				squaresGroupCount,		//  deUint32				squaresGroupCount;
+				geometriesGroupCount,	//  deUint32				geometriesGroupCount;
+				instancesGroupCount,	//  deUint32				instancesGroupCount;
+				stages[stageNdx].stage,	//  VkShaderStageFlagBits	stage;
+				false,					//  bool					skipTriangles;
+				false,					//  bool					skipAABSs;
+				false,					//  bool					opaque;
+				false,					//  bool					frontFace;
+				0						//  VkPipelineCreateFlags	pipelineCreateFlags;
 			};
 			const std::string	suffix		= de::toString(caseDef.width) + '_' + de::toString(caseDef.height) + '_' + de::toString(caseDef.depth);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + suffix;
@@ -2449,17 +2528,15 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 	}
 	sizes[] =
 	{
-		{  16, 256, TEST_ID_INCOMING_RAY_FLAGS_EXT	},
-		{  16,  16, TEST_ID_HIT_KIND_EXT			},
-		{  16,  16, TEST_ID_HIT_T_EXT				},
-		{  16,  16, TEST_ID_RAY_T_MIN_EXT			},
-		{  16,  16, TEST_ID_RAY_T_MAX_EXT			},
-		{  32,  32, TEST_ID_LAST					},
-		{  64,  64, TEST_ID_LAST					},
-		{ 256, 256, TEST_ID_LAST					},
+		{  16,  16, TEST_ID_HIT_KIND_EXT	},
+		{  16,  16, TEST_ID_HIT_T_EXT		},
+		{  16,  16, TEST_ID_RAY_T_MIN_EXT	},
+		{  16,  16, TEST_ID_RAY_T_MAX_EXT	},
+		{  32,  32, TEST_ID_LAST			},
+		{  64,  64, TEST_ID_LAST			},
+		{ 256, 256, TEST_ID_LAST			},
 	};
-	const bool		fourGeometryGroups		=  id == TEST_ID_INCOMING_RAY_FLAGS_EXT
-											|| id == TEST_ID_HIT_KIND_EXT
+	const bool		fourGeometryGroups		=  id == TEST_ID_HIT_KIND_EXT
 											|| id == TEST_ID_HIT_T_EXT
 											|| id == TEST_ID_RAY_T_MIN_EXT
 											|| id == TEST_ID_RAY_T_MAX_EXT;
@@ -2474,6 +2551,8 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
 	for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 	{
+		const GeomType	geomType	= geomTypes[geomTypesNdx].geomType;
+
 		if ((shaderStageFlags & stages[stageNdx].stage) == 0)
 			continue;
 
@@ -2494,22 +2573,26 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 			const deUint32	squaresGroupCount		= largestGroup;
 			const CaseDef	caseDef					=
 			{
-				id,										//  TestId					id;
-				name,									//  const char*				name;
-				width,									//  deUint32				width;
-				height,									//  deUint32				height;
-				imageDepth,								//  deUint32				depth;
-				rayDepth,								//  deUint32				raysDepth;
-				VK_FORMAT_R32_SINT,						//  VkFormat				format;
-				fixedPointScalarOutput,					//  bool					fixedPointScalarOutput;
-				false,									//  bool					fixedPointVectorOutput;
-				false,									//  bool					fixedPointMatrixOutput;
-				geomTypes[geomTypesNdx].geomType,		//  GeomType				geomType;
-				squaresGroupCount,						//  deUint32				squaresGroupCount;
-				geometriesGroupCount,					//  deUint32				geometriesGroupCount;
-				instancesGroupCount,					//  deUint32				instancesGroupCount;
-				stages[stageNdx].stage,					//  VkShaderStageFlagBits	stage;
-				false									//  bool					cullingFlags;
+				id,						//  TestId					id;
+				name,					//  const char*				name;
+				width,					//  deUint32				width;
+				height,					//  deUint32				height;
+				imageDepth,				//  deUint32				depth;
+				rayDepth,				//  deUint32				raysDepth;
+				VK_FORMAT_R32_SINT,		//  VkFormat				format;
+				fixedPointScalarOutput,	//  bool					fixedPointScalarOutput;
+				false,					//  bool					fixedPointVectorOutput;
+				false,					//  bool					fixedPointMatrixOutput;
+				geomType,				//  GeomType				geomType;
+				squaresGroupCount,		//  deUint32				squaresGroupCount;
+				geometriesGroupCount,	//  deUint32				geometriesGroupCount;
+				instancesGroupCount,	//  deUint32				instancesGroupCount;
+				stages[stageNdx].stage,	//  VkShaderStageFlagBits	stage;
+				false,					//  bool					skipTriangles;
+				false,					//  bool					skipAABSs;
+				false,					//  bool					opaque;
+				false,					//  bool					frontFace;
+				0						//  VkPipelineCreateFlags	pipelineCreateFlags;
 			};
 			const std::string	suffix		= '_' + de::toString(caseDef.width) + '_' + de::toString(caseDef.height);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name + (specializedTest ? "" : suffix);
@@ -2530,23 +2613,139 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 			group->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
 			testAdded = true;
 
-			if (id == TEST_ID_INCOMING_RAY_FLAGS_EXT)
-			{
-				CaseDef	caseDefCulling	= caseDef;
-
-				caseDefCulling.cullingFlags = true;
-
-				group->addChild(new RayTracingTestCase(testCtx, (testName + "_culling").c_str(), "", caseDefCulling));
-
-				testAdded = true;
-			}
-
 			if (specializedTest)
 				break;
 		}
 
 		DE_ASSERT(testAdded);
 		DE_UNREF(testAdded);
+	}
+
+	builtinGroup->addChild(group.release());
+}
+
+void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGroup, TestId id, const char* name, const VkShaderStageFlags shaderStageFlags)
+{
+	const deUint32	width		= 16;
+	const deUint32	height		= 16;
+	const deUint32	imageDepth	= 1;
+	const deUint32	rayDepth	= 1;
+
+	const struct Opaques
+	{
+		const char*	name;
+		bool		flag;
+	}
+	opaques[] =
+	{
+		{ "opaque",		true	},
+		{ "noopaque",	false	},
+	};
+	const struct Faces
+	{
+		const char*	name;
+		bool		flag;
+	}
+	faces[] =
+	{
+		{ "frontface",	true	},
+		{ "backface",	false	},
+	};
+	const struct SkipRayFlags
+	{
+		const char*	name;
+		bool		skipTriangles;
+		bool		skipAABBs;
+	}
+	skipRayFlags[] =
+	{
+		{ "raynoskipflags",			false,	false	},
+		{ "rayskiptriangles",		true,	false	},
+		{ "rayskipaabbs",			false,	true	},
+	};
+	const struct PipelineFlags
+	{
+		const char*				name;
+		VkPipelineCreateFlags	flag;
+	}
+	pipelineFlags[] =
+	{
+		{ "pipelinenoskipflags",	static_cast<VkPipelineCreateFlags>(0)					},
+		{ "pipelineskiptriangles",	VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR	},
+		{ "pipelineskipaabbs",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR		},
+	};
+
+	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
+
+	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
+	{
+		const GeomType					geomType	= geomTypes[geomTypesNdx].geomType;
+		de::MovePtr<tcu::TestCaseGroup>	geomGroup	(new tcu::TestCaseGroup(testCtx, geomTypes[geomTypesNdx].name, ""));
+
+		for (size_t skipRayFlagsNdx = 0; skipRayFlagsNdx < DE_LENGTH_OF_ARRAY(skipRayFlags); ++skipRayFlagsNdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup>	rayFlagsGroup	(new tcu::TestCaseGroup(testCtx, skipRayFlags[skipRayFlagsNdx].name, ""));
+
+			for (size_t pipelineFlagsNdx = 0; pipelineFlagsNdx < DE_LENGTH_OF_ARRAY(pipelineFlags); ++pipelineFlagsNdx)
+			{
+				de::MovePtr<tcu::TestCaseGroup>	pipelineFlagsGroup	(new tcu::TestCaseGroup(testCtx, pipelineFlags[pipelineFlagsNdx].name, ""));
+
+				for (size_t opaquesNdx = 0; opaquesNdx < DE_LENGTH_OF_ARRAY(opaques); ++opaquesNdx)
+				for (size_t facesNdx = 0; facesNdx < DE_LENGTH_OF_ARRAY(faces); ++facesNdx)
+				{
+					const std::string				geomPropertiesGroupName	= string(opaques[opaquesNdx].name) + '_' + string(faces[facesNdx].name);
+					de::MovePtr<tcu::TestCaseGroup>	geomPropertiesGroup		(new tcu::TestCaseGroup(testCtx, geomPropertiesGroupName.c_str(), ""));
+
+					for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
+					{
+						if ((shaderStageFlags & stages[stageNdx].stage) == 0)
+							continue;
+
+						if (stages[stageNdx].stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR && geomTypes[geomTypesNdx].geomType == GEOM_TYPE_TRIANGLES)
+							continue;
+
+						const deUint32		instancesGroupCount		= 1;
+						const deUint32		geometriesGroupCount	= 1;
+						const deUint32		largestGroup			= width * height / geometriesGroupCount / instancesGroupCount;
+						const deUint32		squaresGroupCount		= largestGroup;
+						const CaseDef		caseDef					=
+						{
+							id,												//  TestId					id;
+							name,											//  const char*				name;
+							width,											//  deUint32				width;
+							height,											//  deUint32				height;
+							imageDepth,										//  deUint32				depth;
+							rayDepth,										//  deUint32				raysDepth;
+							VK_FORMAT_R32_SINT,								//  VkFormat				format;
+							false,											//  bool					fixedPointScalarOutput;
+							false,											//  bool					fixedPointVectorOutput;
+							false,											//  bool					fixedPointMatrixOutput;
+							geomType,										//  GeomType				geomType;
+							squaresGroupCount,								//  deUint32				squaresGroupCount;
+							geometriesGroupCount,							//  deUint32				geometriesGroupCount;
+							instancesGroupCount,							//  deUint32				instancesGroupCount;
+							stages[stageNdx].stage,							//  VkShaderStageFlagBits	stage;
+							skipRayFlags[skipRayFlagsNdx].skipTriangles,	//  bool					skipTriangles;
+							skipRayFlags[skipRayFlagsNdx].skipAABBs,		//  bool					skipAABSs;
+							opaques[opaquesNdx].flag,						//  bool					opaque;
+							faces[facesNdx].flag,							//  bool					frontFace;
+							pipelineFlags[pipelineFlagsNdx].flag,			//  VkPipelineCreateFlags	pipelineCreateFlags;
+						};
+						const std::string	testName				= string(stages[stageNdx].name) ;
+
+						geomPropertiesGroup->addChild(new RayTracingTestCase(testCtx, testName.c_str(), "", caseDef));
+					}
+
+					pipelineFlagsGroup->addChild(geomPropertiesGroup.release());
+				}
+
+				rayFlagsGroup->addChild(pipelineFlagsGroup.release());
+			}
+
+			geomGroup->addChild(rayFlagsGroup.release());
+		}
+
+		group->addChild(geomGroup.release());
 	}
 
 	builtinGroup->addChild(group.release());
@@ -2574,6 +2773,8 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 	for (size_t geomTypesNdx = 0; geomTypesNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypesNdx)
 	for (size_t stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
 	{
+		const GeomType	geomType	= geomTypes[geomTypesNdx].geomType;
+
 		if ((shaderStageFlags & stages[stageNdx].stage) == 0)
 			continue;
 
@@ -2588,22 +2789,26 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 		const deUint32		squaresGroupCount		= largestGroup;
 		const CaseDef		caseDef					=
 		{
-			id,											//  TestId					id;
-			name,										//  const char*				name;
-			width,										//  deUint32				width;
-			height,										//  deUint32				height;
-			imageDepth,									//  deUint32				depth;
-			rayDepth,									//  deUint32				raysDepth;
-			VK_FORMAT_R32_SINT,							//  VkFormat				format;
-			false,										//  bool					fixedPointScalarOutput;
-			fixedPointVectorOutput,						//  bool					fixedPointVectorOutput;
-			fixedPointMatrixOutput,						//  bool					fixedPointMatrixOutput;
-			geomTypes[geomTypesNdx].geomType,			//  GeomType				geomType;
-			squaresGroupCount,							//  deUint32				squaresGroupCount;
-			geometriesGroupCount,						//  deUint32				geometriesGroupCount;
-			instancesGroupCount,						//  deUint32				instancesGroupCount;
-			stages[stageNdx].stage,						//  VkShaderStageFlagBits	stage;
-			false										//  bool					cullingFlags;
+			id,						//  TestId					id;
+			name,					//  const char*				name;
+			width,					//  deUint32				width;
+			height,					//  deUint32				height;
+			imageDepth,				//  deUint32				depth;
+			rayDepth,				//  deUint32				raysDepth;
+			VK_FORMAT_R32_SINT,		//  VkFormat				format;
+			false,					//  bool					fixedPointScalarOutput;
+			fixedPointVectorOutput,	//  bool					fixedPointVectorOutput;
+			fixedPointMatrixOutput,	//  bool					fixedPointMatrixOutput;
+			geomType,				//  GeomType				geomType;
+			squaresGroupCount,		//  deUint32				squaresGroupCount;
+			geometriesGroupCount,	//  deUint32				geometriesGroupCount;
+			instancesGroupCount,	//  deUint32				instancesGroupCount;
+			stages[stageNdx].stage,	//  VkShaderStageFlagBits	stage;
+			false,					//  bool					rayFlagSkipTriangles;
+			false,					//  bool					rayFlagSkipAABSs;
+			false,					//  bool					opaque;
+			false,					//  bool					frontFace;
+			0						//  VkPipelineCreateFlags	pipelineCreateFlags;
 		};
 		const std::string	testName				= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name;
 
@@ -2646,7 +2851,7 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		{ TEST_ID_OBJECT_RAY_DIRECTION_EXT,		"ObjectRayDirectionEXT"	,			A	|	C	|	I					, createMultiOutputTests	},
 		{ TEST_ID_RAY_T_MIN_EXT,				"RayTminEXT"			,			A	|	C	|	I	|	M			, createScalarTests			},
 		{ TEST_ID_RAY_T_MAX_EXT,				"RayTmaxEXT"			,			A	|	C	|	I	|	M			, createScalarTests			},
-		{ TEST_ID_INCOMING_RAY_FLAGS_EXT,		"IncomingRayFlagsEXT"	,			A	|	C	|	I	|	M			, createScalarTests			},
+		{ TEST_ID_INCOMING_RAY_FLAGS_EXT,		"IncomingRayFlagsEXT"	,			A	|	C	|	I	|	M			, createRayFlagsTests		},
 		{ TEST_ID_HIT_T_EXT,					"HitTEXT"				,			A	|	C							, createScalarTests			},
 		{ TEST_ID_HIT_KIND_EXT,					"HitKindEXT"			,			A	|	C							, createScalarTests			},
 		{ TEST_ID_OBJECT_TO_WORLD_EXT,			"ObjectToWorldEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
