@@ -1185,7 +1185,11 @@ deUint64 CalibratedTimestampTestInstance::getHostNativeTimestamp (VkTimeDomainEX
 	DE_ASSERT(hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT ||
 			  hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT);
 
+#if (DE_OS == DE_OS_QNX)
+	clockid_t id = CLOCK_MONOTONIC;
+#else
 	clockid_t id = ((hostDomain == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT) ? CLOCK_MONOTONIC : CLOCK_MONOTONIC_RAW);
+#endif
 	struct timespec ts;
 	if (clock_gettime(id, &ts) != 0)
 	{
