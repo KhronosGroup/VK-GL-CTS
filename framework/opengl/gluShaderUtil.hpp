@@ -342,6 +342,7 @@ inline bool		dataTypeSupportsPrecisionModifier	(DataType dataType)	{ return !isD
 
 int				getDataTypeMatrixNumRows	(DataType dataType);
 int				getDataTypeMatrixNumColumns	(DataType dataType);
+DataType		getDataTypeMatrixColumnType	(DataType dataType);
 
 int				getDataTypeNumLocations		(DataType dataType);
 int				getDataTypeNumComponents	(DataType dataType);

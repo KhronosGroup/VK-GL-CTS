@@ -1039,7 +1039,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		sbtBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 			vk, device, allocator, makeBufferCreateInfo(DE_NULL, rayTracingProperties.shaderGroupHandleSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, 0), MemoryRequirement::HostVisible));
 		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
-		invalidateMappedMemoryRange(vk, device, sbtBuffer->getAllocation().getMemory(), sbtBuffer->getAllocation().getOffset(), rayTracingProperties.shaderGroupHandleSize);
+		invalidateAlloc(vk, device, sbtBuffer->getAllocation());
 
 		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
 	}
@@ -1311,7 +1311,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
-	invalidateMappedMemoryRange(vk, device, copyBuffer->getAllocation().getMemory(), copyBuffer->getAllocation().getOffset(), DIM*DIM*sizeof(deUint32));
+	invalidateAlloc(vk, device, copyBuffer->getAllocation());
 
 	qpTestResult res = QP_TEST_RESULT_PASS;
 

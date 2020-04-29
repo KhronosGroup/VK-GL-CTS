@@ -1273,7 +1273,7 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-	invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSize);
+	invalidateAlloc(vk, device, *colorBufferAlloc);
 
 	if (!verifyResults(context.getTestContext().getLog(), params, colorFormat, colorBufferAlloc->getHostPtr()))
 		return tcu::TestStatus::fail("Rendered images are incorrect");
@@ -1538,9 +1538,9 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-	invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSize);
-	invalidateMappedMemoryRange(vk, device, depthBufferAlloc->getMemory(), depthBufferAlloc->getOffset(), depthBufferSize);
-	invalidateMappedMemoryRange(vk, device, stencilBufferAlloc->getMemory(), stencilBufferAlloc->getOffset(), stencilBufferSize);
+	invalidateAlloc(vk, device, *colorBufferAlloc);
+	invalidateAlloc(vk, device, *depthBufferAlloc);
+	invalidateAlloc(vk, device, *stencilBufferAlloc);
 
 	if (!verifyResults(context.getTestContext().getLog(), params, colorFormat, colorBufferAlloc->getHostPtr()))
 		result += " Color";
@@ -1792,7 +1792,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-	invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSize);
+	invalidateAlloc(vk, device, *colorBufferAlloc);
 
 	if (!verifyResults(context.getTestContext().getLog(), params, colorFormat, colorBufferAlloc->getHostPtr()))
 		return tcu::TestStatus::fail("Rendered images are incorrect");

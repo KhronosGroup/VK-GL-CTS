@@ -989,7 +989,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 
 		deMemcpy(vertexBuffer->getAllocation().getHostPtr(), positions, positionDataSize);
 		deMemcpy(reinterpret_cast<deUint8*>(vertexBuffer->getAllocation().getHostPtr()) +  positionDataSize, texCoord.data(), textureCoordDataSize);
-		vk::flushMappedMemoryRange(vk, device, vertexBuffer->getAllocation().getMemory(), vertexBuffer->getAllocation().getOffset(), vertexBufferSize);
+		vk::flushAlloc(vk, device, vertexBuffer->getAllocation());
 	}
 
 	// Create pipeline

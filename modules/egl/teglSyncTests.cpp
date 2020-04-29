@@ -108,7 +108,8 @@ public:
 	void							init		(void);
 	void							deinit		(void);
 	bool							hasRequiredEGLVersion(int requiredMajor, int requiredMinor);
-	bool							hasRequiredEGLExtensions(void);
+	bool							hasEGLFenceSyncExtension(void);
+	bool							hasEGLWaitSyncExtension(void);
 	EGLDisplay						getEglDisplay()	{return m_eglDisplay;}
 
 protected:
@@ -175,7 +176,7 @@ bool SyncTest::hasRequiredEGLVersion (int requiredMajor, int requiredMinor)
 	return true;
 }
 
-bool SyncTest::hasRequiredEGLExtensions (void)
+bool SyncTest::hasEGLFenceSyncExtension (void)
 {
 	TestLog&		log	= m_testCtx.getLog();
 
@@ -185,11 +186,12 @@ bool SyncTest::hasRequiredEGLExtensions (void)
 		return false;
 	}
 
-	if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_KHR_reusable_sync"))
-	{
-		log << TestLog::Message << "EGL_KHR_reusable_sync not supported" << TestLog::EndMessage;
-		return false;
-	}
+	return true;
+}
+
+bool SyncTest::hasEGLWaitSyncExtension (void)
+{
+	TestLog&	 log	= m_testCtx.getLog();
 
 	if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_KHR_wait_sync"))
 	{
@@ -350,7 +352,7 @@ public:
 		{
 			test<createSync>(m_funcNames, &Library::createSync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR);
 		}
@@ -402,7 +404,7 @@ public:
 		{
 			test<createSync, EGLAttrib>(m_funcNames, &Library::createSync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR);
 		}
@@ -462,7 +464,7 @@ public:
 		{
 			test<createSync, EGLSync>(m_funcNames, &Library::createSync, EGL_NO_SYNC);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, EGLSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR);
 		}
@@ -523,7 +525,7 @@ public:
 			test<createSync>(m_funcNames, &Library::createSync, EGL_NO_SYNC,
 							 EGL_BAD_PARAMETER, "EGL_BAD_PARAMETER");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR,
 								EGL_BAD_ATTRIBUTE, "EGL_BAD_ATTRIBUTE");
@@ -588,7 +590,7 @@ public:
 		{
 			test<createSync, EGLAttrib>(m_funcNames, &Library::createSync, EGL_NO_SYNC);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR);
 		}
@@ -652,7 +654,7 @@ public:
 		{
 			test<createSync>(m_funcNames, &Library::createSync, EGL_NO_SYNC);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR);
 		}
@@ -713,7 +715,7 @@ public:
 			test<createSync, clientWaitSync>(m_funcNames, &Library::createSync,
 											 &Library::clientWaitSync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
 												   &Library::clientWaitSyncKHR);
@@ -794,7 +796,7 @@ public:
 											 EGL_FOREVER, "EGL_FOREVER",
 											 EGL_CONDITION_SATISFIED);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
 												   &Library::clientWaitSyncKHR,
@@ -878,7 +880,7 @@ public:
 											 &Library::clientWaitSync,
 											 EGL_CONDITION_SATISFIED, EGL_FOREVER, "EGL_FOREVER");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
 												   &Library::clientWaitSyncKHR,
@@ -953,7 +955,7 @@ public:
 											 EGL_FOREVER, "EGL_FOREVER",
 											 EGL_CONDITION_SATISFIED);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
 												   &Library::clientWaitSyncKHR,
@@ -1029,7 +1031,7 @@ public:
 											 EGL_SYNC_FLUSH_COMMANDS_BIT, "EGL_SYNC_FLUSH_COMMANDS_BIT",
 											 EGL_FOREVER, "EGL_FOREVER");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
 												   &Library::clientWaitSyncKHR,
@@ -1095,7 +1097,7 @@ public:
 								 EGL_NO_SYNC, "EGL_NO_SYNC",
 								 EGL_FOREVER, "EGL_FOREVER");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<clientWaitSyncKHR>(m_funcNamesKHR, &Library::clientWaitSyncKHR,
 									EGL_NO_SYNC_KHR, "EGL_NO_SYNC_KHR",
@@ -1158,7 +1160,7 @@ public:
 													   &Library::getSyncAttrib,
 													   EGL_SYNC_TYPE, "EGL_SYNC_TYPE");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
 														  &Library::getSyncAttribKHR,
@@ -1223,7 +1225,7 @@ public:
 													   &Library::getSyncAttrib,
 													   EGL_SYNC_STATUS, "EGL_SYNC_STATUS");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
 														  &Library::getSyncAttribKHR,
@@ -1323,7 +1325,7 @@ public:
 																	   EGL_SYNC_STATUS, "EGL_SYNC_STATUS",
 																	   EGL_SIGNALED);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, clientWaitSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR,
 																			 &Library::createSyncKHR,
@@ -1396,7 +1398,7 @@ public:
 													   EGL_SYNC_CONDITION, "EGL_SYNC_CONDITION",
 													   EGL_SYNC_PRIOR_COMMANDS_COMPLETE);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
 														  &Library::getSyncAttribKHR,
@@ -1473,7 +1475,7 @@ public:
 													   &Library::getSyncAttrib,
 													   EGL_SYNC_CONDITION, "EGL_SYNC_CONDITION");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
 														  &Library::getSyncAttribKHR,
@@ -1543,7 +1545,7 @@ public:
 													EGL_NO_SYNC, "EGL_NO_SYNC",
 													EGL_SYNC_CONDITION, "EGL_SYNC_CONDITION");
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<getSyncAttribKHR, EGLSyncKHR, EGLint>(m_funcNamesKHR, &Library::getSyncAttribKHR,
 													   EGL_NO_SYNC_KHR, "EGL_NO_SYNC_KHR",
@@ -1618,7 +1620,7 @@ public:
 													   &Library::createSync,
 													   &Library::getSyncAttrib);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR,
 														  &Library::createSyncKHR,
@@ -1693,7 +1695,7 @@ public:
 											&Library::getSyncAttrib,
 											EGL_SYNC_TYPE, "EGL_SYNC_TYPE", value);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			EGLint value = 0;
 			test<createSyncKHR, getSyncAttribKHR>(m_funcNamesKHR, &Library::createSyncKHR,
@@ -1756,7 +1758,7 @@ public:
 												   &Library::destroySync,
 												   EGL_NO_SYNC);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, destroySyncKHR, EGLSyncKHR>(m_funcNamesKHR,
 															&Library::createSyncKHR,
@@ -1827,7 +1829,7 @@ public:
 										  &Library::createSync,
 										  &Library::destroySync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<createSyncKHR, destroySyncKHR>(m_funcNamesKHR,
 												&Library::createSyncKHR,
@@ -1890,7 +1892,7 @@ public:
 									   &Library::destroySync,
 									   EGL_NO_SYNC);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLFenceSyncExtension())
 		{
 			test<destroySyncKHR, EGLSyncKHR>(m_funcNamesKHR,
 											 &Library::destroySyncKHR,
@@ -1954,7 +1956,7 @@ public:
 												   &Library::createSync,
 												   &Library::waitSync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLWaitSyncExtension())
 		{
 			test<createSyncKHR, waitSyncKHR, EGLint>(m_funcNamesKHR,
 													 &Library::createSyncKHR,
@@ -2027,7 +2029,7 @@ public:
 												   &Library::createSync,
 												   &Library::waitSync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLWaitSyncExtension())
 		{
 			test<createSyncKHR, waitSyncKHR, EGLint>(m_funcNamesKHR,
 													 &Library::createSyncKHR,
@@ -2090,7 +2092,7 @@ public:
 									&Library::waitSync,
 									EGL_NO_SYNC);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLWaitSyncExtension())
 		{
 			test<waitSyncKHR, EGLSyncKHR>(m_funcNamesKHR,
 										  &Library::waitSyncKHR,
@@ -2160,7 +2162,7 @@ public:
 									   &Library::createSync,
 									   &Library::waitSync);
 		}
-		if (hasRequiredEGLExtensions())
+		if (hasEGLWaitSyncExtension())
 		{
 			test<createSyncKHR, waitSyncKHR>(m_funcNamesKHR,
 											 &Library::createSyncKHR,

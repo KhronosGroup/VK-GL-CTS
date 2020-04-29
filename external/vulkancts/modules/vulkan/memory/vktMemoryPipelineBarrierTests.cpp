@@ -1262,7 +1262,7 @@ public:
 		const vk::DeviceInterface&	vkd		= context.getContext().getDeviceInterface();
 		const vk::VkDevice			device	= context.getContext().getDevice();
 
-		vk::invalidateMappedMemoryRange(vkd, device, m_memory, 0, m_size);
+		vk::invalidateMappedMemoryRange(vkd, device, m_memory, 0, VK_WHOLE_SIZE);
 	}
 
 private:
@@ -1293,7 +1293,7 @@ public:
 		const vk::DeviceInterface&	vkd		= context.getContext().getDeviceInterface();
 		const vk::VkDevice			device	= context.getContext().getDevice();
 
-		vk::flushMappedMemoryRange(vkd, device, m_memory, 0, m_size);
+		vk::flushMappedMemoryRange(vkd, device, m_memory, 0, VK_WHOLE_SIZE);
 	}
 
 private:
@@ -2341,7 +2341,7 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 		void* const	ptr		= mapMemory(vkd, device, *m_memory, m_bufferSize);
 		bool		isOk	= true;
 
-		vk::invalidateMappedMemoryRange(vkd, device, *m_memory, 0, m_bufferSize);
+		vk::invalidateMappedMemoryRange(vkd, device, *m_memory, 0, VK_WHOLE_SIZE);
 
 		{
 			const deUint8* const data = (const deUint8*)ptr;
@@ -2421,7 +2421,7 @@ void BufferCopyFromBuffer::prepare (PrepareContext& context)
 				data[ndx] = rng.getUint8();
 		}
 
-		vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, m_bufferSize);
+		vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, VK_WHOLE_SIZE);
 		vkd.unmapMemory(device, *m_memory);
 	}
 }
@@ -2668,7 +2668,7 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 	{
 		void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
 
-		vk::invalidateMappedMemoryRange(vkd, device, *memory, 0,  4 * m_imageWidth * m_imageHeight);
+		invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
 		{
 			const deUint8* const	data = (const deUint8*)ptr;
@@ -2847,7 +2847,7 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 					data[ndx] = rng.getUint8();
 			}
 
-			vk::flushMappedMemoryRange(vkd, device, *memory, 0, 4 * m_imageWidth * m_imageHeight);
+			vk::flushMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 			vkd.unmapMemory(device, *memory);
 		}
 
@@ -3008,7 +3008,7 @@ void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 		const ConstPixelBufferAccess	referenceImage	(context.getReferenceImage().getAccess());
 		const ConstPixelBufferAccess	resultImage		(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), m_imageWidth, m_imageHeight, 1, ptr);
 
-		vk::invalidateMappedMemoryRange(vkd, device, *m_memory, 0, m_bufferSize);
+		vk::invalidateMappedMemoryRange(vkd, device, *m_memory, 0, VK_WHOLE_SIZE);
 
 		if (!tcu::intThresholdCompare(context.getLog(), (de::toString(commandIndex) + ":" + getName()).c_str(), (de::toString(commandIndex) + ":" + getName()).c_str(), referenceImage, resultImage, UVec4(0), tcu::COMPARE_LOG_ON_ERROR))
 			resultCollector.fail(de::toString(commandIndex) + ":" + getName() + " Image comparison failed");
@@ -3072,7 +3072,7 @@ void ImageCopyFromBuffer::prepare (PrepareContext& context)
 				data[ndx] = rng.getUint8();
 		}
 
-		vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, m_bufferSize);
+		vk::flushMappedMemoryRange(vkd, device, *m_memory, 0, VK_WHOLE_SIZE);
 		vkd.unmapMemory(device, *m_memory);
 	}
 }
@@ -3282,7 +3282,7 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 					data[ndx] = rng.getUint8();
 			}
 
-			vk::flushMappedMemoryRange(vkd, device, *memory, 0, 4 * m_imageWidth * m_imageHeight);
+			vk::flushMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 			vkd.unmapMemory(device, *memory);
 		}
 
@@ -3575,7 +3575,7 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 	{
 		void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
 
-		vk::invalidateMappedMemoryRange(vkd, device, *memory, 0,  4 * m_imageWidth * m_imageHeight);
+		vk::invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
 		{
 			const deUint8* const			data		= (const deUint8*)ptr;
@@ -3764,7 +3764,7 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 					data[ndx] = rng.getUint8();
 			}
 
-			vk::flushMappedMemoryRange(vkd, device, *memory, 0, 4 * m_srcImageWidth * m_srcImageHeight);
+			vk::flushMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 			vkd.unmapMemory(device, *memory);
 		}
 
@@ -4119,7 +4119,7 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 	{
 		void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_dstImageWidth * m_dstImageHeight);
 
-		vk::invalidateMappedMemoryRange(vkd, device, *memory, 0,  4 * m_dstImageWidth * m_dstImageHeight);
+		vk::invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
 		if (m_scale == BLIT_SCALE_10)
 		{
@@ -4515,7 +4515,7 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 		{
 			void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_targetWidth * m_targetHeight);
 
-			vk::invalidateMappedMemoryRange(vkd, device, *memory, 0,  4 * m_targetWidth * m_targetHeight);
+			vk::invalidateMappedMemoryRange(vkd, device, *memory, 0, VK_WHOLE_SIZE);
 
 			{
 				const deUint8* const			data		= (const deUint8*)ptr;

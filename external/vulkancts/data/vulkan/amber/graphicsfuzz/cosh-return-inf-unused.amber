@@ -1,0 +1,346 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# A test for a bug found by GraphicsFuzz.
+
+# Short description: Cosh returns inf for one component which is never used
+
+# The test passes because shader always writes red.
+
+SHADER vertex variant_vertex_shader PASSTHROUGH
+
+# variant_fragment_shader is derived from the following GLSL:
+# #version 310 es
+# precision highp float;
+# precision highp int;
+#
+# layout(location = 0) out vec4 _GLF_color;
+#
+# layout(set = 0, binding = 0) uniform buf0
+# {
+#     float zero;
+# };
+#
+# // Returns 3.0 if b > 1, otherwise returns 5.0.
+# float func(int b)
+# {
+#     for (int ndx = 0; ndx < 2; ndx++)
+#     {
+#         // Always false.
+#         if (gl_FragCoord.x < 0.0)
+#         {
+#             for (int i = 0; i < 2; i++)
+#             {
+#                 // Always false.
+#                 if (int(cosh(vec2(1, 800)).x) <= 1)
+#                     discard;
+#             }
+#         }
+#     }
+#
+#     if (b > 1)
+#         return 3.0;
+#
+#     // Always false.
+#     if (gl_FragCoord.x < 0.0)
+#         _GLF_color = vec4(0);
+#
+#     return 5.0;
+# }
+#
+# void main()
+# {
+#     _GLF_color = vec4(1);
+#     float f = 0.0;
+#
+#     do
+#     {
+#         // Always false.
+#         if (int(_GLF_color.y) < 0)
+#             discard;
+#         else
+#             f = func(int(zero)); // f == 5.0
+#
+#         // Always false.
+#         if (int(_GLF_color.y) > 65)
+#             discard;
+#
+#         for (int x = 0; x < int(zero) + 1; x++)
+#         {
+#             f = func(x + 10); // f == 3.0
+#         }
+#
+#     } while (int(zero) > 1); // Always false.
+#
+#     if (f == 3.0)
+#         _GLF_color = vec4(1, 0, 0, 1);
+#     else
+#         _GLF_color = vec4(0);
+# }
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 8
+; Bound: 140
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %26 %72
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %11 "func(i1;"
+               OpName %10 "b"
+               OpName %13 "ndx"
+               OpName %26 "gl_FragCoord"
+               OpName %36 "i"
+               OpName %72 "_GLF_color"
+               OpName %79 "f"
+               OpName %94 "buf0"
+               OpMemberName %94 0 "zero"
+               OpName %96 ""
+               OpName %101 "param"
+               OpName %111 "x"
+               OpName %126 "param"
+               OpDecorate %26 BuiltIn FragCoord
+               OpDecorate %72 Location 0
+               OpMemberDecorate %94 0 Offset 0
+               OpDecorate %94 Block
+               OpDecorate %96 DescriptorSet 0
+               OpDecorate %96 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypeFunction %8 %7
+         %14 = OpConstant %6 0
+         %21 = OpConstant %6 2
+         %22 = OpTypeBool
+         %24 = OpTypeVector %8 4
+         %25 = OpTypePointer Input %24
+         %26 = OpVariable %25 Input
+         %27 = OpTypeInt 32 0
+         %28 = OpConstant %27 0
+         %29 = OpTypePointer Input %8
+         %32 = OpConstant %8 0
+         %44 = OpTypeVector %8 2
+         %45 = OpConstant %8 1
+         %46 = OpConstant %8 800
+         %47 = OpConstantComposite %44 %45 %46
+         %51 = OpConstant %6 1
+         %64 = OpConstant %8 3
+         %71 = OpTypePointer Output %24
+         %72 = OpVariable %71 Output
+         %73 = OpConstantComposite %24 %32 %32 %32 %32
+         %74 = OpConstant %8 5
+         %77 = OpConstantComposite %24 %45 %45 %45 %45
+         %78 = OpTypePointer Function %8
+         %84 = OpConstant %27 1
+         %85 = OpTypePointer Output %8
+         %94 = OpTypeStruct %8
+         %95 = OpTypePointer Uniform %94
+         %96 = OpVariable %95 Uniform
+         %97 = OpTypePointer Uniform %8
+        %106 = OpConstant %6 65
+        %124 = OpConstant %6 10
+        %138 = OpConstantComposite %24 %45 %32 %32 %45
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %79 = OpVariable %78 Function
+        %101 = OpVariable %7 Function
+        %111 = OpVariable %7 Function
+        %126 = OpVariable %7 Function
+               OpStore %72 %77
+               OpStore %79 %32
+               OpBranch %80
+         %80 = OpLabel
+               OpLoopMerge %82 %83 None
+               OpBranch %81
+         %81 = OpLabel
+         %86 = OpAccessChain %85 %72 %84
+         %87 = OpLoad %8 %86
+         %88 = OpConvertFToS %6 %87
+         %89 = OpSLessThan %22 %88 %14
+               OpSelectionMerge %91 None
+               OpBranchConditional %89 %90 %93
+         %90 = OpLabel
+               OpKill
+         %93 = OpLabel
+         %98 = OpAccessChain %97 %96 %14
+         %99 = OpLoad %8 %98
+        %100 = OpConvertFToS %6 %99
+               OpStore %101 %100
+        %102 = OpFunctionCall %8 %11 %101
+               OpStore %79 %102
+               OpBranch %91
+         %91 = OpLabel
+        %103 = OpAccessChain %85 %72 %84
+        %104 = OpLoad %8 %103
+        %105 = OpConvertFToS %6 %104
+        %107 = OpSGreaterThan %22 %105 %106
+               OpSelectionMerge %109 None
+               OpBranchConditional %107 %108 %109
+        %108 = OpLabel
+               OpKill
+        %109 = OpLabel
+               OpStore %111 %14
+               OpBranch %112
+        %112 = OpLabel
+               OpLoopMerge %114 %115 None
+               OpBranch %116
+        %116 = OpLabel
+        %117 = OpLoad %6 %111
+        %118 = OpAccessChain %97 %96 %14
+        %119 = OpLoad %8 %118
+        %120 = OpConvertFToS %6 %119
+        %121 = OpIAdd %6 %120 %51
+        %122 = OpSLessThan %22 %117 %121
+               OpBranchConditional %122 %113 %114
+        %113 = OpLabel
+        %123 = OpLoad %6 %111
+        %125 = OpIAdd %6 %123 %124
+               OpStore %126 %125
+        %127 = OpFunctionCall %8 %11 %126
+               OpStore %79 %127
+               OpBranch %115
+        %115 = OpLabel
+        %128 = OpLoad %6 %111
+        %129 = OpIAdd %6 %128 %51
+               OpStore %111 %129
+               OpBranch %112
+        %114 = OpLabel
+               OpBranch %83
+         %83 = OpLabel
+        %130 = OpAccessChain %97 %96 %14
+        %131 = OpLoad %8 %130
+        %132 = OpConvertFToS %6 %131
+        %133 = OpSGreaterThan %22 %132 %51
+               OpBranchConditional %133 %80 %82
+         %82 = OpLabel
+        %134 = OpLoad %8 %79
+        %135 = OpFOrdEqual %22 %134 %64
+               OpSelectionMerge %137 None
+               OpBranchConditional %135 %136 %139
+        %136 = OpLabel
+               OpStore %72 %138
+               OpBranch %137
+        %139 = OpLabel
+               OpStore %72 %73
+               OpBranch %137
+        %137 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %8 None %9
+         %10 = OpFunctionParameter %7
+         %12 = OpLabel
+         %13 = OpVariable %7 Function
+         %36 = OpVariable %7 Function
+               OpStore %13 %14
+               OpBranch %15
+         %15 = OpLabel
+               OpLoopMerge %17 %18 None
+               OpBranch %19
+         %19 = OpLabel
+         %20 = OpLoad %6 %13
+         %23 = OpSLessThan %22 %20 %21
+               OpBranchConditional %23 %16 %17
+         %16 = OpLabel
+         %30 = OpAccessChain %29 %26 %28
+         %31 = OpLoad %8 %30
+         %33 = OpFOrdLessThan %22 %31 %32
+               OpSelectionMerge %35 None
+               OpBranchConditional %33 %34 %35
+         %34 = OpLabel
+               OpStore %36 %14
+               OpBranch %37
+         %37 = OpLabel
+               OpLoopMerge %39 %40 None
+               OpBranch %41
+         %41 = OpLabel
+         %42 = OpLoad %6 %36
+         %43 = OpSLessThan %22 %42 %21
+               OpBranchConditional %43 %38 %39
+         %38 = OpLabel
+         %48 = OpExtInst %44 %1 Cosh %47
+         %49 = OpCompositeExtract %8 %48 0
+         %50 = OpConvertFToS %6 %49
+         %52 = OpSLessThanEqual %22 %50 %51
+               OpSelectionMerge %54 None
+               OpBranchConditional %52 %53 %54
+         %53 = OpLabel
+               OpKill
+         %54 = OpLabel
+               OpBranch %40
+         %40 = OpLabel
+         %56 = OpLoad %6 %36
+         %57 = OpIAdd %6 %56 %51
+               OpStore %36 %57
+               OpBranch %37
+         %39 = OpLabel
+               OpBranch %35
+         %35 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+         %58 = OpLoad %6 %13
+         %59 = OpIAdd %6 %58 %51
+               OpStore %13 %59
+               OpBranch %15
+         %17 = OpLabel
+         %60 = OpLoad %6 %10
+         %61 = OpSGreaterThan %22 %60 %51
+               OpSelectionMerge %63 None
+               OpBranchConditional %61 %62 %63
+         %62 = OpLabel
+               OpReturnValue %64
+         %63 = OpLabel
+         %66 = OpAccessChain %29 %26 %28
+         %67 = OpLoad %8 %66
+         %68 = OpFOrdLessThan %22 %67 %32
+               OpSelectionMerge %70 None
+               OpBranchConditional %68 %69 %70
+         %69 = OpLabel
+               OpStore %72 %73
+               OpBranch %70
+         %70 = OpLabel
+               OpReturnValue %74
+               OpFunctionEnd
+END
+
+# uniforms for variant
+
+# zero
+BUFFER variant_zero DATA_TYPE float DATA
+ 0.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_zero AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

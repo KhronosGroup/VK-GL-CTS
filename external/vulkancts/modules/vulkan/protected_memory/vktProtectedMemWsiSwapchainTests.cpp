@@ -1025,7 +1025,7 @@ TriangleRenderer::TriangleRenderer (ProtectedContext&				context,
 		DE_STATIC_ASSERT(sizeof(vertices) == sizeof(float)*4*3);
 
 		deMemcpy(m_vertexBuffer->getAllocation().getHostPtr(), &vertices[0], sizeof(vertices));
-		vk::flushMappedMemoryRange(m_vkd, context.getDevice(), m_vertexBuffer->getAllocation().getMemory(), m_vertexBuffer->getAllocation().getOffset(), sizeof(vertices));
+		flushAlloc(m_vkd, context.getDevice(), m_vertexBuffer->getAllocation());
 	}
 }
 

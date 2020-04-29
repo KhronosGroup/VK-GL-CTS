@@ -80,6 +80,7 @@
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
 #include "vktSpvAsmNonSemanticInfoTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
+#include "vktSpvAsmTrinaryMinMaxTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -20401,6 +20402,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(graphicsTests.release());
 	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
 	instructionTests->addChild(createFunctionParamsGroup(testCtx));
+	instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
 
 	return instructionTests.release();
 }

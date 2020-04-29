@@ -71,7 +71,7 @@ using de::SharedPtr;
 namespace
 {
 
-void initPrograms (SourceCollections& programCollection)
+void initPrograms (SourceCollections& programCollection, vk::VkFormat)
 {
 	// Vertex shader.
 	{
@@ -448,12 +448,10 @@ tcu::TextureLevel generateReferenceImage (const tcu::TextureFormat	format,
 	return image;
 }
 
-tcu::TestStatus testStencilExportReplace (Context& context)
+tcu::TestStatus testStencilExportReplace (Context& context, vk::VkFormat stencilFormat)
 {
-	const VkFormat stencilFormat = VK_FORMAT_S8_UINT;
-
-	context.getTestContext().getLog()
-		<< tcu::TestLog::Message << "Drawing to stencil using shader then using it for another draw." << tcu::TestLog::EndMessage;
+	auto& log = context.getTestContext().getLog();
+	log << tcu::TestLog::Message << "Drawing to stencil using shader then using it for another draw." << tcu::TestLog::EndMessage;
 
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -535,28 +533,43 @@ tcu::TestStatus testStencilExportReplace (Context& context)
 
 		tcu::TextureLevel					referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, 1 << 4, clearColor, Vec4(0, 0, 1, 1));
 
-		if (!tcu::floatThresholdCompare(context.getTestContext().getLog(), "color", "Image compare", referenceImage.getAccess(), resultImage, Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
+		if (!tcu::floatThresholdCompare(log, "color", "Image compare", referenceImage.getAccess(), resultImage, Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
 			TCU_FAIL("Rendered image is not correct");
 	}
 
 	return tcu::TestStatus::pass("OK");
 }
 
-void checkSupport (Context& context)
+void checkSupport (Context& context, vk::VkFormat stencilFormat)
 {
 	context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
 
-	const VkFormat stencilFormat = VK_FORMAT_S8_UINT;
 	if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(), stencilFormat))
-		throw tcu::NotSupportedError(std::string("Unsupported depth/stencil format: ") + getFormatName(stencilFormat));
+		TCU_THROW(NotSupportedError, "Image format not supported");
 }
 
 } // anonymous
 
 tcu::TestCaseGroup* createStencilExportTests (tcu::TestContext& testCtx)
 {
+	struct
+	{
+		const vk::VkFormat	format;
+		const std::string	name;
+	} kFormats[] =
+	{
+		{ vk::VK_FORMAT_S8_UINT,			"s8_uint"				},
+		{ vk::VK_FORMAT_D24_UNORM_S8_UINT,	"d24_unorm_s8_uint"		},
+		{ vk::VK_FORMAT_D32_SFLOAT_S8_UINT,	"d32_sfloat_s8_uint"	},
+	};
+
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_stencil_export", ""));
-	addFunctionCaseWithPrograms(group.get(), "op_replace", "", checkSupport, initPrograms, testStencilExportReplace);
+	for (int fmtIdx = 0; fmtIdx < DE_LENGTH_OF_ARRAY(kFormats); ++fmtIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> formatGroup (new tcu::TestCaseGroup(testCtx, kFormats[fmtIdx].name.c_str(), ""));
+		addFunctionCaseWithPrograms<vk::VkFormat>(formatGroup.get(), "op_replace", "", checkSupport, initPrograms, testStencilExportReplace, kFormats[fmtIdx].format);
+		group->addChild(formatGroup.release());
+	}
 	return group.release();
 }
 

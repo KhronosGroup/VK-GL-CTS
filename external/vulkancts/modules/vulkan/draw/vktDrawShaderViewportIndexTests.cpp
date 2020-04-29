@@ -825,7 +825,7 @@ tcu::TestStatus testVertexFragmentShader (Context& context, const int numViewpor
 	// Log image
 	{
 		const Allocation alloc = colorBuffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, alloc);
 
 		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, alloc.getHostPtr());
 		const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, clearColor, cells, colors);
@@ -886,7 +886,7 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 	// Log image
 	{
 		const Allocation alloc = colorBuffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, alloc);
 
 		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, alloc.getHostPtr());
 		const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, clearColor, cells, colors);

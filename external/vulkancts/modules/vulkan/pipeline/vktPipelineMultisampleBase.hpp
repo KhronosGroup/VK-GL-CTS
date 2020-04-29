@@ -34,12 +34,45 @@ namespace pipeline
 namespace multisample
 {
 
+enum class ComponentSource
+{
+	NONE			= 0,
+	CONSTANT		= 1,
+	PUSH_CONSTANT	= 2,
+};
+
+struct ComponentData
+{
+	ComponentData ()
+		: source	{ComponentSource::NONE}
+		, index		{0u}
+		{}
+
+	ComponentData (ComponentSource source_, deUint32 index_)
+		: source	{source_}
+		, index		{index_}
+		{}
+
+	ComponentData (const ComponentData& other)
+		: source	{other.source}
+		, index		{other.index}
+		{}
+
+	ComponentSource	source;
+	deUint32		index;
+};
+
 struct ImageMSParams
 {
-	ImageMSParams(const vk::VkSampleCountFlagBits samples, const tcu::UVec3& size) : numSamples(samples), imageSize(size) {}
+	ImageMSParams(const vk::VkSampleCountFlagBits samples, const tcu::UVec3& size, const ComponentData& data = ComponentData{})
+		: numSamples	{samples}
+		, imageSize		{size}
+		, componentData	{data}
+		{}
 
 	vk::VkSampleCountFlagBits	numSamples;
 	tcu::UVec3					imageSize;
+	ComponentData				componentData;
 };
 
 class MultisampleCaseBase : public TestCase
@@ -117,7 +150,8 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 								 const tcu::UVec3							imageSizes[],
 								 const deUint32								imageSizesElemCount,
 								 const vk::VkSampleCountFlagBits			imageSamples[],
-								 const deUint32								imageSamplesElemCount)
+								 const deUint32								imageSamplesElemCount,
+								 const multisample::ComponentData&			componentData = multisample::ComponentData{})
 {
 	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, groupName.c_str(), ""));
 
@@ -132,8 +166,8 @@ tcu::TestCaseGroup* makeMSGroup	(tcu::TestContext&							testCtx,
 
 		for (deUint32 imageSamplesNdx = 0u; imageSamplesNdx < imageSamplesElemCount; ++imageSamplesNdx)
 		{
-			const vk::VkSampleCountFlagBits		samples = imageSamples[imageSamplesNdx];
-			const multisample::ImageMSParams	imageMSParams = multisample::ImageMSParams(samples, imageSize);
+			const vk::VkSampleCountFlagBits		samples			= imageSamples[imageSamplesNdx];
+			const multisample::ImageMSParams	imageMSParams	= multisample::ImageMSParams(samples, imageSize, componentData);
 
 			sizeGroup->addChild(CaseClass::createCase(testCtx, "samples_" + de::toString(samples), imageMSParams));
 		}

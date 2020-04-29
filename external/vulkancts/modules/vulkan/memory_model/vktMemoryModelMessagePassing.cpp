@@ -1602,7 +1602,7 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 	tcu::TestLog& log = m_context.getTestContext().getLog();
 
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
-	invalidateMappedMemoryRange(vk, device, copyBuffer->getAllocation().getMemory(), copyBuffer->getAllocation().getOffset(), bufferSizes[2]);
+	invalidateAlloc(vk, device, copyBuffer->getAllocation());
 	qpTestResult res = QP_TEST_RESULT_PASS;
 
 	deUint32 numErrors = 0;

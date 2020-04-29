@@ -3472,20 +3472,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 				// Copy data to memory.
 				{
-					const VkMappedMemoryRange		range					=
-					{
-						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,				//	VkStructureType	sType;
-						DE_NULL,											//	const void*		pNext;
-						resourceMemory->getMemory(),						//	VkDeviceMemory	mem;
-						0,													//	VkDeviceSize	offset;
-						VK_WHOLE_SIZE,										//	VkDeviceSize	size;
-					};
-
 					vector<deUint8>					resourceBytes;
 					resource.getBytes(resourceBytes);
 
 					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
-					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+					flushAlloc(vk, device, *resourceMemory);
 				}
 
 				inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
@@ -3501,20 +3492,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 				// Copy data to memory.
 				{
-					const VkMappedMemoryRange		range					=
-					{
-						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,				//	VkStructureType	sType;
-						DE_NULL,											//	const void*		pNext;
-						resourceMemory->getMemory(),						//	VkDeviceMemory	mem;
-						0,													//	VkDeviceSize	offset;
-						VK_WHOLE_SIZE,										//	VkDeviceSize	size;
-					};
-
 					vector<deUint8>					resourceBytes;
 					resource.getBytes(resourceBytes);
 
 					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
-					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+					flushAlloc(vk, device, *resourceMemory);
 				}
 
 				Move<VkImage>					resourceImage			= createImageForResource(vk, device, resource, instance.resources.inputFormat, queueFamilyIndex);
@@ -3560,18 +3542,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			VK_CHECK(vk.bindBufferMemory(device, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 			// Fill memory with all ones.
-			const VkMappedMemoryRange		range					=
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,				//	VkStructureType	sType;
-				DE_NULL,											//	const void*		pNext;
-				resourceMemory->getMemory(),						//	VkDeviceMemory	mem;
-				0,													//	VkDeviceSize	offset;
-				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
-			};
-
 			resource.getBytes(resourceBytes);
 			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resourceBytes.size());
-			VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+			flushAlloc(vk, device, *resourceMemory);
 
 			outResourceMemories.push_back(AllocationSp(resourceMemory.release()));
 			outResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
@@ -4399,16 +4372,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 		deMemcpy(vertexInputMemory->getHostPtr(), data.data(), data.size());
 
-		const VkMappedMemoryRange	range			=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
-			DE_NULL,								//	const void*		pNext;
-			vertexInputMemory->getMemory(),			//	VkDeviceMemory	mem;
-			0,										//	VkDeviceSize	offset;
-			VK_WHOLE_SIZE,							//	VkDeviceSize	size;
-		};
-
-		VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+		flushAlloc(vk, device, *vertexInputMemory);
 	}
 
 	// Submit & wait for completion
@@ -4422,35 +4386,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
 
 	if (needInterface)
-	{
-		const VkDeviceSize			fragOutputImgSize	= (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
-		const VkMappedMemoryRange	range				=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
-			DE_NULL,								//	const void*		pNext;
-			fragOutputMemory->getMemory(),			//	VkDeviceMemory	mem;
-			0,										//	VkDeviceSize	offset;
-			fragOutputImgSize,						//	VkDeviceSize	size;
-		};
+		invalidateAlloc(vk, device, *fragOutputMemory);
 
-		VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
-	}
-
-	{ // Make sure all output resources are ready.
-		for (deUint32 outputNdx = 0; outputNdx < numOutResources; ++outputNdx)
-		{
-			const VkMappedMemoryRange	range	=
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,			//	VkStructureType	sType;
-				DE_NULL,										//	const void*		pNext;
-				outResourceMemories[outputNdx]->getMemory(),	//	VkDeviceMemory	mem;
-				0,												//	VkDeviceSize	offset;
-				VK_WHOLE_SIZE,									//	VkDeviceSize	size;
-			};
-
-			VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
-		}
-	}
+	// Make sure all output resources are ready.
+	for (deUint32 outputNdx = 0; outputNdx < numOutResources; ++outputNdx)
+		invalidateAlloc(vk, device, *outResourceMemories[outputNdx]);
 
 	const RGBA threshold(1, 1, 1, 1);
 
@@ -4607,30 +4547,42 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 			if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
 			{
-				// Some *variable_pointers* tests store counters in buffer
-				// whose value may vary if the same vertex shader may be executed for multiple times
-				// in this case the output value can be expected value + non-negative integer N
-				if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
-				{
-					const size_t	numExpectedEntries	= expectedBytes.size() / sizeof(float);
-					const float*	expectedFloats		= reinterpret_cast<const float*>(&expectedBytes.front());
-					const float*	outputFloats		= reinterpret_cast<const float*>(outResourceMemories[outputNdx]->getHostPtr());
-					float			diff				= 0.0f;
+				const size_t	numExpectedEntries	= expectedBytes.size() / sizeof(float);
+				float*			expectedFloats		= reinterpret_cast<float*>(&expectedBytes.front());
+				float*			outputFloats		= reinterpret_cast<float*>(outResourceMemories[outputNdx]->getHostPtr());
+				float			diff				= 0.0f;
+				deUint32		bitDiff				= 0;
 
-					for (size_t expectedNdx = 0; expectedNdx < numExpectedEntries; ++expectedNdx)
+				for (size_t expectedNdx = 0; expectedNdx < numExpectedEntries; ++expectedNdx)
+				{
+					// RTZ and RNE can introduce a difference of a single ULP
+					// The RTZ output will always be either equal or lower than the RNE expected,
+					// so perform a bitwise subtractraction and check for the ULP difference
+					bitDiff = *reinterpret_cast<deUint32*>(&expectedFloats[expectedNdx]) - *reinterpret_cast<deUint32*>(&outputFloats[expectedNdx]);
+
+					// Allow a maximum of 1 ULP difference to account for RTZ rounding
+					if (bitDiff & (~0x1))
 					{
-						if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
-							return tcu::TestStatus::fail("Value returned is invalid");
+						// Note: RTZ/RNE rounding leniency isn't applied for the checks below:
 
-						diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+						// Some *variable_pointers* tests store counters in buffer
+						// whose value may vary if the same vertex shader may be executed for multiple times
+						// in this case the output value can be expected value + non-negative integer N
+						if (instance.customizedStages == VK_SHADER_STAGE_VERTEX_BIT)
+						{
+							if (deFloatIsInf(outputFloats[expectedNdx]) || deFloatIsNaN(outputFloats[expectedNdx]))
+								return tcu::TestStatus::fail("Value returned is invalid");
 
-						if ((diff < 0.0f) || (deFloatFloor(diff) != diff))
-							return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
+							diff = outputFloats[expectedNdx] - expectedFloats[expectedNdx];
+
+							if ((diff < 0.0f) || (deFloatFloor(diff) != diff))
+								return tcu::TestStatus::fail("Value returned should be equal to expected value plus non-negative integer");
+						}
+						else
+						{
+							return tcu::TestStatus::fail("Resource returned should be equal to expected, allowing for RTZ/RNE rounding");
+						}
 					}
-				}
-				else
-				{
-					return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
 				}
 			}
 

@@ -139,7 +139,7 @@ void writeHostMemory (const vk::DeviceInterface&	vkd,
 
 	deMemcpy(ptr, data, size);
 
-	flushMappedMemoryRange(vkd, device, memory, 0, size);
+	flushMappedMemoryRange(vkd, device, memory, 0, VK_WHOLE_SIZE);
 
 	vkd.unmapMemory(device, memory);
 }
@@ -152,7 +152,7 @@ void checkHostMemory (const vk::DeviceInterface&	vkd,
 {
 	void* const ptr = vk::mapMemory(vkd, device, memory, 0, size, 0);
 
-	invalidateMappedMemoryRange(vkd, device, memory, 0, size);
+	invalidateMappedMemoryRange(vkd, device, memory, 0, VK_WHOLE_SIZE);
 
 	if (deMemCmp(ptr, data, size) != 0)
 		TCU_FAIL("Memory contents don't match");

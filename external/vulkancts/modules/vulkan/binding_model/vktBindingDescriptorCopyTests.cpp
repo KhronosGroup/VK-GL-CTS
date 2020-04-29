@@ -617,7 +617,7 @@ void BufferDescriptor::init (Context&		context,
 			}
 		}
 
-		flushMappedMemoryRange(vk, device, m_buffer->getAllocation().getMemory(), m_buffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+		flushAlloc(vk, device, m_buffer->getAllocation());
 	}
 }
 
@@ -646,9 +646,9 @@ VkWriteDescriptorSet BufferDescriptor::getDescriptorWrite (void)
 void BufferDescriptor::invalidate (Context& context)
 {
 	const DeviceInterface&	vk		= context.getDeviceInterface();
-    const VkDevice			device	= context.getDevice();
+	const VkDevice			device	= context.getDevice();
 
-	invalidateMappedMemoryRange(vk, device, m_buffer->getAllocation().getMemory(), m_buffer->getAllocation().getOffset(), m_bufferSize);
+	invalidateAlloc(vk, device, m_buffer->getAllocation());
 }
 
 // Returns the buffer data as a vector
@@ -1307,7 +1307,7 @@ void SamplerDescriptor::init (Context&		context,
 	DE_UNREF(pipelineType);
 
 	const DeviceInterface&	vk		= context.getDeviceInterface();
-    const VkDevice			device	= context.getDevice();
+	const VkDevice			device	= context.getDevice();
 	const VkFormat			format	= VK_FORMAT_R32_SFLOAT;
 
 	// Create samplers
@@ -1532,12 +1532,12 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 {
 	const InstanceInterface&				vki					= context.getInstanceInterface();
 	const DeviceInterface&					vk					= context.getDeviceInterface();
-    const VkDevice							device				= context.getDevice();
+	const VkDevice							device				= context.getDevice();
 	const VkQueue							queue				= context.getUniversalQueue();
 	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 	const VkPhysicalDeviceLimits			limits				= getPhysicalDeviceProperties(vki, physicalDevice).limits;
 	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-    Allocator&								allocator			= context.getDefaultAllocator();
+	Allocator&								allocator			= context.getDefaultAllocator();
 	tcu::TestLog&							log					= context.getTestContext().getLog();
 	const Unique<VkCommandPool>				commandPool			(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>			commandBuffer		(allocateCommandBuffer(vk, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));

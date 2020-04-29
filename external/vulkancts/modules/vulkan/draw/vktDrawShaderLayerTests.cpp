@@ -756,7 +756,7 @@ tcu::TestStatus testVertexShader (Context& context, const int numLayers)
 	// Verify layers.
 	{
 		const Allocation alloc = colorBuffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, alloc);
 
 		deUint8* resultMem = reinterpret_cast<deUint8*>(alloc.getHostPtr());
 		for (int i = 0; i < numLayers; i++)
@@ -816,7 +816,7 @@ tcu::TestStatus testTessellationShader (Context& context, const int numLayers)
 	// Verify layers.
 	{
 		const Allocation alloc = colorBuffer->getBoundMemory();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, alloc);
 
 		deUint8* resultMem = reinterpret_cast<deUint8*>(alloc.getHostPtr());
 		for (int i = 0; i < numLayers; i++) {

@@ -357,7 +357,7 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 		bufferBarriers.push_back(bufferBarrier);
 
 		deMemcpy(buffer->getAllocation().getHostPtr(), imageData.getPlanePtr(planeNdx), imageData.getPlaneSize(planeNdx));
-		flushMappedMemoryRange(vk, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), (deUint32)imageData.getPlaneSize(planeNdx));
+		flushAlloc(vk, device, buffer->getAllocation());
 		stagingBuffers.push_back(de::SharedPtr<de::MovePtr<vk::BufferWithMemory> >(new de::MovePtr<vk::BufferWithMemory>(buffer.release())));
 	}
 
@@ -526,7 +526,7 @@ bool validateImage (ProtectedContext&							ctx,
 	// Set the reference uniform data
 	{
 		deMemcpy(refUniform->getAllocation().getHostPtr(), &refData[0], refUniformSize);
-		vk::flushMappedMemoryRange(vk, device, refUniform->getAllocation().getMemory(), refUniform->getAllocation().getOffset(), refUniformSize);
+		flushAlloc(vk, device, refUniform->getAllocation());
 	}
 
 	const deUint32								helperBufferSize	= (deUint32)(2 * sizeof(deUint32));
@@ -857,7 +857,7 @@ void renderYCbCrToColor (ProtectedContext&							ctx,
 	// Set the reference uniform data
 	{
 		deMemcpy(refUniform->getAllocation().getHostPtr(), &referenceData[0], refUniformSize);
-		vk::flushMappedMemoryRange(vk, device, refUniform->getAllocation().getMemory(), refUniform->getAllocation().getOffset(), refUniformSize);
+		flushAlloc(vk, device, refUniform->getAllocation());
 	}
 
 	// Update descriptor set
@@ -902,7 +902,7 @@ void renderYCbCrToColor (ProtectedContext&							ctx,
 								  vk::MemoryRequirement::HostVisible);
 
 		deMemcpy(vertexBuffer->getAllocation().getHostPtr(), &posCoords[0], bufferSize);
-		vk::flushMappedMemoryRange(vk, device, vertexBuffer->getAllocation().getMemory(), vertexBuffer->getAllocation().getOffset(), bufferSize);
+		flushAlloc(vk, device, vertexBuffer->getAllocation());
 	}
 
 	const vk::Unique<vk::VkPipeline>		pipeline			(makeGraphicsPipeline(vk,

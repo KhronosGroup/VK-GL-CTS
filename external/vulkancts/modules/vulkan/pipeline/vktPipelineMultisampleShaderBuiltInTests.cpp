@@ -1254,14 +1254,16 @@ void WriteSampleTest::initPrograms (vk::SourceCollections& programCollection) co
 		<< "        uvec2 ucoords  = uvec2(gl_GlobalInvocationID.xy);\n"
 		<< "        ivec2 icoords  = ivec2(ucoords);\n"
 		<< "        uint writeMask = ((ucoords.x << " << bpc << ") | ucoords.y);\n"
+		<< "        bool ok = true;\n"
 		<< "        for (uint i = 0; i < " << count << "; ++i)\n"
 		<< "        {\n"
 		<< "                bool expectWrite = ((writeMask & (1 << i)) != 0);\n"
 		<< "                vec4 sampleColor = imageLoad(writeImg, icoords, int(i));\n"
 		<< "                vec4 wantedColor = (expectWrite ? wcolor : ccolor);\n"
-		<< "                vec4 resultColor = ((sampleColor == wantedColor) ? gcolor : bcolor);\n"
-		<< "                imageStore(verificationImg, icoords, resultColor);\n"
+		<< "                ok = ok && (sampleColor == wantedColor);\n"
 		<< "        }\n"
+		<< "        vec4 resultColor = (ok ? gcolor : bcolor);\n"
+		<< "        imageStore(verificationImg, icoords, resultColor);\n"
 		<< "}\n"
 		;
 

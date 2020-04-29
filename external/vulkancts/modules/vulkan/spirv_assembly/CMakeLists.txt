@@ -65,6 +65,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmPtrAccessChainTests.hpp
 	vktSpvAsmFloatControlsExtensionlessTests.cpp
 	vktSpvAsmFloatControlsExtensionlessTests.hpp
+	vktSpvAsmTrinaryMinMaxTests.cpp
+	vktSpvAsmTrinaryMinMaxTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

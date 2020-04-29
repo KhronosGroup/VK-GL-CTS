@@ -1481,7 +1481,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	}
 
 	// Flush modified memory.
-	flushMappedMemoryRange(vk, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(vk, device, buffer->getAllocation());
 
 	// Push constants are used for dynamic indexing. PushConstant[i] = i.
 	const VkPushConstantRange			pushConstRange			=
@@ -1995,7 +1995,8 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			vk, device, allocator, makeBufferCreateInfo(shaderGroupHandleSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
 
 		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
-		invalidateMappedMemoryRange(vk, device, sbtBuffer->getAllocation().getMemory(), sbtBuffer->getAllocation().getOffset(), shaderGroupHandleSize);
+
+		invalidateAlloc(vk, device, sbtBuffer->getAllocation());
 
 		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, shaderGroupHandleSize, ptr);
 	}
@@ -2438,7 +2439,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
-	invalidateMappedMemoryRange(vk, device, copyBuffer->getAllocation().getMemory(), copyBuffer->getAllocation().getOffset(), DIM*DIM*sizeof(deUint32));
+	invalidateAlloc(vk, device, copyBuffer->getAllocation());
 
 	deUint32		failures = 0;
 

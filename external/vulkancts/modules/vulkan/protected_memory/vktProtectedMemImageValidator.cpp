@@ -148,7 +148,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 	// Set the reference uniform data
 	{
 		deMemcpy(refUniform->getAllocation().getHostPtr(), &refData, refUniformSize);
-		vk::flushMappedMemoryRange(vk, device, refUniform->getAllocation().getMemory(), refUniform->getAllocation().getOffset(), refUniformSize);
+		flushAlloc(vk, device, refUniform->getAllocation());
 	}
 
 	const deUint32							helperBufferSize	= (deUint32)(2 * sizeof(deUint32));
