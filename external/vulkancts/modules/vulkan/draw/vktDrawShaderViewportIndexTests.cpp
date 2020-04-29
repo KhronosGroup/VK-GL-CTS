@@ -73,6 +73,20 @@ enum Constants
 	MIN_MAX_VIEWPORTS = 16,		//!< Minimum number of viewports for an implementation supporting multiViewport.
 };
 
+struct FragmentTestParams
+{
+	int		numViewports;
+	bool	writeFromVertex;
+
+	FragmentTestParams (int nvp, bool write)
+		: numViewports		(nvp)
+		, writeFromVertex	(write)
+	{
+		if (!write)
+			DE_ASSERT(nvp == 1);
+	}
+};
+
 template<typename T>
 inline VkDeviceSize sizeInBytes(const std::vector<T>& vec)
 {
@@ -460,7 +474,7 @@ void initVertexTestPrograms (SourceCollections& programCollection, const int num
 	}
 }
 
-void initFragmentTestPrograms (SourceCollections& programCollection, const int numViewports)
+void initFragmentTestPrograms (SourceCollections& programCollection, FragmentTestParams testParams)
 {
 	// Vertex shader.
 	{
@@ -474,7 +488,7 @@ void initFragmentTestPrograms (SourceCollections& programCollection, const int n
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n"
-			<< "    gl_ViewportIndex = gl_VertexIndex / 6;\n"
+			<< (testParams.writeFromVertex ? "    gl_ViewportIndex = gl_VertexIndex / 6;\n" : "")
 			<< "    gl_Position = in_position;\n"
 			<< "    out_color = in_color;\n"
 			<< "}\n";
@@ -491,7 +505,7 @@ void initFragmentTestPrograms (SourceCollections& programCollection, const int n
 			<< "layout(location = 0) in  vec4 in_color;\n"
 			<< "layout(location = 0) out vec4 out_color;\n"
 			<< "layout(set=0, binding=0) uniform Colors {\n"
-			<< "    vec4 color[" << numViewports << "];\n"
+			<< "    vec4 color[" << testParams.numViewports << "];\n"
 			<< "};\n"
 			<< "\n"
 			<< "void main(void)\n"
@@ -843,9 +857,9 @@ tcu::TestStatus testVertexShader (Context& context, const int numViewports)
 	return testVertexFragmentShader(context, numViewports, Renderer::VERTEX);
 }
 
-tcu::TestStatus testFragmentShader (Context& context, const int numViewports)
+tcu::TestStatus testFragmentShader (Context& context, FragmentTestParams testParams)
 {
-	return testVertexFragmentShader(context, numViewports, Renderer::FRAGMENT);
+	return testVertexFragmentShader(context, testParams.numViewports, Renderer::FRAGMENT);
 }
 
 tcu::TestStatus testTessellationShader (Context& context, const int numViewports)
@@ -908,7 +922,7 @@ void checkSupportVertex (Context& context, const int)
 		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
 }
 
-void checkSupportFragment (Context& context, const int)
+void checkSupportFragment (Context& context, FragmentTestParams)
 {
 	checkSupportVertex(context, 0);
 }
@@ -929,8 +943,9 @@ tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx)
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
 		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", checkSupportVertex, initVertexTestPrograms, testVertexShader, numViewports);
 
+	addFunctionCaseWithPrograms(group.get(), "fragment_shader_implicit", "", checkSupportFragment, initFragmentTestPrograms, testFragmentShader, FragmentTestParams(1, false));
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(numViewports), "", checkSupportFragment, initFragmentTestPrograms, testFragmentShader, numViewports);
+		addFunctionCaseWithPrograms(group.get(), "fragment_shader_" + de::toString(numViewports), "", checkSupportFragment, initFragmentTestPrograms, testFragmentShader, FragmentTestParams(numViewports, true));
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
 		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numViewports), "", checkSupportTessellation, initTessellationTestPrograms, testTessellationShader, numViewports);
