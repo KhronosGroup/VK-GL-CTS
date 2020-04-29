@@ -232,9 +232,6 @@ void RayTracingTestCase::checkSupport(Context& context) const
 	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
 
-	if (rayTracingFeaturesKHR.rayTracingHostAccelerationStructureCommands == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingHostAccelerationStructureCommands");
-
 	if (rayTracingFeaturesKHR.rayTracingIndirectAccelerationStructureBuild == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingIndirectAccelerationStructureBuild");
 }
