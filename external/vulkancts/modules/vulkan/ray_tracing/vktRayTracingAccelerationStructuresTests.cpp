@@ -1453,7 +1453,16 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 
 void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 {
-	// skip two formats not handled by NV
+	struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		const char*											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
 	struct
 	{
 		VkFormat								format;
@@ -1479,32 +1488,38 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 		{ VK_INDEX_TYPE_UINT32 ,				"index_uint32"	},
 	};
 
-	for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
+	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), vertexFormats[vertexFormatNdx].name, ""));
+		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
 
-		for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
+		for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
 		{
-			TestParams testParams
+			de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), vertexFormats[vertexFormatNdx].name, ""));
+
+			for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
 			{
-				VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,
-				vertexFormats[vertexFormatNdx].format,
-				indexFormats[indexFormatNdx].indexType,
-				BTT_TRIANGLES,
-				false,
-				TTT_IDENTICAL_INSTANCES,
-				false,
-				VkBuildAccelerationStructureFlagsKHR(0u),
-				OT_NONE,
-				OP_NONE,
-				RTAS_DEFAULT_SIZE,
-				RTAS_DEFAULT_SIZE,
-				de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
-				0
-			};
-			vertexFormatGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+				TestParams testParams
+				{
+					buildTypes[buildTypeNdx].buildType,
+					vertexFormats[vertexFormatNdx].format,
+					indexFormats[indexFormatNdx].indexType,
+					BTT_TRIANGLES,
+					false,
+					TTT_IDENTICAL_INSTANCES,
+					false,
+					VkBuildAccelerationStructureFlagsKHR(0u),
+					OT_NONE,
+					OP_NONE,
+					RTAS_DEFAULT_SIZE,
+					RTAS_DEFAULT_SIZE,
+					de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+					0
+				};
+				vertexFormatGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+			}
+			buildGroup->addChild(vertexFormatGroup.release());
 		}
-		group->addChild(vertexFormatGroup.release());
+		group->addChild(buildGroup.release());
 	}
 }
 
