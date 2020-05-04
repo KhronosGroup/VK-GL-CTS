@@ -181,6 +181,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createIndirectCommandsLayoutNV (VkDevice device, 
 	VK_NULL_RETURN((*pIndirectCommandsLayout = allocateNonDispHandle<IndirectCommandsLayoutNV, VkIndirectCommandsLayoutNV>(device, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createPrivateDataSlotEXT (VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlotEXT* pPrivateDataSlot)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pPrivateDataSlot = allocateNonDispHandle<PrivateDataSlotEXT, VkPrivateDataSlotEXT>(device, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -441,6 +447,12 @@ VKAPI_ATTR void VKAPI_CALL destroyIndirectCommandsLayoutNV (VkDevice device, VkI
 {
 	DE_UNREF(device);
 	freeNonDispHandle<IndirectCommandsLayoutNV, VkIndirectCommandsLayoutNV>(indirectCommandsLayout, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyPrivateDataSlotEXT (VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<PrivateDataSlotEXT, VkPrivateDataSlotEXT>(privateDataSlot, pAllocator);
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyDeferredOperationKHR (VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator)
@@ -2376,6 +2388,25 @@ VKAPI_ATTR void VKAPI_CALL cmdBindPipelineShaderGroupNV (VkCommandBuffer command
 	DE_UNREF(groupIndex);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data)
+{
+	DE_UNREF(device);
+	DE_UNREF(objectType);
+	DE_UNREF(objectHandle);
+	DE_UNREF(privateDataSlot);
+	DE_UNREF(data);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(objectType);
+	DE_UNREF(objectHandle);
+	DE_UNREF(privateDataSlot);
+	DE_UNREF(pData);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
 	DE_UNREF(device);
@@ -3065,6 +3096,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdBindPipelineShaderGroupNV,						cmdBindPipelineShaderGroupNV),
 	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNV,					createIndirectCommandsLayoutNV),
 	VK_NULL_FUNC_ENTRY(vkDestroyIndirectCommandsLayoutNV,					destroyIndirectCommandsLayoutNV),
+	VK_NULL_FUNC_ENTRY(vkCreatePrivateDataSlotEXT,							createPrivateDataSlotEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyPrivateDataSlotEXT,							destroyPrivateDataSlotEXT),
+	VK_NULL_FUNC_ENTRY(vkSetPrivateDataEXT,									setPrivateDataEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPrivateDataEXT,									getPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,			getAndroidHardwareBufferPropertiesANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,				getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkCreateDeferredOperationKHR,						createDeferredOperationKHR),

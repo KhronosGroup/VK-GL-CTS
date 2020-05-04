@@ -3240,6 +3240,14 @@ struct VkHdrMetadataEXT
 	float			maxFrameAverageLightLevel;
 };
 
+struct VkDebugUtilsLabelEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pLabelName;
+	float			color[4];
+};
+
 struct VkDebugUtilsObjectNameInfoEXT
 {
 	VkStructureType	sType;
@@ -3247,25 +3255,6 @@ struct VkDebugUtilsObjectNameInfoEXT
 	VkObjectType	objectType;
 	deUint64		objectHandle;
 	const char*		pObjectName;
-};
-
-struct VkDebugUtilsObjectTagInfoEXT
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkObjectType	objectType;
-	deUint64		objectHandle;
-	deUint64		tagName;
-	deUintptr		tagSize;
-	const void*		pTag;
-};
-
-struct VkDebugUtilsLabelEXT
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	const char*		pLabelName;
-	float			color[4];
 };
 
 struct VkDebugUtilsMessengerCallbackDataEXT
@@ -3282,6 +3271,17 @@ struct VkDebugUtilsMessengerCallbackDataEXT
 	const VkDebugUtilsLabelEXT*					pCmdBufLabels;
 	deUint32									objectCount;
 	const VkDebugUtilsObjectNameInfoEXT*		pObjects;
+};
+
+struct VkDebugUtilsObjectTagInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkObjectType	objectType;
+	deUint64		objectHandle;
+	deUint64		tagName;
+	deUintptr		tagSize;
+	const void*		pTag;
 };
 
 struct VkDebugUtilsMessengerCreateInfoEXT
@@ -4461,6 +4461,67 @@ struct VkCommandBufferInheritanceRenderPassTransformInfoQCOM
 	void*							pNext;
 	VkSurfaceTransformFlagBitsKHR	transform;
 	VkRect2D						renderArea;
+};
+
+struct VkPhysicalDeviceRobustness2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		robustBufferAccess2;
+	VkBool32		robustImageAccess2;
+	VkBool32		nullDescriptor;
+};
+
+struct VkPhysicalDeviceRobustness2PropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	robustStorageBufferAccessSizeAlignment;
+	VkDeviceSize	robustUniformBufferAccessSizeAlignment;
+};
+
+struct VkSamplerCustomBorderColorCreateInfoEXT
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkClearColorValue	customBorderColor;
+	VkFormat			format;
+};
+
+struct VkPhysicalDeviceCustomBorderColorPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxCustomBorderColorSamplers;
+};
+
+struct VkPhysicalDeviceCustomBorderColorFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		customBorderColors;
+	VkBool32		customBorderColorWithoutFormat;
+};
+
+struct VkPhysicalDevicePrivateDataFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		privateData;
+};
+
+struct VkDevicePrivateDataCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		privateDataSlotRequestCount;
+};
+
+struct VkPrivateDataSlotCreateInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkPrivateDataSlotCreateFlagsEXT	flags;
 };
 
 struct VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT

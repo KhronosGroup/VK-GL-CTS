@@ -86,7 +86,7 @@ void prepareGlslang (void)
 
 // Fail compilation if more members are added to TLimits or TBuiltInResource
 struct LimitsSizeHelper_s			{ bool m0, m1, m2, m3, m4, m5, m6, m7, m8; };
-struct BuiltInResourceSizeHelper_s	{ int m[92]; LimitsSizeHelper_s l; };
+struct BuiltInResourceSizeHelper_s	{ int m[93]; LimitsSizeHelper_s l; };
 
 DE_STATIC_ASSERT(sizeof(TLimits)			== sizeof(LimitsSizeHelper_s));
 DE_STATIC_ASSERT(sizeof(TBuiltInResource)	== sizeof(BuiltInResourceSizeHelper_s));
@@ -200,6 +200,7 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxTaskWorkGroupSizeY_NV					= 1;
 	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
 	builtin->maxMeshViewCountNV							= 4;
+	builtin->maxDualSourceDrawBuffersEXT				= 1;
 };
 
 int getNumShaderStages (const std::vector<std::string>* sources)

@@ -555,6 +555,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_render_pass_shader_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority")
 	{
 		return;
@@ -744,7 +748,19 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_robustness2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_custom_border_color")
+	{
+		return;
+	}
 	if (extName == "VK_GOOGLE_user_type")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_private_data")
 	{
 		return;
 	}
@@ -1496,6 +1512,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_render_pass_shader_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority")
 	{
 		return;
@@ -1708,8 +1728,24 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_robustness2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_custom_border_color")
+	{
+		return;
+	}
 	if (extName == "VK_GOOGLE_user_type")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_private_data")
+	{
+		functions.push_back("vkCreatePrivateDataSlotEXT");
+		functions.push_back("vkDestroyPrivateDataSlotEXT");
+		functions.push_back("vkSetPrivateDataEXT");
+		functions.push_back("vkGetPrivateDataEXT");
 		return;
 	}
 	if (extName == "VK_EXT_pipeline_creation_cache_control")
@@ -1939,6 +1975,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_line_rasterization",
 	"VK_EXT_host_query_reset",
 	"VK_NV_device_generated_commands",
+	"VK_EXT_private_data",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_ray_tracing",

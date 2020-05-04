@@ -1302,6 +1302,26 @@ void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectC
 	m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
 }
 
+VkResult DeviceDriver::createPrivateDataSlotEXT (VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlotEXT* pPrivateDataSlot) const
+{
+	return m_vk.createPrivateDataSlotEXT(device, pCreateInfo, pAllocator, pPrivateDataSlot);
+}
+
+void DeviceDriver::destroyPrivateDataSlotEXT (VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroyPrivateDataSlotEXT(device, privateDataSlot, pAllocator);
+}
+
+VkResult DeviceDriver::setPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64 data) const
+{
+	return m_vk.setPrivateDataEXT(device, objectType, objectHandle, privateDataSlot, data);
+}
+
+void DeviceDriver::getPrivateDataEXT (VkDevice device, VkObjectType objectType, deUint64 objectHandle, VkPrivateDataSlotEXT privateDataSlot, deUint64* pData) const
+{
+	m_vk.getPrivateDataEXT(device, objectType, objectHandle, privateDataSlot, pData);
+}
+
 VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
 {
 	return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);

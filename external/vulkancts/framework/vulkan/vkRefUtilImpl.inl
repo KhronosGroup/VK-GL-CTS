@@ -161,6 +161,12 @@ void Deleter<VkIndirectCommandsLayoutNV>::operator() (VkIndirectCommandsLayoutNV
 }
 
 template<>
+void Deleter<VkPrivateDataSlotEXT>::operator() (VkPrivateDataSlotEXT obj) const
+{
+	m_deviceIface->destroyPrivateDataSlotEXT(m_device, obj, m_allocator);
+}
+
+template<>
 void Deleter<VkDeferredOperationKHR>::operator() (VkDeferredOperationKHR obj) const
 {
 	m_deviceIface->destroyDeferredOperationKHR(m_device, obj, m_allocator);
@@ -390,6 +396,13 @@ Move<VkIndirectCommandsLayoutNV> createIndirectCommandsLayoutNV (const DeviceInt
 	VkIndirectCommandsLayoutNV object = 0;
 	VK_CHECK(vk.createIndirectCommandsLayoutNV(device, pCreateInfo, pAllocator, &object));
 	return Move<VkIndirectCommandsLayoutNV>(check<VkIndirectCommandsLayoutNV>(object), Deleter<VkIndirectCommandsLayoutNV>(vk, device, pAllocator));
+}
+
+Move<VkPrivateDataSlotEXT> createPrivateDataSlotEXT (const DeviceInterface& vk, VkDevice device, const VkPrivateDataSlotCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkPrivateDataSlotEXT object = 0;
+	VK_CHECK(vk.createPrivateDataSlotEXT(device, pCreateInfo, pAllocator, &object));
+	return Move<VkPrivateDataSlotEXT>(check<VkPrivateDataSlotEXT>(object), Deleter<VkPrivateDataSlotEXT>(vk, device, pAllocator));
 }
 
 Move<VkSurfaceKHR> createAndroidSurfaceKHR (const InstanceInterface& vk, VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)

@@ -13,6 +13,7 @@ const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				getConditionalRend
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&					getCooperativeMatrixFeatures					(void) const;
 const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&					getCornerSampledImageFeatures					(void) const;
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&				getCoverageReductionModeFeatures				(void) const;
+const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&					getCustomBorderColorFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&	getDedicatedAllocationImageAliasingFeatures		(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&					getDescriptorIndexingFeatures					(void) const;
@@ -33,9 +34,11 @@ const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(v
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		getPipelineCreationCacheControlFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
+const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						getPrivateDataFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
 const vk::VkPhysicalDeviceRayTracingFeaturesKHR&						getRayTracingFeatures							(void) const;
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures			(void) const;
+const vk::VkPhysicalDeviceRobustness2FeaturesEXT&						getRobustness2FeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				getSamplerYcbcrConversionFeatures				(void) const;
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					getScalarBlockLayoutFeatures					(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&			getSeparateDepthStencilLayoutsFeatures			(void) const;
