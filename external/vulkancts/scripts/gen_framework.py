@@ -417,14 +417,6 @@ IDENT_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_]*'
 WIDTH_PTRN	= r'[:0-9]*'
 TYPE_PTRN	= r'[a-zA-Z_][a-zA-Z0-9_ \t*&]*'
 
-def fixupEnumValues (values):
-	fixed = []
-	for name, value in values:
-		if "_BEGIN_RANGE" in name or "_END_RANGE" in name:
-			continue
-		fixed.append((name, value))
-	return fixed
-
 def getInterfaceName (function):
 	assert function.name[:2] == "vk"
 	return function.name[2].lower() + function.name[3:]
@@ -469,10 +461,8 @@ def parsePreprocDefinedValueOptional (src, name):
 	return value
 
 def parseEnum (name, src):
-	keyValuePtrn	= '(' + IDENT_PTRN + r')\s*=\s*([^\s,\n}]+)\s*[,\n}]'
-	matches			= re.findall(keyValuePtrn, src)
-
-	return Enum(name, fixupEnumValues(matches))
+	keyValuePtrn = '(' + IDENT_PTRN + r')\s*=\s*([^\s,\n}]+)\s*[,\n}]'
+	return Enum(name, re.findall(keyValuePtrn, src))
 
 # \note Parses raw enums, some are mapped to bitfields later
 def parseEnums (src):
