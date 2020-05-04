@@ -793,7 +793,7 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 			else
 			{
 				vertexData	= makeDeviceOrHostAddressConstKHR( geometryData->getVertexPointer() );
-				if (m_indexBuffer.get() != DE_NULL)
+				if (geometryData->getIndexType() != VK_INDEX_TYPE_NONE_KHR)
 					indexData	= makeDeviceOrHostAddressConstKHR( geometryData->getIndexPointer() );
 				else
 					indexData	= makeDeviceOrHostAddressConstKHR(DE_NULL);
