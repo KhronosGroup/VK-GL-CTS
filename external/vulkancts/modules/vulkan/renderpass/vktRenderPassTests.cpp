@@ -6596,10 +6596,10 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 															vector<deUint32>()));
 
 								deps.push_back(SubpassDependency(0, 1,
-																vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 
-																vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 																0u));
 
@@ -6758,10 +6758,10 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 																vector<deUint32>()));
 
 									deps.push_back(SubpassDependency(0, 1,
-																	vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																	vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 																	vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 
-																	vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																	vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 																	vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 																	0u));
 
