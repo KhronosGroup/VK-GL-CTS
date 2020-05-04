@@ -38,6 +38,7 @@ template<> const char*	getTypeName<VkValidationCacheEXT>				(void) { return "VkV
 template<> const char*	getTypeName<VkAccelerationStructureKHR>			(void) { return "VkAccelerationStructureKHR";		}
 template<> const char*	getTypeName<VkPerformanceConfigurationINTEL>	(void) { return "VkPerformanceConfigurationINTEL";	}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
+template<> const char*	getTypeName<VkPrivateDataSlotEXT>				(void) { return "VkPrivateDataSlotEXT";				}
 template<> const char*	getTypeName<VkDeferredOperationKHR>				(void) { return "VkDeferredOperationKHR";			}
 template<> const char*	getTypeName<VkAccelerationStructureNV>			(void) { return "VkAccelerationStructureNV";		}
 
@@ -554,7 +555,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM:		return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM:							return "VK_STRUCTURE_TYPE_RENDER_PASS_TRANSFORM_BEGIN_INFO_QCOM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
@@ -1237,6 +1246,8 @@ const char* getBorderColorName (VkBorderColor value)
 		case VK_BORDER_COLOR_INT_OPAQUE_BLACK:			return "VK_BORDER_COLOR_INT_OPAQUE_BLACK";
 		case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:		return "VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE";
 		case VK_BORDER_COLOR_INT_OPAQUE_WHITE:			return "VK_BORDER_COLOR_INT_OPAQUE_WHITE";
+		case VK_BORDER_COLOR_FLOAT_CUSTOM_EXT:			return "VK_BORDER_COLOR_FLOAT_CUSTOM_EXT";
+		case VK_BORDER_COLOR_INT_CUSTOM_EXT:			return "VK_BORDER_COLOR_INT_CUSTOM_EXT";
 		case VK_BORDER_COLOR_MAX_ENUM:					return "VK_BORDER_COLOR_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -1378,6 +1389,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL:	return "VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL";
 		case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR:				return "VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR";
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV";
+		case VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT:				return "VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT";
 		case VK_OBJECT_TYPE_MAX_ENUM:							return "VK_OBJECT_TYPE_MAX_ENUM";
 		default:												return DE_NULL;
 	}
@@ -1521,6 +1533,21 @@ const char* getSemaphoreTypeName (VkSemaphoreType value)
 	}
 }
 
+const char* getPresentModeKHRName (VkPresentModeKHR value)
+{
+	switch (value)
+	{
+		case VK_PRESENT_MODE_IMMEDIATE_KHR:					return "VK_PRESENT_MODE_IMMEDIATE_KHR";
+		case VK_PRESENT_MODE_MAILBOX_KHR:					return "VK_PRESENT_MODE_MAILBOX_KHR";
+		case VK_PRESENT_MODE_FIFO_KHR:						return "VK_PRESENT_MODE_FIFO_KHR";
+		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		case VK_PRESENT_MODE_MAX_ENUM_KHR:					return "VK_PRESENT_MODE_MAX_ENUM_KHR";
+		default:											return DE_NULL;
+	}
+}
+
 const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 {
 	switch (value)
@@ -1542,21 +1569,6 @@ const char* getColorSpaceKHRName (VkColorSpaceKHR value)
 		case VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT:	return "VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT";
 		case VK_COLOR_SPACE_DISPLAY_NATIVE_AMD:				return "VK_COLOR_SPACE_DISPLAY_NATIVE_AMD";
 		case VK_COLOR_SPACE_MAX_ENUM_KHR:					return "VK_COLOR_SPACE_MAX_ENUM_KHR";
-		default:											return DE_NULL;
-	}
-}
-
-const char* getPresentModeKHRName (VkPresentModeKHR value)
-{
-	switch (value)
-	{
-		case VK_PRESENT_MODE_IMMEDIATE_KHR:					return "VK_PRESENT_MODE_IMMEDIATE_KHR";
-		case VK_PRESENT_MODE_MAILBOX_KHR:					return "VK_PRESENT_MODE_MAILBOX_KHR";
-		case VK_PRESENT_MODE_FIFO_KHR:						return "VK_PRESENT_MODE_FIFO_KHR";
-		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
-		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
-		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
-		case VK_PRESENT_MODE_MAX_ENUM_KHR:					return "VK_PRESENT_MODE_MAX_ENUM_KHR";
 		default:											return DE_NULL;
 	}
 }
@@ -2652,6 +2664,8 @@ tcu::Format::Bitfield<32> getSubpassDescriptionFlagsStr (VkSubpassDescriptionFla
 	{
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX,		"VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX,	"VK_SUBPASS_DESCRIPTION_PER_VIEW_POSITION_X_ONLY_BIT_NVX"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM,			"VK_SUBPASS_DESCRIPTION_FRAGMENT_REGION_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM,			"VK_SUBPASS_DESCRIPTION_SHADER_RESOLVE_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM,					"VK_SUBPASS_DESCRIPTION_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
@@ -3286,6 +3300,15 @@ tcu::Format::Bitfield<32> getIndirectCommandsLayoutUsageFlagsNVStr (VkIndirectCo
 		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NV,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_INDEXED_SEQUENCES_BIT_NV"),
 		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NV,	"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_NV"),
 		tcu::Format::BitDesc(VK_INDIRECT_COMMANDS_LAYOUT_USAGE_FLAG_BITS_MAX_ENUM_NV,		"VK_INDIRECT_COMMANDS_LAYOUT_USAGE_FLAG_BITS_MAX_ENUM_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getPrivateDataSlotCreateFlagsEXTStr (VkPrivateDataSlotCreateFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PRIVATE_DATA_SLOT_CREATE_FLAG_BITS_MAX_ENUM_EXT,	"VK_PRIVATE_DATA_SLOT_CREATE_FLAG_BITS_MAX_ENUM_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7781,6 +7804,17 @@ std::ostream& operator<< (std::ostream& s, const VkHdrMetadataEXT& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDebugUtilsLabelEXT& value)
+{
+	s << "VkDebugUtilsLabelEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpLabelName = " << getCharPtrStr(value.pLabelName) << '\n';
+	s << "\tcolor = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.color), DE_ARRAY_END(value.color)) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugUtilsObjectNameInfoEXT& value)
 {
 	s << "VkDebugUtilsObjectNameInfoEXT = {\n";
@@ -7789,31 +7823,6 @@ std::ostream& operator<< (std::ostream& s, const VkDebugUtilsObjectNameInfoEXT& 
 	s << "\tobjectType = " << value.objectType << '\n';
 	s << "\tobjectHandle = " << value.objectHandle << '\n';
 	s << "\tpObjectName = " << getCharPtrStr(value.pObjectName) << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDebugUtilsObjectTagInfoEXT& value)
-{
-	s << "VkDebugUtilsObjectTagInfoEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tobjectType = " << value.objectType << '\n';
-	s << "\tobjectHandle = " << value.objectHandle << '\n';
-	s << "\ttagName = " << value.tagName << '\n';
-	s << "\ttagSize = " << value.tagSize << '\n';
-	s << "\tpTag = " << value.pTag << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkDebugUtilsLabelEXT& value)
-{
-	s << "VkDebugUtilsLabelEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpLabelName = " << getCharPtrStr(value.pLabelName) << '\n';
-	s << "\tcolor = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.color), DE_ARRAY_END(value.color)) << '\n';
 	s << '}';
 	return s;
 }
@@ -7833,6 +7842,20 @@ std::ostream& operator<< (std::ostream& s, const VkDebugUtilsMessengerCallbackDa
 	s << "\tpCmdBufLabels = " << value.pCmdBufLabels << '\n';
 	s << "\tobjectCount = " << value.objectCount << '\n';
 	s << "\tpObjects = " << value.pObjects << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDebugUtilsObjectTagInfoEXT& value)
+{
+	s << "VkDebugUtilsObjectTagInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tobjectType = " << value.objectType << '\n';
+	s << "\tobjectHandle = " << value.objectHandle << '\n';
+	s << "\ttagName = " << value.tagName << '\n';
+	s << "\ttagSize = " << value.tagSize << '\n';
+	s << "\tpTag = " << value.pTag << '\n';
 	s << '}';
 	return s;
 }
@@ -9423,6 +9446,91 @@ std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceRende
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttransform = " << value.transform << '\n';
 	s << "\trenderArea = " << value.renderArea << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceRobustness2FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trobustBufferAccess2 = " << value.robustBufferAccess2 << '\n';
+	s << "\trobustImageAccess2 = " << value.robustImageAccess2 << '\n';
+	s << "\tnullDescriptor = " << value.nullDescriptor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceRobustness2PropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trobustStorageBufferAccessSizeAlignment = " << value.robustStorageBufferAccessSizeAlignment << '\n';
+	s << "\trobustUniformBufferAccessSizeAlignment = " << value.robustUniformBufferAccessSizeAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSamplerCustomBorderColorCreateInfoEXT& value)
+{
+	s << "VkSamplerCustomBorderColorCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcustomBorderColor = " << value.customBorderColor << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCustomBorderColorPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceCustomBorderColorPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxCustomBorderColorSamplers = " << value.maxCustomBorderColorSamplers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCustomBorderColorFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceCustomBorderColorFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcustomBorderColors = " << value.customBorderColors << '\n';
+	s << "\tcustomBorderColorWithoutFormat = " << value.customBorderColorWithoutFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePrivateDataFeaturesEXT& value)
+{
+	s << "VkPhysicalDevicePrivateDataFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprivateData = " << value.privateData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDevicePrivateDataCreateInfoEXT& value)
+{
+	s << "VkDevicePrivateDataCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tprivateDataSlotRequestCount = " << value.privateDataSlotRequestCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPrivateDataSlotCreateInfoEXT& value)
+{
+	s << "VkPrivateDataSlotCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPrivateDataSlotCreateFlagsEXTStr(value.flags) << '\n';
 	s << '}';
 	return s;
 }

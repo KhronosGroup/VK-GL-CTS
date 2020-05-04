@@ -1231,24 +1231,24 @@ template<> VkStructureType getStructureType<VkHdrMetadataEXT> (void)
 	return VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
 }
 
-template<> VkStructureType getStructureType<VkDebugUtilsObjectNameInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-}
-
-template<> VkStructureType getStructureType<VkDebugUtilsObjectTagInfoEXT> (void)
-{
-	return VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT;
-}
-
 template<> VkStructureType getStructureType<VkDebugUtilsLabelEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
 }
 
+template<> VkStructureType getStructureType<VkDebugUtilsObjectNameInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkDebugUtilsMessengerCallbackDataEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDebugUtilsObjectTagInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkDebugUtilsMessengerCreateInfoEXT> (void)
@@ -1829,6 +1829,46 @@ template<> VkStructureType getStructureType<VkRenderPassTransformBeginInfoQCOM> 
 template<> VkStructureType getStructureType<VkCommandBufferInheritanceRenderPassTransformInfoQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDER_PASS_TRANSFORM_INFO_QCOM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRobustness2PropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSamplerCustomBorderColorCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCustomBorderColorPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCustomBorderColorFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePrivateDataFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDevicePrivateDataCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPrivateDataSlotCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT> (void)

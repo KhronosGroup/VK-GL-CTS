@@ -566,6 +566,12 @@ public:
 						{}
 };
 
+class PrivateDataSlotEXT
+{
+public:
+						PrivateDataSlotEXT			(VkDevice, const VkPrivateDataSlotCreateInfoEXT*)
+						{}
+};
 
 class CommandPool
 {

@@ -646,6 +646,7 @@ def parseDefinitions (extensionName, src):
 			return True
 		extNameUpper = extensionName.upper()
 		extNameUpper = extNameUpper.replace("VK_INTEL_SHADER_INTEGER_FUNCTIONS2", "VK_INTEL_SHADER_INTEGER_FUNCTIONS_2")
+		extNameUpper = extNameUpper.replace("VK_EXT_ROBUSTNESS2", "VK_EXT_ROBUSTNESS_2")
 		# SPEC_VERSION enums
 		if definition[0].startswith(extNameUpper) and definition[1].isdigit():
 			return False
