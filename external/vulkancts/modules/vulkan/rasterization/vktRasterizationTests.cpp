@@ -1088,7 +1088,17 @@ BaseLineTestInstance::BaseLineTestInstance (Context& context,
 		// set hand picked sizes
 		m_lineWidths.push_back(5.0f);
 		m_lineWidths.push_back(10.0f);
-		m_lineWidths.push_back(range[1]);
+
+		// Do not pick line width with 0.5 fractional value as rounding direction is not defined.
+		if (deFloatFrac(range[1]) == 0.5f)
+		{
+			m_lineWidths.push_back(range[1] - context.getDeviceProperties().limits.lineWidthGranularity);
+		}
+		else
+		{
+			m_lineWidths.push_back(range[1]);
+		}
+
 		DE_ASSERT((int)m_lineWidths.size() == m_iterationCount);
 
 		m_maxLineWidth = range[1];
