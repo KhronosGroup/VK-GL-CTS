@@ -231,13 +231,13 @@ std::ostream& operator<< (std::ostream& str, const VarValue& varValue)
 	return str;
 }
 
-static std::string getCommonFuncCaseName (glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
+static std::string getCommonFuncCaseName (glu::DataType baseType, glu::Precision precision)
 {
-	return string(glu::getDataTypeName(baseType)) + getPrecisionPostfix(precision) + getShaderTypePostfix(shaderType);
+	return string(glu::getDataTypeName(baseType)) + getPrecisionPostfix(precision) + "_compute";
 }
 
 template<class TestClass>
-static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionName, glu::DataType scalarType, deUint32 shaderBits)
+static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionName, glu::DataType scalarType)
 {
 	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName, functionName);
 	parent->addChild(group);
@@ -246,11 +246,7 @@ static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionNa
 	{
 		for (int prec = glu::PRECISION_MEDIUMP; prec <= glu::PRECISION_HIGHP; prec++)
 		{
-			for (int shaderTypeNdx = 0; shaderTypeNdx < glu::SHADERTYPE_LAST; shaderTypeNdx++)
-			{
-				if (shaderBits & (1<<shaderTypeNdx))
-					group->addChild(new TestClass(parent->getTestContext(), glu::DataType(scalarType + vecSize - 1), glu::Precision(prec), glu::ShaderType(shaderTypeNdx)));
-			}
+			group->addChild(new TestClass(parent->getTestContext(), glu::DataType(scalarType + vecSize - 1), glu::Precision(prec)));
 		}
 	}
 }
@@ -260,11 +256,11 @@ static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionNa
 class CommonFunctionCase : public TestCase
 {
 public:
-										CommonFunctionCase			(tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType);
+										CommonFunctionCase			(tcu::TestContext& testCtx, const char* name, const char* description);
 										~CommonFunctionCase			(void);
 	virtual	void						initPrograms				(vk::SourceCollections& programCollection) const
 										{
-											generateSources(m_shaderType, m_spec, programCollection);
+											generateSources(glu::SHADERTYPE_COMPUTE, m_spec, programCollection);
 										}
 
 	virtual TestInstance*				createInstance				(Context& context) const = 0;
@@ -273,14 +269,12 @@ protected:
 										CommonFunctionCase			(const CommonFunctionCase&);
 	CommonFunctionCase&					operator=					(const CommonFunctionCase&);
 
-	const glu::ShaderType				m_shaderType;
 	ShaderSpec							m_spec;
 	const int							m_numValues;
 };
 
-CommonFunctionCase::CommonFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description, glu::ShaderType shaderType)
+CommonFunctionCase::CommonFunctionCase (tcu::TestContext& testCtx, const char* name, const char* description)
 	: TestCase		(testCtx, name, description)
-	, m_shaderType	(shaderType)
 	, m_numValues	(100)
 {
 }
@@ -294,13 +288,12 @@ CommonFunctionCase::~CommonFunctionCase (void)
 class CommonFunctionTestInstance : public TestInstance
 {
 public:
-										CommonFunctionTestInstance	(Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
+										CommonFunctionTestInstance	(Context& context, const ShaderSpec& spec, int numValues, const char* name)
 											: TestInstance	(context)
-											, m_shaderType	(shaderType)
 											, m_spec		(spec)
 											, m_numValues	(numValues)
 											, m_name		(name)
-											, m_executor	(createExecutor(context, shaderType, spec))
+											, m_executor	(createExecutor(context, glu::SHADERTYPE_COMPUTE, spec))
 										{
 										}
 	virtual tcu::TestStatus				iterate						(void);
@@ -309,7 +302,6 @@ protected:
 	virtual void						getInputValues				(int numValues, void* const* values) const = 0;
 	virtual bool						compare						(const void* const* inputs, const void* const* outputs) = 0;
 
-	const glu::ShaderType				m_shaderType;
 	const ShaderSpec					m_spec;
 	const int							m_numValues;
 
@@ -392,8 +384,8 @@ tcu::TestStatus CommonFunctionTestInstance::iterate (void)
 class AbsCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	AbsCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
+	AbsCaseInstance (Context& context, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, spec, numValues, name)
 	{
 	}
 
@@ -443,8 +435,8 @@ public:
 class AbsCase : public CommonFunctionCase
 {
 public:
-	AbsCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision, shaderType).c_str(), "abs", shaderType)
+	AbsCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "abs")
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
@@ -453,15 +445,15 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new AbsCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
+		return new AbsCaseInstance(ctx, m_spec, m_numValues, getName());
 	}
 };
 
 class SignCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	SignCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
+	SignCaseInstance (Context& context, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, spec, numValues, name)
 	{
 	}
 
@@ -515,8 +507,8 @@ public:
 class SignCase : public CommonFunctionCase
 {
 public:
-	SignCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision, shaderType).c_str(), "sign", shaderType)
+	SignCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "sign")
 	{
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(baseType, precision)));
@@ -525,7 +517,7 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new SignCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
+		return new SignCaseInstance(ctx, m_spec, m_numValues, getName());
 	}
 };
 
@@ -560,8 +552,8 @@ static void infNanRandomFloats(int numValues, void* const* values, const char *n
 class IsnanCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	IsnanCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
+	IsnanCaseInstance (Context& context, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, spec, numValues, name)
 	{
 	}
 
@@ -603,8 +595,8 @@ public:
 class IsnanCase : public CommonFunctionCase
 {
 public:
-	IsnanCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision, shaderType).c_str(), "isnan", shaderType)
+	IsnanCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "isnan")
 	{
 		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType));
 
@@ -618,15 +610,15 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new IsnanCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
+		return new IsnanCaseInstance(ctx, m_spec, m_numValues, getName());
 	}
 };
 
 class IsinfCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	IsinfCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
-		: CommonFunctionTestInstance(context, shaderType, spec, numValues, name)
+	IsinfCaseInstance (Context& context, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance(context, spec, numValues, name)
 	{
 	}
 
@@ -673,8 +665,8 @@ public:
 class IsinfCase : public CommonFunctionCase
 {
 public:
-	IsinfCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision, shaderType).c_str(), "isinf", shaderType)
+	IsinfCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "isinf")
 	{
 		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType));
 
@@ -688,15 +680,15 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new IsinfCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
+		return new IsinfCaseInstance(ctx, m_spec, m_numValues, getName());
 	}
 };
 
 class FloatBitsToUintIntCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	FloatBitsToUintIntCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
+	FloatBitsToUintIntCaseInstance (Context& context, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, spec, numValues, name)
 	{
 	}
 
@@ -748,8 +740,8 @@ public:
 class FloatBitsToUintIntCase : public CommonFunctionCase
 {
 public:
-	FloatBitsToUintIntCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType, bool outIsSigned)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision, shaderType).c_str(), outIsSigned ? "floatBitsToInt" : "floatBitsToUint", shaderType)
+	FloatBitsToUintIntCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, bool outIsSigned)
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), outIsSigned ? "floatBitsToInt" : "floatBitsToUint")
 	{
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	intType		= outIsSigned ? (vecSize > 1 ? glu::getDataTypeIntVec(vecSize) : glu::TYPE_INT)
@@ -762,15 +754,15 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new FloatBitsToUintIntCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
+		return new FloatBitsToUintIntCaseInstance(ctx, m_spec, m_numValues, getName());
 	}
 };
 
 class FloatBitsToIntCase : public FloatBitsToUintIntCase
 {
 public:
-	FloatBitsToIntCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: FloatBitsToUintIntCase	(testCtx, baseType, precision, shaderType, true)
+	FloatBitsToIntCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
+		: FloatBitsToUintIntCase	(testCtx, baseType, precision, true)
 	{
 	}
 
@@ -779,8 +771,8 @@ public:
 class FloatBitsToUintCase : public FloatBitsToUintIntCase
 {
 public:
-	FloatBitsToUintCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision, glu::ShaderType shaderType)
-		: FloatBitsToUintIntCase	(testCtx, baseType, precision, shaderType, false)
+	FloatBitsToUintCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
+		: FloatBitsToUintIntCase	(testCtx, baseType, precision, false)
 	{
 	}
 };
@@ -788,8 +780,8 @@ public:
 class BitsToFloatCaseInstance : public CommonFunctionTestInstance
 {
 public:
-	BitsToFloatCaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, int numValues, const char* name)
-		: CommonFunctionTestInstance	(context, shaderType, spec, numValues, name)
+	BitsToFloatCaseInstance (Context& context, const ShaderSpec& spec, int numValues, const char* name)
+		: CommonFunctionTestInstance	(context, spec, numValues, name)
 	{
 	}
 
@@ -831,8 +823,8 @@ public:
 class BitsToFloatCase : public CommonFunctionCase
 {
 public:
-	BitsToFloatCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::ShaderType shaderType)
-		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, glu::PRECISION_HIGHP, shaderType).c_str(), glu::isDataTypeIntOrIVec(baseType) ? "intBitsToFloat" : "uintBitsToFloat", shaderType)
+	BitsToFloatCase (tcu::TestContext& testCtx, glu::DataType baseType)
+		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, glu::PRECISION_HIGHP).c_str(), glu::isDataTypeIntOrIVec(baseType) ? "intBitsToFloat" : "uintBitsToFloat")
 	{
 		const bool			inIsSigned	= glu::isDataTypeIntOrIVec(baseType);
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
@@ -845,7 +837,7 @@ public:
 
 	TestInstance* createInstance (Context& ctx) const
 	{
-		return new BitsToFloatCaseInstance(ctx, m_shaderType, m_spec, m_numValues, getName());
+		return new BitsToFloatCaseInstance(ctx, m_spec, m_numValues, getName());
 	}
 };
 
@@ -862,29 +854,15 @@ ShaderCommonFunctionTests::~ShaderCommonFunctionTests (void)
 
 void ShaderCommonFunctionTests::init (void)
 {
-	enum
-	{
-		VS = (1<<glu::SHADERTYPE_VERTEX),
-		TC = (1<<glu::SHADERTYPE_TESSELLATION_CONTROL),
-		TE = (1<<glu::SHADERTYPE_TESSELLATION_EVALUATION),
-		GS = (1<<glu::SHADERTYPE_GEOMETRY),
-		FS = (1<<glu::SHADERTYPE_FRAGMENT),
-		CS = (1<<glu::SHADERTYPE_COMPUTE),
-
-		ALL_SHADERS = VS|TC|TE|GS|FS|CS,
-		NEW_SHADERS = TC|TE|GS|CS,
-	};
-
-	addFunctionCases<AbsCase>				(this,	"abs",				glu::TYPE_INT,		ALL_SHADERS);
-	addFunctionCases<SignCase>				(this,	"sign",				glu::TYPE_INT,		ALL_SHADERS);
-	addFunctionCases<IsnanCase>				(this,	"isnan",			glu::TYPE_FLOAT,	ALL_SHADERS);
-	addFunctionCases<IsinfCase>				(this,	"isinf",			glu::TYPE_FLOAT,	ALL_SHADERS);
-	addFunctionCases<FloatBitsToIntCase>	(this,	"floatbitstoint",	glu::TYPE_FLOAT,	ALL_SHADERS);
-	addFunctionCases<FloatBitsToUintCase>	(this,	"floatbitstouint",	glu::TYPE_FLOAT,	ALL_SHADERS);
+	addFunctionCases<AbsCase>				(this,	"abs",				glu::TYPE_INT);
+	addFunctionCases<SignCase>				(this,	"sign",				glu::TYPE_INT);
+	addFunctionCases<IsnanCase>				(this,	"isnan",			glu::TYPE_FLOAT);
+	addFunctionCases<IsinfCase>				(this,	"isinf",			glu::TYPE_FLOAT);
+	addFunctionCases<FloatBitsToIntCase>	(this,	"floatbitstoint",	glu::TYPE_FLOAT);
+	addFunctionCases<FloatBitsToUintCase>	(this,	"floatbitstouint",	glu::TYPE_FLOAT);
 
 	// (u)intBitsToFloat()
 	{
-		const deUint32		shaderBits	= NEW_SHADERS;
 		tcu::TestCaseGroup* intGroup	= new tcu::TestCaseGroup(m_testCtx, "intbitstofloat",	"intBitsToFloat() Tests");
 		tcu::TestCaseGroup* uintGroup	= new tcu::TestCaseGroup(m_testCtx, "uintbitstofloat",	"uintBitsToFloat() Tests");
 
@@ -896,14 +874,8 @@ void ShaderCommonFunctionTests::init (void)
 			const glu::DataType		intType		= vecSize > 1 ? glu::getDataTypeIntVec(vecSize) : glu::TYPE_INT;
 			const glu::DataType		uintType	= vecSize > 1 ? glu::getDataTypeUintVec(vecSize) : glu::TYPE_UINT;
 
-			for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
-			{
-				if (shaderBits & (1<<shaderType))
-				{
-					intGroup->addChild(new BitsToFloatCase(getTestContext(), intType, glu::ShaderType(shaderType)));
-					uintGroup->addChild(new BitsToFloatCase(getTestContext(), uintType, glu::ShaderType(shaderType)));
-				}
-			}
+			intGroup->addChild(new BitsToFloatCase(getTestContext(), intType));
+			uintGroup->addChild(new BitsToFloatCase(getTestContext(), uintType));
 		}
 	}
 }
