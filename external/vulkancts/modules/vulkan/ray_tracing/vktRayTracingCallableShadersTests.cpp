@@ -519,7 +519,7 @@ void CallableShaderTestCase::initPrograms (SourceCollections& programCollection)
 			"layout(location = 0) callableDataEXT uvec4 value0;\n"
 			"layout(location = 1) callableDataEXT uint value1;\n"
 			"layout(location = 2) callableDataEXT CallValue value2;\n"
-			"layout(location = 3) callableDataEXT vec3 value3;\n"
+			"layout(location = 4) callableDataEXT vec3 value3;\n"
 			"layout(r32ui, set = 0, binding = 0) uniform uimage2D result;\n"
 			"layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
 			"\n"
@@ -528,7 +528,7 @@ void CallableShaderTestCase::initPrograms (SourceCollections& programCollection)
 			"  executeCallableEXT(0, 0);\n"
 			"  executeCallableEXT(1, 1);\n"
 			"  executeCallableEXT(2, 2);\n"
-			"  executeCallableEXT(3, 3);\n"
+			"  executeCallableEXT(3, 4);\n"
 			"  uint resultValue = value0.x + value1 + value2.a.x * uint(floor(value2.b.y)) + uint(floor(value3.z));\n"
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), uvec4(resultValue, 0, 0, 0));\n"
 			"}\n";
@@ -601,7 +601,7 @@ void CallableShaderTestCase::initPrograms (SourceCollections& programCollection)
 		"layout(location = 0) callableDataInEXT uvec4 result;\n",
 		"layout(location = 1) callableDataInEXT uint result;\n",
 		"struct CallValue\n{\n  ivec4 a;\n  vec4  b;\n};\nlayout(location = 2) callableDataInEXT CallValue result;\n",
-		"layout(location = 3) callableDataInEXT vec3 result;\n"
+		"layout(location = 4) callableDataInEXT vec3 result;\n"
 	};
 
 	std::vector<std::string> callableDataComputation =
