@@ -316,7 +316,7 @@ glw::GLuint EnableDisableAttributesTest::BuildProgram(const char* vertex_shader,
 		glw::GLuint				 id;
 	} shader[] = { { vertex_shader, GL_VERTEX_SHADER, 0 }, { s_fragment_shader, GL_FRAGMENT_SHADER, 0 } };
 
-	glw::GLuint const shader_count = sizeof(shader) / sizeof(shader[0]);
+	glw::GLuint const shader_count = DE_LENGTH_OF_ARRAY(shader);
 
 	glw::GLuint po = 0;
 
@@ -884,7 +884,7 @@ void ElementBufferTest::PrepareProgram()
 		glw::GLuint				 id;
 	} shader[] = { { s_vertex_shader, GL_VERTEX_SHADER, 0 }, { s_fragment_shader, GL_FRAGMENT_SHADER, 0 } };
 
-	glw::GLuint const shader_count = sizeof(shader) / sizeof(shader[0]);
+	glw::GLuint const shader_count = DE_LENGTH_OF_ARRAY(shader);
 
 	try
 	{
@@ -1331,7 +1331,7 @@ void VertexBuffersTest::PrepareProgram()
 		glw::GLuint				 id;
 	} shader[] = { { s_vertex_shader, GL_VERTEX_SHADER, 0 }, { s_fragment_shader, GL_FRAGMENT_SHADER, 0 } };
 
-	glw::GLuint const shader_count = sizeof(shader) / sizeof(shader[0]);
+	glw::GLuint const shader_count = DE_LENGTH_OF_ARRAY(shader);
 
 	try
 	{
@@ -1962,7 +1962,7 @@ void AttributeFormatTest::PrepareProgram(glw::GLint size, AtributeFormatFunction
 					 0 },
 				   { { s_fragment_shader, DE_NULL, DE_NULL }, 1, GL_FRAGMENT_SHADER, 0 } };
 
-	glw::GLuint const shader_count = sizeof(shader) / sizeof(shader[0]);
+	glw::GLuint const shader_count = DE_LENGTH_OF_ARRAY(shader);
 
 	try
 	{
@@ -2652,7 +2652,7 @@ void AttributeBindingTest::PrepareProgram()
 		glw::GLuint				 id;
 	} shader[] = { { s_vertex_shader, GL_VERTEX_SHADER, 0 }, { s_fragment_shader, GL_FRAGMENT_SHADER, 0 } };
 
-	glw::GLuint const shader_count = sizeof(shader) / sizeof(shader[0]);
+	glw::GLuint const shader_count = DE_LENGTH_OF_ARRAY(shader);
 
 	try
 	{
@@ -4770,7 +4770,7 @@ tcu::TestNode::IterateResult AttributeFormatErrorsTest::iterate()
 		{
 			bad_type++;
 			is_accepted_type = false;
-			for (glw::GLuint i = 0; i < sizeof(accepted_types) / sizeof(accepted_types); ++i)
+			for (glw::GLuint i = 0; i < DE_LENGTH_OF_ARRAY(accepted_types); ++i)
 			{
 				if (accepted_types[i] == bad_type)
 				{
@@ -5481,7 +5481,7 @@ tcu::TestNode::IterateResult GetVertexArrayIndexedErrorsTest::iterate()
 		{
 			bad_pname++;
 			is_accepted_pname = false;
-			for (glw::GLuint i = 0; i < sizeof(accepted_pnames) / sizeof(accepted_pnames); ++i)
+			for (glw::GLuint i = 0; i < DE_LENGTH_OF_ARRAY(accepted_pnames); ++i)
 			{
 				if (accepted_pnames[i] == bad_pname)
 				{

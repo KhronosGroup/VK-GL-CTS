@@ -735,12 +735,12 @@ void MultipleBindingCase::createBuffers (void)
 	if (m_spec.instanced)
 	{
 		// store single basic primitive
-		primitiveData[0] = tcu::Vec4(0.0f,				0.0f,				0.0f, 1.0f);
-		primitiveData[1] = tcu::Vec4(0.0f,				2.0f / GRID_SIZE,	0.0f, 1.0f);
-		primitiveData[2] = tcu::Vec4(2.0f / GRID_SIZE,	2.0f / GRID_SIZE,	0.0f, 1.0f);
-		primitiveData[3] = tcu::Vec4(0.0f,				0.0f,				0.0f, 1.0f);
-		primitiveData[4] = tcu::Vec4(2.0f / GRID_SIZE,	2.0f / GRID_SIZE,	0.0f, 1.0f);
-		primitiveData[5] = tcu::Vec4(2.0f / GRID_SIZE,	0.0f,				0.0f, 1.0f);
+		primitiveData[0] = tcu::Vec4(0.0f,						0.0f,						0.0f, 1.0f);
+		primitiveData[1] = tcu::Vec4(0.0f,						2.0f / float(GRID_SIZE),	0.0f, 1.0f);
+		primitiveData[2] = tcu::Vec4(2.0f / float(GRID_SIZE),	2.0f / float(GRID_SIZE),	0.0f, 1.0f);
+		primitiveData[3] = tcu::Vec4(0.0f,						0.0f,						0.0f, 1.0f);
+		primitiveData[4] = tcu::Vec4(2.0f / float(GRID_SIZE),	2.0f / float(GRID_SIZE),	0.0f, 1.0f);
+		primitiveData[5] = tcu::Vec4(2.0f / float(GRID_SIZE),	0.0f,						0.0f, 1.0f);
 	}
 	else
 	{
@@ -1013,12 +1013,12 @@ void MixedBindingCase::createBuffers (void)
 
 	for (int primNdx = 0; primNdx < numPositionCells; ++primNdx)
 	{
-		positionData[primNdx*6 + 0] =  tcu::Vec4(0.0f,				0.0f,				0.0f, 1.0f);
-		positionData[primNdx*6 + 1] =  tcu::Vec4(0.0f,				2.0f / GRID_SIZE,	0.0f, 1.0f);
-		positionData[primNdx*6 + 2] =  tcu::Vec4(2.0f / GRID_SIZE,	2.0f / GRID_SIZE,	0.0f, 1.0f);
-		positionData[primNdx*6 + 3] =  tcu::Vec4(0.0f,				0.0f,				0.0f, 1.0f);
-		positionData[primNdx*6 + 4] =  tcu::Vec4(2.0f / GRID_SIZE,	2.0f / GRID_SIZE,	0.0f, 1.0f);
-		positionData[primNdx*6 + 5] =  tcu::Vec4(2.0f / GRID_SIZE,	0.0f,				0.0f, 1.0f);
+		positionData[primNdx*6 + 0] =  tcu::Vec4(0.0f,						0.0f,						0.0f, 1.0f);
+		positionData[primNdx*6 + 1] =  tcu::Vec4(0.0f,						2.0f / float(GRID_SIZE),	0.0f, 1.0f);
+		positionData[primNdx*6 + 2] =  tcu::Vec4(2.0f / float(GRID_SIZE),	2.0f / float(GRID_SIZE),	0.0f, 1.0f);
+		positionData[primNdx*6 + 3] =  tcu::Vec4(0.0f,						0.0f,						0.0f, 1.0f);
+		positionData[primNdx*6 + 4] =  tcu::Vec4(2.0f / float(GRID_SIZE),	2.0f / float(GRID_SIZE),	0.0f, 1.0f);
+		positionData[primNdx*6 + 5] =  tcu::Vec4(2.0f / float(GRID_SIZE),	0.0f,						0.0f, 1.0f);
 	}
 
 	// color & offset

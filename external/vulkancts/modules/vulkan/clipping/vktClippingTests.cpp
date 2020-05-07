@@ -386,7 +386,7 @@ void initPrograms (SourceCollections& programCollection, const LineOrientation l
 
 void initProgramsPointSize (SourceCollections& programCollection)
 {
-	addSimplePrograms(programCollection, 0.75f * RENDER_SIZE);
+	addSimplePrograms(programCollection, 0.75f * static_cast<float>(RENDER_SIZE));
 }
 
 //! Primitives fully inside the clip volume.

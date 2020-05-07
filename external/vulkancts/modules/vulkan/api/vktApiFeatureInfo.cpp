@@ -5783,7 +5783,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 			"VK_KHR_get_physical_device_properties2",
 		};
 
-		for (const auto ext : mandatoryExtensions)
+		for (const auto &ext : mandatoryExtensions)
 		{
 			if (!context.isInstanceFunctionalitySupported(ext))
 				results.fail(ext + " is not supported");
@@ -5797,7 +5797,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 			"VK_KHR_maintenance1",
 		};
 
-		for (const auto ext : mandatoryExtensions)
+		for (const auto &ext : mandatoryExtensions)
 		{
 			if (!context.isDeviceFunctionalitySupported(ext))
 				results.fail(ext + " is not supported");
