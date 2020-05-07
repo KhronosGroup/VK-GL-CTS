@@ -1787,7 +1787,7 @@ void sized_declarations_invalid_sizes1<API>::test_shader_compilation(
 	};
 
 	for (size_t invalid_declarations_index = 0;
-		 invalid_declarations_index < sizeof(invalid_declarations) / sizeof(invalid_declarations);
+		 invalid_declarations_index < DE_LENGTH_OF_ARRAY(invalid_declarations);
 		 invalid_declarations_index++)
 	{
 		std::string shader_source;
@@ -1825,7 +1825,7 @@ void sized_declarations_invalid_sizes2<API>::test_shader_compilation(
 	};
 
 	for (size_t invalid_declarations_index = 0;
-		 invalid_declarations_index < sizeof(invalid_declarations) / sizeof(invalid_declarations);
+		 invalid_declarations_index < DE_LENGTH_OF_ARRAY(invalid_declarations);
 		 invalid_declarations_index++)
 	{
 		std::string shader_source;
@@ -1864,7 +1864,7 @@ void sized_declarations_invalid_sizes3<API>::test_shader_compilation(
 	std::string non_constant_variable_declaration = "    uint a = 2u;\n";
 
 	for (size_t invalid_declarations_index = 0;
-		 invalid_declarations_index < sizeof(invalid_declarations) / sizeof(invalid_declarations);
+		 invalid_declarations_index < DE_LENGTH_OF_ARRAY(invalid_declarations);
 		 invalid_declarations_index++)
 	{
 		std::string shader_source;

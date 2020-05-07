@@ -663,7 +663,7 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
 	// Validation
-	tcu::TextureLevel refImage (vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+	tcu::TextureLevel refImage (vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 	tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	std::vector<tcu::Vec4>	vertices;
@@ -779,7 +779,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Validation
-	tcu::TextureLevel	refImage	(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+	tcu::TextureLevel	refImage	(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 	tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	std::vector<tcu::Vec4>	vertices;
@@ -908,7 +908,7 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Validation
-	tcu::TextureLevel refImage (vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+	tcu::TextureLevel refImage (vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 	tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	for (std::vector<vk::VkDrawIndirectCommand>::const_iterator it = m_data.commands.begin(); it != m_data.commands.end(); ++it)
@@ -1090,7 +1090,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Validation
-	tcu::TextureLevel refImage (vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+	tcu::TextureLevel refImage (vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 	tcu::clear(refImage.getAccess(), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	for (std::vector<vk::VkDrawIndexedIndirectCommand>::const_iterator cmd = m_data.commands.begin(); cmd != m_data.commands.end(); ++cmd)
