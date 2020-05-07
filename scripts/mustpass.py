@@ -293,9 +293,9 @@ def genSpecXML (mustpass):
 
 		for config in package.configurations:
 			configElem = ElementTree.SubElement(packageElem, "Configuration",
-												name			= config.name,
 												caseListFile	= getCaseListFileName(package, config),
-												commandLine		= getCommandLine(config))
+												commandLine		= getCommandLine(config),
+												name			= config.name)
 
 	return mustpassElem
 
@@ -314,13 +314,13 @@ def genAndroidTestXml (mustpass):
 
 	# add in metadata option for component name
 	ElementTree.SubElement(configElement, "option", name="test-suite-tag", value="cts")
-	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="component", value="deqp")
-	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="parameter", value="not_instant_app")
-	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="parameter", value="multi_abi")
-	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="parameter", value="secondary_user")
+	ElementTree.SubElement(configElement, "option", key="component", name="config-descriptor:metadata", value="deqp")
+	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="not_instant_app")
+	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="multi_abi")
+	ElementTree.SubElement(configElement, "option", key="parameter", name="config-descriptor:metadata", value="secondary_user")
 	controllerElement = ElementTree.SubElement(configElement, "object")
-	controllerElement.set("type", "module_controller")
 	controllerElement.set("class", "com.android.tradefed.testtype.suite.module.TestFailureModuleController")
+	controllerElement.set("type", "module_controller")
 	addOptionElement(controllerElement, "screenshot-on-failure", "false")
 
 	for package in mustpass.packages:
