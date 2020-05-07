@@ -292,9 +292,9 @@ def genSpecXML (mustpass):
 
 		for config in package.configurations:
 			configElem = ElementTree.SubElement(packageElem, "Configuration",
-												name			= config.name,
 												caseListFile	= getCaseListFileName(package, config),
-												commandLine		= getCommandLine(config))
+												commandLine		= getCommandLine(config),
+												name			= config.name)
 
 	return mustpassElem
 
@@ -313,7 +313,7 @@ def genAndroidTestXml (mustpass):
 
 	# add in metadata option for component name
 	ElementTree.SubElement(configElement, "option", name="test-suite-tag", value="cts")
-	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="component", value="deqp")
+	ElementTree.SubElement(configElement, "option", key="component", name="config-descriptor:metadata",  value="deqp")
 
 	for package in mustpass.packages:
 		for config in package.configurations:
