@@ -3159,6 +3159,31 @@ void addOpUnreachableAmberTests(tcu::TestCaseGroup& group, tcu::TestContext& tes
 	}
 }
 
+tcu::TestCaseGroup* createOpArrayLengthComputeGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group		(new tcu::TestCaseGroup(testCtx, "oparraylength", "Test the OpArrayLength instruction"));
+	static const char				dataDir[]	= "spirv_assembly/instruction/compute/arraylength";
+
+	struct Case
+	{
+		string	name;
+		string	desc;
+	};
+
+	static const Case cases[] =
+	{
+		{ "array-stride-larger-than-element-size",	"Test using an unsized array with stride larger than the element size"	}
+	};
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+	{
+		const string fileName = cases[i].name + ".amber";
+		group->addChild(cts_amber::createAmberTestCase(testCtx, cases[i].name.c_str(), cases[i].desc.c_str(), dataDir, fileName));
+	}
+
+	return group.release();
+}
+
 tcu::TestCaseGroup* createOpUnreachableGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opunreachable", "Test the OpUnreachable instruction"));
@@ -20334,6 +20359,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
 	computeTests->addChild(createHlslComputeGroup(testCtx));
 	computeTests->addChild(create64bitCompareComputeGroup(testCtx));
+	computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
