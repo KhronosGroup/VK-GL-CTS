@@ -13192,7 +13192,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 	const string						opName			(op);
 	const deUint32						opIndex			= (opName == "OpCompositeInsert") ? 0
 														: (opName == "OpCompositeExtract") ? 1
-														: -1;
+														: std::numeric_limits<deUint32>::max();
 
 	const StringTemplate preMain
 	(
