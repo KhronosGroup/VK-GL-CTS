@@ -6,6 +6,8 @@ include_directories(
 set(DEQP_VK_RASTERIZATION_SRCS
 	vktRasterizationTests.cpp
 	vktRasterizationTests.hpp
+	vktRasterizationFragShaderSideEffectsTests.cpp
+	vktRasterizationFragShaderSideEffectsTests.hpp
 	)
 
 set(DEQP_VK_RASTERIZATION_LIBS

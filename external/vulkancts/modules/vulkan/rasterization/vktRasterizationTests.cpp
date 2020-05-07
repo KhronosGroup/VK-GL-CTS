@@ -26,6 +26,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktAmberTestCase.hpp"
 #include "vktRasterizationTests.hpp"
+#include "vktRasterizationFragShaderSideEffectsTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
@@ -4766,6 +4767,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 			lineContinuity->addChild(testCase);
 		}
+	}
+
+	// Fragment shader side effects.
+	{
+		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
 	}
 }
 

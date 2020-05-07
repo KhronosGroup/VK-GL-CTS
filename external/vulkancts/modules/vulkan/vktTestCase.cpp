@@ -500,6 +500,8 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 			return !!getTimelineSemaphoreFeatures().timelineSemaphore;
 		if (extension == "VK_EXT_extended_dynamic_state")
 			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
+		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
+			return !!getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation;
 
 		return true;
 	}

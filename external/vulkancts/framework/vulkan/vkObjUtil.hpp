@@ -127,7 +127,7 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 									 const VkDevice			device,
 									 const VkRenderPass		renderPass,
 									 const deUint32			attachmentCount,
-									 const VkImageView*		colorAttachments,
+									 const VkImageView*		attachmentsArray,
 									 const deUint32			width,
 									 const deUint32			height,
 									 const deUint32			layers = 1u);
