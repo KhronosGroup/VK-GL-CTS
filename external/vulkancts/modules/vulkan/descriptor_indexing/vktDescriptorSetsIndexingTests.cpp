@@ -220,9 +220,11 @@ public:
 								CommonDescriptorInstance		(Context&									context,
 																const TestParams&							testParams);
 
-	deUint32					computeAvailableDescriptorCount	(VkDescriptorType							descriptorType) const;
+	deUint32					computeAvailableDescriptorCount	(VkDescriptorType							descriptorType,
+																 bool										reserveUniformTexelBuffer) const;
 
-	Move<VkDescriptorSetLayout>	createDescriptorSetLayout		(deUint32&									descriptorCount) const;
+	Move<VkDescriptorSetLayout>	createDescriptorSetLayout		(bool										reserveUniformTexelBuffer,
+																 deUint32&									descriptorCount) const;
 
 	Move<VkDescriptorPool>		createDescriptorPool			(deUint32									descriptorCount) const;
 
@@ -528,17 +530,19 @@ CommonDescriptorInstance::CommonDescriptorInstance					(Context&								context,
 {
 }
 
-deUint32 CommonDescriptorInstance::computeAvailableDescriptorCount	(VkDescriptorType						descriptorType) const
+deUint32 CommonDescriptorInstance::computeAvailableDescriptorCount	(VkDescriptorType						descriptorType,
+																	 bool									reserveUniformTexelBuffer) const
 {
 	DE_UNREF(descriptorType);
 	const deUint32 vertexCount = m_testParams.frameResolution.width * m_testParams.frameResolution.height;
-	const deUint32 availableDescriptorsOnDevice = ut::DeviceProperties(m_context).computeMaxPerStageDescriptorCount(m_testParams.descriptorType, m_testParams.updateAfterBind);
+	const deUint32 availableDescriptorsOnDevice = ut::DeviceProperties(m_context).computeMaxPerStageDescriptorCount(m_testParams.descriptorType, m_testParams.updateAfterBind, reserveUniformTexelBuffer);
 	return deMinu32(deMinu32(vertexCount, availableDescriptorsOnDevice), MAX_DESCRIPTORS);
 }
 
-Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout (deUint32&					descriptorCount) const
+Move<VkDescriptorSetLayout>	CommonDescriptorInstance::createDescriptorSetLayout (bool						reserveUniformTexelBuffer,
+																				 deUint32&					descriptorCount) const
 {
-	descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType);
+	descriptorCount = computeAvailableDescriptorCount(m_testParams.descriptorType, reserveUniformTexelBuffer);
 
 	bool optional = (m_testParams.additionalDescriptorBinding != BINDING_Undefined) && (m_testParams.additionalDescriptorType != VK_DESCRIPTOR_TYPE_UNDEFINED);
 
@@ -1187,7 +1191,7 @@ void CommonDescriptorInstance::iterateCommandSetup					(IterateCommonVariables&	
 	variables.lowerBound				= 0;
 	variables.upperBound				= variables.vertexCount;
 
-	variables.descriptorSetLayout		= createDescriptorSetLayout(variables.availableDescriptorCount);
+	variables.descriptorSetLayout		= createDescriptorSetLayout(m_testParams.calculateInLoop, variables.availableDescriptorCount);
 	variables.validDescriptorCount		= ut::computePrimeCount(variables.availableDescriptorCount);
 	variables.descriptorPool			= createDescriptorPool(variables.availableDescriptorCount);
 	variables.descriptorSet				= createDescriptorSet(*variables.descriptorPool, *variables.descriptorSetLayout);
