@@ -688,7 +688,8 @@ DeviceProperties::DeviceProperties (const vkt::Context& testContext)
 }
 
 deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	descriptorType,
-																 bool				enableUpdateAfterBind) const
+																 bool				enableUpdateAfterBind,
+																 bool				reserveUniformTexelBuffer) const
 {
 	const VkPhysicalDeviceDescriptorIndexingProperties&		descriptorProps = descriptorIndexingProperties();
 	const VkPhysicalDeviceProperties&						deviceProps = physicalDeviceProperties();
@@ -703,7 +704,11 @@ deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	d
 	deUint32		storageImages			= 0;
 	deUint32		inputAttachments		= 0;
 	deUint32		inlineUniforms			= 0;
-	const deUint32	resources				= deviceProps.limits.maxPerStageResources;
+
+	// in_loop tests use an additional single texel buffer, which is calculated against the limits below
+	const deUint32	reservedCount			= (reserveUniformTexelBuffer ? 1u : 0u);
+
+	const deUint32	resources				= deviceProps.limits.maxPerStageResources - reservedCount;
 
 	if (enableUpdateAfterBind)
 	{
@@ -718,14 +723,14 @@ deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	d
 	}
 	else
 	{
-		samplers				= deMinu32(	deviceProps.limits.maxPerStageDescriptorSamplers,						deviceProps.limits.maxDescriptorSetSamplers);				// 1048576
-		uniformBuffers			= deMinu32(	deviceProps.limits.maxPerStageDescriptorUniformBuffers,					deviceProps.limits.maxDescriptorSetUniformBuffers);			// 15
-		uniformBuffersDynamic	= deMinu32(	deviceProps.limits.maxPerStageDescriptorUniformBuffers,					deviceProps.limits.maxDescriptorSetUniformBuffersDynamic);	// 8
-		storageBuffers			= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageBuffers,					deviceProps.limits.maxDescriptorSetStorageBuffers);			// 1048576
-		storageBuffersDynamic	= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageBuffers,					deviceProps.limits.maxDescriptorSetStorageBuffersDynamic);	// 8
-		sampledImages			= deMinu32(	deviceProps.limits.maxPerStageDescriptorSampledImages-1,				deviceProps.limits.maxDescriptorSetSampledImages-1);		// 1048576. -1 because during in_loop tests a single texel buffer is created and is calculated against this limit
-		storageImages			= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageImages,					deviceProps.limits.maxDescriptorSetStorageImages);			// 1048576
-		inputAttachments		= deMinu32(	deviceProps.limits.maxPerStageDescriptorInputAttachments,				deviceProps.limits.maxDescriptorSetInputAttachments);		// 1048576
+		samplers				= deMinu32(	deviceProps.limits.maxPerStageDescriptorSamplers,						deviceProps.limits.maxDescriptorSetSamplers);							// 1048576
+		uniformBuffers			= deMinu32(	deviceProps.limits.maxPerStageDescriptorUniformBuffers,					deviceProps.limits.maxDescriptorSetUniformBuffers);						// 15
+		uniformBuffersDynamic	= deMinu32(	deviceProps.limits.maxPerStageDescriptorUniformBuffers,					deviceProps.limits.maxDescriptorSetUniformBuffersDynamic);				// 8
+		storageBuffers			= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageBuffers,					deviceProps.limits.maxDescriptorSetStorageBuffers);						// 1048576
+		storageBuffersDynamic	= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageBuffers,					deviceProps.limits.maxDescriptorSetStorageBuffersDynamic);				// 8
+		sampledImages			= deMinu32(	deviceProps.limits.maxPerStageDescriptorSampledImages - reservedCount,	deviceProps.limits.maxDescriptorSetSampledImages - reservedCount);		// 1048576.
+		storageImages			= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageImages,					deviceProps.limits.maxDescriptorSetStorageImages);						// 1048576
+		inputAttachments		= deMinu32(	deviceProps.limits.maxPerStageDescriptorInputAttachments,				deviceProps.limits.maxDescriptorSetInputAttachments);					// 1048576
 	}
 
 	// adding arbitrary upper bound limits to restrain the size of the test ( we are testing big arrays, not the maximum size arrays )
