@@ -4665,6 +4665,56 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 				}
 			}
 
+			// Cases with non-empty framebuffers: only 2 subpasses to avoid a large number of combinations.
+			{
+				// Use one more sample count for the framebuffer attachment. It will be taken from the last item.
+				auto combs = combinations(kSampleCounts, 2 + 1);
+				for (auto& comb : combs)
+				{
+					// Framebuffer sample count.
+					const auto fbCount = comb.back();
+					comb.pop_back();
+
+					// Check sample counts actually vary between some of the subpasses.
+					std::set<vk::VkSampleCountFlagBits> uniqueVals(begin(comb), end(comb));
+					if (uniqueVals.size() < 2)
+						continue;
+
+					for (const auto flag : unusedAttachmentFlag)
+					{
+						std::ostringstream name;
+						std::ostringstream desc;
+
+						desc << "Framebuffer with sample count " << fbCount << " and subpasses with counts ";
+
+						bool first = true;
+						for (const auto& count : comb)
+						{
+							name << (first ? "" : "_") << count;
+							desc << (first ? "" : ", ") << count;
+							first = false;
+						}
+
+						name << "_fb_" << fbCount;
+
+						if (flag)
+						{
+							name << "_unused";
+							desc << " and unused attachments";
+						}
+
+						const VariableRateTestCase::TestParams params =
+						{
+							true,						//	bool						nonEmptyFramebuffer;
+							fbCount,					//	vk::VkSampleCountFlagBits	fbCount;
+							flag,						//	bool						unusedAttachment;
+							comb,						//	SampleCounts				subpassCounts;
+						};
+						variableRateGroup->addChild(new VariableRateTestCase(testCtx, name.str(), desc.str(), params));
+					}
+				}
+			}
+
 			multisampleTests->addChild(variableRateGroup.release());
 		}
 
