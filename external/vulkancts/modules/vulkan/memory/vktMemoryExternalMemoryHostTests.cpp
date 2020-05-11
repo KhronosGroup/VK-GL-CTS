@@ -425,10 +425,17 @@ tcu::TestStatus ExternalMemoryHostRenderImageTestInstance::iterate ()
 
 Move<VkImage>  ExternalMemoryHostRenderImageTestInstance::createImage (VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage)
 {
-	const VkImageCreateInfo			imageCreateInfo =
+	const vk::VkExternalMemoryImageCreateInfo	externalInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
+		DE_NULL,
+		(vk::VkExternalMemoryHandleTypeFlags)VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+	};
+
+	const VkImageCreateInfo						imageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType
-		DE_NULL,								// const void*				pNext
+		&externalInfo,							// const void*				pNext
 		0u,										// VkImageCreateFlags		flags
 		VK_IMAGE_TYPE_2D,						// VkImageType				imageType
 		format,									// VkFormat					format
@@ -948,10 +955,17 @@ void ExternalMemoryHostSynchronizationTestInstance::submitCommands (VkCommandBuf
 
 Move<VkBuffer> ExternalMemoryHostSynchronizationTestInstance::createDataBuffer (VkDeviceSize size, VkBufferUsageFlags usage)
 {
-	const VkBufferCreateInfo		dataBufferCreateInfo =
+	const vk::VkExternalMemoryBufferCreateInfo	externalInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+		DE_NULL,
+		(vk::VkExternalMemoryHandleTypeFlags)VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT
+	};
+
+	const VkBufferCreateInfo					dataBufferCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType
-		DE_NULL,								// const void*			pNext
+		&externalInfo,							// const void*			pNext
 		0,										// VkBufferCreateFlags	flag
 		size,									// VkDeviceSize			size
 		usage,									// VkBufferUsageFlags	usage
