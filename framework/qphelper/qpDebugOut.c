@@ -32,6 +32,7 @@ typedef enum MessageType_e
 {
 	MESSAGETYPE_INFO	= 0,
 	MESSAGETYPE_ERROR,
+	MESSAGETYPE_NONFATAL_ERROR,
 
 	MESSAGETYPE_LAST
 } MessageType;
@@ -53,9 +54,22 @@ void qpPrintf (const char* format, ...)
 	va_end(args);
 }
 
+void qpPrintErrorf (const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	printFmt(MESSAGETYPE_NONFATAL_ERROR, format, args);
+	va_end(args);
+}
+
 void qpPrintv (const char* format, va_list args)
 {
 	printFmt(MESSAGETYPE_INFO, format, args);
+}
+
+void qpPrintErrorv (const char* format, va_list args)
+{
+	printFmt(MESSAGETYPE_NONFATAL_ERROR, format, args);
 }
 
 void qpDief (const char* format, ...)
@@ -103,7 +117,7 @@ void printFmt (MessageType type, const char* format, va_list args)
 
 static FILE* getOutFile (MessageType type)
 {
-	if (type == MESSAGETYPE_ERROR)
+	if (type == MESSAGETYPE_ERROR || type == MESSAGETYPE_NONFATAL_ERROR)
 		return stderr;
 	else
 		return stdout;

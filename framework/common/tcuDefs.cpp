@@ -47,6 +47,14 @@ void print (const char* format, ...)
 	va_end(args);
 }
 
+void printError (const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	qpPrintErrorv(format, args);
+	va_end(args);
+}
+
 static std::string formatError (const char* message, const char* expr, const char* file, int line)
 {
 	std::ostringstream msg;

@@ -222,6 +222,9 @@ public:
 	//! Enable development-time test case validation checks
 	bool							isValidationEnabled				(void) const;
 
+	//! Print validation errors to standard error or keep them in the log only.
+	bool							printValidationErrors			(void) const;
+
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
 	bool							isOutOfMemoryTestEnabled		(void) const;
 
