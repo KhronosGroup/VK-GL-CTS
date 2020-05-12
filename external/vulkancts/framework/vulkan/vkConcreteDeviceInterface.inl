@@ -255,6 +255,18 @@ virtual VkResult			getPerformanceParameterINTEL					(VkDevice device, VkPerforma
 virtual void				setLocalDimmingAMD								(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const;
 virtual VkDeviceAddress		getBufferDeviceAddressEXT						(VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const;
 virtual void				cmdSetLineStippleEXT							(VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern) const;
+virtual void				cmdSetCullModeEXT								(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const;
+virtual void				cmdSetFrontFaceEXT								(VkCommandBuffer commandBuffer, VkFrontFace frontFace) const;
+virtual void				cmdSetPrimitiveTopologyEXT						(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const;
+virtual void				cmdSetViewportWithCountEXT						(VkCommandBuffer commandBuffer, deUint32 viewportCount, const VkViewport* pViewports) const;
+virtual void				cmdSetScissorWithCountEXT						(VkCommandBuffer commandBuffer, deUint32 scissorCount, const VkRect2D* pScissors) const;
+virtual void				cmdBindVertexBuffers2EXT						(VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const;
+virtual void				cmdSetDepthTestEnableEXT						(VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) const;
+virtual void				cmdSetDepthWriteEnableEXT						(VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) const;
+virtual void				cmdSetDepthCompareOpEXT							(VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp) const;
+virtual void				cmdSetDepthBoundsTestEnableEXT					(VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable) const;
+virtual void				cmdSetStencilTestEnableEXT						(VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable) const;
+virtual void				cmdSetStencilOpEXT								(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp) const;
 virtual void				getGeneratedCommandsMemoryRequirementsNV		(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
 virtual void				cmdPreprocessGeneratedCommandsNV				(VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo) const;
 virtual void				cmdExecuteGeneratedCommandsNV					(VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo) const;

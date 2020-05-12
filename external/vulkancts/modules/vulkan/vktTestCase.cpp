@@ -486,6 +486,8 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 	{
 		if (extension == "VK_KHR_timeline_semaphore")
 			return !!getTimelineSemaphoreFeatures().timelineSemaphore;
+		if (extension == "VK_EXT_extended_dynamic_state")
+			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
 
 		return true;
 	}

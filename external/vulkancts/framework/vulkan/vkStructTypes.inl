@@ -4292,6 +4292,13 @@ struct VkPhysicalDeviceIndexTypeUint8FeaturesEXT
 	VkBool32		indexTypeUint8;
 };
 
+struct VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		extendedDynamicState;
+};
+
 struct VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT
 {
 	VkStructureType	sType;
