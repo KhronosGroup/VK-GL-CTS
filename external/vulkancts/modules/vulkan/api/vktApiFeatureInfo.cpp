@@ -5337,8 +5337,8 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 				tiling,
 			};
 
-			deUint32										numCoreProperties	= ~0u;
-			deUint32										numExtProperties	= ~0u;
+			deUint32	numCoreProperties	= 0u;
+			deUint32	numExtProperties	= 0u;
 
 			// Query count
 			vki.getPhysicalDeviceSparseImageFormatProperties(physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.samples, imageFormatInfo.usage, imageFormatInfo.tiling, &numCoreProperties, DE_NULL);
