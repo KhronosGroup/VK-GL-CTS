@@ -732,6 +732,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_extended_dynamic_state")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -1706,6 +1710,22 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_extended_dynamic_state")
+	{
+		functions.push_back("vkCmdSetCullModeEXT");
+		functions.push_back("vkCmdSetFrontFaceEXT");
+		functions.push_back("vkCmdSetPrimitiveTopologyEXT");
+		functions.push_back("vkCmdSetViewportWithCountEXT");
+		functions.push_back("vkCmdSetScissorWithCountEXT");
+		functions.push_back("vkCmdBindVertexBuffers2EXT");
+		functions.push_back("vkCmdSetDepthTestEnableEXT");
+		functions.push_back("vkCmdSetDepthWriteEnableEXT");
+		functions.push_back("vkCmdSetDepthCompareOpEXT");
+		functions.push_back("vkCmdSetDepthBoundsTestEnableEXT");
+		functions.push_back("vkCmdSetStencilTestEnableEXT");
+		functions.push_back("vkCmdSetStencilOpEXT");
+		return;
+	}
 	if (extName == "VK_EXT_shader_demote_to_helper_invocation")
 	{
 		return;
@@ -1974,6 +1994,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_buffer_device_address",
 	"VK_EXT_line_rasterization",
 	"VK_EXT_host_query_reset",
+	"VK_EXT_extended_dynamic_state",
 	"VK_NV_device_generated_commands",
 	"VK_EXT_private_data",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
