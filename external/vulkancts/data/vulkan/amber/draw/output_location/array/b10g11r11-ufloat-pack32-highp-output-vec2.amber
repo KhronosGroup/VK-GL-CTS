@@ -1,0 +1,155 @@
+#!amber
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vert_shader GLSL
+#version 430
+layout(location = 0) in vec2 position_in;
+layout(location = 1) in vec3 color_in[3];
+layout(location = 0) smooth out vec3 color_out[3];
+
+void main()
+{
+	gl_Position = vec4(position_in, 0, 1);
+    for (int i = 0; i < 3; i++)
+        color_out[i] = color_in[i];
+}
+END
+
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) smooth in vec3 color_in[3];
+layout(location = 0) out highp vec2 frag_out[3];
+void main()
+{
+    for (int i = 0; i < 3; i++)
+        frag_out[i] = color_in[i].xy;
+}
+END
+
+SHADER vertex vert_shader_ref GLSL
+#version 430
+layout(location = 0) in vec2 position_in;
+layout(location = 1) in vec3 color_in;
+layout(location = 0) smooth out vec3 color_out;
+
+void main()
+{
+	gl_Position = vec4(position_in, 0, 1);
+    color_out = color_in;
+}
+END
+
+SHADER fragment frag_shader_ref GLSL
+#version 430
+layout(location = 0) smooth in vec3 color_in;
+layout(location = 0) out highp vec2 frag_out;
+void main()
+{
+    frag_out = color_in.xy;
+}
+END
+
+BUFFER framebuffer0 FORMAT B10G11R11_UFLOAT_PACK32
+BUFFER framebuffer1 FORMAT B10G11R11_UFLOAT_PACK32
+BUFFER framebuffer2 FORMAT B10G11R11_UFLOAT_PACK32
+
+BUFFER ref0 FORMAT B10G11R11_UFLOAT_PACK32
+BUFFER ref1 FORMAT B10G11R11_UFLOAT_PACK32
+BUFFER ref2 FORMAT B10G11R11_UFLOAT_PACK32
+
+BUFFER position DATA_TYPE vec2<float> DATA
+-1.0 -1.0
+ 1.0 -1.0
+ 1.0  1.0
+-1.0  1.0
+END
+
+BUFFER color0 DATA_TYPE R32G32B32A32_SFLOAT DATA
+1.0 0.0 0.0 1.0
+0.0 1.0 0.0 1.0
+0.0 0.0 1.0 1.0
+1.0 1.0 0.0 1.0
+END
+
+BUFFER color1 DATA_TYPE R32G32B32A32_SFLOAT DATA
+0.0 1.0 0.0 1.0
+0.0 0.0 1.0 1.0
+1.0 1.0 0.0 1.0
+1.0 0.0 0.0 1.0
+END
+
+BUFFER color2 DATA_TYPE R32G32B32A32_SFLOAT DATA
+0.0 0.0 1.0 1.0
+1.0 1.0 0.0 1.0
+1.0 0.0 0.0 1.0
+0.0 1.0 0.0 1.0
+END
+
+
+PIPELINE graphics pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA color0 LOCATION 1
+  VERTEX_DATA color1 LOCATION 2
+  VERTEX_DATA color2 LOCATION 3
+  BIND BUFFER framebuffer0 AS color LOCATION 0
+  BIND BUFFER framebuffer1 AS color LOCATION 1
+  BIND BUFFER framebuffer2 AS color LOCATION 2
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_ref0
+  ATTACH vert_shader_ref
+  ATTACH frag_shader_ref
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA color0 LOCATION 1
+  BIND BUFFER ref0 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_ref1
+  ATTACH vert_shader_ref
+  ATTACH frag_shader_ref
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA color1 LOCATION 1
+  BIND BUFFER ref1 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+PIPELINE graphics pipeline_ref2
+  ATTACH vert_shader_ref
+  ATTACH frag_shader_ref
+  VERTEX_DATA position LOCATION 0
+  VERTEX_DATA color2 LOCATION 1
+  BIND BUFFER ref2 AS color LOCATION 0
+  FRAMEBUFFER_SIZE 60 60
+END
+
+CLEAR_COLOR pipeline 0 0 0 0
+CLEAR pipeline
+RUN pipeline DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+CLEAR_COLOR pipeline_ref0 0 0 0 0
+CLEAR pipeline_ref0
+RUN pipeline_ref0 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+CLEAR_COLOR pipeline_ref1 0 0 0 0
+CLEAR pipeline_ref1
+RUN pipeline_ref1 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+CLEAR_COLOR pipeline_ref2 0 0 0 0
+CLEAR pipeline_ref2
+RUN pipeline_ref2 DRAW_ARRAY AS TRIANGLE_FAN START_IDX 0 COUNT 4
+EXPECT framebuffer0 EQ_BUFFER ref0
+EXPECT framebuffer1 EQ_BUFFER ref1
+EXPECT framebuffer2 EQ_BUFFER ref2
