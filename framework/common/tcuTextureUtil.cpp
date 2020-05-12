@@ -158,7 +158,7 @@ bool hasDepthComponent (TextureFormat::ChannelOrder order)
 	}
 }
 
-//! Get texture channel class for format
+//! Get texture channel class for format - how the values are stored (not how they are sampled)
 TextureChannelClass getTextureChannelClass (TextureFormat::ChannelType channelType)
 {
 	// make sure this table is updated if format table is updated
