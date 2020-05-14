@@ -1309,7 +1309,7 @@ tcu::TestStatus DepthBoundsRangeUnrestrictedTestInstance::verifyTestResult (bool
 			if (isFloatingPointDepthFormat(m_param.depthFormat) == VK_FALSE)
 				depth = de::min(de::max(depth, 0.0f), 1.0f);
 
-			long i = vertex - m_vertices.begin();
+			auto i = vertex - m_vertices.begin();
 
 			// Depending if the first draw call succeed, we need to know if the second draw call will render the points because the depth buffer content
 			// will determine if it passes the depth test and the depth bounds test.
@@ -1379,7 +1379,7 @@ tcu::TestStatus DepthBoundsRangeUnrestrictedTestInstance::verifyTestResult (bool
 			float scaling = (vertex->position.z() / vertex->position.w()) * (m_param.viewportMaxDepth - m_param.viewportMinDepth) + m_param.viewportMinDepth;
 			float expectedDepth = de::min(de::max(scaling, m_param.viewportMinDepth), m_param.viewportMaxDepth);
 
-			long i = vertex - m_vertices.begin();
+			auto i = vertex - m_vertices.begin();
 
 			// Depending if the first draw call succeed, we need to know if the second draw call will render the points because the depth buffer content
 			// will determine if it passes the depth test and the depth bounds test.

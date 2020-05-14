@@ -116,7 +116,7 @@ void GetProcAddressCase::init (void)
 	{
 		m_supported = eglu::getClientExtensions(m_eglTestCtx.getLibrary());
 	}
-	catch (const tcu::NotSupportedError& error)
+	catch (const tcu::NotSupportedError&)
 	{
 		// Ignore case where EGL client extensions are not supported
 		// that's okay for these tests.

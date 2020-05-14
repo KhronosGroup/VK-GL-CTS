@@ -93,7 +93,6 @@ public:
 		ValueBlock(void)
 		{
 			arrayLength = 0;
-			values.empty();
 		}
 	};
 

@@ -7176,9 +7176,6 @@ void InteractionUniformBuffers3<API>::test_shader_compilation(
 				shader_source += "    " + var_iterator->second.type +
 								 invalid_size_declarations[invalid_size_declarations_index] +
 								 " my_variable = " + array_initializers[var_type_index];
-
-				var_iterator->second.type + invalid_size_declarations[invalid_size_declarations_index] +
-					" my_variable = " + array_initializers[var_type_index];
 				shader_source += "};\n\n";
 				shader_source += shader_start;
 
@@ -7630,9 +7627,6 @@ void InteractionStorageBuffers3<API>::test_shader_compilation(
 				shader_source += "    " + var_iterator->second.type +
 								 invalid_size_declarations[invalid_size_declarations_index] +
 								 " my_variable = " + array_initializers[var_type_index];
-
-				var_iterator->second.type + invalid_size_declarations[invalid_size_declarations_index] +
-					" my_variable = " + array_initializers[var_type_index];
 				shader_source += "};\n\n";
 				shader_source += shader_start;
 

@@ -366,7 +366,7 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 
 	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
 	{
-		const vk::VkImageAspectFlagBits	aspect	= formatDesc.numPlanes > 1
+		const vk::VkImageAspectFlags	aspect	= formatDesc.numPlanes > 1
 												? vk::getPlaneAspect(planeNdx)
 												: vk::VK_IMAGE_ASPECT_COLOR_BIT;
 
@@ -419,7 +419,7 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 
 	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
 	{
-		const vk::VkImageAspectFlagBits	aspect	= formatDesc.numPlanes > 1
+		const vk::VkImageAspectFlags	aspect	= formatDesc.numPlanes > 1
 												? vk::getPlaneAspect(planeNdx)
 												: vk::VK_IMAGE_ASPECT_COLOR_BIT;
 

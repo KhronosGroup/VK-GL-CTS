@@ -1355,7 +1355,7 @@ tcu::TestStatus multiSwapchainRenderTest (Context& context, MultiSwapchainParams
 	{
 		native.reset(new NativeObjects(context, instHelper.supportedExtensions, params.wsiType, params.swapchainCount, tcu::just(desiredSize)));
 	}
-	catch(tcu::ResourceError& err)
+	catch(tcu::ResourceError&)
 	{
 		std::ostringstream msg;
 		msg << "Unable to create " << params.swapchainCount << " windows";

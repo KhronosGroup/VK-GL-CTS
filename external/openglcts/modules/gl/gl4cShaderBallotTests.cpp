@@ -198,7 +198,7 @@ const char* const* ShaderBallotBaseTestCase::ShaderPipeline::getShaderParts(glu:
 
 unsigned int ShaderBallotBaseTestCase::ShaderPipeline::getShaderPartsCount(glu::ShaderType shaderType) const
 {
-	return m_shaders[shaderType].size();
+	return static_cast<unsigned int>(m_shaders[shaderType].size());
 }
 
 void ShaderBallotBaseTestCase::ShaderPipeline::renderQuad(deqp::Context& context)

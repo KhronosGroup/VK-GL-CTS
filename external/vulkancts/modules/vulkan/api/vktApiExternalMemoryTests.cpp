@@ -4027,9 +4027,10 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 		vk::VK_IMAGE_TILING_LINEAR,
 	};
 	deUint64 mustSupportAhbUsageFlags = ahbApi->mustSupportAhbUsageFlags();
+	const size_t	one							= 1u;
 	const size_t	numOfUsageFlags				= DE_LENGTH_OF_ARRAY(usageFlags);
 	const size_t	numOfCreateFlags			= DE_LENGTH_OF_ARRAY(createFlags);
-	const size_t	numOfFlagCombos				= 1u << (numOfUsageFlags + numOfCreateFlags);
+	const size_t	numOfFlagCombos				= one << (numOfUsageFlags + numOfCreateFlags);
 	const size_t	numOfTilings				= DE_LENGTH_OF_ARRAY(tilings);
 
 	for (size_t combo = 0; combo < numOfFlagCombos; combo++)
@@ -4040,7 +4041,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 		bool					enableMaxLayerTest	= true;
 		for (size_t usageNdx = 0; usageNdx < numOfUsageFlags; usageNdx++)
 		{
-			if ((combo & (1u << usageNdx)) == 0)
+			if ((combo & (one << usageNdx)) == 0)
 				continue;
 			usage |= usageFlags[usageNdx];
 			requiredAhbUsage |= ahbApi->vkUsageToAhbUsage(usageFlags[usageNdx]);
@@ -4048,7 +4049,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 		for (size_t createFlagNdx = 0; createFlagNdx < numOfCreateFlags; createFlagNdx++)
 		{
 			const size_t	bit	= numOfUsageFlags + createFlagNdx;
-			if ((combo & (1u << bit)) == 0)
+			if ((combo & (one << bit)) == 0)
 				continue;
 			if (((createFlags[createFlagNdx] & vk::VK_IMAGE_CREATE_PROTECTED_BIT) == vk::VK_IMAGE_CREATE_PROTECTED_BIT ) &&
 				(protectedFeatures.protectedMemory == VK_FALSE))

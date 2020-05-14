@@ -524,8 +524,8 @@ tcu::TestNode::IterateResult TextureFilterAnisotropicDrawingTestCase::iterate()
 			if (!result)
 			{
 				// Stop loops
-				iTarget = m_supportedTargets.size();
-				iFormat = m_supportedInternalFormats.size();
+				iTarget = static_cast<deUint32>(m_supportedTargets.size());
+				iFormat = static_cast<deUint32>(m_supportedInternalFormats.size());
 			}
 		}
 	}

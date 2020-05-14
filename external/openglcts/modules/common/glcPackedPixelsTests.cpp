@@ -948,7 +948,7 @@ void RectangleTest::applyInitialStorageModes()
 
 void RectangleTest::swapBytes(int typeSize, std::vector<GLbyte>& dataBuffer)
 {
-	int bufferSize = dataBuffer.size();
+	int bufferSize = static_cast<int>(dataBuffer.size());
 	switch (typeSize)
 	{
 	case 1:
