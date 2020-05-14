@@ -6712,6 +6712,13 @@ void createImageFormatTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyC
 namespace android
 {
 
+void checkSupportAndroid (Context&)
+{
+#if (DE_OS != DE_OS_ANDROID)
+	TCU_THROW(NotSupportedError, "Test is only for Android");
+#endif
+}
+
 void checkExtensions (tcu::ResultCollector& results, const set<string>& allowedExtensions, const vector<VkExtensionProperties>& reportedExtensions)
 {
 	for (vector<VkExtensionProperties>::const_iterator extension = reportedExtensions.begin(); extension != reportedExtensions.end(); ++extension)
@@ -6971,9 +6978,9 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));
 
-		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::testMandatoryExtensions);
-		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::testNoUnknownExtensions);
-		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::testNoLayers);
+		addFunctionCase(androidTests.get(),	"mandatory_extensions",		"Test that all mandatory extensions are supported",	android::checkSupportAndroid,	android::testMandatoryExtensions);
+		addFunctionCase(androidTests.get(), "no_unknown_extensions",	"Test for unknown device or instance extensions",	android::checkSupportAndroid,	android::testNoUnknownExtensions);
+		addFunctionCase(androidTests.get(), "no_layers",				"Test that no layers are enumerated",				android::checkSupportAndroid,	android::testNoLayers);
 
 		infoTests->addChild(androidTests.release());
 	}
