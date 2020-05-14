@@ -26,6 +26,7 @@
 #include "vktRayQueryTraversalControlTests.hpp"
 #include "vktRayQueryAccelerationStructuresTests.hpp"
 #include "vktRayQueryWatertightnessTests.hpp"
+#include "vktRayQueryCullRayFlagsTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -45,6 +46,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createAccelerationStructuresTests(testCtx));
 	group->addChild(createAdvancedTests(testCtx));
 	group->addChild(createWatertightnessTests(testCtx));
+	group->addChild(createCullRayFlagsTests(testCtx));
 
 	return group.release();
 }

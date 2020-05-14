@@ -11,6 +11,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryAccelerationStructuresTests.hpp
 	vktRayQueryWatertightnessTests.cpp
 	vktRayQueryWatertightnessTests.hpp
+	vktRayQueryCullRayFlagsTests.cpp
+	vktRayQueryCullRayFlagsTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS
