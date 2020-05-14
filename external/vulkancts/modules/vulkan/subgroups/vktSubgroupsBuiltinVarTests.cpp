@@ -1125,8 +1125,14 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"    gl_TessLevelOuter[1] = 1.0f;\n"
 				"  }\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				#if GEOMETRY_POINT_SIZE_SUPPORTED
+				"  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+				#endif
 				"}\n";
 			*/
+
+			const string pointSizeCapability = (*caseDef.geometryPointSizeSupported ? "OpCapability TessellationPointSize\n" : "");
+
 			const string tesc =
 				"; SPIR-V\n"
 				"; Version: 1.3\n"
@@ -1135,6 +1141,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"; Schema: 0\n"
 				"OpCapability Tessellation\n"
 				"OpCapability GroupNonUniform\n"
+				+ pointSizeCapability +
 				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 				"OpMemoryModel Logical GLSL450\n"
 				"OpEntryPoint TessellationControl %4 \"main\" %15 %18 %20 %26 %36 %48 %54\n"
@@ -1205,6 +1212,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"%54 = OpVariable %53 Input\n"
 				"%56 = OpTypePointer Input %42\n"
 				"%59 = OpTypePointer Output %42\n"
+				+ (*caseDef.geometryPointSizeSupported ?
+					"%61 = OpTypePointer Input %32\n"
+					"%62 = OpTypePointer Output %32\n"
+					"%63 = OpConstant %12 1\n" : "") +
 				"%4 = OpFunction %2 None %3\n"
 				"%5 = OpLabel\n"
 				"%16 = OpLoad %12 %15\n"
@@ -1230,6 +1241,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"%58 = OpLoad %42 %57\n"
 				"%60 = OpAccessChain %59 %48 %49 %13\n"
 				"OpStore %60 %58\n"
+				+ (*caseDef.geometryPointSizeSupported ?
+					"%64 = OpAccessChain %61 %54 %49 %63\n"
+					"%65 = OpLoad %32 %64\n"
+					"%66 = OpAccessChain %62 %48 %49 %63\n"
+					"OpStore %66 %65\n" : "") +
 				"OpReturn\n"
 				"OpFunctionEnd\n";
 				programCollection.spirvAsmSources.add("tesc") << tesc << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
@@ -1250,8 +1266,14 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, 0, 0);\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+				#if GEOMETRY_POINT_SIZE_SUPPORTED
+				"  gl_PointSize = gl_in[0].gl_PointSize;\n"
+				#endif
 				"}\n";
 			*/
+
+			const string pointSizeCapability = (*caseDef.geometryPointSizeSupported ? "OpCapability TessellationPointSize\n" : "");
+
 			const string tese =
 				"; SPIR - V\n"
 				"; Version: 1.3\n"
@@ -1260,6 +1282,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"; Schema: 0\n"
 				"OpCapability Tessellation\n"
 				"OpCapability GroupNonUniform\n"
+				+ pointSizeCapability +
 				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 				"OpMemoryModel Logical GLSL450\n"
 				"OpEntryPoint TessellationEvaluation %4 \"main\" %15 %23 %33 %35 %48 %53\n"
@@ -1329,6 +1352,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"%54 = OpTypePointer Input %43\n"
 				"%61 = OpConstant %20 2\n"
 				"%65 = OpTypePointer Output %43\n"
+				+ (*caseDef.geometryPointSizeSupported ?
+					"%67 = OpTypePointer Input %20\n"
+					"%68 = OpTypePointer Output %20\n"
+					"%69 = OpConstant %12 1\n" : "") +
 				"%4 = OpFunction %2 None %3\n"
 				"%5 = OpLabel\n"
 				"%41 = OpVariable %40 Function\n"
@@ -1357,6 +1384,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"%64 = OpFAdd %43 %56 %63\n"
 				"%66 = OpAccessChain %65 %48 %13\n"
 				"OpStore %66 %64\n"
+				+ (*caseDef.geometryPointSizeSupported ?
+					"%70 = OpAccessChain %67 %53 %13 %69\n"
+					"%71 = OpLoad %20 %70\n"
+					"%72 = OpAccessChain %68 %48 %69\n"
+					"OpStore %72 %71\n" : "") +
 				"OpReturn\n"
 				"OpFunctionEnd\n";
 				programCollection.spirvAsmSources.add("tese") << tese << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
@@ -1378,10 +1410,16 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				"  result[gl_PrimitiveIDIn] = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, 0, 0);\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
+				#if GEOMETRY_POINT_SIZE_SUPPORTED
+				"  gl_PointSize = gl_in[0].gl_PointSize;\n"
+				#endif
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";
 			*/
+
+			const string pointSizeCapability = (*caseDef.geometryPointSizeSupported ? "OpCapability GeometryPointSize\n" : "");
+
 			const string geometry =
 			"; SPIR-V\n"
 			"; Version: 1.3\n"
@@ -1390,6 +1428,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"; Schema: 0\n"
 			"OpCapability Geometry\n"
 			"OpCapability GroupNonUniform\n"
+			+ pointSizeCapability +
 			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"OpMemoryModel Logical GLSL450\n"
 			"OpEntryPoint Geometry %4 \"main\" %15 %18 %20 %32 %36\n"
@@ -1449,6 +1488,10 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"%36 = OpVariable %35 Input\n"
 			"%37 = OpTypePointer Input %27\n"
 			"%40 = OpTypePointer Output %27\n"
+			+ (*caseDef.geometryPointSizeSupported ?
+				"%42 = OpTypePointer Input %26\n"
+				"%43 = OpTypePointer Output %26\n"
+				"%44 = OpConstant %12 1\n" : "") +
 			"%4 = OpFunction %2 None %3\n"
 			"%5 = OpLabel\n"
 			"%16 = OpLoad %12 %15\n"
@@ -1461,10 +1504,16 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"%39 = OpLoad %27 %38\n"
 			"%41 = OpAccessChain %40 %32 %13\n"
 			"OpStore %41 %39\n"
+			+ (*caseDef.geometryPointSizeSupported ?
+				"%45 = OpAccessChain %42 %36 %13 %44\n"
+				"%46 = OpLoad %26 %45\n"
+				"%47 = OpAccessChain %43 %32 %44\n"
+				"OpStore %47 %46\n" : "") +
 			"OpEmitVertex\n"
 			"OpEndPrimitive\n"
 			"OpReturn\n"
 			"OpFunctionEnd\n";
+
 			addGeometryShadersFromTemplate(geometry, SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3), programCollection.spirvAsmSources);
 		}
 

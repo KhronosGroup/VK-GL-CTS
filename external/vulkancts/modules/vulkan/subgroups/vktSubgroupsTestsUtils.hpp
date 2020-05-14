@@ -117,6 +117,7 @@ void initStdPrograms(	vk::SourceCollections&			programCollection,
 								const vk::ShaderBuildOptions&	buildOptions,
 								vk::VkShaderStageFlags			shaderStage,
 								vk::VkFormat					format,
+								bool							gsPointSize,
 								std::string						extHeader,
 								std::string						testSrc,
 								std::string						helperStr);

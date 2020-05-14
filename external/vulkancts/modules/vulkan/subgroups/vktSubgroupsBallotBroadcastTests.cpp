@@ -239,7 +239,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	std::string testSrc = getTestSrc(caseDef);
 	std::string helperStr = getHelperFunctionARB(caseDef);
 
-	subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, extHeader, testSrc, helperStr);
+	subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, *caseDef.geometryPointSizeSupported, extHeader, testSrc, helperStr);
 }
 
 void supportedCheck (Context& context, CaseDefinition caseDef)

@@ -268,6 +268,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< source
 			<< "  out_color[gl_InvocationID] = float(result);"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "")
 			<< "}\n";
 
 		programCollection.glslSources.add("tesc")
@@ -295,6 +296,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< source
 			<< "  out_color = float(result);\n"
 			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
 			<< "}\n";
 
 		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
@@ -488,6 +490,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"    gl_TessLevelOuter[1] = 1.0f;\n"
 				"  }\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				+ (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "") +
 				"}\n";
 
 			programCollection.glslSources.add("tesc")
@@ -517,6 +520,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  res[offset] = result;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+				+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
 				"}\n";
 
 			programCollection.glslSources.add("tese")
@@ -546,6 +550,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				+ source +
 				"  res[offset] = result;\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
+				+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";

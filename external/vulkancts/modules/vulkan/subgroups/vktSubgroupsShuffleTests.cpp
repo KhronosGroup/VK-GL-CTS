@@ -236,6 +236,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< testSource
 			<< "  out_color[gl_InvocationID] = temp_res;\n"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "")
 			<< "}\n";
 
 		programCollection.glslSources.add("tesc")
@@ -266,6 +267,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< testSource
 			<< "  out_color = temp_res;\n"
 			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
 			<< "}\n";
 
 		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
@@ -363,6 +365,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"    gl_TessLevelOuter[1] = 1.0f;\n"
 				"  }\n"
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+				+ (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "") +
 				"}\n";
 
 			programCollection.glslSources.add("tesc")
@@ -385,6 +388,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = temp_res;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+				+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
 				"}\n";
 
 			programCollection.glslSources.add("tese")
@@ -407,6 +411,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				+ testSource +
 				"  result[gl_PrimitiveIDIn] = temp_res;\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
+				+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";
