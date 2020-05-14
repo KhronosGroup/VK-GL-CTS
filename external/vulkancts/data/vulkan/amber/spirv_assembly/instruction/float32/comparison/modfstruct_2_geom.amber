@@ -1,0 +1,424 @@
+#!amber
+
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A geometry shader test for ModfStruct.
+
+DEVICE_FEATURE geometryShader
+
+# SHADER vertex vert_shader GLSL
+# #version 430
+# precision highp float;
+#
+# const uint ndp = 1296;
+# const uint ndpSqrt = uint(sqrt(ndp));
+# const float halfGridElementSize = 1.0 / float(ndpSqrt);
+#
+# layout (location = 0) in vec2 position;
+# layout (location = 0) flat out uint ndx_out;
+#
+# void main ()
+# {
+#     uint xcoord = uint(ndpSqrt * ((position.x + halfGridElementSize + 1) / 2) - 1);
+#     uint ycoord = uint(ndpSqrt * ((position.y + halfGridElementSize + 1) / 2) - 1);
+#     ndx_out = xcoord + ycoord * ndpSqrt;
+#
+#     gl_Position = vec4(position, 0, 1);
+#
+#     return;
+# }
+# END
+
+SHADER vertex vert_shader SPIRV-ASM
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %position %ndx_out %_
+               OpDecorate %position Location 0
+               OpDecorate %ndx_out Flat
+               OpDecorate %ndx_out Location 0
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+   %position = OpVariable %_ptr_Input_v2float Input
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+    %float_1 = OpConstant %float 1
+     %uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+    %ndx_out = OpVariable %_ptr_Output_uint Output
+    %uint_36 = OpConstant %uint 36
+    %v4float = OpTypeVector %float 4
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_0 = OpConstant %float 0
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%float_1_02777779 = OpConstant %float 1.02777779
+   %float_18 = OpConstant %float 18
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %_ptr_Input_float %position %uint_0
+         %17 = OpLoad %float %16
+         %21 = OpFAdd %float %17 %float_1_02777779
+         %24 = OpFMul %float %21 %float_18
+         %25 = OpFSub %float %24 %float_1
+         %26 = OpConvertFToU %uint %25
+         %29 = OpAccessChain %_ptr_Input_float %position %uint_1
+         %30 = OpLoad %float %29
+         %32 = OpFAdd %float %30 %float_1_02777779
+         %34 = OpFMul %float %32 %float_18
+         %35 = OpFSub %float %34 %float_1
+         %36 = OpConvertFToU %uint %35
+         %42 = OpIMul %uint %36 %uint_36
+         %43 = OpIAdd %uint %26 %42
+               OpStore %ndx_out %43
+         %51 = OpLoad %v2float %position
+         %53 = OpCompositeExtract %float %51 0
+         %54 = OpCompositeExtract %float %51 1
+         %55 = OpCompositeConstruct %v4float %53 %54 %float_0 %float_1
+         %57 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %57 %55
+               OpReturn
+               OpFunctionEnd
+END
+
+# SHADER geometry geom_shader GLSL
+# #version 430
+# precision highp float;
+#
+# const uint ndp = 1296;
+#
+# layout(set = 0, binding = 0) readonly buffer block0 {
+#     uvec2 in_values[ndp];
+# };
+#
+# layout (triangles) in;
+# layout (triangle_strip, max_vertices = 3) out;
+#
+# layout (location = 0) flat in uint ndx_in[];
+# layout (location = 0) flat out vec2 modf_x_out;
+# layout (location = 1) flat out vec2 modf_i_out;
+# layout (location = 2) flat out vec2 modfStruct_x_out;
+# layout (location = 3) flat out vec2 modfStruct_i_out;
+#
+# struct modfStructType
+# {
+#     vec2 x;
+#     vec2 i;
+# };
+#
+# // Replaced with native function in SPIR-V.
+# modfStructType modfStruct (vec2 orig)
+# {
+#     vec2 x, i;
+#     x = modf(orig, i);
+#     modfStructType res = { x, i };
+#     return res;
+# }
+#
+# void main ()
+# {
+#     for (int vertex = 0; vertex < 3; vertex++)
+#     {
+#         uvec2 in_uint = in_values[ndx_in[vertex]];
+#         vec2 in_float = uintBitsToFloat(in_uint);
+#         vec2 x, i;
+#         modfStructType res;
+#
+#         x = modf(in_float, i);
+#         res = modfStruct(in_float);
+#
+#         modf_x_out = x;
+#         modf_i_out = i;
+#         modfStruct_x_out = res.x;
+#         modfStruct_i_out = res.i;
+#
+#         gl_Position = gl_in[vertex].gl_Position;
+#         EmitVertex();
+#     }
+#
+#     EndPrimitive();
+# }
+# END
+
+SHADER geometry geom_shader SPIRV-ASM
+               OpCapability Geometry
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Geometry %main "main" %ndx_in %modf_x_out %modf_i_out %modfStruct_x_out %modfStruct_i_out %__0 %gl_in
+               OpExecutionMode %main Triangles
+               OpExecutionMode %main Invocations 1
+               OpExecutionMode %main OutputTriangleStrip
+               OpExecutionMode %main OutputVertices 3
+               OpDecorate %_arr_v2uint_uint_1296 ArrayStride 8
+               OpMemberDecorate %block0 0 NonWritable
+               OpMemberDecorate %block0 0 Offset 0
+               OpDecorate %block0 BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %ndx_in Flat
+               OpDecorate %ndx_in Location 0
+               OpDecorate %modf_x_out Flat
+               OpDecorate %modf_x_out Location 0
+               OpDecorate %modf_i_out Flat
+               OpDecorate %modf_i_out Location 1
+               OpDecorate %modfStruct_x_out Flat
+               OpDecorate %modfStruct_x_out Location 2
+               OpDecorate %modfStruct_i_out Flat
+               OpDecorate %modfStruct_i_out Location 3
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex Block
+               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex_0 Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+%modfStructType = OpTypeStruct %v2float %v2float
+         %10 = OpTypeFunction %modfStructType %_ptr_Function_v2float
+%_ptr_Function_modfStructType = OpTypePointer Function %modfStructType
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+      %int_3 = OpConstant %int 3
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %uint_1296 = OpConstant %uint 1296
+%_arr_v2uint_uint_1296 = OpTypeArray %v2uint %uint_1296
+     %block0 = OpTypeStruct %_arr_v2uint_uint_1296
+%_ptr_Uniform_block0 = OpTypePointer Uniform %block0
+          %_ = OpVariable %_ptr_Uniform_block0 Uniform
+     %uint_3 = OpConstant %uint 3
+%_arr_uint_uint_3 = OpTypeArray %uint %uint_3
+%_ptr_Input__arr_uint_uint_3 = OpTypePointer Input %_arr_uint_uint_3
+     %ndx_in = OpVariable %_ptr_Input__arr_uint_uint_3 Input
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_ptr_Uniform_v2uint = OpTypePointer Uniform %v2uint
+%_ptr_Output_v2float = OpTypePointer Output %v2float
+ %modf_x_out = OpVariable %_ptr_Output_v2float Output
+ %modf_i_out = OpVariable %_ptr_Output_v2float Output
+%modfStruct_x_out = OpVariable %_ptr_Output_v2float Output
+%modfStruct_i_out = OpVariable %_ptr_Output_v2float Output
+      %int_1 = OpConstant %int 1
+    %v4float = OpTypeVector %float 4
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+        %__0 = OpVariable %_ptr_Output_gl_PerVertex Output
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_arr_gl_PerVertex_0_uint_3 = OpTypeArray %gl_PerVertex_0 %uint_3
+%_ptr_Input__arr_gl_PerVertex_0_uint_3 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_3
+      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_3 Input
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+     %vertex = OpVariable %_ptr_Function_int Function
+    %in_uint = OpVariable %_ptr_Function_v2uint Function
+   %in_float = OpVariable %_ptr_Function_v2float Function
+        %x_0 = OpVariable %_ptr_Function_v2float Function
+        %i_0 = OpVariable %_ptr_Function_v2float Function
+      %res_0 = OpVariable %_ptr_Function_modfStructType Function
+               OpStore %vertex %int_0
+               OpBranch %30
+         %30 = OpLabel
+               OpLoopMerge %32 %33 None
+               OpBranch %34
+         %34 = OpLabel
+         %35 = OpLoad %int %vertex
+         %38 = OpSLessThan %bool %35 %int_3
+               OpBranchConditional %38 %31 %32
+         %31 = OpLabel
+         %52 = OpLoad %int %vertex
+         %54 = OpAccessChain %_ptr_Input_uint %ndx_in %52
+         %55 = OpLoad %uint %54
+         %57 = OpAccessChain %_ptr_Uniform_v2uint %_ %int_0 %55
+         %58 = OpLoad %v2uint %57
+               OpStore %in_uint %58
+         %60 = OpLoad %v2uint %in_uint
+         %61 = OpBitcast %v2float %60
+               OpStore %in_float %61
+         %63 = OpLoad %v2float %in_float
+         %65 = OpExtInst %v2float %1 Modf %63 %i_0
+               OpStore %x_0 %65
+         %68 = OpLoad %v2float %in_float
+         %69 = OpExtInst %modfStructType %1 ModfStruct %68
+               OpStore %res_0 %69
+         %72 = OpLoad %v2float %x_0
+               OpStore %modf_x_out %72
+         %74 = OpLoad %v2float %i_0
+               OpStore %modf_i_out %74
+         %76 = OpAccessChain %_ptr_Function_v2float %res_0 %int_0
+         %77 = OpLoad %v2float %76
+               OpStore %modfStruct_x_out %77
+         %80 = OpAccessChain %_ptr_Function_v2float %res_0 %int_1
+         %81 = OpLoad %v2float %80
+               OpStore %modfStruct_i_out %81
+         %92 = OpLoad %int %vertex
+         %94 = OpAccessChain %_ptr_Input_v4float %gl_in %92 %int_0
+         %95 = OpLoad %v4float %94
+         %97 = OpAccessChain %_ptr_Output_v4float %__0 %int_0
+               OpStore %97 %95
+               OpEmitVertex
+               OpBranch %33
+         %33 = OpLabel
+         %98 = OpLoad %int %vertex
+         %99 = OpIAdd %int %98 %int_1
+               OpStore %vertex %99
+               OpBranch %30
+         %32 = OpLabel
+               OpEndPrimitive
+               OpReturn
+               OpFunctionEnd
+END
+
+# SHADER fragment frag_shader GLSL
+# #version 430
+# precision highp float;
+#
+# layout (location = 0) flat in vec2 modf_x_in;
+# layout (location = 1) flat in vec2 modf_i_in;
+# layout (location = 2) flat in vec2 modfStruct_x_in;
+# layout (location = 3) flat in vec2 modfStruct_i_in;
+#
+# layout (location = 0) out vec4 modf_x_out;
+# layout (location = 1) out vec4 modf_i_out;
+# layout (location = 2) out vec4 modfStruct_x_out;
+# layout (location = 3) out vec4 modfStruct_i_out;
+#
+# const vec4 clear_value = vec4(0.0, 0.0, 0.0, 1.0);
+#
+# void main ()
+# {
+#     modf_x_out = clear_value;
+#     modf_i_out = clear_value;
+#     modfStruct_x_out = clear_value;
+#     modfStruct_i_out = clear_value;
+#     modf_x_out.rg = modf_x_in;
+#     modf_i_out.rg = modf_i_in;
+#     modfStruct_x_out.rg = modfStruct_x_in;
+#     modfStruct_i_out.rg = modfStruct_i_in;
+# }
+# END
+
+SHADER fragment frag_shader SPIRV-ASM
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %modf_x_out %modf_i_out %modfStruct_x_out %modfStruct_i_out %modf_x_in %modf_i_in %modfStruct_x_in %modfStruct_i_in
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %modf_x_out Location 0
+               OpDecorate %modf_i_out Location 1
+               OpDecorate %modfStruct_x_out Location 2
+               OpDecorate %modfStruct_i_out Location 3
+               OpDecorate %modf_x_in Flat
+               OpDecorate %modf_x_in Location 0
+               OpDecorate %modf_i_in Flat
+               OpDecorate %modf_i_in Location 1
+               OpDecorate %modfStruct_x_in Flat
+               OpDecorate %modfStruct_x_in Location 2
+               OpDecorate %modfStruct_i_in Flat
+               OpDecorate %modfStruct_i_in Location 3
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+ %modf_x_out = OpVariable %_ptr_Output_v4float Output
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+         %12 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
+ %modf_i_out = OpVariable %_ptr_Output_v4float Output
+%modfStruct_x_out = OpVariable %_ptr_Output_v4float Output
+%modfStruct_i_out = OpVariable %_ptr_Output_v4float Output
+    %v2float = OpTypeVector %float 2
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+  %modf_x_in = OpVariable %_ptr_Input_v2float Input
+  %modf_i_in = OpVariable %_ptr_Input_v2float Input
+%modfStruct_x_in = OpVariable %_ptr_Input_v2float Input
+%modfStruct_i_in = OpVariable %_ptr_Input_v2float Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %modf_x_out %12
+               OpStore %modf_i_out %12
+               OpStore %modfStruct_x_out %12
+               OpStore %modfStruct_i_out %12
+         %19 = OpLoad %v2float %modf_x_in
+         %20 = OpLoad %v4float %modf_x_out
+         %21 = OpVectorShuffle %v4float %20 %19 4 5 2 3
+               OpStore %modf_x_out %21
+         %23 = OpLoad %v2float %modf_i_in
+         %24 = OpLoad %v4float %modf_i_out
+         %25 = OpVectorShuffle %v4float %24 %23 4 5 2 3
+               OpStore %modf_i_out %25
+         %27 = OpLoad %v2float %modfStruct_x_in
+         %28 = OpLoad %v4float %modfStruct_x_out
+         %29 = OpVectorShuffle %v4float %28 %27 4 5 2 3
+               OpStore %modfStruct_x_out %29
+         %31 = OpLoad %v2float %modfStruct_i_in
+         %32 = OpLoad %v4float %modfStruct_i_out
+         %33 = OpVectorShuffle %v4float %32 %31 4 5 2 3
+               OpStore %modfStruct_i_out %33
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER buf_in DATA_TYPE uint32 SIZE 1296 FILE TEXT input.txt
+BUFFER vertices DATA_TYPE vec2<float> SIZE 7776 FILE TEXT grid_vertices.txt
+
+BUFFER modf_x FORMAT R32G32B32A32_SFLOAT
+BUFFER modf_i FORMAT R32G32B32A32_SFLOAT
+BUFFER modfStruct_x FORMAT R32G32B32A32_SFLOAT
+BUFFER modfStruct_i FORMAT R32G32B32A32_SFLOAT
+
+PIPELINE graphics test_pipeline
+    FRAMEBUFFER_SIZE 144 144
+
+    ATTACH vert_shader
+    ATTACH geom_shader
+    ATTACH frag_shader
+
+    VERTEX_DATA vertices LOCATION 0
+
+    BIND BUFFER buf_in AS storage DESCRIPTOR_SET 0 BINDING 0
+    BIND BUFFER modf_x AS color LOCATION 0
+    BIND BUFFER modf_i AS color LOCATION 1
+    BIND BUFFER modfStruct_x AS color LOCATION 2
+    BIND BUFFER modfStruct_i AS color LOCATION 3
+END
+
+RUN test_pipeline DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 7776
+
+EXPECT modf_x EQ_BUFFER modfStruct_x
+EXPECT modf_i EQ_BUFFER modfStruct_i
