@@ -18730,6 +18730,84 @@ tcu::TestCaseGroup* createFloat16ArithmeticSet (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+struct ComparisonCase
+{
+	string name;
+	string desc;
+};
+
+template<size_t C>
+tcu::TestCaseGroup* createFloat32ComparisonComputeSet (tcu::TestContext& testCtx)
+{
+	const string					testGroupName	("comparison_" + de::toString(C));
+	de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 32 comparison tests"));
+	const char*						dataDir			= "spirv_assembly/instruction/float32/comparison";
+
+	const ComparisonCase			amberTests[]	=
+	{
+		{ "modfstruct",	"modf and modfStruct" }
+	};
+
+	for (ComparisonCase test : amberTests)
+	{
+		const string caseDesc ("Compare output of " + test.desc);
+		const string fileName (test.name + "_" + de::toString(C) + "_comp.amber");
+
+		testGroup->addChild(cts_amber::createAmberTestCase(testCtx,
+														   test.name.c_str(),
+														   caseDesc.c_str(),
+														   dataDir,
+														   fileName));
+	}
+
+	return testGroup.release();
+}
+
+struct ShaderStage
+{
+	string			name;
+	vector<string>	requirement;
+};
+
+template<size_t C>
+tcu::TestCaseGroup* createFloat32ComparisonGraphicsSet (tcu::TestContext& testCtx)
+{
+	const string					testGroupName	("comparison_" + de::toString(C));
+	de::MovePtr<tcu::TestCaseGroup>	testGroup		(new tcu::TestCaseGroup(testCtx, testGroupName.c_str(), "Float 32 comparison tests"));
+	const char*						dataDir			= "spirv_assembly/instruction/float32/comparison";
+
+	const ShaderStage				stages[]		=
+	{
+		{ "vert", vector<string>(0) },
+		{ "tesc", vector<string>(1, "Features.tessellationShader") },
+		{ "tese", vector<string>(1, "Features.tessellationShader") },
+		{ "geom", vector<string>(1, "Features.geometryShader") },
+		{ "frag", vector<string>(0) }
+	};
+
+	const ComparisonCase			amberTests[]	=
+	{
+		{ "modfstruct",	"modf and modfStruct" }
+	};
+
+	for (ComparisonCase test : amberTests)
+	for (ShaderStage stage : stages)
+	{
+		const string caseName (test.name + "_" + stage.name);
+		const string caseDesc ("Compare output of " + test.desc);
+		const string fileName (test.name + "_" + de::toString(C) + "_" + stage.name + ".amber");
+
+		testGroup->addChild(cts_amber::createAmberTestCase(testCtx,
+														   caseName.c_str(),
+														   caseDesc.c_str(),
+														   dataDir,
+														   fileName,
+														   stage.requirement));
+	}
+
+	return testGroup.release();
+}
+
 const string getNumberTypeName (const NumberType type)
 {
 	if (type == NUMBERTYPE_INT32)
@@ -19549,6 +19627,18 @@ tcu::TestCaseGroup* createFloat16Tests (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createFloat32Tests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "float32", "Float 32 tests"));
+
+	testGroup->addChild(createFloat32ComparisonGraphicsSet<1>(testCtx));
+	testGroup->addChild(createFloat32ComparisonGraphicsSet<2>(testCtx));
+	testGroup->addChild(createFloat32ComparisonGraphicsSet<3>(testCtx));
+	testGroup->addChild(createFloat32ComparisonGraphicsSet<4>(testCtx));
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createFloat16Group (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
@@ -19568,6 +19658,18 @@ tcu::TestCaseGroup* createFloat16Group (tcu::TestContext& testCtx)
 	testGroup->addChild(createFloat16ArithmeticSet<2, ComputeShaderSpec>(testCtx));
 	testGroup->addChild(createFloat16ArithmeticSet<3, ComputeShaderSpec>(testCtx));
 	testGroup->addChild(createFloat16ArithmeticSet<4, ComputeShaderSpec>(testCtx));
+
+	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createFloat32Group (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "float32", "Float 32 tests"));
+
+	testGroup->addChild(createFloat32ComparisonComputeSet<1>(testCtx));
+	testGroup->addChild(createFloat32ComparisonComputeSet<2>(testCtx));
+	testGroup->addChild(createFloat32ComparisonComputeSet<3>(testCtx));
+	testGroup->addChild(createFloat32ComparisonComputeSet<4>(testCtx));
 
 	return testGroup.release();
 }
@@ -20326,6 +20428,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpMemberNameGroup(testCtx));
 	computeTests->addChild(createPointerParameterComputeGroup(testCtx));
 	computeTests->addChild(createFloat16Group(testCtx));
+	computeTests->addChild(createFloat32Group(testCtx));
 	computeTests->addChild(createBoolGroup(testCtx));
 	computeTests->addChild(createWorkgroupMemoryComputeGroup(testCtx));
 	computeTests->addChild(createSpirvIdsAbuseGroup(testCtx));
@@ -20395,6 +20498,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createPointerParameterGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVaryingNameGraphicsGroup(testCtx));
 	graphicsTests->addChild(createFloat16Tests(testCtx));
+	graphicsTests->addChild(createFloat32Tests(testCtx));
 	graphicsTests->addChild(createSpirvIdsAbuseTests(testCtx));
 	graphicsTests->addChild(create64bitCompareGraphicsGroup(testCtx));
 
