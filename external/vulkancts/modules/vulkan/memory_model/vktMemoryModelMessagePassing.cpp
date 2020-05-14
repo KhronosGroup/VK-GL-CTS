@@ -1590,7 +1590,13 @@ tcu::TestStatus MemoryModelTestInstance::iterate (void)
 		}
 
 		if (x == NUM_SUBMITS - 1)
+		{
 			vk.cmdCopyBuffer(*cmdBuffer, **buffers[2], **copyBuffer, 1, &copyParams);
+			memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			memBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
+		}
 
 		endCommandBuffer(vk, *cmdBuffer);
 
