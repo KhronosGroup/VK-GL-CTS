@@ -1403,6 +1403,7 @@ const char* getVendorIdName (VkVendorId value)
 		case VK_VENDOR_ID_VSI:		return "VK_VENDOR_ID_VSI";
 		case VK_VENDOR_ID_KAZAN:	return "VK_VENDOR_ID_KAZAN";
 		case VK_VENDOR_ID_CODEPLAY:	return "VK_VENDOR_ID_CODEPLAY";
+		case VK_VENDOR_ID_MESA:		return "VK_VENDOR_ID_MESA";
 		case VK_VENDOR_ID_MAX_ENUM:	return "VK_VENDOR_ID_MAX_ENUM";
 		default:					return DE_NULL;
 	}
@@ -1493,6 +1494,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_GOOGLE_SWIFTSHADER:			return "VK_DRIVER_ID_GOOGLE_SWIFTSHADER";
 		case VK_DRIVER_ID_GGP_PROPRIETARY:				return "VK_DRIVER_ID_GGP_PROPRIETARY";
 		case VK_DRIVER_ID_BROADCOM_PROPRIETARY:			return "VK_DRIVER_ID_BROADCOM_PROPRIETARY";
+		case VK_DRIVER_ID_MESA_LLVMPIPE:				return "VK_DRIVER_ID_MESA_LLVMPIPE";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}
