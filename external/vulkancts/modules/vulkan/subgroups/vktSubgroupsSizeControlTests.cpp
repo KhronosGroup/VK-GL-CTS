@@ -838,7 +838,8 @@ tcu::TestStatus testRequireSubgroupSize (Context& context, const CaseDefinition 
 
 		deUint32 requiredSubgroupSize = getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
 
-		const deUint32 maxTotalLocalSize = deMin32(requiredSubgroupSize * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
+		const deUint64 maxSubgroupLimitSize = (deUint64)requiredSubgroupSize * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups;
+		const deUint32 maxTotalLocalSize = (deUint32)std::min<deUint64>(maxSubgroupLimitSize, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
 		deUint32 localSizeX, localSizeY, localSizeZ;
 		getLocalSizes(physicalDeviceProperties, maxTotalLocalSize, localSizeX, localSizeY, localSizeZ);
 
