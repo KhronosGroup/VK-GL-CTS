@@ -30,6 +30,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vktImageTestsUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -185,7 +186,8 @@ static string getAtomicOperationShaderFuncName (const AtomicOperation op)
 	}
 }
 
-static deInt32 getOperationInitialValue (const AtomicOperation op)
+template <typename T>
+T getOperationInitialValue (const AtomicOperation op)
 {
 	switch (op)
 	{
@@ -203,7 +205,7 @@ static deInt32 getOperationInitialValue (const AtomicOperation op)
 		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return 18;
 		default:
 			DE_ASSERT(false);
-			return -1;
+			return 0xFFFFFFFF;
 	}
 }
 
@@ -212,9 +214,9 @@ static T getAtomicFuncArgument (const AtomicOperation	op,
 								const IVec3&			invocationID,
 								const IVec3&			gridSize)
 {
-	const int x = invocationID.x();
-	const int y = invocationID.y();
-	const int z = invocationID.z();
+	const T x = static_cast<T>(invocationID.x());
+	const T y = static_cast<T>(invocationID.y());
+	const T z = static_cast<T>(invocationID.z());
 
 	switch (op)
 	{
@@ -234,7 +236,7 @@ static T getAtomicFuncArgument (const AtomicOperation	op,
 			return (1-2*(x % 2))*(x*x + y*y + z*z);
 		case ATOMIC_OPERATION_EXCHANGE:
 		case ATOMIC_OPERATION_COMPARE_EXCHANGE:
-			return (z*gridSize.x() + x)*gridSize.y() + y;
+			return (z*static_cast<T>(gridSize.x()) + x)*static_cast<T>(gridSize.y()) + y;
 		default:
 			DE_ASSERT(false);
 			return -1;
@@ -309,11 +311,43 @@ static T computeBinaryAtomicOperationResult (const AtomicOperation op, const T a
 		case ATOMIC_OPERATION_OR:				return a | b;
 		case ATOMIC_OPERATION_XOR:				return a ^ b;
 		case ATOMIC_OPERATION_EXCHANGE:			return b;
-		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return (a == 18) ? b : a;
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return (a == (sizeof(T) == 8 ? 0xBEFFFFFF18 : 18)) ? b : a;
 		default:
 			DE_ASSERT(false);
 			return -1;
 	}
+}
+
+static bool isSupportedFeatureTransfer (const Context& context, const VkFormat& format)
+{
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																						context.getPhysicalDevice(), format);
+
+	return ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) &&
+			(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT));
+}
+
+//! Prepare the initial data for the image
+static void initDataForImage (const VkDevice			device,
+							  const DeviceInterface&	deviceInterface,
+							  const TextureFormat&		format,
+							  const AtomicOperation		operation,
+							  const tcu::UVec3&			gridSize,
+							  Buffer&					buffer)
+{
+	Allocation&				bufferAllocation	= buffer.getAllocation();
+	tcu::PixelBufferAccess	pixelBuffer			(format, gridSize.x(), gridSize.y(), gridSize.z(), bufferAllocation.getHostPtr());
+
+	const tcu::IVec4 initialValue(getOperationInitialValue<deInt32>(operation));
+
+	for (deUint32 z = 0; z < gridSize.z(); z++)
+	for (deUint32 y = 0; y < gridSize.y(); y++)
+	for (deUint32 x = 0; x < gridSize.x(); x++)
+	{
+		pixelBuffer.setPixel(initialValue, x, y, z);
+	}
+
+	flushAlloc(deviceInterface, device, bufferAllocation);
 }
 
 class BinaryAtomicEndResultCase : public vkt::TestCase
@@ -359,12 +393,48 @@ BinaryAtomicEndResultCase::BinaryAtomicEndResultCase (tcu::TestContext&			testCt
 
 void BinaryAtomicEndResultCase::checkSupport (Context& context) const
 {
+	const VkFormat				format				= mapTextureFormat(m_format);
+	const VkFormatFeatureFlags	texelBufferSupport	= VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT |
+																		   VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT);
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																						context.getPhysicalDevice(), format);
+
+	if ((m_imageType == IMAGE_TYPE_BUFFER) &&
+		((formatProperties.bufferFeatures & texelBufferSupport) != texelBufferSupport))
+		TCU_THROW(NotSupportedError, "STORAGE_TEXEL_BUFFER_ATOMIC is not supported");
+
 	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if (isFloatFormat(mapTextureFormat(m_format)))
+	{
+		const VkFormatFeatureFlags	requiredFormatSupport = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
+																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+
+		context.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
+		if (!context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32Atomics)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic operations not supported");
+		}
+		if ((m_operation == ATOMIC_OPERATION_ADD) && !context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32AtomicAdd)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic add not supported");
+		}
+		if ((formatProperties.optimalTilingFeatures & requiredFormatSupport) != requiredFormatSupport)
+			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
+	}
 }
 
 void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollections) const
 {
+	const VkFormat	imageFormat		= mapTextureFormat(m_format);
+	const deUint32	componentWidth	= getFormatComponentWidth(imageFormat, 0);
+	const bool		uintFormat		= isUintFormat(imageFormat);
+	const bool		intFormat		= isIntFormat(imageFormat);
+	const string	type			= (64 == componentWidth ?
+									  (uintFormat ? "uint64_t" : intFormat ? "int64_t" : "double") :
+									  (uintFormat ? "uint" : intFormat ? "int" : "float"));
+
 	if (isSpirvAtomicOperation(m_operation))
 	{
 		const CaseVariant					caseVariant{m_imageType, m_format.order, m_format.type, CaseVariant::CHECK_TYPE_END_RESULTS};
@@ -380,23 +450,25 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 	else
 	{
 		const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
-
-		const bool		uintFormat				= isUintFormat(mapTextureFormat(m_format));
-		const bool		intFormat				= isIntFormat(mapTextureFormat(m_format));
 		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
 		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 
-		const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
-												+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
+		const string	atomicArgExpr			= type + getAtomicFuncArgumentShaderStr(m_operation,
+																						"gx", "gy", "gz",
+																						IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
-		const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "") : "";
+		const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ?
+												(componentWidth == 64 ?", 820338753304": ", 18") + string(uintFormat ? "u" : "") + string(componentWidth == 64 ? "l" : "")
+												: "";
 		const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
 		const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
+		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n#extension GL_KHR_memory_scope_semantics : enable  ";
 
-		string source = versionDecl + "\n"
-						"precision highp " + shaderImageTypeStr + ";\n"
-						"\n"
+		string source = versionDecl + "\n" + extensions + "\n"
+						"precision highp " + shaderImageTypeStr + ";\n";
+
+		source +=		"\n"
 						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
 						"\n"
@@ -455,12 +527,47 @@ BinaryAtomicIntermValuesCase::BinaryAtomicIntermValuesCase (TestContext&			testC
 
 void BinaryAtomicIntermValuesCase::checkSupport (Context& context) const
 {
+	const VkFormat				format				= mapTextureFormat(m_format);
+	const VkFormatFeatureFlags	texelBufferSupport	= VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT |
+																		   VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT);
+	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
+																						context.getPhysicalDevice(), format);
+
+	if ((m_imageType == IMAGE_TYPE_BUFFER) &&
+		((formatProperties.bufferFeatures & texelBufferSupport) != texelBufferSupport))
+		TCU_THROW(NotSupportedError, "STORAGE_TEXEL_BUFFER_ATOMIC is not supported");
+
 	if (m_imageType == IMAGE_TYPE_CUBE_ARRAY)
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
+	if (isFloatFormat(mapTextureFormat(m_format)))
+	{
+		const VkFormatFeatureFlags	requiredFormatSupport = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
+																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+		context.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
+		if (!context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32Atomics)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic operations not supported");
+		}
+		if ((m_operation == ATOMIC_OPERATION_ADD) && !context.getShaderAtomicFloatFeaturesEXT().shaderImageFloat32AtomicAdd)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point image atomic add not supported");
+		}
+		if ((formatProperties.optimalTilingFeatures & requiredFormatSupport) != requiredFormatSupport)
+			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
+	}
 }
 
 void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollections) const
 {
+	const VkFormat	imageFormat = mapTextureFormat(m_format);
+	const deUint32	componentWidth	= getFormatComponentWidth(imageFormat, 0);
+	const bool		uintFormat		= isUintFormat(imageFormat);
+	const bool		intFormat		= isIntFormat(imageFormat);
+	const string	type			= (64 == componentWidth ?
+									  (uintFormat ? "uint64_t" : intFormat ? "int64_t" : "double") :
+									  (uintFormat ? "uint" : intFormat ? "int" : "float"));
+
 	if (isSpirvAtomicOperation(m_operation))
 	{
 		const CaseVariant					caseVariant{m_imageType, m_format.order, m_format.type, CaseVariant::CHECK_TYPE_INTERMEDIATE_RESULTS};
@@ -476,35 +583,38 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 	else
 	{
 		const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
-
-		const bool		uintFormat				= isUintFormat(mapTextureFormat(m_format));
-		const bool		intFormat				= isIntFormat(mapTextureFormat(m_format));
-		const string	colorVecTypeName		= string(uintFormat ? "u" : intFormat ? "i" : "") + "vec4";
+		const string	colorVecTypeName		= string(uintFormat ? "u" : intFormat ? "i" : "") + (64 == componentWidth ? "64" : "") + "vec4";
 		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
 		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 		const string	invocationCoord			= getCoordStr(m_imageType, "gx", "gy", "gz");
-		const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
-												+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
+		const string	atomicArgExpr			= type + getAtomicFuncArgumentShaderStr(m_operation,
+																						"gx", "gy", "gz",
+																						IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
-		const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "")  : "";
-		const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
+		const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ?
+												  (componentWidth == 64 ? ", 820338753304" : ", 18") + string(uintFormat ? "u" : "") + string(componentWidth == 64 ? "l" : "") :
+												  "";
+		const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) +
+												"(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
 		const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
+		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n#extension GL_KHR_memory_scope_semantics : enable  ";
 
-		string source = versionDecl + "\n"
+		string source = versionDecl + "\n" + extensions + "\n"
 						"precision highp " + shaderImageTypeStr + ";\n"
-						"\n"
-						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
-						"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
-						"\n"
-						"void main (void)\n"
-						"{\n"
-						"	int gx = int(gl_GlobalInvocationID.x);\n"
-						"	int gy = int(gl_GlobalInvocationID.y);\n"
-						"	int gz = int(gl_GlobalInvocationID.z);\n"
-						"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
-						"}\n";
+						"\n";
+
+		source +=	"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+					"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+					"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
+					"\n"
+					"void main (void)\n"
+					"{\n"
+					"	int gx = int(gl_GlobalInvocationID.x);\n"
+					"	int gy = int(gl_GlobalInvocationID.y);\n"
+					"	int gz = int(gl_GlobalInvocationID.z);\n"
+					"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
+					"}\n";
 
 		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
 	}
@@ -525,25 +635,50 @@ public:
 
 	virtual deUint32			getOutputBufferSize		 (void) const = 0;
 
-	virtual void				prepareResources		 (void) = 0;
-	virtual void				prepareDescriptors		 (void) = 0;
+	virtual void				prepareResources		 (const bool					isSupportedTransfer) = 0;
+	virtual void				prepareDescriptors		 (const bool					isTexelBuffer) = 0;
 
 	virtual void				commandsBeforeCompute	 (const VkCommandBuffer			cmdBuffer) const = 0;
-	virtual void				commandsAfterCompute	 (const VkCommandBuffer			cmdBuffer) const = 0;
+	virtual void				commandsAfterCompute	 (const VkCommandBuffer			cmdBuffer,
+														  const VkPipeline				pipeline,
+														  const VkPipelineLayout		pipelineLayout,
+														   const VkDescriptorSet		descriptorSet,
+														  const VkDeviceSize&			range,
+														  const bool					isSupportedTransfer) = 0;
 
-	virtual bool				verifyResult			 (Allocation&					outputBufferAllocation) const = 0;
+	virtual bool				verifyResult			 (Allocation&					outputBufferAllocation,
+														  const bool					is64Bit) const = 0;
 
 protected:
+
+	void						shaderFillImage			 (const VkCommandBuffer			cmdBuffer,
+														  const VkBuffer&				buffer,
+														  const VkPipeline				pipeline,
+														  const VkPipelineLayout		pipelineLayout,
+														  const VkDescriptorSet			descriptorSet,
+														  const VkDeviceSize&			range,
+														  const tcu::UVec3&				gridSize);
+
+	void						createdImageResources	(const VkFormat&				imageFormat,
+														  const bool					isSupportedTransfer);
+
 	const string				m_name;
 	const ImageType				m_imageType;
 	const tcu::UVec3			m_imageSize;
 	const TextureFormat			m_format;
 	const AtomicOperation		m_operation;
 
+	de::MovePtr<Buffer>			m_inputBuffer;
 	de::MovePtr<Buffer>			m_outputBuffer;
+	Move<VkBufferView>			m_descResultBufferView;
+	Move<VkBufferView>			m_descIntermResultsBufferView;
 	Move<VkDescriptorPool>		m_descriptorPool;
 	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
 	Move<VkDescriptorSet>		m_descriptorSet;
+
+	Move<VkDescriptorSetLayout>	m_descriptorSetLayoutNoTransfer;
+	Move<VkDescriptorPool>		m_descriptorPoolNoTransfer;
+
 	de::MovePtr<Image>			m_resultImage;
 	Move<VkImageView>			m_resultImageView;
 };
@@ -572,64 +707,89 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	Allocator&				allocator			= m_context.getDefaultAllocator();
 	const VkDeviceSize		imageSizeInBytes	= tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 	const VkDeviceSize		outBuffSizeInBytes	= getOutputBufferSize();
+	const VkFormat			imageFormat			= mapTextureFormat(m_format);
+	const bool				isSupportedTransfer	= isSupportedFeatureTransfer(m_context, imageFormat);
+	const bool				isTexelBuffer		= (m_imageType == IMAGE_TYPE_BUFFER);
 
-	const VkImageCreateInfo imageParams	=
+	if (!isTexelBuffer)
 	{
-		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
-		DE_NULL,												// const void*				pNext;
-		(m_imageType == IMAGE_TYPE_CUBE ||
-		 m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
-		 (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
-		 (VkImageCreateFlags)0u),								// VkImageCreateFlags		flags;
-		mapImageType(m_imageType),								// VkImageType				imageType;
-		mapTextureFormat(m_format),								// VkFormat					format;
-		makeExtent3D(getLayerSize(m_imageType, m_imageSize)),	// VkExtent3D				extent;
-		1u,														// deUint32					mipLevels;
-		getNumLayers(m_imageType, m_imageSize),					// deUint32					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,								// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_STORAGE_BIT |
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT,						// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,								// VkSharingMode			sharingMode;
-		0u,														// deUint32					queueFamilyIndexCount;
-		DE_NULL,												// const deUint32*			pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
-	};
-
-	//Create the image that is going to store results of atomic operations
-	m_resultImage = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, imageParams, MemoryRequirement::Any));
-
-	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
-
-	m_resultImageView = makeImageView(deviceInterface, device, m_resultImage->get(), mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange);
-
-	//Prepare the buffer with the initial data for the image
-	const Buffer inputBuffer(deviceInterface, device, allocator, makeBufferCreateInfo(imageSizeInBytes, VK_BUFFER_USAGE_TRANSFER_SRC_BIT), MemoryRequirement::HostVisible);
-
-	Allocation& inputBufferAllocation = inputBuffer.getAllocation();
-
-	//Prepare the initial data for the image
-	const tcu::IVec4 initialValue(getOperationInitialValue(m_operation));
-
-	tcu::UVec3 gridSize = getShaderGridSize(m_imageType, m_imageSize);
-	tcu::PixelBufferAccess inputPixelBuffer(m_format, gridSize.x(), gridSize.y(), gridSize.z(), inputBufferAllocation.getHostPtr());
-
-	for (deUint32 z = 0; z < gridSize.z(); z++)
-	for (deUint32 y = 0; y < gridSize.y(); y++)
-	for (deUint32 x = 0; x < gridSize.x(); x++)
-	{
-		inputPixelBuffer.setPixel(initialValue, x, y, z);
+		createdImageResources(imageFormat, isSupportedTransfer);
 	}
 
-	flushAlloc(deviceInterface, device, inputBufferAllocation);
+	tcu::UVec3			gridSize		= getShaderGridSize(m_imageType, m_imageSize);
+
+	//Prepare the buffer with the initial data for the image
+	m_inputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface,
+													device,
+													allocator,
+													makeBufferCreateInfo(imageSizeInBytes,
+																		 VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+																		 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+																		 (isTexelBuffer ? VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : VkBufferUsageFlagBits(0u))),
+													MemoryRequirement::HostVisible));
+
+	// Fill in buffer with initial data used for image.
+	initDataForImage(device, deviceInterface, m_format, m_operation, gridSize, *m_inputBuffer);
 
 	// Create a buffer to store shader output copied from result image
-	m_outputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(outBuffSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
+	m_outputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface,
+													device,
+													allocator,
+													makeBufferCreateInfo(outBuffSizeInBytes,
+																		 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+																		 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+																		 (isTexelBuffer ? VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : VkBufferUsageFlagBits(0u))),
+													MemoryRequirement::HostVisible));
 
-	prepareResources();
+	if (!isTexelBuffer)
+	{
+		prepareResources(isSupportedTransfer);
+	}
 
-	prepareDescriptors();
+	prepareDescriptors(isTexelBuffer);
+
+	Move<VkDescriptorSet>	descriptorSetFillImage;
+	Move<VkShaderModule>	shaderModuleFillImage;
+	Move<VkPipelineLayout>	pipelineLayoutFillImage;
+	Move<VkPipeline>		pipelineFillImage;
+
+	Move<VkDescriptorSet>	descriptorSetReadImage;
+	Move<VkShaderModule>	shaderModuleReadImage;
+	Move<VkPipelineLayout>	pipelineLayoutReadImage;
+	Move<VkPipeline>		pipelineReadImage;
+
+	if (!isSupportedTransfer)
+	{
+		m_descriptorSetLayoutNoTransfer =
+			DescriptorSetLayoutBuilder()
+			.addSingleBinding((isTexelBuffer ? VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE), VK_SHADER_STAGE_COMPUTE_BIT)
+			.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+			.build(deviceInterface, device);
+
+		m_descriptorPoolNoTransfer =
+			DescriptorPoolBuilder()
+			.addType((isTexelBuffer ? VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE), 2)
+			.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2)
+			.build(deviceInterface, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+
+		descriptorSetFillImage = makeDescriptorSet(deviceInterface,
+			device,
+			*m_descriptorPoolNoTransfer,
+			*m_descriptorSetLayoutNoTransfer);
+
+		descriptorSetReadImage = makeDescriptorSet(deviceInterface,
+			device,
+			*m_descriptorPoolNoTransfer,
+			*m_descriptorSetLayoutNoTransfer);
+
+		shaderModuleFillImage	= createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("fillShader"), 0);
+		pipelineLayoutFillImage	= makePipelineLayout(deviceInterface, device, *m_descriptorSetLayoutNoTransfer);
+		pipelineFillImage		= makeComputePipeline(deviceInterface, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
+
+		shaderModuleReadImage   = createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("readShader"), 0);
+		pipelineLayoutReadImage = makePipelineLayout(deviceInterface, device, *m_descriptorSetLayoutNoTransfer);
+		pipelineReadImage		= makeComputePipeline(deviceInterface, device, *pipelineLayoutFillImage, *shaderModuleReadImage);
+	}
 
 	// Create pipeline
 	const Unique<VkShaderModule>	shaderModule(createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get(m_name), 0));
@@ -642,26 +802,51 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	beginCommandBuffer(deviceInterface, *cmdBuffer);
 
+	if (!isTexelBuffer)
+	{
+		if (isSupportedTransfer)
+		{
+			const vector<VkBufferImageCopy>	bufferImageCopy(1, makeBufferImageCopy(makeExtent3D(getLayerSize(m_imageType, m_imageSize)), getNumLayers(m_imageType, m_imageSize)));
+			copyBufferToImage(deviceInterface,
+							  *cmdBuffer,
+							  *(*m_inputBuffer),
+							  imageSizeInBytes,
+							  bufferImageCopy,
+							  VK_IMAGE_ASPECT_COLOR_BIT,
+							  1,
+							  getNumLayers(m_imageType, m_imageSize), m_resultImage->get(), VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		}
+		else
+		{
+			shaderFillImage(*cmdBuffer, *(*m_inputBuffer), *pipelineFillImage, *pipelineLayoutFillImage, *descriptorSetFillImage, imageSizeInBytes, gridSize);
+		}
+		commandsBeforeCompute(*cmdBuffer);
+	}
+
 	deviceInterface.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	deviceInterface.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
 
-	const vector<VkBufferImageCopy>	bufferImageCopy(1, makeBufferImageCopy(makeExtent3D(getLayerSize(m_imageType, m_imageSize)), getNumLayers(m_imageType, m_imageSize)));
-	copyBufferToImage(deviceInterface, *cmdBuffer, *inputBuffer, imageSizeInBytes, bufferImageCopy, VK_IMAGE_ASPECT_COLOR_BIT, 1, getNumLayers(m_imageType, m_imageSize), m_resultImage->get(), VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+	deviceInterface.cmdDispatch(*cmdBuffer, NUM_INVOCATIONS_PER_PIXEL * gridSize.x(), gridSize.y(), gridSize.z());
 
-	commandsBeforeCompute(*cmdBuffer);
-
-	deviceInterface.cmdDispatch(*cmdBuffer, NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z());
-
-	commandsAfterCompute(*cmdBuffer);
+	commandsAfterCompute(*cmdBuffer,
+						 *pipelineReadImage,
+						 *pipelineLayoutReadImage,
+						 *descriptorSetReadImage,
+						 outBuffSizeInBytes,
+						 isSupportedTransfer);
 
 	const VkBufferMemoryBarrier	outputBufferPreHostReadBarrier
-		= makeBufferMemoryBarrier(	VK_ACCESS_TRANSFER_WRITE_BIT,
-									VK_ACCESS_HOST_READ_BIT,
-									m_outputBuffer->get(),
-									0ull,
-									outBuffSizeInBytes);
+		= makeBufferMemoryBarrier(((isSupportedTransfer || isTexelBuffer) ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_SHADER_WRITE_BIT),
+								  VK_ACCESS_HOST_READ_BIT,
+								  m_outputBuffer->get(),
+								  0ull,
+								  outBuffSizeInBytes);
 
-	deviceInterface.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, DE_FALSE, 0u, DE_NULL, 1u, &outputBufferPreHostReadBarrier, 0u, DE_NULL);
+	deviceInterface.cmdPipelineBarrier(*cmdBuffer,
+									   ((isSupportedTransfer || isTexelBuffer) ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT),
+									   VK_PIPELINE_STAGE_HOST_BIT,
+									   DE_FALSE, 0u, DE_NULL,
+									   1u, &outputBufferPreHostReadBarrier, 0u, DE_NULL);
 
 	endCommandBuffer(deviceInterface, *cmdBuffer);
 
@@ -671,43 +856,145 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	invalidateAlloc(deviceInterface, device, outputBufferAllocation);
 
-	if (verifyResult(outputBufferAllocation))
+	if (verifyResult(outputBufferAllocation, false))
 		return tcu::TestStatus::pass("Comparison succeeded");
 	else
 		return tcu::TestStatus::fail("Comparison failed");
+}
+
+void BinaryAtomicInstanceBase::shaderFillImage (const VkCommandBuffer	cmdBuffer,
+												const VkBuffer&			buffer,
+												const VkPipeline		pipeline,
+												const VkPipelineLayout	pipelineLayout,
+												const VkDescriptorSet	descriptorSet,
+												const VkDeviceSize&		range,
+												const tcu::UVec3&		gridSize)
+{
+	const VkDevice					device					= m_context.getDevice();
+	const DeviceInterface&			deviceInterface			= m_context.getDeviceInterface();
+	const VkDescriptorImageInfo		descResultImageInfo		= makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+	const VkDescriptorBufferInfo	descResultBufferInfo	= makeDescriptorBufferInfo(buffer, 0, range);
+	const VkImageSubresourceRange	subresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descResultImageInfo)
+		.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descResultBufferInfo)
+		.update(deviceInterface, device);
+
+	const VkImageMemoryBarrier imageBarrierPre = makeImageMemoryBarrier(0,
+																		VK_ACCESS_SHADER_WRITE_BIT,
+																		VK_IMAGE_LAYOUT_UNDEFINED,
+																		VK_IMAGE_LAYOUT_GENERAL,
+																		m_resultImage->get(),
+																		subresourceRange);
+
+	deviceInterface.cmdPipelineBarrier(	cmdBuffer,
+										VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+										VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+										(VkDependencyFlags)0,
+										0, (const VkMemoryBarrier*)DE_NULL,
+										0, (const VkBufferMemoryBarrier*)DE_NULL,
+										1, &imageBarrierPre);
+
+	deviceInterface.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+	deviceInterface.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
+
+	deviceInterface.cmdDispatch(cmdBuffer, gridSize.x(), gridSize.y(), gridSize.z());
+
+	const VkImageMemoryBarrier imageBarrierPost = makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT,
+																		 VK_ACCESS_SHADER_READ_BIT,
+																		 VK_IMAGE_LAYOUT_GENERAL,
+																		 VK_IMAGE_LAYOUT_GENERAL,
+																		 m_resultImage->get(),
+																		 subresourceRange);
+
+	deviceInterface.cmdPipelineBarrier(	cmdBuffer,
+										VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+										VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+										(VkDependencyFlags)0,
+										0, (const VkMemoryBarrier*)DE_NULL,
+										0, (const VkBufferMemoryBarrier*)DE_NULL,
+										1, &imageBarrierPost);
+}
+
+void BinaryAtomicInstanceBase::createdImageResources (const VkFormat&	imageFormat,
+													  const bool		isSupportedTransfer)
+{
+	const VkDevice			device			= m_context.getDevice();
+	const DeviceInterface&	deviceInterface	= m_context.getDeviceInterface();
+	Allocator&				allocator		= m_context.getDefaultAllocator();
+
+	const VkImageCreateInfo imageParams =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,					// VkStructureType			sType;
+		DE_NULL,												// const void*				pNext;
+		(m_imageType == IMAGE_TYPE_CUBE ||
+		 m_imageType == IMAGE_TYPE_CUBE_ARRAY ?
+		 (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT :
+		 (VkImageCreateFlags)0u),								// VkImageCreateFlags		flags;
+		mapImageType(m_imageType),								// VkImageType				imageType;
+		imageFormat,											// VkFormat					format;
+		makeExtent3D(getLayerSize(m_imageType, m_imageSize)),	// VkExtent3D				extent;
+		1u,														// deUint32					mipLevels;
+		getNumLayers(m_imageType, m_imageSize),					// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,									// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,								// VkImageTiling			tiling;
+		(VkImageUsageFlags)(isSupportedTransfer ?
+			(VK_IMAGE_USAGE_STORAGE_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT) :
+			VK_IMAGE_USAGE_STORAGE_BIT),						// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,								// VkSharingMode			sharingMode;
+		0u,														// deUint32					queueFamilyIndexCount;
+		DE_NULL,												// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,								// VkImageLayout			initialLayout;
+	};
+
+	//Create the image that is going to store results of atomic operations
+	m_resultImage = de::MovePtr<Image>(new Image(deviceInterface, device, allocator, imageParams, MemoryRequirement::Any));
+
+	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
+
+	m_resultImageView = makeImageView(deviceInterface, device, m_resultImage->get(), mapImageViewType(m_imageType), imageFormat, subresourceRange);
 }
 
 class BinaryAtomicEndResultInstance : public BinaryAtomicInstanceBase
 {
 public:
 
-						BinaryAtomicEndResultInstance  (Context&				context,
-														const string&			name,
-														const ImageType			imageType,
-														const tcu::UVec3&		imageSize,
-														const TextureFormat&	format,
-														const AtomicOperation	operation)
+						BinaryAtomicEndResultInstance  (Context&					context,
+														const string&				name,
+														const ImageType				imageType,
+														const tcu::UVec3&			imageSize,
+														const TextureFormat&		format,
+														const AtomicOperation		operation)
 							: BinaryAtomicInstanceBase(context, name, imageType, imageSize, format, operation) {}
 
 	virtual deUint32	getOutputBufferSize			   (void) const;
 
-	virtual void		prepareResources			   (void) {}
-	virtual void		prepareDescriptors			   (void);
+	virtual void		prepareResources			   (const bool					isSupportedTransfer) { DE_UNREF(isSupportedTransfer); }
+	virtual void		prepareDescriptors			   (const bool					isTexelBuffer);
 
 	virtual void		commandsBeforeCompute		   (const VkCommandBuffer) const {}
-	virtual void		commandsAfterCompute		   (const VkCommandBuffer	cmdBuffer) const;
+	virtual void		commandsAfterCompute		   (const VkCommandBuffer		cmdBuffer,
+														const VkPipeline			pipeline,
+														const VkPipelineLayout		pipelineLayout,
+														const VkDescriptorSet		descriptorSet,
+														const VkDeviceSize&			range,
+														const bool					isSupportedTransfer);
 
-	virtual bool		verifyResult				   (Allocation&				outputBufferAllocation) const;
+	virtual bool		verifyResult				   (Allocation&					outputBufferAllocation,
+														const bool					is64Bit) const;
 
 protected:
 
 	template <typename T>
-	bool				isValueCorrect				   (deInt32 resultValue,
-														deInt32 x,
-														deInt32 y,
-														deInt32 z,
-														const UVec3& gridSize,
-														const IVec3 extendedGridSize) const;
+	bool				isValueCorrect				   (const T						resultValue,
+														deInt32						x,
+														deInt32						y,
+														deInt32						z,
+														const UVec3&				gridSize,
+														const IVec3					extendedGridSize) const;
 };
 
 deUint32 BinaryAtomicEndResultInstance::getOutputBufferSize (void) const
@@ -715,53 +1002,126 @@ deUint32 BinaryAtomicEndResultInstance::getOutputBufferSize (void) const
 	return tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 }
 
-void BinaryAtomicEndResultInstance::prepareDescriptors (void)
+void BinaryAtomicEndResultInstance::prepareDescriptors (const bool	isTexelBuffer)
 {
+	const VkDescriptorType	descriptorType	= isTexelBuffer ?
+											VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER :
+											VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	const VkDevice			device			= m_context.getDevice();
 	const DeviceInterface&	deviceInterface = m_context.getDeviceInterface();
 
 	m_descriptorSetLayout =
 		DescriptorSetLayoutBuilder()
-		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(descriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
 		.build(deviceInterface, device);
 
 	m_descriptorPool =
 		DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+		.addType(descriptorType)
 		.build(deviceInterface, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	m_descriptorSet = makeDescriptorSet(deviceInterface, device, *m_descriptorPool, *m_descriptorSetLayout);
+	if (isTexelBuffer)
+	{
+		m_descResultBufferView = makeBufferView(deviceInterface, device, *(*m_inputBuffer), mapTextureFormat(m_format), 0, VK_WHOLE_SIZE);
 
-	const VkDescriptorImageInfo	descResultImageInfo = makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &(m_descResultBufferView.get()))
+			.update(deviceInterface, device);
+	}
+	else
+	{
+		const VkDescriptorImageInfo	descResultImageInfo = makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
 
-	DescriptorSetUpdateBuilder()
-		.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descResultImageInfo)
-		.update(deviceInterface, device);
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &descResultImageInfo)
+			.update(deviceInterface, device);
+	}
 }
 
-void BinaryAtomicEndResultInstance::commandsAfterCompute (const VkCommandBuffer	cmdBuffer) const
+void BinaryAtomicEndResultInstance::commandsAfterCompute (const VkCommandBuffer		cmdBuffer,
+														  const VkPipeline			pipeline,
+														  const VkPipelineLayout	pipelineLayout,
+														  const VkDescriptorSet		descriptorSet,
+														  const VkDeviceSize&		range,
+														  const bool				isSupportedTransfer)
 {
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
-	const VkImageSubresourceRange	subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
+	const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
+	const UVec3						layerSize			= getLayerSize(m_imageType, m_imageSize);
 
-	const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
+	if (m_imageType == IMAGE_TYPE_BUFFER)
+	{
+		m_outputBuffer = m_inputBuffer;
+	}
+	else if (isSupportedTransfer)
+	{
+		const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
+			makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
+									VK_ACCESS_TRANSFER_READ_BIT,
+									VK_IMAGE_LAYOUT_GENERAL,
+									VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									m_resultImage->get(),
+									subresourceRange);
+
+		deviceInterface.cmdPipelineBarrier(	cmdBuffer,
+											VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+											VK_PIPELINE_STAGE_TRANSFER_BIT,
+											DE_FALSE, 0u, DE_NULL, 0u, DE_NULL,
+											1u, &resultImagePostDispatchBarrier);
+
+		const VkBufferImageCopy		bufferImageCopyParams = makeBufferImageCopy(makeExtent3D(layerSize), getNumLayers(m_imageType, m_imageSize));
+
+		deviceInterface.cmdCopyImageToBuffer(cmdBuffer, m_resultImage->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outputBuffer->get(), 1u, &bufferImageCopyParams);
+	}
+	else
+	{
+		const VkDevice					device					= m_context.getDevice();
+		const VkDescriptorImageInfo		descResultImageInfo		= makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+		const VkDescriptorBufferInfo	descResultBufferInfo	= makeDescriptorBufferInfo(m_outputBuffer->get(), 0, range);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descResultImageInfo)
+			.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descResultBufferInfo)
+			.update(deviceInterface, device);
+
+		const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
 		makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
-								VK_ACCESS_TRANSFER_READ_BIT,
+								VK_ACCESS_SHADER_READ_BIT,
 								VK_IMAGE_LAYOUT_GENERAL,
-								VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+								VK_IMAGE_LAYOUT_GENERAL,
 								m_resultImage->get(),
 								subresourceRange);
 
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, 0u, DE_NULL, 0u, DE_NULL, 1u, &resultImagePostDispatchBarrier);
+		deviceInterface.cmdPipelineBarrier(	cmdBuffer,
+											VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+											VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+											DE_FALSE, 0u, DE_NULL, 0u, DE_NULL,
+											1u, &resultImagePostDispatchBarrier);
 
-	const VkBufferImageCopy		bufferImageCopyParams = makeBufferImageCopy(makeExtent3D(getLayerSize(m_imageType, m_imageSize)), getNumLayers(m_imageType, m_imageSize));
+		deviceInterface.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+		deviceInterface.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 
-	deviceInterface.cmdCopyImageToBuffer(cmdBuffer, m_resultImage->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outputBuffer->get(), 1u, &bufferImageCopyParams);
+		switch (m_imageType)
+		{
+			case IMAGE_TYPE_1D_ARRAY:
+				deviceInterface.cmdDispatch(cmdBuffer, layerSize.x(), subresourceRange.layerCount, layerSize.z());
+				break;
+			case IMAGE_TYPE_2D_ARRAY:
+			case IMAGE_TYPE_CUBE:
+			case IMAGE_TYPE_CUBE_ARRAY:
+				deviceInterface.cmdDispatch(cmdBuffer, layerSize.x(), layerSize.y(), subresourceRange.layerCount);
+				break;
+			default:
+				deviceInterface.cmdDispatch(cmdBuffer, layerSize.x(), layerSize.y(), layerSize.z());
+				break;
+		}
+	}
 }
 
-bool BinaryAtomicEndResultInstance::verifyResult (Allocation& outputBufferAllocation) const
+bool BinaryAtomicEndResultInstance::verifyResult (Allocation&	outputBufferAllocation,
+												  const bool	is64Bit) const
 {
-	const bool	uintFormat			= isUintFormat(mapTextureFormat(m_format));
 	const UVec3	gridSize			= getShaderGridSize(m_imageType, m_imageSize);
 	const IVec3 extendedGridSize	= IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z());
 
@@ -771,18 +1131,47 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation& outputBufferAlloca
 	for (deInt32 y = 0; y < resultBuffer.getHeight(); y++)
 	for (deInt32 x = 0; x < resultBuffer.getWidth();  x++)
 	{
-		deInt32 resultValue = resultBuffer.getPixelInt(x, y, z).x();
+		const void* resultValue = resultBuffer.getPixelPtr(x, y, z);
+		deUint32 floatToUnsignedValue = 0;
+		bool isFloatValue = false;
+		if (isFloatFormat(mapTextureFormat(m_format)))
+		{
+			isFloatValue = true;
+			floatToUnsignedValue = static_cast<deUint32>(*((float*)resultValue));
+		}
 
 		if (isOrderIndependentAtomicOperation(m_operation))
 		{
-			if (uintFormat)
+			if (isUintFormat(mapTextureFormat(m_format)))
 			{
-				if (!isValueCorrect<deUint32>(resultValue, x, y, z, gridSize, extendedGridSize))
-					return false;
+				if(is64Bit)
+				{
+					if (!isValueCorrect<deUint64>(*((deUint64*)resultValue), x, y, z, gridSize, extendedGridSize))
+						return false;
+				}
+				else
+				{
+					if (!isValueCorrect<deUint32>(*((deUint32*)resultValue), x, y, z, gridSize, extendedGridSize))
+						return false;
+				}
+			}
+			else if (isIntFormat(mapTextureFormat(m_format)))
+			{
+				if (is64Bit)
+				{
+					if (!isValueCorrect<deInt64>(*((deInt64*)resultValue), x, y, z, gridSize, extendedGridSize))
+						return false;
+				}
+				else
+				{
+					if (!isValueCorrect<deInt32>(*((deInt32*)resultValue), x, y, z, gridSize, extendedGridSize))
+						return false;
+				}
 			}
 			else
 			{
-				if (!isValueCorrect<deInt32>(resultValue, x, y, z, gridSize, extendedGridSize))
+				// 32-bit floating point
+				if (!isValueCorrect<deUint32>(floatToUnsignedValue, x, y, z, gridSize, extendedGridSize))
 					return false;
 			}
 		}
@@ -794,7 +1183,12 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation& outputBufferAlloca
 			for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL) && !matchFound; i++)
 			{
 				const IVec3 gid(x + i*gridSize.x(), y, z);
-				matchFound = (resultValue == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
+				matchFound = is64Bit ?
+					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_operation, gid, extendedGridSize)) :
+					isFloatValue ?
+					floatToUnsignedValue == getAtomicFuncArgument<deUint32>(m_operation, gid, extendedGridSize) :
+					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
+
 			}
 
 			if (!matchFound)
@@ -808,7 +1202,11 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation& outputBufferAlloca
 			for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL) && !matchFound; i++)
 			{
 				const IVec3 gid(x + i*gridSize.x(), y, z);
-				matchFound = (resultValue == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
+				matchFound = is64Bit ?
+					(*((deInt64*)resultValue) == getAtomicFuncArgument<deInt64>(m_operation, gid, extendedGridSize)) :
+					isFloatValue ?
+					floatToUnsignedValue == getAtomicFuncArgument<deUint32>(m_operation, gid, extendedGridSize) :
+					(*((deInt32*)resultValue) == getAtomicFuncArgument<deInt32>(m_operation, gid, extendedGridSize));
 			}
 
 			if (!matchFound)
@@ -821,16 +1219,16 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation& outputBufferAlloca
 }
 
 template <typename T>
-bool BinaryAtomicEndResultInstance::isValueCorrect(deInt32 resultValue, deInt32 x, deInt32 y, deInt32 z, const UVec3& gridSize, const IVec3 extendedGridSize) const
+bool BinaryAtomicEndResultInstance::isValueCorrect(const T resultValue, deInt32 x, deInt32 y, deInt32 z, const UVec3& gridSize, const IVec3 extendedGridSize) const
 {
-	T reference = static_cast<T>(getOperationInitialValue(m_operation));
+	T reference = getOperationInitialValue<T>(m_operation);
 	for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL); i++)
 	{
 		const IVec3 gid(x + i*gridSize.x(), y, z);
 		T			arg = getAtomicFuncArgument<T>(m_operation, gid, extendedGridSize);
 		reference = computeBinaryAtomicOperationResult(m_operation, reference, arg);
 	}
-	return (static_cast<T>(resultValue) == reference);
+	return (resultValue == reference);
 }
 
 TestInstance* BinaryAtomicEndResultCase::createInstance (Context& context) const
@@ -852,18 +1250,25 @@ public:
 
 	virtual deUint32	getOutputBufferSize				   (void) const;
 
-	virtual void		prepareResources				   (void);
-	virtual void		prepareDescriptors				   (void);
+	virtual void		prepareResources				   (const bool				isSupportedTransfer);
+	virtual void		prepareDescriptors				   (const bool				isTexelBuffer);
 
 	virtual void		commandsBeforeCompute			   (const VkCommandBuffer	cmdBuffer) const;
-	virtual void		commandsAfterCompute			   (const VkCommandBuffer	cmdBuffer) const;
+	virtual void		commandsAfterCompute			   (const VkCommandBuffer	cmdBuffer,
+															const VkPipeline		pipeline,
+															const VkPipelineLayout	pipelineLayout,
+															const VkDescriptorSet	descriptorSet,
+															const VkDeviceSize&		range,
+															const bool				isSupportedTransfer);
 
-	virtual bool		verifyResult					   (Allocation&				outputBufferAllocation) const;
+	virtual bool		verifyResult					   (Allocation&				outputBufferAllocation,
+															const bool				is64Bit) const;
 
 protected:
 
 	template <typename T>
 	bool				areValuesCorrect				   (tcu::ConstPixelBufferAccess& resultBuffer,
+															const bool isFloatingPoint,
 															deInt32 x,
 															deInt32 y,
 															deInt32 z,
@@ -885,7 +1290,7 @@ deUint32 BinaryAtomicIntermValuesInstance::getOutputBufferSize (void) const
 	return NUM_INVOCATIONS_PER_PIXEL * tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 }
 
-void BinaryAtomicIntermValuesInstance::prepareResources (void)
+void BinaryAtomicIntermValuesInstance::prepareResources (const bool isSupportedTransfer)
 {
 	const VkDevice			device			= m_context.getDevice();
 	const DeviceInterface&	deviceInterface = m_context.getDeviceInterface();
@@ -911,8 +1316,11 @@ void BinaryAtomicIntermValuesInstance::prepareResources (void)
 		getNumLayers(m_imageType, m_imageSize),		// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
-		VK_IMAGE_USAGE_STORAGE_BIT |
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		(VkImageUsageFlags)(isSupportedTransfer ?
+			(VK_IMAGE_USAGE_STORAGE_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT) :
+			VK_IMAGE_USAGE_STORAGE_BIT),			// VkImageUsageFlags
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
 		0u,											// deUint32					queueFamilyIndexCount;
 		DE_NULL,									// const deUint32*			pQueueFamilyIndices;
@@ -926,31 +1334,48 @@ void BinaryAtomicIntermValuesInstance::prepareResources (void)
 	m_intermResultsImageView = makeImageView(deviceInterface, device, m_intermResultsImage->get(), mapImageViewType(m_imageType), mapTextureFormat(m_format), subresourceRange);
 }
 
-void BinaryAtomicIntermValuesInstance::prepareDescriptors (void)
+void BinaryAtomicIntermValuesInstance::prepareDescriptors (const bool	isTexelBuffer)
 {
+	const VkDescriptorType	descriptorType	= isTexelBuffer ?
+											VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER :
+											VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
 	const VkDevice			device			= m_context.getDevice();
 	const DeviceInterface&	deviceInterface = m_context.getDeviceInterface();
 
 	m_descriptorSetLayout =
 		DescriptorSetLayoutBuilder()
-		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(descriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(descriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
 		.build(deviceInterface, device);
 
 	m_descriptorPool =
 		DescriptorPoolBuilder()
-		.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 2u)
+		.addType(descriptorType, 2u)
 		.build(deviceInterface, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	m_descriptorSet = makeDescriptorSet(deviceInterface, device, *m_descriptorPool, *m_descriptorSetLayout);
 
-	const VkDescriptorImageInfo	descResultImageInfo			= makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
-	const VkDescriptorImageInfo	descIntermResultsImageInfo	= makeDescriptorImageInfo(DE_NULL, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
+	if (isTexelBuffer)
+	{
+		m_descResultBufferView			= makeBufferView(deviceInterface, device, *(*m_inputBuffer), mapTextureFormat(m_format), 0, VK_WHOLE_SIZE);
+		m_descIntermResultsBufferView	= makeBufferView(deviceInterface, device, *(*m_outputBuffer), mapTextureFormat(m_format), 0, VK_WHOLE_SIZE);
 
-	DescriptorSetUpdateBuilder()
-		.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descResultImageInfo)
-		.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descIntermResultsImageInfo)
-		.update(deviceInterface, device);
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &(m_descResultBufferView.get()))
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &(m_descIntermResultsBufferView.get()))
+			.update(deviceInterface, device);
+	}
+	else
+	{
+		const VkDescriptorImageInfo	descResultImageInfo			= makeDescriptorImageInfo(DE_NULL, *m_resultImageView, VK_IMAGE_LAYOUT_GENERAL);
+		const VkDescriptorImageInfo	descIntermResultsImageInfo	= makeDescriptorImageInfo(DE_NULL, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &descResultImageInfo)
+			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &descIntermResultsImageInfo)
+			.update(deviceInterface, device);
+	}
 }
 
 void BinaryAtomicIntermValuesInstance::commandsBeforeCompute (const VkCommandBuffer cmdBuffer) const
@@ -969,31 +1394,86 @@ void BinaryAtomicIntermValuesInstance::commandsBeforeCompute (const VkCommandBuf
 	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, DE_FALSE, 0u, DE_NULL, 0u, DE_NULL, 1u, &imagePreDispatchBarrier);
 }
 
-void BinaryAtomicIntermValuesInstance::commandsAfterCompute (const VkCommandBuffer cmdBuffer) const
+void BinaryAtomicIntermValuesInstance::commandsAfterCompute (const VkCommandBuffer		cmdBuffer,
+															 const VkPipeline			pipeline,
+															 const VkPipelineLayout		pipelineLayout,
+															 const VkDescriptorSet		descriptorSet,
+															 const VkDeviceSize&		range,
+															 const bool					isSupportedTransfer)
 {
+	// nothing is needed for texel image buffer
+	if (m_imageType == IMAGE_TYPE_BUFFER)
+		return;
+
 	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
 	const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
+	const UVec3						layerSize			= getLayerSize(m_imageType, m_imageSize);
 
-	const VkImageMemoryBarrier	imagePostDispatchBarrier =
+	if (isSupportedTransfer)
+	{
+		const VkImageMemoryBarrier	imagePostDispatchBarrier =
+			makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
+									VK_ACCESS_TRANSFER_READ_BIT,
+									VK_IMAGE_LAYOUT_GENERAL,
+									VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									m_intermResultsImage->get(),
+									subresourceRange);
+
+		deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, 0u, DE_NULL, 0u, DE_NULL, 1u, &imagePostDispatchBarrier);
+
+		const UVec3					extendedLayerSize		= UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
+		const VkBufferImageCopy		bufferImageCopyParams	= makeBufferImageCopy(makeExtent3D(extendedLayerSize), getNumLayers(m_imageType, m_imageSize));
+
+		deviceInterface.cmdCopyImageToBuffer(cmdBuffer, m_intermResultsImage->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outputBuffer->get(), 1u, &bufferImageCopyParams);
+	}
+	else
+	{
+		const VkDevice					device					= m_context.getDevice();
+		const VkDescriptorImageInfo		descResultImageInfo		= makeDescriptorImageInfo(DE_NULL, *m_intermResultsImageView, VK_IMAGE_LAYOUT_GENERAL);
+		const VkDescriptorBufferInfo	descResultBufferInfo	= makeDescriptorBufferInfo(m_outputBuffer->get(), 0, range);
+
+		DescriptorSetUpdateBuilder()
+			.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descResultImageInfo)
+			.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descResultBufferInfo)
+			.update(deviceInterface, device);
+
+		const VkImageMemoryBarrier	resultImagePostDispatchBarrier =
 		makeImageMemoryBarrier(	VK_ACCESS_SHADER_WRITE_BIT,
-								VK_ACCESS_TRANSFER_READ_BIT,
+								VK_ACCESS_SHADER_READ_BIT,
 								VK_IMAGE_LAYOUT_GENERAL,
-								VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+								VK_IMAGE_LAYOUT_GENERAL,
 								m_intermResultsImage->get(),
 								subresourceRange);
 
-	deviceInterface.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, 0u, DE_NULL, 0u, DE_NULL, 1u, &imagePostDispatchBarrier);
+		deviceInterface.cmdPipelineBarrier(	cmdBuffer,
+									VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+									VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+									DE_FALSE, 0u, DE_NULL, 0u, DE_NULL,
+									1u, &resultImagePostDispatchBarrier);
 
-	const UVec3					layerSize				= getLayerSize(m_imageType, m_imageSize);
-	const UVec3					extendedLayerSize		= UVec3(NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
-	const VkBufferImageCopy		bufferImageCopyParams	= makeBufferImageCopy(makeExtent3D(extendedLayerSize), getNumLayers(m_imageType, m_imageSize));
+		deviceInterface.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+		deviceInterface.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u, DE_NULL);
 
-	deviceInterface.cmdCopyImageToBuffer(cmdBuffer, m_intermResultsImage->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outputBuffer->get(), 1u, &bufferImageCopyParams);
+		switch (m_imageType)
+		{
+			case IMAGE_TYPE_1D_ARRAY:
+				deviceInterface.cmdDispatch(cmdBuffer, NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), subresourceRange.layerCount, layerSize.z());
+				break;
+			case IMAGE_TYPE_2D_ARRAY:
+			case IMAGE_TYPE_CUBE:
+			case IMAGE_TYPE_CUBE_ARRAY:
+				deviceInterface.cmdDispatch(cmdBuffer, NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), subresourceRange.layerCount);
+				break;
+			default:
+				deviceInterface.cmdDispatch(cmdBuffer, NUM_INVOCATIONS_PER_PIXEL * layerSize.x(), layerSize.y(), layerSize.z());
+				break;
+		}
+	}
 }
 
-bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAllocation) const
+bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAllocation,
+													 const bool		is64Bit) const
 {
-	const bool	uintFormat		 = isUintFormat(mapTextureFormat(m_format));
 	const UVec3	gridSize		 = getShaderGridSize(m_imageType, m_imageSize);
 	const IVec3 extendedGridSize = IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z());
 
@@ -1003,14 +1483,36 @@ bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAll
 	for (deInt32 y = 0; y < resultBuffer.getHeight(); y++)
 	for (deUint32 x = 0; x < gridSize.x(); x++)
 	{
-		if (uintFormat)
+		if (isUintFormat(mapTextureFormat(m_format)))
 		{
-			if (!areValuesCorrect<deUint32>(resultBuffer, x, y, z, gridSize, extendedGridSize))
-				return false;
+			if (is64Bit)
+			{
+				if (!areValuesCorrect<deUint64>(resultBuffer, false, x, y, z, gridSize, extendedGridSize))
+					return false;
+			}
+			else
+			{
+				if (!areValuesCorrect<deUint32>(resultBuffer, false, x, y, z, gridSize, extendedGridSize))
+					return false;
+			}
+		}
+		else if (isIntFormat(mapTextureFormat(m_format)))
+		{
+			if (is64Bit)
+			{
+				if (!areValuesCorrect<deInt64>(resultBuffer, false, x, y, z, gridSize, extendedGridSize))
+					return false;
+			}
+			else
+			{
+				if (!areValuesCorrect<deInt32>(resultBuffer, false, x, y, z, gridSize, extendedGridSize))
+					return false;
+			}
 		}
 		else
 		{
-			if (!areValuesCorrect<deInt32>(resultBuffer, x, y, z, gridSize, extendedGridSize))
+			// 32-bit floating point
+			if (!areValuesCorrect<deUint32>(resultBuffer, true, x, y, z, gridSize, extendedGridSize))
 				return false;
 		}
 	}
@@ -1019,7 +1521,7 @@ bool BinaryAtomicIntermValuesInstance::verifyResult (Allocation&	outputBufferAll
 }
 
 template <typename T>
-bool BinaryAtomicIntermValuesInstance::areValuesCorrect(tcu::ConstPixelBufferAccess& resultBuffer, deInt32 x, deInt32 y, deInt32 z, const UVec3& gridSize, const IVec3 extendedGridSize) const
+bool BinaryAtomicIntermValuesInstance::areValuesCorrect(tcu::ConstPixelBufferAccess& resultBuffer, const bool isFloatingPoint, deInt32 x, deInt32 y, deInt32 z, const UVec3& gridSize, const IVec3 extendedGridSize) const
 {
 	T		resultValues[NUM_INVOCATIONS_PER_PIXEL];
 	T		atomicArgs[NUM_INVOCATIONS_PER_PIXEL];
@@ -1029,13 +1531,18 @@ bool BinaryAtomicIntermValuesInstance::areValuesCorrect(tcu::ConstPixelBufferAcc
 	{
 		IVec3 gid(x + i*gridSize.x(), y, z);
 
-		resultValues[i] = resultBuffer.getPixelInt(gid.x(), gid.y(), gid.z()).cast<T>().x();
+		resultValues[i] = *((T*)resultBuffer.getPixelPtr(gid.x(), gid.y(), gid.z()));
+		if (isFloatingPoint)
+		{
+			float *floatPtr = reinterpret_cast<float*>(&resultValues[i]);
+			resultValues[i] = static_cast<T>(*floatPtr);
+		}
 		atomicArgs[i]	= getAtomicFuncArgument<T>(m_operation, gid, extendedGridSize);
 		argsUsed[i]		= false;
 	}
 
 	// Verify that the return values form a valid sequence.
-	return verifyRecursive(0, static_cast<T>(getOperationInitialValue(m_operation)), argsUsed, atomicArgs, resultValues);
+	return verifyRecursive(0, getOperationInitialValue<T>(m_operation), argsUsed, atomicArgs, resultValues);
 }
 
 template <typename T>
@@ -1096,13 +1603,15 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 		ImageParams(IMAGE_TYPE_2D_ARRAY,	tcu::UVec3(64u, 64u, 8u)),
 		ImageParams(IMAGE_TYPE_3D,			tcu::UVec3(64u, 64u, 8u)),
 		ImageParams(IMAGE_TYPE_CUBE,		tcu::UVec3(64u, 64u, 1u)),
-		ImageParams(IMAGE_TYPE_CUBE_ARRAY,	tcu::UVec3(64u, 64u, 2u))
+		ImageParams(IMAGE_TYPE_CUBE_ARRAY,	tcu::UVec3(64u, 64u, 2u)),
+		ImageParams(IMAGE_TYPE_BUFFER,		tcu::UVec3(64u, 1u, 1u))
 	};
 
 	static const tcu::TextureFormat formats[] =
 	{
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32),
-		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32)
+		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32),
+		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::FLOAT),
 	};
 
 	for (deUint32 operationI = 0; operationI < ATOMIC_OPERATION_LAST; operationI++)
@@ -1123,13 +1632,28 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 				const TextureFormat&	format		= formats[formatNdx];
 				const std::string		formatName	= getShaderImageFormatQualifier(format);
 
+				// Need SPIRV programs in vktImageAtomicSpirvShaders.cpp
+				if (imageType == IMAGE_TYPE_BUFFER && (format.type != tcu::TextureFormat::FLOAT))
+				{
+					continue;
+				}
+
+				// Only ADD and EXCHANGE are supported on floating-point
+				if (format.type == tcu::TextureFormat::FLOAT)
+				{
+					if (operation != ATOMIC_OPERATION_ADD && operation != ATOMIC_OPERATION_EXCHANGE)
+					{
+						continue;
+					}
+				}
+
 				//!< Atomic case checks the end result of the operations, and not the intermediate return values
 				const string caseEndResult = formatName + "_end_result";
-				imageTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_440));
+				imageTypeGroup->addChild(new BinaryAtomicEndResultCase(testCtx, caseEndResult, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_450));
 
 				//!< Atomic case checks the return values of the atomic function and not the end result.
 				const string caseIntermValues = formatName + "_intermediate_values";
-				imageTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_440));
+				imageTypeGroup->addChild(new BinaryAtomicIntermValuesCase(testCtx, caseIntermValues, "", imageType, imageSize, format, operation, glu::GLSL_VERSION_450));
 			}
 
 			operationGroup->addChild(imageTypeGroup.release());
