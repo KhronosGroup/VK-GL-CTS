@@ -17,7 +17,6 @@ const VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPr
 const VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceLineRasterizationPropertiesEXT>();				}
 const VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMaintenance3Properties>();						}
 const VkPhysicalDeviceMemoryProperties2&						getMemoryProperties2						(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMemoryProperties2>();							}
-const VkPhysicalDeviceMemoryBudgetPropertiesEXT&				getMemoryBudgetPropertiesEXT				(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMemoryBudgetPropertiesEXT>();					}
 const VkPhysicalDeviceMeshShaderPropertiesNV&					getMeshShaderProperties						(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMeshShaderPropertiesNV>();						}
 const VkPhysicalDeviceMultiviewProperties&						getMultiviewProperties						(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMultiviewProperties>();						}
 const VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	getMultiviewPerViewAttributesPropertiesX	(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX>();	}

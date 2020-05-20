@@ -1779,6 +1779,9 @@ def generateDevicePropertiesDefs(src):
 		# skip VkPhysicalDeviceGroupProperties
 		if sType == "GROUP":
 			continue
+		# skip VkPhysicalDeviceMemoryBudgetPropertiesEXT
+		if sType == "MEMORY_BUDGET":
+			continue
 		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
 		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Properties' + sSuffix[1:] + ')'
 		matchStructName		= re.search(ptrnStructName, src, re.M)
