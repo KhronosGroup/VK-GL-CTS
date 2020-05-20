@@ -460,6 +460,7 @@ void InternalformatCaseBase::generateTextureData(GLuint width, GLuint height, GL
 		colorConversionMap[GL_BYTE]						   = &convertByte;
 		colorConversionMap[GL_UNSIGNED_BYTE]			   = &convertUByte;
 		colorConversionMap[GL_HALF_FLOAT]				   = &convertHFloat;
+		colorConversionMap[GL_HALF_FLOAT_OES]			   = &convertHFloat;
 		colorConversionMap[GL_FLOAT]					   = &convertFloat;
 		colorConversionMap[GL_SHORT]					   = &convertShort;
 		colorConversionMap[GL_UNSIGNED_SHORT]			   = &convertUShort;
@@ -1423,10 +1424,10 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 		TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, GL_DEPTH_COMPONENT, OES_depth_texture),
 		TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT, OES_depth_texture),
 		TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL, OES_packed_depth_stencil, OES_depth_texture),
-		TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F, OES_texture_half_float),
-		TF(GL_RGBA, GL_HALF_FLOAT, GL_RGBA16F, OES_texture_half_float),
-		TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
-		TF(GL_RGBA, GL_HALF_FLOAT, GL_RGBA16F, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
+		TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float),
+		TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float),
+		TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
+		TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
 		TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float),
 		TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float),
 		TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
@@ -1463,6 +1464,8 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB565),
 			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8),
 			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8),
+			TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F),
+			TF(GL_RGBA, GL_HALF_FLOAT, GL_RGBA16F),
 			TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8),
 		};
 
