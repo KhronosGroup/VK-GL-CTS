@@ -2763,6 +2763,10 @@ bool verifyRelaxedLineGroupRasterization (const tcu::Surface& surface, const Lin
 
 		return true;
 	}
+	else if (strict == false && args.numSamples == 0 && verifyLineGroupRasterization(surface, scene, args, log))
+	{
+		return true;
+	}
 	else
 	{
 		log << tcu::TestLog::Message << "Relaxed rasterization failed, details follow." << tcu::TestLog::EndMessage;
