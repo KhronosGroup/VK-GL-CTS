@@ -43,6 +43,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));
+	group->addChild(createAdvancedTests(testCtx));
 
 	return group.release();
 }

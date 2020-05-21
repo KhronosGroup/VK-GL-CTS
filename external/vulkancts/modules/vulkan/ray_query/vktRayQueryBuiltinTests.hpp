@@ -32,6 +32,7 @@ namespace RayQuery
 {
 
 tcu::TestCaseGroup*	createBuiltinTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createAdvancedTests	(tcu::TestContext& testCtx);
 
 } // RayQuery
 } // vkt

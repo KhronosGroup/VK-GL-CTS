@@ -61,7 +61,7 @@ static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 
 enum TestType
 {
-	TEST_TYPE_FLOW						= 0,
+	TEST_TYPE_FLOW							= 0,
 	TEST_TYPE_PRIMITIVE_ID,
 	TEST_TYPE_INSTANCE_ID,
 	TEST_TYPE_INSTANCE_CUSTOM_INDEX,
@@ -70,6 +70,8 @@ enum TestType
 	TEST_TYPE_OBJECT_RAY_DIRECTION_KHR,
 	TEST_TYPE_OBJECT_TO_WORLD_KHR,
 	TEST_TYPE_WORLD_TO_OBJECT_KHR,
+	TEST_TYPE_NULL_ACCELERATION_STRUCTURE,
+	TEST_TYPE_LAST
 };
 
 enum GeomType
@@ -191,6 +193,7 @@ struct TestParams
 	CheckSupportFunc		pipelineCheckSupport;
 	InitProgramsFunc		pipelineInitPrograms;
 	ShaderBodyTextFunc		testConfigShaderBodyText;
+	CheckSupportFunc		testConfigCheckSupport;
 };
 
 deUint32 getShaderGroupHandleSize (const InstanceInterface&	vki,
@@ -3398,6 +3401,86 @@ const std::string TestConfigurationWorldToObject::getShaderBodyText (const TestP
 	}
 }
 
+class TestConfigurationNullASStruct : public TestConfiguration
+{
+public:
+												TestConfigurationNullASStruct		();
+												~TestConfigurationNullASStruct		();
+
+	static const std::string					getShaderBodyText					(const TestParams&					testParams);
+	static void									checkSupport						(Context&							context,
+																					 const TestParams&					testParams);
+
+	virtual const VkAccelerationStructureKHR*	initAccelerationStructures			(Context&							context,
+																					 TestParams&						testParams,
+																					 VkCommandBuffer					cmdBuffer) override;
+protected:
+	Move<VkAccelerationStructureKHR>			m_emptyAccelerationStructure;
+};
+
+TestConfigurationNullASStruct::TestConfigurationNullASStruct ()
+	: TestConfiguration				()
+	, m_emptyAccelerationStructure	()
+{
+}
+
+TestConfigurationNullASStruct::~TestConfigurationNullASStruct ()
+{
+}
+
+const VkAccelerationStructureKHR* TestConfigurationNullASStruct::initAccelerationStructures (Context&			context,
+																							 TestParams&		testParams,
+																							 VkCommandBuffer	cmdBuffer)
+{
+	DE_UNREF(context);
+	DE_UNREF(cmdBuffer);
+
+	m_expected = std::vector<deInt32>(testParams.width * testParams.height, 1);
+
+	return &m_emptyAccelerationStructure.get();
+}
+
+void TestConfigurationNullASStruct::checkSupport (Context&			context,
+												 const TestParams&	testParams)
+{
+	DE_UNREF(testParams);
+
+	context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+	const vk::VkPhysicalDeviceRobustness2FeaturesEXT&	robustness2FeaturesEXT	= context.getRobustness2FeaturesEXT();
+
+	if (!robustness2FeaturesEXT.nullDescriptor)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor");
+}
+
+const std::string TestConfigurationNullASStruct::getShaderBodyText (const TestParams& testParams)
+{
+	DE_UNREF(testParams);
+
+	const std::string result =
+		"  uint        rayFlags = 0;\n"
+		"  uint        cullMask = 0xFF;\n"
+		"  float       tmin     = 0.0;\n"
+		"  float       tmax     = 9.0;\n"
+		"  vec3        origin   = vec3((float(pos.x) + 0.5f) / float(size.x), (float(pos.y) + 0.5f) / float(size.y), 0.0);\n"
+		"  vec3        direct   = vec3(0.0, 0.0, -1.0);\n"
+		"  uint        value    = 1;\n"
+		"  rayQueryEXT rayQuery;\n"
+		"\n"
+		"  rayQueryInitializeEXT(rayQuery, rayQueryTopLevelAccelerationStructure, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+		"\n"
+		"  if (rayQueryProceedEXT(rayQuery))\n"
+		"  {\n"
+		"    value++;\n"
+		"\n"
+		"    rayQueryTerminateEXT(rayQuery);\n"
+		"  }\n"
+		"\n"
+		"  imageStore(result, pos, ivec4(value, 0, 0, 0));\n";
+
+	return result;
+}
+
 class RayQueryBuiltinTestInstance : public TestInstance
 {
 public:
@@ -3426,6 +3509,7 @@ RayQueryBuiltinTestInstance::RayQueryBuiltinTestInstance (Context& context, cons
 		case TEST_TYPE_OBJECT_RAY_DIRECTION_KHR:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectRayDirection());	break;
 		case TEST_TYPE_OBJECT_TO_WORLD_KHR:			m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectToWorld());		break;
 		case TEST_TYPE_WORLD_TO_OBJECT_KHR:			m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationWorldToObject());		break;
+		case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationNullASStruct());			break;
 		default: TCU_THROW(InternalError, "Unknown test type");
 	}
 
@@ -3563,6 +3647,9 @@ void RayQueryBuiltinTestCase::checkSupport (Context& context) const
 		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayQuery");
 
 	m_data.pipelineCheckSupport(context, m_data);
+
+	if (m_data.testConfigCheckSupport != DE_NULL)
+		m_data.testConfigCheckSupport(context, m_data);
 }
 
 TestInstance* RayQueryBuiltinTestCase::createInstance (Context& context) const
@@ -3642,36 +3729,61 @@ static inline ShaderBodyTextFunc getShaderBodyTextFunc (const TestType testType)
 		case TEST_TYPE_OBJECT_RAY_DIRECTION_KHR:	return TestConfigurationObjectRayDirection::getShaderBodyText;	break;
 		case TEST_TYPE_OBJECT_TO_WORLD_KHR:			return TestConfigurationObjectToWorld::getShaderBodyText;		break;
 		case TEST_TYPE_WORLD_TO_OBJECT_KHR:			return TestConfigurationWorldToObject::getShaderBodyText;		break;
-		default: TCU_THROW(InternalError, "Unknown test type");
+		case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:	return TestConfigurationNullASStruct::getShaderBodyText;		break;
+		default:									TCU_THROW(InternalError, "Unknown test type");
+	}
+}
+
+static inline CheckSupportFunc getTestConfigCheckSupport (const TestType testType)
+{
+	if (testType >= TEST_TYPE_LAST)
+		TCU_THROW(InternalError, "Unknown test type");
+
+	switch (testType)
+	{
+		case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:	return TestConfigurationNullASStruct::checkSupport;	break;
+		default:									return DE_NULL;
 	}
 }
 
 }	// anonymous
 
+const struct PipelineStages
+{
+	VkShaderStageFlagBits	stage;
+	const char*				name;
+}
+pipelineStages[] =
+{
+	{ VK_SHADER_STAGE_VERTEX_BIT,					"vert"	},
+	{ VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		"tesc"	},
+	{ VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	"tese"	},
+	{ VK_SHADER_STAGE_GEOMETRY_BIT,					"geom"	},
+	{ VK_SHADER_STAGE_FRAGMENT_BIT,					"frag"	},
+	{ VK_SHADER_STAGE_COMPUTE_BIT,					"comp"	},
+	{ VK_SHADER_STAGE_RAYGEN_BIT_KHR,				"rgen"	},
+	{ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,				"ahit"	},
+	{ VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,			"chit"	},
+	{ VK_SHADER_STAGE_MISS_BIT_KHR,					"miss"	},
+	{ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,			"sect"	},
+	{ VK_SHADER_STAGE_CALLABLE_BIT_KHR,				"call"	},
+};
+
+const struct GeomTypes
+{
+	GeomType	geomType;
+	const char*	name;
+}
+geomTypes[] =
+{
+	{ GEOM_TYPE_TRIANGLES,							"triangles" },
+	{ GEOM_TYPE_AABBS,								"aabbs" },
+};
+
 tcu::TestCaseGroup*	createBuiltinTests	(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "builtin", "Tests verifying builtins provided by ray query"));
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, "builtin", "Tests verifying builtins provided by ray query"));
 
-	const struct PipelineStages
-	{
-		VkShaderStageFlagBits	stage;
-		const char*				name;
-	}
-	pipelineStages[] =
-	{
-		{ VK_SHADER_STAGE_VERTEX_BIT,					"vert"	},
-		{ VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		"tesc"	},
-		{ VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	"tese"	},
-		{ VK_SHADER_STAGE_GEOMETRY_BIT,					"geom"	},
-		{ VK_SHADER_STAGE_FRAGMENT_BIT,					"frag"	},
-		{ VK_SHADER_STAGE_COMPUTE_BIT,					"comp"	},
-		{ VK_SHADER_STAGE_RAYGEN_BIT_KHR,				"rgen"	},
-		{ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,				"ahit"	},
-		{ VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,			"chit"	},
-		{ VK_SHADER_STAGE_MISS_BIT_KHR,					"miss"	},
-		{ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,			"sect"	},
-		{ VK_SHADER_STAGE_CALLABLE_BIT_KHR,				"call"	},
-	};
 	const struct TestTypes
 	{
 		TestType	testType;
@@ -3689,34 +3801,24 @@ tcu::TestCaseGroup*	createBuiltinTests	(tcu::TestContext& testCtx)
 		{ TEST_TYPE_OBJECT_TO_WORLD_KHR,				"objecttoworld"			},
 		{ TEST_TYPE_WORLD_TO_OBJECT_KHR,				"worldtoobject"			},
 	};
-	const struct GeomTypes
-	{
-		GeomType	geomType;
-		const char*	name;
-	}
-	geomTypes[] =
-	{
-		{ GEOM_TYPE_TRIANGLES,							"triangles" },
-		{ GEOM_TYPE_AABBS,								"aabbs" },
-	};
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	testTypeGroup				(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name, ""));
-		const TestType					testType					= testTypes[testTypeNdx].testType;
-		const ShaderBodyTextFunc		shaderBodyTextFunc			= getShaderBodyTextFunc(testType);
-		const bool						fixedPointVectorOutput		=  testType == TEST_TYPE_OBJECT_RAY_ORIGIN_KHR
-																	|| testType == TEST_TYPE_OBJECT_RAY_DIRECTION_KHR;
-		const bool						fixedPointMatrixOutput		=  testType == TEST_TYPE_OBJECT_TO_WORLD_KHR
-																	|| testType == TEST_TYPE_WORLD_TO_OBJECT_KHR;
-		const bool						single						=  testTypeNdx == TEST_TYPE_FLOW
-																	|| testType == TEST_TYPE_OBJECT_RAY_ORIGIN_KHR
-																	|| testType == TEST_TYPE_OBJECT_RAY_DIRECTION_KHR
-																	|| testType == TEST_TYPE_OBJECT_TO_WORLD_KHR
-																	|| testType == TEST_TYPE_WORLD_TO_OBJECT_KHR;
-		const deUint32					imageDepth					= fixedPointMatrixOutput ? 4 * 4
-																	: fixedPointVectorOutput ? 4
-																	: 1;
+		de::MovePtr<tcu::TestCaseGroup>	testTypeGroup					(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name, ""));
+		const TestType					testType						= testTypes[testTypeNdx].testType;
+		const ShaderBodyTextFunc		testConfigShaderBodyTextFunc	= getShaderBodyTextFunc(testType);
+		const bool						fixedPointVectorOutput			=  testType == TEST_TYPE_OBJECT_RAY_ORIGIN_KHR
+																		|| testType == TEST_TYPE_OBJECT_RAY_DIRECTION_KHR;
+		const bool						fixedPointMatrixOutput			=  testType == TEST_TYPE_OBJECT_TO_WORLD_KHR
+																		|| testType == TEST_TYPE_WORLD_TO_OBJECT_KHR;
+		const bool						single							=  testTypeNdx == TEST_TYPE_FLOW
+																		|| testType == TEST_TYPE_OBJECT_RAY_ORIGIN_KHR
+																		|| testType == TEST_TYPE_OBJECT_RAY_DIRECTION_KHR
+																		|| testType == TEST_TYPE_OBJECT_TO_WORLD_KHR
+																		|| testType == TEST_TYPE_WORLD_TO_OBJECT_KHR;
+		const deUint32					imageDepth						= fixedPointMatrixOutput ? 4 * 4
+																		: fixedPointVectorOutput ? 4
+																		: 1;
 
 		for (size_t pipelineStageNdx = 0; pipelineStageNdx < DE_LENGTH_OF_ARRAY(pipelineStages); ++pipelineStageNdx)
 		{
@@ -3735,19 +3837,87 @@ tcu::TestCaseGroup*	createBuiltinTests	(tcu::TestContext& testCtx)
 				const GeomType		geomType	= geomTypes[geomTypeNdx].geomType;
 				const TestParams	testParams	=
 				{
-					TEST_WIDTH,				//  deUint32				width;
-					TEST_HEIGHT,			//  deUint32				height;
-					imageDepth,				//  deUint32				depth;
-					testType,				//  TestType				testType;
-					stage,					//  VkShaderStageFlagBits	stage;
-					geomType,				//  GeomType				geomType;
-					squaresGroupCount,		//  deUint32				squaresGroupCount;
-					geometriesGroupCount,	//  deUint32				geometriesGroupCount;
-					instancesGroupCount,	//  deUint32				instancesGroupCount;
-					VK_FORMAT_R32_SINT,		//  VkFormat				format;
-					pipelineCheckSupport,	//  CheckSupportFunc		pipelineCheckSupport;
-					pipelineInitPrograms,	//  InitProgramsFunc		pipelineInitPrograms;
-					shaderBodyTextFunc,		//  ShaderTestTextFunc		testConfigShaderBodyText;
+					TEST_WIDTH,						//  deUint32				width;
+					TEST_HEIGHT,					//  deUint32				height;
+					imageDepth,						//  deUint32				depth;
+					testType,						//  TestType				testType;
+					stage,							//  VkShaderStageFlagBits	stage;
+					geomType,						//  GeomType				geomType;
+					squaresGroupCount,				//  deUint32				squaresGroupCount;
+					geometriesGroupCount,			//  deUint32				geometriesGroupCount;
+					instancesGroupCount,			//  deUint32				instancesGroupCount;
+					VK_FORMAT_R32_SINT,				//  VkFormat				format;
+					pipelineCheckSupport,			//  CheckSupportFunc		pipelineCheckSupport;
+					pipelineInitPrograms,			//  InitProgramsFunc		pipelineInitPrograms;
+					testConfigShaderBodyTextFunc,	//  ShaderTestTextFunc		testConfigShaderBodyText;
+					DE_NULL,						//  CheckSupportFunc		testConfigCheckSupport;
+				};
+
+				sourceTypeGroup->addChild(new RayQueryBuiltinTestCase(group->getTestContext(), geomTypes[geomTypeNdx].name, "", testParams));
+			}
+
+			testTypeGroup->addChild(sourceTypeGroup.release());
+		}
+
+		group->addChild(testTypeGroup.release());
+	}
+
+	return group.release();
+}
+
+tcu::TestCaseGroup*	createAdvancedTests	(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		group	(new tcu::TestCaseGroup(testCtx, "advanced", "Advanced ray query tests"));
+
+	const struct TestTypes
+	{
+		TestType	testType;
+		const char*	name;
+	}
+	testTypes[] =
+	{
+		{ TEST_TYPE_NULL_ACCELERATION_STRUCTURE,	"null_as"	},
+	};
+
+	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup>	testTypeGroup					(new tcu::TestCaseGroup(group->getTestContext(), testTypes[testTypeNdx].name, ""));
+		const TestType					testType						= testTypes[testTypeNdx].testType;
+		const ShaderBodyTextFunc		testConfigShaderBodyTextFunc	= getShaderBodyTextFunc(testType);
+		const CheckSupportFunc			testConfigCheckSupport			= getTestConfigCheckSupport(testType);
+		const deUint32					imageDepth						= 1;
+
+		for (size_t pipelineStageNdx = 0; pipelineStageNdx < DE_LENGTH_OF_ARRAY(pipelineStages); ++pipelineStageNdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup>	sourceTypeGroup			(new tcu::TestCaseGroup(group->getTestContext(), pipelineStages[pipelineStageNdx].name, ""));
+			const VkShaderStageFlagBits		stage					= pipelineStages[pipelineStageNdx].stage;
+			const CheckSupportFunc			pipelineCheckSupport	= getPipelineCheckSupport(stage);
+			const InitProgramsFunc			pipelineInitPrograms	= getPipelineInitPrograms(stage);
+			const deUint32					instancesGroupCount		= 1;
+			const deUint32					geometriesGroupCount	= 1;
+			const deUint32					squaresGroupCount		= (TEST_WIDTH * TEST_HEIGHT) / geometriesGroupCount / instancesGroupCount;
+
+			DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == TEST_WIDTH * TEST_HEIGHT);
+
+			for (size_t geomTypeNdx = 0; geomTypeNdx < DE_LENGTH_OF_ARRAY(geomTypes); ++geomTypeNdx)
+			{
+				const GeomType		geomType	= geomTypes[geomTypeNdx].geomType;
+				const TestParams	testParams	=
+				{
+					TEST_WIDTH,						//  deUint32				width;
+					TEST_HEIGHT,					//  deUint32				height;
+					imageDepth,						//  deUint32				depth;
+					testType,						//  TestType				testType;
+					stage,							//  VkShaderStageFlagBits	stage;
+					geomType,						//  GeomType				geomType;
+					squaresGroupCount,				//  deUint32				squaresGroupCount;
+					geometriesGroupCount,			//  deUint32				geometriesGroupCount;
+					instancesGroupCount,			//  deUint32				instancesGroupCount;
+					VK_FORMAT_R32_SINT,				//  VkFormat				format;
+					pipelineCheckSupport,			//  CheckSupportFunc		pipelineCheckSupport;
+					pipelineInitPrograms,			//  InitProgramsFunc		pipelineInitPrograms;
+					testConfigShaderBodyTextFunc,	//  ShaderTestTextFunc		testConfigShaderBodyText;
+					testConfigCheckSupport,			//  CheckSupportFunc		testConfigCheckSupport;
 				};
 
 				sourceTypeGroup->addChild(new RayQueryBuiltinTestCase(group->getTestContext(), geomTypes[geomTypeNdx].name, "", testParams));
