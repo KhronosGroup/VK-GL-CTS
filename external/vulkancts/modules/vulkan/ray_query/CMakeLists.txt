@@ -7,6 +7,8 @@ set(DEQP_VK_RAY_QUERY_SRCS
 	vktRayQueryBuiltinTests.hpp
 	vktRayQueryTraversalControlTests.cpp
 	vktRayQueryTraversalControlTests.hpp
+	vktRayQueryAccelerationStructuresTests.cpp
+	vktRayQueryAccelerationStructuresTests.hpp
 	)
 
 set(DEQP_VK_RAY_QUERY_LIBS

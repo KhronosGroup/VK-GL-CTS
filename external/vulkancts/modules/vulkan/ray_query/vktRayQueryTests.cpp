@@ -22,9 +22,10 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayQueryTests.hpp"
-#include "vktRayQueryTraversalControlTests.hpp"
 
 #include "vktRayQueryBuiltinTests.hpp"
+#include "vktRayQueryTraversalControlTests.hpp"
+#include "vktRayQueryAccelerationStructuresTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -41,6 +42,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
+	group->addChild(createAccelerationStructuresTests(testCtx));
 
 	return group.release();
 }
