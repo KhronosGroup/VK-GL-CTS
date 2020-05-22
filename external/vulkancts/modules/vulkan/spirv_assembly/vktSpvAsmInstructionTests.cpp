@@ -12858,7 +12858,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 	const string						opName			(op);
 	const deUint32						opIndex			= (opName == "OpCompositeInsert") ? 0
 														: (opName == "OpCompositeExtract") ? 1
-														: -1;
+														: std::numeric_limits<deUint32>::max();
 
 	const StringTemplate preMain
 	(
@@ -13555,7 +13555,7 @@ tcu::TestCaseGroup* createFloat16CompositeInsertExtractSet (tcu::TestContext& te
 		},
 	};
 
-	DE_ASSERT(opIndex >= 0 && opIndex < DE_LENGTH_OF_ARRAY(opPartsArray));
+	DE_ASSERT(opIndex < DE_LENGTH_OF_ARRAY(opPartsArray));
 
 	const char*	accessPathF16[] =
 	{
