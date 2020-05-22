@@ -275,6 +275,7 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 	, failResult					(QP_TEST_RESULT_FAIL)
 	, failMessageTemplate			("${reason}")
 	, renderFullSquare				(false)
+	, splitRenderArea				(false)
 {
 	inputColors[0]		= inputs[0];
 	inputColors[1]		= inputs[1];
@@ -302,6 +303,7 @@ InstanceContext::InstanceContext (const InstanceContext& other)
 	, failResult					(other.failResult)
 	, failMessageTemplate			(other.failMessageTemplate)
 	, renderFullSquare				(other.renderFullSquare)
+	, splitRenderArea				(other.splitRenderArea)
 {
 	inputColors[0]		= other.inputColors[0];
 	inputColors[1]		= other.inputColors[1];
@@ -3006,7 +3008,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	Allocator&									allocator				= context.getDefaultAllocator();
 	vector<ModuleHandleSp>						modules;
 	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
-	const tcu::UVec2							renderSize				(256, 256);
+	const deUint32								fullRenderSize			= 256;
+	const deUint32								quarterRenderSize		= 64;
+	const tcu::UVec2							renderSize				(fullRenderSize, fullRenderSize);
 	const int									testSpecificSeed		= 31354125;
 	const int									seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
 	bool										supportsGeometry		= false;
@@ -3018,6 +3022,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const bool									needInterface			= !instance.interfaces.empty();
 	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
 	const Vec4									defaulClearColor		(0.125f, 0.25f, 0.75f, 1.0f);
+	bool										splitRenderArea			= instance.splitRenderArea;
+
+	const deUint32								renderDimension			= splitRenderArea ? quarterRenderSize : fullRenderSize;
+	const int									numRenderSegments		= splitRenderArea ? 4 : 1;
 
 	supportsGeometry		= features.geometryShader == VK_TRUE;
 	supportsTessellation	= features.tessellationShader == VK_TRUE;
@@ -3955,7 +3963,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		+1.0f,														//	float				maxDepthBounds;
 	};
 	const VkViewport							viewport0				= makeViewport(renderSize);
-	const VkRect2D								scissor0				= makeRect2D(renderSize);
+	const VkRect2D								scissor0				= makeRect2D(0u, 0u);
 	const VkPipelineViewportStateCreateInfo		viewportParams			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		//	VkStructureType		sType;
@@ -4119,6 +4127,20 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		3u
 	};
 
+	const	VkDynamicState							dynamicStates[]				=
+	{
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	const VkPipelineDynamicStateCreateInfo			dynamicStateCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,  // sType
+		DE_NULL,											   // pNext
+		0u,													   // flags
+		DE_LENGTH_OF_ARRAY(dynamicStates),					   // dynamicStateCount
+		dynamicStates										   // pDynamicStates
+	};
+
 	const VkPipelineTessellationStateCreateInfo* tessellationInfo	=	hasTessellation ? &tessellationState: DE_NULL;
 	const VkGraphicsPipelineCreateInfo		pipelineParams			=
 	{
@@ -4135,7 +4157,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		&multisampleParams,										//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 		&depthStencilParams,									//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
 		&blendParams,											//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		(const VkPipelineDynamicStateCreateInfo*)DE_NULL,		//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		&dynamicStateCreateInfo,								//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 		*pipelineLayout,										//	VkPipelineLayout								layout;
 		*renderPass,											//	VkRenderPass									renderPass;
 		0u,														//	deUint32										subpass;
@@ -4192,227 +4214,247 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, device, &framebufferParams));
 
-	// Record commands
-	beginCommandBuffer(vk, *cmdBuf);
+	bool firstPass = true;
 
+	for (int x = 0; x < numRenderSegments; x++)
 	{
-		const VkMemoryBarrier			vertFlushBarrier	=
+		for (int y = 0; y < numRenderSegments; y++)
 		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER,			//	VkStructureType		sType;
-			DE_NULL,									//	const void*			pNext;
-			VK_ACCESS_HOST_WRITE_BIT,					//	VkMemoryOutputFlags	outputMask;
-			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,		//	VkMemoryInputFlags	inputMask;
-		};
-		vector<VkImageMemoryBarrier>	colorAttBarriers;
+			// Record commands
+			beginCommandBuffer(vk, *cmdBuf);
 
-		VkImageMemoryBarrier			imgBarrier          =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
-			DE_NULL,									//	const void*				pNext;
-			0u,											//	VkMemoryOutputFlags		outputMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		//	VkMemoryInputFlags		inputMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			newLayout;
-			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
-			queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
-			*image,										//	VkImage					image;
 			{
-				VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspect	aspect;
-				0u,											//	deUint32		baseMipLevel;
-				1u,											//	deUint32		mipLevels;
-				0u,											//	deUint32		baseArraySlice;
-				1u,											//	deUint32		arraySize;
-			}											//	VkImageSubresourceRange	subresourceRange;
-		};
-		colorAttBarriers.push_back(imgBarrier);
-		if (needInterface)
-		{
-			imgBarrier.image = *fragOutputImage;
-			colorAttBarriers.push_back(imgBarrier);
-			vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, colorAttBarriers.data());
-		}
-		else
-		{
-			vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, colorAttBarriers.data());
-		}
-	}
+				const VkMemoryBarrier			vertFlushBarrier	=
+				{
+					VK_STRUCTURE_TYPE_MEMORY_BARRIER,			//	VkStructureType		sType;
+					DE_NULL,									//	const void*			pNext;
+					VK_ACCESS_HOST_WRITE_BIT,					//	VkMemoryOutputFlags	outputMask;
+					VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,		//	VkMemoryInputFlags	inputMask;
+				};
+				vector<VkImageMemoryBarrier>	colorAttBarriers;
 
-	{
-		vector<VkClearValue>			clearValue;
-		clearValue.push_back(makeClearValueColorF32(defaulClearColor[0], defaulClearColor[1], defaulClearColor[2], defaulClearColor[3]));
-		if (needInterface)
-		{
-			clearValue.push_back(makeClearValueColorU32(0, 0, 0, 0));
-		}
-		beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), (deUint32)clearValue.size(), clearValue.data());
-	}
+				VkImageMemoryBarrier			imgBarrier          =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
+					DE_NULL,									//	const void*				pNext;
+					0u,											//	VkMemoryOutputFlags		outputMask;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		//	VkMemoryInputFlags		inputMask;
+					VK_IMAGE_LAYOUT_UNDEFINED,					//	VkImageLayout			oldLayout;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			newLayout;
+					queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+					queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
+					*image,										//	VkImage					image;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspect	aspect;
+						0u,											//	deUint32		baseMipLevel;
+						1u,											//	deUint32		mipLevels;
+						0u,											//	deUint32		baseArraySlice;
+						1u,											//	deUint32		arraySize;
+					}											//	VkImageSubresourceRange	subresourceRange;
+				};
+				colorAttBarriers.push_back(imgBarrier);
+				if (needInterface)
+				{
+					imgBarrier.image = *fragOutputImage;
+					colorAttBarriers.push_back(imgBarrier);
+					vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, colorAttBarriers.data());
+				}
+				else
+				{
+					vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, colorAttBarriers.data());
+				}
+			}
 
-	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-	{
-		const VkDeviceSize bindingOffset = 0;
-		vk.cmdBindVertexBuffers(*cmdBuf, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
-	}
-	if (needInterface)
-	{
-		const VkDeviceSize bindingOffset = 0;
-		vk.cmdBindVertexBuffers(*cmdBuf, 1u, 1u, &vertexInputBuffer.get(), &bindingOffset);
-	}
-	if (hasPushConstants)
-	{
-		vector<deUint8> pushConstantsBytes;
-		instance.pushConstants.getBuffer()->getBytes(pushConstantsBytes);
-
-		const deUint32	size	= static_cast<deUint32>(pushConstantsBytes.size());
-		const void*		data	= &pushConstantsBytes.front();
-
-		vk.cmdPushConstants(*cmdBuf, *pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS, 0, size, data);
-	}
-	if (numResources != 0)
-	{
-		// Bind to set number 0.
-		vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &rawSet, 0, DE_NULL);
-	}
-	vk.cmdDraw(*cmdBuf, deUint32(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/, 0u /*first instanceIndex*/);
-	endRenderPass(vk, *cmdBuf);
-
-	{
-		vector<VkImageMemoryBarrier>	renderFinishBarrier;
-		VkImageMemoryBarrier			imgBarrier				=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
-			DE_NULL,									//	const void*				pNext;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		//	VkMemoryOutputFlags		outputMask;
-			VK_ACCESS_TRANSFER_READ_BIT,				//	VkMemoryInputFlags		inputMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		//	VkImageLayout			newLayout;
-			queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
-			queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
-			*image,										//	VkImage					image;
 			{
-				VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags	aspectMask;
-				0u,											//	deUint32			baseMipLevel;
-				1u,											//	deUint32			mipLevels;
-				0u,											//	deUint32			baseArraySlice;
-				1u,											//	deUint32			arraySize;
-			}											//	VkImageSubresourceRange	subresourceRange;
-		};
-		renderFinishBarrier.push_back(imgBarrier);
+				vector<VkClearValue>			clearValue;
+				clearValue.push_back(makeClearValueColorF32(defaulClearColor[0], defaulClearColor[1], defaulClearColor[2], defaulClearColor[3]));
+				if (needInterface)
+				{
+					clearValue.push_back(makeClearValueColorU32(0, 0, 0, 0));
+				}
 
-		if (needInterface)
-		{
-			imgBarrier.image = *fragOutputImage;
-			renderFinishBarrier.push_back(imgBarrier);
-			vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, renderFinishBarrier.data());
-		}
-		else
-		{
-			vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, renderFinishBarrier.data());
-		}
-	}
 
-	{
-		const VkBufferImageCopy	copyParams	=
-		{
-			(VkDeviceSize)0u,						//	VkDeviceSize			bufferOffset;
-			(deUint32)renderSize.x(),				//	deUint32				bufferRowLength;
-			(deUint32)renderSize.y(),				//	deUint32				bufferImageHeight;
+				vk::VkRect2D scissor = makeRect2D(x * renderDimension, y * renderDimension, renderDimension, renderDimension);
+				vk.cmdSetScissor(*cmdBuf, 0u, 1u, &scissor);
+
+				beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, scissor, (deUint32)clearValue.size(), clearValue.data());
+			}
+
+			vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				//	VkImageAspect		aspect;
-				0u,										//	deUint32			mipLevel;
-				0u,										//	deUint32			arrayLayer;
-				1u,										//	deUint32			arraySize;
-			},										//	VkImageSubresourceCopy	imageSubresource;
-			{ 0u, 0u, 0u },							//	VkOffset3D				imageOffset;
-			{ renderSize.x(), renderSize.y(), 1u }	//	VkExtent3D				imageExtent;
-		};
-		vk.cmdCopyImageToBuffer(*cmdBuf, *image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+				const VkDeviceSize bindingOffset = 0;
+				vk.cmdBindVertexBuffers(*cmdBuf, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
+			}
+			if (needInterface)
+			{
+				const VkDeviceSize bindingOffset = 0;
+				vk.cmdBindVertexBuffers(*cmdBuf, 1u, 1u, &vertexInputBuffer.get(), &bindingOffset);
+			}
+			if (hasPushConstants)
+			{
+				vector<deUint8> pushConstantsBytes;
+				instance.pushConstants.getBuffer()->getBytes(pushConstantsBytes);
 
-		if (needInterface)
-		{
-			vk.cmdCopyImageToBuffer(*cmdBuf, *fragOutputImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *fragOutputBuffer, 1u, &copyParams);
+				const deUint32	size	= static_cast<deUint32>(pushConstantsBytes.size());
+				const void*		data	= &pushConstantsBytes.front();
+
+				vk.cmdPushConstants(*cmdBuf, *pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS, 0, size, data);
+			}
+			if (numResources != 0)
+			{
+				// Bind to set number 0.
+				vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &rawSet, 0, DE_NULL);
+			}
+			vk.cmdDraw(*cmdBuf, deUint32(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/, 0u /*first instanceIndex*/);
+			endRenderPass(vk, *cmdBuf);
+
+			{
+				vector<VkImageMemoryBarrier>	renderFinishBarrier;
+				VkImageMemoryBarrier			imgBarrier				=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
+					DE_NULL,									//	const void*				pNext;
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		//	VkMemoryOutputFlags		outputMask;
+					VK_ACCESS_TRANSFER_READ_BIT,				//	VkMemoryInputFlags		inputMask;
+					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			oldLayout;
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		//	VkImageLayout			newLayout;
+					queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+					queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
+					*image,										//	VkImage					image;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags	aspectMask;
+						0u,											//	deUint32			baseMipLevel;
+						1u,											//	deUint32			mipLevels;
+						0u,											//	deUint32			baseArraySlice;
+						1u,											//	deUint32			arraySize;
+					}											//	VkImageSubresourceRange	subresourceRange;
+				};
+				renderFinishBarrier.push_back(imgBarrier);
+
+				if (needInterface)
+				{
+					imgBarrier.image = *fragOutputImage;
+					renderFinishBarrier.push_back(imgBarrier);
+					vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, renderFinishBarrier.data());
+				}
+				else
+				{
+					vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, renderFinishBarrier.data());
+				}
+			}
+
+			if ( x ==  numRenderSegments -1 && y == numRenderSegments - 1)
+			{
+				{
+					const VkBufferImageCopy	copyParams	=
+					{
+						(VkDeviceSize)0u,						//	VkDeviceSize			bufferOffset;
+						(deUint32)renderSize.x(),				//	deUint32				bufferRowLength;
+						(deUint32)renderSize.y(),				//	deUint32				bufferImageHeight;
+						{
+							VK_IMAGE_ASPECT_COLOR_BIT,				//	VkImageAspect		aspect;
+							0u,										//	deUint32			mipLevel;
+							0u,										//	deUint32			arrayLayer;
+							1u,										//	deUint32			arraySize;
+						},										//	VkImageSubresourceCopy	imageSubresource;
+						{ 0u, 0u, 0u },							//	VkOffset3D				imageOffset;
+						{ renderSize.x(), renderSize.y(), 1u }
+					};
+					vk.cmdCopyImageToBuffer(*cmdBuf, *image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+
+					if (needInterface)
+					{
+					vk.cmdCopyImageToBuffer(*cmdBuf, *fragOutputImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *fragOutputBuffer, 1u, &copyParams);
+					}
+				}
+
+				{
+					vector<VkBufferMemoryBarrier>	cpFinishBarriers;
+					VkBufferMemoryBarrier			copyFinishBarrier	=
+					{
+						VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//	VkStructureType		sType;
+						DE_NULL,									//	const void*			pNext;
+						VK_ACCESS_TRANSFER_WRITE_BIT,				//	VkMemoryOutputFlags	outputMask;
+						VK_ACCESS_HOST_READ_BIT,					//	VkMemoryInputFlags	inputMask;
+						queueFamilyIndex,							//	deUint32			srcQueueFamilyIndex;
+						queueFamilyIndex,							//	deUint32			destQueueFamilyIndex;
+						*readImageBuffer,							//	VkBuffer			buffer;
+						0u,											//	VkDeviceSize		offset;
+						imageSizeBytes								//	VkDeviceSize		size;
+					};
+					cpFinishBarriers.push_back(copyFinishBarrier);
+
+					if (needInterface)
+					{
+						copyFinishBarrier.buffer	= *fragOutputBuffer;
+						copyFinishBarrier.size		= VK_WHOLE_SIZE;
+						cpFinishBarriers.push_back(copyFinishBarrier);
+
+						vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 2, cpFinishBarriers.data(), 0, (const VkImageMemoryBarrier*)DE_NULL);
+					}
+					else
+					{
+						vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, cpFinishBarriers.data(), 0, (const VkImageMemoryBarrier*)DE_NULL);
+					}
+				}
+				}
+
+			endCommandBuffer(vk, *cmdBuf);
+
+			if (firstPass)
+			{
+				// Upload vertex data
+				{
+					void* vertexBufPtr = vertexBufferMemory->getHostPtr();
+					deMemcpy(vertexBufPtr, &vertexData[0], vertexDataSize);
+					flushAlloc(vk, device, *vertexBufferMemory);
+				}
+
+				if (needInterface)
+				{
+					vector<deUint8> inputBufferBytes;
+					instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+
+					const deUint32				typNumBytes		= instance.interfaces.getInputType().getNumBytes();
+					const deUint32				bufNumBytes		= static_cast<deUint32>(inputBufferBytes.size());
+
+					// Require that the test instantation provides four output values.
+					DE_ASSERT(bufNumBytes == 4 * typNumBytes);
+
+					// We have four triangles. Because interpolation happens before executing the fragment shader,
+					// we need to provide the same vertex attribute for the same triangle. That means, duplicate each
+					// value three times for all four values.
+
+					const deUint8*				provided		= static_cast<const deUint8*>(&inputBufferBytes.front());
+					vector<deUint8>				data;
+
+					data.reserve(3 * bufNumBytes);
+
+					for (deUint32 offset = 0; offset < bufNumBytes; offset += typNumBytes)
+						for (deUint32 vertexNdx = 0; vertexNdx < 3; ++vertexNdx)
+							for (deUint32 byteNdx = 0; byteNdx < typNumBytes; ++byteNdx)
+								data.push_back(provided[offset + byteNdx]);
+
+					deMemcpy(vertexInputMemory->getHostPtr(), data.data(), data.size());
+
+					const VkMappedMemoryRange	range			=
+					{
+						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
+						DE_NULL,								//	const void*		pNext;
+						vertexInputMemory->getMemory(),			//	VkDeviceMemory	mem;
+						0,										//	VkDeviceSize	offset;
+						VK_WHOLE_SIZE,							//	VkDeviceSize	size;
+					};
+
+					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+				}
+				firstPass = false;
+			}
+
+			// Submit & wait for completion
+			submitCommandsAndWait(vk, device, queue, cmdBuf.get());
 		}
 	}
-
-	{
-		vector<VkBufferMemoryBarrier> cpFinishBarriers;
-		VkBufferMemoryBarrier			copyFinishBarrier	=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//	VkStructureType		sType;
-			DE_NULL,									//	const void*			pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				//	VkMemoryOutputFlags	outputMask;
-			VK_ACCESS_HOST_READ_BIT,					//	VkMemoryInputFlags	inputMask;
-			queueFamilyIndex,							//	deUint32			srcQueueFamilyIndex;
-			queueFamilyIndex,							//	deUint32			destQueueFamilyIndex;
-			*readImageBuffer,							//	VkBuffer			buffer;
-			0u,											//	VkDeviceSize		offset;
-			imageSizeBytes								//	VkDeviceSize		size;
-		};
-		cpFinishBarriers.push_back(copyFinishBarrier);
-
-		if (needInterface)
-		{
-			copyFinishBarrier.buffer	= *fragOutputBuffer;
-			copyFinishBarrier.size		= VK_WHOLE_SIZE;
-			cpFinishBarriers.push_back(copyFinishBarrier);
-
-			vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 2, cpFinishBarriers.data(), 0, (const VkImageMemoryBarrier*)DE_NULL);
-		}
-		else
-		{
-			vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, cpFinishBarriers.data(), 0, (const VkImageMemoryBarrier*)DE_NULL);
-		}
-	}
-
-	endCommandBuffer(vk, *cmdBuf);
-
-	// Upload vertex data
-	{
-		void* vertexBufPtr = vertexBufferMemory->getHostPtr();
-		deMemcpy(vertexBufPtr, &vertexData[0], vertexDataSize);
-		flushAlloc(vk, device, *vertexBufferMemory);
-	}
-
-	if (needInterface)
-	{
-		vector<deUint8> inputBufferBytes;
-		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
-
-		const deUint32				typNumBytes		= instance.interfaces.getInputType().getNumBytes();
-		const deUint32				bufNumBytes		= static_cast<deUint32>(inputBufferBytes.size());
-
-		// Require that the test instantation provides four output values.
-		DE_ASSERT(bufNumBytes == 4 * typNumBytes);
-
-		// We have four triangles. Because interpolation happens before executing the fragment shader,
-		// we need to provide the same vertex attribute for the same triangle. That means, duplicate each
-		// value three times for all four values.
-
-		const deUint8*				provided		= static_cast<const deUint8*>(&inputBufferBytes.front());
-		vector<deUint8>				data;
-
-		data.reserve(3 * bufNumBytes);
-
-		for (deUint32 offset = 0; offset < bufNumBytes; offset += typNumBytes)
-			for (deUint32 vertexNdx = 0; vertexNdx < 3; ++vertexNdx)
-				for (deUint32 byteNdx = 0; byteNdx < typNumBytes; ++byteNdx)
-					data.push_back(provided[offset + byteNdx]);
-
-		deMemcpy(vertexInputMemory->getHostPtr(), data.data(), data.size());
-
-		const VkMappedMemoryRange	range			=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
-			DE_NULL,								//	const void*		pNext;
-			vertexInputMemory->getMemory(),			//	VkDeviceMemory	mem;
-			0,										//	VkDeviceSize	offset;
-			VK_WHOLE_SIZE,							//	VkDeviceSize	size;
-		};
-
-		VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
-	}
-
-	// Submit & wait for completion
-	submitCommandsAndWait(vk, device, queue, cmdBuf.get());
 
 	const void* imagePtr	= readImageBufferMemory->getHostPtr();
 	const tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
@@ -4729,7 +4771,8 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 						 tcu::TestCaseGroup*		tests,
 						 const qpTestResult			failResult,
 						 const string&				failMessageTemplate,
-						 const bool					renderFullSquare)
+						 const bool					renderFullSquare,
+						 const bool					splitRenderArea)
 {
 	const StageData&				stageData			= getStageData(stage);
 	DE_ASSERT(stageData.getPipelineFn || stageData.initProgramsFn);
@@ -4740,6 +4783,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 		specConstantMap[stage] = specConstants;
 
 	InstanceContext					ctx					(inputColors, outputColors, testCodeFragments, specConstantMap, pushConstants, resources, interfaces, extensions, vulkanFeatures, stage);
+	ctx.splitRenderArea = splitRenderArea;
 	for (size_t i = 0; i < pipeline.size(); ++i)
 	{
 		ctx.moduleMap[pipeline[i].moduleName].push_back(std::make_pair(pipeline[i].entryName, pipeline[i].stage));
@@ -4751,6 +4795,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 		ctx.failMessageTemplate = failMessageTemplate;
 
 	ctx.renderFullSquare = renderFullSquare;
+	ctx.splitRenderArea	= splitRenderArea;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name, "", stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
 }
 
@@ -4766,7 +4811,8 @@ void createTestsForAllStages (const std::string&			name,
 							  VulkanFeatures				vulkanFeatures,
 							  tcu::TestCaseGroup*			tests,
 							  const qpTestResult			failResult,
-							  const string&					failMessageTemplate)
+							  const string&					failMessageTemplate,
+							  const bool					splitRenderArea)
 {
 	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, name + "_vert",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
@@ -4786,7 +4832,7 @@ void createTestsForAllStages (const std::string&			name,
 
 	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, name + "_frag",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate);
+					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate, false, splitRenderArea);
 }
 
 void addTessCtrlTest (tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)

@@ -1724,7 +1724,7 @@ TestCaseGroup* createSeparateShaderTests (Context& ctx)
 	enum
 	{
 		NUM_INTERPOLATIONS	= VARYINGINTERPOLATION_RANDOM, // VARYINGINTERPOLATION_RANDOM is one after last fully specified interpolation
-		INTERFACEFLAGS_LAST = BINDING_LAST * NUM_INTERPOLATIONS * NUM_INTERPOLATIONS
+		INTERFACEFLAGS_LAST = static_cast<int>(BINDING_LAST) * static_cast<int>(NUM_INTERPOLATIONS) * static_cast<int>(NUM_INTERPOLATIONS)
 	};
 
 	for (deUint32 flags = 0; flags < INTERFACEFLAGS_LAST; ++flags)

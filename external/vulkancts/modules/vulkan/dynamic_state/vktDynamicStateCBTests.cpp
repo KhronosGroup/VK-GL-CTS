@@ -115,7 +115,7 @@ public:
 
 		//validation
 		{
-			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 			referenceFrame.allocLevel(0);
 
 			const deInt32 frameWidth = referenceFrame.getWidth();
