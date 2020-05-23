@@ -129,7 +129,7 @@ public:
 
 	virtual void setDynamicStates(void)
 	{
-		const vk::VkViewport viewport	= { 0.0f, 0.0f, (float)WIDTH * 2, (float)HEIGHT * 2, 0.0f, 0.0f };
+		const vk::VkViewport viewport	= { 0.0f, 0.0f, static_cast<float>(WIDTH) * 2.0f, static_cast<float>(HEIGHT) * 2.0f, 0.0f, 0.0f };
 		const vk::VkRect2D scissor		= { { 0, 0 }, { WIDTH, HEIGHT } };
 
 		setDynamicViewportState(1, &viewport, &scissor);
@@ -140,7 +140,7 @@ public:
 
 	virtual tcu::Texture2D buildReferenceFrame (void)
 	{
-		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 		referenceFrame.allocLevel(0);
 
 		const deInt32 frameWidth	= referenceFrame.getWidth();
@@ -187,7 +187,7 @@ public:
 
 	virtual tcu::Texture2D buildReferenceFrame (void)
 	{
-		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 		referenceFrame.allocLevel(0);
 
 		const deInt32 frameWidth	= referenceFrame.getWidth();
@@ -308,7 +308,7 @@ public:
 
 		// validation
 		{
-			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 			referenceFrame.allocLevel(0);
 
 			const deInt32 frameWidth = referenceFrame.getWidth();

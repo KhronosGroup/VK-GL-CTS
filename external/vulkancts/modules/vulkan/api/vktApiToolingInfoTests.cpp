@@ -31,6 +31,7 @@
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuCommandLine.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -74,12 +75,12 @@ CustomInstance createCustomInstance (Context& context, bool allowLayers)
 
 	if (allowLayers)
 	{
-		enabledLayers = getValidationLayers(context.getPlatformInterface());
-		enabledLayersStr = std::vector<std::string>(begin(enabledLayers), end(enabledLayers));
+		enabledLayers		= getValidationLayers(context.getPlatformInterface());
+		enabledLayersStr	= std::vector<std::string>(begin(enabledLayers), end(enabledLayers));
 	}
 
 	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, enabledExtensions, DE_NULL);
-	return CustomInstance(context, instance, allowLayers);
+	return CustomInstance(context, instance, allowLayers, context.getTestContext().getCommandLine().printValidationErrors());
 }
 
 bool checkToolsProperties (Context& context, const std::vector<VkPhysicalDeviceToolPropertiesEXT>& deviceToolPropertiesEXTArray)

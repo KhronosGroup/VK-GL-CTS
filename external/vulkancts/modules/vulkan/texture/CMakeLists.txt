@@ -15,6 +15,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureTests.hpp
 	vktTextureTestUtil.cpp
 	vktTextureTestUtil.hpp
+	vktTextureConversionTests.cpp
+	vktTextureConversionTests.hpp
 	vktTextureFilteringExplicitLodTests.cpp
 	vktTextureFilteringExplicitLodTests.hpp
 	vktTextureFilteringTests.cpp

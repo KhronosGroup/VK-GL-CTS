@@ -5337,8 +5337,8 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 				tiling,
 			};
 
-			deUint32										numCoreProperties	= ~0u;
-			deUint32										numExtProperties	= ~0u;
+			deUint32	numCoreProperties	= 0u;
+			deUint32	numExtProperties	= 0u;
 
 			// Query count
 			vki.getPhysicalDeviceSparseImageFormatProperties(physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.samples, imageFormatInfo.usage, imageFormatInfo.tiling, &numCoreProperties, DE_NULL);
@@ -5569,7 +5569,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 			"VK_KHR_get_physical_device_properties2",
 		};
 
-		for (const auto ext : mandatoryExtensions)
+		for (const auto &ext : mandatoryExtensions)
 		{
 			if (!context.isInstanceFunctionalitySupported(ext))
 				results.fail(ext + " is not supported");
@@ -5583,7 +5583,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 			"VK_KHR_maintenance1",
 		};
 
-		for (const auto ext : mandatoryExtensions)
+		for (const auto &ext : mandatoryExtensions)
 		{
 			if (!context.isDeviceFunctionalitySupported(ext))
 				results.fail(ext + " is not supported");

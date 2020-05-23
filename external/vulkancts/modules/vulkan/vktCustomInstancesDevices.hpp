@@ -52,7 +52,7 @@ class CustomInstance
 {
 public:
 								CustomInstance			();
-								CustomInstance			(Context& context, vk::Move<vk::VkInstance> instance, bool enableDebugReportRecorder);
+								CustomInstance			(Context& context, vk::Move<vk::VkInstance> instance, bool enableDebugReportRecorder, bool printValidationErrors);
 								CustomInstance			(CustomInstance&& other);
 								~CustomInstance			();
 	CustomInstance&				operator=				(CustomInstance&& other);
@@ -74,7 +74,7 @@ class UncheckedInstance
 {
 public:
 						UncheckedInstance		();
-						UncheckedInstance		(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator, bool enableDebugReportRecorder);
+						UncheckedInstance		(Context& context, vk::VkInstance instance, const vk::VkAllocationCallbacks* pAllocator, bool enableDebugReportRecorder, bool printValidationErrors);
 						UncheckedInstance		(UncheckedInstance&& other);
 						~UncheckedInstance		();
 	UncheckedInstance&	operator=				(UncheckedInstance&& other);

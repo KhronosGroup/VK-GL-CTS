@@ -47,7 +47,7 @@ extern "C" {
 #define VK_VERSION_MINOR(version) (((deUint32)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((deUint32)(version) & 0xfff)
 // Version of this file
-#define VK_HEADER_VERSION 140
+#define VK_HEADER_VERSION 141
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_VERSION(1, 2, VK_HEADER_VERSION)
@@ -1434,6 +1434,7 @@ typedef enum VkVendorId {
     VK_VENDOR_ID_VSI = 0x10002,
     VK_VENDOR_ID_KAZAN = 0x10003,
     VK_VENDOR_ID_CODEPLAY = 0x10004,
+    VK_VENDOR_ID_MESA = 0x10005,
     VK_VENDOR_ID_MAX_ENUM = 0x7FFFFFFF
 } VkVendorId;
 typedef VkFlags VkInstanceCreateFlags;
@@ -4888,6 +4889,7 @@ typedef enum VkDriverId {
     VK_DRIVER_ID_GOOGLE_SWIFTSHADER = 10,
     VK_DRIVER_ID_GGP_PROPRIETARY = 11,
     VK_DRIVER_ID_BROADCOM_PROPRIETARY = 12,
+    VK_DRIVER_ID_MESA_LLVMPIPE = 13,
     VK_DRIVER_ID_AMD_PROPRIETARY_KHR = VK_DRIVER_ID_AMD_PROPRIETARY,
     VK_DRIVER_ID_AMD_OPEN_SOURCE_KHR = VK_DRIVER_ID_AMD_OPEN_SOURCE,
     VK_DRIVER_ID_MESA_RADV_KHR = VK_DRIVER_ID_MESA_RADV,

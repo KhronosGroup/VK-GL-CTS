@@ -78,7 +78,7 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)
 																vk,
 																device,
 																memAlloc,
-																makeImageCreateInfo(resolution, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+																makeImageCreateInfo(resolution, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
 																MemoryRequirement::Any
 															);
 	const Unique<VkRenderPass>		renderPass				(makeRenderPass(vk, device, colorFormat));

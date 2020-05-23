@@ -332,7 +332,7 @@ tcu::TestStatus ConcurrentDraw::iterate (void)
 
 	// Validation - draw
 
-	tcu::Texture2D referenceFrame(mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+	tcu::Texture2D referenceFrame(mapVkFormat(m_colorAttachmentFormat), (int)(0.5f + static_cast<float>(WIDTH)), (int)(0.5f + static_cast<float>(HEIGHT)));
 
 	referenceFrame.allocLevel(0);
 

@@ -31,7 +31,9 @@ DE_BEGIN_EXTERN_C
 
 void	qpPrint			(const char* message);
 void	qpPrintf		(const char* fmt, ...);
+void	qpPrintErrorf	(const char* fmt, ...);
 void	qpPrintv		(const char* fmt, va_list va);
+void	qpPrintErrorv	(const char* fmt, va_list va);
 
 void	qpDief			(const char* fmt, ...);
 void	qpDiev			(const char* fmt, va_list va);

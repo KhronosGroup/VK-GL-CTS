@@ -6109,7 +6109,7 @@ class AdvancedWriteTessellation : public ShaderStorageBufferObjectBase
 			int  pad[3];
 			vec4 position;
 		} data[6];
-		memset(data, 0, sizeof(data));
+		deMemset((void *)data, 0, sizeof(data));
 		glGenBuffers(1, &m_storage_buffer);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_storage_buffer);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(data), data, GL_DYNAMIC_DRAW);

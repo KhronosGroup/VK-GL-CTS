@@ -39,10 +39,13 @@ namespace tcu
 {
 
 //! Kill program. Called when a fatal error occurs.
-void	die		(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
+void	die			(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
 
 //! Print to debug console.
-void	print	(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
+void	print		(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
+
+//! Print nonfatal error.
+void	printError	(const char* format, ...) DE_PRINTF_FUNC_ATTR(1, 2);
 
 //! Base exception class for dEQP test framework.
 class Exception : public std::runtime_error

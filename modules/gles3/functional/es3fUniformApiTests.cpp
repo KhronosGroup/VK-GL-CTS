@@ -531,7 +531,7 @@ public:
 				for (int j = 0; j < (int)structTypes.size(); j++)
 					delete structTypes[j];
 				structTypes.clear();
-				uniform.type = (("u_var" + de::toString(i)).c_str(), generateRandomType(3, structIdx, structTypes, rnd));
+				uniform.type = generateRandomType(3, structIdx, structTypes, rnd);
 			} while (res->getNumSamplers() + getNumSamplersInType(uniform.type) > MAX_NUM_SAMPLER_UNIFORMS);
 
 			res->addUniform(uniform);

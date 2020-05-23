@@ -655,28 +655,22 @@ void TestCase::delayedInit (void)
 
 void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder, Context& context)
 {
-	// \note We are not logging INFORMATION and DEBUG messages
-	static const vk::VkDebugReportFlagsEXT			errorFlags		= vk::VK_DEBUG_REPORT_ERROR_BIT_EXT;
-	static const vk::VkDebugReportFlagsEXT			logFlags		= errorFlags
-																	| vk::VK_DEBUG_REPORT_WARNING_BIT_EXT
-																	| vk::VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-
-	typedef vk::DebugReportRecorder::MessageList	DebugMessages;
+	using DebugMessages = vk::DebugReportRecorder::MessageList;
 
 	const DebugMessages&	messages	= debugReportRecorder.getMessages();
 	tcu::TestLog&			log			= context.getTestContext().getLog();
 
-	if (messages.begin() != messages.end())
+	if (messages.size() > 0)
 	{
 		const tcu::ScopedLogSection	section		(log, "DebugMessages", "Debug Messages");
 		int							numErrors	= 0;
 
-		for (DebugMessages::const_iterator curMsg = messages.begin(); curMsg != messages.end(); ++curMsg)
+		for (const auto& msg : messages)
 		{
-			if ((curMsg->flags & logFlags) != 0)
-				log << tcu::TestLog::Message << *curMsg << tcu::TestLog::EndMessage;
+			if (msg.shouldBeLogged())
+				log << tcu::TestLog::Message << msg << tcu::TestLog::EndMessage;
 
-			if ((curMsg->flags & errorFlags) != 0)
+			if (msg.isError())
 				numErrors += 1;
 		}
 

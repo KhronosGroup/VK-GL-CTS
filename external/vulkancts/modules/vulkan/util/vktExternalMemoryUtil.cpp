@@ -1443,6 +1443,8 @@ deUint64 AndroidHardwareBufferExternalApi26::vkUsageToAhbUsage(vk::VkImageUsageF
 	  case vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT:
 		return AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
 	  case vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT:
+	  case vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT:
+		// Alias of AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER which is defined in later Android API versions.
 		return AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
 	  default:
 		  return 0u;
@@ -1494,6 +1496,7 @@ class AndroidHardwareBufferExternalApi28 : public  AndroidHardwareBufferExternal
 public:
 
 	virtual deUint64 vkCreateToAhbUsage(vk::VkImageCreateFlagBits vkFlag);
+	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat);
 	virtual deUint64 mustSupportAhbUsageFlags();
 
 	AndroidHardwareBufferExternalApi28() : AndroidHardwareBufferExternalApi26() {};
@@ -1513,6 +1516,27 @@ deUint64 AndroidHardwareBufferExternalApi28::vkCreateToAhbUsage(vk::VkImageCreat
 		return AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP;
 	  default:
 		return AndroidHardwareBufferExternalApi26::vkCreateToAhbUsage(vkFlags);
+	}
+}
+
+deUint32 AndroidHardwareBufferExternalApi28::vkFormatToAhbFormat(vk::VkFormat vkFormat)
+{
+	switch(vkFormat)
+	{
+	  case vk::VK_FORMAT_D16_UNORM:
+		return AHARDWAREBUFFER_FORMAT_D16_UNORM;
+	  case vk::VK_FORMAT_X8_D24_UNORM_PACK32:
+		return AHARDWAREBUFFER_FORMAT_D24_UNORM;
+	  case vk::VK_FORMAT_D24_UNORM_S8_UINT:
+		return AHARDWAREBUFFER_FORMAT_D24_UNORM_S8_UINT;
+	  case vk::VK_FORMAT_D32_SFLOAT:
+		return AHARDWAREBUFFER_FORMAT_D32_FLOAT;
+	  case vk::VK_FORMAT_D32_SFLOAT_S8_UINT:
+		return AHARDWAREBUFFER_FORMAT_D32_FLOAT_S8_UINT;
+	  case vk::VK_FORMAT_S8_UINT:
+		return AHARDWAREBUFFER_FORMAT_S8_UINT;
+	  default:
+		return AndroidHardwareBufferExternalApi26::vkFormatToAhbFormat(vkFormat);
 	}
 }
 
