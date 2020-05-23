@@ -84,6 +84,7 @@
 #include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcTextureFilterAnisotropicTests.hpp"
 #include "glcViewportArrayTests.hpp"
+#include "glcPixelStorageModesTests.hpp"
 
 #include "../gles31/es31cArrayOfArraysTests.hpp"
 #include "../gles31/es31cDrawIndirectTests.hpp"
