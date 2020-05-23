@@ -33,6 +33,7 @@
 #include "vktTextureCompressedFormatTests.hpp"
 #include "vktTextureSwizzleTests.hpp"
 #include "vktTextureSubgroupLodTests.hpp"
+#include "vktTextureConversionTests.hpp"
 
 namespace vkt
 {
@@ -53,6 +54,7 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 	textureTests->addChild(createTextureCompressedFormatTests	(testCtx));
 	textureTests->addChild(createTextureSwizzleTests			(testCtx));
 	textureTests->addChild(createTextureSubgroupLodTests		(testCtx));
+	textureTests->addChild(createTextureConversionTests			(testCtx));
 }
 
 } // anonymous

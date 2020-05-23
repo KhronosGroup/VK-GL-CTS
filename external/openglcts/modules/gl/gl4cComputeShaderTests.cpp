@@ -69,9 +69,9 @@ public:
 		if (pixelFormat.redBits != 0 && pixelFormat.greenBits != 0 && pixelFormat.blueBits != 0 &&
 			pixelFormat.alphaBits != 0)
 		{
-			g_color_eps = vec4(1.f / ((float)(1 << pixelFormat.redBits) - 1.0f),
-							   1.f / ((float)(1 << pixelFormat.greenBits) - 1.0f),
-							   1.f / ((float)(1 << pixelFormat.blueBits) - 1.0f),
+			g_color_eps = vec4(1.f / ((float)(1 << deMin32(8, pixelFormat.redBits)) - 1.0f),
+							   1.f / ((float)(1 << deMin32(8, pixelFormat.greenBits)) - 1.0f),
+							   1.f / ((float)(1 << deMin32(8, pixelFormat.blueBits)) - 1.0f),
 							   1.f / ((float)(1 << pixelFormat.alphaBits) - 1.0f)) +
 						  vec4(epsilon_zero);
 		}

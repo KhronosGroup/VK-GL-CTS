@@ -91,6 +91,7 @@ DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceGroupID,			int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation,					bool);
+DE_DECLARE_COMMAND_LINE_OPT(PrintValidationErrors,		bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
@@ -190,6 +191,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<ArchiveDir>					(DE_NULL,	"deqp-archive-dir",							"Path to test resource files",											".")
 		<< Option<LogFlush>						(DE_NULL,	"deqp-log-flush",							"Enable or disable log file fflush",				s_enableNames,		"enable")
 		<< Option<Validation>					(DE_NULL,	"deqp-validation",							"Enable or disable test case validation",			s_enableNames,		"disable")
+		<< Option<PrintValidationErrors>		(DE_NULL,	"deqp-print-validation-errors",				"Print validation errors to standard error")
 		<< Option<Optimization>					(DE_NULL,	"deqp-optimization-recipe",					"Shader optimization recipe (0=disabled, 1=performance, 2=size)",		"0")
 		<< Option<OptimizeSpirv>				(DE_NULL,	"deqp-optimize-spirv",						"Apply optimization to spir-v shaders as well",		s_enableNames,		"disable")
 		<< Option<ShaderCache>					(DE_NULL,	"deqp-shadercache",							"Enable or disable shader cache",					s_enableNames,		"enable")
@@ -837,6 +839,7 @@ const std::vector<int>&	CommandLine::getCLDeviceIds					(void) const	{ return m_
 int						CommandLine::getVKDeviceId					(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();							}
 int						CommandLine::getVKDeviceGroupId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();						}
 bool					CommandLine::isValidationEnabled			(void) const	{ return m_cmdLine.getOption<opt::Validation>();							}
+bool					CommandLine::printValidationErrors			(void) const	{ return m_cmdLine.getOption<opt::PrintValidationErrors>();					}
 bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();								}
 bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();							}
 const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();			}

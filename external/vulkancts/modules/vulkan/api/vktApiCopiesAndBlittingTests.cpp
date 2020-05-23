@@ -2347,8 +2347,10 @@ bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAcces
 
 	log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
 
-	// if either of srcImage or dstImage was created with a signed/unsigned integer VkFormat,
-	// the other must also have been created with a signed/unsigned integer VkFormat
+	// if either of srcImage or dstImage stores values as a signed/unsigned integer,
+	// the other must also store values a signed/unsigned integer
+	// e.g. blit unorm to uscaled is not allowed as uscaled formats store data as integers
+	// despite the fact that both formats are sampled as floats
 	bool dstImageIsIntClass = dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
 							  dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 	bool srcImageIsIntClass = srcChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
@@ -2608,8 +2610,10 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 
 	tcu::clear(errorMask, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0));
 
-	// if either of srcImage or dstImage was created with a signed/unsigned integer VkFormat,
-	// the other must also have been created with a signed/unsigned integer VkFormat
+	// if either of srcImage or dstImage stores values as a signed/unsigned integer,
+	// the other must also store values a signed/unsigned integer
+	// e.g. blit unorm to uscaled is not allowed as uscaled formats store data as integers
+	// despite the fact that both formats are sampled as floats
 	bool dstImageIsIntClass = dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
 							  dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
 	bool srcImageIsIntClass = srcChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||

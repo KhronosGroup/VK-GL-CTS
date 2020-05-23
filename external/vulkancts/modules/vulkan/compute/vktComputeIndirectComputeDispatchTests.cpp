@@ -449,10 +449,11 @@ protected:
 	virtual void					fillIndirectBufferData					(const vk::VkCommandBuffer	commandBuffer,
 																			 const Buffer&				indirectBuffer);
 
-	vk::Move<vk::VkDescriptorPool>	m_descriptorPool;
-	vk::Move<vk::VkDescriptorSet>	m_descriptorSet;
-	vk::Move<vk::VkPipelineLayout>	m_pipelineLayout;
-	vk::Move<vk::VkPipeline>		m_computePipeline;
+	vk::Move<vk::VkDescriptorSetLayout>	m_descriptorSetLayout;
+	vk::Move<vk::VkDescriptorPool>		m_descriptorPool;
+	vk::Move<vk::VkDescriptorSet>		m_descriptorSet;
+	vk::Move<vk::VkPipelineLayout>		m_pipelineLayout;
+	vk::Move<vk::VkPipeline>			m_computePipeline;
 
 private:
 	IndirectDispatchInstanceBufferGenerate (const vkt::TestInstance&);
@@ -466,12 +467,12 @@ void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::V
 		m_device_interface, m_device, m_context.getBinaryCollection().get("indirect_dispatch_" + m_name + "_generate"), 0u));
 
 	// Create descriptorSetLayout
-	vk::DescriptorSetLayoutBuilder layoutBuilder;
-	layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
-	vk::Unique<vk::VkDescriptorSetLayout> descriptorSetLayout(layoutBuilder.build(m_device_interface, m_device));
+	m_descriptorSetLayout = vk::DescriptorSetLayoutBuilder()
+		.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(m_device_interface, m_device);
 
 	// Create compute pipeline
-	m_pipelineLayout = makePipelineLayout(m_device_interface, m_device, *descriptorSetLayout);
+	m_pipelineLayout = makePipelineLayout(m_device_interface, m_device, *m_descriptorSetLayout);
 	m_computePipeline = makeComputePipeline(m_device_interface, m_device, *m_pipelineLayout, *genIndirectBufferDataShader);
 
 	// Create descriptor pool
@@ -480,7 +481,7 @@ void IndirectDispatchInstanceBufferGenerate::fillIndirectBufferData (const vk::V
 		.build(m_device_interface, m_device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
 	// Create descriptor set
-	m_descriptorSet = makeDescriptorSet(m_device_interface, m_device, *m_descriptorPool, *descriptorSetLayout);
+	m_descriptorSet = makeDescriptorSet(m_device_interface, m_device, *m_descriptorPool, *m_descriptorSetLayout);
 
 	const vk::VkDescriptorBufferInfo indirectDescriptorInfo = makeDescriptorBufferInfo(*indirectBuffer, 0ull, m_bufferSize);
 

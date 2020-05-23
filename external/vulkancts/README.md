@@ -368,11 +368,15 @@ validation layers enabled and debug callback is registered to record any
 messages. Debug messages collected during test execution will be included at
 the end of the test case log.
 
+In addition, when the `--deqp-print-validation-errors` command line option is
+used, validation errors are additionally printed to standard error in the
+moment they are generated.
+
 If any validation errors are found, test result will be set to `InternalError`.
 
 By default `VK_DEBUG_REPORT_INFORMATION_BIT_EXT` and `_DEBUG_BIT_EXT` messages
 are excluded from the log, but that can be customized by modifying
-`vkt::TestCaseExecutor::deinit()` in `vktTestPackage.cpp`.
+`vk::DebugReportMessage::shouldBeLogged()` in `vkDebugReportUtil.hpp`.
 
 On the Android target, layers can be added to the APK during the build process
 by setting the `--layers-path` command line option to point into the NDK or to

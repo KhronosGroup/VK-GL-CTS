@@ -65,6 +65,20 @@ struct DebugReportMessage
 		, layerPrefix	(layerPrefix_)
 		, message		(message_)
 	{}
+
+	bool isError		() const
+	{
+		static const vk::VkDebugReportFlagsEXT errorFlags = vk::VK_DEBUG_REPORT_ERROR_BIT_EXT;
+		return ((flags & errorFlags) != 0u);
+	}
+
+	bool shouldBeLogged	() const
+	{
+		// \note We are not logging INFORMATION and DEBUG messages
+		static const vk::VkDebugReportFlagsEXT otherFlags	= vk::VK_DEBUG_REPORT_WARNING_BIT_EXT
+															| vk::VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+		return (isError() || ((flags & otherFlags) != 0u));
+	}
 };
 
 std::ostream&	operator<<	(std::ostream& str, const DebugReportMessage& message);
@@ -72,17 +86,19 @@ std::ostream&	operator<<	(std::ostream& str, const DebugReportMessage& message);
 class DebugReportRecorder
 {
 public:
-	typedef de::AppendList<DebugReportMessage>	MessageList;
+	using MessageList = de::AppendList<DebugReportMessage>;
 
-											DebugReportRecorder		(const InstanceInterface& vki, VkInstance instance);
+											DebugReportRecorder		(const InstanceInterface& vki, VkInstance instance, bool printValidationErrors);
 											~DebugReportRecorder	(void);
 
-	const MessageList&						getMessages				(void) const { return m_messages; }
+	MessageList&							getMessages				(void) { return m_messages; }
 	void									clearMessages			(void) { m_messages.clear(); }
+	bool									errorPrinting			(void) const { return m_print_errors; }
 
 private:
 	MessageList								m_messages;
 	const Unique<VkDebugReportCallbackEXT>	m_callback;
+	const bool								m_print_errors;
 };
 
 bool	isDebugReportSupported		(const PlatformInterface& vkp);

@@ -38,9 +38,9 @@ namespace
 void populateSubgroupLodTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&			testCtx			= group->getTestContext();
-	cts_amber::AmberTestCase*	testCaseLod		= cts_amber::createAmberTestCase(testCtx, "texturelod", "", "texture_subgroup_lod", "texture_lod.amber");
-	cts_amber::AmberTestCase*	testCaseGrad	= cts_amber::createAmberTestCase(testCtx, "texturegrad", "", "texture_subgroup_lod", "texture_grad.amber");
-	cts_amber::AmberTestCase*	testCaseFetch	= cts_amber::createAmberTestCase(testCtx, "texelfetch", "", "texture_subgroup_lod", "texel_fetch.amber");
+	cts_amber::AmberTestCase*	testCaseLod		= cts_amber::createAmberTestCase(testCtx, "texturelod", "", "texture/subgroup_lod", "texture_lod.amber");
+	cts_amber::AmberTestCase*	testCaseGrad	= cts_amber::createAmberTestCase(testCtx, "texturegrad", "", "texture/subgroup_lod", "texture_grad.amber");
+	cts_amber::AmberTestCase*	testCaseFetch	= cts_amber::createAmberTestCase(testCtx, "texelfetch", "", "texture/subgroup_lod", "texel_fetch.amber");
 
 	group->addChild(testCaseLod);
 	group->addChild(testCaseGrad);

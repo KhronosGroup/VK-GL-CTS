@@ -1,0 +1,209 @@
+#!amber
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Generated from the following GLSL code, but array stride changed
+# from 4 to 8.
+#
+# SHADER compute compute_shader GLSL
+# #version 320 es
+# layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+# layout(binding = 0) buffer Out0
+# {
+#     uint values[];
+# } sb;
+#
+# void main (void)
+# {
+#     uvec3 size = gl_NumWorkGroups * gl_WorkGroupSize;
+#     uint groupNdx = size.x * size.y * gl_GlobalInvocationID.z + size.x * gl_GlobalInvocationID.y + gl_GlobalInvocationID.x;
+#     uint numValuesPerInv = uint(sb.values.length()) / (size.x * size.y * size.z);
+#     uint offset = numValuesPerInv * groupNdx;
+#
+#     for (uint ndx = 0u; ndx < numValuesPerInv; ndx++)
+#         sb.values[offset + ndx] = offset + ndx;
+# }
+SHADER compute compute_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 7
+; Bound: 83
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %gl_NumWorkGroups %gl_GlobalInvocationID
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource ESSL 320
+               OpName %main "main"
+               OpName %size "size"
+               OpName %gl_NumWorkGroups "gl_NumWorkGroups"
+               OpName %groupNdx "groupNdx"
+               OpName %gl_GlobalInvocationID "gl_GlobalInvocationID"
+               OpName %numValuesPerInv "numValuesPerInv"
+               OpName %Out0 "Out0"
+               OpMemberName %Out0 0 "values"
+               OpName %sb "sb"
+               OpName %offset "offset"
+               OpName %ndx "ndx"
+               OpDecorate %gl_NumWorkGroups BuiltIn NumWorkgroups
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %_runtimearr_uint ArrayStride 8
+               OpMemberDecorate %Out0 0 Offset 0
+               OpDecorate %Out0 BufferBlock
+               OpDecorate %sb DescriptorSet 0
+               OpDecorate %sb Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_NumWorkGroups = OpVariable %_ptr_Input_v3uint Input
+     %uint_1 = OpConstant %uint 1
+         %14 = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_0 = OpConstant %uint 0
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+     %uint_2 = OpConstant %uint 2
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+       %Out0 = OpTypeStruct %_runtimearr_uint
+%_ptr_Uniform_Out0 = OpTypePointer Uniform %Out0
+         %sb = OpVariable %_ptr_Uniform_Out0 Uniform
+        %int = OpTypeInt 32 1
+       %bool = OpTypeBool
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+       %size = OpVariable %_ptr_Function_v3uint Function
+   %groupNdx = OpVariable %_ptr_Function_uint Function
+%numValuesPerInv = OpVariable %_ptr_Function_uint Function
+     %offset = OpVariable %_ptr_Function_uint Function
+        %ndx = OpVariable %_ptr_Function_uint Function
+         %12 = OpLoad %v3uint %gl_NumWorkGroups
+         %15 = OpIMul %v3uint %12 %14
+               OpStore %size %15
+         %19 = OpAccessChain %_ptr_Function_uint %size %uint_0
+         %20 = OpLoad %uint %19
+         %21 = OpAccessChain %_ptr_Function_uint %size %uint_1
+         %22 = OpLoad %uint %21
+         %23 = OpIMul %uint %20 %22
+         %27 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_2
+         %28 = OpLoad %uint %27
+         %29 = OpIMul %uint %23 %28
+         %30 = OpAccessChain %_ptr_Function_uint %size %uint_0
+         %31 = OpLoad %uint %30
+         %32 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_1
+         %33 = OpLoad %uint %32
+         %34 = OpIMul %uint %31 %33
+         %35 = OpIAdd %uint %29 %34
+         %36 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0
+         %37 = OpLoad %uint %36
+         %38 = OpIAdd %uint %35 %37
+               OpStore %groupNdx %38
+         %44 = OpArrayLength %uint %sb 0
+         %46 = OpBitcast %int %44
+         %47 = OpBitcast %uint %46
+         %48 = OpAccessChain %_ptr_Function_uint %size %uint_0
+         %49 = OpLoad %uint %48
+         %50 = OpAccessChain %_ptr_Function_uint %size %uint_1
+         %51 = OpLoad %uint %50
+         %52 = OpIMul %uint %49 %51
+         %53 = OpAccessChain %_ptr_Function_uint %size %uint_2
+         %54 = OpLoad %uint %53
+         %55 = OpIMul %uint %52 %54
+         %56 = OpUDiv %uint %47 %55
+               OpStore %numValuesPerInv %56
+         %58 = OpLoad %uint %numValuesPerInv
+         %59 = OpLoad %uint %groupNdx
+         %60 = OpIMul %uint %58 %59
+               OpStore %offset %60
+               OpStore %ndx %uint_0
+               OpBranch %62
+         %62 = OpLabel
+               OpLoopMerge %64 %65 None
+               OpBranch %66
+         %66 = OpLabel
+         %67 = OpLoad %uint %ndx
+         %68 = OpLoad %uint %numValuesPerInv
+         %70 = OpULessThan %bool %67 %68
+               OpBranchConditional %70 %63 %64
+         %63 = OpLabel
+         %72 = OpLoad %uint %offset
+         %73 = OpLoad %uint %ndx
+         %74 = OpIAdd %uint %72 %73
+         %75 = OpLoad %uint %offset
+         %76 = OpLoad %uint %ndx
+         %77 = OpIAdd %uint %75 %76
+         %79 = OpAccessChain %_ptr_Uniform_uint %sb %int_0 %74
+               OpStore %79 %77
+               OpBranch %65
+         %65 = OpLabel
+         %80 = OpLoad %uint %ndx
+         %82 = OpIAdd %uint %80 %int_1
+               OpStore %ndx %82
+               OpBranch %62
+         %64 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+# Because the array stride was doubled the verification shader
+# skips every second element.
+SHADER compute compute_shader_verify GLSL
+#version 320 es
+layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(binding = 0) buffer Buf0
+{
+    uint values[];
+};
+
+layout(binding = 1) buffer Buf1
+{
+    int result;
+};
+
+void main()
+{
+    result = 1;
+
+    for (uint i = 0u; i < 512u; i++)
+        if (values[i*2u] != i)
+            result = 0;
+}
+END
+
+BUFFER buf DATA_TYPE uint32 SIZE 1024 FILL 0
+BUFFER result DATA_TYPE int32 SIZE 1 FILL 0
+
+PIPELINE compute verify
+  ATTACH compute_shader_verify
+
+  BIND BUFFER buf AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER result AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER buf AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN pipeline 4 2 2
+RUN verify 1 1 1
+
+EXPECT result IDX 0 EQ 1

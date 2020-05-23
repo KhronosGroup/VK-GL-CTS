@@ -1067,7 +1067,7 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
 
 		float mvpMatrix[16];
-		constructOrthoProjMatrix(mvpMatrix, 0.0, m_renderWidth, 0.0f, m_renderHeight, 1.0f, -1.0f);
+		constructOrthoProjMatrix(mvpMatrix, 0.0, w, 0.0f, h, 1.0f, -1.0f);
 		GLint mvpUniformLocation = gl.getUniformLocation(programs[loop]->getProgram(), "mvpMatrix");
 		gl.uniformMatrix4fv(mvpUniformLocation, 1, 0, mvpMatrix);
 

@@ -1108,7 +1108,7 @@ std::string ShadersOOB::genVertexShader (const std::string& shaderDecl, const st
 								<<	shaderDecl << "\n"
 								<<	"void main (void)\n"
 								<<	"{\n"
-								<<	"	highp vec4 color;\n"
+								<<	"	highp vec4 color = vec4(0.0f);\n"
 								<<	shaderBody << "\n"
 								<<	"	v_color = color;\n"
 								<<	"	gl_Position = a_position;\n"

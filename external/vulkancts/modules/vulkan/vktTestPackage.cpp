@@ -181,10 +181,10 @@ using tcu::TestLog;
 namespace
 {
 
-MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, const vk::InstanceInterface& vki, vk::VkInstance instance)
+MovePtr<vk::DebugReportRecorder> createDebugReportRecorder (const vk::PlatformInterface& vkp, const vk::InstanceInterface& vki, vk::VkInstance instance, bool printValidationErrors)
 {
 	if (isDebugReportSupported(vkp))
-		return MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(vki, instance));
+		return MovePtr<vk::DebugReportRecorder>(new vk::DebugReportRecorder(vki, instance, printValidationErrors));
 	else
 		TCU_THROW(NotSupportedError, "VK_EXT_debug_report is not supported");
 }
@@ -242,7 +242,8 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 	, m_debugReportRecorder	(testCtx.getCommandLine().isValidationEnabled()
 							 ? createDebugReportRecorder(m_library->getPlatformInterface(),
 														 m_context.getInstanceInterface(),
-														 m_context.getInstance())
+														 m_context.getInstance(),
+														 testCtx.getCommandLine().printValidationErrors())
 							 : MovePtr<vk::DebugReportRecorder>(DE_NULL))
 	, m_renderDoc			(testCtx.getCommandLine().isRenderDocEnabled()
 							 ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil())
