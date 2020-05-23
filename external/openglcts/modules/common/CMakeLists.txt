@@ -54,6 +54,8 @@ set(GLCTS_COMMON_SRCS
 	glcPackedDepthStencilTests.hpp
 	glcParallelShaderCompileTests.cpp
 	glcParallelShaderCompileTests.hpp
+	glcPixelStorageModesTests.cpp
+	glcPixelStorageModesTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
 	glcRobustBufferAccessBehaviorTests.hpp
 	glcSeparableProgramsTransformFeedbackTests.cpp

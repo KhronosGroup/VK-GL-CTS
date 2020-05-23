@@ -33,6 +33,7 @@
 #include "gl3cTransformFeedbackOverflowQueryTests.hpp"
 #include "gl3cTransformFeedbackTests.hpp"
 #include "gl4cPipelineStatisticsQueryTests.hpp"
+#include "glcPixelStorageModesTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcPackedDepthStencilTests.hpp"
@@ -302,6 +303,7 @@ void GL33TestPackage::init(void)
 		addChild(new glcts::CullDistance::Tests(getContext()));
 		addChild(new gl3cts::TextureSwizzleTests(getContext()));
 		addChild(new glcts::NearestEdgeCases(getContext()));
+		addChild(new glcts::PixelStorageModesTests(getContext(), glu::GLSL_VERSION_330));
 	}
 	catch (...)
 	{
