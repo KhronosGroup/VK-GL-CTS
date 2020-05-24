@@ -133,7 +133,7 @@ def getCommandLine (config):
 
 def readCaseList (filename):
 	cases = []
-	with open(filename, 'rb') as f:
+	with open(filename, 'rt') as f:
 		for line in f:
 			if line[:6] == "TEST: ":
 				cases.append(line[6:].strip())
@@ -144,7 +144,7 @@ def getCaseList (buildCfg, generator, module):
 
 def readPatternList (filename):
 	ptrns = []
-	with open(filename, 'rb') as f:
+	with open(filename, 'rt') as f:
 		for line in f:
 			line = line.strip()
 			if len(line) > 0 and line[0] != '#':
@@ -243,11 +243,12 @@ def genSpecXML (mustpass):
 	for package in mustpass.packages:
 		for config in package.configurations:
 			configElem = ElementTree.SubElement(packageElem, "Configuration",
-							useForFirstEGLConfig	= str(package.useforfirsteglconfig),
-							name					= config.name,
 							caseListFile			= getCaseListFileName(package, config),
 							commandLine				= getCommandLine(config),
-							os						= str(config.os))
+							name					= config.name,
+							os						= str(config.os),
+							useForFirstEGLConfig	= str(package.useforfirsteglconfig)
+							)
 
 	return mustpassElem
 
@@ -417,7 +418,7 @@ def genMustpass (mustpass, moduleCaseLists):
 	specFilename	= os.path.join(mustpass.project.path, mustpass.version, "mustpass.xml")
 
 	print("  Writing spec: " + specFilename)
-	writeFile(specFilename, prettifyXML(specXML))
+	writeFile(specFilename, prettifyXML(specXML).decode())
 
 	print("Done!")
 

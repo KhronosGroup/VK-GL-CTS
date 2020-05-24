@@ -238,7 +238,7 @@ class GitRepo (Source):
 
 	def detectProtocol(self, cmdProtocol = None):
 		# reuse parent repo protocol
-		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
+		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE, universal_newlines=True)
 		(stdout, stderr) = proc.communicate()
 
 		if proc.returncode != 0:
