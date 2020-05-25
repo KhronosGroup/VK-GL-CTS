@@ -1889,22 +1889,30 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 	vector<VkImage>								rawImages						(numImages);
 	vector<ImageSp>								imagesSfr						(numImages);
 	vector<VkImage>								rawImagesSfr					(numImages);
+	vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
 
 	// Create non-SFR image aliases for image layout transition
 	{
-	vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
-	vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
-	vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
+		vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
 
-	for (deUint32 idx = 0; idx < numImages; ++idx)
-	{
-		// Create image
-		images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
+		for (deUint32 idx = 0; idx < numImages; ++idx)
+		{
+			// Create image
+			images[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
+
+			VkBindImageMemorySwapchainInfoKHR bimsInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
+				DE_NULL,
+				*swapchain,
+				idx
+			};
+			bindImageMemorySwapchainInfo[idx] = bimsInfo;
 
 			VkBindImageMemoryInfo bimInfo =
 			{
 				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,
-				DE_NULL,
+				&bindImageMemorySwapchainInfo[idx],
 				**images[idx],
 				DE_NULL,				// If the pNext chain includes an instance of VkBindImageMemorySwapchainInfoKHR, memory must be VK_NULL_HANDLE
 				0u						// If swapchain <in VkBindImageMemorySwapchainInfoKHR> is not NULL, the swapchain and imageIndex are used to determine the memory that the image is bound to, instead of memory and memoryOffset.
@@ -1918,22 +1926,12 @@ tcu::TestStatus deviceGroupRenderTest2 (Context& context, Type wsiType)
 
 	// Create the SFR images
 	{
-		vector<VkBindImageMemorySwapchainInfoKHR>	bindImageMemorySwapchainInfo	(numImages);
 		vector<VkBindImageMemoryDeviceGroupInfo	>	bindImageMemoryDeviceGroupInfo	(numImages);
 		vector<VkBindImageMemoryInfo>				bindImageMemoryInfos			(numImages);
 		for (deUint32 idx = 0; idx < numImages; ++idx)
 		{
 			// Create image
 			imagesSfr[idx] = ImageSp(new UniqueImage(createImage(vkd, *groupDevice, &imageCreateInfo)));
-
-		VkBindImageMemorySwapchainInfoKHR bimsInfo =
-		{
-			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_SWAPCHAIN_INFO_KHR,
-			DE_NULL,
-			*swapchain,
-			idx
-		};
-		bindImageMemorySwapchainInfo[idx] = bimsInfo;
 
 		// Split into 2 vertical halves
 		// NOTE: the same split has to be done also in WsiTriangleRenderer::recordDeviceGroupFrame
