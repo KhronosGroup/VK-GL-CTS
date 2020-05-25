@@ -683,7 +683,8 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 	else if (m_data.id == TEST_ID_INCOMING_RAY_FLAGS_EXT)
 	{
 		const bool			cullingFlags			= m_data.rayFlagSkipTriangles || m_data.rayFlagSkipAABSs;
-		const std::string	cullingFlagsInit		= m_data.rayFlagSkipTriangles ? "gl_RayFlagsSkipTrianglesEXT"
+		const std::string	cullingFlagsInit		= (m_data.rayFlagSkipTriangles && m_data.rayFlagSkipAABSs) ? "gl_RayFlagsSkipTrianglesEXT|gl_RayFlagsSkipAABBEXT"
+													: m_data.rayFlagSkipTriangles ? "gl_RayFlagsSkipTrianglesEXT"
 													: m_data.rayFlagSkipAABSs ? "gl_RayFlagsSkipAABBEXT"
 													: "gl_RayFlagsNoneEXT";
 		const std::string	updateImage				=
@@ -2618,6 +2619,7 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 		{ "raynoskipflags",			false,	false	},
 		{ "rayskiptriangles",		true,	false	},
 		{ "rayskipaabbs",			false,	true	},
+		{ "rayskipboth",			true,	true	},
 	};
 	const struct PipelineFlags
 	{
@@ -2626,9 +2628,10 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 	}
 	pipelineFlags[] =
 	{
-		{ "pipelinenoskipflags",	static_cast<VkPipelineCreateFlags>(0)					},
-		{ "pipelineskiptriangles",	VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR	},
-		{ "pipelineskipaabbs",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR		},
+		{ "pipelinenoskipflags",	static_cast<VkPipelineCreateFlags>(0)																		},
+		{ "pipelineskiptriangles",	VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR														},
+		{ "pipelineskipaabbs",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR															},
+		{ "pipelineskipboth",		VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR | VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR	},
 	};
 
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, de::toLower(name).c_str(), ""));
