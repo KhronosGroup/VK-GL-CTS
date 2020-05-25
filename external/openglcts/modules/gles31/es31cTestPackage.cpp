@@ -71,6 +71,7 @@
 #include "../glesext/texture_buffer/esextcTextureBufferTests.hpp"
 #include "../glesext/texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
 #include "glcViewportArrayTests.hpp"
+#include "glcPixelStorageModesTests.hpp"
 
 namespace es31cts
 {
@@ -222,6 +223,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::ViewportArrayTests(getContext(), extParams));
+		coreGroup->addChild(new glcts::PixelStorageModesTests(getContext(), glu::GLSL_VERSION_310_ES));
 
 		addChild(coreGroup);
 
