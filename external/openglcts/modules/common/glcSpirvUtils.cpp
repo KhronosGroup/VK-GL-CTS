@@ -190,6 +190,7 @@ void getDefaultBuiltInResources(TBuiltInResource* builtin)
 	builtin->maxTaskWorkGroupSizeY_NV				   = 1;
 	builtin->maxTaskWorkGroupSizeZ_NV				   = 1;
 	builtin->maxMeshViewCountNV						   = 4;
+	builtin->maxDualSourceDrawBuffersEXT			   = 1;
 };
 
 glslang::EShTargetLanguageVersion getSpirvTargetVersion(SpirvVersion version)
