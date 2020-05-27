@@ -142,7 +142,9 @@ VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vk,
 										 const VkBuffer			buffer,
 										 VkDeviceSize			offset )
 {
-	DE_ASSERT(buffer != DE_NULL);
+
+	if (buffer == DE_NULL)
+		return 0;
 
 	VkBufferDeviceAddressInfo deviceAddressInfo
 	{
