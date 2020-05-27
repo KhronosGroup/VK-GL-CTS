@@ -422,14 +422,13 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR:						return "VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR:					return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR:					return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR";
-		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR:			return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR:					return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR:					return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR:								return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_KHR:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_KHR";
-		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_KHR:								return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_KHR";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_INFO_KHR:							return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR:							return "VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR:					return "VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR:					return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR";
@@ -439,6 +438,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR:						return "VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR:						return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV";
@@ -1179,36 +1179,37 @@ const char* getDynamicStateName (VkDynamicState value)
 {
 	switch (value)
 	{
-		case VK_DYNAMIC_STATE_VIEWPORT:							return "VK_DYNAMIC_STATE_VIEWPORT";
-		case VK_DYNAMIC_STATE_SCISSOR:							return "VK_DYNAMIC_STATE_SCISSOR";
-		case VK_DYNAMIC_STATE_LINE_WIDTH:						return "VK_DYNAMIC_STATE_LINE_WIDTH";
-		case VK_DYNAMIC_STATE_DEPTH_BIAS:						return "VK_DYNAMIC_STATE_DEPTH_BIAS";
-		case VK_DYNAMIC_STATE_BLEND_CONSTANTS:					return "VK_DYNAMIC_STATE_BLEND_CONSTANTS";
-		case VK_DYNAMIC_STATE_DEPTH_BOUNDS:						return "VK_DYNAMIC_STATE_DEPTH_BOUNDS";
-		case VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK:				return "VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK";
-		case VK_DYNAMIC_STATE_STENCIL_WRITE_MASK:				return "VK_DYNAMIC_STATE_STENCIL_WRITE_MASK";
-		case VK_DYNAMIC_STATE_STENCIL_REFERENCE:				return "VK_DYNAMIC_STATE_STENCIL_REFERENCE";
-		case VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV:			return "VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV";
-		case VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT:			return "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT";
-		case VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT:				return "VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT";
-		case VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV:	return "VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV";
-		case VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV:	return "VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV";
-		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:				return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV";
-		case VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:					return "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT";
-		case VK_DYNAMIC_STATE_CULL_MODE_EXT:					return "VK_DYNAMIC_STATE_CULL_MODE_EXT";
-		case VK_DYNAMIC_STATE_FRONT_FACE_EXT:					return "VK_DYNAMIC_STATE_FRONT_FACE_EXT";
-		case VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT:			return "VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT";
-		case VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT:			return "VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT";
-		case VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT:			return "VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT";
-		case VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT:	return "VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT";
-		case VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT:			return "VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT";
-		case VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT:			return "VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT";
-		case VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT:				return "VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT";
-		case VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT:		return "VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT";
-		case VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT:			return "VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT";
-		case VK_DYNAMIC_STATE_STENCIL_OP_EXT:					return "VK_DYNAMIC_STATE_STENCIL_OP_EXT";
-		case VK_DYNAMIC_STATE_MAX_ENUM:							return "VK_DYNAMIC_STATE_MAX_ENUM";
-		default:												return DE_NULL;
+		case VK_DYNAMIC_STATE_VIEWPORT:								return "VK_DYNAMIC_STATE_VIEWPORT";
+		case VK_DYNAMIC_STATE_SCISSOR:								return "VK_DYNAMIC_STATE_SCISSOR";
+		case VK_DYNAMIC_STATE_LINE_WIDTH:							return "VK_DYNAMIC_STATE_LINE_WIDTH";
+		case VK_DYNAMIC_STATE_DEPTH_BIAS:							return "VK_DYNAMIC_STATE_DEPTH_BIAS";
+		case VK_DYNAMIC_STATE_BLEND_CONSTANTS:						return "VK_DYNAMIC_STATE_BLEND_CONSTANTS";
+		case VK_DYNAMIC_STATE_DEPTH_BOUNDS:							return "VK_DYNAMIC_STATE_DEPTH_BOUNDS";
+		case VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK:					return "VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK";
+		case VK_DYNAMIC_STATE_STENCIL_WRITE_MASK:					return "VK_DYNAMIC_STATE_STENCIL_WRITE_MASK";
+		case VK_DYNAMIC_STATE_STENCIL_REFERENCE:					return "VK_DYNAMIC_STATE_STENCIL_REFERENCE";
+		case VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV:				return "VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV";
+		case VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT:				return "VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT";
+		case VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT:					return "VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT";
+		case VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR:	return "VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR";
+		case VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV:		return "VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV";
+		case VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV:		return "VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV";
+		case VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV:					return "VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV";
+		case VK_DYNAMIC_STATE_LINE_STIPPLE_EXT:						return "VK_DYNAMIC_STATE_LINE_STIPPLE_EXT";
+		case VK_DYNAMIC_STATE_CULL_MODE_EXT:						return "VK_DYNAMIC_STATE_CULL_MODE_EXT";
+		case VK_DYNAMIC_STATE_FRONT_FACE_EXT:						return "VK_DYNAMIC_STATE_FRONT_FACE_EXT";
+		case VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT:				return "VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY_EXT";
+		case VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT:				return "VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT";
+		case VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT:				return "VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT";
+		case VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT:		return "VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE_EXT";
+		case VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT:				return "VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT:				return "VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT:					return "VK_DYNAMIC_STATE_DEPTH_COMPARE_OP_EXT";
+		case VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT:			return "VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT:				return "VK_DYNAMIC_STATE_STENCIL_TEST_ENABLE_EXT";
+		case VK_DYNAMIC_STATE_STENCIL_OP_EXT:						return "VK_DYNAMIC_STATE_STENCIL_OP_EXT";
+		case VK_DYNAMIC_STATE_MAX_ENUM:								return "VK_DYNAMIC_STATE_MAX_ENUM";
+		default:													return DE_NULL;
 	}
 }
 
@@ -1915,14 +1916,14 @@ const char* getCopyAccelerationStructureModeKHRName (VkCopyAccelerationStructure
 	}
 }
 
-const char* getAccelerationStructureMemoryRequirementsTypeKHRName (VkAccelerationStructureMemoryRequirementsTypeKHR value)
+const char* getAccelerationStructureMemoryRequirementsTypeNVName (VkAccelerationStructureMemoryRequirementsTypeNV value)
 {
 	switch (value)
 	{
-		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_KHR:			return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_KHR";
-		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_KHR:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_KHR";
-		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_KHR:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_KHR";
-		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_MAX_ENUM_KHR:		return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_MAX_ENUM_KHR";
+		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV:			return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_OBJECT_NV";
+		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV";
+		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV:	return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_NV";
+		case VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_MAX_ENUM_NV:		return "VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_MAX_ENUM_NV";
 		default:																	return DE_NULL;
 	}
 }
@@ -2124,6 +2125,17 @@ const char* getIndirectCommandsTokenTypeNVName (VkIndirectCommandsTokenTypeNV va
 	}
 }
 
+const char* getBuildAccelerationStructureModeKHRName (VkBuildAccelerationStructureModeKHR value)
+{
+	switch (value)
+	{
+		case VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR:	return "VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR";
+		case VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR:	return "VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR";
+		case VK_BUILD_ACCELERATION_STRUCTURE_MODE_MAX_ENUM_KHR:	return "VK_BUILD_ACCELERATION_STRUCTURE_MODE_MAX_ENUM_KHR";
+		default:												return DE_NULL;
+	}
+}
+
 const char* getAccelerationStructureBuildTypeKHRName (VkAccelerationStructureBuildTypeKHR value)
 {
 	switch (value)
@@ -2133,6 +2145,30 @@ const char* getAccelerationStructureBuildTypeKHRName (VkAccelerationStructureBui
 		case VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_OR_DEVICE_KHR:	return "VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_OR_DEVICE_KHR";
 		case VK_ACCELERATION_STRUCTURE_BUILD_TYPE_MAX_ENUM_KHR:			return "VK_ACCELERATION_STRUCTURE_BUILD_TYPE_MAX_ENUM_KHR";
 		default:														return DE_NULL;
+	}
+}
+
+const char* getAccelerationStructureCompatibilityKHRName (VkAccelerationStructureCompatibilityKHR value)
+{
+	switch (value)
+	{
+		case VK_ACCELERATION_STRUCTURE_COMPATIBILITY_COMPATIBLE_KHR:	return "VK_ACCELERATION_STRUCTURE_COMPATIBILITY_COMPATIBLE_KHR";
+		case VK_ACCELERATION_STRUCTURE_COMPATIBILITY_INCOMPATIBLE_KHR:	return "VK_ACCELERATION_STRUCTURE_COMPATIBILITY_INCOMPATIBLE_KHR";
+		case VK_ACCELERATION_STRUCTURE_COMPATIBILITY_MAX_ENUM_KHR:		return "VK_ACCELERATION_STRUCTURE_COMPATIBILITY_MAX_ENUM_KHR";
+		default:														return DE_NULL;
+	}
+}
+
+const char* getShaderGroupShaderKHRName (VkShaderGroupShaderKHR value)
+{
+	switch (value)
+	{
+		case VK_SHADER_GROUP_SHADER_GENERAL_KHR:		return "VK_SHADER_GROUP_SHADER_GENERAL_KHR";
+		case VK_SHADER_GROUP_SHADER_CLOSEST_HIT_KHR:	return "VK_SHADER_GROUP_SHADER_CLOSEST_HIT_KHR";
+		case VK_SHADER_GROUP_SHADER_ANY_HIT_KHR:		return "VK_SHADER_GROUP_SHADER_ANY_HIT_KHR";
+		case VK_SHADER_GROUP_SHADER_INTERSECTION_KHR:	return "VK_SHADER_GROUP_SHADER_INTERSECTION_KHR";
+		case VK_SHADER_GROUP_SHADER_MAX_ENUM_KHR:		return "VK_SHADER_GROUP_SHADER_MAX_ENUM_KHR";
+		default:										return DE_NULL;
 	}
 }
 
@@ -2513,28 +2549,29 @@ tcu::Format::Bitfield<32> getPipelineCreateFlagsStr (VkPipelineCreateFlags value
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,							"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,								"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,										"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,					"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,									"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR,		"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR,	"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR,			"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR,	"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR,					"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR,						"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV,								"VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR,							"VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR,			"VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV,							"VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,									"VK_PIPELINE_CREATE_LIBRARY_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT,			"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT,					"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,										"VK_PIPELINE_CREATE_DISPATCH_BASE"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,				"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,									"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
-		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,									"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,								"VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT,									"VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DERIVATIVE_BIT,											"VK_PIPELINE_CREATE_DERIVATIVE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT,						"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_BIT,										"VK_PIPELINE_CREATE_DISPATCH_BASE_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR,			"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR,		"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR,				"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_MISS_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR,		"VK_PIPELINE_CREATE_RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR,						"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_TRIANGLES_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR,							"VK_PIPELINE_CREATE_RAY_TRACING_SKIP_AABBS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR,	"VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV,									"VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR,								"VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR,				"VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV,								"VK_PIPELINE_CREATE_INDIRECT_BINDABLE_BIT_NV"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,										"VK_PIPELINE_CREATE_LIBRARY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT,				"VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT,						"VK_PIPELINE_CREATE_EARLY_RETURN_ON_FAILURE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE,											"VK_PIPELINE_CREATE_DISPATCH_BASE"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR,					"VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_DISPATCH_BASE_KHR,										"VK_PIPELINE_CREATE_DISPATCH_BASE_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM,										"VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3336,6 +3373,16 @@ tcu::Format::Bitfield<32> getDeviceDiagnosticsConfigFlagsNVStr (VkDeviceDiagnost
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV,		"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV,	"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV,				"VK_DEVICE_DIAGNOSTICS_CONFIG_FLAG_BITS_MAX_ENUM_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getAccelerationStructureCreateFlagsKHRStr (VkAccelerationStructureCreateFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR,	"VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR,					"VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -9669,16 +9716,6 @@ std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeferredOperationInfoKHR& value)
-{
-	s << "VkDeferredOperationInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\toperationHandle = " << value.operationHandle << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value)
 {
 	s << "VkPipelineLibraryCreateInfoKHR = {\n";
@@ -9708,9 +9745,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceOrHostAddressConstKHR& 
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureBuildOffsetInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value)
 {
-	s << "VkAccelerationStructureBuildOffsetInfoKHR = {\n";
+	s << "VkAccelerationStructureBuildRangeInfoKHR = {\n";
 	s << "\tprimitiveCount = " << value.primitiveCount << '\n';
 	s << "\tprimitiveOffset = " << value.primitiveOffset << '\n';
 	s << "\tfirstVertex = " << value.firstVertex << '\n';
@@ -9741,7 +9778,6 @@ std::ostream& operator<< (std::ostream& s, const VkRayTracingPipelineInterfaceCr
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxPayloadSize = " << value.maxPayloadSize << '\n';
 	s << "\tmaxAttributeSize = " << value.maxAttributeSize << '\n';
-	s << "\tmaxCallableSize = " << value.maxCallableSize << '\n';
 	s << '}';
 	return s;
 }
@@ -9757,8 +9793,9 @@ std::ostream& operator<< (std::ostream& s, const VkRayTracingPipelineCreateInfoK
 	s << "\tgroupCount = " << value.groupCount << '\n';
 	s << "\tpGroups = " << value.pGroups << '\n';
 	s << "\tmaxRecursionDepth = " << value.maxRecursionDepth << '\n';
-	s << "\tlibraries = " << value.libraries << '\n';
+	s << "\tpLibraryInfo = " << value.pLibraryInfo << '\n';
 	s << "\tpLibraryInterface = " << value.pLibraryInterface << '\n';
+	s << "\tpDynamicState = " << value.pDynamicState << '\n';
 	s << "\tlayout = " << value.layout << '\n';
 	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
 	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
@@ -9774,6 +9811,7 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometry
 	s << "\tvertexFormat = " << value.vertexFormat << '\n';
 	s << "\tvertexData = " << value.vertexData << '\n';
 	s << "\tvertexStride = " << value.vertexStride << '\n';
+	s << "\tmaxVertex = " << value.maxVertex << '\n';
 	s << "\tindexType = " << value.indexType << '\n';
 	s << "\tindexData = " << value.indexData << '\n';
 	s << "\ttransformData = " << value.transformData << '\n';
@@ -9832,28 +9870,13 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureBuildGeo
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttype = " << value.type << '\n';
 	s << "\tflags = " << getBuildAccelerationStructureFlagsKHRStr(value.flags) << '\n';
-	s << "\tupdate = " << value.update << '\n';
+	s << "\tmode = " << value.mode << '\n';
 	s << "\tsrcAccelerationStructure = " << value.srcAccelerationStructure << '\n';
 	s << "\tdstAccelerationStructure = " << value.dstAccelerationStructure << '\n';
-	s << "\tgeometryArrayOfPointers = " << value.geometryArrayOfPointers << '\n';
 	s << "\tgeometryCount = " << value.geometryCount << '\n';
+	s << "\tpGeometries = " << value.pGeometries << '\n';
 	s << "\tppGeometries = " << value.ppGeometries << '\n';
 	s << "\tscratchData = " << value.scratchData << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateGeometryTypeInfoKHR& value)
-{
-	s << "VkAccelerationStructureCreateGeometryTypeInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tgeometryType = " << value.geometryType << '\n';
-	s << "\tmaxPrimitiveCount = " << value.maxPrimitiveCount << '\n';
-	s << "\tindexType = " << value.indexType << '\n';
-	s << "\tmaxVertexCount = " << value.maxVertexCount << '\n';
-	s << "\tvertexFormat = " << value.vertexFormat << '\n';
-	s << "\tallowsTransforms = " << value.allowsTransforms << '\n';
 	s << '}';
 	return s;
 }
@@ -9863,11 +9886,9 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateIn
 	s << "VkAccelerationStructureCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tcompactedSize = " << value.compactedSize << '\n';
+	s << "\tcreateFlags = " << getAccelerationStructureCreateFlagsKHRStr(value.createFlags) << '\n';
+	s << "\tsize = " << value.size << '\n';
 	s << "\ttype = " << value.type << '\n';
-	s << "\tflags = " << getBuildAccelerationStructureFlagsKHRStr(value.flags) << '\n';
-	s << "\tmaxGeometryCount = " << value.maxGeometryCount << '\n';
-	s << "\tpGeometryInfos = " << value.pGeometryInfos << '\n';
 	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
 	s << '}';
 	return s;
@@ -9878,7 +9899,6 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMemoryRe
 	s << "VkAccelerationStructureMemoryRequirementsInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\ttype = " << value.type << '\n';
 	s << "\tbuildType = " << value.buildType << '\n';
 	s << "\taccelerationStructure = " << value.accelerationStructure << '\n';
 	s << '}';
@@ -9917,6 +9937,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingPrope
 	s << "\tmaxPrimitiveCount = " << value.maxPrimitiveCount << '\n';
 	s << "\tmaxDescriptorSetAccelerationStructures = " << value.maxDescriptorSetAccelerationStructures << '\n';
 	s << "\tshaderGroupHandleCaptureReplaySize = " << value.shaderGroupHandleCaptureReplaySize << '\n';
+	s << "\tminAccelerationStructureScratchOffsetAlignment = " << value.minAccelerationStructureScratchOffsetAlignment << '\n';
+	s << "\tmaxRayDispatchInvocationCount = " << value.maxRayDispatchInvocationCount << '\n';
+	s << "\tshaderGroupHandleAlignment = " << value.shaderGroupHandleAlignment << '\n';
 	s << '}';
 	return s;
 }
@@ -9931,21 +9954,20 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureDeviceAd
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureVersionKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureVersionInfoKHR& value)
 {
-	s << "VkAccelerationStructureVersionKHR = {\n";
+	s << "VkAccelerationStructureVersionInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tversionData = " << value.versionData << '\n';
+	s << "\tpVersionData = " << value.pVersionData << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkStridedBufferRegionKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressRegionKHR& value)
 {
-	s << "VkStridedBufferRegionKHR = {\n";
-	s << "\tbuffer = " << value.buffer << '\n';
-	s << "\toffset = " << value.offset << '\n';
+	s << "VkStridedDeviceAddressRegionKHR = {\n";
+	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
 	s << "\tstride = " << value.stride << '\n';
 	s << "\tsize = " << value.size << '\n';
 	s << '}';
@@ -9994,6 +10016,18 @@ std::ostream& operator<< (std::ostream& s, const VkCopyAccelerationStructureInfo
 	s << "\tsrc = " << value.src << '\n';
 	s << "\tdst = " << value.dst << '\n';
 	s << "\tmode = " << value.mode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureBuildSizesInfoKHR& value)
+{
+	s << "VkAccelerationStructureBuildSizesInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taccelerationStructureSize = " << value.accelerationStructureSize << '\n';
+	s << "\tupdateScratchSize = " << value.updateScratchSize << '\n';
+	s << "\tbuildScratchSize = " << value.buildScratchSize << '\n';
 	s << '}';
 	return s;
 }

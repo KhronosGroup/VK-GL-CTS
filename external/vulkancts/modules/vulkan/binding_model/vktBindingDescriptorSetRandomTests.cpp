@@ -1583,34 +1583,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	// Create ray tracing structures
 	de::MovePtr<vk::BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure;
 	de::MovePtr<vk::TopLevelAccelerationStructure>		topLevelAccelerationStructure;
-	VkStridedBufferRegionKHR							raygenShaderBindingTableRegion		=
-	{
-		DE_NULL,	//  VkBuffer		buffer;
-		0,			//  VkDeviceSize	offset;
-		0,			//  VkDeviceSize	stride;
-		0,			//  VkDeviceSize	size;
-	};
-	VkStridedBufferRegionKHR							missShaderBindingTableRegion		=
-	{
-		DE_NULL,	//  VkBuffer		buffer;
-		0,			//  VkDeviceSize	offset;
-		0,			//  VkDeviceSize	stride;
-		0,			//  VkDeviceSize	size;
-	};
-	VkStridedBufferRegionKHR							hitShaderBindingTableRegion			=
-	{
-		DE_NULL,	//  VkBuffer		buffer;
-		0,			//  VkDeviceSize	offset;
-		0,			//  VkDeviceSize	stride;
-		0,			//  VkDeviceSize	size;
-	};
-	VkStridedBufferRegionKHR							callableShaderBindingTableRegion	=
-	{
-		DE_NULL,	//  VkBuffer		buffer;
-		0,			//  VkDeviceSize	offset;
-		0,			//  VkDeviceSize	stride;
-		0,			//  VkDeviceSize	size;
-	};
+	VkStridedDeviceAddressRegionKHR						raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR						missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR						hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR						callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	if (usesAccelerationStructure(m_data.stage))
 	{
@@ -2009,10 +1985,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
 
 		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-		raygenShaderBindingTableRegion.buffer	= raygenShaderBindingTable->get();
-		raygenShaderBindingTableRegion.offset	= 0;
-		raygenShaderBindingTableRegion.stride	= 0;
-		raygenShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 	}
 	else if (m_data.stage == STAGE_INTERSECT)
 	{
@@ -2024,16 +1997,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
 
 		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-		raygenShaderBindingTableRegion.buffer	= raygenShaderBindingTable->get();
-		raygenShaderBindingTableRegion.offset	= 0;
-		raygenShaderBindingTableRegion.stride	= 0;
-		raygenShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 
 		hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
-		hitShaderBindingTableRegion.buffer		= hitShaderBindingTable->get();
-		hitShaderBindingTableRegion.offset		= 0;
-		hitShaderBindingTableRegion.stride		= 0;
-		hitShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		hitShaderBindingTableRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 	}
 	else if (m_data.stage == STAGE_ANY_HIT)
 	{
@@ -2045,16 +2012,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
 
 		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-		raygenShaderBindingTableRegion.buffer	= raygenShaderBindingTable->get();
-		raygenShaderBindingTableRegion.offset	= 0;
-		raygenShaderBindingTableRegion.stride	= 0;
-		raygenShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 
 		hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
-		hitShaderBindingTableRegion.buffer		= hitShaderBindingTable->get();
-		hitShaderBindingTableRegion.offset		= 0;
-		hitShaderBindingTableRegion.stride		= 0;
-		hitShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		hitShaderBindingTableRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 	}
 	else if (m_data.stage == STAGE_CLOSEST_HIT)
 	{
@@ -2066,16 +2027,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
 
 		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-		raygenShaderBindingTableRegion.buffer	= raygenShaderBindingTable->get();
-		raygenShaderBindingTableRegion.offset	= 0;
-		raygenShaderBindingTableRegion.stride	= 0;
-		raygenShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 
 		hitShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
-		hitShaderBindingTableRegion.buffer		= hitShaderBindingTable->get();
-		hitShaderBindingTableRegion.offset		= 0;
-		hitShaderBindingTableRegion.stride		= 0;
-		hitShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		hitShaderBindingTableRegion				= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 	}
 	else if (m_data.stage == STAGE_MISS)
 	{
@@ -2087,16 +2042,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
 
 		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-		raygenShaderBindingTableRegion.buffer	= raygenShaderBindingTable->get();
-		raygenShaderBindingTableRegion.offset	= 0;
-		raygenShaderBindingTableRegion.stride	= 0;
-		raygenShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 
 		missShaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
-		missShaderBindingTableRegion.buffer		= missShaderBindingTable->get();
-		missShaderBindingTableRegion.offset		= 0;
-		missShaderBindingTableRegion.stride		= 0;
-		missShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		missShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 	}
 	else if (m_data.stage == STAGE_CALLABLE)
 	{
@@ -2108,16 +2057,10 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		pipeline = rayTracingPipeline->createPipeline(vk, device, *pipelineLayout);
 
 		raygenShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-		raygenShaderBindingTableRegion.buffer	= raygenShaderBindingTable->get();
-		raygenShaderBindingTableRegion.offset	= 0;
-		raygenShaderBindingTableRegion.stride	= 0;
-		raygenShaderBindingTableRegion.size		= shaderGroupHandleSize;
+		raygenShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 
 		callableShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vk, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
-		callableShaderBindingTableRegion.buffer	= callableShaderBindingTable->get();
-		callableShaderBindingTableRegion.offset	= 0;
-		callableShaderBindingTableRegion.stride	= 0;
-		callableShaderBindingTableRegion.size	= shaderGroupHandleSize;
+		callableShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, callableShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 	}
 	else
 	{

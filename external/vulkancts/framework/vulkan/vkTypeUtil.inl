@@ -615,9 +615,9 @@ inline VkIndirectCommandsStreamNV makeIndirectCommandsStreamNV (VkBuffer buffer,
 	return res;
 }
 
-inline VkAccelerationStructureBuildOffsetInfoKHR makeAccelerationStructureBuildOffsetInfoKHR (deUint32 primitiveCount, deUint32 primitiveOffset, deUint32 firstVertex, deUint32 transformOffset)
+inline VkAccelerationStructureBuildRangeInfoKHR makeAccelerationStructureBuildRangeInfoKHR (deUint32 primitiveCount, deUint32 primitiveOffset, deUint32 firstVertex, deUint32 transformOffset)
 {
-	VkAccelerationStructureBuildOffsetInfoKHR res;
+	VkAccelerationStructureBuildRangeInfoKHR res;
 	res.primitiveCount	= primitiveCount;
 	res.primitiveOffset	= primitiveOffset;
 	res.firstVertex		= firstVertex;
@@ -625,13 +625,12 @@ inline VkAccelerationStructureBuildOffsetInfoKHR makeAccelerationStructureBuildO
 	return res;
 }
 
-inline VkStridedBufferRegionKHR makeStridedBufferRegionKHR (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize stride, VkDeviceSize size)
+inline VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegionKHR (VkDeviceAddress deviceAddress, VkDeviceSize stride, VkDeviceSize size)
 {
-	VkStridedBufferRegionKHR res;
-	res.buffer	= buffer;
-	res.offset	= offset;
-	res.stride	= stride;
-	res.size	= size;
+	VkStridedDeviceAddressRegionKHR res;
+	res.deviceAddress	= deviceAddress;
+	res.stride			= stride;
+	res.size			= size;
 	return res;
 }
 

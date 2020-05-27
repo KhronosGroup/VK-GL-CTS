@@ -63,12 +63,13 @@ Move<VkPipeline> createRayTracingPipelineNV (const DeviceInterface&						vk,
 
 Move<VkPipeline> createRayTracingPipelineKHR (const DeviceInterface&					vk,
 											  VkDevice									device,
+											  VkDeferredOperationKHR					deferredOperation,
 											  VkPipelineCache							pipelineCache,
 											  const VkRayTracingPipelineCreateInfoKHR*	pCreateInfo,
 											  const VkAllocationCallbacks*				pAllocator)
 {
 	VkPipeline object = 0;
-	VK_CHECK(vk.createRayTracingPipelinesKHR(device, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
+	VK_CHECK(vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, 1u, pCreateInfo, pAllocator, &object));
 	return Move<VkPipeline>(check<VkPipeline>(object), Deleter<VkPipeline>(vk, device, pAllocator));
 }
 

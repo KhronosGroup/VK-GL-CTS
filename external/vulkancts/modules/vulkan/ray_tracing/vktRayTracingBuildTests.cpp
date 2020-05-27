@@ -73,15 +73,6 @@ struct CaseDef
 	deUint32	workerThreadsCount;
 };
 
-enum ShaderGroups
-{
-	FIRST_GROUP		= 0,
-	RAYGEN_GROUP	= FIRST_GROUP,
-	MISS_GROUP,
-	HIT_GROUP,
-	GROUP_COUNT
-};
-
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
 							 const VkPhysicalDevice		physicalDevice)
 {
@@ -98,30 +89,6 @@ deUint32 getShaderGroupBaseAlignment (const InstanceInterface&	vki,
 
 	rayTracingPropertiesKHR = makeRayTracingProperties(vki, physicalDevice);
 	return rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
-}
-
-Move<VkPipeline> makePipeline (const DeviceInterface&			vkd,
-							   const VkDevice					device,
-							   vk::BinaryCollection&			collection,
-							   de::MovePtr<RayTracingPipeline>&	rayTracingPipeline,
-							   VkPipelineLayout					pipelineLayout,
-							   const deUint32					raygenGroup,
-							   const deUint32					missGroup,
-							   const deUint32					hitGroup)
-{
-	Move<VkShaderModule>	raygenShader		= createShaderModule(vkd, device, collection.get("rgen"), 0);
-	Move<VkShaderModule>	hitShader			= createShaderModule(vkd, device, collection.get("ahit"), 0);
-	Move<VkShaderModule>	missShader			= createShaderModule(vkd, device, collection.get("miss"), 0);
-	Move<VkShaderModule>	intersectionShader	= createShaderModule(vkd, device, collection.get("sect"), 0);
-
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		raygenShader,		raygenGroup);
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		hitShader,			hitGroup);
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			missShader,			missGroup);
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	intersectionShader,	hitGroup);
-
-	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
-
-	return pipeline;
 }
 
 VkImageCreateInfo makeImageCreateInfo (deUint32 width, deUint32 height, VkFormat format)
@@ -237,7 +204,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 			"hitAttributeEXT vec3 attribs;\n"
@@ -255,7 +221,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
 			"layout(r32ui, set = 0, binding = 0) uniform uimage2D result;\n"
@@ -272,7 +237,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"hitAttributeEXT vec3 hitAttribute;\n"
 			"void main()\n"
@@ -305,8 +269,13 @@ de::MovePtr<TopLevelAccelerationStructure> RayTracingBuildTestInstance::initTopA
 	result->setBuildType(useGpuBuild ? VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR : VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR);
 	result->setDeferredOperation(m_data.deferredOperation, workerThreadsCount);
 
-	for (size_t structNdx = 0; structNdx < bottomLevelAccelerationStructures.size(); ++structNdx)
-		result->addInstance(bottomLevelAccelerationStructures[structNdx]);
+	for (size_t instanceNdx = 0; instanceNdx < bottomLevelAccelerationStructures.size(); ++instanceNdx)
+	{
+		const bool	triangles								= (m_data.testType == TEST_TYPE_TRIANGLES) || (m_data.testType == TEST_TYPE_MIXED && (instanceNdx & 1) == 0);
+		deUint32	instanceShaderBindingTableRecordOffset	= triangles ? 0 : 1;
+
+		result->addInstance(bottomLevelAccelerationStructures[instanceNdx], vk::identityMatrix3x4, 0, 0xFF, instanceShaderBindingTableRecordOffset);
+	}
 
 	result->createAndBuild(vkd, device, cmdBuffer, allocator);
 
@@ -424,14 +393,23 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (bool useGpuB
 	const Move<VkCommandBuffer>			cmdBuffer							= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	de::MovePtr<RayTracingPipeline>		rayTracingPipeline					= de::newMovePtr<RayTracingPipeline>();
-	const Move<VkPipeline>				pipeline							= makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline, *pipelineLayout, RAYGEN_GROUP, MISS_GROUP, HIT_GROUP);
-	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, RAYGEN_GROUP, 1u);
-	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, MISS_GROUP, 1u);
-	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, HIT_GROUP, 1u);
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
+	Move<VkShaderModule>				raygenShader						= createShaderModule(vkd, device, m_context.getBinaryCollection().get("rgen"), 0);
+	Move<VkShaderModule>				hitShader							= createShaderModule(vkd, device, m_context.getBinaryCollection().get("ahit"), 0);
+	Move<VkShaderModule>				missShader							= createShaderModule(vkd, device, m_context.getBinaryCollection().get("miss"), 0);
+	Move<VkShaderModule>				intersectionShader					= createShaderModule(vkd, device, m_context.getBinaryCollection().get("sect"), 0);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		raygenShader,		0u);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		hitShader,			1u);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR,		hitShader,			2u);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, intersectionShader, 2u);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			missShader,			3u);
+	Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, *pipelineLayout);
+	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0u, 1u);
+	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1u, 2u);
+	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 3u, 1u);
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, 2u * shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.width, m_data.height, format);
 	const VkImageSubresourceRange		imageSubresourceRange				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);

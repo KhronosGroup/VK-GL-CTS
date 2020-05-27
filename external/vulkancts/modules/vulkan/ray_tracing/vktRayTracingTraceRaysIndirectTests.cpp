@@ -393,10 +393,11 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1 );
 	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1 );
 	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1 );
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, shaderGroupHandleSize, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), 0, shaderGroupHandleSize, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), 0, shaderGroupHandleSize, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
+
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	const VkFormat						imageFormat							= VK_FORMAT_R32_UINT;
 	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.indirectCommand.width, m_data.indirectCommand.height, m_data.indirectCommand.depth, imageFormat);
@@ -412,9 +413,9 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 	const VkDescriptorImageInfo			descriptorImageInfo					= makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
 	// create indirect command buffer and fill it with parameter values
-	VkBufferUsageFlags					indirectBufferUsageFlags			= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | ( m_data.fillBufferOnGPU ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT );
+	VkBufferUsageFlags					indirectBufferUsageFlags			= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | ( m_data.fillBufferOnGPU ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT );
 	const VkBufferCreateInfo			indirectBufferCreateInfo			= makeBufferCreateInfo(sizeof(VkTraceRaysIndirectCommandKHR), indirectBufferUsageFlags);
-	vk::MemoryRequirement				indirectBufferMemoryRequirement		= m_data.fillBufferOnGPU ? MemoryRequirement::Any : MemoryRequirement::HostVisible;
+	vk::MemoryRequirement				indirectBufferMemoryRequirement		= MemoryRequirement::DeviceAddress | ( m_data.fillBufferOnGPU ? MemoryRequirement::Any : MemoryRequirement::HostVisible );
 	de::MovePtr<BufferWithMemory>		indirectBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, indirectBufferCreateInfo, indirectBufferMemoryRequirement));
 
 	de::MovePtr<BufferWithMemory>		uniformBuffer;
@@ -497,8 +498,8 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 			&missShaderBindingTableRegion,
 			&hitShaderBindingTableRegion,
 			&callableShaderBindingTableRegion,
-			indirectBuffer->get(),
-			0);
+			getBufferDeviceAddress(vkd, device, indirectBuffer->get(), 0));
+
 		// Results should be the same as in the command below
 		//cmdTraceRays(vkd,
 		//	*cmdBuffer,

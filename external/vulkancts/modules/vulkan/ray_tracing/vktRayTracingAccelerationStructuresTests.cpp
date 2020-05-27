@@ -389,7 +389,8 @@ void CheckerboardConfiguration::initRayTracingShaders(de::MovePtr<RayTracingPipe
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		createShaderModule(vkd, device, context.getBinaryCollection().get("rgen"),  0), 0);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("chit"),  0), 1);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("chit"),  0), 2);
-	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("isect"), 0), 2);
+	if (testParams.bottomTestType == BTT_AABBS)
+		rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR,	createShaderModule(vkd, device, context.getBinaryCollection().get("isect"), 0), 2);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,			createShaderModule(vkd, device, context.getBinaryCollection().get("miss"),  0), 3);
 }
 
@@ -858,10 +859,10 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 	de::MovePtr<BufferWithMemory>		missShaderBindingTable;
 	m_data.testConfiguration->initShaderBindingTables(rayTracingPipeline, m_context, m_data, *pipeline, shaderGroupHandleSize, shaderGroupBaseAlignment, raygenShaderBindingTable, hitShaderBindingTable, missShaderBindingTable);
 
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(),	0,	shaderGroupHandleSize,	shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(),		0,	shaderGroupHandleSize,	shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(),		0,	shaderGroupHandleSize,	shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL,							0,	0,						0);
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(),	0),	shaderGroupHandleSize,	shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(),		0),	shaderGroupHandleSize,	shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(),		0),	shaderGroupHandleSize,	shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL,																	0,						0);
 
 	const VkFormat						imageFormat							= m_data.testConfiguration->getResultImageFormat();
 	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.width, m_data.height, imageFormat);
@@ -964,14 +965,15 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 			{
 			case OP_COPY:
 			{
-				bottomLevelAccelerationStructureCopies = m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
 				for (size_t i = 0; i < bottomLevelAccelerationStructures.size(); ++i)
 				{
-					bottomLevelAccelerationStructureCopies[i]->setDeferredOperation(htCopy, workerThreadsCount);
-					bottomLevelAccelerationStructureCopies[i]->setBuildType(m_data.buildType);
-					bottomLevelAccelerationStructureCopies[i]->setBuildFlags(m_data.buildFlags);
-					bottomLevelAccelerationStructureCopies[i]->setUseArrayOfPointers(m_data.bottomUsesAOP);
-					bottomLevelAccelerationStructureCopies[i]->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, 0u, bottomLevelAccelerationStructures[i].get(), 0u);
+					de::MovePtr<BottomLevelAccelerationStructure> asCopy = makeBottomLevelAccelerationStructure();
+					asCopy->setDeferredOperation(htCopy, workerThreadsCount);
+					asCopy->setBuildType(m_data.buildType);
+					asCopy->setBuildFlags(m_data.buildFlags);
+					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
+					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), 0u, 0u);
+					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
 				break;
 			}
@@ -983,14 +985,14 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildType(m_data.buildType);
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
-					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, 0u, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i]);
+					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
 				break;
 			}
 			case OP_SERIALIZE:
 			{
-				bottomLevelAccelerationStructureCopies = m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
+				//bottomLevelAccelerationStructureCopies = m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
 				for (size_t i = 0; i < bottomLevelAccelerationStructures.size(); ++i)
 				{
 					de::SharedPtr<SerialStorage> storage ( new SerialStorage(vkd, device, allocator, m_data.buildType, bottomBlasSerialSize[i]));
@@ -1005,11 +1007,13 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 						cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &serializeMemoryBarrier);
 					}
 
-					bottomLevelAccelerationStructureCopies[i]->setBuildType(m_data.buildType);
-					bottomLevelAccelerationStructureCopies[i]->setBuildFlags(m_data.buildFlags);
-					bottomLevelAccelerationStructureCopies[i]->setUseArrayOfPointers(m_data.bottomUsesAOP);
-					bottomLevelAccelerationStructureCopies[i]->setDeferredOperation(htSerialize, workerThreadsCount);
-					bottomLevelAccelerationStructureCopies[i]->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, 0u, storage.get());
+					de::MovePtr<BottomLevelAccelerationStructure> asCopy = makeBottomLevelAccelerationStructure();
+					asCopy->setBuildType(m_data.buildType);
+					asCopy->setBuildFlags(m_data.buildFlags);
+					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
+					asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
+					asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
+					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
 				break;
 			}
@@ -1063,12 +1067,12 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 			{
 				case OP_COPY:
 				{
-					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
 					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
-					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, 0u, topLevelAccelerationStructure.get(), 0u);
+					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
 				case OP_COMPACT:
@@ -1077,13 +1081,11 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
-					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, 0u, topLevelAccelerationStructure.get(), topBlasCompactSize[0]);
+					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
 					break;
 				}
 				case OP_SERIALIZE:
 				{
-					topLevelAccelerationStructureCopy = m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
-
 					de::SharedPtr<SerialStorage> storage( new SerialStorage(vkd, device, allocator, m_data.buildType, topBlasSerialSize[0]));
 
 					topLevelAccelerationStructure->setDeferredOperation(htSerialize, workerThreadsCount);
@@ -1096,11 +1098,12 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 						cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &serializeMemoryBarrier);
 					}
 
+					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
-					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, 0u, storage.get());
+					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
 					break;
 				}
 				default:
@@ -1204,9 +1207,8 @@ tcu::TestStatus RayTracingASBasicTestInstance::iterate (void)
 
 struct MemoryRequirementsTestParams
 {
-	VkAccelerationStructureMemoryRequirementsTypeKHR asMemReqType;
+	bool stub;
 };
-
 
 class RayTracingASMemoryRequirementsTestCase : public TestCase
 {
@@ -1275,29 +1277,16 @@ tcu::TestStatus RayTracingASMemoryRequirementsTestInstance::iterate (void)
 {
 	const DeviceInterface&									vkd												= m_context.getDeviceInterface();
 	const VkDevice											device											= m_context.getDevice();
-
-	const VkAccelerationStructureCreateGeometryTypeInfoKHR	accelerationStructureCreateGeometryTypeInfoKHR	=
-	{
-		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR,	//  VkStructureType		sType;
-		DE_NULL,																//  const void*			pNext;
-		VK_GEOMETRY_TYPE_TRIANGLES_KHR,											//  VkGeometryTypeKHR	geometryType;
-		128,																	//  deUint32			maxPrimitiveCount;
-		VK_INDEX_TYPE_UINT32,													//  VkIndexType			indexType;
-		128,																	//  deUint32			maxVertexCount;
-		VK_FORMAT_R32G32B32_SFLOAT,												//  VkFormat			vertexFormat;
-		DE_FALSE																//  VkBool32			allowsTransforms;
-	};
+	DE_UNREF(m_data.stub);
 
 	const VkAccelerationStructureCreateInfoKHR				accelerationStructureCreateInfoKHR				=
 	{
-		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,				//  VkStructureType											sType;
-		DE_NULL,																//  const void*												pNext;
-		0,																		//  VkDeviceSize											compactedSize;
-		VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,						//  VkAccelerationStructureTypeKHR							type;
-		0,																		//  VkBuildAccelerationStructureFlagsKHR					flags;
-		1,																		//  deUint32												maxGeometryCount;
-		&accelerationStructureCreateGeometryTypeInfoKHR,						//  const VkAccelerationStructureCreateGeometryTypeInfoKHR*	pGeometryInfos;
-		0u																		//  VkDeviceAddress											deviceAddress;
+		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,	// VkStructureType                          sType;
+		DE_NULL,													// const void*                              pNext;
+		0u,															// VkAccelerationStructureCreateFlagsKHR    createFlags;
+		128,														// VkDeviceSize                             size;
+		VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,			// VkAccelerationStructureTypeKHR           type;
+		0u															// VkDeviceAddress                          deviceAddress;
 	};
 	Move<VkAccelerationStructureKHR>						m_accelerationStructureKHR						= createAccelerationStructureKHR(vkd, device, &accelerationStructureCreateInfoKHR, DE_NULL);
 
@@ -1305,10 +1294,10 @@ tcu::TestStatus RayTracingASMemoryRequirementsTestInstance::iterate (void)
 	{
 		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_KHR,	//  VkStructureType										sType;
 		DE_NULL,																//  const void*											pNext;
-		m_data.asMemReqType,													//  VkAccelerationStructureMemoryRequirementsTypeKHR	type;
 		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,						//  VkAccelerationStructureBuildTypeKHR					buildType;
 		m_accelerationStructureKHR.get()										//  VkAccelerationStructureKHR							accelerationStructure;
 	};
+
 	VkMemoryRequirements2									memoryRequirements2								=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,	//  VkStructureType			sType;
@@ -1317,10 +1306,8 @@ tcu::TestStatus RayTracingASMemoryRequirementsTestInstance::iterate (void)
 	};
 	vkd.getAccelerationStructureMemoryRequirementsKHR(device, &accelerationStructureMemoryRequirementsInfoKHR, &memoryRequirements2);
 
-	if(memoryRequirements2.memoryRequirements.alignment != 0)
-		return tcu::TestStatus::fail("Fail");
-
-	if (memoryRequirements2.memoryRequirements.memoryTypeBits != 0)
+	// at least one memoryTypeBits must be set
+	if (memoryRequirements2.memoryRequirements.memoryTypeBits == 0)
 		return tcu::TestStatus::fail("Fail");
 
 	return tcu::TestStatus::pass("Pass");
@@ -1618,8 +1605,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 
 void addRequirementsTests(tcu::TestCaseGroup* group)
 {
-	group->addChild(new RayTracingASMemoryRequirementsTestCase(group->getTestContext(), "memory_build_scratch", "", MemoryRequirementsTestParams{ VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_KHR }));
-	group->addChild(new RayTracingASMemoryRequirementsTestCase(group->getTestContext(), "memory_update_scratch", "", MemoryRequirementsTestParams{ VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_UPDATE_SCRATCH_KHR }));
+	group->addChild(new RayTracingASMemoryRequirementsTestCase(group->getTestContext(), "get_acceleration_structure_memory_requirements", "", MemoryRequirementsTestParams{ true }));
 }
 
 void addOperationTests (tcu::TestCaseGroup* group)

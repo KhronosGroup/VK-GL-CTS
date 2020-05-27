@@ -4610,13 +4610,6 @@ struct VkExternalFormatANDROID
 	deUint64		externalFormat;
 };
 
-struct VkDeferredOperationInfoKHR
-{
-	VkStructureType			sType;
-	const void*				pNext;
-	VkDeferredOperationKHR	operationHandle;
-};
-
 struct VkPipelineLibraryCreateInfoKHR
 {
 	VkStructureType		sType;
@@ -4637,7 +4630,7 @@ union VkDeviceOrHostAddressConstKHR
 	const void*		hostAddress;
 };
 
-struct VkAccelerationStructureBuildOffsetInfoKHR
+struct VkAccelerationStructureBuildRangeInfoKHR
 {
 	deUint32	primitiveCount;
 	deUint32	primitiveOffset;
@@ -4663,7 +4656,6 @@ struct VkRayTracingPipelineInterfaceCreateInfoKHR
 	const void*		pNext;
 	deUint32		maxPayloadSize;
 	deUint32		maxAttributeSize;
-	deUint32		maxCallableSize;
 };
 
 struct VkRayTracingPipelineCreateInfoKHR
@@ -4676,8 +4668,9 @@ struct VkRayTracingPipelineCreateInfoKHR
 	deUint32											groupCount;
 	const VkRayTracingShaderGroupCreateInfoKHR*			pGroups;
 	deUint32											maxRecursionDepth;
-	VkPipelineLibraryCreateInfoKHR						libraries;
+	VkPipelineLibraryCreateInfoKHR*						pLibraryInfo;
 	const VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
+	const VkPipelineDynamicStateCreateInfo*				pDynamicState;
 	VkPipelineLayout									layout;
 	VkPipeline											basePipelineHandle;
 	deInt32												basePipelineIndex;
@@ -4690,6 +4683,7 @@ struct VkAccelerationStructureGeometryTrianglesDataKHR
 	VkFormat						vertexFormat;
 	VkDeviceOrHostAddressConstKHR	vertexData;
 	VkDeviceSize					vertexStride;
+	deUint32						maxVertex;
 	VkIndexType						indexType;
 	VkDeviceOrHostAddressConstKHR	indexData;
 	VkDeviceOrHostAddressConstKHR	transformData;
@@ -4733,46 +4727,31 @@ struct VkAccelerationStructureBuildGeometryInfoKHR
 	const void*											pNext;
 	VkAccelerationStructureTypeKHR						type;
 	VkBuildAccelerationStructureFlagsKHR				flags;
-	VkBool32											update;
+	VkBuildAccelerationStructureModeKHR					mode;
 	VkAccelerationStructureKHR							srcAccelerationStructure;
 	VkAccelerationStructureKHR							dstAccelerationStructure;
-	VkBool32											geometryArrayOfPointers;
 	deUint32											geometryCount;
+	const VkAccelerationStructureGeometryKHR*			pGeometries;
 	const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
 	VkDeviceOrHostAddressKHR							scratchData;
 };
 
-struct VkAccelerationStructureCreateGeometryTypeInfoKHR
-{
-	VkStructureType		sType;
-	const void*			pNext;
-	VkGeometryTypeKHR	geometryType;
-	deUint32			maxPrimitiveCount;
-	VkIndexType			indexType;
-	deUint32			maxVertexCount;
-	VkFormat			vertexFormat;
-	VkBool32			allowsTransforms;
-};
-
 struct VkAccelerationStructureCreateInfoKHR
 {
-	VkStructureType											sType;
-	const void*												pNext;
-	VkDeviceSize											compactedSize;
-	VkAccelerationStructureTypeKHR							type;
-	VkBuildAccelerationStructureFlagsKHR					flags;
-	deUint32												maxGeometryCount;
-	const VkAccelerationStructureCreateGeometryTypeInfoKHR*	pGeometryInfos;
-	VkDeviceAddress											deviceAddress;
+	VkStructureType							sType;
+	const void*								pNext;
+	VkAccelerationStructureCreateFlagsKHR	createFlags;
+	VkDeviceSize							size;
+	VkAccelerationStructureTypeKHR			type;
+	VkDeviceAddress							deviceAddress;
 };
 
 struct VkAccelerationStructureMemoryRequirementsInfoKHR
 {
-	VkStructureType										sType;
-	const void*											pNext;
-	VkAccelerationStructureMemoryRequirementsTypeKHR	type;
-	VkAccelerationStructureBuildTypeKHR					buildType;
-	VkAccelerationStructureKHR							accelerationStructure;
+	VkStructureType						sType;
+	const void*							pNext;
+	VkAccelerationStructureBuildTypeKHR	buildType;
+	VkAccelerationStructureKHR			accelerationStructure;
 };
 
 struct VkPhysicalDeviceRayTracingFeaturesKHR
@@ -4803,6 +4782,9 @@ struct VkPhysicalDeviceRayTracingPropertiesKHR
 	deUint64		maxPrimitiveCount;
 	deUint32		maxDescriptorSetAccelerationStructures;
 	deUint32		shaderGroupHandleCaptureReplaySize;
+	deUint32		minAccelerationStructureScratchOffsetAlignment;
+	deUint32		maxRayDispatchInvocationCount;
+	deUint32		shaderGroupHandleAlignment;
 };
 
 struct VkAccelerationStructureDeviceAddressInfoKHR
@@ -4812,17 +4794,16 @@ struct VkAccelerationStructureDeviceAddressInfoKHR
 	VkAccelerationStructureKHR	accelerationStructure;
 };
 
-struct VkAccelerationStructureVersionKHR
+struct VkAccelerationStructureVersionInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
-	const deUint8*	versionData;
+	const deUint8*	pVersionData;
 };
 
-struct VkStridedBufferRegionKHR
+struct VkStridedDeviceAddressRegionKHR
 {
-	VkBuffer		buffer;
-	VkDeviceSize	offset;
+	VkDeviceAddress	deviceAddress;
 	VkDeviceSize	stride;
 	VkDeviceSize	size;
 };
@@ -4859,6 +4840,15 @@ struct VkCopyAccelerationStructureInfoKHR
 	VkAccelerationStructureKHR			src;
 	VkAccelerationStructureKHR			dst;
 	VkCopyAccelerationStructureModeKHR	mode;
+};
+
+struct VkAccelerationStructureBuildSizesInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	accelerationStructureSize;
+	VkDeviceSize	updateScratchSize;
+	VkDeviceSize	buildScratchSize;
 };
 
 struct VkImagePipeSurfaceCreateInfoFUCHSIA

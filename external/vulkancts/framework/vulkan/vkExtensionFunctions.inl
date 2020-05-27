@@ -1819,6 +1819,9 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetRayTracingCaptureReplayShaderGroupHandlesKHR");
 		functions.push_back("vkCmdTraceRaysIndirectKHR");
 		functions.push_back("vkGetDeviceAccelerationStructureCompatibilityKHR");
+		functions.push_back("vkGetRayTracingShaderGroupStackSizeKHR");
+		functions.push_back("vkCmdSetRayTracingPipelineStackSizeKHR");
+		functions.push_back("vkGetAccelerationStructureBuildSizesKHR");
 		return;
 	}
 	if (extName == "VK_FUCHSIA_imagepipe_surface")

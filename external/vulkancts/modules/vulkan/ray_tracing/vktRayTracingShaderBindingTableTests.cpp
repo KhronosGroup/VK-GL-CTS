@@ -101,10 +101,10 @@ public:
 																												 de::MovePtr<BufferWithMemory>&		hitShaderBindingTable,
 																												 de::MovePtr<BufferWithMemory>&		missShaderBindingTable,
 																												 de::MovePtr<BufferWithMemory>&		callableShaderBindingTable,
-																												 VkStridedBufferRegionKHR&			raygenShaderBindingTableRegion,
-																												 VkStridedBufferRegionKHR&			hitShaderBindingTableRegion,
-																												 VkStridedBufferRegionKHR&			missShaderBindingTableRegion,
-																												 VkStridedBufferRegionKHR&			callableShaderBindingTableRegion) = 0;
+																												 VkStridedDeviceAddressRegionKHR&	raygenShaderBindingTableRegion,
+																												 VkStridedDeviceAddressRegionKHR&	hitShaderBindingTableRegion,
+																												 VkStridedDeviceAddressRegionKHR&	missShaderBindingTableRegion,
+																												 VkStridedDeviceAddressRegionKHR&	callableShaderBindingTableRegion) = 0;
 	virtual bool															verifyImage							(BufferWithMemory*					resultBuffer,
 																												 Context&							context,
 																												 TestParams&						testParams) = 0;
@@ -200,10 +200,10 @@ public:
 																										 de::MovePtr<BufferWithMemory>&		hitShaderBindingTable,
 																										 de::MovePtr<BufferWithMemory>&		missShaderBindingTable,
 																										 de::MovePtr<BufferWithMemory>&		callableShaderBindingTable,
-																										 VkStridedBufferRegionKHR&			raygenShaderBindingTableRegion,
-																										 VkStridedBufferRegionKHR&			hitShaderBindingTableRegion,
-																										 VkStridedBufferRegionKHR&			missShaderBindingTableRegion,
-																										 VkStridedBufferRegionKHR&			callableShaderBindingTableRegion) override;
+																										 VkStridedDeviceAddressRegionKHR&	raygenShaderBindingTableRegion,
+																										 VkStridedDeviceAddressRegionKHR&	hitShaderBindingTableRegion,
+																										 VkStridedDeviceAddressRegionKHR&	missShaderBindingTableRegion,
+																										 VkStridedDeviceAddressRegionKHR&	callableShaderBindingTableRegion) override;
 	bool															verifyImage							(BufferWithMemory*					resultBuffer,
 																										 Context&							context,
 																										 TestParams&						testParams) override;
@@ -406,7 +406,6 @@ void CheckerboardConfiguration::initRayTracingShaders (de::MovePtr<RayTracingPip
 				}
 			}
 			rayTracingPipeline->setMaxPayloadSize(16u);
-			rayTracingPipeline->setMaxCallableSize(16u);
 			break;
 		}
 		default:
@@ -424,10 +423,10 @@ void CheckerboardConfiguration::initShaderBindingTables (de::MovePtr<RayTracingP
 														 de::MovePtr<BufferWithMemory>&		hitShaderBindingTable,
 														 de::MovePtr<BufferWithMemory>&		missShaderBindingTable,
 														 de::MovePtr<BufferWithMemory>&		callableShaderBindingTable,
-														 VkStridedBufferRegionKHR&			raygenShaderBindingTableRegion,
-														 VkStridedBufferRegionKHR&			hitShaderBindingTableRegion,
-														 VkStridedBufferRegionKHR&			missShaderBindingTableRegion,
-														 VkStridedBufferRegionKHR&			callableShaderBindingTableRegion)
+														 VkStridedDeviceAddressRegionKHR&	raygenShaderBindingTableRegion,
+														 VkStridedDeviceAddressRegionKHR&	hitShaderBindingTableRegion,
+														 VkStridedDeviceAddressRegionKHR&	missShaderBindingTableRegion,
+														 VkStridedDeviceAddressRegionKHR&	callableShaderBindingTableRegion)
 {
 	const DeviceInterface&						vkd							= context.getDeviceInterface();
 	const VkDevice								device						= context.getDevice();
@@ -451,13 +450,13 @@ void CheckerboardConfiguration::initShaderBindingTables (de::MovePtr<RayTracingP
 				hitShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, shaderCount[STT_HIT], 0u, 0u, MemoryRequirement::Any, 0u, shaderBindingTableOffset);
 			missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1 + shaderCount[STT_HIT], 1 );
 
-			raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
+			raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 			if (testParams.shaderRecordPresent)
-				hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), shaderBindingTableOffset, shaderRecordAlignedSize, shaderCount[STT_HIT] * shaderRecordAlignedSize);
+				hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), shaderBindingTableOffset), shaderRecordAlignedSize, shaderCount[STT_HIT] * shaderRecordAlignedSize);
 			else
-				hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), shaderBindingTableOffset, shaderGroupHandleSize, shaderCount[STT_HIT] * shaderGroupHandleSize);
-			missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-			callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
+				hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), shaderBindingTableOffset), shaderGroupHandleSize, shaderCount[STT_HIT] * shaderGroupHandleSize);
+			missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+			callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 			// fill ShaderRecordKHR data
 			if (testParams.shaderRecordPresent)
@@ -484,13 +483,13 @@ void CheckerboardConfiguration::initShaderBindingTables (de::MovePtr<RayTracingP
 			else
 				missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2, shaderCount[STT_MISS], 0u, 0u, MemoryRequirement::Any, 0u, shaderBindingTableOffset);
 
-			raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-			hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
+			raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+			hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 			if (testParams.shaderRecordPresent)
-				missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), shaderBindingTableOffset, shaderRecordAlignedSize, shaderCount[STT_MISS] * shaderRecordAlignedSize);
+				missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), shaderBindingTableOffset), shaderRecordAlignedSize, shaderCount[STT_MISS] * shaderRecordAlignedSize);
 			else
-				missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), shaderBindingTableOffset, shaderGroupHandleSize, shaderCount[STT_MISS] * shaderGroupHandleSize);
-			callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
+				missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), shaderBindingTableOffset), shaderGroupHandleSize, shaderCount[STT_MISS] * shaderGroupHandleSize);
+			callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 			if (testParams.shaderRecordPresent)
 			{
@@ -517,13 +516,13 @@ void CheckerboardConfiguration::initShaderBindingTables (de::MovePtr<RayTracingP
 			else
 				callableShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 2 + shaderCount[STT_CALL], shaderCount[STT_CALL], 0u, 0u, MemoryRequirement::Any, 0u, shaderBindingTableOffset);
 
-			raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-			hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), 0, shaderGroupHandleSize, shaderCount[STT_CALL] * shaderGroupHandleSize);
-			missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
+			raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+			hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderCount[STT_CALL] * shaderGroupHandleSize);
+			missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
 			if (testParams.shaderRecordPresent)
-				callableShaderBindingTableRegion = makeStridedBufferRegionKHR(callableShaderBindingTable->get(), shaderBindingTableOffset, shaderRecordAlignedSize, shaderCount[STT_CALL] * shaderRecordAlignedSize);
+				callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), shaderBindingTableOffset), shaderRecordAlignedSize, shaderCount[STT_CALL] * shaderRecordAlignedSize);
 			else
-				callableShaderBindingTableRegion = makeStridedBufferRegionKHR(callableShaderBindingTable->get(), shaderBindingTableOffset, shaderGroupHandleSize, shaderCount[STT_CALL] * shaderGroupHandleSize);
+				callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), shaderBindingTableOffset), shaderGroupHandleSize, shaderCount[STT_CALL] * shaderGroupHandleSize);
 
 			if (testParams.shaderRecordPresent)
 			{
@@ -874,10 +873,10 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest ()
 	de::MovePtr<BufferWithMemory>		hitShaderBindingTable;
 	de::MovePtr<BufferWithMemory>		missShaderBindingTable;
 	de::MovePtr<BufferWithMemory>		callableShaderBindingTable;
-	VkStridedBufferRegionKHR			raygenShaderBindingTableRegion;
-	VkStridedBufferRegionKHR			hitShaderBindingTableRegion;
-	VkStridedBufferRegionKHR			missShaderBindingTableRegion;
-	VkStridedBufferRegionKHR			callableShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR		raygenShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR		hitShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR		missShaderBindingTableRegion;
+	VkStridedDeviceAddressRegionKHR		callableShaderBindingTableRegion;
 	m_data.testConfiguration->initShaderBindingTables(rayTracingPipeline, m_context, m_data, *pipeline, getShaderGroupHandleSize(vki, physicalDevice), getShaderGroupBaseAlignment(vki, physicalDevice), raygenShaderBindingTable, hitShaderBindingTable, missShaderBindingTable, callableShaderBindingTable, raygenShaderBindingTableRegion, hitShaderBindingTableRegion, missShaderBindingTableRegion, callableShaderBindingTableRegion);
 
 	const VkFormat						imageFormat							= m_data.testConfiguration->getResultImageFormat();
@@ -979,7 +978,7 @@ tcu::TestStatus ShaderBindingTableIndexingTestInstance::iterate (void)
 
 tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_binding_table", "Tests veryfying vkCmdTraceRaysIndirectKHR"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_binding_table", "Tests veryfying shader binding tables"));
 
 	struct ShaderTestTypeData
 	{

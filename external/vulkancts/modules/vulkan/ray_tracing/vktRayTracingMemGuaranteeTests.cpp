@@ -124,21 +124,6 @@ VkImageCreateInfo makeImageCreateInfo (deUint32 width, deUint32 height, VkFormat
 	return imageCreateInfo;
 }
 
-VkBuffer getVkBuffer (const de::MovePtr<BufferWithMemory>& buffer)
-{
-	VkBuffer result = (buffer.get() == DE_NULL) ? DE_NULL : buffer->get();
-
-	return result;
-}
-
-VkStridedBufferRegionKHR makeStridedBufferRegionKHR (VkBuffer buffer, VkDeviceSize size, VkDeviceSize stride = 0)
-{
-	const VkDeviceSize sizeFixed	= ((buffer == DE_NULL) ? 0ull : size);
-	const VkDeviceSize strideFixed	= ((buffer == DE_NULL) ? 0ull : stride);
-
-	return makeStridedBufferRegionKHR(buffer, 0, strideFixed, sizeFixed);
-}
-
 class RayTracingBuildTestInstance : public TestInstance
 {
 public:
@@ -271,7 +256,6 @@ const std::string RayTracingTestCase::getIntersectionPassthrough (void)
 {
 	const std::string intersectionPassthrough =
 		"#version 460 core\n"
-		"#extension GL_EXT_nonuniform_qualifier : enable\n"
 		"#extension GL_EXT_ray_tracing : require\n"
 		"hitAttributeEXT vec3 hitAttribute;\n"
 		"\n"
@@ -287,7 +271,6 @@ const std::string RayTracingTestCase::getMissPassthrough (void)
 {
 	const std::string missPassthrough =
 		"#version 460 core\n"
-		"#extension GL_EXT_nonuniform_qualifier : enable\n"
 		"#extension GL_EXT_ray_tracing : require\n"
 		"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 		"\n"
@@ -302,7 +285,6 @@ const std::string RayTracingTestCase::getHitPassthrough (void)
 {
 	const std::string hitPassthrough =
 		"#version 460 core\n"
-		"#extension GL_EXT_nonuniform_qualifier : enable\n"
 		"#extension GL_EXT_ray_tracing : require\n"
 		"hitAttributeEXT vec3 attribs;\n"
 		"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
@@ -340,7 +322,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 	const std::string	calleeShaderParam	= calleeIsAnyHit ? "" : "layout(location = 0) callableDataInEXT float dummy;\n";
 	const std::string	calleeShader		=
 		"#version 460 core\n"
-		"#extension GL_EXT_nonuniform_qualifier : enable\n"
 		"#extension GL_EXT_ray_tracing : require\n"
 		+ glslExtensions
 		+ calleeShaderParam +
@@ -359,7 +340,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			std::stringstream css;
 			css <<
 				"#version 460 core\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				+ glslExtensions +
 				"layout(set = 0, binding = 0, r32ui)" + imageQualifiers + "uniform uimage2D result;\n"
@@ -383,7 +363,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			std::stringstream css;
 			css <<
 				"#version 460 core\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				+ glslExtensions +
 				"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
@@ -413,7 +392,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			std::stringstream css;
 			css <<
 				"#version 460 core\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				+ glslExtensions +
 				"layout(r32ui, set = 0, binding = 0)" + imageQualifiers + "uniform uimage2D result;\n"
@@ -441,7 +419,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			std::stringstream css;
 			css <<
 				"#version 460 core\n"
-				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				+ glslExtensions +
 				"layout(r32ui, set = 0, binding = 0)" + imageQualifiers + "uniform uimage2D result;\n"
@@ -466,7 +443,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				std::stringstream css;
 				css <<
 					"#version 460 core\n"
-					"#extension GL_EXT_nonuniform_qualifier : enable\n"
 					"#extension GL_EXT_ray_tracing : require\n"
 					+ glslExtensions +
 					"layout(location = 0) callableDataEXT float dummy;\n"
@@ -484,7 +460,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				std::stringstream css;
 				css <<
 					"#version 460 core\n"
-					"#extension GL_EXT_nonuniform_qualifier : enable\n"
 					"#extension GL_EXT_ray_tracing : require\n"
 					+ glslExtensions +
 					"layout(location = 0) callableDataInEXT float dummyIn;\n"
@@ -665,10 +640,11 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (void)
 	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= createShaderBindingTable(vki, vkd, device, physicalDevice, *pipeline, allocator, rayTracingPipeline, m_missShaderGroup);
 	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= createShaderBindingTable(vki, vkd, device, physicalDevice, *pipeline, allocator, rayTracingPipeline, m_hitShaderGroup);
 	const de::MovePtr<BufferWithMemory>	callableShaderBindingTable			= createShaderBindingTable(vki, vkd, device, physicalDevice, *pipeline, allocator, rayTracingPipeline, m_callableShaderGroup, callableGroups);
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(getVkBuffer(raygenShaderBindingTable), shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(getVkBuffer(missShaderBindingTable), shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(getVkBuffer(hitShaderBindingTable), shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(getVkBuffer(callableShaderBindingTable), shaderGroupHandleSize * callableGroups, shaderGroupHandleSize);
+
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= raygenShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= missShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= hitShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= callableShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize * callableGroups) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.width, m_data.height, format);
 	const VkImageSubresourceRange		imageSubresourceRange				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);

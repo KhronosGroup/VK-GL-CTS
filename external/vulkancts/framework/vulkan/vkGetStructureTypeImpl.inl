@@ -1926,11 +1926,6 @@ template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
 }
 
-template<> VkStructureType getStructureType<VkDeferredOperationInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR;
-}
-
 template<> VkStructureType getStructureType<VkPipelineLibraryCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR;
@@ -1976,11 +1971,6 @@ template<> VkStructureType getStructureType<VkAccelerationStructureBuildGeometry
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 }
 
-template<> VkStructureType getStructureType<VkAccelerationStructureCreateGeometryTypeInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_GEOMETRY_TYPE_INFO_KHR;
-}
-
 template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -2006,9 +1996,9 @@ template<> VkStructureType getStructureType<VkAccelerationStructureDeviceAddress
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
 }
 
-template<> VkStructureType getStructureType<VkAccelerationStructureVersionKHR> (void)
+template<> VkStructureType getStructureType<VkAccelerationStructureVersionInfoKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_KHR;
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkCopyAccelerationStructureToMemoryInfoKHR> (void)
@@ -2024,6 +2014,11 @@ template<> VkStructureType getStructureType<VkCopyMemoryToAccelerationStructureI
 template<> VkStructureType getStructureType<VkCopyAccelerationStructureInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureBuildSizesInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImagePipeSurfaceCreateInfoFUCHSIA> (void)

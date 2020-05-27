@@ -288,6 +288,11 @@ void RaytracedGeometry<V, I>::addIndex (const deUint32& index)
 
 de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR geometryType, VkFormat vertexFormat, VkIndexType indexType);
 
+VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vkd,
+										 const VkDevice			device,
+										 const VkBuffer			buffer,
+										 VkDeviceSize			offset );
+
 class SerialStorage
 {
 public:
@@ -302,9 +307,11 @@ public:
 																 const VkDevice			device);
 	VkDeviceOrHostAddressConstKHR			getAddressConst		(const DeviceInterface&	vk,
 																 const VkDevice			device);
+	VkDeviceSize							getStorageSize		();
 protected:
 	VkAccelerationStructureBuildTypeKHR		m_buildType;
 	de::MovePtr<BufferWithMemory>			m_buffer;
+	VkDeviceSize							m_storageSize;
 
 };
 
@@ -314,76 +321,81 @@ public:
 	static deUint32										getRequiredAllocationCount				(void);
 
 														BottomLevelAccelerationStructure		();
-														BottomLevelAccelerationStructure		(const BottomLevelAccelerationStructure&	other) = delete;
+														BottomLevelAccelerationStructure		(const BottomLevelAccelerationStructure&		other) = delete;
 	virtual												~BottomLevelAccelerationStructure		();
 
-	virtual void										setGeometryData							(const std::vector<tcu::Vec3>&				geometryData,
-																								 const bool									triangles,
-																								 const VkGeometryFlagsKHR					geometryFlags = 0);
-	virtual void										setDefaultGeometryData					(const VkShaderStageFlagBits				testStage);
-	virtual void										setGeometryCount						(const size_t								geometryCount);
-	virtual void										addGeometry								(de::SharedPtr<RaytracedGeometryBase>&		raytracedGeometry);
-	virtual void										addGeometry								(const std::vector<tcu::Vec3>&				geometryData,
-																								 const bool									triangles,
-																								 const VkGeometryFlagsKHR					geometryFlags = 0);
+	virtual void										setGeometryData							(const std::vector<tcu::Vec3>&					geometryData,
+																								 const bool										triangles,
+																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
+	virtual void										setDefaultGeometryData					(const VkShaderStageFlagBits					testStage);
+	virtual void										setGeometryCount						(const size_t									geometryCount);
+	virtual void										addGeometry								(de::SharedPtr<RaytracedGeometryBase>&			raytracedGeometry);
+	virtual void										addGeometry								(const std::vector<tcu::Vec3>&					geometryData,
+																								 const bool										triangles,
+																								 const VkGeometryFlagsKHR						geometryFlags			= 0u );
 
-	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR	buildType) = DE_NULL;
-	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR	flags) = DE_NULL;
-	virtual void										setDeferredOperation					(const bool									deferredOperation,
-																								 const deUint32								workerThreadCount = 0) = DE_NULL;
-	virtual void										setUseArrayOfPointers					(const bool									useArrayOfPointers) = DE_NULL;
-	virtual void										setIndirectBuildParameters				(const VkBuffer								indirectBuffer,
-																								 const VkDeviceSize							indirectBufferOffset,
-																								 const deUint32								indirectBufferStride) = DE_NULL;
+	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR		buildType) = DE_NULL;
+	virtual void										setCreateFlags							(const VkAccelerationStructureCreateFlagsKHR	createFlags) = DE_NULL;
+	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR		buildFlags) = DE_NULL;
+	virtual void										setDeferredOperation					(const bool										deferredOperation,
+																								 const deUint32									workerThreadCount		= 0u ) = DE_NULL;
+	virtual void										setUseArrayOfPointers					(const bool										useArrayOfPointers) = DE_NULL;
+	virtual void										setIndirectBuildParameters				(const VkBuffer									indirectBuffer,
+																								 const VkDeviceSize								indirectBufferOffset,
+																								 const deUint32									indirectBufferStride) = DE_NULL;
 	virtual VkBuildAccelerationStructureFlagsKHR		getBuildFlags							() const = DE_NULL;
+	VkDeviceSize										getStructureSize						() const;
 
 	// methods specific for each acceleration structure
-	virtual void										create									(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 Allocator&									allocator,
-																								 VkDeviceAddress							deviceAddress,
-																								 VkDeviceSize								compactCopySize) = DE_NULL;
-	virtual void										build									(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer) = DE_NULL;
-	virtual void										copyFrom								(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer,
-																								 BottomLevelAccelerationStructure*			accelerationStructure,
-																								 VkDeviceSize								compactCopySize) = DE_NULL;
+	virtual void										create									(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 Allocator&										allocator,
+																								 VkDeviceSize									structureSize,
+																								 VkDeviceAddress								deviceAddress			= 0u) = DE_NULL;
+	virtual void										build									(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer) = DE_NULL;
+	virtual void										copyFrom								(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer,
+																								 BottomLevelAccelerationStructure*				accelerationStructure,
+																								 bool											compactCopy) = DE_NULL;
 
-	virtual void										serialize								(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer,
-																								 SerialStorage*								storage) = DE_NULL;
-	virtual void										deserialize								(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer,
-																								 SerialStorage*								storage) = DE_NULL;
+	virtual void										serialize								(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer,
+																								 SerialStorage*									storage) = DE_NULL;
+	virtual void										deserialize								(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer,
+																								 SerialStorage*									storage) = DE_NULL;
 
 	// helper methods for typical acceleration structure creation tasks
-	void												createAndBuild							(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer,
-																								 Allocator&									allocator,
-																								 VkDeviceAddress							deviceAddress			= 0u );
-	void												createAndCopyFrom						(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer,
-																								 Allocator&									allocator,
-																								 VkDeviceAddress							deviceAddress			= 0u,
-																								 BottomLevelAccelerationStructure*			accelerationStructure	= DE_NULL,
-																								 VkDeviceSize								compactCopySize			= 0u);
-	void												createAndDeserializeFrom				(const DeviceInterface&						vk,
-																								 const VkDevice								device,
-																								 const VkCommandBuffer						cmdBuffer,
-																								 Allocator&									allocator,
-																								 VkDeviceAddress							deviceAddress			= 0u,
-																								 SerialStorage*								storage					= DE_NULL);
+	void												createAndBuild							(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer,
+																								 Allocator&										allocator,
+																								 VkDeviceAddress								deviceAddress			= 0u );
+	void												createAndCopyFrom						(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer,
+																								 Allocator&										allocator,
+																								 BottomLevelAccelerationStructure*				accelerationStructure,
+																								 VkDeviceSize									compactCopySize			= 0u,
+																								 VkDeviceAddress								deviceAddress			= 0u);
+	void												createAndDeserializeFrom				(const DeviceInterface&							vk,
+																								 const VkDevice									device,
+																								 const VkCommandBuffer							cmdBuffer,
+																								 Allocator&										allocator,
+																								 SerialStorage*									storage,
+																								 VkDeviceAddress								deviceAddress			= 0u);
 
 	virtual const VkAccelerationStructureKHR*			getPtr									(void) const = DE_NULL;
 protected:
 	std::vector<de::SharedPtr<RaytracedGeometryBase>>	m_geometriesData;
+	VkDeviceSize										m_structureSize;
+	VkDeviceSize										m_updateScratchSize;
+	VkDeviceSize										m_buildScratchSize;
 };
 
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure ();
@@ -423,21 +435,23 @@ public:
 																										 VkGeometryInstanceFlagsKHR							flags									= VkGeometryInstanceFlagBitsKHR(0u)	);
 
 	virtual void													setBuildType						(const VkAccelerationStructureBuildTypeKHR			buildType) = DE_NULL;
-	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			flags) = DE_NULL;
+	virtual void													setCreateFlags						(const VkAccelerationStructureCreateFlagsKHR		createFlags) = DE_NULL;
+	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			buildFlags) = DE_NULL;
 	virtual void													setDeferredOperation				(const bool											deferredOperation,
-																										 const deUint32										workerThreadCount = 0) = DE_NULL;
+																										 const deUint32										workerThreadCount = 0u) = DE_NULL;
 	virtual void													setUseArrayOfPointers				(const bool											useArrayOfPointers) = DE_NULL;
 	virtual void													setIndirectBuildParameters			(const VkBuffer										indirectBuffer,
 																										 const VkDeviceSize									indirectBufferOffset,
 																										 const deUint32										indirectBufferStride) = DE_NULL;
 	virtual VkBuildAccelerationStructureFlagsKHR					getBuildFlags						() const = DE_NULL;
+	VkDeviceSize													getStructureSize					() const;
 
 	// methods specific for each acceleration structure
 	virtual void													create								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 Allocator&									allocator,
-																										 VkDeviceAddress							deviceAddress,
-																										 VkDeviceSize								compactCopySize) = DE_NULL;
+																										 VkDeviceSize								structureSize			= 0u,
+																										 VkDeviceAddress							deviceAddress			= 0u ) = DE_NULL;
 	virtual void													build								(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer) = DE_NULL;
@@ -445,7 +459,7 @@ public:
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer,
 																										 TopLevelAccelerationStructure*				accelerationStructure,
-																										 VkDeviceSize								compactCopySize) = DE_NULL;
+																										 bool										compactCopy) = DE_NULL;
 
 	virtual void													serialize							(const DeviceInterface&						vk,
 																										 const VkDevice								device,
@@ -466,21 +480,24 @@ public:
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer,
 																										 Allocator&									allocator,
-																										 VkDeviceAddress							deviceAddress			= 0u,
-																										 TopLevelAccelerationStructure*				accelerationStructure	= DE_NULL,
-																										 VkDeviceSize								compactCopySize			= 0u);
+																										 TopLevelAccelerationStructure*				accelerationStructure,
+																										 VkDeviceSize								compactCopySize			= 0u,
+																										 VkDeviceAddress							deviceAddress			= 0u);
 	void															createAndDeserializeFrom			(const DeviceInterface&						vk,
 																										 const VkDevice								device,
 																										 const VkCommandBuffer						cmdBuffer,
 																										 Allocator&									allocator,
-																										 VkDeviceAddress							deviceAddress			= 0u,
-																										 SerialStorage*								storage					= DE_NULL);
+																										 SerialStorage*								storage,
+																										 VkDeviceAddress							deviceAddress			= 0u);
 
 	virtual const VkAccelerationStructureKHR*						getPtr								(void) const = DE_NULL;
 
 protected:
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	m_bottomLevelInstances;
 	std::vector<InstanceData>										m_instanceData;
+	VkDeviceSize													m_structureSize;
+	VkDeviceSize													m_updateScratchSize;
+	VkDeviceSize													m_buildScratchSize;
 };
 
 de::MovePtr<TopLevelAccelerationStructure> makeTopLevelAccelerationStructure ();
@@ -530,7 +547,6 @@ public:
 	void														setMaxRecursionDepth		(const deUint32&										maxRecursionDepth);
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);
 	void														setMaxAttributeSize			(const deUint32&										maxAttributeSize);
-	void														setMaxCallableSize			(const deUint32&										maxCallableSize);
 	void														setDeferredOperation		(const bool												deferredOperation,
 																							 const deUint32											workerThreadCount = 0);
 
@@ -548,7 +564,6 @@ protected:
 	deUint32													m_maxRecursionDepth;
 	deUint32													m_maxPayloadSize;
 	deUint32													m_maxAttributeSize;
-	deUint32													m_maxCallableSize;
 	bool														m_deferredOperation;
 	deUint32													m_workerThreadCount;
 };
@@ -576,24 +591,23 @@ public:
 de::MovePtr<RayTracingProperties> makeRayTracingProperties (const InstanceInterface&	vki,
 															const VkPhysicalDevice		physicalDevice);
 
-void cmdTraceRays	(const DeviceInterface&				vk,
-					 VkCommandBuffer					commandBuffer,
-					 const VkStridedBufferRegionKHR*	raygenShaderBindingTableRegion,
-					 const VkStridedBufferRegionKHR*	missShaderBindingTableRegion,
-					 const VkStridedBufferRegionKHR*	hitShaderBindingTableRegion,
-					 const VkStridedBufferRegionKHR*	callableShaderBindingTableRegion,
-					 deUint32							width,
-					 deUint32							height,
-					 deUint32							depth);
+void cmdTraceRays	(const DeviceInterface&					vk,
+					 VkCommandBuffer						commandBuffer,
+					 const VkStridedDeviceAddressRegionKHR*	raygenShaderBindingTableRegion,
+					 const VkStridedDeviceAddressRegionKHR*	missShaderBindingTableRegion,
+					 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
+					 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
+					 deUint32								width,
+					 deUint32								height,
+					 deUint32								depth);
 
-void cmdTraceRaysIndirect	(const DeviceInterface&				vk,
-							 VkCommandBuffer					commandBuffer,
-							 const VkStridedBufferRegionKHR*	raygenShaderBindingTableRegion,
-							 const VkStridedBufferRegionKHR*	missShaderBindingTableRegion,
-							 const VkStridedBufferRegionKHR*	hitShaderBindingTableRegion,
-							 const VkStridedBufferRegionKHR*	callableShaderBindingTableRegion,
-							 VkBuffer							buffer,
-							 VkDeviceSize						offset);
+void cmdTraceRaysIndirect	(const DeviceInterface&					vk,
+							 VkCommandBuffer						commandBuffer,
+							 const VkStridedDeviceAddressRegionKHR*	raygenShaderBindingTableRegion,
+							 const VkStridedDeviceAddressRegionKHR*	missShaderBindingTableRegion,
+							 const VkStridedDeviceAddressRegionKHR*	hitShaderBindingTableRegion,
+							 const VkStridedDeviceAddressRegionKHR*	callableShaderBindingTableRegion,
+							 VkDeviceAddress						indirectDeviceAddress);
 } // vk
 
 #endif // _VKRAYTRACINGUTIL_HPP

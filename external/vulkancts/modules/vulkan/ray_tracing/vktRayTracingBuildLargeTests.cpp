@@ -236,7 +236,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) callableDataEXT float dummy;"
 			"layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
@@ -258,7 +257,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream	css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) callableDataInEXT float dummy;\n"
 			"layout(r32ui, set = 0, binding = 0) uniform uimage2D image0_0;\n"
@@ -374,10 +372,10 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest (const d
 	const Move<VkPipeline>				pipeline							= makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline, *pipelineLayout, callableShaderCount, m_data.deferredOperation, threadCount);
 	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1u);
 	const de::MovePtr<BufferWithMemory>	callableShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1u, callableShaderCount);
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, shaderGroupHandleSize, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(callableShaderBindingTable->get(), 0, shaderGroupHandleSize, shaderGroupHandleSize * callableShaderCount);
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize * callableShaderCount);
 
 	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.width, m_data.height, format);
 	const VkImageSubresourceRange		imageSubresourceRange				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);

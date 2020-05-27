@@ -48,6 +48,7 @@ Move<VkPipeline>		createRayTracingPipelineNV(const DeviceInterface&					vk,
 												 const VkAllocationCallbacks*			pAllocator = DE_NULL);
 Move<VkPipeline>		createRayTracingPipelineKHR	(const DeviceInterface&					vk,
 												 VkDevice									device,
+												 VkDeferredOperationKHR						deferredOperation,
 												 VkPipelineCache							pipelineCache,
 												 const VkRayTracingPipelineCreateInfoKHR*	pCreateInfo,
 												 const VkAllocationCallbacks*				pAllocator = DE_NULL);

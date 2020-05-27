@@ -242,7 +242,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(set = 0, binding = 0, std140) writeonly buffer OutBuf\n"
 			"{\n"
@@ -269,7 +268,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(set = 0, binding = 0, std140) writeonly buffer OutBuf\n"
 			"{\n"
@@ -293,7 +291,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) rayPayloadEXT vec3 hitValue;\n"
 			"layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;\n"
@@ -319,7 +316,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 			"hitAttributeEXT vec3 attribs;\n"
@@ -337,7 +333,6 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		std::stringstream css;
 		css <<
 			"#version 460 core\n"
-			"#extension GL_EXT_nonuniform_qualifier : enable\n"
 			"#extension GL_EXT_ray_tracing : require\n"
 			"layout(location = 0) rayPayloadInEXT dummyPayload { vec4 dummy; };\n"
 			"layout(set = 0, binding = 0, r32ui) uniform uimage3D result;\n"
@@ -460,10 +455,10 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::prepareBuffer
 	de::MovePtr<RayTracingPipeline>		rayTracingPipeline					= de::newMovePtr<RayTracingPipeline>();
 	const Move<VkPipeline>				pipeline							= makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline, *pipelineLayout, shaderName);
 	const de::MovePtr<BufferWithMemory>	shaderBindingTable					= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(shaderBindingTable->get(), 0, shaderGroupHandleSize, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, shaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	beginCommandBuffer(vkd, *cmdBuffer, 0u);
 	{
@@ -524,10 +519,10 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::runTest (cons
 	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, RAYGEN_GROUP, 1u);
 	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, MISS_GROUP, 1u);
 	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, HIT_GROUP, 1u);
-	const VkStridedBufferRegionKHR		raygenShaderBindingTableRegion		= makeStridedBufferRegionKHR(raygenShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		missShaderBindingTableRegion		= makeStridedBufferRegionKHR(missShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		hitShaderBindingTableRegion			= makeStridedBufferRegionKHR(hitShaderBindingTable->get(), 0, 0, shaderGroupHandleSize);
-	const VkStridedBufferRegionKHR		callableShaderBindingTableRegion	= makeStridedBufferRegionKHR(DE_NULL, 0, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);
 	const VkImageSubresourceRange		imageSubresourceRange				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
@@ -551,7 +546,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::runTest (cons
 	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
 	const VkMemoryBarrier				postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, 0);
 	const VkClearValue					clearValue							= makeClearValueColorU32(5u, 5u, 5u, 255u);
-	const deUint32						indirectAccelerationStructureStride	= sizeof(VkAccelerationStructureBuildOffsetInfoKHR);
+	const deUint32						indirectAccelerationStructureStride	= sizeof(VkAccelerationStructureBuildRangeInfoKHR);
 
 	de::SharedPtr<BottomLevelAccelerationStructure>	bottomLevelAccelerationStructure;
 	de::SharedPtr<TopLevelAccelerationStructure>	topLevelAccelerationStructure;
@@ -628,7 +623,7 @@ VkBuffer	RayTracingBuildIndirectTestInstance::initIndirectTopAccelerationStructu
 {
 	VkBuffer result	= DE_NULL;
 
-	m_indirectAccelerationStructureTop	= prepareBuffer(sizeof(VkAccelerationStructureBuildOffsetInfoKHR), "wr-ast");
+	m_indirectAccelerationStructureTop	= prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR), "wr-ast");
 	result								= **m_indirectAccelerationStructureTop;
 
 	return result;
@@ -638,7 +633,7 @@ VkBuffer	RayTracingBuildIndirectTestInstance::initIndirectBottomAccelerationStru
 {
 	VkBuffer result	= DE_NULL;
 
-	m_indirectAccelerationStructureBottom	= prepareBuffer(sizeof(VkAccelerationStructureBuildOffsetInfoKHR), "wr-asb");
+	m_indirectAccelerationStructureBottom	= prepareBuffer(sizeof(VkAccelerationStructureBuildRangeInfoKHR), "wr-asb");
 	result									= **m_indirectAccelerationStructureBottom;
 
 	return result;

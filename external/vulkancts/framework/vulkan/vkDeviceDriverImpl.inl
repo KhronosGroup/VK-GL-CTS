@@ -1427,34 +1427,34 @@ void DeviceDriver::getAccelerationStructureMemoryRequirementsKHR (VkDevice devic
 	m_vk.getAccelerationStructureMemoryRequirementsKHR(device, pInfo, pMemoryRequirements);
 }
 
-void DeviceDriver::cmdBuildAccelerationStructureKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildOffsetInfoKHR* const* ppOffsetInfos) const
+void DeviceDriver::cmdBuildAccelerationStructureKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const
 {
-	m_vk.cmdBuildAccelerationStructureKHR(commandBuffer, infoCount, pInfos, ppOffsetInfos);
+	m_vk.cmdBuildAccelerationStructureKHR(commandBuffer, infoCount, pInfos, ppBuildRangeInfos);
 }
 
-void DeviceDriver::cmdBuildAccelerationStructureIndirectKHR (VkCommandBuffer commandBuffer, const VkAccelerationStructureBuildGeometryInfoKHR* pInfo, VkBuffer indirectBuffer, VkDeviceSize indirectOffset, deUint32 indirectStride) const
+void DeviceDriver::cmdBuildAccelerationStructureIndirectKHR (VkCommandBuffer commandBuffer, const VkAccelerationStructureBuildGeometryInfoKHR* pInfo, VkDeviceAddress indirectDeviceAddress, deUint32 indirectStride) const
 {
-	m_vk.cmdBuildAccelerationStructureIndirectKHR(commandBuffer, pInfo, indirectBuffer, indirectOffset, indirectStride);
+	m_vk.cmdBuildAccelerationStructureIndirectKHR(commandBuffer, pInfo, indirectDeviceAddress, indirectStride);
 }
 
-VkResult DeviceDriver::buildAccelerationStructureKHR (VkDevice device, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildOffsetInfoKHR* const* ppOffsetInfos) const
+VkResult DeviceDriver::buildAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const
 {
-	return m_vk.buildAccelerationStructureKHR(device, infoCount, pInfos, ppOffsetInfos);
+	return m_vk.buildAccelerationStructureKHR(device, deferredOperation, infoCount, pInfos, ppBuildRangeInfos);
 }
 
-VkResult DeviceDriver::copyAccelerationStructureKHR (VkDevice device, const VkCopyAccelerationStructureInfoKHR* pInfo) const
+VkResult DeviceDriver::copyAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureInfoKHR* pInfo) const
 {
-	return m_vk.copyAccelerationStructureKHR(device, pInfo);
+	return m_vk.copyAccelerationStructureKHR(device, deferredOperation, pInfo);
 }
 
-VkResult DeviceDriver::copyAccelerationStructureToMemoryKHR (VkDevice device, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const
+VkResult DeviceDriver::copyAccelerationStructureToMemoryKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const
 {
-	return m_vk.copyAccelerationStructureToMemoryKHR(device, pInfo);
+	return m_vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, pInfo);
 }
 
-VkResult DeviceDriver::copyMemoryToAccelerationStructureKHR (VkDevice device, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
+VkResult DeviceDriver::copyMemoryToAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
 {
-	return m_vk.copyMemoryToAccelerationStructureKHR(device, pInfo);
+	return m_vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, pInfo);
 }
 
 VkResult DeviceDriver::writeAccelerationStructuresPropertiesKHR (VkDevice device, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, deUintptr dataSize, void* pData, deUintptr stride) const
@@ -1477,14 +1477,14 @@ void DeviceDriver::cmdCopyMemoryToAccelerationStructureKHR (VkCommandBuffer comm
 	m_vk.cmdCopyMemoryToAccelerationStructureKHR(commandBuffer, pInfo);
 }
 
-void DeviceDriver::cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedBufferRegionKHR* pRaygenShaderBindingTable, const VkStridedBufferRegionKHR* pMissShaderBindingTable, const VkStridedBufferRegionKHR* pHitShaderBindingTable, const VkStridedBufferRegionKHR* pCallableShaderBindingTable, deUint32 width, deUint32 height, deUint32 depth) const
+void DeviceDriver::cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, deUint32 width, deUint32 height, deUint32 depth) const
 {
 	m_vk.cmdTraceRaysKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, width, height, depth);
 }
 
-VkResult DeviceDriver::createRayTracingPipelinesKHR (VkDevice device, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
+VkResult DeviceDriver::createRayTracingPipelinesKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
 {
-	return m_vk.createRayTracingPipelinesKHR(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+	return m_vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
 VkDeviceAddress DeviceDriver::getAccelerationStructureDeviceAddressKHR (VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo) const
@@ -1497,14 +1497,29 @@ VkResult DeviceDriver::getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice
 	return m_vk.getRayTracingCaptureReplayShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
 }
 
-void DeviceDriver::cmdTraceRaysIndirectKHR (VkCommandBuffer commandBuffer, const VkStridedBufferRegionKHR* pRaygenShaderBindingTable, const VkStridedBufferRegionKHR* pMissShaderBindingTable, const VkStridedBufferRegionKHR* pHitShaderBindingTable, const VkStridedBufferRegionKHR* pCallableShaderBindingTable, VkBuffer buffer, VkDeviceSize offset) const
+void DeviceDriver::cmdTraceRaysIndirectKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress) const
 {
-	m_vk.cmdTraceRaysIndirectKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, buffer, offset);
+	m_vk.cmdTraceRaysIndirectKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, indirectDeviceAddress);
 }
 
-VkResult DeviceDriver::getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionKHR* version) const
+void DeviceDriver::getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
 {
-	return m_vk.getDeviceAccelerationStructureCompatibilityKHR(device, version);
+	m_vk.getDeviceAccelerationStructureCompatibilityKHR(device, pVersionInfo, pCompatibility);
+}
+
+VkDeviceSize DeviceDriver::getRayTracingShaderGroupStackSizeKHR (VkDevice device, VkPipeline pipeline, deUint32 group, VkShaderGroupShaderKHR groupShader) const
+{
+	return m_vk.getRayTracingShaderGroupStackSizeKHR(device, pipeline, group, groupShader);
+}
+
+void DeviceDriver::cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer commandBuffer, deUint32 pipelineStackSize) const
+{
+	m_vk.cmdSetRayTracingPipelineStackSizeKHR(commandBuffer, pipelineStackSize);
+}
+
+void DeviceDriver::getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const deUint32* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+	m_vk.getAccelerationStructureBuildSizesKHR(device, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo);
 }
 
 VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
