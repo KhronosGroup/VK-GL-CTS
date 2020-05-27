@@ -1857,7 +1857,7 @@ tcu::TestCaseGroup* createExactSamplingTests (tcu::TestContext& testCtx)
 
 		de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str(), description.c_str()));
 
-		for (const auto unnorm : unnormalizedCoordinates)
+		for (const auto& unnorm : unnormalizedCoordinates)
 		{
 			const ExactSamplingCase::Params	params = { format, unnorm.first };
 			formatGroup->addChild(new ExactSamplingCase{testCtx, unnorm.second, "", params});

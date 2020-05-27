@@ -238,7 +238,7 @@ class GitRepo (Source):
 
 	def detectProtocol(self, cmdProtocol = None):
 		# reuse parent repo protocol
-		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
+		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE, universal_newlines=True)
 		(stdout, stderr) = proc.communicate()
 
 		if proc.returncode != 0:
@@ -321,7 +321,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"02c70ad10e1f9dc88ae4ee509f26fe5f9fb31843",
+		"b5f003d7a3ece37db45578a8a3140b370036fc64",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
