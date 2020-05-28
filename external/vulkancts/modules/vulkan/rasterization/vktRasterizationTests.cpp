@@ -46,8 +46,12 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include <vector>
+#include <sstream>
 
 using namespace vk;
 
@@ -4017,6 +4021,261 @@ protected:
 	const PrimitiveStrictness	m_strictness;
 };
 
+class StrideZeroCase : public vkt::TestCase
+{
+public:
+	struct Params
+	{
+		std::vector<tcu::Vec2>	bufferData;
+		deUint32				drawVertexCount;
+	};
+
+							StrideZeroCase		(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
+								: vkt::TestCase	(testCtx, name, description)
+								, m_params		(params)
+								{}
+
+	virtual					~StrideZeroCase		(void) {}
+
+	virtual void			initPrograms		(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance		(Context& context) const;
+	virtual void			checkSupport		(Context& context) const;
+
+	static constexpr vk::VkFormat				kColorFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+	static constexpr vk::VkFormatFeatureFlags	kColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+	static constexpr vk::VkImageUsageFlags		kColorUsage		= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+	//	(-1,-1)
+	//		+-----+-----+
+	//		|     |     |
+	//		|  a  |  b  |	a = (-0.5, -0.5)
+	//		|     |     |	b = ( 0.5, -0.5)
+	//		+-----------+	c = (-0.5,  0.5)
+	//		|     |     |	d = ( 0.5,  0.5)
+	//		|  c  |  d  |
+	//		|     |     |
+	//		+-----+-----+
+	//					(1,1)
+	static constexpr deUint32					kImageDim		= 2u;
+	static const float							kCornerDelta;	// 0.5f;
+
+	static const tcu::Vec4						kClearColor;
+	static const tcu::Vec4						kDrawColor;
+
+private:
+	Params m_params;
+};
+
+const float		StrideZeroCase::kCornerDelta	= 0.5f;
+const tcu::Vec4	StrideZeroCase::kClearColor		(0.0f, 0.0f, 0.0f, 1.0f);
+const tcu::Vec4	StrideZeroCase::kDrawColor		(1.0f, 1.0f, 1.0f, 1.0f);
+
+class StrideZeroInstance : public vkt::TestInstance
+{
+public:
+								StrideZeroInstance	(Context& context, const StrideZeroCase::Params& params)
+									: vkt::TestInstance	(context)
+									, m_params			(params)
+									{}
+
+	virtual						~StrideZeroInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate				(void);
+
+private:
+	StrideZeroCase::Params m_params;
+};
+
+void StrideZeroCase::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream vert;
+	std::ostringstream frag;
+
+	std::ostringstream drawColor;
+	drawColor
+		<< std::setprecision(2) << std::fixed
+		<< "vec4(" << kDrawColor.x() << ", " << kDrawColor.y() << ", " << kDrawColor.z() << ", " << kDrawColor.w() << ")";
+
+	vert
+		<< "#version 450\n"
+		<< "layout (location=0) in vec2 inPos;\n"
+		<< "void main() {\n"
+		<< "    gl_Position = vec4(inPos, 0.0, 1.0);\n"
+		<< "    gl_PointSize = 1.0;\n"
+		<< "}\n"
+		;
+
+	frag
+		<< "#version 450\n"
+		<< "layout (location=0) out vec4 outColor;\n"
+		<< "void main() {\n"
+		<< "    outColor = " << drawColor.str() << ";\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+	programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance* StrideZeroCase::createInstance (Context& context) const
+{
+	return new StrideZeroInstance(context, m_params);
+}
+
+void StrideZeroCase::checkSupport (Context& context) const
+{
+	const auto properties = vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), kColorFormat);
+	if ((properties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
+		TCU_THROW(NotSupportedError, "Required image format not supported");
+}
+
+// Creates a vertex buffer with the given data but uses zero as the binding stride.
+// Then, tries to draw the requested number of points. Only the first point should ever be used.
+tcu::TestStatus StrideZeroInstance::iterate (void)
+{
+	const auto&		vkd			= m_context.getDeviceInterface();
+	const auto		device		= m_context.getDevice();
+	auto&			alloc		= m_context.getDefaultAllocator();
+	const auto		queue		= m_context.getUniversalQueue();
+	const auto		queueIndex	= m_context.getUniversalQueueFamilyIndex();
+	constexpr auto	kImageDim	= StrideZeroCase::kImageDim;
+	const auto		colorExtent	= vk::makeExtent3D(kImageDim, kImageDim, 1u);
+
+	// Prepare vertex buffer.
+	const auto					vertexBufferSize	= static_cast<vk::VkDeviceSize>(m_params.bufferData.size() * sizeof(decltype(m_params.bufferData)::value_type));
+	const auto					vertexBufferInfo	= vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const vk::BufferWithMemory	vertexBuffer(		vkd, device, alloc, vertexBufferInfo, vk::MemoryRequirement::HostVisible);
+	auto&						vertexBufferAlloc	= vertexBuffer.getAllocation();
+	const vk::VkDeviceSize		vertexBufferOffset	= 0ull;
+	deMemcpy(vertexBufferAlloc.getHostPtr(), m_params.bufferData.data(), static_cast<size_t>(vertexBufferSize));
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Prepare render image.
+	const vk::VkImageCreateInfo colorAttachmentInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkImageCreateFlags		flags;
+		vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
+		StrideZeroCase::kColorFormat,				//	VkFormat				format;
+		colorExtent,								//	VkExtent3D				extent;
+		1u,											//	deUint32				mipLevels;
+		1u,											//	deUint32				arrayLayers;
+		vk::VK_SAMPLE_COUNT_1_BIT,					//	VkSampleCountFlagBits	samples;
+		vk::VK_IMAGE_TILING_OPTIMAL,				//	VkImageTiling			tiling;
+		StrideZeroCase::kColorUsage,				//	VkImageUsageFlags		usage;
+		vk::VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode			sharingMode;
+		1u,											//	deUint32				queueFamilyIndexCount;
+		&queueIndex,								//	const deUint32*			pQueueFamilyIndices;
+		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
+	};
+	const vk::ImageWithMemory colorAttachment(vkd, device, alloc, colorAttachmentInfo, vk::MemoryRequirement::Any);
+
+	const auto colorSubresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+	const auto colorAttachmentView		= vk::makeImageView(vkd, device, colorAttachment.get(), vk::VK_IMAGE_VIEW_TYPE_2D, StrideZeroCase::kColorFormat, colorSubresourceRange);
+
+	const vk::VkVertexInputBindingDescription vertexBinding =
+	{
+		0u,									//	deUint32			binding;
+		0u,									//	deUint32			stride;		[IMPORTANT]
+		vk::VK_VERTEX_INPUT_RATE_VERTEX,	//	VkVertexInputRate	inputRate;
+	};
+
+	const vk::VkVertexInputAttributeDescription vertexAttribute =
+	{
+		0u,								//	deUint32	location;
+		0u,								//	deUint32	binding;
+		vk::VK_FORMAT_R32G32_SFLOAT,	//	VkFormat	format;
+		0u,								//	deUint32	offset;
+	};
+
+	const vk::VkPipelineVertexInputStateCreateInfo vertexInput =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	VkStructureType								sType;
+		nullptr,														//	const void*									pNext;
+		0u,																//	VkPipelineVertexInputStateCreateFlags		flags;
+		1u,																//	deUint32									vertexBindingDescriptionCount;
+		&vertexBinding,													//	const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
+		1u,																//	deUint32									vertexAttributeDescriptionCount;
+		&vertexAttribute,												//	const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+	};
+
+	const auto renderArea		= vk::makeRect2D(kImageDim, kImageDim);
+	const auto viewports		= std::vector<vk::VkViewport>(1, vk::makeViewport(kImageDim, kImageDim));
+	const auto scissors			= std::vector<vk::VkRect2D>(1, renderArea);
+	const auto pipelineLayout	= vk::makePipelineLayout(vkd, device);
+	const auto vertexShader		= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto fragmentShader	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+	const auto renderPass		= vk::makeRenderPass(vkd, device, StrideZeroCase::kColorFormat);
+	const auto graphicsPipeline	= vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(),
+		vertexShader.get(), DE_NULL, DE_NULL, DE_NULL, fragmentShader.get(),					// Shaders.
+		renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0u, 0u,	// Render pass, viewports, scissors, topology.
+		&vertexInput);																			// Vertex input state.
+	const auto framebuffer		= vk::makeFramebuffer(vkd, device, renderPass.get(), colorAttachmentView.get(), kImageDim, kImageDim);
+
+	const auto cmdPool		= vk::makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr	= vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	// Buffer used to verify results.
+	const auto					tcuFormat			= vk::mapVkFormat(StrideZeroCase::kColorFormat);
+	const auto					colorBufferSize		= static_cast<vk::VkDeviceSize>(tcu::getPixelSize(tcuFormat)) * kImageDim * kImageDim;
+	const auto					colorBufferInfo		= vk::makeBufferCreateInfo(colorBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	const vk::BufferWithMemory	colorBuffer			(vkd, device, alloc, colorBufferInfo, vk::MemoryRequirement::HostVisible);
+	auto&						colorBufferAlloc	= colorBuffer.getAllocation();
+	void*						colorBufferPtr		= colorBufferAlloc.getHostPtr();
+	const auto					colorLayers			= vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+	const auto					copyRegion			= vk::makeBufferImageCopy(colorExtent, colorLayers);
+
+	// Barriers from attachment to buffer and buffer to host.
+	const auto colorAttachmentBarrier	= vk::makeImageMemoryBarrier	(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorAttachment.get(), colorSubresourceRange);
+	const auto colorBufferBarrier		= vk::makeBufferMemoryBarrier	(vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, colorBuffer.get(), 0ull, colorBufferSize);
+
+	vk::beginCommandBuffer(vkd, cmdBuffer);
+	vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, StrideZeroCase::kClearColor);
+	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+	vkd.cmdDraw(cmdBuffer, m_params.drawVertexCount, 1u, 0u, 0u);
+	vk::endRenderPass(vkd, cmdBuffer);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &colorAttachmentBarrier);
+	vkd.cmdCopyImageToBuffer(cmdBuffer, colorAttachment.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.get(), 1u, &copyRegion);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &colorBufferBarrier, 0u, nullptr);
+	vk::endCommandBuffer(vkd, cmdBuffer);
+
+	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Invalidate color buffer alloc.
+	vk::invalidateAlloc(vkd, device, colorBufferAlloc);
+
+	// Check buffer.
+	const int							imageDimI	= static_cast<int>(kImageDim);
+	const tcu::ConstPixelBufferAccess	colorPixels	(tcuFormat, imageDimI, imageDimI, 1, colorBufferPtr);
+	tcu::TestStatus						testStatus	= tcu::TestStatus::pass("Pass");
+	auto&								log			= m_context.getTestContext().getLog();
+
+	for (int x = 0; x < imageDimI; ++x)
+	for (int y = 0; y < imageDimI; ++y)
+	{
+		// Only the top-left corner should have draw data.
+		const auto expectedColor	= ((x == 0 && y == 0) ? StrideZeroCase::kDrawColor : StrideZeroCase::kClearColor);
+		const auto imageColor		= colorPixels.getPixel(x, y);
+
+		if (expectedColor != imageColor)
+		{
+			log
+				<< tcu::TestLog::Message
+				<< "Unexpected color found in pixel (" << x << ", " << y << "): "
+				<< "expected (" << expectedColor.x() << ", " << expectedColor.y() << ", " << expectedColor.z() << ", " << expectedColor.w() << ") "
+				<< "and found (" << imageColor.x() << ", " << imageColor.y() << ", " << imageColor.z() << ", " << imageColor.w() << ")"
+				<< tcu::TestLog::EndMessage;
+
+			testStatus = tcu::TestStatus::fail("Failed; Check log for details");
+		}
+	}
+
+	return testStatus;
+}
+
 void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 {
 	tcu::TestContext&	testCtx		=	rasterizationTests->getTestContext();
@@ -4030,10 +4289,37 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		tcu::TestCaseGroup* const nostippleTests = new tcu::TestCaseGroup(testCtx, "no_stipple", "No stipple");
 		tcu::TestCaseGroup* const stippleStaticTests = new tcu::TestCaseGroup(testCtx, "static_stipple", "Line stipple static");
 		tcu::TestCaseGroup* const stippleDynamicTests = new tcu::TestCaseGroup(testCtx, "dynamic_stipple", "Line stipple dynamic");
+		tcu::TestCaseGroup* const strideZeroTests = new tcu::TestCaseGroup(testCtx, "stride_zero", "Test input assembly with stride zero");
 
 		primitives->addChild(nostippleTests);
 		primitives->addChild(stippleStaticTests);
 		primitives->addChild(stippleDynamicTests);
+		primitives->addChild(strideZeroTests);
+
+		// .stride_zero
+		{
+			{
+				StrideZeroCase::Params params;
+				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta, -StrideZeroCase::kCornerDelta);
+				params.drawVertexCount = 1u;
+				strideZeroTests->addChild(new StrideZeroCase(testCtx, "single_point", "Attempt to draw 1 point with stride 0", params));
+			}
+			{
+				StrideZeroCase::Params params;
+				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta, -StrideZeroCase::kCornerDelta);
+				params.bufferData.emplace_back( StrideZeroCase::kCornerDelta, -StrideZeroCase::kCornerDelta);
+				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta,  StrideZeroCase::kCornerDelta);
+				params.bufferData.emplace_back( StrideZeroCase::kCornerDelta,  StrideZeroCase::kCornerDelta);
+				params.drawVertexCount = static_cast<deUint32>(params.bufferData.size());
+				strideZeroTests->addChild(new StrideZeroCase(testCtx, "four_points", "Attempt to draw 4 points with stride 0 and 4 points in the buffer", params));
+			}
+			{
+				StrideZeroCase::Params params;
+				params.bufferData.emplace_back(-StrideZeroCase::kCornerDelta, -StrideZeroCase::kCornerDelta);
+				params.drawVertexCount = 100000u;
+				strideZeroTests->addChild(new StrideZeroCase(testCtx, "many_points", "Attempt to draw many points with stride 0 with one point in the buffer", params));
+			}
+		}
 
 		nostippleTests->addChild(new BaseTestCase<TrianglesTestInstance>		(testCtx, "triangles",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, verify rasterization result"));
 		nostippleTests->addChild(new BaseTestCase<TriangleStripTestInstance>	(testCtx, "triangle_strip",		"Render primitives as VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, verify rasterization result"));
