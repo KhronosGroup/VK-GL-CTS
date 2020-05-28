@@ -22,7 +22,7 @@
  * \brief Vulkan robustness2 tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktRobustness2Tests.hpp"
+#include "vktRobustnessExtsTests.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -137,6 +137,7 @@ struct CaseDef
 	bool useTemplate;
 	bool formatQualifier;
 	bool pushDescriptor;
+	bool testRobustness2;
 	deUint32 imageDim[3]; // width, height, depth or layers
 };
 
@@ -148,31 +149,31 @@ public:
 };
 
 
-class Robustness2TestInstance : public TestInstance
+class RobustnessExtsTestInstance : public TestInstance
 {
 public:
-						Robustness2TestInstance		(Context& context, const CaseDef& data);
-						~Robustness2TestInstance	(void);
+						RobustnessExtsTestInstance		(Context& context, const CaseDef& data);
+						~RobustnessExtsTestInstance	(void);
 	tcu::TestStatus		iterate								(void);
 private:
 	CaseDef				m_data;
 };
 
-Robustness2TestInstance::Robustness2TestInstance (Context& context, const CaseDef& data)
+RobustnessExtsTestInstance::RobustnessExtsTestInstance (Context& context, const CaseDef& data)
 	: vkt::TestInstance		(context)
 	, m_data				(data)
 {
 }
 
-Robustness2TestInstance::~Robustness2TestInstance (void)
+RobustnessExtsTestInstance::~RobustnessExtsTestInstance (void)
 {
 }
 
-class Robustness2TestCase : public TestCase
+class RobustnessExtsTestCase : public TestCase
 {
 	public:
-								Robustness2TestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
-								~Robustness2TestCase	(void);
+								RobustnessExtsTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								~RobustnessExtsTestCase	(void);
 	virtual	void				initPrograms					(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance					(Context& context) const;
 	virtual void				checkSupport					(Context& context) const;
@@ -181,13 +182,13 @@ private:
 	CaseDef					m_data;
 };
 
-Robustness2TestCase::Robustness2TestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
+RobustnessExtsTestCase::RobustnessExtsTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
 	: vkt::TestCase	(context, name, desc)
 	, m_data		(data)
 {
 }
 
-Robustness2TestCase::~Robustness2TestCase	(void)
+RobustnessExtsTestCase::~RobustnessExtsTestCase	(void)
 {
 }
 
@@ -231,7 +232,7 @@ static bool supportsStores(int descriptorType)
 	}
 }
 
-void Robustness2TestCase::checkSupport(Context& context) const
+void RobustnessExtsTestCase::checkSupport(Context& context) const
 {
 	// Get needed properties.
 	VkPhysicalDeviceProperties2 properties;
@@ -252,6 +253,9 @@ void Robustness2TestCase::checkSupport(Context& context) const
 	else if (m_data.stage == STAGE_RAYGEN)
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
 
+	if (!m_data.testRobustness2 && !context.getImageRobustnessFeaturesEXT().robustImageAccess)
+		TCU_THROW(NotSupportedError, "robustImageAccess not supported");
+
 	if (m_data.nullDescriptor && !context.getRobustness2FeaturesEXT().nullDescriptor)
 		TCU_THROW(NotSupportedError, "nullDescriptor not supported");
 
@@ -265,12 +269,12 @@ void Robustness2TestCase::checkSupport(Context& context) const
 	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 	case VERTEX_ATTRIBUTE_FETCH:
-		if (!context.getRobustness2FeaturesEXT().robustBufferAccess2)
+		if (m_data.testRobustness2 && !context.getRobustness2FeaturesEXT().robustBufferAccess2)
 			TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported");
 		break;
 	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-		if (!context.getRobustness2FeaturesEXT().robustImageAccess2)
+		if (m_data.testRobustness2 && !context.getRobustness2FeaturesEXT().robustImageAccess2)
 			TCU_THROW(NotSupportedError, "robustImageAccess2 not supported");
 		break;
 	}
@@ -552,7 +556,7 @@ string genCoordNorm(const CaseDef &caseDef, string c, int numCoords, int numNorm
 	return coord;
 }
 
-void Robustness2TestCase::initPrograms (SourceCollections& programCollection) const
+void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection) const
 {
 	Layout layout;
 	generateLayout(layout, m_data);
@@ -934,7 +938,11 @@ void Robustness2TestCase::initPrograms (SourceCollections& programCollection) co
 						  "    }\n";
 
 				// normal out-of-bounds value
-				checks << "    else if (temp == " << expectedOOB << ") temp = " << vecType << "(0);\n";
+				if (m_data.testRobustness2)
+					checks << "    else if (temp == " << expectedOOB << ") temp = " << vecType << "(0);\n";
+				else
+					// image_robustness relaxes alpha which is allowed to be zero or one
+					checks << "    else if (temp == zzzz || temp == zzzo) temp = " << vecType << "(0);\n";
 
 				if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
 					m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
@@ -964,9 +972,10 @@ void Robustness2TestCase::initPrograms (SourceCollections& programCollection) co
 			// Accumulate any incorrect values.
 			checks << "    accum += abs(temp);\n";
 
-			// Fetch from an out of bounds mip level. Expect this to always return the OOB value.
-			if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER && m_data.samples == VK_SAMPLE_COUNT_1_BIT)
+			// Only the full robustness2 extension provides guarantees about out-of-bounds mip levels.
+			if (m_data.testRobustness2 && m_data.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER && m_data.samples == VK_SAMPLE_COUNT_1_BIT)
 			{
+				// Fetch from an out of bounds mip level. Expect this to always return the OOB value.
 				string coord0 = genCoord("0", numCoords, m_data.samples, i);
 				checks << "    if (c != 0) temp = " << genFetch(m_data, numComponents, vecType, coord0, "c") << "; else temp = " << vecType << "(0);\n";
 				checks << "    if (c != 0) temp -= " << expectedOOB << ";\n";
@@ -994,7 +1003,16 @@ void Robustness2TestCase::initPrograms (SourceCollections& programCollection) co
 				(layered && i == numCoords-1))
 				normexpected << "    temp -= expectedIB2;\n";
 			else
-				normexpected << "    if (c >= 0 && c < inboundcoords) temp -= expectedIB2; else temp -= " << expectedOOB << ";\n";
+			{
+				normexpected << "    if (c >= 0 && c < inboundcoords)\n";
+				normexpected << "        temp -= expectedIB2;\n";
+				normexpected << "    else\n";
+				if (m_data.testRobustness2)
+					normexpected << "        temp -= " << expectedOOB << ";\n";
+				else
+					// image_robustness relaxes alpha which is allowed to be zero or one
+					normexpected << "        temp = " << vecType << "((temp == zzzz || temp == zzzo) ? 0 : 1);\n";
+			}
 
 			checks << "    temp = texture(texture0_1, " << coordNorm << ");\n";
 			checks << normexpected.str();
@@ -1200,12 +1218,12 @@ VkImageType imageViewTypeToImageType (VkImageViewType type)
 	return VK_IMAGE_TYPE_2D;
 }
 
-TestInstance* Robustness2TestCase::createInstance (Context& context) const
+TestInstance* RobustnessExtsTestCase::createInstance (Context& context) const
 {
-	return new Robustness2TestInstance(context, m_data);
+	return new RobustnessExtsTestInstance(context, m_data);
 }
 
-tcu::TestStatus Robustness2TestInstance::iterate (void)
+tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 {
 	const InstanceInterface&	vki					= m_context.getInstanceInterface();
 	const VkDevice				device				= *SingletonDevice::getDevice(m_context);
@@ -1244,14 +1262,17 @@ tcu::TestStatus Robustness2TestInstance::iterate (void)
 
 	vki.getPhysicalDeviceProperties2(physicalDevice, &properties);
 
-	if (robustness2Properties.robustStorageBufferAccessSizeAlignment != 1 &&
-		robustness2Properties.robustStorageBufferAccessSizeAlignment != 4)
-		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "robustStorageBufferAccessSizeAlignment must be 1 or 4");
+	if (m_data.testRobustness2)
+	{
+		if (robustness2Properties.robustStorageBufferAccessSizeAlignment != 1 &&
+			robustness2Properties.robustStorageBufferAccessSizeAlignment != 4)
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "robustStorageBufferAccessSizeAlignment must be 1 or 4");
 
-	if (robustness2Properties.robustUniformBufferAccessSizeAlignment < 1 ||
-		robustness2Properties.robustUniformBufferAccessSizeAlignment > 256 ||
-		!deIntIsPow2((int)robustness2Properties.robustUniformBufferAccessSizeAlignment))
-		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "robustUniformBufferAccessSizeAlignment must be a power of two in [1,256]");
+		if (robustness2Properties.robustUniformBufferAccessSizeAlignment < 1 ||
+			robustness2Properties.robustUniformBufferAccessSizeAlignment > 256 ||
+			!deIntIsPow2((int)robustness2Properties.robustUniformBufferAccessSizeAlignment))
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "robustUniformBufferAccessSizeAlignment must be a power of two in [1,256]");
+	}
 
 	VkPipelineBindPoint bindPoint;
 
@@ -2275,7 +2296,7 @@ tcu::TestStatus Robustness2TestInstance::iterate (void)
 
 }	// anonymous
 
-static void createTests (tcu::TestCaseGroup* group)
+static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
 
@@ -2299,7 +2320,7 @@ static void createTests (tcu::TestCaseGroup* group)
 		{ VK_FORMAT_R32G32B32A32_SFLOAT,	"rgba32f",	""		},
 	};
 
-	TestGroupCase descCases[] =
+	TestGroupCase fullDescCases[] =
 	{
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,				"uniform_buffer",			""		},
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,				"storage_buffer",			""		},
@@ -2312,7 +2333,13 @@ static void createTests (tcu::TestCaseGroup* group)
 		{ VERTEX_ATTRIBUTE_FETCH,							"vertex_attribute_fetch",	""		},
 	};
 
-	TestGroupCase lenCases[] =
+	TestGroupCase imgDescCases[] =
+	{
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,					"storage_image",			""		},
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		"sampled_image",			""		},
+	};
+
+	TestGroupCase fullLenCases[] =
 	{
 		{ ~0U,			"null_descriptor",	""		},
 		{ 0,			"img",				""		},
@@ -2331,6 +2358,11 @@ static void createTests (tcu::TestCaseGroup* group)
 		{ 252,			"len_252",			""		},
 		{ 256,			"len_256",			""		},
 		{ 260,			"len_260",			""		},
+	};
+
+	TestGroupCase imgLenCases[] =
+	{
+		{ 0,	"img",	""		},
 	};
 
 	TestGroupCase viewCases[] =
@@ -2406,7 +2438,11 @@ static void createTests (tcu::TestCaseGroup* group)
 					for (int volNdx = 0; volNdx < DE_LENGTH_OF_ARRAY(volCases); volNdx++)
 					{
 						de::MovePtr<tcu::TestCaseGroup> volGroup(new tcu::TestCaseGroup(testCtx, volCases[volNdx].name, volCases[volNdx].name));
-						for (int descNdx = 0; descNdx < DE_LENGTH_OF_ARRAY(descCases); descNdx++)
+
+						int numDescCases = robustness2 ? DE_LENGTH_OF_ARRAY(fullDescCases) : DE_LENGTH_OF_ARRAY(imgDescCases);
+						TestGroupCase *descCases = robustness2 ? fullDescCases : imgDescCases;
+
+						for (int descNdx = 0; descNdx < numDescCases; descNdx++)
 						{
 							de::MovePtr<tcu::TestCaseGroup> descGroup(new tcu::TestCaseGroup(testCtx, descCases[descNdx].name, descCases[descNdx].name));
 							for (int fmtQualNdx = 0; fmtQualNdx < DE_LENGTH_OF_ARRAY(fmtQualCases); fmtQualNdx++)
@@ -2422,7 +2458,10 @@ static void createTests (tcu::TestCaseGroup* group)
 									(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH))
 									continue;
 
-								for (int lenNdx = 0; lenNdx < DE_LENGTH_OF_ARRAY(lenCases); lenNdx++)
+								int numLenCases = robustness2 ? DE_LENGTH_OF_ARRAY(fullLenCases) : DE_LENGTH_OF_ARRAY(imgLenCases);
+								TestGroupCase *lenCases = robustness2 ? fullLenCases : imgLenCases;
+
+								for (int lenNdx = 0; lenNdx < numLenCases; lenNdx++)
 								{
 									if (lenCases[lenNdx].count != ~0U)
 									{
@@ -2504,10 +2543,11 @@ static void createTests (tcu::TestCaseGroup* group)
 													(bool)tempCases[tempNdx].count,									// bool useTemplate
 													(bool)fmtQualCases[fmtQualNdx].count,							// bool formatQualifier
 													(bool)pushCases[pushNdx].count,									// bool pushDescriptor;
+													(bool)robustness2,												// bool testRobustness2;
 													{ imageDim[0], imageDim[1], imageDim[2] },						// deUint32 imageDim[3];
 												};
 
-												viewGroup->addChild(new Robustness2TestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].name, c));
+												viewGroup->addChild(new RobustnessExtsTestCase(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].name, c));
 											}
 											sampGroup->addChild(viewGroup.release());
 										}
@@ -2531,6 +2571,16 @@ static void createTests (tcu::TestCaseGroup* group)
 	}
 }
 
+static void createRobustness2Tests (tcu::TestCaseGroup* group)
+{
+	createTests(group, /*robustness2=*/true);
+}
+
+static void createImageRobustnessTests (tcu::TestCaseGroup* group)
+{
+	createTests(group, /*robustness2=*/false);
+}
+
 static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
@@ -2540,7 +2590,14 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createRobustness2Tests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "robustness2", "VK_EXT_robustness2 tests", createTests, cleanupGroup);
+	return createTestGroup(testCtx, "robustness2", "VK_EXT_robustness2 tests",
+							createRobustness2Tests, cleanupGroup);
+}
+
+tcu::TestCaseGroup* createImageRobustnessTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "image_robustness", "VK_EXT_image_robustness tests",
+							createImageRobustnessTests, cleanupGroup);
 }
 
 }	// robustness

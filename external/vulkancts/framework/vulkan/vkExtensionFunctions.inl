@@ -784,6 +784,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_image_robustness")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_android_surface")
 	{
 		functions.push_back("vkCreateAndroidSurfaceKHR");
@@ -1789,6 +1793,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_fragment_density_map2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}

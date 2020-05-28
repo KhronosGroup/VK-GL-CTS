@@ -1,5 +1,5 @@
-#ifndef _VKTROBUSTNESS2TESTS_HPP
-#define _VKTROBUSTNESS2TESTS_HPP
+#ifndef _VKTROBUSTNESSEXTSTESTS_HPP
+#define _VKTROBUSTNESSEXTSTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -32,8 +32,9 @@ namespace robustness
 {
 
 tcu::TestCaseGroup* createRobustness2Tests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createImageRobustnessTests(tcu::TestContext& testCtx);
 
 } // robustness
 } // vkt
 
-#endif // _VKTROBUSTNESS2TESTS_HPP
+#endif // _VKTROBUSTNESSEXTSTESTS_HPP

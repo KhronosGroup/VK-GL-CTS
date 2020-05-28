@@ -888,6 +888,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDiagnosticsConf
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value);
