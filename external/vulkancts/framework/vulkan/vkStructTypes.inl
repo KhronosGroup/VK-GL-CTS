@@ -4569,6 +4569,13 @@ struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
 	deUint32		maxDescriptorSetSubsampledSamplers;
 };
 
+struct VkPhysicalDeviceImageRobustnessFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		robustImageAccess;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;
