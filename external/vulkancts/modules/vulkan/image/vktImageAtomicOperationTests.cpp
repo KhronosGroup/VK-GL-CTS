@@ -209,6 +209,36 @@ T getOperationInitialValue (const AtomicOperation op)
 	}
 }
 
+template <>
+deInt64 getOperationInitialValue<deInt64>(const AtomicOperation op)
+{
+	switch (op)
+	{
+		// \note 0x000000BEFFFFFF18 is just an arbitrary nonzero value.
+		case ATOMIC_OPERATION_ADD:				return 0x000000BEFFFFFF18;
+		case ATOMIC_OPERATION_INC:				return 0x000000BEFFFFFF18;
+		case ATOMIC_OPERATION_SUB:				return (1ull << 56) - 1;
+		case ATOMIC_OPERATION_DEC:				return (1ull << 56) - 1;
+		case ATOMIC_OPERATION_MIN:				return (1ull << 47) - 1;
+		case ATOMIC_OPERATION_MAX:				return 0x000000BEFFFFFF18;
+		case ATOMIC_OPERATION_AND:				return (1ull << 47) - 1;
+		case ATOMIC_OPERATION_OR:				return 0x000000BEFFFFFF18;
+		case ATOMIC_OPERATION_XOR:				return 0x000000BEFFFFFF18;
+		case ATOMIC_OPERATION_EXCHANGE:			return 0x000000BEFFFFFF18;
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return 0x000000BEFFFFFF18;
+		default:
+			DE_ASSERT(false);
+			return 0xFFFFFFFFFFFFFFFF;
+	}
+}
+
+template <>
+deUint64 getOperationInitialValue<deUint64>(const AtomicOperation op)
+{
+	return (deUint64)getOperationInitialValue<deInt64>(op);
+}
+
+
 template <typename T>
 static T getAtomicFuncArgument (const AtomicOperation	op,
 								const IVec3&			invocationID,
@@ -318,6 +348,100 @@ static T computeBinaryAtomicOperationResult (const AtomicOperation op, const T a
 	}
 }
 
+void AddFillReadShader (SourceCollections&			sourceCollections,
+						const ImageType&			imageType,
+						const tcu::TextureFormat&	format,
+						const string&				type)
+{
+	const string	imageInCoord			= getCoordStr(imageType, "gx", "gy", "gz");
+	const string	shaderImageFormatStr	= getShaderImageFormatQualifier(format);
+	const string	shaderImageTypeStr		= getShaderImageType(format, imageType);
+
+	const string fillShader =	"#version 450\n"
+								"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+								"#extension GL_EXT_shader_image_int64 : require\n"
+								"precision highp " + shaderImageTypeStr + ";\n"
+								"\n"
+								"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+								"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+								"\n"
+								"layout(std430, binding = 1) buffer inputBuffer\n"
+								"{\n"
+								"	"+ type + " data[];\n"
+								"} inBuffer;\n"
+								"\n"
+								"void main(void)\n"
+								"{\n"
+								"	int gx = int(gl_GlobalInvocationID.x);\n"
+								"	int gy = int(gl_GlobalInvocationID.y);\n"
+								"	int gz = int(gl_GlobalInvocationID.z);\n"
+								"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
+								"	imageStore(u_resultImage, " + imageInCoord + ", i64vec4(inBuffer.data[index]));\n"
+								"}\n";
+
+	const string readShader =	"#version 450\n"
+								"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+								"#extension GL_EXT_shader_image_int64 : require\n"
+								"precision highp " + shaderImageTypeStr + ";\n"
+								"\n"
+								"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+								"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+								"\n"
+								"layout(std430, binding = 1) buffer outputBuffer\n"
+								"{\n"
+								"	" + type + " data[];\n"
+								"} outBuffer;\n"
+								"\n"
+								"void main(void)\n"
+								"{\n"
+								"	int gx = int(gl_GlobalInvocationID.x);\n"
+								"	int gy = int(gl_GlobalInvocationID.y);\n"
+								"	int gz = int(gl_GlobalInvocationID.z);\n"
+								"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
+								"	outBuffer.data[index] = imageLoad(u_resultImage, " + imageInCoord + ").x;\n"
+								"}\n";
+
+
+	if ((imageType != IMAGE_TYPE_1D) &&
+		(imageType != IMAGE_TYPE_1D_ARRAY) &&
+		(imageType != IMAGE_TYPE_BUFFER))
+	{
+		const string gvec4 = isUintFormat(mapTextureFormat(format)) ? "u64vec4" : "i64vec4";
+
+		const string readShaderResidency  = "#version 450\n"
+											"#extension GL_ARB_sparse_texture2 : require\n"
+											"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+											"#extension GL_EXT_shader_image_int64 : require\n"
+											"precision highp " + shaderImageTypeStr + ";\n"
+											"\n"
+											"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+											"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+											"\n"
+											"layout(std430, binding = 1) buffer outputBuffer\n"
+											"{\n"
+											"	" + type + " data[];\n"
+											"} outBuffer;\n"
+											"\n"
+											"void main(void)\n"
+											"{\n"
+											"	int gx = int(gl_GlobalInvocationID.x);\n"
+											"	int gy = int(gl_GlobalInvocationID.y);\n"
+											"	int gz = int(gl_GlobalInvocationID.z);\n"
+											"	uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n"
+											"	outBuffer.data[index] = imageLoad(u_resultImage, " + imageInCoord + ").x;\n"
+											"	" + gvec4 + " sparseValue;\n"
+											"	sparseImageLoadARB(u_resultImage, " + imageInCoord + ", sparseValue);\n"
+											"	if (outBuffer.data[index] != sparseValue.x)\n"
+											"		outBuffer.data[index] = " + gvec4 + "(1234).x;\n"
+											"}\n";
+
+		sourceCollections.glslSources.add("readShaderResidency") << glu::ComputeSource(readShaderResidency.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	}
+
+	sourceCollections.glslSources.add("fillShader") << glu::ComputeSource(fillShader.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	sourceCollections.glslSources.add("readShader") << glu::ComputeSource(readShader.c_str()) << vk::ShaderBuildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+}
+
 static bool isSupportedFeatureTransfer (const Context& context, const VkFormat& format)
 {
 	const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
@@ -336,15 +460,30 @@ static void initDataForImage (const VkDevice			device,
 							  Buffer&					buffer)
 {
 	Allocation&				bufferAllocation	= buffer.getAllocation();
+	const VkFormat			imageFormat			= mapTextureFormat(format);
 	tcu::PixelBufferAccess	pixelBuffer			(format, gridSize.x(), gridSize.y(), gridSize.z(), bufferAllocation.getHostPtr());
 
-	const tcu::IVec4 initialValue(getOperationInitialValue<deInt32>(operation));
-
-	for (deUint32 z = 0; z < gridSize.z(); z++)
-	for (deUint32 y = 0; y < gridSize.y(); y++)
-	for (deUint32 x = 0; x < gridSize.x(); x++)
+	if (imageFormat == VK_FORMAT_R64_UINT || imageFormat == VK_FORMAT_R64_SINT)
 	{
-		pixelBuffer.setPixel(initialValue, x, y, z);
+		const deInt64 initialValue(getOperationInitialValue<deInt64>(operation));
+
+		for (deUint32 z = 0; z < gridSize.z(); z++)
+		for (deUint32 y = 0; y < gridSize.y(); y++)
+		for (deUint32 x = 0; x < gridSize.x(); x++)
+		{
+			*((deInt64*)pixelBuffer.getPixelPtr(x, y, z)) = initialValue;
+		}
+	}
+	else
+	{
+		const tcu::IVec4 initialValue(getOperationInitialValue<deInt32>(operation));
+
+		for (deUint32 z = 0; z < gridSize.z(); z++)
+		for (deUint32 y = 0; y < gridSize.y(); y++)
+		for (deUint32 x = 0; x < gridSize.x(); x++)
+		{
+			pixelBuffer.setPixel(initialValue, x, y, z);
+		}
 	}
 
 	flushAlloc(deviceInterface, device, bufferAllocation);
@@ -423,6 +562,22 @@ void BinaryAtomicEndResultCase::checkSupport (Context& context) const
 		if ((formatProperties.optimalTilingFeatures & requiredFormatSupport) != requiredFormatSupport)
 			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
 	}
+
+	if (format == VK_FORMAT_R64_UINT || format == VK_FORMAT_R64_SINT)
+	{
+		const VkFormatFeatureFlags	requisiteSupportR64 = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
+																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		if (!context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics)
+		{
+			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
+		}
+
+		if ((formatProperties.optimalTilingFeatures & requisiteSupportR64) != requisiteSupportR64)
+			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
+	}
 }
 
 void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollections) const
@@ -434,6 +589,11 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 	const string	type			= (64 == componentWidth ?
 									  (uintFormat ? "uint64_t" : intFormat ? "int64_t" : "double") :
 									  (uintFormat ? "uint" : intFormat ? "int" : "float"));
+
+	if (imageFormat == VK_FORMAT_R64_UINT || imageFormat == VK_FORMAT_R64_SINT)
+	{
+		AddFillReadShader(sourceCollections, m_imageType, m_format, type);
+	}
 
 	if (isSpirvAtomicOperation(m_operation))
 	{
@@ -450,6 +610,7 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 	else
 	{
 		const string	versionDecl				= glu::getGLSLVersionDeclaration(m_glslVersion);
+
 		const UVec3		gridSize				= getShaderGridSize(m_imageType, m_imageSize);
 		const string	atomicCoord				= getCoordStr(m_imageType, "gx % " + toString(gridSize.x()), "gy", "gz");
 
@@ -465,20 +626,26 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 		const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
 		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n#extension GL_KHR_memory_scope_semantics : enable  ";
 
-		string source = versionDecl + "\n" + extensions + "\n"
-						"precision highp " + shaderImageTypeStr + ";\n";
+		string source = versionDecl + "\n" + extensions + "\n";
 
-		source +=		"\n"
-						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
-						"\n"
-						"void main (void)\n"
-						"{\n"
-						"	int gx = int(gl_GlobalInvocationID.x);\n"
-						"	int gy = int(gl_GlobalInvocationID.y);\n"
-						"	int gz = int(gl_GlobalInvocationID.z);\n"
-						"	" + atomicInvocation + ";\n"
-						"}\n";
+		if (64 == componentWidth)
+		{
+			source +=	"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+						"#extension GL_EXT_shader_image_int64 : require\n";
+		}
+
+		source +=	"precision highp " + shaderImageTypeStr + ";\n"
+					"\n"
+					"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+					"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+					"\n"
+					"void main (void)\n"
+					"{\n"
+					"	int gx = int(gl_GlobalInvocationID.x);\n"
+					"	int gy = int(gl_GlobalInvocationID.y);\n"
+					"	int gz = int(gl_GlobalInvocationID.z);\n"
+					"	" + atomicInvocation + ";\n"
+					"}\n";
 
 		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
 	}
@@ -556,6 +723,22 @@ void BinaryAtomicIntermValuesCase::checkSupport (Context& context) const
 		if ((formatProperties.optimalTilingFeatures & requiredFormatSupport) != requiredFormatSupport)
 			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
 	}
+
+	if (format == VK_FORMAT_R64_UINT || format == VK_FORMAT_R64_SINT)
+	{
+		const VkFormatFeatureFlags	requisiteSupportR64 = VkFormatFeatureFlags(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
+																				VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT);
+
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		if (!context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics)
+		{
+			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
+		}
+
+		if ((formatProperties.optimalTilingFeatures & requisiteSupportR64) != requisiteSupportR64)
+			TCU_FAIL("VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT and VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT must be supported");
+	}
 }
 
 void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollections) const
@@ -567,6 +750,11 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 	const string	type			= (64 == componentWidth ?
 									  (uintFormat ? "uint64_t" : intFormat ? "int64_t" : "double") :
 									  (uintFormat ? "uint" : intFormat ? "int" : "float"));
+
+	if (imageFormat == VK_FORMAT_R64_UINT || imageFormat == VK_FORMAT_R64_SINT)
+	{
+		AddFillReadShader(sourceCollections, m_imageType, m_format, type);
+	}
 
 	if (isSpirvAtomicOperation(m_operation))
 	{
@@ -601,20 +789,26 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 		const string	extensions				= "#extension GL_EXT_shader_atomic_float : enable\n#extension GL_KHR_memory_scope_semantics : enable  ";
 
 		string source = versionDecl + "\n" + extensions + "\n"
-						"precision highp " + shaderImageTypeStr + ";\n"
 						"\n";
 
-		source +=	"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-					"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
-					"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
-					"\n"
-					"void main (void)\n"
-					"{\n"
-					"	int gx = int(gl_GlobalInvocationID.x);\n"
-					"	int gy = int(gl_GlobalInvocationID.y);\n"
-					"	int gz = int(gl_GlobalInvocationID.z);\n"
-					"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
-					"}\n";
+		if (64 == componentWidth)
+		{
+			source +=	"#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+						"#extension GL_EXT_shader_image_int64 : require\n";
+		}
+
+			source +=	"precision highp " + shaderImageTypeStr + "; \n"
+						"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+						"layout (" + shaderImageFormatStr + ", binding=0) coherent uniform " + shaderImageTypeStr + " u_resultImage;\n"
+						"layout (" + shaderImageFormatStr + ", binding=1) writeonly uniform " + shaderImageTypeStr + " u_intermValuesImage;\n"
+						"\n"
+						"void main (void)\n"
+						"{\n"
+						"	int gx = int(gl_GlobalInvocationID.x);\n"
+						"	int gy = int(gl_GlobalInvocationID.y);\n"
+						"	int gz = int(gl_GlobalInvocationID.z);\n"
+						"	imageStore(u_intermValuesImage, " + invocationCoord + ", " + colorVecTypeName + "(" + atomicInvocation + "));\n"
+						"}\n";
 
 		sourceCollections.glslSources.add(m_name) << glu::ComputeSource(source.c_str());
 	}
@@ -708,7 +902,9 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 	const VkDeviceSize		imageSizeInBytes	= tcu::getPixelSize(m_format) * getNumPixels(m_imageType, m_imageSize);
 	const VkDeviceSize		outBuffSizeInBytes	= getOutputBufferSize();
 	const VkFormat			imageFormat			= mapTextureFormat(m_format);
-	const bool				isSupportedTransfer	= isSupportedFeatureTransfer(m_context, imageFormat);
+	const bool				isSupportedTransfer	= (imageFormat != VK_FORMAT_R64_SINT) &&
+												  (imageFormat != VK_FORMAT_R64_UINT) &&
+												  isSupportedFeatureTransfer(m_context, imageFormat);
 	const bool				isTexelBuffer		= (m_imageType == IMAGE_TYPE_BUFFER);
 
 	if (!isTexelBuffer)
@@ -725,7 +921,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 													makeBufferCreateInfo(imageSizeInBytes,
 																		 VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
 																		 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-																		 (isTexelBuffer ? VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : VkBufferUsageFlagBits(0u))),
+																		 (isTexelBuffer ? VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : static_cast<VkBufferUsageFlagBits>(0u))),
 													MemoryRequirement::HostVisible));
 
 	// Fill in buffer with initial data used for image.
@@ -738,7 +934,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 													makeBufferCreateInfo(outBuffSizeInBytes,
 																		 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 																		 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-																		 (isTexelBuffer ? VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : VkBufferUsageFlagBits(0u))),
+																		 (isTexelBuffer ? VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT : static_cast<VkBufferUsageFlagBits>(0u))),
 													MemoryRequirement::HostVisible));
 
 	if (!isTexelBuffer)
@@ -786,7 +982,20 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 		pipelineLayoutFillImage	= makePipelineLayout(deviceInterface, device, *m_descriptorSetLayoutNoTransfer);
 		pipelineFillImage		= makeComputePipeline(deviceInterface, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
 
-		shaderModuleReadImage   = createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("readShader"), 0);
+		const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+
+		if ((deviceFeatures.shaderResourceResidency == VK_TRUE) &&
+			m_context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics &&
+			(m_imageType != IMAGE_TYPE_1D) &&
+			(m_imageType != IMAGE_TYPE_1D_ARRAY) &&
+			(m_imageType != IMAGE_TYPE_BUFFER))
+		{
+			shaderModuleReadImage = createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("readShaderResidency"), 0);
+		}
+		else
+		{
+			shaderModuleReadImage = createShaderModule(deviceInterface, device, m_context.getBinaryCollection().get("readShader"), 0);
+		}
 		pipelineLayoutReadImage = makePipelineLayout(deviceInterface, device, *m_descriptorSetLayoutNoTransfer);
 		pipelineReadImage		= makeComputePipeline(deviceInterface, device, *pipelineLayoutFillImage, *shaderModuleReadImage);
 	}
@@ -856,7 +1065,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	invalidateAlloc(deviceInterface, device, outputBufferAllocation);
 
-	if (verifyResult(outputBufferAllocation, false))
+	if (verifyResult(outputBufferAllocation, (imageFormat == VK_FORMAT_R64_UINT || imageFormat == VK_FORMAT_R64_SINT)))
 		return tcu::TestStatus::pass("Comparison succeeded");
 	else
 		return tcu::TestStatus::fail("Comparison failed");
@@ -1613,6 +1822,8 @@ tcu::TestCaseGroup* createImageAtomicOperationTests (tcu::TestContext& testCtx)
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT32),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT32),
 		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::FLOAT),
+		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::UNSIGNED_INT64),
+		tcu::TextureFormat(tcu::TextureFormat::R, tcu::TextureFormat::SIGNED_INT64)
 	};
 
 	for (deUint32 operationI = 0; operationI < ATOMIC_OPERATION_LAST; operationI++)

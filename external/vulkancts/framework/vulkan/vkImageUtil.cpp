@@ -2526,6 +2526,8 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 
 		case FMT_CASE(R, UNSIGNED_INT32):					return VK_FORMAT_R32_UINT;
 		case FMT_CASE(R, SIGNED_INT32):						return VK_FORMAT_R32_SINT;
+		case FMT_CASE(R, UNSIGNED_INT64):					return VK_FORMAT_R64_UINT;
+		case FMT_CASE(R, SIGNED_INT64):						return VK_FORMAT_R64_SINT;
 		case FMT_CASE(R, FLOAT):							return VK_FORMAT_R32_SFLOAT;
 
 		case FMT_CASE(RG, UNSIGNED_INT32):					return VK_FORMAT_R32G32_UINT;
@@ -3314,12 +3316,14 @@ deUint32 getFormatComponentWidth (const VkFormat format, const deUint32 componen
 				return 32;
 
 			case tcu::TextureFormat::FLOAT64:
-			return 64;
+			case tcu::TextureFormat::UNSIGNED_INT64:
+			case tcu::TextureFormat::SIGNED_INT64:
+				return 64;
 
 			// Packed formats
 			case tcu::TextureFormat::UNORM_SHORT_4444:
 			case tcu::TextureFormat::UNSIGNED_SHORT_4444:
-			return 4;
+				return 4;
 
 			case tcu::TextureFormat::UNORM_SHORT_565:
 			case tcu::TextureFormat::UNSIGNED_SHORT_565:

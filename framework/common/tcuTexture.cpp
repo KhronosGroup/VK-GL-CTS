@@ -325,10 +325,12 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 		case TextureFormat::SIGNED_INT8:		return (int)*((const deInt8*)value);
 		case TextureFormat::SIGNED_INT16:		return (int)*((const deInt16*)value);
 		case TextureFormat::SIGNED_INT32:		return (int)*((const deInt32*)value);
+		case TextureFormat::SIGNED_INT64:		return (int)*((const deInt64*)value);
 		case TextureFormat::UNSIGNED_INT8:		return (int)*((const deUint8*)value);
 		case TextureFormat::UNSIGNED_INT16:		return (int)*((const deUint16*)value);
 		case TextureFormat::UNSIGNED_INT24:		return (int)readUint24(value);
 		case TextureFormat::UNSIGNED_INT32:		return (int)*((const deUint32*)value);
+		case TextureFormat::UNSIGNED_INT64:		return (int)*((const deUint64*)value);
 		case TextureFormat::HALF_FLOAT:			return (int)deFloat16To32(*(const deFloat16*)value);
 		case TextureFormat::FLOAT:				return (int)*((const float*)value);
 		case TextureFormat::FLOAT64:			return (int)*((const double*)value);
@@ -450,10 +452,12 @@ void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 		case TextureFormat::SIGNED_INT8:		*((deInt8*)dst)			= convertSat<deInt8>	(src);				break;
 		case TextureFormat::SIGNED_INT16:		*((deInt16*)dst)		= convertSat<deInt16>	(src);				break;
 		case TextureFormat::SIGNED_INT32:		*((deInt32*)dst)		= convertSat<deInt32>	(src);				break;
+		case TextureFormat::SIGNED_INT64:		*((deInt64*)dst)		= convertSat<deInt64>	((deInt64)src);		break;
 		case TextureFormat::UNSIGNED_INT8:		*((deUint8*)dst)		= convertSat<deUint8>	((deUint32)src);	break;
 		case TextureFormat::UNSIGNED_INT16:		*((deUint16*)dst)		= convertSat<deUint16>	((deUint32)src);	break;
 		case TextureFormat::UNSIGNED_INT24:		writeUint24(dst,		  convertSatUint24		((deUint32)src));	break;
 		case TextureFormat::UNSIGNED_INT32:		*((deUint32*)dst)		= convertSat<deUint32>	((deUint32)src);	break;
+		case TextureFormat::UNSIGNED_INT64:		*((deUint64*)dst)		= convertSat<deUint64>	((deUint64)src);	break;
 		case TextureFormat::HALF_FLOAT:			*((deFloat16*)dst)		= deFloat32To16((float)src);				break;
 		case TextureFormat::FLOAT:				*((float*)dst)			= (float)src;								break;
 		case TextureFormat::FLOAT64:			*((double*)dst)			= (double)src;								break;

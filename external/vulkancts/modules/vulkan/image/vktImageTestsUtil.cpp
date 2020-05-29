@@ -559,8 +559,9 @@ std::string getImageTypeName (const ImageType imageType)
 
 std::string getFormatPrefix (const tcu::TextureFormat& format)
 {
-	return tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" :
-		   tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" : "";
+	const std::string image64 = ((mapTextureFormat(format) == VK_FORMAT_R64_UINT || mapTextureFormat(format) == VK_FORMAT_R64_SINT) ? "64" : "");
+	return tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER ? "u" + image64 :
+		   tcu::getTextureChannelClass(format.type) == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER   ? "i" + image64 : "";
 }
 
 std::string getShaderImageType (const tcu::TextureFormat& format, const ImageType imageType, const bool multisample)
@@ -625,12 +626,14 @@ std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 			case tcu::TextureFormat::FLOAT:				typePart = "32f";		break;
 			case tcu::TextureFormat::HALF_FLOAT:		typePart = "16f";		break;
 
+			case tcu::TextureFormat::UNSIGNED_INT64:	typePart = "64ui";		break;
 			case tcu::TextureFormat::UNSIGNED_INT32:	typePart = "32ui";		break;
 			case tcu::TextureFormat::USCALED_INT16:
 			case tcu::TextureFormat::UNSIGNED_INT16:	typePart = "16ui";		break;
 			case tcu::TextureFormat::USCALED_INT8:
 			case tcu::TextureFormat::UNSIGNED_INT8:		typePart = "8ui";		break;
 
+			case tcu::TextureFormat::SIGNED_INT64:		typePart = "64i";		break;
 			case tcu::TextureFormat::SIGNED_INT32:		typePart = "32i";		break;
 			case tcu::TextureFormat::SSCALED_INT16:
 			case tcu::TextureFormat::SIGNED_INT16:		typePart = "16i";		break;
