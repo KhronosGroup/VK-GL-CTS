@@ -128,6 +128,7 @@ def install (adbPath, apkPath, extraArgs = [], printPrefix=""):
 	print(printPrefix + "Installing %s...\n" % apkPath,)
 	execWithPrintPrefix([adbPath] + extraArgs + [
 			'install',
+			'-g',
 			apkPath
 		], printPrefix)
 	print(printPrefix + "Install complete\n",)

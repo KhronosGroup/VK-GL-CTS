@@ -57,7 +57,7 @@ void Display::handleGlobal (void* data, struct wl_registry* registry, uint32_t i
 	DE_UNREF(version);
 
 	if (!strcmp(interface, "wl_compositor"))
-		_this->m_compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, 3));
+		_this->m_compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, version > 3 ? version : 3));
 	/* Todo: when the xdg_shell protocol has stablized, we should move wl_shell to xdg_shell. */
 	if (!strcmp(interface, "wl_shell"))
 		_this->m_shell = static_cast<struct wl_shell*>(wl_registry_bind(registry, id, &wl_shell_interface, 1));

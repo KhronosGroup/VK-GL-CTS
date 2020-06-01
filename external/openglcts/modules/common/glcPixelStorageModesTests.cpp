@@ -52,6 +52,8 @@
 #include "glsTextureTestUtil.hpp"
 #include "glcPixelStorageModesTests.hpp"
 
+#include <algorithm>
+
 namespace glcts
 {
 

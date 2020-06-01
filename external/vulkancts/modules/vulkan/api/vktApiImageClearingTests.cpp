@@ -1723,7 +1723,7 @@ const char* getImageTypeCaseName (VkImageType type)
 		"2d",
 		"3d"
 	};
-	return s_names[type];
+	return de::getSizedArrayElement<VK_CORE_IMAGE_TYPE_LAST>(s_names, type);
 }
 
 const char* getImageTilingCaseName (VkImageTiling tiling)
@@ -1733,7 +1733,7 @@ const char* getImageTilingCaseName (VkImageTiling tiling)
 		"optimal",
 		"linear",
 	};
-	return s_names[tiling];
+	return de::getSizedArrayElement<VK_CORE_IMAGE_TILING_LAST>(s_names, tiling);
 }
 
 TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)
