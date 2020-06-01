@@ -1268,6 +1268,9 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 
 	const bool							dsUsed				= (VK_IMAGE_VIEW_TYPE_3D != params.image.viewType);
 	const VkFormat						dsFormat			= VK_FORMAT_D24_UNORM_S8_UINT;
+	const VkImageType					dsImageType			= (imageType == VK_IMAGE_TYPE_3D ? VK_IMAGE_TYPE_2D : imageType); // depth/stencil 2D_ARRAY attachments cannot be taken from 3D image, use 2D_ARRAY image instead.
+	const VkExtent3D					dsImageSize			= makeExtent3D(params.image.size.width, params.image.size.height, 1u);
+	const VkImageCreateFlags			dsImageCreateFlags	= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0);
 	const deUint32						dsImagePixelSize	= static_cast<deUint32>(tcu::getPixelSize(mapVkFormat(dsFormat)));
 	const VkImageUsageFlags				dsImageUsage		= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const VkImageAspectFlags			dsAspectFlags		= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -1285,7 +1288,7 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const Unique<VkBuffer>				colorBuffer			(makeBuffer				(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer				(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 
-	const Unique<VkImage>				dsImage				(makeImage				(vk, device, makeImageCreateInfo(imageCreateFlags, imageType, dsFormat, params.image.size, params.image.numLayers, dsImageUsage)));
+	const Unique<VkImage>				dsImage				(makeImage				(vk, device, makeImageCreateInfo(dsImageCreateFlags, dsImageType, dsFormat, dsImageSize, numLayers, dsImageUsage)));
 	const UniquePtr<Allocation>			dsImageAlloc		(bindImage				(vk, device, allocator, *dsImage, MemoryRequirement::Any));
 	const Unique<VkImageView>			dsAttachment		(makeImageView			(vk, device, *dsImage, viewType, dsFormat, makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, numLayers)));
 	const Unique<VkBuffer>				depthBuffer			(makeBuffer				(vk, device, depthBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
@@ -1334,7 +1337,7 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const Unique<VkCommandPool>			cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const VkImageSubresourceRange		colorSubresRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
-	const VkImageSubresourceRange		dsSubresRange		= makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, params.image.numLayers);
+	const VkImageSubresourceRange		dsSubresRange		= makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, numLayers);
 	std::string							result;
 
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -1352,13 +1355,14 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 
 		for (deUint32 layerNdx = 0; layerNdx < numLayers; ++layerNdx)
 		{
-			const deUint32		imageDepth	= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType) ? layerNdx :       0u;
-			const deUint32		layer		= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType) ?       0u : layerNdx;
-			const VkOffset3D	imageOffset = makeOffset3D(0u, 0u, imageDepth);
 			const VkExtent3D	imageExtent = makeExtent3D(params.image.size.width, params.image.size.height, 1u);
 
 			// Clear color image with initial value
 			{
+				const deUint32					layer					= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType) ? 0u : layerNdx;
+				const deUint32					imageDepth				= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType) ? layerNdx : 0u;
+				const VkOffset3D				imageOffset				= makeOffset3D(0u, 0u, imageDepth);
+
 				const tcu::Vec4					clearColor				= scaleColor(s_colors[layerNdx % DE_LENGTH_OF_ARRAY(s_colors)], 0.25f);
 				const deUint32					bufferSliceSize			= params.image.size.width * params.image.size.height * colorImagePixelSize;
 				const VkDeviceSize				bufferOffset			= layerNdx * bufferSliceSize;
@@ -1375,8 +1379,8 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 				const float						depthValue				= 1.0f;
 				const deUint32					bufferSliceSize			= params.image.size.width * params.image.size.height * dsImagePixelSize;
 				const VkDeviceSize				bufferOffset			= layerNdx * bufferSliceSize;
-				const VkImageSubresourceLayers	imageSubresource		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, layer, 1u);
-				const VkBufferImageCopy			bufferImageCopyRegion	= makeBufferImageCopy(bufferOffset, imageSubresource, imageOffset, imageExtent);
+				const VkImageSubresourceLayers	imageSubresource		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, layerNdx, 1u);
+				const VkBufferImageCopy			bufferImageCopyRegion	= makeBufferImageCopy(bufferOffset, imageSubresource, makeOffset3D(0u, 0u, 0u), imageExtent);
 
 				fillBuffer(vk, device, *depthBufferAlloc, bufferOffset, bufferSliceSize, dsFormat, depthValue);
 				vk.cmdCopyBufferToImage(*cmdBuffer, *depthBuffer, *dsImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &bufferImageCopyRegion);
@@ -1388,8 +1392,8 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 				const deUint8					stencilValue			= 0;
 				const deUint32					bufferSliceSize			= params.image.size.width * params.image.size.height * stencilPixelSize;
 				const VkDeviceSize				bufferOffset			= layerNdx * bufferSliceSize;
-				const VkImageSubresourceLayers	imageSubresource		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, layer, 1u);
-				const VkBufferImageCopy			bufferImageCopyRegion	= makeBufferImageCopy(bufferOffset, imageSubresource, imageOffset, imageExtent);
+				const VkImageSubresourceLayers	imageSubresource		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, layerNdx, 1u);
+				const VkBufferImageCopy			bufferImageCopyRegion	= makeBufferImageCopy(bufferOffset, imageSubresource, makeOffset3D(0u, 0u, 0u), imageExtent);
 				deUint8*						bufferStart				= static_cast<deUint8*>((*stencilBufferAlloc).getHostPtr());
 				deUint8*						bufferLayerStart		= &bufferStart[bufferOffset];
 
@@ -1481,8 +1485,8 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 		{
 			const VkImageMemoryBarrier	preCopyBarrier		= makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
 																					 VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dsImage, dsSubresRange);
-			const VkBufferImageCopy		depthCopyRegion		= makeBufferImageCopy(params.image.size, makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, params.image.numLayers));
-			const VkBufferImageCopy		stencilCopyRegion	= makeBufferImageCopy(params.image.size, makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, params.image.numLayers));
+			const VkBufferImageCopy		depthCopyRegion		= makeBufferImageCopy(dsImageSize, makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, numLayers));
+			const VkBufferImageCopy		stencilCopyRegion	= makeBufferImageCopy(dsImageSize, makeImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, numLayers));
 			const VkBufferMemoryBarrier	postCopyBarriers[]	=
 			{
 				makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *depthBuffer, 0ull, VK_WHOLE_SIZE),
@@ -1572,7 +1576,7 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 
 	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *offscreenImageView, VK_IMAGE_LAYOUT_GENERAL);
 
-    DescriptorSetUpdateBuilder()
+	DescriptorSetUpdateBuilder()
 		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageDescriptorInfo)
 		.update(vk, device);
 
