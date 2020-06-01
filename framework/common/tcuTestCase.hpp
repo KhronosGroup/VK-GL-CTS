@@ -121,6 +121,7 @@ public:
 	const char*				getDescription	(void) const	{ return m_description.c_str(); }
 	void					getChildren		(std::vector<TestNode*>& children);
 	void					addChild		(TestNode* node);
+	bool					empty			() const		{ return m_children.empty();	}
 
 	virtual void			init			(void);
 	virtual void			deinit			(void);

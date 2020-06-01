@@ -43,6 +43,7 @@ add_subdirectory(ray_tracing)
 add_subdirectory(ray_query)
 add_subdirectory(postmortem)
 add_subdirectory(fragment_shading_rate)
+add_subdirectory(reconvergence)
 
 
 include_directories(
@@ -89,6 +90,7 @@ include_directories(
 	ray_tracing
 	ray_query
 	postmortem
+	reconvergence
 	)
 
 set(DEQP_VK_SRCS
@@ -155,6 +157,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-ray-query
 	deqp-vk-postmortem
 	deqp-vk-fragment-shading-rate
+	deqp-vk-reconvergence
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

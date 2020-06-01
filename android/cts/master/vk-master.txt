@@ -26,6 +26,7 @@ vk-master/query-pool.txt
 vk-master/rasterization.txt
 vk-master/ray-query.txt
 vk-master/ray-tracing-pipeline.txt
+vk-master/reconvergence.txt
 vk-master/renderpass.txt
 vk-master/renderpass2.txt
 vk-master/robustness.txt

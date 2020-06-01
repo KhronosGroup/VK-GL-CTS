@@ -20,6 +20,7 @@ vk-master-2021-03-01/query-pool.txt
 vk-master-2021-03-01/rasterization.txt
 vk-master-2021-03-01/ray-query.txt
 vk-master-2021-03-01/ray-tracing-pipeline.txt
+vk-master-2021-03-01/reconvergence.txt
 vk-master-2021-03-01/renderpass.txt
 vk-master-2021-03-01/renderpass2.txt
 vk-master-2021-03-01/robustness.txt
