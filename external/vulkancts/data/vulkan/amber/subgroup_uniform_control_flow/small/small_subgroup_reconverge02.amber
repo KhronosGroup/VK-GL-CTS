@@ -1,0 +1,77 @@
+#!amber
+
+SHADER compute test GLSL TARGET_ENV spv1.3
+#version 450 core
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_EXT_subgroup_uniform_control_flow : enable
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+layout(set=0, binding=0) coherent buffer A { uint a[]; } a;
+layout(set=0, binding=1) coherent buffer B { uint b[]; } b;
+layout(set=0, binding=2) coherent buffer C { uint c[]; } c;
+layout(set=0, binding=3) coherent buffer D { uint d[]; } d;
+
+void main()
+[[subgroup_uniform_control_flow]]
+{
+  uint idx = gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID;
+  if (a.a[gl_SubgroupID] % 2 == 0) {
+    while (true) {
+      atomicAdd(c.c[0], 1);
+      if (subgroupElect())
+        break;
+    }
+    b.b[idx] = subgroupElect() ? 1 : 0;
+  }
+}
+END
+
+SHADER compute fill GLSL TARGET_ENV spv1.3
+#version 450 core
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+layout(set=0, binding=0) coherent buffer A { uint a[]; } a;
+layout(set=0, binding=1) coherent buffer C { uint c[]; } c;
+layout(set=0, binding=2) coherent buffer COMPARE { uint x[]; } compare;
+
+void main()
+{
+  uint idx = gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID;
+  uint a_val = subgroupElect() ? 1 : 0;
+  if (a.a[gl_SubgroupID] % 2 != 0) {
+    a_val = 4;
+  }
+  compare.x[idx] = a_val;
+}
+END
+
+BUFFER a DATA_TYPE uint32 SIZE 128 SERIES_FROM 0 INC_BY 1
+BUFFER b DATA_TYPE uint32 SIZE 128 FILL 4
+BUFFER c DATA_TYPE uint32 SIZE 128 FILL 4
+BUFFER d DATA_TYPE uint32 SIZE 128 FILL 0
+BUFFER compare DATA_TYPE uint32 SIZE 128 FILL 4
+
+PIPELINE compute fill_pipe
+  ATTACH fill
+  BIND BUFFER a AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER c AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER compare AS storage DESCRIPTOR_SET 0 BINDING 2
+END
+
+PIPELINE compute test_pipe
+  ATTACH test
+  BIND BUFFER a AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER b AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER c AS storage DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER d AS storage DESCRIPTOR_SET 0 BINDING 3
+END
+
+RUN fill_pipe 1 1 1
+RUN test_pipe 1 1 1
+
+EXPECT compare IDX 0 EQ 1 0 0 0
+EXPECT b EQ_BUFFER compare
+

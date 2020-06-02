@@ -428,6 +428,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOCornerCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupUniformControlFlowTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsArithmeticTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBallotBroadcastTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBallotMasksTests.cpp \

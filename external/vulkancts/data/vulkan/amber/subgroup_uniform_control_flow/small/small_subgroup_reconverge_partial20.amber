@@ -1,0 +1,132 @@
+#!amber
+
+SHADER compute test GLSL TARGET_ENV spv1.3
+#version 450 core
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_EXT_subgroup_uniform_control_flow : enable
+layout(local_size_x = 119, local_size_y = 1, local_size_z = 1) in;
+
+layout(set=0, binding=0) coherent buffer A { uint a[]; } a;
+layout(set=0, binding=1) coherent buffer B { uint b[]; } b;
+layout(set=0, binding=2) coherent buffer C { uint c[]; } c;
+layout(set=0, binding=3) volatile buffer D { uint d[]; } d;
+
+void main()
+[[subgroup_uniform_control_flow]]
+{
+  uint idx = gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID;
+  uint a_val = a.a[idx];
+  if (a_val < 128) {
+    uint c_val = c.c[idx];
+    switch (c_val) {
+      case 0:
+        atomicAdd(d.d[idx], 1);
+        break;
+      case 1:
+      case 2:
+        if (a_val > 4) {
+          uint val = a_val;
+          for (uint i = 0; i < 4; ++i) {
+            val = atomicExchange(d.d[0], val);
+          }
+        } else if (a_val == 3) {
+          atomicAdd(d.d[1], gl_SubgroupID);
+        } else {
+          atomicAdd(d.d[2], gl_SubgroupInvocationID);
+        }
+        if (c_val == 1) return;
+        break;
+      default:
+        if (a.a[gl_SubgroupID] % 2 == 0) return;
+        atomicExchange(d.d[idx], c_val);
+        break;
+    }
+  } else if (a_val < 192) {
+    atomicExchange(d.d[idx], a_val);
+    uint c_val = c.c[idx];
+    if (subgroupAny(c_val == 0)) {
+      return;
+    } else {
+      uint val = atomicAdd(d.d[idx], gl_SubgroupInvocationID);
+      while (!subgroupElect()) {
+        val = atomicExchange(d.d[0], val);
+      }
+      if (val > 10) {
+        atomicAnd(d.d[idx], 0xff00ff00);
+      }
+    }
+  } else {
+    if (a.a[gl_SubgroupID] % 2 == 0) return;
+  }
+
+  b.b[idx] = subgroupElect() ? 1 : 0;
+}
+END
+
+SHADER compute fill GLSL TARGET_ENV spv1.3
+#version 450 core
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+layout(local_size_x = 119, local_size_y = 1, local_size_z = 1) in;
+
+layout(set=0, binding=0) coherent buffer A { uint a[]; } a;
+layout(set=0, binding=1) coherent buffer C { uint c[]; } c;
+layout(set=0, binding=2) coherent buffer COMPARE { uint x[]; } compare;
+
+void main()
+{
+  uint idx = gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID;
+  uint cmp_val = subgroupElect() ? 1 : 0;
+  if (gl_SubgroupID % 2 == 0) {
+    cmp_val = 4;
+  }
+  compare.x[idx] = cmp_val;
+
+  uint c_val = c.c[idx];
+  if (a.a[idx] < 128) {
+    if (gl_SubgroupID % 2 == 0) {
+      c_val = 1;
+    } else {
+      c_val = gl_SubgroupInvocationID % 4;
+      if (c_val == 1) c_val += 4;
+    }
+  } else if (a.a[idx] < 192) {
+    if (gl_SubgroupInvocationID == 0 && gl_SubgroupID % 2 == 0) {
+      c_val = 0;
+    } else {
+      c_val = c_val + 1;
+    }
+  }
+  c.c[idx] = c_val;
+}
+END
+
+BUFFER a DATA_TYPE uint32 SIZE 119 SERIES_FROM 0 INC_BY 1
+BUFFER b DATA_TYPE uint32 SIZE 119 FILL 4
+BUFFER c DATA_TYPE uint32 SIZE 119 SERIES_FROM 0 INC_BY 1
+BUFFER d DATA_TYPE uint32 SIZE 119 FILL 4
+BUFFER compare DATA_TYPE uint32 SIZE 119 FILL 4
+
+PIPELINE compute fill_pipe
+  ATTACH fill
+  BIND BUFFER a AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER c AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER compare AS storage DESCRIPTOR_SET 0 BINDING 2
+END
+
+PIPELINE compute test_pipe
+  ATTACH test
+  BIND BUFFER a AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER b AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER c AS storage DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER d AS storage DESCRIPTOR_SET 0 BINDING 3
+END
+
+RUN fill_pipe 1 1 1
+RUN test_pipe 1 1 1
+
+EXPECT compare IDX 0 EQ 4 4 4 4
+EXPECT b EQ_BUFFER compare
+

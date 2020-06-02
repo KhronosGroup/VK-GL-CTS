@@ -1,0 +1,84 @@
+#!amber
+
+SHADER vertex vtex_shader GLSL TARGET_ENV spv1.3
+#version 430
+layout(location = 0) in vec3 position;
+void main() {
+  gl_Position = vec4(position, 1.0);
+}
+END
+
+SHADER fragment compare_shader GLSL TARGET_ENV spv1.3
+#version 430
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_EXT_subgroup_uniform_control_flow : enable
+
+layout(location = 0) out int compare;
+layout(location = 1) out vec4 out1;
+layout(location = 2) out vec4 out2;
+void main() [[subgroup_uniform_control_flow]] {
+  bool inbounds = (gl_FragCoord.x < 128 || gl_FragCoord.y < 128);
+  bool elect = subgroupElect();
+  if (elect) {
+    out1 = vec4(1.0, 0, 0, 1.0);
+  } else if (inbounds) {
+    out2 = vec4(0, 1.0, 0, 1.0);
+  } else {
+    discard;
+  }
+
+  bool a = (!inbounds && elect);
+  bool b = subgroupElect() == elect;
+  compare = (b && !a) ? 1 : -1;
+}
+END
+
+SHADER fragment expect_shader GLSL TARGET_ENV spv1.3
+#version 430
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+
+layout(location = 0) out int expect;
+void main() {
+  bool inbounds = (gl_FragCoord.x < 128 || gl_FragCoord.y < 128);
+  expect = inbounds ? 1 : -1;
+}
+END
+
+BUFFER position_buf DATA_TYPE vec3<float> DATA
+-1 -1 0
+-1  1 0
+ 1 -1 0
+END
+
+BUFFER expect DATA_TYPE int32 SIZE 65536 FILL -1
+BUFFER compare DATA_TYPE int32 SIZE 65536 FILL -1
+BUFFER out1 DATA_TYPE vec4<float> SIZE 65536 FILL -1
+BUFFER out2 DATA_TYPE vec4<float> SIZE 65536 FILL -1
+
+PIPELINE graphics compare_pipe
+  ATTACH vtex_shader
+  ATTACH compare_shader
+
+  VERTEX_DATA position_buf LOCATION 0
+  BIND BUFFER compare AS color LOCATION 0
+  BIND BUFFER out1 AS color LOCATION 1
+  BIND BUFFER out2 AS color LOCATION 2
+  FRAMEBUFFER_SIZE 256 256
+END
+
+PIPELINE graphics expect_pipe
+  ATTACH vtex_shader
+  ATTACH expect_shader
+
+  VERTEX_DATA position_buf LOCATION 0
+  BIND BUFFER expect AS color LOCATION 0
+  FRAMEBUFFER_SIZE 256 256
+END
+
+RUN expect_pipe DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 3
+RUN compare_pipe DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 3
+EXPECT compare EQ_BUFFER expect
