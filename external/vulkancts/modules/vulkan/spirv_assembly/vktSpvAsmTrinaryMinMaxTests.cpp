@@ -435,7 +435,7 @@ private:
 
 TrinaryMinMaxCase::TrinaryMinMaxCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const TestParams& params)
 	: vkt::TestCase	(testCtx, name, description)
-	, m_params		{params}
+	, m_params		(params)
 {}
 
 TestInstance* TrinaryMinMaxCase::createInstance (Context& context) const
@@ -699,7 +699,7 @@ void TrinaryMinMaxCase::initPrograms (vk::SourceCollections& programCollection) 
 
 TrinaryMinMaxInstance::TrinaryMinMaxInstance (Context& context, const TestParams& params)
 	: vkt::TestInstance	(context)
-	, m_params			{params}
+	, m_params			(params)
 {}
 
 tcu::TestStatus TrinaryMinMaxInstance::iterate (void)
