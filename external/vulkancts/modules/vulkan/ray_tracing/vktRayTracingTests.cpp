@@ -37,6 +37,7 @@
 #include "vktRayTracingNullASTests.hpp"
 #include "vktRayTracingCaptureReplayTests.hpp"
 #include "vktRayTracingMiscTests.hpp"
+#include "vktRayTracingComplexControlFlowTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -66,6 +67,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createNullAccelerationStructureTests(testCtx));
 	group->addChild(createCaptureReplayTests(testCtx));
 	group->addChild(createMiscTests(testCtx));
+	group->addChild(createComplexControlFlowTests(testCtx));
 
 	return group.release();
 }
