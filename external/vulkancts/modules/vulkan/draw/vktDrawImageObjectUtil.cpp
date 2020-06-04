@@ -348,6 +348,24 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		};
 
 		m_vk.cmdCopyImageToBuffer(*copyCmdBuffer, object(), layout, stagingResource->object(), 1, &region);
+
+		// pipeline barrier for accessing the staging buffer from HOST
+		{
+			const vk::VkBufferMemoryBarrier memoryBarrier =
+			{
+				vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+				DE_NULL,
+				vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+				vk::VK_ACCESS_HOST_READ_BIT,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				stagingResource->object(),
+				0u,
+				VK_WHOLE_SIZE
+			};
+			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &memoryBarrier, 0u, DE_NULL);
+		}
+
 		endCommandBuffer(m_vk, *copyCmdBuffer);
 
 		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
@@ -437,6 +455,31 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		vk::VkImageCopy region = { { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement, 1}, offset, { (vk::VkImageAspectFlags)aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
 
 		m_vk.cmdCopyImage(*copyCmdBuffer, object(), layout, stagingResource->object(), vk::VK_IMAGE_LAYOUT_GENERAL, 1, &region);
+
+		// pipeline barrier for accessing the staging image from HOST
+		{
+			const vk::VkImageMemoryBarrier memoryBarrier =
+			{
+				vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				DE_NULL,
+				vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+				vk::VK_ACCESS_HOST_READ_BIT,
+				vk::VK_IMAGE_LAYOUT_GENERAL,
+				vk::VK_IMAGE_LAYOUT_GENERAL,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				stagingResource->object(),
+				{
+					static_cast<vk::VkImageAspectFlags>(aspect),
+					0u,
+					1u,
+					0u,
+					1u
+				}
+			};
+			m_vk.cmdPipelineBarrier(*copyCmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &memoryBarrier);
+		}
+
 		endCommandBuffer(m_vk, *copyCmdBuffer);
 
 		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
