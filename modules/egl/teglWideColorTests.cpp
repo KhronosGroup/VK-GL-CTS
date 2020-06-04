@@ -1122,7 +1122,7 @@ void WideColorSurfaceTest::testFramebufferColorEncoding()
 	bool correct = false;
 	if (m_colorSpace == EGL_GL_COLORSPACE_SRGB_KHR || m_colorSpace == EGL_GL_COLORSPACE_DISPLAY_P3_EXT)
 	{
-		if (m_redSize == 8 || m_redSize == 10)
+		if (m_redSize == 8)
 		{
 			correct = framebufferColorEncoding == GL_SRGB;
 		}
