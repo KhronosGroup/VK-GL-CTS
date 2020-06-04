@@ -88,6 +88,8 @@ public:
 	// An instance or device extension will not have a period in its name.
 	void addRequirement(const std::string& requirement);
 
+	void addImageRequirement(vk::VkImageCreateInfo info);
+
 private:
 	bool parse (const std::string& readFilename);
 
@@ -108,14 +110,17 @@ private:
 	// An example entry is: "VariablePointerFeatures.variablePointers".
 	// Use a set for consistent ordering.
 	std::set<std::string> m_required_features;
+
+	std::vector<vk::VkImageCreateInfo> m_imageRequirements;
 };
 
-AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
-									const char*						name,
-									const char*						description,
-									const char*						category,
-									const std::string&				filename,
-									const std::vector<std::string>	requirements = std::vector<std::string>());
+AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
+									const char*									name,
+									const char*									description,
+									const char*									category,
+									const std::string&							filename,
+									const std::vector<std::string>				requirements = std::vector<std::string>(),
+									const std::vector<vk::VkImageCreateInfo>	imageRequirements = std::vector<vk::VkImageCreateInfo>());
 
 void createAmberTestsFromIndexFile (tcu::TestContext&	testCtx,
 									tcu::TestCaseGroup*	group,

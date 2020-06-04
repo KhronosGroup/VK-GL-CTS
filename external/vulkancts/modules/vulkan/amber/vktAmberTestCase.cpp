@@ -37,6 +37,7 @@
 #include "tcuResource.hpp"
 #include "tcuTestLog.hpp"
 #include "vkSpirVProgram.hpp"
+#include "vkImageUtil.hpp"
 
 namespace vkt
 {
@@ -58,14 +59,14 @@ AmberTestCase::~AmberTestCase (void)
 	delete m_recipe;
 }
 
-TestInstance* AmberTestCase::createInstance(Context& ctx) const
+TestInstance* AmberTestCase::createInstance (Context& ctx) const
 {
 	return new AmberTestInstance(ctx, m_recipe);
 }
 
-static amber::EngineConfig* createEngineConfig(Context& ctx)
+static amber::EngineConfig* createEngineConfig (Context& ctx)
 {
-	amber::EngineConfig*	vkConfig = GetVulkanConfig(ctx.getInstance(),
+	amber::EngineConfig* vkConfig = GetVulkanConfig(ctx.getInstance(),
 			ctx.getPhysicalDevice(), ctx.getDevice(), &ctx.getDeviceFeatures(),
 			&ctx.getDeviceFeatures2(), ctx.getInstanceExtensions(),
 			ctx.getDeviceExtensions(), ctx.getUniversalQueueFamilyIndex(),
@@ -160,6 +161,9 @@ void AmberTestCase::checkSupport(Context& ctx) const
 			TCU_THROW(NotSupportedError, message.c_str());
 		}
 	}
+
+	for (auto req : m_imageRequirements)
+		checkImageSupport(ctx.getInstanceInterface(), ctx.getPhysicalDevice(), req);
 }
 
 class Delegate : public amber::Delegate
@@ -229,7 +233,7 @@ amber::Result Delegate::LoadBufferData (const std::string			file_name,
 	return {};
 }
 
-bool AmberTestCase::parse(const std::string& readFilename)
+bool AmberTestCase::parse (const std::string& readFilename)
 {
 	std::string script = ShaderSourceProvider::getSource(m_testCtx.getArchive(), readFilename.c_str());
 	if (script.empty())
@@ -262,7 +266,7 @@ bool AmberTestCase::parse(const std::string& readFilename)
 	return true;
 }
 
-void AmberTestCase::initPrograms(vk::SourceCollections& programCollection) const
+void AmberTestCase::initPrograms (vk::SourceCollections& programCollection) const
 {
 	std::vector<amber::ShaderInfo> shaders = m_recipe->GetShaderInfo();
 	for (size_t i = 0; i < shaders.size(); ++i)
@@ -380,17 +384,22 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	return r.IsSuccess() ? tcu::TestStatus::pass("Pass") :tcu::TestStatus::fail("Fail");
 }
 
-void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options)
+void AmberTestCase::setSpirVAsmBuildOptions (const vk::SpirVAsmBuildOptions& asm_options)
 {
 	m_asm_options = asm_options;
 }
 
-void AmberTestCase::addRequirement(const std::string& requirement)
+void AmberTestCase::addRequirement (const std::string& requirement)
 {
 	if (requirement.find(".") != std::string::npos)
 		m_required_features.insert(requirement);
 	else
 		m_required_extensions.insert(requirement);
+}
+
+void AmberTestCase::addImageRequirement (vk::VkImageCreateInfo info)
+{
+	m_imageRequirements.push_back(info);
 }
 
 } // cts_amber
