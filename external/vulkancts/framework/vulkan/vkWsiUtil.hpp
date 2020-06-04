@@ -125,6 +125,10 @@ std::vector<deUint32>			getCompatibleQueueFamilyIndices			(const InstanceInterfa
 																		 VkPhysicalDevice					physicalDevice,
 																		 const std::vector<VkSurfaceKHR>&	surface);
 
+tcu::UVec2						getFullScreenSize						(const vk::wsi::Type			wsiType,
+																		 const vk::wsi::Display&		display,
+																		 const tcu::UVec2&				fallbackSize);
+
 class WsiTriangleRenderer
 {
 public:

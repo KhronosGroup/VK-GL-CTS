@@ -444,6 +444,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayControlTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiFullScreenExclusiveTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
