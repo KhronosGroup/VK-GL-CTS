@@ -42,6 +42,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -51,6 +52,7 @@
 #include "deRandom.hpp"
 
 #include <vector>
+#include <memory>
 
 using namespace vk;
 
@@ -3298,6 +3300,292 @@ tcu::TestStatus ConcurrentComputeInstance::iterate (void)
 	return tcu::TestStatus::pass("Test passed");
 }
 
+class MaxWorkGroupSizeTest : public vkt::TestCase
+{
+public:
+	enum class Axis	{ X = 0, Y = 1, Z = 2 };
+
+	struct Params
+	{
+		// Which axis to maximize.
+		Axis axis;
+	};
+
+							MaxWorkGroupSizeTest	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params);
+	virtual					~MaxWorkGroupSizeTest	(void) {}
+
+	virtual void			initPrograms			(vk::SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance			(Context& context) const;
+	virtual void			checkSupport			(Context& context) const;
+
+	// Helper to transform the axis value to an index.
+	static int				getIndex				(Axis axis);
+
+	// Helper returning the number of invocations according to the test parameters.
+	static deUint32			getInvocations			(const Params& params, const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, const vk::VkPhysicalDeviceProperties* devProperties = nullptr);
+
+	// Helper returning the buffer size needed to this test.
+	static deUint32			getSSBOSize				(deUint32 invocations);
+
+private:
+	Params m_params;
+};
+
+class MaxWorkGroupSizeInstance : public vkt::TestInstance
+{
+public:
+								MaxWorkGroupSizeInstance	(Context& context, const MaxWorkGroupSizeTest::Params& params);
+	virtual						~MaxWorkGroupSizeInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate			(void);
+
+private:
+	MaxWorkGroupSizeTest::Params m_params;
+};
+
+int MaxWorkGroupSizeTest::getIndex (Axis axis)
+{
+	const int ret = static_cast<int>(axis);
+	DE_ASSERT(ret >= static_cast<int>(Axis::X) && ret <= static_cast<int>(Axis::Z));
+	return ret;
+}
+
+deUint32 MaxWorkGroupSizeTest::getInvocations (const Params& params, const vk::InstanceInterface& vki, vk::VkPhysicalDevice physicalDevice, const vk::VkPhysicalDeviceProperties* devProperties)
+{
+	const auto axis = getIndex(params.axis);
+
+	if (devProperties)
+		return devProperties->limits.maxComputeWorkGroupSize[axis];
+	return vk::getPhysicalDeviceProperties(vki, physicalDevice).limits.maxComputeWorkGroupSize[axis];
+}
+
+deUint32 MaxWorkGroupSizeTest::getSSBOSize (deUint32 invocations)
+{
+	return invocations * static_cast<deUint32>(sizeof(deUint32));
+}
+
+MaxWorkGroupSizeTest::MaxWorkGroupSizeTest (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const Params& params)
+	: vkt::TestCase	(testCtx, name, description)
+	, m_params		(params)
+{}
+
+void MaxWorkGroupSizeTest::initPrograms (vk::SourceCollections& programCollection) const
+{
+	std::ostringstream shader;
+
+	// The actual local sizes will be set using spec constants when running the test instance.
+	shader
+		<< "#version 450\n"
+		<< "\n"
+		<< "layout(constant_id=0) const int local_size_x_val = 1;\n"
+		<< "layout(constant_id=1) const int local_size_y_val = 1;\n"
+		<< "layout(constant_id=2) const int local_size_z_val = 1;\n"
+		<< "\n"
+		<< "layout(local_size_x_id=0, local_size_y_id=1, local_size_z_id=2) in;\n"
+		<< "\n"
+		<< "layout(set=0, binding=0) buffer StorageBuffer {\n"
+		<< "    uint values[];\n"
+		<< "} ssbo;\n"
+		<< "\n"
+		<< "void main() {\n"
+		<< "    ssbo.values[gl_LocalInvocationIndex] = 1u;\n"
+		<< "}\n"
+		;
+
+	programCollection.glslSources.add("comp") << glu::ComputeSource(shader.str());
+}
+
+TestInstance* MaxWorkGroupSizeTest::createInstance (Context& context) const
+{
+	return new MaxWorkGroupSizeInstance(context, m_params);
+}
+
+void MaxWorkGroupSizeTest::checkSupport (Context& context) const
+{
+	const auto&	vki				= context.getInstanceInterface();
+	const auto	physicalDevice	= context.getPhysicalDevice();
+
+	const auto	properties		= vk::getPhysicalDeviceProperties(vki, physicalDevice);
+	const auto	invocations		= getInvocations(m_params, vki, physicalDevice, &properties);
+
+	if (invocations > properties.limits.maxComputeWorkGroupInvocations)
+		TCU_FAIL("Reported workgroup size limit in the axis is greater than the global invocation limit");
+
+	if (properties.limits.maxStorageBufferRange / static_cast<deUint32>(sizeof(deUint32)) < invocations)
+		TCU_THROW(NotSupportedError, "Maximum supported storage buffer range too small");
+}
+
+MaxWorkGroupSizeInstance::MaxWorkGroupSizeInstance (Context& context, const MaxWorkGroupSizeTest::Params& params)
+	: vkt::TestInstance	(context)
+	, m_params			(params)
+{}
+
+tcu::TestStatus MaxWorkGroupSizeInstance::iterate (void)
+{
+	const auto&	vki				= m_context.getInstanceInterface();
+	const auto&	vkd				= m_context.getDeviceInterface();
+	const auto	physicalDevice	= m_context.getPhysicalDevice();
+	const auto	device			= m_context.getDevice();
+	auto&		alloc			= m_context.getDefaultAllocator();
+	const auto	queueIndex		= m_context.getUniversalQueueFamilyIndex();
+	const auto	queue			= m_context.getUniversalQueue();
+	auto&		log				= m_context.getTestContext().getLog();
+
+	const auto	axis			= MaxWorkGroupSizeTest::getIndex(m_params.axis);
+	const auto	invocations		= MaxWorkGroupSizeTest::getInvocations(m_params, vki, physicalDevice);
+	const auto	ssboSize		= static_cast<vk::VkDeviceSize>(MaxWorkGroupSizeTest::getSSBOSize(invocations));
+
+	log
+		<< tcu::TestLog::Message
+		<< "Running test with " << invocations << " invocations on axis " << axis << " using a storage buffer size of " << ssboSize << " bytes"
+		<< tcu::TestLog::EndMessage
+		;
+
+	// Main SSBO buffer.
+	const auto				ssboInfo	= vk::makeBufferCreateInfo(ssboSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	vk::BufferWithMemory	ssbo		(vkd, device, alloc, ssboInfo, vk::MemoryRequirement::HostVisible);
+
+	// Shader module.
+	const auto shaderModule	= vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+
+	// Descriptor set layouts.
+	vk::DescriptorSetLayoutBuilder layoutBuilder;
+	layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
+
+	// Specialization constants: set the number of invocations in the appropriate local size id.
+	const auto	entrySize				= static_cast<deUintptr>(sizeof(deInt32));
+	deInt32		specializationData[3]	= { 1, 1, 1 };
+	specializationData[axis] = static_cast<deInt32>(invocations);
+
+	const vk::VkSpecializationMapEntry specializationMaps[3] =
+	{
+		{
+			0u,										//	deUint32	constantID;
+			0u,										//	deUint32	offset;
+			entrySize,								//	deUintptr	size;
+		},
+		{
+			1u,										//	deUint32	constantID;
+			static_cast<deUint32>(entrySize),		//	deUint32	offset;
+			entrySize,								//	deUintptr	size;
+		},
+		{
+			2u,										//	deUint32	constantID;
+			static_cast<deUint32>(entrySize * 2u),	//	deUint32	offset;
+			entrySize,								//	deUintptr	size;
+		},
+	};
+
+	const vk::VkSpecializationInfo specializationInfo =
+	{
+		3u,													//	deUint32						mapEntryCount;
+		specializationMaps,									//	const VkSpecializationMapEntry*	pMapEntries;
+		static_cast<deUintptr>(sizeof(specializationData)),	//	deUintptr						dataSize;
+		specializationData,									//	const void*						pData;
+	};
+
+	// Test pipeline.
+	const vk::VkPipelineLayoutCreateInfo testPipelineLayoutInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,											//	const void*						pNext;
+		0u,													//	VkPipelineLayoutCreateFlags		flags;
+		1u,													//	deUint32						setLayoutCount;
+		&descriptorSetLayout.get(),							//	const VkDescriptorSetLayout*	pSetLayouts;
+		0u,													//	deUint32						pushConstantRangeCount;
+		nullptr,											//	const VkPushConstantRange*		pPushConstantRanges;
+	};
+	const auto testPipelineLayout = vk::createPipelineLayout(vkd, device, &testPipelineLayoutInfo);
+
+	const vk::VkComputePipelineCreateInfo testPipelineInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,											//	const void*						pNext;
+		0u,													//	VkPipelineCreateFlags			flags;
+		{													//	VkPipelineShaderStageCreateInfo	stage;
+			vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,//	VkStructureType						sType;
+			nullptr,												//	const void*							pNext;
+			0u,														//	VkPipelineShaderStageCreateFlags	flags;
+			vk::VK_SHADER_STAGE_COMPUTE_BIT,						//	VkShaderStageFlagBits				stage;
+			shaderModule.get(),										//	VkShaderModule						module;
+			"main",													//	const char*							pName;
+			&specializationInfo,									//	const VkSpecializationInfo*			pSpecializationInfo;
+		},
+		testPipelineLayout.get(),							//	VkPipelineLayout				layout;
+		DE_NULL,											//	VkPipeline						basePipelineHandle;
+		0u,													//	deInt32							basePipelineIndex;
+	};
+	const auto testPipeline = vk::createComputePipeline(vkd, device, DE_NULL, &testPipelineInfo);
+
+	// Create descriptor pool and set.
+	vk::DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const auto descriptorPool	= poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const auto descriptorSet	= vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayout.get());
+
+	// Update descriptor set.
+	const vk::VkDescriptorBufferInfo ssboBufferInfo =
+	{
+		ssbo.get(),		//	VkBuffer		buffer;
+		0u,				//	VkDeviceSize	offset;
+		VK_WHOLE_SIZE,	//	VkDeviceSize	range;
+	};
+
+	vk::DescriptorSetUpdateBuilder updateBuilder;
+	updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &ssboBufferInfo);
+	updateBuilder.update(vkd, device);
+
+	// Clear buffer.
+	auto& ssboAlloc	= ssbo.getAllocation();
+	void* ssboPtr	= ssboAlloc.getHostPtr();
+	deMemset(ssboPtr, 0, static_cast<size_t>(ssboSize));
+	vk::flushAlloc(vkd, device, ssboAlloc);
+
+	// Run pipelines.
+	const auto cmdPool		= vk::makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBUfferPtr	= vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBUfferPtr.get();
+
+	vk::beginCommandBuffer(vkd, cmdBuffer);
+
+	// Run the main test shader.
+	const auto hostToComputeBarrier = vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, ssbo.get(), 0ull, VK_WHOLE_SIZE);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 1u, &hostToComputeBarrier, 0u, nullptr);
+
+	vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, testPipeline.get());
+	vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, testPipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+	vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+	const auto computeToHostBarrier = vk::makeBufferMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, ssbo.get(), 0ull, VK_WHOLE_SIZE);
+	vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &computeToHostBarrier, 0u, nullptr);
+
+	vk::endCommandBuffer(vkd, cmdBuffer);
+	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Verify buffer contents.
+	vk::invalidateAlloc(vkd, device, ssboAlloc);
+	std::unique_ptr<deUint32[]>	valuesArray	(new deUint32[invocations]);
+	deUint32*					valuesPtr	= valuesArray.get();
+	deMemcpy(valuesPtr, ssboPtr, static_cast<size_t>(ssboSize));
+
+	std::string	errorMsg;
+	bool		ok			= true;
+
+	for (size_t i = 0; i < invocations; ++i)
+	{
+		if (valuesPtr[i] != 1u)
+		{
+			ok			= false;
+			errorMsg	= "Found invalid value for invocation index " + de::toString(i) + ": expected 1u and found " + de::toString(valuesPtr[i]);
+			break;
+		}
+	}
+
+	if (!ok)
+		return tcu::TestStatus::fail(errorMsg);
+	return tcu::TestStatus::pass("Pass");
+}
 
 namespace EmptyShaderTest
 {
@@ -3352,6 +3640,10 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", "Shader that does nothing", EmptyShaderTest::createProgram, EmptyShaderTest::createTest);
 
 	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", "Concurrent compute test"));
+
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_x", "Use the maximum work group size on the X axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::X}));
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_y", "Use the maximum work group size on the Y axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Y}));
+	basicComputeTests->addChild(new MaxWorkGroupSizeTest(testCtx, "max_local_size_z", "Use the maximum work group size on the Z axis", MaxWorkGroupSizeTest::Params{MaxWorkGroupSizeTest::Axis::Z}));
 
 	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_invocation",	"Copy from UBO to SSBO, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
 	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_group",			"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(2,1,4),	tcu::IVec3(1,1,1)));
