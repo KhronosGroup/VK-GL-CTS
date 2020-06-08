@@ -296,7 +296,7 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingWatertightnessTestInstan
 	triangles.reserve(m_data.squaresGroupCount);
 
 	triangles.push_back(tcu::UVec3(0, 1, 2));
-	triangles.push_back(tcu::UVec3(1, 2, 3));
+	triangles.push_back(tcu::UVec3(3, 2, 1));
 
 	while (triangles.size() < m_data.squaresGroupCount)
 	{
