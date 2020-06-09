@@ -359,6 +359,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSignedOpTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSpirvVersion1p4Tests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmSpirvVersionTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTerminateInvocationTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTrinaryMinMaxTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTypeTests.cpp \

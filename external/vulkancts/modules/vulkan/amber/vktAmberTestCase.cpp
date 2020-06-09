@@ -87,6 +87,8 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getDeviceFeatures().tessellationShader;
 	if (feature == "Features.geometryShader")
 		return ctx.getDeviceFeatures().geometryShader;
+	if (feature == "Features.fragmentStoresAndAtomics")
+		return ctx.getDeviceFeatures().fragmentStoresAndAtomics;
 	if (feature == "Features.vertexPipelineStoresAndAtomics")
 		return ctx.getDeviceFeatures().vertexPipelineStoresAndAtomics;
 	if (feature == "Features.fillModeNonSolid")
@@ -97,6 +99,12 @@ static bool isFeatureSupported(const vkt::Context& ctx, const std::string& featu
 		return ctx.getVariablePointersFeatures().variablePointersStorageBuffer;
 	if (feature == "VariablePointerFeatures.variablePointers")
 		return ctx.getVariablePointersFeatures().variablePointers;
+	if (feature == "SubgroupProperties.supportedStages.fragment")
+		return (ctx.getSubgroupProperties().supportedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) != 0;
+	if (feature == "SubgroupProperties.supportedOperations.vote")
+		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_VOTE_BIT) != 0;
+	if (feature == "SubgroupProperties.supportedOperations.ballot")
+		return (ctx.getSubgroupProperties().supportedOperations & vk::VK_SUBGROUP_FEATURE_BALLOT_BIT) != 0;
 
 	std::string message = std::string("Unexpected feature name: ") + feature;
 	TCU_THROW(InternalError, message.c_str());

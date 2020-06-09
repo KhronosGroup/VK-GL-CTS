@@ -83,6 +83,7 @@
 #include "vktSpvAsmNonSemanticInfoTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
 #include "vktSpvAsmTrinaryMinMaxTests.hpp"
+#include "vktSpvAsmTerminateInvocationTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -20540,6 +20541,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
 	instructionTests->addChild(createFunctionParamsGroup(testCtx));
 	instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
+	instructionTests->addChild(createTerminateInvocationGroup(testCtx));
 
 	return instructionTests.release();
 }

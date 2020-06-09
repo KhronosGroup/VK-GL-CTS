@@ -82,3 +82,4 @@ VK_KHR_shader_clock							DEVICE
 VK_KHR_performance_query					DEVICE
 VK_KHR_shader_non_semantic_info				DEVICE
 VK_KHR_copy_commands2						DEVICE
+VK_KHR_shader_terminate_invocation			DEVICE

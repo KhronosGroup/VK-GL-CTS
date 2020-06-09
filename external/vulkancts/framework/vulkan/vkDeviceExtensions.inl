@@ -63,5 +63,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_performance_query",
 	"VK_KHR_shader_non_semantic_info",
 	"VK_KHR_copy_commands2",
+	"VK_KHR_shader_terminate_invocation",
 };
 

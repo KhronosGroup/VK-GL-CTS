@@ -1,0 +1,225 @@
+#!amber
+
+SHADER vertex vs SPIRV-ASM
+;#version 450
+;
+;layout(location = 0) in vec3 position;
+;layout(location = 1) in int in_data;
+;layout(location = 0) out int out_data;
+;void main() {
+;  gl_Position = vec4(position, 1.0);
+;  out_data = int(in_data);
+;}
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %position %in_data %out_data %per_vertex
+OpDecorate %position Location 0
+OpDecorate %in_data Location 1
+OpDecorate %out_data Location 0
+OpDecorate %block Block
+OpMemberDecorate %block 0 BuiltIn Position
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float3 = OpTypeVector %float 3
+%float4 = OpTypeVector %float 4
+%ptr_float3_input = OpTypePointer Input %float3
+%ptr_int_input = OpTypePointer Input %int
+%ptr_int_output = OpTypePointer Output %int
+%block = OpTypeStruct %float4
+%ptr_float4_output = OpTypePointer Output %float4
+%ptr_block_output = OpTypePointer Output %block
+%position = OpVariable %ptr_float3_input Input
+%in_data = OpVariable %ptr_int_input Input
+%out_data = OpVariable %ptr_int_output Output
+%per_vertex = OpVariable %ptr_block_output Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld_pos = OpLoad %float3 %position
+%out_pos = OpCompositeConstruct %float4 %ld_pos %float_1
+%out_pos_gep = OpAccessChain %ptr_float4_output %per_vertex %int_0
+OpStore %out_pos_gep %out_pos
+OpCopyMemory %out_data %in_data
+OpReturn
+OpFunctionEnd
+END
+
+SHADER fragment fs SPIRV-ASM
+;#version 450
+;
+;#extension GL_KHR_shader_subgroup_ballot : enable
+;layout(location = 0) in flat int in_data;
+;layout(location = 0) out int out_data;
+;
+;void main() {
+;  int x_coord = int(gl_FragCoord.x);
+;  int y_coord = int(gl_FragCoord.y);
+;  int combined = (x_coord & 0x1) + (y_coord & 0x1) + in_data;
+;  bool cond = combined == int(gl_FragCoord.z);
+;  if (combined == int(gl_FragCoord.z))
+;    terminateInvocation;
+;
+;  int quad_idx = (x_coord & 0x1) + 2 * (y_coord & 0x1);
+;  uvec4 b = subgroupBallot(true);
+;  uint element;
+;  if (gl_SubgroupInvocationID < 32)
+;      element = b.x;
+;  else if (gl_SubgroupInvocationID < 64)
+;      element = b.y;
+;  else if (gl_SubgroupInvocationID < 96)
+;      element = b.z;
+;  else
+;      element = b.w;
+;  uint base_bit = (gl_SubgroupInvocationID - quad_idx) % 32;
+;  bool check_quad_idx_0 = ((element >> base_bit) & 0x1) == 0;
+;  out_data = check_quad_idx_0 ? 1 : 0;
+;
+;}
+OpCapability Shader
+OpCapability GroupNonUniformBallot
+OpExtension "SPV_KHR_terminate_invocation"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %frag_coord %in_data %out_data %subgroupID
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %frag_coord BuiltIn FragCoord
+OpDecorate %in_data Location 0
+OpDecorate %in_data Flat
+OpDecorate %out_data Location 0
+OpDecorate %subgroupID Flat
+OpDecorate %subgroupID BuiltIn SubgroupLocalInvocationId
+%void = OpTypeVoid
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_32 = OpConstant %int 32
+%int_64 = OpConstant %int 64
+%int_96 = OpConstant %int 96
+%subgroup = OpConstant %int 3
+%int4 = OpTypeVector %int 4
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%ptr_int_input = OpTypePointer Input %int
+%ptr_int_output = OpTypePointer Output %int
+%ptr_float4_input = OpTypePointer Input %float4
+%frag_coord = OpVariable %ptr_float4_input Input
+%in_data = OpVariable %ptr_int_input Input
+%out_data = OpVariable %ptr_int_output Output
+%subgroupID = OpVariable %ptr_int_input Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%coord = OpLoad %float4 %frag_coord
+%x_coord = OpCompositeExtract %float %coord 0
+%y_coord = OpCompositeExtract %float %coord 1
+%z_coord = OpCompositeExtract %float %coord 2
+%x = OpConvertFToS %int %x_coord
+%y = OpConvertFToS %int %y_coord
+%z = OpConvertFToS %int %z_coord
+%x_and_1 = OpBitwiseAnd %int %x %int_1
+%y_and_1 = OpBitwiseAnd %int %y %int_1
+%add = OpIAdd %int %x_and_1 %y_and_1
+%ld_in_data = OpLoad %int %in_data
+%combined = OpIAdd %int %add %ld_in_data
+%cmp = OpIEqual %bool %combined %z
+OpSelectionMerge %exit None
+OpBranchConditional %cmp %then %exit
+%then = OpLabel
+OpTerminateInvocation
+%exit = OpLabel
+%y_2 = OpIMul %int %int_2 %y_and_1
+%quad_idx = OpIAdd %int %x_and_1 %y_2
+%b = OpGroupNonUniformBallot %int4 %subgroup %true
+%sid = OpLoad %int %subgroupID
+%less_than_32 = OpULessThan %bool %sid %int_32
+OpSelectionMerge %merge_32 None
+OpBranchConditional %less_than_32 %then_32 %else_32
+%then_32 = OpLabel
+%element_0 = OpCompositeExtract %int %b 0
+OpBranch %merge_32
+%else_32 = OpLabel
+%less_than_64 = OpULessThan %bool %sid %int_64
+OpSelectionMerge %merge_64 None
+OpBranchConditional %less_than_64 %then_64 %else_64
+%then_64 = OpLabel
+%element_1 = OpCompositeExtract %int %b 1
+OpBranch %merge_64
+%else_64 = OpLabel
+%less_than_96 = OpULessThan %bool %sid %int_96
+%element_2 = OpCompositeExtract %int %b 2
+%element_3 = OpCompositeExtract %int %b 3
+%sel_96 = OpSelect %int %less_than_96 %element_2 %element_3
+OpBranch %merge_64
+%merge_64 = OpLabel
+%phi_64 = OpPhi %int %element_1 %then_64 %sel_96 %else_64
+OpBranch %merge_32
+%merge_32 = OpLabel
+%phi_32 = OpPhi %int %element_0 %then_32 %phi_64 %merge_64
+%bit = OpISub %int %sid %quad_idx
+%base_bit = OpUMod %int %bit %int_32
+%idx_0_shift = OpShiftRightLogical %int %phi_32 %base_bit
+%idx_0_shift_and_1 = OpBitwiseAnd %int %idx_0_shift %int_1
+%idx_0_check = OpIEqual %bool %idx_0_shift_and_1 %int_0
+%out_val = OpSelect %int %idx_0_check %int_1 %int_0
+OpStore %out_data %out_val
+OpReturn
+OpFunctionEnd
+END
+
+SHADER vertex passthrough PASSTHROUGH
+SHADER fragment expect_fs GLSL
+#version 450
+
+layout(location = 0) out int out_data;
+void main() {
+  bool x_is_odd = (int(gl_FragCoord.x) & 0x1) == 1;
+  bool y_is_odd = (int(gl_FragCoord.y) & 0x1) == 1;
+  out_data = (x_is_odd || y_is_odd) ? 1 : 0;
+}
+END
+
+BUFFER position_buf DATA_TYPE vec3<float> DATA
+-1 -1 0
+-1  1 0
+ 1 -1 0
+
+-1  1 0
+ 1 -1 0
+ 1  1 0
+END
+
+BUFFER in_data_buf DATA_TYPE int32 SIZE 6 FILL 0
+
+IMAGE out_data DATA_TYPE int32 DIM_2D WIDTH 8 HEIGHT 8 FILL 0
+IMAGE expect_frame DATA_TYPE int32 DIM_2D WIDTH 8 HEIGHT 8 FILL 0
+
+PIPELINE graphics gpipe
+  ATTACH vs
+  ATTACH fs
+
+  FRAMEBUFFER_SIZE 8 8
+  VERTEX_DATA position_buf LOCATION 0
+  VERTEX_DATA in_data_buf LOCATION 1
+  BIND BUFFER out_data AS color LOCATION 0
+END
+
+PIPELINE graphics expect_pipe
+  ATTACH passthrough
+  ATTACH expect_fs
+
+  FRAMEBUFFER_SIZE 8 8
+  VERTEX_DATA position_buf LOCATION 0
+  BIND BUFFER expect_frame AS color LOCATION 0
+END
+
+RUN expect_pipe DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 6
+RUN gpipe DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 6
+EXPECT out_data EQ_BUFFER expect_frame
+

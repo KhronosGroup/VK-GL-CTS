@@ -1,0 +1,165 @@
+#!amber
+
+SHADER vertex vs SPIRV-ASM
+;#version 450
+;
+;layout(location = 0) in vec3 position;
+;layout(location = 1) in int in_data;
+;layout(location = 0) out int out_data;
+;void main() {
+;  gl_Position = vec4(position, 1.0);
+;  out_data = int(in_data);
+;}
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %position %in_data %out_data %per_vertex
+OpDecorate %position Location 0
+OpDecorate %in_data Location 1
+OpDecorate %out_data Location 0
+OpDecorate %block Block
+OpMemberDecorate %block 0 BuiltIn Position
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%float3 = OpTypeVector %float 3
+%float4 = OpTypeVector %float 4
+%ptr_float3_input = OpTypePointer Input %float3
+%ptr_int_input = OpTypePointer Input %int
+%ptr_int_output = OpTypePointer Output %int
+%block = OpTypeStruct %float4
+%ptr_float4_output = OpTypePointer Output %float4
+%ptr_block_output = OpTypePointer Output %block
+%position = OpVariable %ptr_float3_input Input
+%in_data = OpVariable %ptr_int_input Input
+%out_data = OpVariable %ptr_int_output Output
+%per_vertex = OpVariable %ptr_block_output Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld_pos = OpLoad %float3 %position
+%out_pos = OpCompositeConstruct %float4 %ld_pos %float_1
+%out_pos_gep = OpAccessChain %ptr_float4_output %per_vertex %int_0
+OpStore %out_pos_gep %out_pos
+OpCopyMemory %out_data %in_data
+OpReturn
+OpFunctionEnd
+END
+
+SHADER fragment fs SPIRV-ASM
+;#version 450
+;
+;#pragma GL_EXT_terminate_invocation : enable
+;
+;layout(location = 0) in flat int in_data;
+;layout(location = 0) out int out_data;
+;layout(set = 0, binding = 0, r32i) uniform iimage2D im2d;
+;void main() {
+;  out_data = 1;
+;  int x_coord = int(gl_FragCoord.x);
+;  int y_coord = int(gl_FragCoord.y);
+;  int combined = (x_coord & 0x1) + (y_coord & 0x1) + in_data;
+;  if (combined == int(gl_FragCoord.z))
+;    terminateInvocation;
+;
+;  ivec4 data = ivec4(x_coord, 0, 0, 0);
+;  imageStore(im2d, ivec2(x_coord, y_coord), data);
+;}
+OpCapability Shader
+OpExtension "SPV_KHR_terminate_invocation"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %frag_coord %in_data %out_data
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %frag_coord BuiltIn FragCoord
+OpDecorate %in_data Location 0
+OpDecorate %in_data Flat
+OpDecorate %out_data Location 0
+OpDecorate %im2d DescriptorSet 0
+OpDecorate %im2d Binding 0
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_8 = OpConstant %int 8
+%int2 = OpTypeVector %int 2
+%int4 = OpTypeVector %int 4
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%ptr_int_input = OpTypePointer Input %int
+%ptr_int_output = OpTypePointer Output %int
+%ptr_float4_input = OpTypePointer Input %float4
+%frag_coord = OpVariable %ptr_float4_input Input
+%in_data = OpVariable %ptr_int_input Input
+%out_data = OpVariable %ptr_int_output Output
+%image = OpTypeImage %int 2D 0 0 0 2 R32i
+%ptr_image_uniform = OpTypePointer UniformConstant %image
+%im2d = OpVariable %ptr_image_uniform UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpStore %out_data %int_1
+%coord = OpLoad %float4 %frag_coord
+%x_coord = OpCompositeExtract %float %coord 0
+%y_coord = OpCompositeExtract %float %coord 1
+%z_coord = OpCompositeExtract %float %coord 2
+%x = OpConvertFToS %int %x_coord
+%y = OpConvertFToS %int %y_coord
+%z = OpConvertFToS %int %z_coord
+%x_and_1 = OpBitwiseAnd %int %x %int_1
+%y_and_1 = OpBitwiseAnd %int %y %int_1
+%add = OpIAdd %int %x_and_1 %y_and_1
+%ld_in_data = OpLoad %int %in_data
+%combined = OpIAdd %int %add %ld_in_data
+%cmp = OpIEqual %bool %combined %z
+OpSelectionMerge %exit None
+OpBranchConditional %cmp %then %exit
+%then = OpLabel
+OpTerminateInvocation
+%exit = OpLabel
+%im_data = OpCompositeConstruct %int4 %x %int_0 %int_0 %int_0
+%im_coord = OpCompositeConstruct %int2 %x %y
+%ld_im2d = OpLoad %image %im2d
+OpImageWrite %ld_im2d %im_coord %im_data
+OpReturn
+OpFunctionEnd
+END
+
+BUFFER position_buf DATA_TYPE vec3<float> DATA
+-1 -1 0
+-1  1 0
+ 1 -1 0
+
+-1  1 0
+ 1 -1 0
+ 1  1 0
+END
+
+BUFFER in_data_buf DATA_TYPE int32 SIZE 6 FILL 0
+
+IMAGE out_data DATA_TYPE int32 DIM_2D WIDTH 8 HEIGHT 8 FILL 0
+IMAGE a_buf DATA_TYPE int32 DIM_2D WIDTH 8 HEIGHT 8 FILL 0
+
+PIPELINE graphics gpipe
+  ATTACH vs
+  ATTACH fs
+
+  FRAMEBUFFER_SIZE 8 8
+  VERTEX_DATA position_buf LOCATION 0
+  VERTEX_DATA in_data_buf LOCATION 1
+  BIND BUFFER out_data AS color LOCATION 0
+  BIND BUFFER a_buf AS storage_image DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN gpipe DRAW_ARRAY AS TRIANGLE_LIST START_IDX 0 COUNT 6
+EXPECT a_buf IDX   0 EQ 0 1 0 3 0 5 0 7
+EXPECT a_buf IDX  32 EQ 0 1 2 3 4 5 6 7
+EXPECT a_buf IDX  64 EQ 0 1 0 3 0 5 0 7
+EXPECT a_buf IDX  96 EQ 0 1 2 3 4 5 6 7
+EXPECT a_buf IDX 128 EQ 0 1 0 3 0 5 0 7
+EXPECT a_buf IDX 160 EQ 0 1 2 3 4 5 6 7
+EXPECT a_buf IDX 192 EQ 0 1 0 3 0 5 0 7
+EXPECT a_buf IDX 224 EQ 0 1 2 3 4 5 6 7
+

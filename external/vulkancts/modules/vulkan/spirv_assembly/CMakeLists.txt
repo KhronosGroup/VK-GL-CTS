@@ -41,6 +41,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsm64bitCompareTests.hpp
 	vktSpvAsmTypeTests.cpp
 	vktSpvAsmTypeTests.hpp
+	vktSpvAsmTerminateInvocationTests.cpp
+	vktSpvAsmTerminateInvocationTests.hpp
 	vktSpvAsmTests.cpp
 	vktSpvAsmTests.hpp
 	vktSpvAsmUtils.cpp
