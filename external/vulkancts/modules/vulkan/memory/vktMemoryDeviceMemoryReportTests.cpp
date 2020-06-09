@@ -54,13 +54,23 @@ using namespace vk;
 using de::MovePtr;
 using de::SharedPtr;
 
+enum CallbackMarker
+{
+	MARKER_UNKNOWN = 0,
+	MARKER_ALLOCATE,
+	MARKER_FREE,
+	MARKER_IMPORT,
+	MARKER_UNIMPORT,
+	MARKER_ALLOCATION_FAILED
+};
+
 class CallbackRecorder
 {
 public:
-	CallbackRecorder(void) = default;
+	CallbackRecorder(void): mMarker(MARKER_UNKNOWN) {}
 	~CallbackRecorder(void) = default;
 
-	typedef std::vector<VkDeviceMemoryReportCallbackDataEXT>::const_iterator	RecordIterator;
+	typedef std::vector<std::pair<VkDeviceMemoryReportCallbackDataEXT, CallbackMarker>>::const_iterator	RecordIterator;
 
 	RecordIterator getRecordsBegin (void) const
 	{
@@ -77,9 +87,14 @@ public:
 		return mRecords.size();
 	}
 
+	void setCallbackMarker(CallbackMarker marker)
+	{
+		mMarker = marker;
+	}
+
 	void callbackInternal (const VkDeviceMemoryReportCallbackDataEXT* pCallbackData)
 	{
-		mRecords.emplace_back(*pCallbackData);
+		mRecords.emplace_back(*pCallbackData, mMarker);
 	}
 
 	static VKAPI_ATTR void VKAPI_CALL callback (const struct VkDeviceMemoryReportCallbackDataEXT* pCallbackData, void* pUserData)
@@ -88,8 +103,10 @@ public:
 	}
 
 private:
-	typedef std::vector<VkDeviceMemoryReportCallbackDataEXT>	Records;
-	Records														mRecords;
+	typedef std::vector<std::pair<VkDeviceMemoryReportCallbackDataEXT, CallbackMarker>>	Records;
+
+	Records			mRecords;
+	CallbackMarker	mMarker;
 };
 
 struct Environment
@@ -141,6 +158,57 @@ struct Dependency
 	{}
 };
 
+static Move<VkDevice> createDeviceWithMemoryReport (deBool								isValidationEnabled,
+													const PlatformInterface&			vkp,
+													VkInstance							instance,
+													const InstanceInterface&			vki,
+													VkPhysicalDevice					physicalDevice,
+													deUint32							queueFamilyIndex,
+													const CallbackRecorder*				recorder)
+{
+	const deUint32										queueCount						= 1;
+	const float											queuePriority					= 1.0f;
+	const char* const									enabledExtensions[]				= {"VK_EXT_device_memory_report"};
+	const VkPhysicalDeviceDeviceMemoryReportFeaturesEXT	deviceMemoryReportFeatures		=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,	// VkStructureType						sType;
+		DE_NULL,																// void*								pNext;
+		VK_TRUE																	// VkBool32								deviceMemoryReport;
+	};
+	const VkDeviceDeviceMemoryReportCreateInfoEXT		deviceMemoryReportCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,			// VkStructureType						sType;
+		&deviceMemoryReportFeatures,											// void*								pNext;
+		(VkDeviceMemoryReportFlagsEXT)0,										// VkDeviceMemoryReportFlagsEXT			flags;
+		recorder->callback,														// PFN_vkDeviceMemoryReportCallbackEXT	pfnUserCallback;
+		(void*)recorder,														// void*								pUserData;
+	};
+	const VkDeviceQueueCreateInfo						queueCreateInfo					=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,								// VkStructureType						sType;
+		DE_NULL,																// const void*							pNext;
+		(VkDeviceQueueCreateFlags)0,											// VkDeviceQueueCreateFlags				flags;
+		queueFamilyIndex,														// deUint32								queueFamilyIndex;
+		queueCount,																// deUint32								queueCount;
+		&queuePriority,															// const float*							pQueuePriorities;
+	};
+	const VkDeviceCreateInfo							deviceCreateInfo				=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,									// VkStructureType						sType;
+		&deviceMemoryReportCreateInfo,											// const void*							pNext;
+		(VkDeviceCreateFlags)0,													// VkDeviceCreateFlags					flags;
+		queueCount,																// uint32_t								queueCreateInfoCount;
+		&queueCreateInfo,														// const VkDeviceQueueCreateInfo*		pQueueCreateInfos;
+		0u,																		// uint32_t								enabledLayerCount
+		DE_NULL,																// const char* const*					ppEnabledLayerNames
+		DE_LENGTH_OF_ARRAY(enabledExtensions),									// uint32_t								enabledExtensionCount
+		DE_ARRAY_BEGIN(enabledExtensions),										// const char* const*					ppEnabledExtensionNames
+		DE_NULL,																// const VkPhysicalDeviceFeatures*		pEnabledFeatures
+	};
+
+	return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+}
+
 struct Device
 {
 	typedef VkDevice Type;
@@ -157,47 +225,7 @@ struct Device
 
 	static Move<VkDevice> create (const Environment& env, const Resources&, const Parameters&)
 	{
-		const deUint32										queueCount						= 1;
-		const float											queuePriority					= 1.0f;
-		const char* const									enabledExtensions[]				= {"VK_EXT_device_memory_report"};
-		const VkPhysicalDeviceDeviceMemoryReportFeaturesEXT	deviceMemoryReportFeatures		=
-		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,	// VkStructureType						sType;
-			DE_NULL,																// void*								pNext;
-			VK_TRUE																	// VkBool32								deviceMemoryReport;
-		};
-		const VkDeviceDeviceMemoryReportCreateInfoEXT		deviceMemoryReportCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,			// VkStructureType						sType;
-			&deviceMemoryReportFeatures,											// void*								pNext;
-			(VkDeviceMemoryReportFlagsEXT)0,										// VkDeviceMemoryReportFlagsEXT			flags;
-			env.recorder->callback,													// PFN_vkDeviceMemoryReportCallbackEXT	pfnUserCallback;
-			(void*)env.recorder,													// void*								pUserData;
-		};
-		const VkDeviceQueueCreateInfo						queueCreateInfo					=
-		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,								// VkStructureType						sType;
-			DE_NULL,																// const void*							pNext;
-			(VkDeviceQueueCreateFlags)0,											// VkDeviceQueueCreateFlags				flags;
-			env.queueFamilyIndex,													// deUint32								queueFamilyIndex;
-			queueCount,																// deUint32								queueCount;
-			&queuePriority,															// const float*							pQueuePriorities;
-		};
-		const VkDeviceCreateInfo							deviceCreateInfo				=
-		{
-			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,									// VkStructureType						sType;
-			&deviceMemoryReportCreateInfo,											// const void*							pNext;
-			(VkDeviceCreateFlags)0,													// VkDeviceCreateFlags					flags;
-			queueCount,																// uint32_t								queueCreateInfoCount;
-			&queueCreateInfo,														// const VkDeviceQueueCreateInfo*		pQueueCreateInfos;
-			0u,																		// uint32_t								enabledLayerCount
-			DE_NULL,																// const char* const*					ppEnabledLayerNames
-			DE_LENGTH_OF_ARRAY(enabledExtensions),									// uint32_t								enabledExtensionCount
-			DE_ARRAY_BEGIN(enabledExtensions),										// const char* const*					ppEnabledExtensionNames
-			DE_NULL,																// const VkPhysicalDeviceFeatures*		pEnabledFeatures
-		};
-
-		return createCustomDevice(env.commandLine.isValidationEnabled(), env.vkp, env.instance, env.vki, env.physicalDevice, &deviceCreateInfo);
+		return createDeviceWithMemoryReport(env.commandLine.isValidationEnabled(), env.vkp, env.instance, env.vki, env.physicalDevice, env.queueFamilyIndex, env.recorder);
 	}
 };
 
@@ -1569,7 +1597,7 @@ void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDesc
 	}
 }
 
-tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+tcu::TestCaseGroup* createObjectTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
 {
 	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
 
@@ -1610,7 +1638,7 @@ static deBool validateCallbackRecords (Context& context, const CallbackRecorder&
 
 	for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
 	{
-		const VkDeviceMemoryReportCallbackDataEXT&	record	= *iter;
+		const VkDeviceMemoryReportCallbackDataEXT&	record	= iter->first;
 
 		if ((record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT ||
 			 record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT) &&
@@ -1705,6 +1733,163 @@ tcu::TestStatus createDestroyObjectTest (Context& context, typename Object::Para
 	}
 
 	return tcu::TestStatus::pass("Ok");
+}
+
+tcu::TestStatus vkDeviceMemoryAllocateAndFreeTest (Context& context)
+{
+	CallbackRecorder						recorder;
+	const PlatformInterface&				vkp					= context.getPlatformInterface();
+	const VkInstance						instance			= context.getInstance();
+	const InstanceInterface&				vki					= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
+	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const deBool							isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
+	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
+	const DeviceDriver						vkd					(vkp, instance, *device);
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	const VkDeviceSize						testSize			= 1024;
+	const deUint32							testTypeIndex		= 0;
+	const deUint32							testHeapIndex		= memoryProperties.memoryTypes[testTypeIndex].heapIndex;
+	deUint64								objectHandle		= 0;
+
+	{
+		recorder.setCallbackMarker(MARKER_ALLOCATE);
+
+		VkResult					result				= VK_SUCCESS;
+		VkDeviceMemory				memory				= DE_NULL;
+		const VkMemoryAllocateInfo	memoryAllocateInfo	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
+			DE_NULL,								// const void*		pNext;
+			testSize,								// VkDeviceSize		allocationSize;
+			testHeapIndex,							// uint32_t			memoryTypeIndex;
+		};
+
+		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
+		if (result != VK_SUCCESS)
+		{
+			return tcu::TestStatus::fail("Unable to allocate " + de::toString(testSize) + " bytes of memory");
+		}
+		objectHandle									= memory.getInternal();
+
+		recorder.setCallbackMarker(MARKER_FREE);
+		vkd.freeMemory(*device, memory, (const VkAllocationCallbacks*)DE_NULL);
+	}
+
+	recorder.setCallbackMarker(MARKER_UNKNOWN);
+
+	deBool							allocateEvent		= false;
+	deBool							freeEvent			= false;
+	deUint64						memoryObjectId		= 0;
+
+	for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
+	{
+		const VkDeviceMemoryReportCallbackDataEXT&	record	= iter->first;
+		const CallbackMarker						marker	= iter->second;
+
+		if (record.objectHandle == objectHandle && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT)
+		{
+			TCU_CHECK(marker == MARKER_ALLOCATE);
+			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
+			TCU_CHECK(memoryObjectId == 0);
+			TCU_CHECK(record.memoryObjectId != 0);
+			TCU_CHECK_MSG(record.size >= testSize, ("record.size=" + de::toString(record.size) + ", testSize=" + de::toString(testSize)).c_str());
+			TCU_CHECK(record.heapIndex == testHeapIndex);
+
+			memoryObjectId	= record.memoryObjectId;
+			allocateEvent	= true;
+		}
+		else if (record.objectHandle == objectHandle && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT)
+		{
+			TCU_CHECK(marker == MARKER_FREE);
+			TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
+						  ("record.memoryObjectId=" + de::toString(record.memoryObjectId) +
+						   ", memoryObjectId=" + de::toString(memoryObjectId)).c_str());
+
+			freeEvent		= true;
+		}
+	}
+
+	TCU_CHECK(allocateEvent);
+	TCU_CHECK(freeEvent);
+
+	return tcu::TestStatus::pass("Ok");
+}
+
+tcu::TestStatus vkDeviceMemoryAllocationFailedTest (Context& context)
+{
+	CallbackRecorder						recorder;
+	const PlatformInterface&				vkp					= context.getPlatformInterface();
+	const VkInstance						instance			= context.getInstance();
+	const InstanceInterface&				vki					= context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
+	const deUint32							queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const deBool							isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
+	const Unique<VkDevice>					device				(createDeviceWithMemoryReport(isValidationEnabled, vkp, instance, vki, physicalDevice, queueFamilyIndex, &recorder));
+	const DeviceDriver						vkd					(vkp, instance, *device);
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	const VkDeviceSize						testSize			= std::numeric_limits<deUint64>::max();
+	const deUint32							testTypeIndex		= 0;
+	const deUint32							testHeapIndex		= memoryProperties.memoryTypes[testTypeIndex].heapIndex;
+
+	{
+		recorder.setCallbackMarker(MARKER_ALLOCATION_FAILED);
+
+		VkResult					result				= VK_SUCCESS;
+		VkDeviceMemory				memory				= DE_NULL;
+		const VkMemoryAllocateInfo	memoryAllocateInfo	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType	sType;
+			DE_NULL,								// const void*		pNext;
+			testSize,								// VkDeviceSize		allocationSize;
+			testHeapIndex,							// uint32_t			memoryTypeIndex;
+		};
+
+		result = vkd.allocateMemory(*device, &memoryAllocateInfo, (const VkAllocationCallbacks*)DE_NULL, &memory);
+		if (result == VK_SUCCESS)
+		{
+			return tcu::TestStatus::fail("Should not be able to allocate UINT64_MAX bytes of memory");
+		}
+
+		recorder.setCallbackMarker(MARKER_UNKNOWN);
+	}
+
+	deBool	allocationFailedEvent	= false;
+
+	for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
+	{
+		const VkDeviceMemoryReportCallbackDataEXT&	record	= iter->first;
+		const CallbackMarker						marker	= iter->second;
+
+		if (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATION_FAILED_EXT)
+		{
+			TCU_CHECK(marker == MARKER_ALLOCATION_FAILED);
+			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
+			TCU_CHECK_MSG(record.size >= testSize, ("record.size=" + de::toString(record.size) + ", testSize=" + de::toString(testSize)).c_str());
+			TCU_CHECK(record.heapIndex == testHeapIndex);
+
+			allocationFailedEvent	= true;
+		}
+	}
+
+	TCU_CHECK(allocationFailedEvent);
+
+	return tcu::TestStatus::pass("Ok");
+}
+
+static void checkSupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
+}
+
+tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
+{
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+
+	addFunctionCase(group.get(), "allocate_and_free",	"", checkSupport, vkDeviceMemoryAllocateAndFreeTest);
+	addFunctionCase(group.get(), "allocation_failed",	"", checkSupport, vkDeviceMemoryAllocationFailedTest);
+
+	return group.release();
 }
 
 } // anonymous
@@ -1927,7 +2112,8 @@ tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
 		CASE_DESC(createDestroyObjectTest	<CommandPool>,			s_commandPoolCases),
 		CASE_DESC(createDestroyObjectTest	<CommandBuffer>,		s_commandBufferCases),
 	};
-	deviceMemoryReportTests->addChild(createGroup(testCtx, "create_and_destroy_object", "Check emitted callbacks are properly paired", s_createDestroyObjectGroup));
+	deviceMemoryReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", "Check emitted callbacks are properly paired", s_createDestroyObjectGroup));
+	deviceMemoryReportTests->addChild(createVkDeviceMemoryTestsGroup(testCtx, "vk_device_memory", "Check callbacks are emitted properly for VkDeviceMemory"));
 
 	return deviceMemoryReportTests.release();
 }
