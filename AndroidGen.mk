@@ -105,6 +105,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/compute/vktComputeZeroInitializeWorkgroupMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalClearAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawAndClearTests.cpp \

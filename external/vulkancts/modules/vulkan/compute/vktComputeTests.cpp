@@ -26,6 +26,7 @@
 #include "vktComputeCooperativeMatrixTests.hpp"
 #include "vktComputeIndirectComputeDispatchTests.hpp"
 #include "vktComputeShaderBuiltinVarTests.hpp"
+#include "vktComputeZeroInitializeWorkgroupMemoryTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -45,6 +46,7 @@ void createChildren (tcu::TestCaseGroup* computeTests)
 	computeTests->addChild(createCooperativeMatrixTests(testCtx));
 	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
 	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
+	computeTests->addChild(createZeroInitializeWorkgroupMemoryTests(testCtx));
 }
 
 } // anonymous
