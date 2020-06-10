@@ -80,7 +80,7 @@ CustomInstance createCustomInstance (Context& context, bool allowLayers)
 	}
 
 	Move<VkInstance> instance = vk::createDefaultInstance(vkp, apiVersion, enabledLayersStr, enabledExtensions, DE_NULL);
-	return CustomInstance(context, instance, allowLayers, context.getTestContext().getCommandLine().printValidationErrors());
+	return CustomInstance(context, instance, !enabledLayers.empty(), context.getTestContext().getCommandLine().printValidationErrors());
 }
 
 bool checkToolsProperties (Context& context, const std::vector<VkPhysicalDeviceToolPropertiesEXT>& deviceToolPropertiesEXTArray)
