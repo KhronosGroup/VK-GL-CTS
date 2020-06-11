@@ -348,12 +348,15 @@ void RobustBufferAccessTest::genBufferShaderAccess (ShaderType			shaderType,
 		}
 		else if (isIntFormat(bufferFormat))
 		{
-			typePrefixStr = "i";
+			typePrefixStr =  "i";
 		}
 		else
 		{
 			DE_ASSERT(false);
 		}
+
+		typePrefixStr += (bufferFormat == vk::VK_FORMAT_R64_UINT || bufferFormat == vk::VK_FORMAT_R64_SINT) ?
+						 "64" : "";
 
 		bufferDefinition <<
 			"layout(binding = 0, " << (readFromStorage ? "std430" : "std140") << ") " << (readFromStorage ? "buffer readonly" : "uniform") << " InBuffer\n"
@@ -482,6 +485,12 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 {
 	std::ostringstream	bufferDefinition;
 	std::ostringstream	bufferUse;
+	std::string			extensions;
+
+	if (bufferFormat == vk::VK_FORMAT_R64_UINT || bufferFormat == vk::VK_FORMAT_R64_SINT)
+	{
+		extensions = "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n";
+	}
 
 	if (shaderType != SHADER_TYPE_TEXEL_COPY)
 	{
@@ -498,6 +507,7 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 		computeShaderSource <<
 			"#version 440\n"
 			"#extension GL_EXT_texture_buffer : require\n"
+			<< extensions <<
 			"precision highp float;\n"
 			"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 			<< bufferDefinition.str() <<
@@ -521,6 +531,7 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 			vertexShaderSource <<
 				"#version 440\n"
 				"#extension GL_EXT_texture_buffer : require\n"
+				<< extensions <<
 				"precision highp float;\n"
 				"layout(location = 0) in vec4 position;\n\n"
 				<< bufferDefinition.str() << "\n"
@@ -558,6 +569,7 @@ void RobustBufferAccessTest::initBufferAccessPrograms (SourceCollections&	progra
 			fragmentShaderSource <<
 				"#version 440\n"
 				"#extension GL_EXT_texture_buffer : require\n"
+				<< extensions <<
 				"precision highp float;\n"
 				"layout(location = 0) out vec4 fragColor;\n"
 				<< bufferDefinition.str() <<
@@ -673,6 +685,11 @@ BufferAccessInstance::BufferAccessInstance (Context&			context,
 	DE_ASSERT(RobustBufferAccessTest::s_numberOfBytesAccessed % sizeof(deUint32) == 0);
 	DE_ASSERT(inBufferAccessRange <= RobustBufferAccessTest::s_numberOfBytesAccessed);
 	DE_ASSERT(outBufferAccessRange <= RobustBufferAccessTest::s_numberOfBytesAccessed);
+
+	if (m_bufferFormat == VK_FORMAT_R64_UINT || m_bufferFormat == VK_FORMAT_R64_SINT)
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+	}
 
 	// Check storage support
 	if (shaderStage == VK_SHADER_STAGE_VERTEX_BIT)
@@ -1163,7 +1180,7 @@ bool BufferAccessInstance::verifyResult (void)
 						break;
 
 					case SHADER_TYPE_VECTOR_COPY:
-						operandSize		= 4 * 4; // Size of vec4
+						operandSize		= 4 * ((m_bufferFormat == vk::VK_FORMAT_R64_UINT || m_bufferFormat == vk::VK_FORMAT_R64_SINT) ? 8 : 4);// Size of vec4
 						break;
 
 					case SHADER_TYPE_MATRIX_COPY:
@@ -1379,6 +1396,8 @@ static void addBufferAccessTests (tcu::TestContext& testCtx, tcu::TestCaseGroup*
 	{
 		VK_FORMAT_R32_SINT,
 		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R64_SINT,
+		VK_FORMAT_R64_UINT,
 		VK_FORMAT_R32_SFLOAT
 	};
 

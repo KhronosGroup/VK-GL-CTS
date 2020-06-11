@@ -747,9 +747,13 @@ public:
 		, v4f32(autoincrement)
 		, v4s32(autoincrement)
 		, v4u32(autoincrement)
+		, v4s64(autoincrement)
+		, v4u64(autoincrement)
 		, s32(autoincrement)
 		, f32(autoincrement)
 		, u32(autoincrement)
+		, s64(autoincrement)
+		, u64(autoincrement)
 		, boolean(autoincrement)
 		, array_content_type(autoincrement)
 		, s32_type_ptr(autoincrement)
@@ -786,9 +790,13 @@ public:
 	const Variable				v4f32;
 	const Variable				v4s32;
 	const Variable				v4u32;
+	const Variable				v4s64;
+	const Variable				v4u64;
 	const Variable				s32;
 	const Variable				f32;
 	const Variable				u32;
+	const Variable				s64;
+	const Variable				u64;
 	const Variable				boolean;
 	const Variable				array_content_type;
 	const Variable				s32_type_ptr;
@@ -812,6 +820,7 @@ public:
 // A routing generating SPIRV code for all test cases in this group
 std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, VkFormat bufferFormat, bool reads, bool dummy)
 {
+	const bool					isR64				= (bufferFormat == VK_FORMAT_R64_UINT || bufferFormat == VK_FORMAT_R64_SINT);
 	// faster to write
 	const char					is					= '=';
 
@@ -828,7 +837,15 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 	// A basic preamble of SPIRV shader. Turns on required capabilities and extensions.
 	shaderSource
 	(op::Capability, "Shader")
-	(op::Capability, "VariablePointersStorageBuffer")
+	(op::Capability, "VariablePointersStorageBuffer");
+
+	if (isR64)
+	{
+		shaderSource
+		(op::Capability, "Int64");
+	}
+
+	shaderSource
 	(op::Extension, "\"SPV_KHR_storage_buffer_storage_class\"")
 	(op::Extension, "\"SPV_KHR_variable_pointers\"")
 	(var.version, is, op::ExtInstImport, "\"GLSL.std.450\"")
@@ -903,15 +920,33 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 		// so the stride of internal array is size of 4-component vector
 		if (shaderType == SHADER_TYPE_SCALAR_COPY || shaderType == SHADER_TYPE_VECTOR_COPY)
 		{
-			shaderSource
-			(op::Decorate, var.array_content_type, "ArrayStride", 16);
+			if (isR64)
+			{
+				shaderSource
+				(op::Decorate, var.array_content_type, "ArrayStride", 32);
+			}
+			else
+			{
+				shaderSource
+				(op::Decorate, var.array_content_type, "ArrayStride", 16);
+			}
 		}
-		// for matrices we use array of 4x4-component matrices
-		// stride of outer array is then 64 in every case
-		shaderSource
-		(op::Decorate, var.dataArrayType, "ArrayStride", 64)
+
+		if (isR64)
+		{
+			shaderSource
+			(op::Decorate, var.dataArrayType, "ArrayStride", 128);
+		}
+		else
+		{
+			// for matrices we use array of 4x4-component matrices
+			// stride of outer array is then 64 in every case
+			shaderSource
+			(op::Decorate, var.dataArrayType, "ArrayStride", 64);
+		}
 
 		// an output block
+		shaderSource
 		(op::MemberDecorate, var.dataOutputType, 0, "Offset", 0)
 		(op::Decorate, var.dataOutputType, "Block")
 
@@ -941,11 +976,26 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 
 		(var.f32, is, op::TypeFloat, 32)
 		(var.s32, is, op::TypeInt, 32, 1)
-		(var.u32, is, op::TypeInt, 32, 0)
+		(var.u32, is, op::TypeInt, 32, 0);
 
+		if (isR64)
+		{
+			shaderSource
+			(var.s64, is, op::TypeInt, 64, 1)
+			(var.u64, is, op::TypeInt, 64, 0);
+		}
+
+		shaderSource
 		(var.v4f32, is, op::TypeVector, var.f32, 4)
 		(var.v4s32, is, op::TypeVector, var.s32, 4)
 		(var.v4u32, is, op::TypeVector, var.u32, 4);
+
+		if (isR64)
+		{
+			shaderSource
+			(var.v4s64, is, op::TypeVector, var.s64, 4)
+			(var.v4u64, is, op::TypeVector, var.u64, 4);
+		}
 
 		// since the shared tests scalars, vectors, matrices of ints, uints and floats I am generating alternative names for some of the types so I can use those and not need to use "if" everywhere.
 		// A Variable mappings will make sure the proper variable name is used
@@ -963,6 +1013,14 @@ std::string MakeShader(VkShaderStageFlags shaderStage, ShaderType shaderType, Vk
 		case vk::VK_FORMAT_R32_SFLOAT:
 			shaderSource.makeSame(var.buffer_type, var.f32);
 			shaderSource.makeSame(var.buffer_type_vec, var.v4f32);
+			break;
+		case vk::VK_FORMAT_R64_SINT:
+			shaderSource.makeSame(var.buffer_type, var.s64);
+			shaderSource.makeSame(var.buffer_type_vec, var.v4s64);
+			break;
+		case vk::VK_FORMAT_R64_UINT:
+			shaderSource.makeSame(var.buffer_type, var.u64);
+			shaderSource.makeSame(var.buffer_type_vec, var.v4u64);
 			break;
 		default:
 			// to prevent compiler from complaining not all cases are handled (but we should not get here).
@@ -1315,6 +1373,11 @@ AccessInstance::AccessInstance (Context&			context,
 	DE_ASSERT(RobustAccessWithPointersTest::s_numberOfBytesAccessed % sizeof(deUint32) == 0);
 	DE_ASSERT(inBufferAccessRange <= RobustAccessWithPointersTest::s_numberOfBytesAccessed);
 	DE_ASSERT(outBufferAccessRange <= RobustAccessWithPointersTest::s_numberOfBytesAccessed);
+
+	if (m_bufferFormat == VK_FORMAT_R64_UINT || m_bufferFormat == VK_FORMAT_R64_SINT)
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+	}
 
 	// Check storage support
 	if (shaderStage == VK_SHADER_STAGE_VERTEX_BIT)
@@ -1789,7 +1852,9 @@ tcu::TestCaseGroup* createBufferAccessWithVariablePointersTests(tcu::TestContext
 	{
 		{ VK_FORMAT_R32_SINT,		"s32" },
 		{ VK_FORMAT_R32_UINT,		"u32" },
-		{ VK_FORMAT_R32_SFLOAT,		"f32" }
+		{ VK_FORMAT_R32_SFLOAT,		"f32" },
+		{ VK_FORMAT_R64_SINT,		"s64" },
+		{ VK_FORMAT_R64_UINT,		"u64" },
 	};
 	const deUint8			bufferFormatsCount		= static_cast<deUint8>(DE_LENGTH_OF_ARRAY(bufferFormats));
 
