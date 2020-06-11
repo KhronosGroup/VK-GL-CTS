@@ -25,8 +25,10 @@
 #include "vktMemoryDeviceMemoryReportTests.hpp"
 
 #include "vktCustomInstancesDevices.hpp"
+#include "vktExternalMemoryUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 
+#include "vkDeviceUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -51,6 +53,7 @@ namespace
 #define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
 
 using namespace vk;
+using namespace vkt::ExternalMemoryUtil;
 using de::MovePtr;
 using de::SharedPtr;
 
@@ -1892,6 +1895,349 @@ tcu::TestCaseGroup* createVkDeviceMemoryTestsGroup (tcu::TestContext& testCtx, c
 	return group.release();
 }
 
+static void checkSupport (Context& context, VkExternalMemoryHandleTypeFlagBits externalMemoryType)
+{
+	context.requireInstanceFunctionality("VK_KHR_external_memory_capabilities");
+	context.requireDeviceFunctionality("VK_EXT_device_memory_report");
+	context.requireDeviceFunctionality("VK_KHR_dedicated_allocation");
+	context.requireDeviceFunctionality("VK_KHR_get_memory_requirements2");
+
+	if (externalMemoryType & (VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT))
+	{
+		context.requireDeviceFunctionality("VK_KHR_external_memory_fd");
+	}
+
+	if (externalMemoryType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
+	{
+		context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
+	}
+
+	if (externalMemoryType & (VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT))
+	{
+		context.requireDeviceFunctionality("VK_KHR_external_memory_win32");
+	}
+
+	if (externalMemoryType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+	}
+}
+
+static std::vector<std::string> getInstanceExtensions (const deUint32 instanceVersion)
+{
+	std::vector<std::string> instanceExtensions;
+
+	if (!isCoreInstanceExtension(instanceVersion, "VK_KHR_get_physical_device_properties2"))
+		instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
+
+	if (!isCoreInstanceExtension(instanceVersion, "VK_KHR_external_memory_capabilities"))
+		instanceExtensions.push_back("VK_KHR_external_memory_capabilities");
+
+	return instanceExtensions;
+}
+
+static Move<VkDevice> createExternalMemoryDevice (deBool								isValidationEnabled,
+												  const PlatformInterface&				vkp,
+												  VkInstance							instance,
+												  const InstanceInterface&				vki,
+												  VkPhysicalDevice						physicalDevice,
+												  deUint32								apiVersion,
+												  deUint32								queueFamilyIndex,
+												  VkExternalMemoryHandleTypeFlagBits	externalMemoryType,
+												  const CallbackRecorder*				recorder)
+{
+	const deUint32				queueCount			= 1;
+	const float					queuePriority		= 1.0f;
+	std::vector<const char*>	enabledExtensions	= {"VK_EXT_device_memory_report"};
+
+	if (!isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
+	{
+		enabledExtensions.push_back("VK_KHR_dedicated_allocation");
+	}
+	if (!isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
+	{
+		enabledExtensions.push_back("VK_KHR_get_memory_requirements2");
+	}
+
+	if (externalMemoryType & (VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT))
+	{
+		if (!isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory_fd"))
+		{
+			enabledExtensions.push_back("VK_KHR_external_memory_fd");
+		}
+	}
+
+	if (externalMemoryType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
+	{
+		enabledExtensions.push_back("VK_EXT_external_memory_dma_buf");
+	}
+
+	if (externalMemoryType & (VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT |
+							  VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT))
+	{
+		enabledExtensions.push_back("VK_KHR_external_memory_win32");
+	}
+
+	if (externalMemoryType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		enabledExtensions.push_back("VK_ANDROID_external_memory_android_hardware_buffer");
+		enabledExtensions.push_back("VK_EXT_queue_family_foreign");
+		if (!isCoreDeviceExtension(apiVersion, "VK_KHR_sampler_ycbcr_conversion"))
+		{
+			enabledExtensions.push_back("VK_KHR_sampler_ycbcr_conversion");
+		}
+	}
+
+	const VkPhysicalDeviceDeviceMemoryReportFeaturesEXT	deviceMemoryReportFeatures		=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_MEMORY_REPORT_FEATURES_EXT,	// VkStructureType						sType;
+		DE_NULL,																// void*								pNext;
+		VK_TRUE																	// VkBool32								deviceMemoryReport;
+	};
+	const VkDeviceDeviceMemoryReportCreateInfoEXT		deviceMemoryReportCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_DEVICE_MEMORY_REPORT_CREATE_INFO_EXT,			// VkStructureType						sType;
+		&deviceMemoryReportFeatures,											// void*								pNext;
+		(VkDeviceMemoryReportFlagsEXT)0,										// VkDeviceMemoryReportFlagsEXT			flags;
+		recorder->callback,														// PFN_vkDeviceMemoryReportCallbackEXT	pfnUserCallback;
+		(void*)recorder,														// void*								pUserData;
+	};
+	const VkDeviceQueueCreateInfo						queueCreateInfo					=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,								// VkStructureType						sType;
+		DE_NULL,																// const void*							pNext;
+		(VkDeviceQueueCreateFlags)0,											// VkDeviceQueueCreateFlags				flags;
+		queueFamilyIndex,														// deUint32								queueFamilyIndex;
+		queueCount,																// deUint32								queueCount;
+		&queuePriority,															// const float*							pQueuePriorities;
+	};
+	const VkDeviceCreateInfo							deviceCreateInfo				=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,									// VkStructureType						sType;
+		&deviceMemoryReportCreateInfo,											// const void*							pNext;
+		(VkDeviceCreateFlags)0,													// VkDeviceCreateFlags					flags;
+		queueCount,																// uint32_t								queueCreateInfoCount;
+		&queueCreateInfo,														// const VkDeviceQueueCreateInfo*		pQueueCreateInfos;
+		0u,																		// uint32_t								enabledLayerCount;
+		DE_NULL,																// const char* const*					ppEnabledLayerNames;
+		(deUint32)enabledExtensions.size(),										// uint32_t								enabledExtensionCount;
+		enabledExtensions.data(),												// const char* const*					ppEnabledExtensionNames;
+		DE_NULL,																// const VkPhysicalDeviceFeatures*		pEnabledFeatures;
+	};
+
+	return createCustomDevice(isValidationEnabled, vkp, instance, vki, physicalDevice, &deviceCreateInfo);
+}
+
+static void checkBufferSupport (const InstanceInterface&			vki,
+								VkPhysicalDevice					device,
+								VkBufferUsageFlags					usage,
+								VkExternalMemoryHandleTypeFlagBits	externalMemoryType)
+{
+	const VkPhysicalDeviceExternalBufferInfo	info		=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,	// VkStructureType						sType;
+		DE_NULL,												// void*								pNext;
+		(VkBufferCreateFlags)0,									// VkBufferCreateFlags					flags;
+		usage,													// VkBufferUsageFlags					usage;
+		externalMemoryType,										// VkExternalMemoryHandleTypeFlagBits	handleType;
+	};
+	VkExternalBufferProperties					properties	=
+	{
+		VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,			// VkStructureType						sType;
+		DE_NULL,												// void*								pNext;
+		{ 0u, 0u, 0u },											// VkExternalMemoryProperties			externalMemoryProperties;
+	};
+
+	vki.getPhysicalDeviceExternalBufferProperties(device, &info, &properties);
+
+	if ((properties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0)
+		TCU_THROW(NotSupportedError, "External handle type doesn't support exporting buffer");
+
+	if ((properties.externalMemoryProperties.externalMemoryFeatures & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
+		TCU_THROW(NotSupportedError, "External handle type doesn't support importing buffer");
+}
+
+tcu::TestStatus testImportAndUnimportExternalMemory (Context& context, VkExternalMemoryHandleTypeFlagBits externalMemoryType)
+{
+	CallbackRecorder			recorder;
+	const PlatformInterface&	vkp					(context.getPlatformInterface());
+	const CustomInstance		instance			(createCustomInstanceWithExtensions(context, getInstanceExtensions(context.getUsedApiVersion())));
+	const InstanceDriver&		vki					(instance.getDriver());
+	const VkPhysicalDevice		physicalDevice		(chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
+	const deUint32				queueFamilyIndex	(context.getUniversalQueueFamilyIndex());
+	const Unique<VkDevice>		device				(createExternalMemoryDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+																				vkp,
+																				instance,
+																				vki,
+																				physicalDevice,
+																				context.getUsedApiVersion(),
+																				queueFamilyIndex,
+																				externalMemoryType,
+																				&recorder));
+	const DeviceDriver			vkd					(vkp, instance, *device);
+	const VkBufferUsageFlags	usage				= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	const VkDeviceSize			bufferSize			= 1024;
+
+	checkBufferSupport(vki, physicalDevice, usage, externalMemoryType);
+
+	const Unique<VkBuffer>		buffer				(createExternalBuffer(vkd, *device, queueFamilyIndex, externalMemoryType, bufferSize, 0u, usage));
+	const VkMemoryRequirements	requirements		(getBufferMemoryRequirements(vkd, *device, *buffer));
+	const deUint32				memoryTypeIndex		(chooseMemoryType(requirements.memoryTypeBits));
+	deUint64					objectHandle		= 0;
+	deUint64					objectHandleA		= 0;
+	deUint64					objectHandleB		= 0;
+
+	{
+		recorder.setCallbackMarker(MARKER_ALLOCATE);
+		const Unique<VkDeviceMemory>	memory	(allocateExportableMemory(vkd, *device, requirements.size, memoryTypeIndex, externalMemoryType, *buffer));
+		objectHandle							= (*memory).getInternal();
+		NativeHandle					handleA;
+
+		getMemoryNative(vkd, *device, *memory, externalMemoryType, handleA);
+
+		NativeHandle					handleB	(handleA);
+		const Unique<VkBuffer>			bufferA	(createExternalBuffer(vkd, *device, queueFamilyIndex, externalMemoryType, bufferSize, 0u, usage));
+		const Unique<VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, externalMemoryType, bufferSize, 0u, usage));
+
+		{
+			recorder.setCallbackMarker(MARKER_IMPORT);
+			const Unique<VkDeviceMemory>	memoryA	(importDedicatedMemory(vkd, *device, *bufferA, requirements, externalMemoryType, memoryTypeIndex, handleA));
+			const Unique<VkDeviceMemory>	memoryB	(importDedicatedMemory(vkd, *device, *bufferB, requirements, externalMemoryType, memoryTypeIndex, handleB));
+			objectHandleA							= (*memoryA).getInternal();
+			objectHandleB							= (*memoryB).getInternal();
+			recorder.setCallbackMarker(MARKER_UNIMPORT);
+		}
+
+		recorder.setCallbackMarker(MARKER_FREE);
+	}
+
+	recorder.setCallbackMarker(MARKER_UNKNOWN);
+
+	deBool		allocateEvent	= false;
+	deBool		freeEvent		= false;
+	deBool		importA			= false;
+	deBool		importB			= false;
+	deBool		unimportA		= false;
+	deBool		unimportB		= false;
+	deUint64	memoryObjectId	= 0;
+
+	for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
+	{
+		const VkDeviceMemoryReportCallbackDataEXT&	record	= iter->first;
+		const CallbackMarker						marker	= iter->second;
+
+		if (record.objectHandle == objectHandle && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT)
+		{
+			TCU_CHECK(marker == MARKER_ALLOCATE);
+			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
+			TCU_CHECK(memoryObjectId == 0);
+			TCU_CHECK(record.memoryObjectId != 0);
+			TCU_CHECK_MSG(record.size >= requirements.size,
+						  ("size: record=" + de::toString(record.size) +
+						   ", requirements=" + de::toString(requirements.size)).c_str());
+
+			allocateEvent	= true;
+			memoryObjectId	= record.memoryObjectId;
+		}
+		else if (record.objectHandle == objectHandleA && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT)
+		{
+			TCU_CHECK(marker == MARKER_IMPORT);
+			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
+			TCU_CHECK_MSG(record.size >= requirements.size,
+						  ("sizeA: record=" + de::toString(record.size) +
+						   ", requirements=" + de::toString(requirements.size)).c_str());
+			TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
+						  ("memoryObjectIdA: record=" + de::toString(record.memoryObjectId) +
+						   ", original=" + de::toString(memoryObjectId)).c_str());
+
+			importA			= true;
+		}
+		else if (record.objectHandle == objectHandleB && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT)
+		{
+			TCU_CHECK(marker == MARKER_IMPORT);
+			TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
+			TCU_CHECK_MSG(record.size >= requirements.size,
+						  ("sizeB: record=" + de::toString(record.size) +
+						   ", requirements=" + de::toString(requirements.size)).c_str());
+			TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
+						  ("memoryObjectIdB: record=" + de::toString(record.memoryObjectId) +
+						   ", original=" + de::toString(memoryObjectId)).c_str());
+
+			importB			= true;
+		}
+		else if (record.objectHandle == objectHandleB && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT)
+		{
+			TCU_CHECK(marker == MARKER_UNIMPORT);
+			TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
+						  ("memoryObjectIdA: record=" + de::toString(record.memoryObjectId) +
+						   ", original=" + de::toString(memoryObjectId)).c_str());
+
+			unimportB		= true;
+		}
+		else if (record.objectHandle == objectHandleA && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT)
+		{
+			TCU_CHECK(marker == MARKER_UNIMPORT);
+			TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
+						  ("memoryObjectIdB: record=" + de::toString(record.memoryObjectId) +
+						   ", original=" + de::toString(memoryObjectId)).c_str());
+
+			unimportA		= true;
+		}
+		else if (record.objectHandle == objectHandle && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT)
+		{
+			TCU_CHECK(marker == MARKER_FREE);
+			TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
+						  ("memoryObjectId: record=" + de::toString(record.memoryObjectId) +
+						   ", original=" + de::toString(memoryObjectId)).c_str());
+
+			freeEvent		= true;
+		}
+	}
+
+	TCU_CHECK(allocateEvent);
+	TCU_CHECK(importA);
+	TCU_CHECK(importB);
+	TCU_CHECK(unimportB);
+	TCU_CHECK(unimportA);
+	TCU_CHECK(freeEvent);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestCaseGroup* createExternalMemoryTestsGroup (tcu::TestContext& testCtx, const char* name, const char* desc)
+{
+	MovePtr<tcu::TestCaseGroup>	group (new tcu::TestCaseGroup(testCtx, name, desc));
+
+	const std::vector<VkExternalMemoryHandleTypeFlagBits>	externalMemoryTypes	=
+	{
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+		VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT
+	};
+
+	for (const auto externalMemoryType : externalMemoryTypes)
+	{
+		const std::string	testName	= std::string("import_and_unimport_") + std::string(externalMemoryTypeToName(externalMemoryType));
+
+		addFunctionCase(group.get(), testName.c_str(), "", checkSupport, testImportAndUnimportExternalMemory, externalMemoryType);
+	}
+
+	return group.release();
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
@@ -2114,6 +2460,7 @@ tcu::TestCaseGroup* createDeviceMemoryReportTests (tcu::TestContext& testCtx)
 	};
 	deviceMemoryReportTests->addChild(createObjectTestsGroup(testCtx, "create_and_destroy_object", "Check emitted callbacks are properly paired", s_createDestroyObjectGroup));
 	deviceMemoryReportTests->addChild(createVkDeviceMemoryTestsGroup(testCtx, "vk_device_memory", "Check callbacks are emitted properly for VkDeviceMemory"));
+	deviceMemoryReportTests->addChild(createExternalMemoryTestsGroup(testCtx, "external_memory", "Check callbacks are emitted properly for external memory"));
 
 	return deviceMemoryReportTests.release();
 }
