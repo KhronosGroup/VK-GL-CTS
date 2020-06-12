@@ -159,7 +159,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	std::string extHeader	= getExtHeader(caseDef);
 	std::string testSrc		= getTestSrc(caseDef);
 
-	subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, extHeader, testSrc, "");
+	subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, *caseDef.geometryPointSizeSupported, extHeader, testSrc, "");
 }
 
 void supportedCheck (Context& context, CaseDefinition caseDef)

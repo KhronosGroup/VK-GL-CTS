@@ -2077,6 +2077,19 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel = readImage(*m_destination, m_params.dst.image);
 
+	// For combined depth/stencil formats both aspects are checked even when the test only
+	// copies one. Clear such aspects here for both the result and the reference.
+	if (tcu::hasDepthComponent(m_textureFormat.order) && !depthLoaded)
+	{
+		tcu::clearDepth(m_expectedTextureLevel[0]->getAccess(), 0.0f);
+		tcu::clearDepth(resultLevel->getAccess(), 0.0f);
+	}
+	if (tcu::hasStencilComponent(m_textureFormat.order) && !stencilLoaded)
+	{
+		tcu::clearStencil(m_expectedTextureLevel[0]->getAccess(), 0);
+		tcu::clearStencil(resultLevel->getAccess(), 0);
+	}
+
 	return checkTestResult(resultLevel->getAccess());
 }
 
