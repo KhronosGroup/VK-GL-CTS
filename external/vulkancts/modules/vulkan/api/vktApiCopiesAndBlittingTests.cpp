@@ -3036,9 +3036,14 @@ public:
 			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
 		}
 
-		if (m_params.filter == VK_FILTER_CUBIC_EXT && !(srcFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT))
+		if (m_params.filter == VK_FILTER_CUBIC_EXT)
 		{
-			TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
+			context.requireDeviceFunctionality("VK_EXT_filter_cubic");
+
+			if (!(srcFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT))
+			{
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
+			}
 		}
 	}
 
@@ -3725,8 +3730,15 @@ public:
 		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
 			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
 
-		if (m_params.filter == VK_FILTER_CUBIC_EXT && !(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT))
-			TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
+		if (m_params.filter == VK_FILTER_CUBIC_EXT)
+		{
+			context.requireDeviceFunctionality("VK_EXT_filter_cubic");
+
+			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT))
+			{
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
+			}
+		}
 	}
 
 private:
