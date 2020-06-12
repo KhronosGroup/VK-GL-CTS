@@ -4223,6 +4223,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Record commands
 			beginCommandBuffer(vk, *cmdBuf);
 
+			if (firstPass)
 			{
 				const VkMemoryBarrier			vertFlushBarrier	=
 				{
@@ -4308,43 +4309,43 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			vk.cmdDraw(*cmdBuf, deUint32(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/, 0u /*first instanceIndex*/);
 			endRenderPass(vk, *cmdBuf);
 
+			if (x == numRenderSegments - 1 && y == numRenderSegments - 1)
 			{
-				vector<VkImageMemoryBarrier>	renderFinishBarrier;
-				VkImageMemoryBarrier			imgBarrier				=
 				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
-					DE_NULL,									//	const void*				pNext;
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		//	VkMemoryOutputFlags		outputMask;
-					VK_ACCESS_TRANSFER_READ_BIT,				//	VkMemoryInputFlags		inputMask;
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			oldLayout;
-					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		//	VkImageLayout			newLayout;
-					queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
-					queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
-					*image,										//	VkImage					image;
+					vector<VkImageMemoryBarrier>	renderFinishBarrier;
+					VkImageMemoryBarrier			imgBarrier				=
 					{
-						VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags	aspectMask;
-						0u,											//	deUint32			baseMipLevel;
-						1u,											//	deUint32			mipLevels;
-						0u,											//	deUint32			baseArraySlice;
-						1u,											//	deUint32			arraySize;
-					}											//	VkImageSubresourceRange	subresourceRange;
-				};
-				renderFinishBarrier.push_back(imgBarrier);
-
-				if (needInterface)
-				{
-					imgBarrier.image = *fragOutputImage;
+						VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		//	VkStructureType			sType;
+						DE_NULL,									//	const void*				pNext;
+						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		//	VkMemoryOutputFlags		outputMask;
+						VK_ACCESS_TRANSFER_READ_BIT,				//	VkMemoryInputFlags		inputMask;
+						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//	VkImageLayout			oldLayout;
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		//	VkImageLayout			newLayout;
+						queueFamilyIndex,							//	deUint32				srcQueueFamilyIndex;
+						queueFamilyIndex,							//	deUint32				destQueueFamilyIndex;
+						*image,										//	VkImage					image;
+						{
+							VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags	aspectMask;
+							0u,											//	deUint32			baseMipLevel;
+							1u,											//	deUint32			mipLevels;
+							0u,											//	deUint32			baseArraySlice;
+							1u,											//	deUint32			arraySize;
+						}											//	VkImageSubresourceRange	subresourceRange;
+					};
 					renderFinishBarrier.push_back(imgBarrier);
-					vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, renderFinishBarrier.data());
-				}
-				else
-				{
-					vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, renderFinishBarrier.data());
-				}
-			}
 
-			if ( x ==  numRenderSegments -1 && y == numRenderSegments - 1)
-			{
+					if (needInterface)
+					{
+						imgBarrier.image = *fragOutputImage;
+						renderFinishBarrier.push_back(imgBarrier);
+						vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 2, renderFinishBarrier.data());
+					}
+					else
+					{
+						vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, renderFinishBarrier.data());
+					}
+				}
+
 				{
 					const VkBufferImageCopy	copyParams	=
 					{
@@ -4364,7 +4365,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 					if (needInterface)
 					{
-					vk.cmdCopyImageToBuffer(*cmdBuf, *fragOutputImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *fragOutputBuffer, 1u, &copyParams);
+						vk.cmdCopyImageToBuffer(*cmdBuf, *fragOutputImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *fragOutputBuffer, 1u, &copyParams);
 					}
 				}
 

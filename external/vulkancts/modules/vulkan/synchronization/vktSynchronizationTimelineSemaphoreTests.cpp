@@ -1651,8 +1651,12 @@ public:
 				for (deUint32 instanceIdx = 0; instanceIdx < queueFamilyProperties[familyIdx].queueCount && !added; instanceIdx++) {
 					VkQueueFlags	readOpQueueFlags	= readOp->getQueueFlags(m_opContext);
 
-					if ((readOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != readOpQueueFlags)
-							continue;
+					// If the readOpQueueFlags contain the transfer bit set then check if the queue supports graphics or compute operations before skipping this iteration.
+					// Because reporting transfer functionality is optional if a queue supports graphics or compute operations.
+					if (((readOpQueueFlags & queueFamilyProperties[familyIdx].queueFlags) != readOpQueueFlags) &&
+						(((readOpQueueFlags & VK_QUEUE_TRANSFER_BIT) == 0) ||
+						((queueFamilyProperties[familyIdx].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0)))
+						continue;
 
 					// Add the read operation on the universal queue, it should be
 					// submitted in order with regard to the write operation.
