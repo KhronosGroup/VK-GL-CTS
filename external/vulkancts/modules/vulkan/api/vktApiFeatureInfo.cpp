@@ -3853,9 +3853,9 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 			if (queryResult == VK_SUCCESS)
 			{
-				const deUint32	fullMipPyramidSize	= de::max(de::max(deLog2Ceil32(properties.maxExtent.width),
-																	  deLog2Ceil32(properties.maxExtent.height)),
-															  deLog2Ceil32(properties.maxExtent.depth)) + 1;
+				const deUint32	fullMipPyramidSize	= de::max(de::max(deLog2Floor32(properties.maxExtent.width),
+																	  deLog2Floor32(properties.maxExtent.height)),
+															  deLog2Floor32(properties.maxExtent.depth)) + 1;
 
 				log << TestLog::Message << properties << "\n" << TestLog::EndMessage;
 
