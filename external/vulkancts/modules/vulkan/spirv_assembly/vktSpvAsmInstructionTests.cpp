@@ -10752,7 +10752,8 @@ void finalizeTestsCreation (T&							specResource,
 							const std::string&			testName,
 							const VulkanFeatures&		vulkanFeatures,
 							const vector<string>&		extensions,
-							const IVec3&				numWorkGroups);
+							const IVec3&				numWorkGroups,
+							const bool					splitRenderArea = false);
 
 template<>
 void finalizeTestsCreation (GraphicsResources&			specResource,
@@ -10762,12 +10763,13 @@ void finalizeTestsCreation (GraphicsResources&			specResource,
 							const std::string&			testName,
 							const VulkanFeatures&		vulkanFeatures,
 							const vector<string>&		extensions,
-							const IVec3&				)
+							const IVec3&				,
+							const bool					splitRenderArea)
 {
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
 
-	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, specResource, extensions, &testGroup, vulkanFeatures);
+	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, specResource, extensions, &testGroup, vulkanFeatures, QP_TEST_RESULT_FAIL, std::string(), splitRenderArea);
 }
 
 template<>
@@ -10778,7 +10780,8 @@ void finalizeTestsCreation (ComputeShaderSpec&			specResource,
 							const std::string&			testName,
 							const VulkanFeatures&		vulkanFeatures,
 							const vector<string>&		extensions,
-							const IVec3&				numWorkGroups)
+							const IVec3&				numWorkGroups,
+							bool)
 {
 	specResource.numWorkGroups = numWorkGroups;
 	specResource.requestedVulkanFeatures = vulkanFeatures;
@@ -11091,7 +11094,7 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 
 			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
-			finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1));
+			finalizeTestsCreation(specResource, fragments, testCtx, *testGroup.get(), testName, features, extensions, IVec3(1, 1, 1), true);
 		}
 	}
 
