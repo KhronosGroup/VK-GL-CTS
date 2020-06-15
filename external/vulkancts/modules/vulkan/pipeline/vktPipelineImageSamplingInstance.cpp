@@ -1406,7 +1406,6 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	ReferenceRenderer					refRenderer				(m_renderSize.x(), m_renderSize.y(), 1, colorFormat, depthStencilFormat, &rrProgram);
 
 	bool								compareOkAll			= true;
-	bool								anyWarnings				= false;
 
 	tcu::Vec4							lookupScale				(1.0f);
 	tcu::Vec4							lookupBias				(0.0f);
@@ -1431,8 +1430,6 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		tcu::TextureLevel					errorMask		(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), (int)m_renderSize.x(), (int)m_renderSize.y());
 		const tcu::PixelBufferAccess		errorAccess		= errorMask.getAccess();
 
-		const bool							allowSnorm8Bug	= m_texture->getTextureFormat().type == tcu::TextureFormat::SNORM_INT8 &&
-															  (m_samplerParams.minFilter == VK_FILTER_LINEAR || m_samplerParams.magFilter == VK_FILTER_LINEAR);
 		const bool							isNearestOnly	= (m_samplerParams.minFilter == VK_FILTER_NEAREST && m_samplerParams.magFilter == VK_FILTER_NEAREST);
 
 		tcu::LookupPrecision				lookupPrecision;
@@ -1504,40 +1501,6 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 																					  lookupBias,
 																					  resultAccess,
 																					  errorAccess);
-
-			if (!compareOk && allowSnorm8Bug)
-			{
-				// HW waiver (VK-GL-CTS issue: 229)
-				//
-				// Due to an error in bit replication of the fixed point SNORM values, linear filtered
-				// negative SNORM values will differ slightly from ideal precision in the last bit, moving
-				// the values towards 0.
-				//
-				// This occurs on all members of the PowerVR Rogue family of GPUs
-				tcu::LookupPrecision	relaxedPrecision;
-
-				relaxedPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
-
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message
-					<< "Warning: Strict validation failed, re-trying with lower precision for SNORM8 format"
-					<< tcu::TestLog::EndMessage;
-				anyWarnings = true;
-
-				compareOk = validateResultImage(*texture,
-												m_imageViewType,
-												subresource,
-												sampler,
-												m_componentMapping,
-												coordAccess,
-												lodBounds,
-												relaxedPrecision,
-												lookupScale,
-												lookupBias,
-												resultAccess,
-												errorAccess);
-			}
-
 			if (!compareOk)
 				m_context.getTestContext().getLog()
 				<< tcu::TestLog::Image("Result", "Result Image", resultAccess)
@@ -1548,12 +1511,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 	}
 
 	if (compareOkAll)
-	{
-		if (anyWarnings)
-			return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Inaccurate filtering results");
-		else
-			return tcu::TestStatus::pass("Result image matches reference");
-	}
+		return tcu::TestStatus::pass("Result image matches reference");
 	else
 		return tcu::TestStatus::fail("Image mismatch");
 }
