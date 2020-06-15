@@ -1046,9 +1046,6 @@ tcu::TestStatus testDisplayEvent(Context& context)
 	const DeviceInterface&	vkd		= context.getDeviceInterface();
 	std::vector<VkFence>	fences	= std::vector<VkFence>(availableDisplays.size(), (VkFence)0);
 
-	// create fence for each display
-	initFences(vkd, device, fences);
-
 	// iterate over all displays
 	for (size_t i = 0 ; i < availableDisplays.size() ; ++i)
 	{
@@ -1080,9 +1077,6 @@ tcu::TestStatus testDeviceEvent(Context& context)
 	VkDevice				device = context.getDevice();
 	const DeviceInterface&	vkd = context.getDeviceInterface();
 	std::vector<VkFence>	fences = std::vector<VkFence>(1, (VkFence)0);
-
-	// create fence
-	initFences(vkd, device, fences);
 
 	vk::VkDeviceEventInfoEXT deviceEventInfo =
 	{
