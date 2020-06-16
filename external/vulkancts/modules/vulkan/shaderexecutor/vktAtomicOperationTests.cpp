@@ -43,6 +43,7 @@
 #include "deArrayUtil.hpp"
 
 #include <string>
+#include <memory>
 
 namespace vkt
 {
@@ -58,33 +59,38 @@ using std::vector;
 
 using namespace vk;
 
+enum class AtomicMemoryType
+{
+	BUFFER = 0,	// Normal buffer.
+	SHARED,		// Shared global struct in a compute workgroup.
+	REFERENCE,	// Buffer passed as a reference.
+};
+
 // Helper struct to indicate the shader type and if it should use shared global memory.
 class AtomicShaderType
 {
 public:
-	AtomicShaderType (glu::ShaderType type, bool sharedGlobalMemory = false)
+	AtomicShaderType (glu::ShaderType type, AtomicMemoryType memoryType)
 		: m_type				(type)
-		, m_sharedGlobalMemory	(sharedGlobalMemory)
+		, m_atomicMemoryType	(memoryType)
 	{
 		// Shared global memory can only be set to true with compute shaders.
-		DE_ASSERT(!sharedGlobalMemory || type == glu::SHADERTYPE_COMPUTE);
+		DE_ASSERT(memoryType != AtomicMemoryType::SHARED || type == glu::SHADERTYPE_COMPUTE);
 	}
 
-	glu::ShaderType	getType						(void) const	{ return m_type; }
-	bool			useSharedGlobalMemory		(void) const	{ return m_sharedGlobalMemory; }
-	// This allows using an AtomicShaderType whenever a glu::ShaderType is required.
-					operator glu::ShaderType	(void) const	{ return getType();	}
+	glu::ShaderType		getType					(void) const	{ return m_type; }
+	AtomicMemoryType	getMemoryType			(void) const	{ return m_atomicMemoryType; }
 
 private:
-	glu::ShaderType	m_type;
-	bool			m_sharedGlobalMemory;
+	glu::ShaderType		m_type;
+	AtomicMemoryType	m_atomicMemoryType;
 };
 
 // Buffer helper
 class Buffer
 {
 public:
-						Buffer				(Context& context, VkBufferUsageFlags usage, size_t size);
+						Buffer				(Context& context, VkBufferUsageFlags usage, size_t size, bool useRef);
 
 	VkBuffer			getBuffer			(void) const { return *m_buffer;					}
 	void*				getHostPtr			(void) const { return m_allocation->getHostPtr();	}
@@ -118,16 +124,17 @@ Move<VkBuffer> createBuffer (const DeviceInterface& vkd, VkDevice device, VkDevi
 	return createBuffer(vkd, device, &createInfo);
 }
 
-MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface& vkd, VkDevice device, Allocator& allocator, VkBuffer buffer)
+MovePtr<Allocation> allocateAndBindMemory (const DeviceInterface& vkd, VkDevice device, Allocator& allocator, VkBuffer buffer, bool useRef)
 {
-	MovePtr<Allocation>	alloc(allocator.allocate(getBufferMemoryRequirements(vkd, device, buffer), MemoryRequirement::HostVisible));
+	const MemoryRequirement allocationType = (MemoryRequirement::HostVisible | (useRef ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any));
+	MovePtr<Allocation>	alloc(allocator.allocate(getBufferMemoryRequirements(vkd, device, buffer), allocationType));
 
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
 
 	return alloc;
 }
 
-Buffer::Buffer (Context& context, VkBufferUsageFlags usage, size_t size)
+Buffer::Buffer (Context& context, VkBufferUsageFlags usage, size_t size, bool useRef)
 	: m_vkd			(context.getDeviceInterface())
 	, m_device		(context.getDevice())
 	, m_queue		(context.getUniversalQueue())
@@ -139,7 +146,8 @@ Buffer::Buffer (Context& context, VkBufferUsageFlags usage, size_t size)
 	, m_allocation	(allocateAndBindMemory	(context.getDeviceInterface(),
 											 context.getDevice(),
 											 context.getDefaultAllocator(),
-											 *m_buffer))
+											 *m_buffer,
+											 useRef))
 {
 }
 
@@ -507,62 +515,39 @@ AtomicOperationCaseInstance::AtomicOperationCaseInstance (Context&				context,
 	, m_dataType	(dataType)
 	, m_atomicOp	(atomicOp)
 {
-	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
-	{
-		if (!context.isDeviceFunctionalitySupported("VK_KHR_shader_atomic_int64"))
-			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_atomic_int64");
-
-		VkPhysicalDeviceShaderAtomicInt64Features shaderAtomicInt64Features;
-		deMemset(&shaderAtomicInt64Features, 0x0, sizeof(VkPhysicalDeviceShaderAtomicInt64Features));
-		shaderAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES;
-		shaderAtomicInt64Features.pNext = DE_NULL;
-
-		VkPhysicalDeviceFeatures2 features;
-		deMemset(&features, 0x0, sizeof(VkPhysicalDeviceFeatures2));
-		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		features.pNext = &shaderAtomicInt64Features;
-
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
-
-		if (!m_shaderType.useSharedGlobalMemory() && shaderAtomicInt64Features.shaderBufferInt64Atomics == VK_FALSE)
-		{
-			TCU_THROW(NotSupportedError, "VkShaderAtomicInt64: 64-bit integer atomic operations not supported for buffers");
-		}
-		if (m_shaderType.useSharedGlobalMemory() && shaderAtomicInt64Features.shaderSharedInt64Atomics == VK_FALSE)
-		{
-			TCU_THROW(NotSupportedError, "VkShaderAtomicInt64: 64-bit integer atomic operations not supported for shared memory");
-		}
-	}
 }
 
 tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 {
-	//Check stores and atomic operation support.
-	switch (m_shaderType)
-	{
-	case glu::SHADERTYPE_VERTEX:
-	case glu::SHADERTYPE_TESSELLATION_CONTROL:
-	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-	case glu::SHADERTYPE_GEOMETRY:
-		if (!m_context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
-			TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in Vertex, Tessellation, and Geometry shader.");
-		break;
-	case glu::SHADERTYPE_FRAGMENT:
-		if (!m_context.getDeviceFeatures().fragmentStoresAndAtomics)
-			TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in fragment shader.");
-		break;
-	case glu::SHADERTYPE_COMPUTE:
-		break;
-	default:
-		DE_FATAL("Unsupported shader type");
-	}
-
 	de::UniquePtr<BufferInterface>	testBuffer	(createTestBuffer(m_dataType, m_atomicOp));
 	tcu::TestLog&					log			= m_context.getTestContext().getLog();
 	const DeviceInterface&			vkd			= m_context.getDeviceInterface();
 	const VkDevice					device		= m_context.getDevice();
 	de::Random						rnd			(0x62a15e34);
-	Buffer							buffer		(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, testBuffer->bufferSize());
+	const bool						useRef		= (m_shaderType.getMemoryType() == AtomicMemoryType::REFERENCE);
+	const VkDescriptorType			descType	= (useRef ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	const VkBufferUsageFlags		usageFlags	= (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | (useRef ? static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) : 0u));
+
+	// The main buffer will hold test data. When using buffer references, the buffer's address will be indirectly passed as part of
+	// a uniform buffer. If not, it will be passed directly as a descriptor.
+	Buffer							buffer		(m_context, usageFlags, testBuffer->bufferSize(), useRef);
+	std::unique_ptr<Buffer>			auxBuffer;
+
+	if (useRef)
+	{
+		// Pass the main buffer address inside a uniform buffer.
+		const VkBufferDeviceAddressInfo addressInfo =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,	//	VkStructureType	sType;
+			nullptr,										//	const void*		pNext;
+			buffer.getBuffer(),								//	VkBuffer		buffer;
+		};
+		const auto address = vkd.getBufferDeviceAddress(device, &addressInfo);
+
+		auxBuffer.reset(new Buffer(m_context, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(address), false));
+		deMemcpy(auxBuffer->getHostPtr(), &address, sizeof(address));
+		auxBuffer->flush();
+	}
 
 	testBuffer->setBuffer(buffer.getHostPtr());
 	testBuffer->fillWithTestData(rnd);
@@ -575,7 +560,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 
 	const VkDescriptorSetLayoutBinding bindings[] =
 	{
-		{ 0u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_ALL, DE_NULL }
+		{ 0u, descType, 1, VK_SHADER_STAGE_ALL, DE_NULL }
 	};
 
 	const VkDescriptorSetLayoutCreateInfo	layoutInfo	=
@@ -591,7 +576,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 
 	const VkDescriptorPoolSize poolSizes[] =
 	{
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u }
+		{ descType, 1u }
 	};
 
 	const VkDescriptorPoolCreateInfo poolInfo =
@@ -618,7 +603,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 	extraResourcesSet = allocateDescriptorSet(vkd, device, &allocInfo);
 
 	VkDescriptorBufferInfo bufferInfo;
-	bufferInfo.buffer	= buffer.getBuffer();
+	bufferInfo.buffer	= (useRef ? auxBuffer->getBuffer() : buffer.getBuffer());
 	bufferInfo.offset	= 0u;
 	bufferInfo.range	= VK_WHOLE_SIZE;
 
@@ -630,7 +615,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 		0u,		// dstBinding
 		0u,		// dstArrayElement
 		1u,
-		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		descType,
 		(const VkDescriptorImageInfo*)DE_NULL,
 		&bufferInfo,
 		(const VkBufferView*)DE_NULL
@@ -648,8 +633,8 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 		outputPtr[i] = &outputs[i];
 	}
 
-	const int					numWorkGroups	= (m_shaderType.useSharedGlobalMemory() ? 1 : static_cast<int>(NUM_ELEMENTS));
-	UniquePtr<ShaderExecutor>	executor		(createExecutor(m_context, m_shaderType, m_shaderSpec, *extraResourcesLayout));
+	const int					numWorkGroups	= ((m_shaderType.getMemoryType() == AtomicMemoryType::SHARED) ? 1 : static_cast<int>(NUM_ELEMENTS));
+	UniquePtr<ShaderExecutor>	executor		(createExecutor(m_context, m_shaderType.getType(), m_shaderSpec, *extraResourcesLayout));
 
 	executor->execute(numWorkGroups, DE_NULL, &outputPtr[0], *extraResourcesSet);
 	buffer.invalidate();
@@ -674,9 +659,10 @@ public:
 	virtual					~AtomicOperationCase	(void);
 
 	virtual TestInstance*	createInstance			(Context& ctx) const;
+	virtual void			checkSupport			(Context& ctx) const;
 	virtual void			initPrograms			(vk::SourceCollections& programCollection) const
 	{
-		generateSources(m_shaderType, m_shaderSpec, programCollection);
+		generateSources(m_shaderType.getType(), m_shaderSpec, programCollection);
 	}
 
 private:
@@ -712,13 +698,61 @@ TestInstance* AtomicOperationCase::createInstance (Context& ctx) const
 	return new AtomicOperationCaseInstance(ctx, m_shaderSpec, m_shaderType, m_dataType, m_atomicOp);
 }
 
+void AtomicOperationCase::checkSupport (Context& ctx) const
+{
+	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
+	{
+		ctx.requireDeviceFunctionality("VK_KHR_shader_atomic_int64");
+
+		const auto atomicInt64Features	= ctx.getShaderAtomicInt64Features();
+		const bool isSharedMemory		= (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED);
+
+		if (!isSharedMemory && atomicInt64Features.shaderBufferInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicInt64: 64-bit integer atomic operations not supported for buffers");
+		}
+		if (isSharedMemory && atomicInt64Features.shaderSharedInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicInt64: 64-bit integer atomic operations not supported for shared memory");
+		}
+	}
+
+	if (m_shaderType.getMemoryType() == AtomicMemoryType::REFERENCE)
+	{
+		ctx.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+	}
+
+	// Check stores and atomic operation support.
+	switch (m_shaderType.getType())
+	{
+	case glu::SHADERTYPE_VERTEX:
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+	case glu::SHADERTYPE_GEOMETRY:
+		if (!ctx.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+			TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in Vertex, Tessellation, and Geometry shader.");
+		break;
+	case glu::SHADERTYPE_FRAGMENT:
+		if (!ctx.getDeviceFeatures().fragmentStoresAndAtomics)
+			TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in fragment shader.");
+		break;
+	case glu::SHADERTYPE_COMPUTE:
+		break;
+	default:
+		DE_FATAL("Unsupported shader type");
+	}
+}
+
 void AtomicOperationCase::createShaderSpec (void)
 {
+	const AtomicMemoryType memoryType = m_shaderType.getMemoryType();
+
 	// Global declarations.
 	std::ostringstream shaderTemplateGlobalStream;
 
+	// Structure in use for atomic operations.
 	shaderTemplateGlobalStream
-		<< "${EXTENSIONS:opt}\n"
+		<< "${EXTENSIONS}\n"
 		<< "\n"
 		<< "struct AtomicStruct\n"
 		<< "{\n"
@@ -730,18 +764,44 @@ void AtomicOperationCase::createShaderSpec (void)
 		<< "    int index;\n"
 		<< "};\n"
 		<< "\n"
-		<< "layout (set = ${SETIDX}, binding = 0) buffer AtomicBuffer {\n"
-		<< "    AtomicStruct buf;\n"
-		<< "} ${RESULT_BUFFER_NAME};\n"
-		<< "\n"
 		;
 
-	// When using global shared memory in the compute variant, invocations will use a shared global structure instead of a
-	// descriptor set as the sources and results of each tested operation.
-	if (m_shaderType.useSharedGlobalMemory())
+	// The name dance and declarations below will make sure the structure that will be used with atomic operations can be accessed
+	// as "buf.data", which is the name used in the atomic operation statements.
+	//
+	// * When using a buffer directly, RESULT_BUFFER_NAME will be "buf" and the inner struct will be "data".
+	// * When using a workgroup-shared global variable, the "data" struct will be nested in an auxiliar "buf" struct.
+	// * When using buffer references, the uniform buffer reference will be called "buf" and its contents "data".
+	//
+	if (memoryType != AtomicMemoryType::REFERENCE)
 	{
 		shaderTemplateGlobalStream
-			<< "shared AtomicStruct buf;\n"
+			<< "layout (set = ${SETIDX}, binding = 0) buffer AtomicBuffer {\n"
+			<< "    AtomicStruct data;\n"
+			<< "} ${RESULT_BUFFER_NAME};\n"
+			<< "\n"
+			;
+
+		// When using global shared memory in the compute variant, invocations will use a shared global structure instead of a
+		// descriptor set as the sources and results of each tested operation.
+		if (memoryType == AtomicMemoryType::SHARED)
+		{
+			shaderTemplateGlobalStream
+				<< "shared struct { AtomicStruct data; } buf;\n"
+				<< "\n"
+				;
+		}
+	}
+	else
+	{
+		shaderTemplateGlobalStream
+			<< "layout (buffer_reference) buffer AtomicBuffer {\n"
+			<< "    AtomicStruct data;\n"
+			<< "};\n"
+			<< "\n"
+			<< "layout (set = ${SETIDX}, binding = 0) uniform References {\n"
+			<< "    AtomicBuffer buf;\n"
+			<< "};\n"
 			<< "\n"
 			;
 	}
@@ -752,31 +812,31 @@ void AtomicOperationCase::createShaderSpec (void)
 	// Shader body for the non-vertex case.
 	std::ostringstream nonVertexShaderTemplateStream;
 
-	if (m_shaderType.useSharedGlobalMemory())
+	if (memoryType == AtomicMemoryType::SHARED)
 	{
 		// Invocation zero will initialize the shared structure from the descriptor set.
 		nonVertexShaderTemplateStream
 			<< "if (gl_LocalInvocationIndex == 0u)\n"
 			<< "{\n"
-			<< "    buf = ${RESULT_BUFFER_NAME}.buf;\n"
+			<< "    buf.data = ${RESULT_BUFFER_NAME}.data;\n"
 			<< "}\n"
 			<< "barrier();\n"
 			;
 	}
 
 	nonVertexShaderTemplateStream
-		<< "int idx = atomicAdd(buf.index, 1);\n"
-		<< "buf.outputValues[idx] = ${ATOMICOP}(buf.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.inputValues[idx]);\n"
+		<< "int idx = atomicAdd(buf.data.index, 1);\n"
+		<< "buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
 		;
 
-	if (m_shaderType.useSharedGlobalMemory())
+	if (memoryType == AtomicMemoryType::SHARED)
 	{
 		// Invocation zero will copy results back to the descriptor set.
 		nonVertexShaderTemplateStream
 			<< "barrier();\n"
 			<< "if (gl_LocalInvocationIndex == 0u)\n"
 			<< "{\n"
-			<< "    ${RESULT_BUFFER_NAME}.buf = buf;\n"
+			<< "    ${RESULT_BUFFER_NAME}.data = buf.data;\n"
 			<< "}\n"
 			;
 	}
@@ -787,24 +847,37 @@ void AtomicOperationCase::createShaderSpec (void)
 	// Shader body for the vertex case.
 	const tcu::StringTemplate vertexShaderTemplateSrc(
 		"int idx = gl_VertexIndex;\n"
-		"if (atomicAdd(buf.invocationHitCount[idx], 1) == 0)\n"
+		"if (atomicAdd(buf.data.invocationHitCount[idx], 1) == 0)\n"
 		"{\n"
-		"    buf.outputValues[idx] = ${ATOMICOP}(buf.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.inputValues[idx]);\n"
+		"    buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
 		"}\n");
+
+	// Extensions.
+	std::ostringstream extensions;
+
+	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
+	{
+		extensions
+			<< "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
+			<< "#extension GL_EXT_shader_atomic_int64 : enable\n"
+			;
+	}
+
+	if (memoryType == AtomicMemoryType::REFERENCE)
+	{
+		extensions << "#extension GL_EXT_buffer_reference : require\n";
+	}
 
 	// Specializations.
 	std::map<std::string, std::string> specializations;
-	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
-	{
-		specializations["EXTENSIONS"] = "#extension GL_ARB_gpu_shader_int64 : enable\n"
-										"#extension GL_EXT_shader_atomic_int64 : enable\n";
-	}
-	specializations["DATATYPE"] = dataType2Str(m_dataType);
-	specializations["ATOMICOP"] = atomicOp2Str(m_atomicOp);
-	specializations["SETIDX"] = de::toString((int)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX);
-	specializations["N"] = de::toString((int)NUM_ELEMENTS);
-	specializations["COMPARE_ARG"] = ((m_atomicOp == ATOMIC_OP_COMP_SWAP) ? "buf.compareValues[idx], " : "");
-	specializations["RESULT_BUFFER_NAME"] = (m_shaderType.useSharedGlobalMemory() ? "result" : "");
+
+	specializations["EXTENSIONS"]			= extensions.str();
+	specializations["DATATYPE"]				= dataType2Str(m_dataType);
+	specializations["ATOMICOP"]				= atomicOp2Str(m_atomicOp);
+	specializations["SETIDX"]				= de::toString((int)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX);
+	specializations["N"]					= de::toString((int)NUM_ELEMENTS);
+	specializations["COMPARE_ARG"]			= ((m_atomicOp == ATOMIC_OP_COMP_SWAP) ? "buf.data.compareValues[idx], " : "");
+	specializations["RESULT_BUFFER_NAME"]	= ((memoryType == AtomicMemoryType::SHARED) ? "result" : "buf");
 
 	// Shader spec.
 	m_shaderSpec.outputs.push_back(Symbol("outData", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
@@ -814,7 +887,7 @@ void AtomicOperationCase::createShaderSpec (void)
 										? vertexShaderTemplateSrc.specialize(specializations)
 										: nonVertexShaderTemplateSrc.specialize(specializations));
 
-	if (m_shaderType.useSharedGlobalMemory())
+	if (memoryType == AtomicMemoryType::SHARED)
 	{
 		// When using global shared memory, use a single workgroup and an appropriate number of local invocations.
 		m_shaderSpec.localSizeX = static_cast<int>(NUM_ELEMENTS);
@@ -827,7 +900,7 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 
 	static const struct
 	{
-		AtomicShaderType	type;
+		glu::ShaderType		type;
 		const char*			name;
 	} shaderTypes[] =
 	{
@@ -837,7 +910,17 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 		{ glu::SHADERTYPE_TESSELLATION_CONTROL,				"tess_ctrl"			},
 		{ glu::SHADERTYPE_TESSELLATION_EVALUATION,			"tess_eval"			},
 		{ glu::SHADERTYPE_COMPUTE,							"compute"			},
-		{ AtomicShaderType(glu::SHADERTYPE_COMPUTE, true),	"compute_shared"	},
+	};
+
+	static const struct
+	{
+		AtomicMemoryType	type;
+		const char*			suffix;
+	} kMemoryTypes[] =
+	{
+		{ AtomicMemoryType::BUFFER,		""				},
+		{ AtomicMemoryType::SHARED,		"_shared"		},
+		{ AtomicMemoryType::REFERENCE,	"_reference"	},
 	};
 
 	static const struct
@@ -875,9 +958,17 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 		{
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
 			{
-				const std::string description = std::string("Tests atomic operation ") + atomicOp2Str(atomicOp[opNdx].value) + std::string(".");
-				std::string name = std::string(atomicOp[opNdx].name) + "_" + std::string(dataSign[signNdx].name) + "_" + std::string(shaderTypes[shaderTypeNdx].name);
-				atomicOperationTestsGroup->addChild(new AtomicOperationCase(testCtx, name.c_str(), description.c_str(), shaderTypes[shaderTypeNdx].type, dataSign[signNdx].dataType, atomicOp[opNdx].value));
+				for (int memoryTypeNdx = 0; memoryTypeNdx < DE_LENGTH_OF_ARRAY(kMemoryTypes); ++memoryTypeNdx)
+				{
+					// Shared memory only available in compute shaders.
+					if (kMemoryTypes[memoryTypeNdx].type == AtomicMemoryType::SHARED && shaderTypes[shaderTypeNdx].type != glu::SHADERTYPE_COMPUTE)
+						continue;
+
+					const std::string description	= std::string("Tests atomic operation ") + atomicOp2Str(atomicOp[opNdx].value) + std::string(".");
+					const std::string name			= std::string(atomicOp[opNdx].name) + "_" + std::string(dataSign[signNdx].name) + "_" + std::string(shaderTypes[shaderTypeNdx].name) + kMemoryTypes[memoryTypeNdx].suffix;
+
+					atomicOperationTestsGroup->addChild(new AtomicOperationCase(testCtx, name.c_str(), description.c_str(), AtomicShaderType(shaderTypes[shaderTypeNdx].type, kMemoryTypes[memoryTypeNdx].type), dataSign[signNdx].dataType, atomicOp[opNdx].value));
+				}
 			}
 		}
 	}
