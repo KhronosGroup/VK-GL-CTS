@@ -209,6 +209,11 @@ VulkanPlatform::VulkanPlatform (EventState& eventState)
 
 vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 {
+	if (!hasDisplay(wsiType))
+	{
+	    throw NotSupportedError("This display type is not available: ", NULL, __FILE__, __LINE__);
+	}
+
 	switch(wsiType)
 	{
 #if defined (DEQP_SUPPORT_X11)
