@@ -43,9 +43,9 @@ DeviceProperties::DeviceProperties	(const InstanceInterface&			vki,
 		{
 			const char* propertyName = propertyStructCreatorMap[i].name;
 
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), propertyName))
+			if (deStringEqual(propertyName, "core_property") || de::contains(deviceExtensions.begin(), deviceExtensions.end(), propertyName))
 			{
-				PropertyStruct* p = createPropertyStructWrapper(propertyName);
+				PropertyStruct* p = propertyStructCreatorMap[i].creator();
 
 				if (p)
 				{

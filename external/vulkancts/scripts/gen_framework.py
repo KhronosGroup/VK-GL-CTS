@@ -1794,11 +1794,8 @@ def generateDevicePropertiesDefs(src):
 	# construct final list
 	defs = []
 	for sType, sSuffix in matches:
-		# skip VkPhysicalDeviceGroupProperties
-		if sType == "GROUP":
-			continue
-		# skip VkPhysicalDeviceMemoryBudgetPropertiesEXT
-		if sType == "MEMORY_BUDGET":
+		# handle special cases
+		if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'GROUP', 'MEMORY_BUDGET', 'MEMORY', 'TOOL'}:
 			continue
 		# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_2_EXT
 		# where 2 is after PROPERTIES - to handle this we need to split suffix to two parts
@@ -1812,14 +1809,15 @@ def generateDevicePropertiesDefs(src):
 		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Properties' + sSuffix.replace('_', '') + ')'
 		matchStructName		= re.search(ptrnStructName, src, re.M)
 		if matchStructName:
-			# handle special cases
-			if sType in {'VULKAN_1_1', 'VULKAN_1_2'}:
-				continue
 			extType = sType
 			if extType == "MAINTENANCE_3":
 				extType = "MAINTENANCE3"
 			elif extType == "DISCARD_RECTANGLE":
 				extType = "DISCARD_RECTANGLES"
+			elif extType == "DRIVER":
+				extType = "DRIVER_PROPERTIES"
+			elif extType == "POINT_CLIPPING":
+				extType = "MAINTENANCE2"
 			elif extType == "SHADER_CORE":
 				extType = "SHADER_CORE_PROPERTIES"
 			# end handling special cases
@@ -1974,7 +1972,7 @@ def writeDeviceProperties(dfDefs, filename):
 		if extLine:
 			extensionDefines.append(extLine)
 		else:
-			extensionDefines.append('#define {0} "not_existent_property"'.format(extensionNameDefinition))
+			extensionDefines.append('#define {0} "core_property"'.format(extensionNameDefinition))
 		# construct makePropertyDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sVerSuffix + sExtSuffix)
 		makePropertyDescDefinitions.append("template<> PropertyDesc makePropertyDesc<{0}>(void) " \

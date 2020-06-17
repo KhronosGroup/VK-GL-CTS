@@ -17,7 +17,6 @@ const vk::VkPhysicalDeviceFragmentDensityMapProperties2EXT&			Context::getFragme
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			Context::getInlineUniformBlockPropertiesEXT			(void) const { return m_device->getInlineUniformBlockPropertiesEXT();			}
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			Context::getLineRasterizationPropertiesEXT			(void) const { return m_device->getLineRasterizationPropertiesEXT();			}
 const vk::VkPhysicalDeviceMaintenance3Properties&					Context::getMaintenance3Properties					(void) const { return m_device->getMaintenance3Properties();					}
-const vk::VkPhysicalDeviceMemoryProperties2&						Context::getMemoryProperties2						(void) const { return m_device->getMemoryProperties2();							}
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&					Context::getMeshShaderProperties					(void) const { return m_device->getMeshShaderProperties();						}
 const vk::VkPhysicalDeviceMultiviewProperties&						Context::getMultiviewProperties						(void) const { return m_device->getMultiviewProperties();						}
 const vk::VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX&	Context::getMultiviewPerViewAttributesPropertiesX	(void) const { return m_device->getMultiviewPerViewAttributesPropertiesX();		}
@@ -37,6 +36,5 @@ const vk::VkPhysicalDeviceSubgroupProperties&						Context::getSubgroupPropertie
 const vk::VkPhysicalDeviceSubgroupSizeControlPropertiesEXT&			Context::getSubgroupSizeControlPropertiesEXT		(void) const { return m_device->getSubgroupSizeControlPropertiesEXT();			}
 const vk::VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&		Context::getTexelBufferAlignmentPropertiesEXT		(void) const { return m_device->getTexelBufferAlignmentPropertiesEXT();			}
 const vk::VkPhysicalDeviceTimelineSemaphoreProperties&				Context::getTimelineSemaphoreProperties				(void) const { return m_device->getTimelineSemaphoreProperties();				}
-const vk::VkPhysicalDeviceToolPropertiesEXT&						Context::getToolPropertiesEXT						(void) const { return m_device->getToolPropertiesEXT();							}
 const vk::VkPhysicalDeviceTransformFeedbackPropertiesEXT&			Context::getTransformFeedbackPropertiesEXT			(void) const { return m_device->getTransformFeedbackPropertiesEXT();			}
 const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT&		Context::getVertexAttributeDivisorPropertiesEXT		(void) const { return m_device->getVertexAttributeDivisorPropertiesEXT();		}
