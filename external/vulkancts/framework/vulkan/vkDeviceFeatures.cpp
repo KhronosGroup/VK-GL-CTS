@@ -74,9 +74,20 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 					featuresToFillFromBlob.push_back(p);
 				else
 				{
-					// add to chain
-					*nextPtr = p->getFeatureTypeRaw();
-					nextPtr = p->getFeatureTypeNext();
+					if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
+					{
+						VkPhysicalDeviceFeatures2 coreFeatures2 = initVulkanStructure();
+
+						coreFeatures2.pNext = p->getFeatureTypeRaw();
+
+						vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures2);
+					}
+					else
+					{
+						// add to chain
+						*nextPtr = p->getFeatureTypeRaw();
+						nextPtr = p->getFeatureTypeNext();
+					}
 				}
 				m_features.push_back(p);
 			}
