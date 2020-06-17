@@ -1444,6 +1444,44 @@ def writeTypeUtil (api, filename):
 
 	writeInlFile(filename, INL_HEADER, gen())
 
+def writeDriverIds(filename):
+
+	driverIdsString = []
+	driverIdsString.append("static const struct\n"
+					 "{\n"
+					 "\tstd::string driver;\n"
+					 "\tdeUint32 id;\n"
+					 "} driverIds [] =\n"
+					 "{")
+
+	vulkanCore = readFile(os.path.join(VULKAN_H_DIR, "vulkan_core.h"))
+
+	items = re.search(r'(?:typedef\s+enum\s+VkDriverId\s*{)((.*\n)*)(?:}\s*VkDriverId\s*;)', vulkanCore).group(1).split(',')
+	driverItems = dict()
+	for item in items:
+		item.strip()
+		splitted = item.split('=')
+		key = splitted[0].strip()
+		value_str = splitted[1].strip()
+		try: # is this previously defined value?
+			value = driverItems[value_str]
+		except:
+			value = value_str
+			value_str = ""
+		if value_str:
+			value_str = "\t// " + value_str
+		driverItems[key] = value
+		if not item == items[-1]:
+			driverIdsString.append("\t{\"" + key + "\"" + ", " + value + "}," + value_str)
+		else:
+			driverIdsString.append("\t{\"" + key + "\"" + ", " + value + "}" + value_str)
+		driverItems[key] = value
+
+	driverIdsString.append("};")
+
+	writeInlFile(filename, INL_HEADER, driverIdsString)
+
+
 def writeSupportedExtenions(api, filename):
 
 	def writeExtensionsForVersions(map):
@@ -2216,3 +2254,4 @@ if __name__ == "__main__":
 	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
+	writeDriverIds							(     os.path.join(VULKAN_DIR, "vkKnownDriverIds.inl"))
