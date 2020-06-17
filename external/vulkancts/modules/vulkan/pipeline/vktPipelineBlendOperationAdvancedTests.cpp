@@ -1660,7 +1660,30 @@ void BlendOperationAdvancedTest::checkSupport(Context& context) const
 
 	if (!blendProperties.advancedBlendAllOperations)
 	{
-		throw tcu::NotSupportedError("Unsupported all advanced blend operations");
+		for (deUint32 index = 0u; index < m_param.blendOps.size(); index++)
+		{
+			switch (m_param.blendOps[index])
+			{
+			case VK_BLEND_OP_MULTIPLY_EXT:
+			case VK_BLEND_OP_SCREEN_EXT:
+			case VK_BLEND_OP_OVERLAY_EXT:
+			case VK_BLEND_OP_DARKEN_EXT:
+			case VK_BLEND_OP_LIGHTEN_EXT:
+			case VK_BLEND_OP_COLORDODGE_EXT:
+			case VK_BLEND_OP_COLORBURN_EXT:
+			case VK_BLEND_OP_HARDLIGHT_EXT:
+			case VK_BLEND_OP_SOFTLIGHT_EXT:
+			case VK_BLEND_OP_DIFFERENCE_EXT:
+			case VK_BLEND_OP_EXCLUSION_EXT:
+			case VK_BLEND_OP_HSL_HUE_EXT:
+			case VK_BLEND_OP_HSL_SATURATION_EXT:
+			case VK_BLEND_OP_HSL_COLOR_EXT:
+			case VK_BLEND_OP_HSL_LUMINOSITY_EXT:
+				break;
+			default:
+				throw tcu::NotSupportedError("Unsupported all advanced blend operations and unsupported advanced blend operation");
+			}
+		}
 	}
 
 	if (m_param.colorAttachmentsCount > blendProperties.advancedBlendMaxColorAttachments)
