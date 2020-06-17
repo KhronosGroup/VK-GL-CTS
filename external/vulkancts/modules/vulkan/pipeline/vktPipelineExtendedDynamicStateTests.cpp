@@ -914,15 +914,35 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	else
 		DE_ASSERT(m_testConfig.scissorConfig.staticValue.size() > 0u);
 
-	const vk::VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
+	// The viewport and scissor counts must match in the static part, which will be used by the static pipeline.
+	const auto minCounter = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
+
+	// For the static pipeline.
+	const vk::VkPipelineViewportStateCreateInfo staticViewportStateCreateInfo =
 	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,				//	VkStructureType						sType;
-		nullptr,																//	const void*							pNext;
-		0u,																		//	VkPipelineViewportStateCreateFlags	flags;
-		static_cast<deUint32>(m_testConfig.viewportConfig.staticValue.size()),	//	deUint32							viewportCount;
-		m_testConfig.viewportConfig.staticValue.data(),							//	const VkViewport*					pViewports;
-		static_cast<deUint32>(m_testConfig.scissorConfig.staticValue.size()),	//	deUint32							scissorCount;
-		m_testConfig.scissorConfig.staticValue.data(),							//	const VkRect2D*						pScissors;
+
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					//	VkStructureType						sType;
+		nullptr,																	//	const void*							pNext;
+		0u,																			//	VkPipelineViewportStateCreateFlags	flags;
+		minCounter,																	//	deUint32							viewportCount;
+		m_testConfig.viewportConfig.staticValue.data(),								//	const VkViewport*					pViewports;
+		minCounter,																	//	deUint32							scissorCount;
+		m_testConfig.scissorConfig.staticValue.data(),								//	const VkRect2D*						pScissors;
+	};
+
+	// For the dynamic pipeline. The viewport and scissor counts must be zero when a dynamic value will be provided, as per the spec.
+	const vk::VkPipelineViewportStateCreateInfo dynamicViewportStateCreateInfo =
+	{
+
+		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					//	VkStructureType						sType;
+		nullptr,																	//	const void*							pNext;
+		0u,																			//	VkPipelineViewportStateCreateFlags	flags;
+		(m_testConfig.viewportConfig.dynamicValue) ? 0u :
+			static_cast<deUint32>(m_testConfig.viewportConfig.staticValue.size()),	//	deUint32							viewportCount;
+		m_testConfig.viewportConfig.staticValue.data(),								//	const VkViewport*					pViewports;
+		(m_testConfig.scissorConfig.dynamicValue) ? 0u :
+			static_cast<deUint32>(m_testConfig.scissorConfig.staticValue.size()),	//	deUint32							scissorCount;
+		m_testConfig.scissorConfig.staticValue.data(),								//	const VkRect2D*						pScissors;
 	};
 
 	// Rasterization state.
@@ -1057,7 +1077,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float                                         blendConstants[4]
 	};
 
-	const vk::VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo =
+	const vk::VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfoTemplate =
 	{
 		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	//	VkStructureType									sType;
 		nullptr,												//	const void*										pNext;
@@ -1067,28 +1087,37 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		&vertexInputStateCreateInfo,							//	const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
 		&inputAssemblyStateCreateInfo,							//	const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
 		nullptr,												//	const VkPipelineTessellationStateCreateInfo*	pTessellationState;
-		&viewportStateCreateInfo,								//	const VkPipelineViewportStateCreateInfo*		pViewportState;
+		nullptr,												//	const VkPipelineViewportStateCreateInfo*		pViewportState;
 		&rasterizationStateCreateInfo,							//	const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
 		&multisampleStateCreateInfo,							//	const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 		&depthStencilStateCreateInfo,							//	const VkPipelineDepthStencilStateCreateInfo*	pDepthStencilState;
 		&colorBlendStateCreateInfo,								//	const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		&dynamicStateCreateInfo,								//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		nullptr,												//	const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 		pipelineLayout.get(),									//	VkPipelineLayout								layout;
 		renderPass.get(),										//	VkRenderPass									renderPass;
 		0u,														//	deUint32										subpass;
 		DE_NULL,												//	VkPipeline										basePipelineHandle;
 		0,														//	deInt32											basePipelineIndex;
 	};
-	const auto graphicsPipeline = vk::createGraphicsPipeline(vkd, device, DE_NULL, &graphicsPipelineCreateInfo);
 
-	const bool useStaticPipeline = (m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES || m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES);
+	vk::Move<vk::VkPipeline>	staticPipeline;
+	const bool					useStaticPipeline	= (m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES || m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES);
 
-	vk::Move<vk::VkPipeline> staticPipeline;
+	// Create static pipeline when needed.
 	if (useStaticPipeline)
 	{
-		auto staticPipelineCreateInfo			= graphicsPipelineCreateInfo;
-		staticPipelineCreateInfo.pDynamicState	= nullptr;
+		auto staticPipelineCreateInfo			= graphicsPipelineCreateInfoTemplate;
+		staticPipelineCreateInfo.pViewportState	= &staticViewportStateCreateInfo;
 		staticPipeline							= vk::createGraphicsPipeline(vkd, device, DE_NULL, &staticPipelineCreateInfo);
+	}
+
+	// Create dynamic pipeline.
+	vk::Move<vk::VkPipeline> graphicsPipeline;
+	{
+		auto dynamicPipelineCreateInfo				= graphicsPipelineCreateInfoTemplate;
+		dynamicPipelineCreateInfo.pDynamicState		= &dynamicStateCreateInfo;
+		dynamicPipelineCreateInfo.pViewportState	= &dynamicViewportStateCreateInfo;
+		graphicsPipeline							= vk::createGraphicsPipeline(vkd, device, DE_NULL, &dynamicPipelineCreateInfo);
 	}
 
 	// Command buffer.
