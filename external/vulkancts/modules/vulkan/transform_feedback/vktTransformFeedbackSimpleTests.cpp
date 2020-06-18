@@ -107,6 +107,7 @@ struct TestParameters
 	deUint32		vertexStride;
 	StreamId0Mode	streamId0Mode;
 	bool			query64bits;
+	bool			noOffsetArray;
 };
 
 const deUint32 MINIMUM_TF_BUFFER_SIZE	= (1<<27);
@@ -1611,7 +1612,7 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate (void)
 				{
 					vk.cmdDraw(*cmdBuffer, numPoints, 1u, 0u, 0u);
 				}
-				vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 1, &*tfcBuf, &tfcBufBindingOffset);
+				vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 1, &*tfcBuf, m_parameters.noOffsetArray ? DE_NULL : &tfcBufBindingOffset);
 			}
 
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 1u, &tfcMemoryBarrier, 0u, DE_NULL, DE_NULL, 0u);
@@ -1621,7 +1622,7 @@ tcu::TestStatus TransformFeedbackBackwardDependencyTestInstance::iterate (void)
 
 				vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, sizeof(startValue), &startValue);
 
-				vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 1, &*tfcBuf, &tfcBufBindingOffset);
+				vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 1, &*tfcBuf, m_parameters.noOffsetArray ? DE_NULL : &tfcBufBindingOffset);
 				{
 					vk.cmdDrawIndirectByteCountEXT(*cmdBuffer, 1u, 0u, *tfcBuf, 0u, 0u, 4u);
 				}
@@ -2546,7 +2547,7 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 				for (deUint32 bufferSizesNdx = 0; bufferSizesNdx < DE_LENGTH_OF_ARRAY(bufferSizes); ++bufferSizesNdx)
 				{
 					const deUint32	bufferSize	= bufferSizes[bufferSizesNdx];
-					TestParameters	parameters	= { testType, bufferSize, partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false };
+					TestParameters	parameters	= { testType, bufferSize, partCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false };
 
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(partCount) + "_" + de::toString(bufferSize)).c_str(), "Simple Transform Feedback test", parameters));
 					parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -2596,7 +2597,7 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 			for (deUint32 bufferCountsNdx = 0; bufferCountsNdx < DE_LENGTH_OF_ARRAY(bufferCounts); ++bufferCountsNdx)
 			{
 				const deUint32	vertexCount	= bufferCounts[bufferCountsNdx];
-				TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false };
+				TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false };
 
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexCount)).c_str(), "Topology winding test", parameters));
 			}
@@ -2611,7 +2612,7 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 		for (deUint32 vertexStridesNdx = 0; vertexStridesNdx < DE_LENGTH_OF_ARRAY(vertexStrides); ++vertexStridesNdx)
 		{
 			const deUint32	vertexStride	= static_cast<deUint32>(sizeof(deUint32) * vertexStrides[vertexStridesNdx]);
-			TestParameters	parameters		= { testType, 0u, 0u, 0u, 0u, vertexStride, STREAM_ID_0_NORMAL, false };
+			TestParameters	parameters		= { testType, 0u, 0u, 0u, 0u, vertexStride, STREAM_ID_0_NORMAL, false, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexStride)).c_str(), "Rendering tests with various strides", parameters));
 			parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
@@ -2624,13 +2625,16 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 	{
 		const TestType		testType	= TEST_TYPE_BACKWARD_DEPENDENCY;
 		const std::string	testName	= "backward_dependency";
-		TestParameters		parameters	= { testType, 512u, 2u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false };
+		TestParameters		parameters	= { testType, 512u, 2u, 0u, 0u, 0u, STREAM_ID_0_NORMAL, false, false };
 
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), testName.c_str(), "Rendering test checks backward pipeline dependency", parameters));
 		parameters.streamId0Mode = STREAM_ID_0_BEGIN_QUERY_INDEXED;
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_beginqueryindexed_streamid_0").c_str(), "Rendering test checks backward pipeline dependency", parameters));
 		parameters.streamId0Mode = STREAM_ID_0_END_QUERY_INDEXED;
 		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_endqueryindexed_streamid_0").c_str(), "Rendering test checks backward pipeline dependency", parameters));
+
+		parameters.noOffsetArray = true;
+		group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_no_offset_array").c_str(), "Rendering test checks backward pipeline dependency (using NULL for offset array)", parameters));
 	}
 
 	{
@@ -2656,15 +2660,15 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 
 					const deUint32			bytesPerVertex	= static_cast<deUint32>(4 * sizeof(float));
 					const deUint32			bufferSize		= bytesPerVertex * vertexCount[vertexCountNdx];
-					TestParameters			parameters		= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits };
+					TestParameters			parameters		= { testType, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false };
 					const std::string		fullTestName	= testName + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]) + widthStr;
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "Written primitives query test", parameters));
 
-					const TestParameters	parametersCopy		= { testTypeCopy, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits };
+					const TestParameters	parametersCopy		= { testTypeCopy, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false };
 					const std::string		fullTestNameCopy	= testNameCopy + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]) + widthStr;
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameCopy.c_str(), "Written primitives query test", parametersCopy));
 
-					const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits };
+					const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u, STREAM_ID_0_NORMAL, query64Bits, false };
 					const std::string		fullTestNameHostQueryReset	= testNameHostQueryReset + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]) + widthStr;
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameHostQueryReset.c_str(), "Written primitives query test", parametersHostQueryReset));
 
@@ -2700,7 +2704,7 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 		for (deUint32 streamCountsNdx = 0; streamCountsNdx < DE_LENGTH_OF_ARRAY(usedStreamId); ++streamCountsNdx)
 		{
 			const deUint32	streamId	= usedStreamId[streamCountsNdx];
-			TestParameters	parameters	= { testType, 0u, 0u, streamId, pointSize, 0u, STREAM_ID_0_NORMAL, false };
+			TestParameters	parameters	= { testType, 0u, 0u, streamId, pointSize, 0u, STREAM_ID_0_NORMAL, false, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Streams usage test", parameters));
 		}
@@ -2715,7 +2719,7 @@ void createTransformFeedbackStreamsSimpleTests (tcu::TestCaseGroup* group)
 			const deUint32			streamId			= usedStreamId[bufferCountsNdx];
 			const deUint32			streamsUsed			= 2u;
 			const deUint32			maxBytesPerVertex	= 256u;
-			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false };
+			const TestParameters	parameters			= { testType, maxBytesPerVertex * streamsUsed, streamsUsed, streamId, 0u, 0u, STREAM_ID_0_NORMAL, false, false };
 
 			group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(streamId)).c_str(), "Simultaneous multiple streams usage test", parameters));
 		}
