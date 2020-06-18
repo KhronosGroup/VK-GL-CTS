@@ -99,6 +99,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMaxVaryingsTests.hpp
 	vktPipelineBlendOperationAdvancedTests.cpp
 	vktPipelineBlendOperationAdvancedTests.hpp
+	vktPipelineExtendedDynamicStateTests.cpp
+	vktPipelineExtendedDynamicStateTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_LIBS

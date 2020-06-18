@@ -2077,6 +2077,19 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
 
 	de::MovePtr<tcu::TextureLevel>	resultLevel = readImage(*m_destination, m_params.dst.image);
 
+	// For combined depth/stencil formats both aspects are checked even when the test only
+	// copies one. Clear such aspects here for both the result and the reference.
+	if (tcu::hasDepthComponent(m_textureFormat.order) && !depthLoaded)
+	{
+		tcu::clearDepth(m_expectedTextureLevel[0]->getAccess(), 0.0f);
+		tcu::clearDepth(resultLevel->getAccess(), 0.0f);
+	}
+	if (tcu::hasStencilComponent(m_textureFormat.order) && !stencilLoaded)
+	{
+		tcu::clearStencil(m_expectedTextureLevel[0]->getAccess(), 0);
+		tcu::clearStencil(resultLevel->getAccess(), 0);
+	}
+
 	return checkTestResult(resultLevel->getAccess());
 }
 
@@ -2114,7 +2127,7 @@ protected:
 	virtual void						copyRegionToTextureLevel		(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel = 0u);
 	virtual void						generateExpectedResult			(void);
 private:
-	bool								checkLinearFilteredResult		(const tcu::ConstPixelBufferAccess&	result,
+	bool								checkNonNearestFilteredResult	(const tcu::ConstPixelBufferAccess&	result,
 																		 const tcu::ConstPixelBufferAccess&	clampedReference,
 																		 const tcu::ConstPixelBufferAccess&	unclampedReference,
 																		 const tcu::TextureFormat&			sourceFormat);
@@ -2334,10 +2347,10 @@ tcu::Vec4 getFormatThreshold (const tcu::TextureFormat& format)
 		return threshold;
 }
 
-bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAccess&	result,
-												const tcu::ConstPixelBufferAccess&	clampedExpected,
-												const tcu::ConstPixelBufferAccess&	unclampedExpected,
-												const tcu::TextureFormat&			srcFormat)
+bool BlittingImages::checkNonNearestFilteredResult (const tcu::ConstPixelBufferAccess&	result,
+													const tcu::ConstPixelBufferAccess&	clampedExpected,
+													const tcu::ConstPixelBufferAccess&	unclampedExpected,
+													const tcu::TextureFormat&			srcFormat)
 {
 	tcu::TestLog&					log				(m_context.getTestContext().getLog());
 	const tcu::TextureFormat		dstFormat		= result.getFormat();
@@ -2366,7 +2379,7 @@ bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAcces
 		const bool		srcIsSRGB	= tcu::isSRGB(srcFormat);
 		const tcu::Vec4	srcMaxDiff	= getFormatThreshold(srcFormat) * tcu::Vec4(srcIsSRGB ? 2.0f : 1.0f);
 		const tcu::Vec4	dstMaxDiff	= getFormatThreshold(dstFormat);
-		const tcu::Vec4	threshold	= tcu::max(srcMaxDiff, dstMaxDiff);
+		const tcu::Vec4	threshold	= ( srcMaxDiff + dstMaxDiff ) * ((m_params.filter == VK_FILTER_CUBIC_EXT) ? 1.5f : 1.0f);
 
 		isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 		log << tcu::TestLog::EndSection;
@@ -2382,9 +2395,10 @@ bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAcces
 	{
 		tcu::UVec4	threshold;
 		// Calculate threshold depending on channel width of destination format.
-		const tcu::IVec4	bitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
+		const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
+		const tcu::IVec4	srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
 		for (deUint32 i = 0; i < 4; ++i)
-			threshold[i] = de::max( (0x1 << bitDepth[i]) / 256, 1);
+			threshold[i] = 1 + de::max( ( ( 1 << dstBitDepth[i] ) - 1 ) / de::clamp((1 << srcBitDepth[i]) - 1, 1, 256), 1);
 
 		isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold, tcu::COMPARE_LOG_RESULT);
 		log << tcu::TestLog::EndSection;
@@ -2650,10 +2664,10 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 
 tcu::TestStatus BlittingImages::checkTestResult (tcu::ConstPixelBufferAccess result)
 {
-	DE_ASSERT(m_params.filter == VK_FILTER_NEAREST || m_params.filter == VK_FILTER_LINEAR);
+	DE_ASSERT(m_params.filter == VK_FILTER_NEAREST || m_params.filter == VK_FILTER_LINEAR || m_params.filter == VK_FILTER_CUBIC_EXT);
 	const std::string failMessage("Result image is incorrect");
 
-	if (m_params.filter == VK_FILTER_LINEAR)
+	if (m_params.filter != VK_FILTER_NEAREST)
 	{
 		if (tcu::isCombinedDepthStencilType(result.getFormat().type))
 		{
@@ -2665,7 +2679,7 @@ tcu::TestStatus BlittingImages::checkTestResult (tcu::ConstPixelBufferAccess res
 				const tcu::ConstPixelBufferAccess		unclampedExpected	= tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode);
 				const tcu::TextureFormat				sourceFormat		= tcu::getEffectiveDepthStencilTextureFormat(mapVkFormat(m_params.src.image.format), mode);
 
-				if (!checkLinearFilteredResult(depthResult, clampedExpected, unclampedExpected, sourceFormat))
+				if (!checkNonNearestFilteredResult(depthResult, clampedExpected, unclampedExpected, sourceFormat))
 					return tcu::TestStatus::fail(failMessage);
 			}
 
@@ -2677,7 +2691,7 @@ tcu::TestStatus BlittingImages::checkTestResult (tcu::ConstPixelBufferAccess res
 				const tcu::ConstPixelBufferAccess		unclampedExpected	= tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode);
 				const tcu::TextureFormat				sourceFormat		= tcu::getEffectiveDepthStencilTextureFormat(mapVkFormat(m_params.src.image.format), mode);
 
-				if (!checkLinearFilteredResult(stencilResult, clampedExpected, unclampedExpected, sourceFormat))
+				if (!checkNonNearestFilteredResult(stencilResult, clampedExpected, unclampedExpected, sourceFormat))
 					return tcu::TestStatus::fail(failMessage);
 			}
 		}
@@ -2685,7 +2699,7 @@ tcu::TestStatus BlittingImages::checkTestResult (tcu::ConstPixelBufferAccess res
 		{
 			const tcu::TextureFormat	sourceFormat	= mapVkFormat(m_params.src.image.format);
 
-			if (!checkLinearFilteredResult(result, m_expectedTextureLevel[0]->getAccess(), m_unclampedExpectedTextureLevel->getAccess(), sourceFormat))
+			if (!checkNonNearestFilteredResult(result, m_expectedTextureLevel[0]->getAccess(), m_unclampedExpectedTextureLevel->getAccess(), sourceFormat))
 				return tcu::TestStatus::fail(failMessage);
 		}
 	}
@@ -2730,7 +2744,7 @@ tcu::Vec4 linearToSRGBIfNeeded (const tcu::TextureFormat& format, const tcu::Vec
 
 void scaleFromWholeSrcBuffer (const tcu::PixelBufferAccess& dst, const tcu::ConstPixelBufferAccess& src, const VkOffset3D regionOffset, const VkOffset3D regionExtent, tcu::Sampler::FilterMode filter, const MirrorMode mirrorMode = MIRROR_MODE_NONE)
 {
-	DE_ASSERT(filter == tcu::Sampler::LINEAR);
+	DE_ASSERT(filter == tcu::Sampler::LINEAR || filter == tcu::Sampler::CUBIC);
 	DE_ASSERT(dst.getDepth() == 1 && src.getDepth() == 1);
 
 	tcu::Sampler sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
@@ -2750,7 +2764,7 @@ void scaleFromWholeSrcBuffer (const tcu::PixelBufferAccess& dst, const tcu::Cons
 
 void blit (const tcu::PixelBufferAccess& dst, const tcu::ConstPixelBufferAccess& src, const tcu::Sampler::FilterMode filter, const MirrorMode mirrorMode)
 {
-	DE_ASSERT(filter == tcu::Sampler::NEAREST || filter == tcu::Sampler::LINEAR);
+	DE_ASSERT(filter == tcu::Sampler::NEAREST || filter == tcu::Sampler::LINEAR || filter == tcu::Sampler::CUBIC);
 
 	tcu::Sampler sampler(tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE, tcu::Sampler::CLAMP_TO_EDGE,
 						 filter, filter, 0.0f, false);
@@ -2886,7 +2900,15 @@ void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, 
 		region.imageBlit.dstOffsets[1].y - dstOffset.y,
 		region.imageBlit.dstOffsets[1].z - dstOffset.z
 	};
-	const tcu::Sampler::FilterMode		filter			= (m_params.filter == VK_FILTER_LINEAR) ? tcu::Sampler::LINEAR : tcu::Sampler::NEAREST;
+
+	tcu::Sampler::FilterMode		filter;
+	switch (m_params.filter)
+	{
+		case VK_FILTER_LINEAR:		filter = tcu::Sampler::LINEAR; break;
+		case VK_FILTER_CUBIC_EXT:	filter = tcu::Sampler::CUBIC;  break;
+		case VK_FILTER_NEAREST:
+		default:					filter = tcu::Sampler::NEAREST;  break;
+	}
 
 	if (tcu::isCombinedDepthStencilType(src.getFormat().type))
 	{
@@ -2898,7 +2920,7 @@ void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, 
 			const tcu::PixelBufferAccess		dstSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_DEPTH);
 			tcu::scale(dstSubRegion, srcSubRegion, filter);
 
-			if (filter == tcu::Sampler::LINEAR)
+			if (filter != tcu::Sampler::NEAREST)
 			{
 				const tcu::ConstPixelBufferAccess	depthSrc			= getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_DEPTH);
 				const tcu::PixelBufferAccess		unclampedSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_DEPTH);
@@ -2913,7 +2935,7 @@ void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, 
 			const tcu::PixelBufferAccess		dstSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_STENCIL);
 			blit(dstSubRegion, srcSubRegion, filter, mirrorMode);
 
-			if (filter == tcu::Sampler::LINEAR)
+			if (filter != tcu::Sampler::NEAREST)
 			{
 				const tcu::ConstPixelBufferAccess	stencilSrc			= getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_STENCIL);
 				const tcu::PixelBufferAccess		unclampedSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_STENCIL);
@@ -2927,7 +2949,7 @@ void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, 
 		const tcu::PixelBufferAccess		dstSubRegion	= tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y);
 		blit(dstSubRegion, srcSubRegion, filter, mirrorMode);
 
-		if (filter == tcu::Sampler::LINEAR)
+		if (filter != tcu::Sampler::NEAREST)
 		{
 			const tcu::PixelBufferAccess	unclampedSubRegion	= tcu::getSubregion(m_unclampedExpectedTextureLevel->getAccess(), dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y);
 			scaleFromWholeSrcBuffer(unclampedSubRegion, src, srcOffset, srcExtent, filter, mirrorMode);
@@ -2943,7 +2965,7 @@ void BlittingImages::generateExpectedResult (void)
 	m_expectedTextureLevel[0]		= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dst.getFormat(), dst.getWidth(), dst.getHeight(), dst.getDepth()));
 	tcu::copy(m_expectedTextureLevel[0]->getAccess(), dst);
 
-	if (m_params.filter == VK_FILTER_LINEAR)
+	if (m_params.filter != VK_FILTER_NEAREST)
 	{
 		m_unclampedExpectedTextureLevel	= de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dst.getFormat(), dst.getWidth(), dst.getHeight(), dst.getDepth()));
 		tcu::copy(m_unclampedExpectedTextureLevel->getAccess(), dst);
@@ -3010,7 +3032,19 @@ public:
 		}
 
 		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+		{
 			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
+		}
+
+		if (m_params.filter == VK_FILTER_CUBIC_EXT)
+		{
+			context.requireDeviceFunctionality("VK_EXT_filter_cubic");
+
+			if (!(srcFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT))
+			{
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
+			}
+		}
 	}
 
 private:
@@ -3028,7 +3062,7 @@ protected:
 	virtual void						copyRegionToTextureLevel		(tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel = 0u);
 	virtual void						generateExpectedResult			(void);
 private:
-	bool								checkLinearFilteredResult		(void);
+	bool								checkNonNearestFilteredResult	(void);
 	bool								checkNearestFilteredResult		(void);
 
 	Move<VkImage>						m_source;
@@ -3314,7 +3348,7 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 	return checkTestResult();
 }
 
-bool BlittingMipmaps::checkLinearFilteredResult (void)
+bool BlittingMipmaps::checkNonNearestFilteredResult (void)
 {
 	tcu::TestLog&				log				(m_context.getTestContext().getLog());
 	bool						allLevelsOk		= true;
@@ -3378,7 +3412,7 @@ bool BlittingMipmaps::checkLinearFilteredResult (void)
 			const bool		srcIsSRGB   = tcu::isSRGB(srcFormat);
 			const tcu::Vec4 srcMaxDiff  = getFormatThreshold(srcFormat) * tcu::Vec4(srcIsSRGB ? 2.0f : 1.0f);
 			const tcu::Vec4 dstMaxDiff  = getFormatThreshold(dstFormat);
-			const tcu::Vec4 threshold   = tcu::max(srcMaxDiff, dstMaxDiff);
+			const tcu::Vec4 threshold   = ( srcMaxDiff + dstMaxDiff ) * ((m_params.filter == VK_FILTER_CUBIC_EXT)? 1.5f : 1.0f);
 
 			singleLevelOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedLevel, result, threshold, tcu::COMPARE_LOG_RESULT);
 			log << tcu::TestLog::EndSection;
@@ -3394,9 +3428,10 @@ bool BlittingMipmaps::checkLinearFilteredResult (void)
 		{
 			tcu::UVec4  threshold;
 			// Calculate threshold depending on channel width of destination format.
-			const tcu::IVec4	bitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
+			const tcu::IVec4	dstBitDepth	= tcu::getTextureFormatBitDepth(dstFormat);
+			const tcu::IVec4	srcBitDepth = tcu::getTextureFormatBitDepth(srcFormat);
 			for (deUint32 i = 0; i < 4; ++i)
-				threshold[i] = de::max((0x1 << bitDepth[i]) / 256, 2);
+				threshold[i] = 1 + de::max(((1 << dstBitDepth[i]) - 1) / de::clamp((1 << srcBitDepth[i]) - 1, 1, 256), 1);
 
 			singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedLevel, result, threshold, tcu::COMPARE_LOG_RESULT);
 			log << tcu::TestLog::EndSection;
@@ -3489,12 +3524,12 @@ bool BlittingMipmaps::checkNearestFilteredResult (void)
 tcu::TestStatus BlittingMipmaps::checkTestResult (tcu::ConstPixelBufferAccess result)
 {
 	DE_UNREF(result);
-	DE_ASSERT(m_params.filter == VK_FILTER_NEAREST || m_params.filter == VK_FILTER_LINEAR);
+	DE_ASSERT(m_params.filter == VK_FILTER_NEAREST || m_params.filter == VK_FILTER_LINEAR || m_params.filter == VK_FILTER_CUBIC_EXT);
 	const std::string failMessage("Result image is incorrect");
 
-	if (m_params.filter == VK_FILTER_LINEAR)
+	if (m_params.filter != VK_FILTER_NEAREST)
 	{
-		if (!checkLinearFilteredResult())
+		if (!checkNonNearestFilteredResult())
 			return tcu::TestStatus::fail(failMessage);
 	}
 	else // NEAREST filtering
@@ -3531,7 +3566,15 @@ void BlittingMipmaps::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src,
 		region.imageBlit.dstOffsets[1].y - dstOffset.y,
 		region.imageBlit.dstOffsets[1].z - dstOffset.z
 	};
-	const tcu::Sampler::FilterMode		filter			= (m_params.filter == VK_FILTER_LINEAR) ? tcu::Sampler::LINEAR : tcu::Sampler::NEAREST;
+
+	tcu::Sampler::FilterMode		filter;
+	switch (m_params.filter)
+	{
+	case VK_FILTER_LINEAR:		filter = tcu::Sampler::LINEAR; break;
+	case VK_FILTER_CUBIC_EXT:	filter = tcu::Sampler::CUBIC;  break;
+	case VK_FILTER_NEAREST:
+	default:					filter = tcu::Sampler::NEAREST;  break;
+	}
 
 	if (tcu::isCombinedDepthStencilType(src.getFormat().type))
 	{
@@ -3543,7 +3586,7 @@ void BlittingMipmaps::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src,
 			const tcu::PixelBufferAccess		dstSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_DEPTH);
 			tcu::scale(dstSubRegion, srcSubRegion, filter);
 
-			if (filter == tcu::Sampler::LINEAR)
+			if (filter != tcu::Sampler::NEAREST)
 			{
 				const tcu::ConstPixelBufferAccess	depthSrc			= getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_DEPTH);
 				const tcu::PixelBufferAccess		unclampedSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(m_unclampedExpectedTextureLevel[0]->getAccess(), dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_DEPTH);
@@ -3558,7 +3601,7 @@ void BlittingMipmaps::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src,
 			const tcu::PixelBufferAccess		dstSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(dst, dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_STENCIL);
 			blit(dstSubRegion, srcSubRegion, filter, mirrorMode);
 
-			if (filter == tcu::Sampler::LINEAR)
+			if (filter != tcu::Sampler::NEAREST)
 			{
 				const tcu::ConstPixelBufferAccess	stencilSrc			= getEffectiveDepthStencilAccess(src, tcu::Sampler::MODE_STENCIL);
 				const tcu::PixelBufferAccess		unclampedSubRegion	= getEffectiveDepthStencilAccess(tcu::getSubregion(m_unclampedExpectedTextureLevel[0]->getAccess(), dstOffset.x, dstOffset.y, dstExtent.x, dstExtent.y), tcu::Sampler::MODE_STENCIL);
@@ -3574,7 +3617,7 @@ void BlittingMipmaps::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src,
 			const tcu::PixelBufferAccess		dstSubRegion	= tcu::getSubregion(dst, dstOffset.x, dstOffset.y, layerNdx, dstExtent.x, dstExtent.y, 1);
 			blit(dstSubRegion, srcSubRegion, filter, mirrorMode);
 
-			if (filter == tcu::Sampler::LINEAR)
+			if (filter != tcu::Sampler::NEAREST)
 			{
 				const tcu::PixelBufferAccess	unclampedSubRegion	= tcu::getSubregion(m_unclampedExpectedTextureLevel[mipLevel]->getAccess(), dstOffset.x, dstOffset.y, layerNdx, dstExtent.x, dstExtent.y, 1);
 				scaleFromWholeSrcBuffer(unclampedSubRegion, srcSubRegion, srcOffset, srcExtent, filter);
@@ -3593,7 +3636,7 @@ void BlittingMipmaps::generateExpectedResult (void)
 
 	tcu::copy(m_expectedTextureLevel[0]->getAccess(), src);
 
-	if (m_params.filter == VK_FILTER_LINEAR)
+	if (m_params.filter != VK_FILTER_NEAREST)
 	{
 		for (deUint32 mipLevelNdx = 0u; mipLevelNdx < m_params.mipLevels; mipLevelNdx++)
 			m_unclampedExpectedTextureLevel[mipLevelNdx] = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(dst.getFormat(), dst.getWidth() >> mipLevelNdx, dst.getHeight() >> mipLevelNdx, dst.getDepth()));
@@ -3686,6 +3729,16 @@ public:
 
 		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
 			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
+
+		if (m_params.filter == VK_FILTER_CUBIC_EXT)
+		{
+			context.requireDeviceFunctionality("VK_EXT_filter_cubic");
+
+			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT))
+			{
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter cubic not supported");
+			}
+		}
 	}
 
 private:
@@ -6477,6 +6530,23 @@ void addBlittingImageSimpleWholeTests (tcu::TestCaseGroup* group, AllocationKind
 		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
+	}
 }
 
 void addBlittingImageSimpleMirrorXYTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -6547,6 +6617,23 @@ void addBlittingImageSimpleMirrorXYTests (tcu::TestCaseGroup* group, AllocationK
 		params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
 	}
 }
 
@@ -6619,6 +6706,23 @@ void addBlittingImageSimpleMirrorXTests (tcu::TestCaseGroup* group, AllocationKi
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
+	}
 }
 
 void addBlittingImageSimpleMirrorYTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -6689,6 +6793,23 @@ void addBlittingImageSimpleMirrorYTests (tcu::TestCaseGroup* group, AllocationKi
 		params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
 	}
 }
 
@@ -6827,6 +6948,23 @@ void addBlittingImageSimpleMirrorSubregionsTests (tcu::TestCaseGroup* group, All
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
+	}
 }
 
 void addBlittingImageSimpleScalingWhole1Tests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -6897,6 +7035,23 @@ void addBlittingImageSimpleScalingWhole1Tests (tcu::TestCaseGroup* group, Alloca
 		params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
 	}
 }
 
@@ -6969,6 +7124,23 @@ void addBlittingImageSimpleScalingWhole2Tests (tcu::TestCaseGroup* group, Alloca
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
+	}
 }
 
 void addBlittingImageSimpleScalingAndOffsetTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -7039,6 +7211,23 @@ void addBlittingImageSimpleScalingAndOffsetTests (tcu::TestCaseGroup* group, All
 		params.dst.image.format	= VK_FORMAT_B8G8R8A8_UNORM;
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
+	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
 	}
 }
 
@@ -7114,6 +7303,23 @@ void addBlittingImageSimpleWithoutScalingPartialTests (tcu::TestCaseGroup* group
 		const std::string	descriptionOfRGBAToBGRA	(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
 		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_linear", descriptionOfRGBAToBGRA, params));
 	}
+
+	// Filter is VK_FILTER_CUBIC_EXT.
+	{
+		params.filter					= VK_FILTER_CUBIC_EXT;
+		const std::string description	= "Cubic filter";
+
+		params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+		group->addChild(new BlitImageTestCase(testCtx, "cubic", description, params));
+
+		params.dst.image.format = VK_FORMAT_R32_SFLOAT;
+		const std::string	descriptionOfRGBAToR32(description + " and different formats (R8G8B8A8 -> R32)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToR32, params));
+
+		params.dst.image.format = VK_FORMAT_B8G8R8A8_UNORM;
+		const std::string	descriptionOfRGBAToBGRA(description + " and different formats (R8G8B8A8 -> B8G8R8A8)");
+		group->addChild(new BlitImageTestCase(testCtx, getFormatCaseName(params.dst.image.format) + "_cubic", descriptionOfRGBAToBGRA, params));
+	}
 }
 
 void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -7133,7 +7339,7 @@ struct BlitColorTestParams
 {
 	TestParams		params;
 	const VkFormat*	compatibleFormats;
-	bool			onlyNearest;
+	deUint32		testFilters;
 };
 
 bool isAllowedBlittingAllFormatsColorSrcFormatTests(const BlitColorTestParams& testParams)
@@ -7274,10 +7480,16 @@ void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup*
 														  " to " + getBlitImageTilingLayoutCaseName(testParams.params.dst.image.tiling, testParams.params.dst.image.operationLayout);
 					group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest", description, testParams.params));
 
-					if (!testParams.onlyNearest)
+					if (testParams.testFilters & 1u)
 					{
-						testParams.params.filter		= VK_FILTER_LINEAR;
+						testParams.params.filter = VK_FILTER_LINEAR;
 						group->addChild(new BlitImageTestCase(testCtx, testName + "_linear", description, testParams.params));
+					}
+
+					if (testParams.testFilters & 2u)
+					{
+						testParams.params.filter		= VK_FILTER_CUBIC_EXT;
+						group->addChild(new BlitImageTestCase(testCtx, testName + "_cubic", description, testParams.params));
 					}
 				}
 			}
@@ -7518,6 +7730,15 @@ const VkFormat	dedicatedAllocationBlittingFormatsToTest[]	=
 	VK_FORMAT_A8B8G8R8_SRGB_PACK32,
 };
 
+// skip cubic filtering test for the following data formats
+const FormatSet	onlyNearestAndLinearFormatsToTest =
+{
+	VK_FORMAT_A8B8G8R8_USCALED_PACK32,
+	VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
+	VK_FORMAT_A8B8G8R8_UINT_PACK32,
+	VK_FORMAT_A8B8G8R8_SINT_PACK32
+};
+
 void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 {
 	const struct {
@@ -7599,10 +7820,12 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 			if (!isSupportedByFramework(params.src.image.format))
 				continue;
 
+			const bool onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
+
 			BlitColorTestParams		testParams;
 			testParams.params				= params;
 			testParams.compatibleFormats	= compatibleFormats;
-			testParams.onlyNearest			= onlyNearest;
+			testParams.testFilters			= onlyNearest ? 0u : (onlyNearestAndLinear ? 1u : 3u );
 
 			const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
 			addTestGroup(group, getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
@@ -8012,10 +8235,16 @@ void addBlittingImageAllFormatsMipmapFormatTests (tcu::TestCaseGroup* group, Bli
 												  " to " + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
 			group->addChild(new BlitMipmapTestCase(testCtx, testName + "_nearest", description, testParams.params));
 
-			if (!testParams.onlyNearest)
+			if (testParams.testFilters & 1u)
 			{
-				testParams.params.filter		= VK_FILTER_LINEAR;
+				testParams.params.filter = VK_FILTER_LINEAR;
 				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_linear", description, testParams.params));
+			}
+
+			if (testParams.testFilters & 2u)
+			{
+				testParams.params.filter = VK_FILTER_CUBIC_EXT;
+				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_cubic", description, testParams.params));
 			}
 		}
 	}
@@ -8106,12 +8335,14 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 				if (!isSupportedByFramework(params.src.image.format))
 					continue;
 
+				const bool onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
+
 				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
 
 				BlitColorTestParams testParams;
 				testParams.params				= params;
 				testParams.compatibleFormats	= compatibleFormats;
-				testParams.onlyNearest			= onlyNearest;
+				testParams.testFilters			= onlyNearest ? 0u : (onlyNearestAndLinear ? 1u : 3u);
 
 				testParams.params.src.image.extent.depth = layerCount;
 				testParams.params.dst.image.extent.depth = layerCount;
@@ -8217,12 +8448,14 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 				if (!isSupportedByFramework(params.src.image.format))
 					continue;
 
+				const bool			onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
+
 				const std::string	description				= "Blit source format " + getFormatCaseName(params.src.image.format);
 
 				BlitColorTestParams	testParams;
 				testParams.params							= params;
 				testParams.compatibleFormats				= compatibleFormats;
-				testParams.onlyNearest						= onlyNearest;
+				testParams.testFilters						= onlyNearest ? 0u : (onlyNearestAndLinear ? 1u : 3u);
 
 				testParams.params.src.image.extent.depth	= layerCount;
 				testParams.params.dst.image.extent.depth	= layerCount;
@@ -8268,7 +8501,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 					BlitColorTestParams testParams;
 					testParams.params							= params;
 					testParams.compatibleFormats				= compatibleFormatsUInts;
-					testParams.onlyNearest						= true;
+					testParams.testFilters						= 0;
 
 					testParams.params.src.image.extent.depth	= layerCount;
 					testParams.params.dst.image.extent.depth	= layerCount;

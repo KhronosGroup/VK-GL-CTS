@@ -25,6 +25,7 @@
 
 #include "vktShaderCommonFunctionTests.hpp"
 #include "vktShaderExecutor.hpp"
+#include "vkQueryUtil.hpp"
 #include "gluContextInfo.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -37,6 +38,7 @@
 #include "deString.h"
 #include "deArrayUtil.hpp"
 #include "deSharedPtr.hpp"
+#include <algorithm>
 
 namespace vkt
 {
@@ -108,25 +110,87 @@ inline deUint32 getUlpDiffIgnoreZeroSign (float a, float b)
 		return getUlpDiff(a, b);
 }
 
-inline deUint32 getMaxUlpDiffFromBits (int numAccurateBits)
+inline deUint64 getMaxUlpDiffFromBits (int numAccurateBits, int numTotalBits)
 {
-	const int		numGarbageBits	= 23-numAccurateBits;
-	const deUint32	mask			= (1u<<numGarbageBits)-1u;
+	const int		numGarbageBits	= numTotalBits-numAccurateBits;
+	const deUint64	mask			= (1ull<<numGarbageBits)-1ull;
 
 	return mask;
 }
 
-static int getMinMantissaBits (glu::Precision precision)
+static int getNumMantissaBits (glu::DataType type)
 {
+	DE_ASSERT(glu::isDataTypeFloatOrVec(type) || glu::isDataTypeDoubleOrDVec(type));
+	return (glu::isDataTypeFloatOrVec(type) ? 23 : 52);
+}
+
+static int getMinMantissaBits (glu::DataType type, glu::Precision precision)
+{
+	if (glu::isDataTypeDoubleOrDVec(type))
+	{
+		return tcu::Float64::MANTISSA_BITS;
+	}
+
+	// Float case.
 	const int bits[] =
 	{
-		7,		// lowp
-		10,		// mediump
-		23		// highp
+		7,								// lowp
+		tcu::Float16::MANTISSA_BITS,	// mediump
+		tcu::Float32::MANTISSA_BITS,	// highp
 	};
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(bits) == glu::PRECISION_LAST);
 	DE_ASSERT(de::inBounds<int>(precision, 0, DE_LENGTH_OF_ARRAY(bits)));
 	return bits[precision];
+}
+
+static int getExponentBits (glu::DataType type)
+{
+	DE_ASSERT(glu::isDataTypeFloatOrVec(type) || glu::isDataTypeDoubleOrDVec(type));
+	return (glu::isDataTypeFloatOrVec(type) ? static_cast<int>(tcu::Float32::EXPONENT_BITS) : static_cast<int>(tcu::Float64::EXPONENT_BITS));
+}
+
+static deUint32 getExponentMask (int exponentBits)
+{
+	DE_ASSERT(exponentBits > 0);
+	return ((1u<<exponentBits) - 1u);
+}
+
+static int getComponentByteSize (glu::DataType type)
+{
+	const glu::DataType scalarType = glu::getDataTypeScalarType(type);
+
+	DE_ASSERT(	scalarType == glu::TYPE_FLOAT	||
+				scalarType == glu::TYPE_FLOAT16	||
+				scalarType == glu::TYPE_DOUBLE	||
+				scalarType == glu::TYPE_INT		||
+				scalarType == glu::TYPE_UINT	||
+				scalarType == glu::TYPE_INT8	||
+				scalarType == glu::TYPE_UINT8	||
+				scalarType == glu::TYPE_INT16	||
+				scalarType == glu::TYPE_UINT16	||
+				scalarType == glu::TYPE_BOOL	);
+
+	switch (scalarType)
+	{
+	case glu::TYPE_INT8:
+	case glu::TYPE_UINT8:
+		return 1;
+	case glu::TYPE_INT16:
+	case glu::TYPE_UINT16:
+	case glu::TYPE_FLOAT16:
+		return 2;
+	case glu::TYPE_BOOL:
+	case glu::TYPE_INT:
+	case glu::TYPE_UINT:
+	case glu::TYPE_FLOAT:
+		return 4;
+	case glu::TYPE_DOUBLE:
+		return 8;
+	default:
+		DE_ASSERT(false); break;
+	}
+	// Unreachable.
+	return 0;
 }
 
 static vector<int> getScalarSizes (const vector<Symbol>& symbols)
@@ -137,15 +201,24 @@ static vector<int> getScalarSizes (const vector<Symbol>& symbols)
 	return sizes;
 }
 
-static int computeTotalScalarSize (const vector<Symbol>& symbols)
+static vector<int> getComponentByteSizes (const vector<Symbol>& symbols)
+{
+	vector<int> sizes;
+	sizes.reserve(symbols.size());
+	for (const auto& sym : symbols)
+		sizes.push_back(getComponentByteSize(sym.varType.getBasicType()));
+	return sizes;
+}
+
+static int computeTotalByteSize (const vector<Symbol>& symbols)
 {
 	int totalSize = 0;
-	for (vector<Symbol>::const_iterator sym = symbols.begin(); sym != symbols.end(); ++sym)
-		totalSize += sym->varType.getScalarSize();
+	for (const auto& sym : symbols)
+		totalSize += getComponentByteSize(sym.varType.getBasicType()) * sym.varType.getScalarSize();
 	return totalSize;
 }
 
-static vector<void*> getInputOutputPointers (const vector<Symbol>& symbols, vector<deUint32>& data, const int numValues)
+static vector<void*> getInputOutputPointers (const vector<Symbol>& symbols, vector<deUint8>& data, const int numValues)
 {
 	vector<void*>	pointers		(symbols.size());
 	int				curScalarOffset	= 0;
@@ -154,15 +227,29 @@ static vector<void*> getInputOutputPointers (const vector<Symbol>& symbols, vect
 	{
 		const Symbol&	var				= symbols[varNdx];
 		const int		scalarSize		= var.varType.getScalarSize();
+		const auto		componentBytes	= getComponentByteSize(var.varType.getBasicType());
 
 		// Uses planar layout as input/output specs do not support strides.
 		pointers[varNdx] = &data[curScalarOffset];
-		curScalarOffset += scalarSize*numValues;
+		curScalarOffset += scalarSize*numValues*componentBytes;
 	}
 
 	DE_ASSERT(curScalarOffset == (int)data.size());
 
 	return pointers;
+}
+
+void checkTypeSupport (Context& context, glu::DataType dataType)
+{
+	if (glu::isDataTypeDoubleOrDVec(dataType))
+	{
+		const auto&	vki				= context.getInstanceInterface();
+		const auto	physicalDevice	= context.getPhysicalDevice();
+
+		const auto features = vk::getPhysicalDeviceFeatures(vki, physicalDevice);
+		if (!features.shaderFloat64)
+			TCU_THROW(NotSupportedError, "64-bit floats not supported by the implementation");
+	}
 }
 
 // \todo [2013-08-08 pyry] Make generic utility and move to glu?
@@ -176,6 +263,17 @@ struct HexFloat
 std::ostream& operator<< (std::ostream& str, const HexFloat& v)
 {
 	return str << v.value << " / " << tcu::toHex(tcu::Float32(v.value).bits());
+}
+
+struct HexDouble
+{
+	const double value;
+	HexDouble (const double value_) : value(value_) {}
+};
+
+std::ostream& operator<< (std::ostream& str, const HexDouble& v)
+{
+	return str << v.value << " / " << tcu::toHex(tcu::Float64(v.value).bits());
 }
 
 struct HexBool
@@ -219,6 +317,7 @@ std::ostream& operator<< (std::ostream& str, const VarValue& varValue)
 			case glu::TYPE_INT:		str << ((const deInt32*)varValue.value)[compNdx];					break;
 			case glu::TYPE_UINT:	str << tcu::toHex(((const deUint32*)varValue.value)[compNdx]);		break;
 			case glu::TYPE_BOOL:	str << HexBool(((const deUint32*)varValue.value)[compNdx]);			break;
+			case glu::TYPE_DOUBLE:	str << HexDouble(((const double*)varValue.value)[compNdx]);			break;
 
 			default:
 				DE_ASSERT(false);
@@ -233,20 +332,28 @@ std::ostream& operator<< (std::ostream& str, const VarValue& varValue)
 
 static std::string getCommonFuncCaseName (glu::DataType baseType, glu::Precision precision)
 {
-	return string(glu::getDataTypeName(baseType)) + getPrecisionPostfix(precision) + "_compute";
+	const bool isDouble = glu::isDataTypeDoubleOrDVec(baseType);
+	return string(glu::getDataTypeName(baseType)) + (isDouble ? "" : getPrecisionPostfix(precision)) + "_compute";
 }
 
 template<class TestClass>
-static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionName, glu::DataType scalarType)
+static void addFunctionCases (tcu::TestCaseGroup* parent, const char* functionName, const std::vector<glu::DataType>& scalarTypes)
 {
 	tcu::TestCaseGroup* group = new tcu::TestCaseGroup(parent->getTestContext(), functionName, functionName);
 	parent->addChild(group);
 
-	for (int vecSize = 1; vecSize <= 4; vecSize++)
+	for (const auto scalarType : scalarTypes)
 	{
-		for (int prec = glu::PRECISION_MEDIUMP; prec <= glu::PRECISION_HIGHP; prec++)
+		const bool	isDouble	= glu::isDataTypeDoubleOrDVec(scalarType);
+		const int	lowestPrec	= (isDouble ? glu::PRECISION_LAST : glu::PRECISION_MEDIUMP);
+		const int	highestPrec	= (isDouble ? glu::PRECISION_LAST : glu::PRECISION_HIGHP);
+
+		for (int vecSize = 1; vecSize <= 4; vecSize++)
 		{
-			group->addChild(new TestClass(parent->getTestContext(), glu::DataType(scalarType + vecSize - 1), glu::Precision(prec)));
+			for (int prec = lowestPrec; prec <= highestPrec; prec++)
+			{
+				group->addChild(new TestClass(parent->getTestContext(), glu::DataType(scalarType + vecSize - 1), glu::Precision(prec)));
+			}
 		}
 	}
 }
@@ -315,10 +422,10 @@ protected:
 
 tcu::TestStatus CommonFunctionTestInstance::iterate (void)
 {
-	const int				numInputScalars			= computeTotalScalarSize(m_spec.inputs);
-	const int				numOutputScalars		= computeTotalScalarSize(m_spec.outputs);
-	vector<deUint32>		inputData				(numInputScalars * m_numValues);
-	vector<deUint32>		outputData				(numOutputScalars * m_numValues);
+	const int				numInputBytes			= computeTotalByteSize(m_spec.inputs);
+	const int				numOutputBytes			= computeTotalByteSize(m_spec.outputs);
+	vector<deUint8>			inputData				(numInputBytes * m_numValues);
+	vector<deUint8>			outputData				(numOutputBytes * m_numValues);
 	const vector<void*>		inputPointers			= getInputOutputPointers(m_spec.inputs, inputData, m_numValues);
 	const vector<void*>		outputPointers			= getInputOutputPointers(m_spec.outputs, outputData, m_numValues);
 
@@ -332,6 +439,8 @@ tcu::TestStatus CommonFunctionTestInstance::iterate (void)
 	{
 		const vector<int>		inScalarSizes		= getScalarSizes(m_spec.inputs);
 		const vector<int>		outScalarSizes		= getScalarSizes(m_spec.outputs);
+		const vector<int>		inCompByteSizes		= getComponentByteSizes(m_spec.inputs);
+		const vector<int>		outCompByteSizes	= getComponentByteSizes(m_spec.outputs);
 		vector<void*>			curInputPtr			(inputPointers.size());
 		vector<void*>			curOutputPtr		(outputPointers.size());
 		int						numFailed			= 0;
@@ -341,10 +450,10 @@ tcu::TestStatus CommonFunctionTestInstance::iterate (void)
 		{
 			// Set up pointers for comparison.
 			for (int inNdx = 0; inNdx < (int)curInputPtr.size(); ++inNdx)
-				curInputPtr[inNdx] = (deUint32*)inputPointers[inNdx] + inScalarSizes[inNdx]*valNdx;
+				curInputPtr[inNdx] = (deUint8*)inputPointers[inNdx] + inScalarSizes[inNdx]*inCompByteSizes[inNdx]*valNdx;
 
 			for (int outNdx = 0; outNdx < (int)curOutputPtr.size(); ++outNdx)
-				curOutputPtr[outNdx] = (deUint32*)outputPointers[outNdx] + outScalarSizes[outNdx]*valNdx;
+				curOutputPtr[outNdx] = (deUint8*)outputPointers[outNdx] + outScalarSizes[outNdx]*outCompByteSizes[outNdx]*valNdx;
 
 			if (!compare(&curInputPtr[0], &curOutputPtr[0]))
 			{
@@ -523,29 +632,43 @@ public:
 
 static void infNanRandomFloats(int numValues, void* const* values, const char *name, const ShaderSpec& spec)
 {
+	constexpr deUint64		kOne			= 1;
 	de::Random				rnd				(deStringHash(name) ^ 0xc2a39fu);
 	const glu::DataType		type			= spec.inputs[0].varType.getBasicType();
 	const glu::Precision	precision		= spec.inputs[0].varType.getPrecision();
 	const int				scalarSize		= glu::getDataTypeScalarSize(type);
-	const int				mantissaBits	= getMinMantissaBits(precision);
-	const deUint32			mantissaMask	= ~getMaxUlpDiffFromBits(mantissaBits) & ((1u<<23)-1u);
+	const int				minMantissaBits	= getMinMantissaBits(type, precision);
+	const int				numMantissaBits	= getNumMantissaBits(type);
+	const deUint64			mantissaMask	= ~getMaxUlpDiffFromBits(minMantissaBits, numMantissaBits) & ((kOne<<numMantissaBits)-kOne);
+	const int				exponentBits	= getExponentBits(type);
+	const deUint32			exponentMask	= getExponentMask(exponentBits);
+	const bool				isDouble		= glu::isDataTypeDoubleOrDVec(type);
+	const deUint64			exponentBias	= (isDouble ? static_cast<deUint64>(tcu::Float64::EXPONENT_BIAS) : static_cast<deUint64>(tcu::Float32::EXPONENT_BIAS));
 
 	for (int valNdx = 0; valNdx < numValues*scalarSize; valNdx++)
 	{
 		// Roughly 25% chance of each of Inf and NaN
 		const bool		isInf		= rnd.getFloat() > 0.75f;
 		const bool		isNan		= !isInf && rnd.getFloat() > 0.66f;
-		const deUint32	m			= rnd.getUint32() & mantissaMask;
-		const deUint32	e			= rnd.getUint32() & 0xffu;
-		const deUint32	sign		= rnd.getUint32() & 0x1u;
+		const deUint64	m			= rnd.getUint64() & mantissaMask;
+		const deUint64	e			= static_cast<deUint64>(rnd.getUint32() & exponentMask);
+		const deUint64	sign		= static_cast<deUint64>(rnd.getUint32() & 0x1u);
 		// Ensure the 'quiet' bit is set on NaNs (also ensures we don't generate inf by mistake)
-		const deUint32	mantissa	= isInf ? 0 : (isNan ? ((1u<<22) | m) : m);
-		const deUint32	exp			= (isNan || isInf) ? 0xffu : deMin32(e, 0x7fu);
-		const deUint32	value		= (sign << 31) | (exp << 23) | mantissa;
+		const deUint64	mantissa	= isInf ? 0 : (isNan ? ((kOne<<(numMantissaBits-1)) | m) : m);
+		const deUint64	exp			= (isNan || isInf) ? exponentMask : std::min(e, exponentBias);
+		const deUint64	value		= (sign << (numMantissaBits + exponentBits)) | (exp << numMantissaBits) | static_cast<deUint32>(mantissa);
 
-		DE_ASSERT(tcu::Float32(value).isInf() == isInf && tcu::Float32(value).isNaN() == isNan);
-
-		((deUint32*)values[0])[valNdx] = value;
+		if (isDouble)
+		{
+			DE_ASSERT(tcu::Float64(value).isInf() == isInf && tcu::Float64(value).isNaN() == isNan);
+			((deUint64*)values[0])[valNdx] = value;
+		}
+		else
+		{
+			const auto value32 = static_cast<deUint32>(value);
+			DE_ASSERT(tcu::Float32(value32).isInf() == isInf && tcu::Float32(value32).isNaN() == isNan);
+			((deUint32*)values[0])[valNdx] = value32;
+		}
 	}
 }
 
@@ -567,19 +690,31 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
+		const bool				isDouble		= glu::isDataTypeDoubleOrDVec(type);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
-			const float		in0		= ((const float*)inputs[0])[compNdx];
-			const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
-			const bool		ref		= tcu::Float32(in0).isNaN();
-			bool			ok;
+			const bool	out0	= reinterpret_cast<const deUint32*>(outputs[0])[compNdx] != 0;
+			bool		ok;
+			bool		ref;
 
-			// NaN support only required for highp. Otherwise just check for false positives.
-			if (precision == glu::PRECISION_HIGHP)
+			if (isDouble)
+			{
+				const double in0 = reinterpret_cast<const double*>(inputs[0])[compNdx];
+				ref	= tcu::Float64(in0).isNaN();
 				ok = (out0 == ref);
+			}
 			else
-				ok = ref || !out0;
+			{
+				const float	in0	= reinterpret_cast<const float*>(inputs[0])[compNdx];
+				ref	= tcu::Float32(in0).isNaN();
+
+				// NaN support only required for highp. Otherwise just check for false positives.
+				if (precision == glu::PRECISION_HIGHP)
+					ok = (out0 == ref);
+				else
+					ok = ref || !out0;
+			}
 
 			if (!ok)
 			{
@@ -598,7 +733,7 @@ public:
 	IsnanCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
 		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "isnan")
 	{
-		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType));
+		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType) || glu::isDataTypeDoubleOrDVec(baseType));
 
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	boolType	= vecSize > 1 ? glu::getDataTypeBoolVec(vecSize) : glu::TYPE_BOOL;
@@ -606,6 +741,11 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(boolType, glu::PRECISION_LAST)));
 		m_spec.source = "out0 = isnan(in0);";
+	}
+
+	void checkSupport (Context& context) const
+	{
+		checkTypeSupport(context, m_spec.inputs[0].varType.getBasicType());
 	}
 
 	TestInstance* createInstance (Context& ctx) const
@@ -632,25 +772,37 @@ public:
 		const glu::DataType		type			= m_spec.inputs[0].varType.getBasicType();
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
+		const bool				isDouble		= glu::isDataTypeDoubleOrDVec(type);
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
-			const float		in0		= ((const float*)inputs[0])[compNdx];
-			const bool		out0	= ((const deUint32*)outputs[0])[compNdx] != 0;
-			bool			ref;
-			bool			ok;
-			if (precision == glu::PRECISION_HIGHP)
+			const bool	out0 = reinterpret_cast<const deUint32*>(outputs[0])[compNdx] != 0;
+			bool		ref;
+			bool		ok;
+
+			if (isDouble)
 			{
-				// Only highp is required to support inf/nan
-				ref = tcu::Float32(in0).isInf();
+				const double in0 = reinterpret_cast<const double*>(inputs[0])[compNdx];
+				ref = tcu::Float64(in0).isInf();
 				ok = (out0 == ref);
 			}
 			else
 			{
-				// Inf support is optional, check that inputs that are not Inf in mediump don't result in true.
-				ref = tcu::Float16(in0).isInf();
-				ok = (out0 || !ref);
+				const float in0 = reinterpret_cast<const float*>(inputs[0])[compNdx];
+				if (precision == glu::PRECISION_HIGHP)
+				{
+					// Only highp is required to support inf/nan
+					ref = tcu::Float32(in0).isInf();
+					ok = (out0 == ref);
+				}
+				else
+				{
+					// Inf support is optional, check that inputs that are not Inf in mediump don't result in true.
+					ref = tcu::Float16(in0).isInf();
+					ok = (out0 || !ref);
+				}
 			}
+
 			if (!ok)
 			{
 				m_failMsg << "Expected [" << compNdx << "] = " << HexBool(ref);
@@ -668,7 +820,7 @@ public:
 	IsinfCase (tcu::TestContext& testCtx, glu::DataType baseType, glu::Precision precision)
 		: CommonFunctionCase	(testCtx, getCommonFuncCaseName(baseType, precision).c_str(), "isinf")
 	{
-		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType));
+		DE_ASSERT(glu::isDataTypeFloatOrVec(baseType) || glu::isDataTypeDoubleOrDVec(baseType));
 
 		const int			vecSize		= glu::getDataTypeScalarSize(baseType);
 		const glu::DataType	boolType	= vecSize > 1 ? glu::getDataTypeBoolVec(vecSize) : glu::TYPE_BOOL;
@@ -676,6 +828,11 @@ public:
 		m_spec.inputs.push_back(Symbol("in0", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("out0", glu::VarType(boolType, glu::PRECISION_LAST)));
 		m_spec.source = "out0 = isinf(in0);";
+	}
+
+	void checkSupport (Context& context) const
+	{
+		checkTypeSupport(context, m_spec.inputs[0].varType.getBasicType());
 	}
 
 	TestInstance* createInstance (Context& ctx) const
@@ -715,8 +872,9 @@ public:
 		const glu::Precision	precision		= m_spec.inputs[0].varType.getPrecision();
 		const int				scalarSize		= glu::getDataTypeScalarSize(type);
 
-		const int				mantissaBits	= getMinMantissaBits(precision);
-		const int				maxUlpDiff		= getMaxUlpDiffFromBits(mantissaBits);
+		const int				minMantissaBits	= getMinMantissaBits(type, precision);
+		const int				numMantissaBits	= getNumMantissaBits(type);
+		const int				maxUlpDiff		= static_cast<int>(getMaxUlpDiffFromBits(minMantissaBits, numMantissaBits));
 
 		for (int compNdx = 0; compNdx < scalarSize; compNdx++)
 		{
@@ -854,12 +1012,16 @@ ShaderCommonFunctionTests::~ShaderCommonFunctionTests (void)
 
 void ShaderCommonFunctionTests::init (void)
 {
-	addFunctionCases<AbsCase>				(this,	"abs",				glu::TYPE_INT);
-	addFunctionCases<SignCase>				(this,	"sign",				glu::TYPE_INT);
-	addFunctionCases<IsnanCase>				(this,	"isnan",			glu::TYPE_FLOAT);
-	addFunctionCases<IsinfCase>				(this,	"isinf",			glu::TYPE_FLOAT);
-	addFunctionCases<FloatBitsToIntCase>	(this,	"floatbitstoint",	glu::TYPE_FLOAT);
-	addFunctionCases<FloatBitsToUintCase>	(this,	"floatbitstouint",	glu::TYPE_FLOAT);
+	static const std::vector<glu::DataType>	kIntOnly		(1u, glu::TYPE_INT);
+	static const std::vector<glu::DataType>	kFloatOnly		(1u, glu::TYPE_FLOAT);
+	static const std::vector<glu::DataType>	kFloatAndDouble	{glu::TYPE_FLOAT, glu::TYPE_DOUBLE};
+
+	addFunctionCases<AbsCase>				(this,	"abs",				kIntOnly);
+	addFunctionCases<SignCase>				(this,	"sign",				kIntOnly);
+	addFunctionCases<IsnanCase>				(this,	"isnan",			kFloatAndDouble);
+	addFunctionCases<IsinfCase>				(this,	"isinf",			kFloatAndDouble);
+	addFunctionCases<FloatBitsToIntCase>	(this,	"floatbitstoint",	kFloatOnly);
+	addFunctionCases<FloatBitsToUintCase>	(this,	"floatbitstouint",	kFloatOnly);
 
 	// (u)intBitsToFloat()
 	{

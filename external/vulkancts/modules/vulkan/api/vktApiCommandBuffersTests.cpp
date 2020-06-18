@@ -124,7 +124,7 @@ public:
 	VkCommandBuffer							getSecondaryCommandBuffer				(void) const { return *m_secondaryCommandBuffer; }
 
 	void									beginPrimaryCommandBuffer				(VkCommandBufferUsageFlags usageFlags);
-	void									beginSecondaryCommandBuffer				(VkCommandBufferUsageFlags usageFlags);
+	void									beginSecondaryCommandBuffer				(VkCommandBufferUsageFlags usageFlags, bool framebufferHint);
 	void									beginRenderPass							(VkSubpassContents content);
 	void									submitPrimaryCommandBuffer				(void);
 	de::MovePtr<tcu::TextureLevel>			readColorAttachment						(void);
@@ -261,7 +261,7 @@ void CommandBufferRenderPassTestEnvironment::beginPrimaryCommandBuffer(VkCommand
 	beginCommandBuffer(m_vkd, m_primaryCommandBuffers[0], usageFlags);
 }
 
-void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkCommandBufferUsageFlags usageFlags)
+void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkCommandBufferUsageFlags usageFlags, bool framebufferHint)
 {
 	const VkCommandBufferInheritanceInfo	commandBufferInheritanceInfo =
 	{
@@ -269,7 +269,7 @@ void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkComma
 		DE_NULL,												// const void*                      pNext;
 		*m_renderPass,											// VkRenderPass                     renderPass;
 		0u,														// deUint32                         subpass;
-		*m_frameBuffer,											// VkFramebuffer                    framebuffer;
+		(framebufferHint ? *m_frameBuffer : DE_NULL),			// VkFramebuffer                    framebuffer;
 		VK_FALSE,												// VkBool32                         occlusionQueryEnable;
 		0u,														// VkQueryControlFlags              queryFlags;
 		0u														// VkQueryPipelineStatisticFlags    pipelineStatistics;
@@ -1655,7 +1655,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 		return tcu::TestStatus::pass("oneTimeSubmitFlagSecondaryBufferTest succeeded");
 }
 
-tcu::TestStatus renderPassContinueTest(Context& context)
+tcu::TestStatus renderPassContinueTest(Context& context, bool framebufferHint)
 {
 	const DeviceInterface&					vkd						= context.getDeviceInterface();
 	CommandBufferRenderPassTestEnvironment	env						(context, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
@@ -1681,7 +1681,7 @@ tcu::TestStatus renderPassContinueTest(Context& context)
 		1u															// deUint32	layerCount;
 	};
 
-	env.beginSecondaryCommandBuffer(VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+	env.beginSecondaryCommandBuffer(VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, framebufferHint);
 	vkd.cmdClearAttachments(secondaryCommandBuffer, 1, &clearAttachment, 1, &clearRect);
 	endCommandBuffer(vkd, secondaryCommandBuffer);
 
@@ -3846,7 +3846,8 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "submit_twice_secondary",			"",	submitSecondaryBufferTwiceTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_primary",	"",	oneTimeSubmitFlagPrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_one_time_submit_secondary",	"",	oneTimeSubmitFlagSecondaryBufferTest);
-	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				"",	renderPassContinueTest);
+	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue",				"",	renderPassContinueTest, true);
+	addFunctionCase				(commandBuffersTests.get(), "render_pass_continue_no_fb",		"",	renderPassContinueTest, false);
 	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_primary",			"",	simultaneousUsePrimaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "record_simul_use_secondary",		"",	simultaneousUseSecondaryBufferTest);
 	addFunctionCaseWithPrograms (commandBuffersTests.get(), "record_simul_use_secondary_one_primary", "", genComputeIncrementSource, simultaneousUseSecondaryBufferOnePrimaryBufferTest);

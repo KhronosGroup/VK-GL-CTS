@@ -32,6 +32,7 @@
 #include "tcuTextureUtil.hpp"
 #include "deStringUtil.hpp"
 #include "deArrayUtil.hpp"
+#include "tcuMatrix.hpp"
 
 #include <limits>
 
@@ -1880,6 +1881,44 @@ static Vec4 sampleLinear1D (const ConstPixelBufferAccess& access, const Sampler&
 	return p0 * (1.0f - a) + p1 * a;
 }
 
+static Vec4 sampleCubic1D(const ConstPixelBufferAccess& access, const Sampler& sampler, float u, const IVec2& offset)
+{
+	int width = access.getWidth();
+
+	tcu::IVec4 x, i;
+
+	x[0] = deFloorFloatToInt32(u - 1.5f) + offset.x();
+	x[1] = x[0] + 1;
+	x[2] = x[1] + 1;
+	x[3] = x[2] + 1;
+
+	for (deUint32 m = 0; m < 4; ++m)
+		i[m] = wrap(sampler.wrapS, x[m], width);
+
+	bool iUseBorder[4];
+	for (deUint32 m = 0; m < 4; ++m)
+		iUseBorder[m] = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i[m], 0, width);
+
+	// Catmull-Rom basis matrix
+	static const float crValues[16] = { 0.0f,	1.0f,	0.0f,	0.0f,
+										-0.5f,	0.0f,	0.5f,	0.0f,
+										1.0f,	-2.5f,	2.0f,	-0.5f,
+										-0.5f,	1.5f,	-1.5f,	0.5f };
+	static const tcu::Mat4 crBasis(crValues);
+
+	float		a = deFloatFrac(u - 0.5f);
+	tcu::Vec4	alpha(1, a, a*a, a*a*a);
+	tcu::Vec4	wi = alpha * crBasis;
+
+	tcu::Vec4 result(0.0f, 0.0f, 0.0f, 0.0f);
+	for (deUint32 m = 0; m < 4; ++m)
+	{
+		tcu::Vec4 p = (iUseBorder[m]) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i[m], offset.y(), 0);
+		result += wi[m] * p;
+	}
+	return result;
+}
+
 static Vec4 sampleLinear2D (const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, const IVec3& offset)
 {
 	int w = access.getWidth();
@@ -1914,6 +1953,57 @@ static Vec4 sampleLinear2D (const ConstPixelBufferAccess& access, const Sampler&
 		   (p10*(     a)*(1.0f-b)) +
 		   (p01*(1.0f-a)*(     b)) +
 		   (p11*(     a)*(     b));
+}
+
+static Vec4 sampleCubic2D(const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, const IVec3& offset)
+{
+	int width	= access.getWidth();
+	int height	= access.getHeight();
+
+	tcu::IVec4 x, y, i, j;
+
+	x[0] = deFloorFloatToInt32(u - 1.5f) + offset.x();
+	x[1] = x[0] + 1;
+	x[2] = x[1] + 1;
+	x[3] = x[2] + 1;
+	y[0] = deFloorFloatToInt32(v - 1.5f) + offset.y();
+	y[1] = y[0] + 1;
+	y[2] = y[1] + 1;
+	y[3] = y[2] + 1;
+
+	for (deUint32 m = 0; m < 4; ++m)
+		i[m] = wrap(sampler.wrapS, x[m], width);
+	for (deUint32 n = 0; n < 4; ++n)
+		j[n] = wrap(sampler.wrapT, y[n], height);
+
+	bool iUseBorder[4], jUseBorder[4];
+	for (deUint32 m = 0; m < 4; ++m)
+		iUseBorder[m] = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i[m], 0, width);
+	for (deUint32 n = 0; n < 4; ++n)
+		jUseBorder[n] = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j[n], 0, height);
+
+	// Catmull-Rom basis matrix
+	static const float crValues[16] = {	0.0f,	1.0f,	0.0f,	0.0f,
+										-0.5f,	0.0f,	0.5f,	0.0f,
+										1.0f,	-2.5f,	2.0f,	-0.5f,
+										-0.5f,	1.5f,	-1.5f,	0.5f };
+	static const tcu::Mat4 crBasis(crValues);
+
+	float		a		= deFloatFrac(u - 0.5f);
+	float		b		= deFloatFrac(v - 0.5f);
+	tcu::Vec4	alpha	(1, a, a*a, a*a*a);
+	tcu::Vec4	beta	(1, b, b*b, b*b*b);
+	tcu::Vec4	wi		= alpha * crBasis;
+	tcu::Vec4	wj		= beta  * crBasis;
+
+	tcu::Vec4 result(0.0f, 0.0f, 0.0f, 0.0f);
+	for (deUint32 n = 0; n < 4; ++n)
+		for (deUint32 m = 0; m < 4; ++m)
+		{
+			tcu::Vec4 p = (iUseBorder[m] || jUseBorder[n]) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i[m], j[n], offset.z());
+			result += wi[m] * wj[n] * p;
+		}
+	return result;
 }
 
 static float sampleLinear1DCompare (const ConstPixelBufferAccess& access, const Sampler& sampler, float ref, float u, const IVec2& offset, bool isFixedPointDepthFormat)
@@ -2037,6 +2127,70 @@ static Vec4 sampleLinear3D (const ConstPixelBufferAccess& access, const Sampler&
 		   (p111*(     a)*(     b)*(     c));
 }
 
+static Vec4 sampleCubic3D(const ConstPixelBufferAccess& access, const Sampler& sampler, float u, float v, float w, const IVec3& offset)
+{
+	int width	= access.getWidth();
+	int height	= access.getHeight();
+	int depth	= access.getDepth();
+
+	tcu::IVec4 x, y, z, i, j, k;
+
+	x[0] = deFloorFloatToInt32(u - 1.5f) + offset.x();
+	x[1] = x[0] + 1;
+	x[2] = x[1] + 1;
+	x[3] = x[2] + 1;
+	y[0] = deFloorFloatToInt32(v - 1.5f) + offset.y();
+	y[1] = y[0] + 1;
+	y[2] = y[1] + 1;
+	y[3] = y[2] + 1;
+	z[0] = deFloorFloatToInt32(w - 1.5f) + offset.z();
+	z[1] = z[0] + 1;
+	z[2] = z[1] + 1;
+	z[3] = z[2] + 1;
+
+	for (deUint32 m = 0; m < 4; ++m)
+		i[m] = wrap(sampler.wrapS, x[m], width);
+	for (deUint32 n = 0; n < 4; ++n)
+		j[n] = wrap(sampler.wrapT, y[n], height);
+	for (deUint32 o = 0; o < 4; ++o)
+		k[o] = wrap(sampler.wrapR, k[o], depth);
+
+	bool iUseBorder[4], jUseBorder[4], kUseBorder[4];
+	for (deUint32 m = 0; m < 4; ++m)
+		iUseBorder[m] = sampler.wrapS == Sampler::CLAMP_TO_BORDER && !de::inBounds(i[m], 0, width);
+	for (deUint32 n = 0; n < 4; ++n)
+		jUseBorder[n] = sampler.wrapT == Sampler::CLAMP_TO_BORDER && !de::inBounds(j[n], 0, height);
+	for (deUint32 o = 0; o < 4; ++o)
+		kUseBorder[o] = sampler.wrapR == Sampler::CLAMP_TO_BORDER && !de::inBounds(k[o], 0, depth);
+
+	// Catmull-Rom basis matrix
+	static const float crValues[16] = {	0.0f,	1.0f,	0.0f,	0.0f,
+										-0.5f,	0.0f,	0.5f,	0.0f,
+										1.0f,	-2.5f,	2.0f,	-0.5f,
+										-0.5f,	1.5f,	-1.5f,	0.5f };
+	static const tcu::Mat4 crBasis(crValues);
+
+	float		a		= deFloatFrac(u - 0.5f);
+	float		b		= deFloatFrac(v - 0.5f);
+	float		c		= deFloatFrac(w - 0.5f);
+	tcu::Vec4	alpha	(1, a, a*a, a*a*a);
+	tcu::Vec4	beta	(1, b, b*b, b*b*b);
+	tcu::Vec4	gamma	(1, c, c*c, c*c*c);
+	tcu::Vec4	wi		= alpha * crBasis;
+	tcu::Vec4	wj		= beta  * crBasis;
+	tcu::Vec4	wk		= gamma * crBasis;
+
+	tcu::Vec4 result(0.0f, 0.0f, 0.0f, 0.0f);
+	for (deUint32 o = 0; o < 4; ++o)
+		for (deUint32 n = 0; n < 4; ++n)
+			for (deUint32 m = 0; m < 4; ++m)
+			{
+				tcu::Vec4 p = (iUseBorder[m] || jUseBorder[n] || kUseBorder[o]) ? lookupBorder(access.getFormat(), sampler) : lookup(access, i[m], j[n], k[o]);
+				result += wi[m] * wj[n] * wk[o] * p;
+			}
+	return result;
+}
+
 Vec4 ConstPixelBufferAccess::sample1D (const Sampler& sampler, Sampler::FilterMode filter, float s, int level) const
 {
 	// check selected layer exists
@@ -2074,6 +2228,7 @@ Vec4 ConstPixelBufferAccess::sample1DOffset (const Sampler& sampler, Sampler::Fi
 	{
 		case Sampler::NEAREST:	return sampleNearest1D	(*this, sampler, u, offset);
 		case Sampler::LINEAR:	return sampleLinear1D	(*this, sampler, u, offset);
+		case Sampler::CUBIC:	return sampleCubic1D	(*this, sampler, u, offset);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return Vec4(0.0f);
@@ -2100,6 +2255,7 @@ Vec4 ConstPixelBufferAccess::sample2DOffset (const Sampler& sampler, Sampler::Fi
 	{
 		case Sampler::NEAREST:	return sampleNearest2D	(*this, sampler, u, v, offset);
 		case Sampler::LINEAR:	return sampleLinear2D	(*this, sampler, u, v, offset);
+		case Sampler::CUBIC:	return sampleCubic2D	(*this, sampler, u, v, offset);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return Vec4(0.0f);
@@ -2124,6 +2280,7 @@ Vec4 ConstPixelBufferAccess::sample3DOffset (const Sampler& sampler, Sampler::Fi
 	{
 		case Sampler::NEAREST:	return sampleNearest3D	(*this, sampler, u, v, w, offset);
 		case Sampler::LINEAR:	return sampleLinear3D	(*this, sampler, u, v, w, offset);
+		case Sampler::CUBIC:	return sampleCubic3D	(*this, sampler, u, v, w, offset);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return Vec4(0.0f);
@@ -2290,26 +2447,48 @@ Vec4 sampleLevelArray2DOffset (const ConstPixelBufferAccess* levels, int numLeve
 
 	switch (filterMode)
 	{
-		case Sampler::NEAREST:	return levels[0].sample2DOffset(sampler, filterMode, s, t, offset);
-		case Sampler::LINEAR:	return levels[0].sample2DOffset(sampler, filterMode, s, t, offset);
+		case Sampler::NEAREST:
+		case Sampler::LINEAR:
+		case Sampler::CUBIC:
+			return levels[0].sample2DOffset(sampler, filterMode, s, t, offset);
 
 		case Sampler::NEAREST_MIPMAP_NEAREST:
 		case Sampler::LINEAR_MIPMAP_NEAREST:
+		case Sampler::CUBIC_MIPMAP_NEAREST:
 		{
 			int					maxLevel	= (int)numLevels-1;
 			int					level		= deClamp32((int)deFloatCeil(lod + 0.5f) - 1, 0, maxLevel);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_NEAREST) ? Sampler::LINEAR : Sampler::NEAREST;
+			Sampler::FilterMode	levelFilter;
+			switch (filterMode)
+			{
+			case Sampler::NEAREST_MIPMAP_NEAREST:	levelFilter = Sampler::NEAREST; break;
+			case Sampler::LINEAR_MIPMAP_NEAREST:	levelFilter = Sampler::LINEAR; break;
+			case Sampler::CUBIC_MIPMAP_NEAREST:		levelFilter = Sampler::CUBIC; break;
+			default:
+				DE_ASSERT(DE_FALSE);
+				return Vec4(0.0f);
+			}
 
 			return levels[level].sample2DOffset(sampler, levelFilter, s, t, offset);
 		}
 
 		case Sampler::NEAREST_MIPMAP_LINEAR:
 		case Sampler::LINEAR_MIPMAP_LINEAR:
+		case Sampler::CUBIC_MIPMAP_LINEAR:
 		{
 			int					maxLevel	= (int)numLevels-1;
 			int					level0		= deClamp32((int)deFloatFloor(lod), 0, maxLevel);
 			int					level1		= de::min(maxLevel, level0 + 1);
-			Sampler::FilterMode	levelFilter	= (filterMode == Sampler::LINEAR_MIPMAP_LINEAR) ? Sampler::LINEAR : Sampler::NEAREST;
+			Sampler::FilterMode	levelFilter;
+			switch (filterMode)
+			{
+			case Sampler::NEAREST_MIPMAP_LINEAR:	levelFilter = Sampler::NEAREST; break;
+			case Sampler::LINEAR_MIPMAP_LINEAR:		levelFilter = Sampler::LINEAR; break;
+			case Sampler::CUBIC_MIPMAP_LINEAR:		levelFilter = Sampler::CUBIC; break;
+			default:
+				DE_ASSERT(DE_FALSE);
+				return Vec4(0.0f);
+			}
 			float				f			= deFloatFrac(lod);
 			tcu::Vec4			t0			= levels[level0].sample2DOffset(sampler, levelFilter, s, t, offset);
 			tcu::Vec4			t1			= levels[level1].sample2DOffset(sampler, levelFilter, s, t, offset);

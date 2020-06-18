@@ -293,6 +293,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< bdyStr
 			<< "  out_color[gl_InvocationID ] = float(tempResult);\n"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "")
 			<< "}\n";
 
 		programCollection.glslSources.add("tesc")
@@ -311,6 +312,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< bdyStr
 			<< "  out_color  = float(tempResult);\n"
 			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+			<< (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "")
 			<< "}\n";
 
 		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
@@ -392,6 +394,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"    gl_TessLevelOuter[1] = 1.0f;\n"
 			"  }\n"
 			"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			+ (*caseDef.geometryPointSizeSupported ? "  gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n" : "") +
 			"}\n";
 
 		const string tese =
@@ -409,6 +412,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
 			"  float pixelSize = 2.0f/1024.0f;\n"
 			"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
+			+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
 			"}\n";
 
 		const string geometry =
@@ -426,6 +430,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			+ bdyStr +
 			"  result[gl_PrimitiveIDIn] = tempResult;\n"
 			"  gl_Position = gl_in[0].gl_Position;\n"
+			+ (*caseDef.geometryPointSizeSupported ? "  gl_PointSize = gl_in[0].gl_PointSize;\n" : "") +
 			"  EmitVertex();\n"
 			"  EndPrimitive();\n"
 			"}\n";

@@ -2360,6 +2360,89 @@ VKAPI_ATTR void VKAPI_CALL cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, 
 	DE_UNREF(lineStipplePattern);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdSetCullModeEXT (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(cullMode);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetFrontFaceEXT (VkCommandBuffer commandBuffer, VkFrontFace frontFace)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(frontFace);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetPrimitiveTopologyEXT (VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(primitiveTopology);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetViewportWithCountEXT (VkCommandBuffer commandBuffer, deUint32 viewportCount, const VkViewport* pViewports)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(viewportCount);
+	DE_UNREF(pViewports);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetScissorWithCountEXT (VkCommandBuffer commandBuffer, deUint32 scissorCount, const VkRect2D* pScissors)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(scissorCount);
+	DE_UNREF(pScissors);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBindVertexBuffers2EXT (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstBinding);
+	DE_UNREF(bindingCount);
+	DE_UNREF(pBuffers);
+	DE_UNREF(pOffsets);
+	DE_UNREF(pSizes);
+	DE_UNREF(pStrides);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthTestEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthTestEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthTestEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthWriteEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthWriteEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthCompareOpEXT (VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthCompareOp);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetDepthBoundsTestEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(depthBoundsTestEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetStencilTestEnableEXT (VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(stencilTestEnable);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdSetStencilOpEXT (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(faceMask);
+	DE_UNREF(failOp);
+	DE_UNREF(passOp);
+	DE_UNREF(depthFailOp);
+	DE_UNREF(compareOp);
+}
+
 VKAPI_ATTR void VKAPI_CALL getGeneratedCommandsMemoryRequirementsNV (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements)
 {
 	DE_UNREF(device);
@@ -3090,6 +3173,18 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressEXT,							getBufferDeviceAddressEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetLineStippleEXT,								cmdSetLineStippleEXT),
 	VK_NULL_FUNC_ENTRY(vkResetQueryPoolEXT,									resetQueryPool),
+	VK_NULL_FUNC_ENTRY(vkCmdSetCullModeEXT,									cmdSetCullModeEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetFrontFaceEXT,								cmdSetFrontFaceEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetPrimitiveTopologyEXT,						cmdSetPrimitiveTopologyEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetViewportWithCountEXT,						cmdSetViewportWithCountEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetScissorWithCountEXT,							cmdSetScissorWithCountEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindVertexBuffers2EXT,							cmdBindVertexBuffers2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthTestEnableEXT,							cmdSetDepthTestEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthWriteEnableEXT,							cmdSetDepthWriteEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthCompareOpEXT,							cmdSetDepthCompareOpEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBoundsTestEnableEXT,					cmdSetDepthBoundsTestEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilTestEnableEXT,						cmdSetStencilTestEnableEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdSetStencilOpEXT,								cmdSetStencilOpEXT),
 	VK_NULL_FUNC_ENTRY(vkGetGeneratedCommandsMemoryRequirementsNV,			getGeneratedCommandsMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkCmdPreprocessGeneratedCommandsNV,					cmdPreprocessGeneratedCommandsNV),
 	VK_NULL_FUNC_ENTRY(vkCmdExecuteGeneratedCommandsNV,						cmdExecuteGeneratedCommandsNV),

@@ -358,6 +358,18 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSupportedFramebuffe
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateHeadlessSurfaceEXTFunc)											(VkInstance instance, const VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetLineStippleEXTFunc)												(VkCommandBuffer commandBuffer, deUint32 lineStippleFactor, deUint16 lineStipplePattern);
 typedef VKAPI_ATTR void					(VKAPI_CALL* ResetQueryPoolEXTFunc)													(VkDevice device, VkQueryPool queryPool, deUint32 firstQuery, deUint32 queryCount);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetCullModeEXTFunc)													(VkCommandBuffer commandBuffer, VkCullModeFlags cullMode);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetFrontFaceEXTFunc)												(VkCommandBuffer commandBuffer, VkFrontFace frontFace);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetPrimitiveTopologyEXTFunc)										(VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetViewportWithCountEXTFunc)										(VkCommandBuffer commandBuffer, deUint32 viewportCount, const VkViewport* pViewports);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetScissorWithCountEXTFunc)											(VkCommandBuffer commandBuffer, deUint32 scissorCount, const VkRect2D* pScissors);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBindVertexBuffers2EXTFunc)											(VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthTestEnableEXTFunc)											(VkCommandBuffer commandBuffer, VkBool32 depthTestEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthWriteEnableEXTFunc)											(VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthCompareOpEXTFunc)											(VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBoundsTestEnableEXTFunc)									(VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetStencilTestEnableEXTFunc)										(VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetStencilOpEXTFunc)												(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetGeneratedCommandsMemoryRequirementsNVFunc)							(VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPreprocessGeneratedCommandsNVFunc)									(VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdExecuteGeneratedCommandsNVFunc)										(VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo);

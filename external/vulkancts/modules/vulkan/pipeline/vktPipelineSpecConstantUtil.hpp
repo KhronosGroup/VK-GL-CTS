@@ -67,6 +67,10 @@ enum FeatureFlagBits
 	FEATURE_SHADER_FLOAT_64						= 1u << 2,
 	FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS	= 1u << 3,
 	FEATURE_FRAGMENT_STORES_AND_ATOMICS			= 1u << 4,
+	FEATURE_SHADER_INT_64						= 1u << 5,
+	FEATURE_SHADER_INT_16						= 1u << 6,
+	FEATURE_SHADER_FLOAT_16						= 1u << 7,
+	FEATURE_SHADER_INT_8						= 1u << 8,
 };
 typedef deUint32 FeatureFlags;
 

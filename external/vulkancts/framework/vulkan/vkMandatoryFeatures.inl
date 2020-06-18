@@ -16,6 +16,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 	coreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	void** nextPtr = &coreFeatures.pNext;
 
+	vk::VkPhysicalDevice16BitStorageFeaturesKHR physicalDevice16BitStorageFeaturesKHR;
+	deMemset(&physicalDevice16BitStorageFeaturesKHR, 0, sizeof(physicalDevice16BitStorageFeaturesKHR));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_16bit_storage")) )
+	{
+		physicalDevice16BitStorageFeaturesKHR.sType = getStructureType<VkPhysicalDevice16BitStorageFeaturesKHR>();
+		*nextPtr = &physicalDevice16BitStorageFeaturesKHR;
+		nextPtr  = &physicalDevice16BitStorageFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDevice8BitStorageFeaturesKHR physicalDevice8BitStorageFeaturesKHR;
 	deMemset(&physicalDevice8BitStorageFeaturesKHR, 0, sizeof(physicalDevice8BitStorageFeaturesKHR));
 
@@ -985,6 +995,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderAtomicInt64FeaturesKHR.shaderBufferInt64Atomics == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderBufferInt64Atomics not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_16bit_storage")) )
+	{
+		if ( physicalDevice16BitStorageFeaturesKHR.storageBuffer16BitAccess == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature storageBuffer16BitAccess not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
