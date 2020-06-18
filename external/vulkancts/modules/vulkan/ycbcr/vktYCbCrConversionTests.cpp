@@ -246,11 +246,12 @@ vk::Move<vk::VkDescriptorSetLayout> createDescriptorSetLayout (const vk::DeviceI
 
 vk::Move<vk::VkDescriptorPool> createDescriptorPool (const vk::DeviceInterface&											vkd,
 													 vk::VkDevice														device,
-													 const std::vector<de::SharedPtr<vk::Unique<vk::VkSampler> > >&		samplers)
+													 const std::vector<de::SharedPtr<vk::Unique<vk::VkSampler> > >&		samplers,
+													 const deUint32														combinedSamplerDescriptorCount)
 {
 	const vk::VkDescriptorPoolSize			poolSizes[]					=
 	{
-		{ vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (deUint32)samplers.size() }
+		{ vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (deUint32)samplers.size() * combinedSamplerDescriptorCount }
 	};
 	const vk::VkDescriptorPoolCreateInfo	descriptorPoolCreateInfo	=
 	{
@@ -488,6 +489,7 @@ void evalShader (Context&												context,
 				 deUint32												samplerBinding,
 				 vector<vector<Vec4> >&									results)
 {
+	const vk::InstanceInterface&											vk				(context.getInstanceInterface());
 	const vk::DeviceInterface&												vkd				(context.getDeviceInterface());
 	const vk::VkDevice														device			(context.getDevice());
 	std::vector<de::SharedPtr<vk::Unique<vk::VkSamplerYcbcrConversion> > >	conversions;
@@ -523,8 +525,37 @@ void evalShader (Context&												context,
 	}
 #endif
 
+	deUint32 combinedSamplerDescriptorCount = 1;
+	{
+		const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,	//VkStructureType		sType;
+			DE_NULL,													//const void*			pNext;
+			format,														//VkFormat				format;
+			vk::VK_IMAGE_TYPE_2D,										//VkImageType			type;
+			imageTiling,												//VkImageTiling			tiling;
+			vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			vk::VK_IMAGE_USAGE_SAMPLED_BIT,								//VkImageUsageFlags		usage;
+			disjoint ?
+			(vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_DISJOINT_BIT :
+			(vk::VkImageCreateFlags)0u									//VkImageCreateFlags	flags;
+		};
+
+		vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
+		samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
+		samplerYcbcrConversionImage.pNext = DE_NULL;
+
+		vk::VkImageFormatProperties2 imageFormatProperties = {};
+		imageFormatProperties.sType = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+		imageFormatProperties.pNext = &samplerYcbcrConversionImage;
+
+		VK_CHECK(vk.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &imageFormatProperties));
+		combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
+	}
+
+
 	const vk::Unique<vk::VkDescriptorSetLayout>			layout				(createDescriptorSetLayout(vkd, device, samplers, samplerBinding));
-	const vk::Unique<vk::VkDescriptorPool>				descriptorPool		(createDescriptorPool(vkd, device, samplers));
+	const vk::Unique<vk::VkDescriptorPool>				descriptorPool		(createDescriptorPool(vkd, device, samplers, combinedSamplerDescriptorCount));
 	const vk::Unique<vk::VkDescriptorSet>				descriptorSet		(createDescriptorSet(vkd, device, *descriptorPool, *layout, samplers, imageViews, samplerBinding));
 
 	const ShaderSpec									spec				(createShaderSpec(samplerBinding, colorModels));
