@@ -1741,7 +1741,7 @@ def writeDeviceFeatures2(api, filename):
 		if extension is not None:
 			condition = ' checkExtension(properties, "' + extension + '")'
 		if major is not None:
-			if condition is not '':
+			if condition != '':
 				condition += '\t' * int((39 - len(extension)) / 4) + '|| '
 			else:
 				condition += '\t' * 17 + '   '
