@@ -59,6 +59,9 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <map>
+#include <utility>
+#include <memory>
 
 namespace vkt
 {
@@ -94,24 +97,29 @@ typedef enum
 	UPDATE_AFTER_BIND_ENABLED,
 } UpdateAfterBind;
 
-struct CaseDef
+struct DescriptorId
 {
-	IndexType indexType;
-	deUint32 numDescriptorSets;
-	deUint32 maxPerStageUniformBuffers;
-	deUint32 maxUniformBuffersDynamic;
-	deUint32 maxPerStageStorageBuffers;
-	deUint32 maxStorageBuffersDynamic;
-	deUint32 maxPerStageSampledImages;
-	deUint32 maxPerStageStorageImages;
-	deUint32 maxInlineUniformBlocks;
-	deUint32 maxInlineUniformBlockSize;
-	deUint32 maxPerStageInputAttachments;
-	Stage stage;
-	UpdateAfterBind uab;
-	deUint32 seed;
-	VkFlags allShaderStages;
-	VkFlags allPipelineStages;
+	DescriptorId (deUint32 set_, deUint32 binding_, deUint32 number_)
+		: set(set_), binding(binding_), number(number_)
+		{}
+
+	bool operator< (const DescriptorId& other) const
+	{
+		return (set < other.set || (set == other.set && (binding < other.binding || (binding == other.binding && number < other.number))));
+	}
+
+	deUint32 set;
+	deUint32 binding;
+	deUint32 number;
+};
+
+struct WriteInfo
+{
+	WriteInfo () : ptr(nullptr), expected(0u), writeGenerated(false) {}
+
+	deInt32*	ptr;
+	deInt32		expected;
+	bool		writeGenerated;
 };
 
 class RandomLayout
@@ -132,22 +140,52 @@ public:
 	// size of the variable descriptor (last) binding in each set
 	vector<deUint32> variableDescriptorSizes;
 
+	// List of descriptors that will write the descriptor value instead of reading it.
+	map<DescriptorId, WriteInfo> descriptorWrites;
+
+};
+
+struct CaseDef
+{
+	IndexType						indexType;
+	deUint32						numDescriptorSets;
+	deUint32						maxPerStageUniformBuffers;
+	deUint32						maxUniformBuffersDynamic;
+	deUint32						maxPerStageStorageBuffers;
+	deUint32						maxStorageBuffersDynamic;
+	deUint32						maxPerStageSampledImages;
+	deUint32						maxPerStageStorageImages;
+	deUint32						maxPerStageStorageTexelBuffers;
+	deUint32						maxInlineUniformBlocks;
+	deUint32						maxInlineUniformBlockSize;
+	deUint32						maxPerStageInputAttachments;
+	Stage							stage;
+	UpdateAfterBind					uab;
+	deUint32						seed;
+	VkFlags							allShaderStages;
+	VkFlags							allPipelineStages;
+	// Shared by the test case and the test instance.
+	std::shared_ptr<RandomLayout>	randomLayout;
 };
 
 
 class DescriptorSetRandomTestInstance : public TestInstance
 {
 public:
-						DescriptorSetRandomTestInstance		(Context& context, const CaseDef& data);
-						~DescriptorSetRandomTestInstance	(void);
-	tcu::TestStatus		iterate								(void);
+								DescriptorSetRandomTestInstance		(Context& context, const std::shared_ptr<CaseDef>& data);
+								~DescriptorSetRandomTestInstance	(void);
+	tcu::TestStatus				iterate								(void);
 private:
-	CaseDef				m_data;
+	// Shared pointer because the test case and the test instance need to share the random layout information. Specifically, the
+	// descriptorWrites map, which is filled from the test case and used by the test instance.
+	std::shared_ptr<CaseDef>	m_data_ptr;
+	CaseDef&					m_data;
 };
 
-DescriptorSetRandomTestInstance::DescriptorSetRandomTestInstance (Context& context, const CaseDef& data)
+DescriptorSetRandomTestInstance::DescriptorSetRandomTestInstance (Context& context, const std::shared_ptr<CaseDef>& data)
 	: vkt::TestInstance		(context)
-	, m_data				(data)
+	, m_data_ptr			(data)
+	, m_data				(*m_data_ptr.get())
 {
 }
 
@@ -158,19 +196,22 @@ DescriptorSetRandomTestInstance::~DescriptorSetRandomTestInstance (void)
 class DescriptorSetRandomTestCase : public TestCase
 {
 	public:
-								DescriptorSetRandomTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
+								DescriptorSetRandomTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef& data);
 								~DescriptorSetRandomTestCase	(void);
 	virtual	void				initPrograms					(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance					(Context& context) const;
 	virtual void				checkSupport					(Context& context) const;
 
 private:
-	CaseDef					m_data;
+	// See DescriptorSetRandomTestInstance about the need for a shared pointer here.
+	std::shared_ptr<CaseDef>	m_data_ptr;
+	CaseDef&					m_data;
 };
 
-DescriptorSetRandomTestCase::DescriptorSetRandomTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef data)
+DescriptorSetRandomTestCase::DescriptorSetRandomTestCase (tcu::TestContext& context, const char* name, const char* desc, const CaseDef& data)
 	: vkt::TestCase	(context, name, desc)
-	, m_data		(data)
+	, m_data_ptr	(std::make_shared<CaseDef>(data))
+	, m_data		(*reinterpret_cast<CaseDef*>(m_data_ptr.get()))
 {
 }
 
@@ -215,16 +256,16 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		context.requireDeviceFunctionality("VK_NV_ray_tracing");
 	}
 
+	// Note binding 0 in set 0 is the output storage image, always present and not subject to dynamic indexing.
 	if ((m_data.indexType == INDEX_TYPE_PUSHCONSTANT ||
 		 m_data.indexType == INDEX_TYPE_DEPENDENT ||
 		 m_data.indexType == INDEX_TYPE_RUNTIME_SIZE) &&
-		(!features.features.shaderUniformBufferArrayDynamicIndexing ||
-		 !features.features.shaderStorageBufferArrayDynamicIndexing ||
-		 !features.features.shaderSampledImageArrayDynamicIndexing ||
-		 !features.features.shaderStorageImageArrayDynamicIndexing ||
-		 (m_data.stage == STAGE_FRAGMENT && (!indexingFeatures.shaderInputAttachmentArrayDynamicIndexing)) ||
-		 !indexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing ||
-		 !indexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing))
+		((m_data.maxPerStageUniformBuffers > 0u && !features.features.shaderUniformBufferArrayDynamicIndexing) ||
+		 (m_data.maxPerStageStorageBuffers > 0u && !features.features.shaderStorageBufferArrayDynamicIndexing) ||
+		 (m_data.maxPerStageStorageImages > 1u && !features.features.shaderStorageImageArrayDynamicIndexing) ||
+		 (m_data.stage == STAGE_FRAGMENT && m_data.maxPerStageInputAttachments > 0u && (!indexingFeatures.shaderInputAttachmentArrayDynamicIndexing)) ||
+		 (m_data.maxPerStageSampledImages > 0u && !indexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing) ||
+		 (m_data.maxPerStageStorageTexelBuffers > 0u && !indexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing)))
 	{
 		TCU_THROW(NotSupportedError, "Dynamic indexing not supported");
 	}
@@ -236,19 +277,20 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 
 	if ((m_data.maxPerStageUniformBuffers + m_data.maxPerStageStorageBuffers +
 		m_data.maxPerStageSampledImages + m_data.maxPerStageStorageImages +
-		m_data.maxPerStageInputAttachments) >
+		m_data.maxPerStageStorageTexelBuffers + m_data.maxPerStageInputAttachments) >
 		properties.properties.limits.maxPerStageResources)
 	{
 		TCU_THROW(NotSupportedError, "Number of descriptors not supported");
 	}
 
-	if (m_data.maxPerStageUniformBuffers	> properties.properties.limits.maxPerStageDescriptorUniformBuffers ||
-		m_data.maxPerStageStorageBuffers	> properties.properties.limits.maxPerStageDescriptorStorageBuffers ||
-		m_data.maxUniformBuffersDynamic		> properties.properties.limits.maxDescriptorSetUniformBuffersDynamic ||
-		m_data.maxStorageBuffersDynamic		> properties.properties.limits.maxDescriptorSetStorageBuffersDynamic ||
-		m_data.maxPerStageSampledImages		> properties.properties.limits.maxPerStageDescriptorSampledImages ||
-		m_data.maxPerStageStorageImages		> properties.properties.limits.maxPerStageDescriptorStorageImages ||
-		m_data.maxPerStageInputAttachments	> properties.properties.limits.maxPerStageDescriptorInputAttachments)
+	if (m_data.maxPerStageUniformBuffers		> properties.properties.limits.maxPerStageDescriptorUniformBuffers ||
+		m_data.maxPerStageStorageBuffers		> properties.properties.limits.maxPerStageDescriptorStorageBuffers ||
+		m_data.maxUniformBuffersDynamic			> properties.properties.limits.maxDescriptorSetUniformBuffersDynamic ||
+		m_data.maxStorageBuffersDynamic			> properties.properties.limits.maxDescriptorSetStorageBuffersDynamic ||
+		m_data.maxPerStageSampledImages			> properties.properties.limits.maxPerStageDescriptorSampledImages ||
+		(m_data.maxPerStageStorageImages +
+		 m_data.maxPerStageStorageTexelBuffers)	> properties.properties.limits.maxPerStageDescriptorStorageImages ||
+		m_data.maxPerStageInputAttachments		> properties.properties.limits.maxPerStageDescriptorInputAttachments)
 	{
 		TCU_THROW(NotSupportedError, "Number of descriptors not supported");
 	}
@@ -286,24 +328,45 @@ deInt32 randRange(deRandom *rnd, deInt32 min, deInt32 max)
 	return (deRandom_getUint32(rnd) % (max - min + 1)) + min;
 }
 
-void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
+void chooseWritesRandomly(vk::VkDescriptorType type, RandomLayout& randomLayout, deRandom& rnd, deUint32 set, deUint32 binding, deUint32 count)
 {
-	deRandom rnd;
-	deRandom_init(&rnd, caseDef.seed);
+	switch (type)
+	{
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+	case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+	case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+		// Disable writes for all descriptor types.
+		return;
+	default:
+		break;
+	}
 
+	for (deUint32 i = 0u; i < count; ++i)
+	{
+		// 1/2 chance of being a write.
+		if (randRange(&rnd, 1, 2) == 1)
+			randomLayout.descriptorWrites[DescriptorId(set, binding, i)] = {};
+	}
+}
+
+void generateRandomLayout(RandomLayout& randomLayout, const CaseDef &caseDef, deRandom& rnd)
+{
 	// Count the number of each resource type, to avoid overflowing the limits.
 	deUint32 numUBO = 0;
 	deUint32 numUBODyn = 0;
 	deUint32 numSSBO = 0;
 	deUint32 numSSBODyn = 0;
 	deUint32 numImage = 0;
+	deUint32 numStorageTex = 0;
 	deUint32 numTexBuffer = 0;
 	deUint32 numInlineUniformBlocks = 0;
 	deUint32 numInputAttachments = 0;
 
 	// TODO: Consider varying these
 	deUint32 minBindings = 0;
-	deUint32 maxBindings = 32;
+	// Try to keep the workload roughly constant while exercising higher numbered sets.
+	deUint32 maxBindings = 128u / caseDef.numDescriptorSets;
 	// No larger than 32 elements for dynamic indexing tests, due to 128B limit
 	// for push constants (used for the indices)
 	deUint32 maxArray = caseDef.indexType == INDEX_TYPE_NONE ? 0 : 32;
@@ -370,6 +433,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 				intToType[index++] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				intToType[index++] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				intToType[index++] = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+				intToType[index++] = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 				intToType[index++] = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
 				intToType[index++] = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT;
 				if (caseDef.stage == STAGE_FRAGMENT)
@@ -405,14 +469,28 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, caseDef.maxPerStageStorageBuffers - numSSBO));
 					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
 					numSSBO += binding.descriptorCount;
+
+					chooseWritesRandomly(binding.descriptorType, randomLayout, rnd, s, b, binding.descriptorCount);
 				}
 				break;
 			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+				if (numStorageTex < caseDef.maxPerStageStorageTexelBuffers)
+				{
+					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, caseDef.maxPerStageStorageTexelBuffers - numStorageTex));
+					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
+					numStorageTex += binding.descriptorCount;
+
+					chooseWritesRandomly(binding.descriptorType, randomLayout, rnd, s, b, binding.descriptorCount);
+				}
+				break;
+			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 				if (numImage < caseDef.maxPerStageStorageImages)
 				{
 					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, caseDef.maxPerStageStorageImages - numImage));
 					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
 					numImage += binding.descriptorCount;
+
+					chooseWritesRandomly(binding.descriptorType, randomLayout, rnd, s, b, binding.descriptorCount);
 				}
 				break;
 			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
@@ -461,6 +539,8 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
 					numSSBO += binding.descriptorCount;
 					numSSBODyn += binding.descriptorCount;
+
+					chooseWritesRandomly(binding.descriptorType, randomLayout, rnd, s, b, binding.descriptorCount);
 				}
 				break;
 			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
@@ -489,6 +569,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC &&
 			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+			bindings[bindings.size()-1].descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE &&
 			!(s == 0 && bindings.size() == 1) && // Don't cut out the output image binding
 			randRange(&rnd, 1,4) == 1) // 1 in 4 chance
 		{
@@ -504,10 +585,55 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 	}
 }
 
+class CheckDecider
+{
+public:
+	CheckDecider (deRandom& rnd, deUint32 descriptorCount)
+		: m_rnd(rnd)
+		, m_count(descriptorCount)
+		, m_remainder(0u)
+		, m_have_remainder(false)
+	{
+	}
+
+	bool shouldCheck (deUint32 arrayIndex)
+	{
+		// Always check the first 3 and the last one, at least.
+		if (arrayIndex <= 2u || arrayIndex == m_count - 1u)
+			return true;
+
+		if (!m_have_remainder)
+		{
+			// Find a random remainder for this set and binding.
+			DE_ASSERT(m_count >= kRandomChecksPerBinding);
+
+			// Because the divisor will be m_count/kRandomChecksPerBinding and the remainder will be chosen randomly for the
+			// divisor, we expect to check around kRandomChecksPerBinding descriptors per binding randomly, no matter the amount of
+			// descriptors in the binding.
+			m_remainder = static_cast<deUint32>(randRange(&m_rnd, 0, static_cast<deInt32>((m_count / kRandomChecksPerBinding) - 1)));
+			m_have_remainder = true;
+		}
+
+		return (arrayIndex % m_count == m_remainder);
+	}
+
+private:
+	static constexpr deUint32 kRandomChecksPerBinding = 4u;
+
+	deRandom&	m_rnd;
+	deUint32	m_count;
+	deUint32	m_remainder;
+	bool		m_have_remainder;
+};
+
 void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollection) const
 {
-	RandomLayout randomLayout(m_data.numDescriptorSets);
-	generateRandomLayout(randomLayout, m_data);
+	deRandom rnd;
+	deRandom_init(&rnd, m_data.seed);
+
+	m_data.randomLayout.reset(new RandomLayout(m_data.numDescriptorSets));
+	RandomLayout& randomLayout = *m_data.randomLayout.get();
+	generateRandomLayout(randomLayout, m_data, rnd);
 
 	std::stringstream decls, checks;
 
@@ -566,7 +692,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					decls << "layout(r32i, set = " << s << ", binding = " << b << ") uniform iimageBuffer image" << s << "_" << b << array.str()  << ";\n";
 					break;
 				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-					decls << "layout(r32ui, set = " << s << ", binding = " << b << ") uniform uimage2D image" << s << "_" << b << array.str()  << ";\n";
+					decls << "layout(r32i, set = " << s << ", binding = " << b << ") uniform iimage2D simage" << s << "_" << b << array.str()  << ";\n";
 					break;
 				case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
 					decls << "layout(input_attachment_index = " << inputAttachments << ", set = " << s << ", binding = " << b << ") uniform isubpassInput attachment" << s << "_" << b << array.str()  << ";\n";
@@ -575,7 +701,10 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				default: DE_ASSERT(0);
 				}
 
-				for (deUint32 ai = 0; ai < de::max(1u, arraySizes[b]); ++ai, descriptor += descriptorIncrement)
+				const deUint32	arraySize		= de::max(1u, arraySizes[b]);
+				CheckDecider	checkDecider	(rnd, arraySize);
+
+				for (deUint32 ai = 0; ai < arraySize; ++ai, descriptor += descriptorIncrement)
 				{
 					// Don't access descriptors past the end of the allocated range for
 					// variable descriptor count
@@ -602,90 +731,110 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 						continue;
 					}
 
-					// Check that the value in the descriptor equals its descriptor number.
-					// i.e. check "ubo[c].val == descriptor" or "ubo[pushconst[c]].val == descriptor"
-
-					// First, construct the index. This can be a constant literal, a value
-					// from a push constant, or a function of the previous descriptor value.
-					std::stringstream ind;
-					switch (m_data.indexType)
+					if (checkDecider.shouldCheck(ai))
 					{
-					case INDEX_TYPE_NONE:
-					case INDEX_TYPE_CONSTANT:
-						// The index is just the constant literal
-						if (arraySizes[b])
-						{
-							ind << "[" << ai << "]";
-						}
-						break;
-					case INDEX_TYPE_PUSHCONSTANT:
-						// identity is an int[], directly index it
-						if (arraySizes[b])
-						{
-							ind << "[pc.identity[" << ai << "]]";
-						}
-						break;
-					case INDEX_TYPE_RUNTIME_SIZE:
-					case INDEX_TYPE_DEPENDENT:
-						// Index is a function of the previous return value (which is reset to zero)
-						if (arraySizes[b])
-						{
-							ind << "[accum + " << ai << "]";
-						}
-						break;
-					default: DE_ASSERT(0);
-					}
+						// Check that the value in the descriptor equals its descriptor number.
+						// i.e. check "ubo[c].val == descriptor" or "ubo[pushconst[c]].val == descriptor"
+						// When doing a write check, write the descriptor number in the value.
 
-					// For very large bindings, only check every N=201 descriptors (chosen arbitrarily)
-					bool checkDescriptor = true;
-					if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
-					{
-						// For "large" bindings, only check every N=3 descriptors (chosen arbitrarily).
-						// This is meant to reduce shader compile time.
-						if (ai > 2 &&
-							binding.descriptorCount >= 4 &&
-							(ai % 3) != 0)
+						// First, construct the index. This can be a constant literal, a value
+						// from a push constant, or a function of the previous descriptor value.
+						std::stringstream ind;
+						switch (m_data.indexType)
 						{
-							checkDescriptor = false;
-						}
-					}
-
-					if (checkDescriptor)
-					{
-						// Fetch from the descriptor.
-						switch (binding.descriptorType)
-						{
-						case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
-							checks << "  temp = inlineubo" << s << "_" << b << ".val" << ind.str() << ";\n";
+						case INDEX_TYPE_NONE:
+						case INDEX_TYPE_CONSTANT:
+							// The index is just the constant literal
+							if (arraySizes[b])
+							{
+								ind << "[" << ai << "]";
+							}
 							break;
-						case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-						case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-							checks << "  temp = ubo" << s << "_" << b << ind.str() << ".val;\n";
+						case INDEX_TYPE_PUSHCONSTANT:
+							// identity is an int[], directly index it
+							if (arraySizes[b])
+							{
+								ind << "[pc.identity[" << ai << "]]";
+							}
 							break;
-						case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-						case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-							checks << "  temp = ssbo" << s << "_" << b << ind.str() << ".val;\n";
-							break;
-						case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-							checks << "  temp = texelFetch(texbo" << s << "_" << b << ind.str() << ", 0).x;\n";
-							break;
-						case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-							checks << "  temp = imageLoad(image" << s << "_" << b << ind.str() << ", 0).x;\n";
-							break;
-						case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-							checks << "  temp = subpassLoad(attachment" << s << "_" << b << ind.str() << ").r;\n";
+						case INDEX_TYPE_RUNTIME_SIZE:
+						case INDEX_TYPE_DEPENDENT:
+							// Index is a function of the previous return value (which is reset to zero)
+							if (arraySizes[b])
+							{
+								ind << "[accum + " << ai << "]";
+							}
 							break;
 						default: DE_ASSERT(0);
 						}
-						if (m_data.indexType == INDEX_TYPE_DEPENDENT || m_data.indexType == INDEX_TYPE_RUNTIME_SIZE)
+
+						const DescriptorId	descriptorId	(s, static_cast<deUint32>(b), ai);
+						auto				writesItr		= randomLayout.descriptorWrites.find(descriptorId);
+
+						if (writesItr == randomLayout.descriptorWrites.end())
 						{
-							// Set accum to zero, it is added to the next index.
-							checks << "  accum = temp - " << descriptor << ";\n";
+							// Fetch from the descriptor.
+							switch (binding.descriptorType)
+							{
+							case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:
+								checks << "  temp = inlineubo" << s << "_" << b << ".val" << ind.str() << ";\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+							case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+								checks << "  temp = ubo" << s << "_" << b << ind.str() << ".val;\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+							case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+								checks << "  temp = ssbo" << s << "_" << b << ind.str() << ".val;\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+								checks << "  temp = texelFetch(texbo" << s << "_" << b << ind.str() << ", 0).x;\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+								checks << "  temp = imageLoad(image" << s << "_" << b << ind.str() << ", 0).x;\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+								checks << "  temp = imageLoad(simage" << s << "_" << b << ind.str() << ", ivec2(0, 0)).x;\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+								checks << "  temp = subpassLoad(attachment" << s << "_" << b << ind.str() << ").r;\n";
+								break;
+							default: DE_ASSERT(0);
+							}
+							if (m_data.indexType == INDEX_TYPE_DEPENDENT || m_data.indexType == INDEX_TYPE_RUNTIME_SIZE)
+							{
+								// Set accum to zero, it is added to the next index.
+								checks << "  accum = temp - " << descriptor << ";\n";
+							}
+							else
+							{
+								// Accumulate any incorrect values.
+								checks << "  accum |= temp - " << descriptor << ";\n";
+							}
 						}
 						else
 						{
-							// Accumulate any incorrect values.
-							checks << "  accum |= temp - " << descriptor << ";\n";
+							// Check descriptor write. We need to confirm we are actually generating write code for this descriptor.
+							writesItr->second.writeGenerated = true;
+
+							// Assign each write operation to a single invocation to avoid race conditions.
+							const auto			expectedInvocationID	= descriptor % (DIM*DIM);
+							const std::string	writeCond				= "if (" + de::toString(expectedInvocationID) + " == invocationID)";
+
+							switch (binding.descriptorType)
+							{
+							case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+							case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+								checks << "  " << writeCond << " ssbo" << s << "_" << b << ind.str() << ".val = " << descriptor << ";\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+								checks << "  " << writeCond << " imageStore(image" << s << "_" << b << ind.str() << ", 0, ivec4(" << descriptor << ", 0, 0, 0));\n";
+								break;
+							case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+								checks << "  " << writeCond << " imageStore(simage" << s << "_" << b << ind.str() << ", ivec2(0, 0), ivec4(" << descriptor << ", 0, 0, 0));\n";
+								break;
+							default: DE_ASSERT(0);
+							}
 						}
 					}
 				}
@@ -722,10 +871,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"layout(local_size_x = 1, local_size_y = 1) in;\n"
 				"void main()\n"
 				"{\n"
+				"  const int invocationID = int(gl_GlobalInvocationID.y) * " << DIM << " + int(gl_GlobalInvocationID.x);\n"
 				"  int accum = 0, temp;\n"
 				<< checks.str() <<
-				"  uvec4 color = (accum != 0) ? uvec4(0,0,0,0) : uvec4(1,0,0,1);\n"
-				"  imageStore(image0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_GlobalInvocationID.xy), color);\n"
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str());
@@ -742,10 +892,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			<< decls.str() <<
 			"void main()\n"
 			"{\n"
+			"  const int invocationID = int(gl_LaunchIDNV.y) * " << DIM << " + int(gl_LaunchIDNV.x);\n"
 			"  int accum = 0, temp;\n"
 			<< checks.str() <<
-			"  uvec4 color = (accum != 0) ? uvec4(0,0,0,0) : uvec4(1,0,0,1);\n"
-			"  imageStore(image0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
+			"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+			"  imageStore(simage0_0, ivec2(gl_LaunchIDNV.xy), color);\n"
 			"}\n";
 
 		programCollection.glslSources.add("test") << glu::RaygenSource(css.str());
@@ -761,10 +912,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				<< decls.str()  <<
 				"void main()\n"
 				"{\n"
+				"  const int invocationID = gl_VertexIndex;\n"
 				"  int accum = 0, temp;\n"
 				<< checks.str() <<
-				"  uvec4 color = (accum != 0) ? uvec4(0,0,0,0) : uvec4(1,0,0,1);\n"
-				"  imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
 				"  gl_PointSize = 1.0f;\n"
 				"  gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
 				"}\n";
@@ -793,10 +945,11 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
+				"  const int invocationID = int(gl_FragCoord.y) * " << DIM << " + int(gl_FragCoord.x);\n"
 				"  int accum = 0, temp;\n"
 				<< checks.str() <<
-				"  uvec4 color = (accum != 0) ? uvec4(0,0,0,0) : uvec4(1,0,0,1);\n"
-				"  imageStore(image0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
+				"  ivec4 color = (accum != 0) ? ivec4(0,0,0,0) : ivec4(1,0,0,1);\n"
+				"  imageStore(simage0_0, ivec2(gl_FragCoord.x, gl_FragCoord.y), color);\n"
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::FragmentSource(fss.str());
@@ -808,7 +961,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 
 TestInstance* DescriptorSetRandomTestCase::createInstance (Context& context) const
 {
-	return new DescriptorSetRandomTestInstance(context, m_data);
+	return new DescriptorSetRandomTestInstance(context, m_data_ptr);
 }
 
 tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
@@ -818,9 +971,11 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	const VkDevice				device				= m_context.getDevice();
 	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
 	Allocator&					allocator			= m_context.getDefaultAllocator();
+	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	deRandom					rnd;
 
-	RandomLayout randomLayout(m_data.numDescriptorSets);
-	generateRandomLayout(randomLayout, m_data);
+	deRandom_init(&rnd, m_data.seed);
+	RandomLayout& randomLayout = *m_data.randomLayout.get();
 
 	// Get needed properties.
 	VkPhysicalDeviceProperties2 properties;
@@ -842,9 +997,6 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	auto descriptorIndexingSupported	= m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
 	auto indexingFeatures				= m_context.getDescriptorIndexingFeatures();
 	auto inlineUniformFeatures			= m_context.getInlineUniformBlockFeaturesEXT();
-
-	deRandom rnd;
-	deRandom_init(&rnd, m_data.seed);
 
 	VkPipelineBindPoint bindPoint;
 
@@ -934,13 +1086,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_data.maxPerStageStorageBuffers);
 		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, m_data.maxStorageBuffersDynamic);
 		poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, m_data.maxPerStageSampledImages);
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, m_data.maxPerStageStorageImages);
+		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, m_data.maxPerStageStorageTexelBuffers);
+		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_data.maxPerStageStorageImages);
 		if (m_data.maxPerStageInputAttachments > 0u)
 		{
 			poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, m_data.maxPerStageInputAttachments);
 		}
-		poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1);
-		if (m_data.maxInlineUniformBlocks)
+		if (m_data.maxInlineUniformBlocks > 0u)
 		{
 			poolBuilder.addType(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT, m_data.maxInlineUniformBlocks * m_data.maxInlineUniformBlockSize);
 		}
@@ -983,6 +1135,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		(VkDeviceSize)sizeof(deUint32)});
 
 	de::MovePtr<BufferWithMemory> buffer;
+
 	buffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator, makeBufferCreateInfo(align*numDescriptors,
 													VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
@@ -992,17 +1145,95 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 													MemoryRequirement::HostVisible));
 	deUint8 *bufferPtr = (deUint8 *)buffer->getAllocation().getHostPtr();
 
-	// Count the total number of input attachments and create images for them.
-	deUint32 inputAttachmentCount = 0u;
+	// Create storage images separately.
+	deUint32				storageImageCount		= 0u;
+	vector<Move<VkImage>>	storageImages;
+
+	const VkImageCreateInfo	storageImgCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
+		DE_NULL,								// const void*				pNext;
+		0u,										// VkImageCreateFlags		flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
+		VK_FORMAT_R32_SINT,						// VkFormat					format;
+		{ 1u, 1u, 1u },							// VkExtent3D				extent;
+		1u,										// deUint32					mipLevels;
+		1u,										// deUint32					arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
+		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
+		VK_IMAGE_USAGE_STORAGE_BIT
+		| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+		| VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
+		1u,										// deUint32					queueFamilyIndexCount;
+		&queueFamilyIndex,						// const deUint32*			pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout			initialLayout;
+	};
+
+	// Create storage images.
 	for (const auto& bindings	: randomLayout.layoutBindings)
 	for (const auto& binding	: bindings)
 	{
-		if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-			inputAttachmentCount += binding.descriptorCount;
+		if (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+		{
+			storageImageCount += binding.descriptorCount;
+			for (deUint32 d = 0; d < binding.descriptorCount; ++d)
+			{
+				storageImages.push_back(createImage(vk, device, &storageImgCreateInfo));
+			}
+		}
 	}
 
-	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	// Allocate memory for them.
+	vk::VkMemoryRequirements storageImageMemReqs;
+	vk.getImageMemoryRequirements(device, *storageImages.front(), &storageImageMemReqs);
 
+	de::MovePtr<Allocation> storageImageAlloc;
+	VkDeviceSize			storageImageBlockSize = 0u;
+	{
+		VkDeviceSize mod = (storageImageMemReqs.size % storageImageMemReqs.alignment);
+		storageImageBlockSize = storageImageMemReqs.size + ((mod == 0u) ? 0u : storageImageMemReqs.alignment - mod);
+	}
+	storageImageMemReqs.size = storageImageBlockSize * storageImageCount;
+	storageImageAlloc = allocator.allocate(storageImageMemReqs, MemoryRequirement::Any);
+
+	// Allocate buffer to copy storage images to.
+	auto		storageImgBuffer	= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, makeBufferCreateInfo(storageImageCount * sizeof(deInt32), VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
+	deInt32*	storageImgBufferPtr	= reinterpret_cast<deInt32*>(storageImgBuffer->getAllocation().getHostPtr());
+
+	// Create image views.
+	vector<Move<VkImageView>>	storageImageViews;
+	{
+		VkImageViewCreateInfo		storageImageViewCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
+			DE_NULL,										// const void*				pNext;
+			0u,												// VkImageViewCreateFlags	flags;
+			DE_NULL,										// VkImage					image;
+			VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType			viewType;
+			VK_FORMAT_R32_SINT,								// VkFormat					format;
+			{												// VkComponentMapping		channels;
+				VK_COMPONENT_SWIZZLE_IDENTITY,
+				VK_COMPONENT_SWIZZLE_IDENTITY,
+				VK_COMPONENT_SWIZZLE_IDENTITY,
+				VK_COMPONENT_SWIZZLE_IDENTITY
+			},
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }	// VkImageSubresourceRange	subresourceRange;
+		};
+
+		for (deUint32 i = 0; i < static_cast<deUint32>(storageImages.size()); ++i)
+		{
+			// Bind image memory.
+			vk::VkImage img = *storageImages[i];
+			VK_CHECK(vk.bindImageMemory(device, img, storageImageAlloc->getMemory(), storageImageAlloc->getOffset() + i * storageImageBlockSize));
+
+			// Create view.
+			storageImageViewCreateInfo.image = img;
+			storageImageViews.push_back(createImageView(vk, device, &storageImageViewCreateInfo));
+		}
+	}
+
+	// Create input attachment images.
 	vector<Move<VkImage>>	inputAttachments;
 	const VkImageCreateInfo imgCreateInfo =
 	{
@@ -1023,11 +1254,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		VK_IMAGE_LAYOUT_UNDEFINED													// VkImageLayout			initialLayout;
 
 	};
+
+	deUint32 inputAttachmentCount = 0u;
 	for (const auto& bindings	: randomLayout.layoutBindings)
 	for (const auto& binding	: bindings)
 	{
 		if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
 		{
+			inputAttachmentCount += binding.descriptorCount;
 			for (deUint32 d = 0; d < binding.descriptorCount; ++d)
 			{
 				inputAttachments.push_back(createImage(vk, device, &imgCreateInfo));
@@ -1067,30 +1301,19 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }	// VkImageSubresourceRange	subresourceRange;
 	};
 	vector<Move<VkImageView>>	inputAttachmentViews;
-	deUint32					attachmentIndex = 0;
 
-	for (const auto& bindings	: randomLayout.layoutBindings)
-	for (const auto& binding	: bindings)
+	for (deUint32 i = 0; i < static_cast<deUint32>(inputAttachments.size()); ++i)
 	{
-		if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-		{
-			for (deUint32 d = 0; d < binding.descriptorCount; ++d)
-			{
-				vk::VkImage img = *inputAttachments[attachmentIndex];
+		vk::VkImage img = *inputAttachments[i];
+		VK_CHECK(vk.bindImageMemory(device, img, inputAttachmentAlloc->getMemory(), inputAttachmentAlloc->getOffset() + i * imageBlockSize));
 
-				VK_CHECK(vk.bindImageMemory(device, img, inputAttachmentAlloc->getMemory(), inputAttachmentAlloc->getOffset() + attachmentIndex * imageBlockSize));
-
-				inputAttachmentViewParams.image = img;
-				inputAttachmentViews.push_back(createImageView(vk, device, &inputAttachmentViewParams));
-
-				++attachmentIndex;
-			}
-		}
+		inputAttachmentViewParams.image = img;
+		inputAttachmentViews.push_back(createImageView(vk, device, &inputAttachmentViewParams));
 	}
 
-	// Create a view for each descriptor. Fill descriptor 'd' with an integer
-	// value equal to 'd'. Skip inline uniform blocks and use images for input
-	// attachments.
+	// Create a view for each descriptor. Fill descriptor 'd' with an integer value equal to 'd'. In case the descriptor would be
+	// written to from the shader, store a -1 in it instead. Skip inline uniform blocks and use images for input attachments and
+	// storage images.
 
 	Move<VkCommandPool>				cmdPool						= createCommandPool(vk, device, 0, queueFamilyIndex);
 	const VkQueue					queue						= m_context.getUniversalQueue();
@@ -1105,7 +1328,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		1u			// deUint32				layerCount;
 	};
 
-	VkImageMemoryBarrier			preImageBarrier				=
+	VkImageMemoryBarrier			preInputAttachmentBarrier	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
@@ -1125,7 +1348,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		}
 	};
 
-	VkImageMemoryBarrier			postImageBarrier			=
+	VkImageMemoryBarrier			postInputAttachmentBarrier	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
@@ -1139,6 +1362,40 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		clearRange,									// VkImageSubresourceRange	subresourceRange;
 	};
 
+	VkImageMemoryBarrier			preStorageImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType		sType
+		DE_NULL,									// const void*			pNext
+		0u,											// VkAccessFlags		srcAccessMask
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		dstAccessMask
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout		oldLayout
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout		newLayout
+		VK_QUEUE_FAMILY_IGNORED,					// uint32_t				srcQueueFamilyIndex
+		VK_QUEUE_FAMILY_IGNORED,					// uint32_t				dstQueueFamilyIndex
+		DE_NULL,									// VkImage				image
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
+			0u,										// uint32_t				baseMipLevel
+			1u,										// uint32_t				mipLevels,
+			0u,										// uint32_t				baseArray
+			1u,										// uint32_t				arraySize
+		}
+	};
+
+	VkImageMemoryBarrier			postStorageImageBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
+		DE_NULL,													// const void*				pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags			srcAccessMask;
+		(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT),	// VkAccessFlags			dstAccessMask;
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,						// VkImageLayout			oldLayout;
+		VK_IMAGE_LAYOUT_GENERAL,									// VkImageLayout			newLayout;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32					dstQueueFamilyIndex;
+		DE_NULL,													// VkImage					image;
+		clearRange,													// VkImageSubresourceRange	subresourceRange;
+	};
+
 	vk::VkClearColorValue			clearValue;
 	clearValue.uint32[0] = 0u;
 	clearValue.uint32[1] = 0u;
@@ -1147,8 +1404,9 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	beginCommandBuffer(vk, *cmdBuffer, 0u);
 
-	int descriptor	= 0;
-	attachmentIndex = 0;
+	int			descriptor		= 0;
+	deUint32	attachmentIndex	= 0;
+	deUint32	storageImgIndex	= 0;
 
 	typedef vk::Unique<vk::VkBufferView>		BufferViewHandleUp;
 	typedef de::SharedPtr<BufferViewHandleUp>	BufferViewHandleSp;
@@ -1167,12 +1425,25 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				continue;
 			}
 			if (binding.descriptorType != VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT &&
-				binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+				binding.descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT &&
+				binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			{
 				for (deUint32 d = descriptor; d < descriptor + binding.descriptorCount; ++d)
 				{
-					deUint32 *ptr = (deUint32 *)(bufferPtr + align*d);
-					*ptr = d;
+					DescriptorId	descriptorId	(s, static_cast<deUint32>(b), d - descriptor);
+					auto			writeInfoItr	= randomLayout.descriptorWrites.find(descriptorId);
+					deInt32*		ptr				= (deInt32 *)(bufferPtr + align*d);
+
+					if (writeInfoItr == randomLayout.descriptorWrites.end())
+					{
+						*ptr = static_cast<deInt32>(d);
+					}
+					else
+					{
+						*ptr = -1;
+						writeInfoItr->second.ptr = ptr;
+						writeInfoItr->second.expected = d;
+					}
 
 					const vk::VkBufferViewCreateInfo viewCreateInfo =
 					{
@@ -1195,6 +1466,46 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				DE_ASSERT(binding.descriptorCount >= 16);
 				descriptor += binding.descriptorCount - 16;
 			}
+			else if (binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			{
+				// Storage image.
+				for (deUint32 d = descriptor; d < descriptor + binding.descriptorCount; ++d)
+				{
+					VkImage			img				= *storageImages[storageImgIndex];
+					DescriptorId	descriptorId	(s, static_cast<deUint32>(b), d - descriptor);
+					deInt32*		ptr				= storageImgBufferPtr + storageImgIndex;
+
+					auto			writeInfoItr	= randomLayout.descriptorWrites.find(descriptorId);
+					const bool		isWrite			= (writeInfoItr != randomLayout.descriptorWrites.end());
+
+					if (isWrite)
+					{
+						writeInfoItr->second.ptr		= ptr;
+						writeInfoItr->second.expected	= static_cast<deInt32>(d);
+					}
+
+					preStorageImageBarrier.image	= img;
+					clearValue.int32[0]				= (isWrite ? -1 : static_cast<deInt32>(d));
+					postStorageImageBarrier.image	= img;
+
+					VkPipelineStageFlags usedStage	= 0;
+					switch (m_data.stage)
+					{
+						case STAGE_COMPUTE:		usedStage |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;			break;
+						case STAGE_VERTEX:		usedStage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;			break;
+						case STAGE_FRAGMENT:	usedStage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;			break;
+						case STAGE_RAYGEN:		usedStage |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;	break;
+						default:				DE_ASSERT(0); break;
+					}
+
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preStorageImageBarrier);
+					vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, usedStage, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postStorageImageBarrier);
+
+					++storageImgIndex;
+				}
+				descriptor += binding.descriptorCount;
+			}
 			else
 			{
 				// Input attachment.
@@ -1202,13 +1513,13 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 				{
 					VkImage img = *inputAttachments[attachmentIndex];
 
-					preImageBarrier.image	= img;
-					clearValue.uint32[0]	= d;
-					postImageBarrier.image	= img;
+					preInputAttachmentBarrier.image		= img;
+					clearValue.int32[0]					= static_cast<deInt32>(d);
+					postInputAttachmentBarrier.image	= img;
 
-					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preInputAttachmentBarrier);
 					vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
-					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postInputAttachmentBarrier);
 
 					++attachmentIndex;
 				}
@@ -1261,13 +1572,14 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 	copyBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
 		vk, device, allocator, makeBufferCreateInfo(DIM*DIM*sizeof(deUint32), VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
 
+	// Special case for the output storage image.
 	const VkImageCreateInfo			imageCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType			sType;
 		DE_NULL,								// const void*				pNext;
 		(VkImageCreateFlags)0u,					// VkImageCreateFlags		flags;
 		VK_IMAGE_TYPE_2D,						// VkImageType				imageType;
-		VK_FORMAT_R32_UINT,						// VkFormat					format;
+		VK_FORMAT_R32_SINT,						// VkFormat					format;
 		{
 			DIM,								// deUint32	width;
 			DIM,								// deUint32	height;
@@ -1293,7 +1605,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags	flags;
 		DE_NULL,									// VkImage					image;
 		VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType			viewType;
-		VK_FORMAT_R32_UINT,							// VkFormat					format;
+		VK_FORMAT_R32_SINT,							// VkFormat					format;
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -1319,6 +1631,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 	descriptor		= 0;
 	attachmentIndex	= 0;
+	storageImgIndex = 0;
 
 	for (deUint32 s = 0; s < m_data.numDescriptorSets; ++s)
 	{
@@ -1376,8 +1689,16 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 					switch (binding.descriptorType)
 					{
 					case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-						// Output image.
-						imageInfoVec[vecIndex] = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+						// Output image. Special case.
+						if (s == 0 && b == 0)
+						{
+							imageInfoVec[vecIndex] = makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
+						}
+						else
+						{
+							imageInfoVec[vecIndex] = makeDescriptorImageInfo(DE_NULL, storageImageViews[storageImgIndex].get(), VK_IMAGE_LAYOUT_GENERAL);
+						}
+						++storageImgIndex;
 						break;
 					case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
 						imageInfoVec[vecIndex] = makeDescriptorImageInfo(DE_NULL, inputAttachmentViews[attachmentIndex].get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -1639,13 +1960,17 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 
 		pipeline = createRayTracingPipelineNV(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
 
+		const auto shaderGroupHandleSize	= static_cast<VkDeviceSize>(rayTracingProperties.shaderGroupHandleSize);
+		const auto allocSize				= de::roundUp(shaderGroupHandleSize, properties.properties.limits.nonCoherentAtomSize);
+
 		sbtBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-			vk, device, allocator, makeBufferCreateInfo(rayTracingProperties.shaderGroupHandleSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
+			vk, device, allocator, makeBufferCreateInfo(allocSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_RAY_TRACING_BIT_NV), MemoryRequirement::HostVisible));
 
-		deUint32 *ptr = (deUint32 *)sbtBuffer->getAllocation().getHostPtr();
-		invalidateAlloc(vk, device, sbtBuffer->getAllocation());
+		const auto&	alloc	= sbtBuffer->getAllocation();
+		const auto	ptr		= reinterpret_cast<deUint32*>(alloc.getHostPtr());
 
-		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, rayTracingProperties.shaderGroupHandleSize, ptr);
+		invalidateAlloc(vk, device, alloc);
+		vk.getRayTracingShaderGroupHandlesNV(device, *pipeline, 0, 1, static_cast<deUintptr>(allocSize), ptr);
 	}
 	else
 	{
@@ -1952,19 +2277,101 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 															 makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
 	vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_GENERAL, **copyBuffer, 1u, &copyRegion);
 
+	const VkBufferMemoryBarrier copyBufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		**copyBuffer,								// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE,								// VkDeviceSize		size;
+	};
+
+	// Add a barrier to read the copy buffer after copying.
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0u, DE_NULL, 1u, &copyBufferBarrier, 0u, DE_NULL);
+
+	// Copy all storage images to the storage image buffer.
+	VkBufferImageCopy storageImgCopyRegion =
+	{
+		0u,																	// VkDeviceSize                bufferOffset;
+		0u,																	// uint32_t                    bufferRowLength;
+		0u,																	// uint32_t                    bufferImageHeight;
+		makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	// VkImageSubresourceLayers    imageSubresource;
+		makeOffset3D(0, 0, 0),												// VkOffset3D                  imageOffset;
+		makeExtent3D(1u, 1u, 1u),											// VkExtent3D                  imageExtent;
+	};
+
+	for (deUint32 i = 0; i < storageImageCount; ++i)
+	{
+		storageImgCopyRegion.bufferOffset = sizeof(deInt32) * i;
+		vk.cmdCopyImageToBuffer(*cmdBuffer, storageImages[i].get(), VK_IMAGE_LAYOUT_GENERAL, **storageImgBuffer, 1u, &storageImgCopyRegion);
+	}
+
+	const VkBufferMemoryBarrier storageImgBufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		**storageImgBuffer,							// VkBuffer			buffer;
+		0u,											// VkDeviceSize		offset;
+		VK_WHOLE_SIZE,								// VkDeviceSize		size;
+	};
+
+	// Add a barrier to read the storage image buffer after copying.
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0u, DE_NULL, 1u, &storageImgBufferBarrier, 0u, DE_NULL);
+
+	const VkBufferMemoryBarrier descriptorBufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+		DE_NULL,													// const void*		pNext;
+		(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT),	// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,									// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			dstQueueFamilyIndex;
+		**buffer,													// VkBuffer			buffer;
+		0u,															// VkDeviceSize		offset;
+		VK_WHOLE_SIZE,												// VkDeviceSize		size;
+	};
+
+	// Add a barrier to read stored data from shader writes in descriptor memory for other types of descriptors.
+	vk.cmdPipelineBarrier(*cmdBuffer, m_data.allPipelineStages, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &descriptorBufferBarrier, 0u, nullptr);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
+	// Verify output image.
 	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
 	invalidateAlloc(vk, device, copyBuffer->getAllocation());
 
-	qpTestResult res = QP_TEST_RESULT_PASS;
+	auto&			log = m_context.getTestContext().getLog();
+	qpTestResult	res = QP_TEST_RESULT_PASS;
 
 	for (deUint32 i = 0; i < DIM*DIM; ++i)
 	{
 		if (ptr[i] != 1)
 		{
+			log << tcu::TestLog::Message << "Failure in copy buffer, ptr[" << i << "] = " << ptr[i] << tcu::TestLog::EndMessage;
+			res = QP_TEST_RESULT_FAIL;
+		}
+	}
+
+	// Verify descriptors with writes.
+	invalidateMappedMemoryRange(vk, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+	invalidateMappedMemoryRange(vk, device, storageImgBuffer->getAllocation().getMemory(), storageImgBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+
+	for (const auto& descIdWriteInfo : randomLayout.descriptorWrites)
+	{
+		const auto& writeInfo = descIdWriteInfo.second;
+		if (writeInfo.writeGenerated && *writeInfo.ptr != writeInfo.expected)
+		{
+			log << tcu::TestLog::Message << "Failure in write operation; expected " << writeInfo.expected << " and found " << *writeInfo.ptr << tcu::TestLog::EndMessage;
 			res = QP_TEST_RESULT_FAIL;
 		}
 	}
@@ -2006,12 +2413,14 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 
 	TestGroupCase uboCases[] =
 	{
+		{ 0,			"noubo",			"no ubos"					},
 		{ 12,			"ubolimitlow",		"spec minmax ubo limit"		},
 		{ 4096,			"ubolimithigh",		"high ubo limit"			},
 	};
 
 	TestGroupCase sboCases[] =
 	{
+		{ 0,			"nosbo",			"no ssbos"					},
 		{ 4,			"sbolimitlow",		"spec minmax ssbo limit"	},
 		{ 4096,			"sbolimithigh",		"high ssbo limit"			},
 	};
@@ -2023,19 +2432,29 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		{ 64,			"ialimithigh",		"high input attachment limit"			},
 	};
 
-	static const struct
+	TestGroupCase sampledImgCases[] =
 	{
-		deUint32				texCount;
-		deUint32				imgCount;
-		const char*				name;
-		const char*				description;
-	} imgCases[] =
-	{
-		{ 16, 4,		"imglimitlow",		"spec minmax image limit"	},
-		{ 4096, 4096,	"imglimithigh",		"high image limit"			},
+		{ 0,			"nosampledimg",		"no sampled images"			},
+		{ 16,			"sampledimglow",	"spec minmax image limit"	},
+		{ 4096,			"sampledimghigh",	"high image limit"			},
 	};
 
-	static const struct
+	const struct
+	{
+		deUint32	sImgCount;
+		deUint32	sTexCount;
+		const char* name;
+		const char* description;
+	} sImgTexCases[] =
+	{
+		{ 1,		0,		"outimgonly",		"output storage image only"							},
+		{ 1,		3,		"outimgtexlow",		"output image low storage tex limit"				},
+		{ 4,		0,		"lowimgnotex",		"minmax storage images and no storage tex"			},
+		{ 3,		1,		"lowimgsingletex",	"low storage image single storage texel"			},
+		{ 2048,		2048,	"storageimghigh",	"high limit of storage images and texel buffers"	},
+	};
+
+	const struct
 	{
 		deUint32				iubCount;
 		deUint32				iubSize;
@@ -2043,9 +2462,9 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		const char*				description;
 	} iubCases[] =
 	{
-		{ 0, 0,		"noiub",			"no inline_uniform_block"			},
-		{ 4, 256,	"iublimitlow",		"inline_uniform_block low limit"	},
-		{ 8, 4096,	"iublimithigh",		"inline_uniform_block high limit"	},
+		{ 0, 0,		"noiub",			"no inline uniform blocks"			},
+		{ 4, 256,	"iublimitlow",		"inline uniform blocks low limit"	},
+		{ 8, 4096,	"iublimithigh",		"inline uniform blocks high limit"	},
 	};
 
 	TestGroupCase stageCases[] =
@@ -2074,52 +2493,96 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 				for (int sboNdx = 0; sboNdx < DE_LENGTH_OF_ARRAY(sboCases); sboNdx++)
 				{
 					de::MovePtr<tcu::TestCaseGroup> sboGroup(new tcu::TestCaseGroup(testCtx, sboCases[sboNdx].name, sboCases[sboNdx].description));
-					for (int imgNdx = 0; imgNdx < DE_LENGTH_OF_ARRAY(imgCases); imgNdx++)
+					for (int sampledImgNdx = 0; sampledImgNdx < DE_LENGTH_OF_ARRAY(sampledImgCases); sampledImgNdx++)
 					{
-						de::MovePtr<tcu::TestCaseGroup> imgGroup(new tcu::TestCaseGroup(testCtx, imgCases[imgNdx].name, imgCases[imgNdx].description));
-						for (int iubNdx = 0; iubNdx < DE_LENGTH_OF_ARRAY(iubCases); iubNdx++)
+						de::MovePtr<tcu::TestCaseGroup> sampledImgGroup(new tcu::TestCaseGroup(testCtx, sampledImgCases[sampledImgNdx].name, sampledImgCases[sampledImgNdx].description));
+						for (int storageImgNdx = 0; storageImgNdx < DE_LENGTH_OF_ARRAY(sImgTexCases); ++storageImgNdx)
 						{
-							de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name, iubCases[iubNdx].description));
-							for (int uabNdx = 0; uabNdx < DE_LENGTH_OF_ARRAY(uabCases); uabNdx++)
+							de::MovePtr<tcu::TestCaseGroup> storageImgGroup(new tcu::TestCaseGroup(testCtx, sImgTexCases[storageImgNdx].name, sImgTexCases[storageImgNdx].description));
+							for (int iubNdx = 0; iubNdx < DE_LENGTH_OF_ARRAY(iubCases); iubNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name, uabCases[uabNdx].description));
-								bool updateAfterBind = (UpdateAfterBind)uabCases[uabNdx].count == UPDATE_AFTER_BIND_ENABLED;
-								for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+								de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name, iubCases[iubNdx].description));
+								for (int uabNdx = 0; uabNdx < DE_LENGTH_OF_ARRAY(uabCases); uabNdx++)
 								{
-									Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
-									de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
-									for (int iaNdx = 0; iaNdx < DE_LENGTH_OF_ARRAY(iaCases); ++iaNdx)
+									de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name, uabCases[uabNdx].description));
+									for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 									{
-										if (currentStage == STAGE_FRAGMENT || iaCases[iaNdx].count == 0u)
+										Stage currentStage = static_cast<Stage>(stageCases[stageNdx].count);
+										de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
+										for (int iaNdx = 0; iaNdx < DE_LENGTH_OF_ARRAY(iaCases); ++iaNdx)
 										{
+											// Input attachments can only be used in the fragment stage.
+											if (currentStage != STAGE_FRAGMENT && iaCases[iaNdx].count > 0u)
+												continue;
+
+											// Allow only one high limit or all of them.
+											deUint32 highLimitCount = 0u;
+											if (uboNdx == DE_LENGTH_OF_ARRAY(uboCases) - 1)					++highLimitCount;
+											if (sboNdx == DE_LENGTH_OF_ARRAY(sboCases) - 1)					++highLimitCount;
+											if (sampledImgNdx == DE_LENGTH_OF_ARRAY(sampledImgCases) - 1)	++highLimitCount;
+											if (storageImgNdx == DE_LENGTH_OF_ARRAY(sImgTexCases) - 1)		++highLimitCount;
+											if (iaNdx == DE_LENGTH_OF_ARRAY(iaCases) - 1)					++highLimitCount;
+
+											if (highLimitCount > 1 && highLimitCount < 5)
+												continue;
+
+											// Allow only all, all-but-one, none or one "zero limits" at the same time, except for inline uniform blocks.
+											deUint32 zeroLimitCount = 0u;
+											if (uboNdx == 0)			++zeroLimitCount;
+											if (sboNdx == 0)			++zeroLimitCount;
+											if (sampledImgNdx == 0)		++zeroLimitCount;
+											if (storageImgNdx == 0)		++zeroLimitCount;
+											if (iaNdx == 0)				++zeroLimitCount;
+
+											if (zeroLimitCount > 1 && zeroLimitCount < 4)
+												continue;
+
+											// Avoid using multiple storage images if no dynamic indexing is being used.
+											if (storageImgNdx >= 2 && indexNdx < 2)
+												continue;
+
+											// Skip the case of no UBOs, SSBOs or sampled images when no dynamic indexing is being used.
+											if ((uboNdx == 0 || sboNdx == 0 || sampledImgNdx == 0) && indexNdx < 2)
+												continue;
+
 											de::MovePtr<tcu::TestCaseGroup> iaGroup(new tcu::TestCaseGroup(testCtx, iaCases[iaNdx].name, iaCases[iaNdx].description));
-											deUint32 numSeeds = (setsCases[setsNdx].count == 4 && uboNdx == 0 && sboNdx == 0 && imgNdx == 0 && iubNdx == 0 && iaNdx < 2) ? 10 : 1;
+
+											// Generate 10 random cases when working with only 4 sets and the number of descriptors is low. Otherwise just one case.
+											// Exception: the case of no descriptors of any kind only needs one case.
+											const deUint32 numSeeds = (setsCases[setsNdx].count == 4 && uboNdx < 2 && sboNdx < 2 && sampledImgNdx < 2 && storageImgNdx < 4 && iubNdx == 0 && iaNdx < 2 &&
+																	(uboNdx != 0 || sboNdx != 0 || sampledImgNdx != 0 || storageImgNdx != 0 || iaNdx != 0)) ? 10 : 1;
+
 											for (deUint32 rnd = 0; rnd < numSeeds; ++rnd)
 											{
-												VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-												VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-												if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN) {
-													allShaderStages |= VK_SHADER_STAGE_RAYGEN_BIT_NV;
-													allPipelineStages |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
+												VkFlags allShaderStages		= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+												VkFlags allPipelineStages	= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+												if ((Stage)stageCases[stageNdx].count == STAGE_RAYGEN)
+												{
+													allShaderStages		|= VK_SHADER_STAGE_RAYGEN_BIT_NV;
+													allPipelineStages	|= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV;
 												}
+
 												CaseDef c =
 												{
-													(IndexType)indexCases[indexNdx].count,							// IndexType indexType;
-													setsCases[setsNdx].count,										// deUint32 numDescriptorSets;
-													uboCases[uboNdx].count,											// deUint32 maxPerStageUniformBuffers;
-													8,																// deUint32 maxUniformBuffersDynamic;
-													sboCases[sboNdx].count,											// deUint32 maxPerStageStorageBuffers;
-													4,																// deUint32 maxStorageBuffersDynamic;
-													imgCases[imgNdx].texCount,										// deUint32 maxPerStageSampledImages;
-													imgCases[imgNdx].imgCount,										// deUint32 maxPerStageStorageImages;
-													iubCases[iubNdx].iubCount,										// deUint32 maxInlineUniformBlocks;
-													iubCases[iubNdx].iubSize,										// deUint32 maxInlineUniformBlockSize;
-													iaCases[iaNdx].count,											// deUint32 maxPerStageInputAttachments;
-													currentStage,													// Stage stage;
-													(UpdateAfterBind)uabCases[uabNdx].count,						// UpdateAfterBind uab;
-													seed++,															// deUint32 seed;
-													allShaderStages,												// VkFlags allShaderStages;
-													allPipelineStages,												// VkFlags allPipelineStages;
+													(IndexType)indexCases[indexNdx].count,		// IndexType indexType;
+													setsCases[setsNdx].count,					// deUint32 numDescriptorSets;
+													uboCases[uboNdx].count,						// deUint32 maxPerStageUniformBuffers;
+													8,											// deUint32 maxUniformBuffersDynamic;
+													sboCases[sboNdx].count,						// deUint32 maxPerStageStorageBuffers;
+													4,											// deUint32 maxStorageBuffersDynamic;
+													sampledImgCases[sampledImgNdx].count,		// deUint32 maxPerStageSampledImages;
+													sImgTexCases[storageImgNdx].sImgCount,		// deUint32 maxPerStageStorageImages;
+													sImgTexCases[storageImgNdx].sTexCount,		// deUint32 maxPerStageStorageTexelBuffers;
+													iubCases[iubNdx].iubCount,					// deUint32 maxInlineUniformBlocks;
+													iubCases[iubNdx].iubSize,					// deUint32 maxInlineUniformBlockSize;
+													iaCases[iaNdx].count,						// deUint32 maxPerStageInputAttachments;
+													currentStage,								// Stage stage;
+													(UpdateAfterBind)uabCases[uabNdx].count,	// UpdateAfterBind uab;
+													seed++,										// deUint32 seed;
+													allShaderStages,							// VkFlags allShaderStages;
+													allPipelineStages,							// VkFlags allPipelineStages;
+													nullptr,									// std::shared_ptr<RandomLayout> randomLayout;
 												};
 
 												string name = de::toString(rnd);
@@ -2127,17 +2590,15 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 											}
 											stageGroup->addChild(iaGroup.release());
 										}
+										uabGroup->addChild(stageGroup.release());
 									}
-									(updateAfterBind ? uabGroup : iubGroup)->addChild(stageGroup.release());
-								}
-								if (updateAfterBind)
-								{
 									iubGroup->addChild(uabGroup.release());
 								}
+								storageImgGroup->addChild(iubGroup.release());
 							}
-							imgGroup->addChild(iubGroup.release());
+							sampledImgGroup->addChild(storageImgGroup.release());
 						}
-						sboGroup->addChild(imgGroup.release());
+						sboGroup->addChild(sampledImgGroup.release());
 					}
 					uboGroup->addChild(sboGroup.release());
 				}
