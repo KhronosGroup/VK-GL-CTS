@@ -1,0 +1,56 @@
+#!amber
+# Copyright 2020 The Amber Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER vertex vert_shader PASSTHROUGH
+SHADER fragment frag_shader GLSL
+#version 430
+layout(location = 0) out vec4 color_out;
+uniform layout(set=0, binding=0) samplerBuffer texels;
+
+void main()
+{
+    color_out = texelFetch(texels, int(gl_FragCoord.x) % 4);
+}
+END
+
+BUFFER texel_buffer DATA_TYPE A2B10G10R10_UNORM_PACK32 DATA
+0xc00003ff # Unpacks to R = 1023, G = 1023, B = 1023, A = 3
+0xc00ffc00 # Unpacks to R = 1023, G = 1023, B = 1023, A = 3
+0xfff00000 # Unpacks to R = 1023, G = 1023, B = 1023, A = 3
+0xfffffc00 # Unpacks to R = 1023, G = 1023, B = 1023, A = 3
+END
+
+BUFFER framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics pipeline
+  ATTACH vert_shader
+  ATTACH frag_shader
+  BIND BUFFER texel_buffer AS uniform_texel_buffer DESCRIPTOR_SET 0 BINDING 0
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER framebuffer AS color LOCATION 0
+END
+
+CLEAR_COLOR pipeline 0 0 255 255
+CLEAR pipeline
+RUN pipeline DRAW_RECT POS 50 50 SIZE 100 100
+
+EXPECT framebuffer IDX 50 50 SIZE 1 100 EQ_RGBA   0   0 255 255
+EXPECT framebuffer IDX 51 50 SIZE 1 100 EQ_RGBA   0 255 255 255
+EXPECT framebuffer IDX 52 50 SIZE 1 100 EQ_RGBA 255   0   0 255
+EXPECT framebuffer IDX 53 50 SIZE 1 100 EQ_RGBA   0 255   0 255
+EXPECT framebuffer IDX 54 50 SIZE 1 100 EQ_RGBA   0   0 255 255
+EXPECT framebuffer IDX 55 50 SIZE 1 100 EQ_RGBA   0 255 255 255
+EXPECT framebuffer IDX 56 50 SIZE 1 100 EQ_RGBA 255   0   0 255
+EXPECT framebuffer IDX 57 50 SIZE 1 100 EQ_RGBA   0 255   0 255
