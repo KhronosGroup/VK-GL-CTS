@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+        ..
+        ../amber
+        )
 
 set(DEQP_VK_COMPUTE_SRCS
 	vktComputeTests.cpp

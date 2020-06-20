@@ -27,6 +27,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktComputeTestsUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
@@ -3692,6 +3693,8 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 
 	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_single",		"Image barrier",	tcu::IVec2(1,1)));
 	basicComputeTests->addChild(new ImageBarrierTest(testCtx,	"image_barrier_multiple",	"Image barrier",	tcu::IVec2(64,64)));
+
+	basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
 
 	return basicComputeTests.release();
 }
