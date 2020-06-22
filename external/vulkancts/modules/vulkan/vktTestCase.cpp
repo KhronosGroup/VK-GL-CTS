@@ -446,38 +446,49 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 	deUint32 apiVersion = getUsedApiVersion();
 	if (isCoreDeviceExtension(apiVersion, extension))
 	{
-		// all folowing checks are for vk12 and can be skipped for previous versions
 		if (apiVersion < VK_MAKE_VERSION(1, 2, 0))
-			return true;
+		{
+			// Check feature bits in extension-specific structures.
+			if (extension == "VK_KHR_multiview")
+				return !!m_device->getMultiviewFeatures().multiview;
+			if (extension == "VK_KHR_variable_pointers")
+				return !!m_device->getVariablePointersFeatures().variablePointersStorageBuffer;
+			if (extension == "VK_KHR_sampler_ycbcr_conversion")
+				return !!m_device->getSamplerYcbcrConversionFeatures().samplerYcbcrConversion;
+			if (extension == "VK_KHR_shader_draw_parameters")
+				return !!m_device->getShaderDrawParametersFeatures().shaderDrawParameters;
+		}
+		else
+		{
+			// Check feature bits using the new Vulkan 1.2 structures.
+			const auto& vk11Features = m_device->getVulkan11Features();
+			if (extension == "VK_KHR_multiview")
+				return !!vk11Features.multiview;
+			if (extension == "VK_KHR_variable_pointers")
+				return !!vk11Features.variablePointersStorageBuffer;
+			if (extension == "VK_KHR_sampler_ycbcr_conversion")
+				return !!vk11Features.samplerYcbcrConversion;
+			if (extension == "VK_KHR_shader_draw_parameters")
+				return !!vk11Features.shaderDrawParameters;
 
-		// handle promoted functionality that was provided under feature bit
-		const auto& vk11Features = m_device->getVulkan11Features();
-		if (extension == "VK_KHR_multiview")
-			return !!vk11Features.multiview;
-		if (extension == "VK_KHR_variable_pointers")
-			return !!vk11Features.variablePointersStorageBuffer;
-		if (extension == "VK_KHR_sampler_ycbcr_conversion")
-			return !!vk11Features.samplerYcbcrConversion;
-		if (extension == "VK_KHR_shader_draw_parameters")
-			return !!vk11Features.shaderDrawParameters;
+			const auto& vk12Features = m_device->getVulkan12Features();
+			if (extension == "VK_KHR_timeline_semaphore")
+				return !!vk12Features.timelineSemaphore;
+			if (extension == "VK_KHR_buffer_device_address")
+				return !!vk12Features.bufferDeviceAddress;
+			if (extension == "VK_EXT_descriptor_indexing")
+				return !!vk12Features.descriptorIndexing;
+			if (extension == "VK_KHR_draw_indirect_count")
+				return !!vk12Features.drawIndirectCount;
+			if (extension == "VK_KHR_sampler_mirror_clamp_to_edge")
+				return !!vk12Features.samplerMirrorClampToEdge;
+			if (extension == "VK_EXT_sampler_filter_minmax")
+				return !!vk12Features.samplerFilterMinmax;
+			if (extension == "VK_EXT_shader_viewport_index_layer")
+				return !!vk12Features.shaderOutputViewportIndex && !!vk12Features.shaderOutputLayer;
+		}
 
-		const auto& vk12Features = m_device->getVulkan12Features();
-		if (extension == "VK_KHR_timeline_semaphore")
-			return !!vk12Features.timelineSemaphore;
-		if (extension == "VK_KHR_buffer_device_address")
-			return !!vk12Features.bufferDeviceAddress;
-		if (extension == "VK_EXT_descriptor_indexing")
-			return !!vk12Features.descriptorIndexing;
-		if (extension == "VK_KHR_draw_indirect_count")
-			return !!vk12Features.drawIndirectCount;
-		if (extension == "VK_KHR_sampler_mirror_clamp_to_edge")
-			return !!vk12Features.samplerMirrorClampToEdge;
-		if (extension == "VK_EXT_sampler_filter_minmax")
-			return !!vk12Features.samplerFilterMinmax;
-		if (extension == "VK_EXT_shader_viewport_index_layer")
-			return !!vk12Features.shaderOutputViewportIndex && !!vk12Features.shaderOutputLayer;
-
-		// no feature flags to check
+		// No feature flags to check.
 		return true;
 	}
 
