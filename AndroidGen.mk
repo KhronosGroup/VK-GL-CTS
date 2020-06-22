@@ -413,6 +413,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringExplicitLodTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureMipmapTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureMultisampleTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureShadowTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureSubgroupLodTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureSwizzleTests.cpp \
