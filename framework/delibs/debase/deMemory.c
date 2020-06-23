@@ -35,7 +35,11 @@
 
 #if (DE_OS == DE_OS_UNIX) || ((DE_OS == DE_OS_ANDROID) && (DE_ANDROID_API >= 21))
 #	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_POSIX
-#	include <malloc.h>
+#       if defined(__FreeBSD__)
+#	        include <stdlib.h>
+#       else
+#	        include <malloc.h>
+#       endif
 #elif (DE_OS == DE_OS_WIN32)
 #	define DE_ALIGNED_MALLOC DE_ALIGNED_MALLOC_WIN32
 #	include <malloc.h>

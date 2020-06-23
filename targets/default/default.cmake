@@ -23,6 +23,10 @@ message("*** Default target")
 
 set(DEQP_TARGET_NAME	"Default")
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+link_directories(/usr/local/lib)
+endif ()
+
 # For static linking
 find_library(GLES2_LIBRARY		NAMES libGLESv2 GLESv2)
 find_library(EGL_LIBRARY		NAMES libEGL EGL)
