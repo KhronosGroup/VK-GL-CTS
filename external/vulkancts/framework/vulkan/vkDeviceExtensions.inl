@@ -69,5 +69,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_pipeline_library",
 	"VK_KHR_deferred_host_operations",
+	"VK_KHR_fragment_shading_rate",
 };
 

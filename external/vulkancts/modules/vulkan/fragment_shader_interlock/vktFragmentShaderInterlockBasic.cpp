@@ -238,8 +238,12 @@ void FSITestCase::checkSupport(Context& context) const
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
-		if (!shadingRateImageFeatures.shadingRateImage)
-			TCU_THROW(NotSupportedError, "Shading rate image not supported");
+
+		if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate ||
+		    !context.getFragmentShadingRateProperties().fragmentShadingRateWithFragmentShaderInterlock)
+		{
+			TCU_THROW(NotSupportedError, "fragment shading rate not supported");
+		}
 	}
 }
 
@@ -555,8 +559,8 @@ tcu::TestStatus FSITestInstance::iterate (void)
 
 	vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 
-	VkBool32 shadingRateImageEnable = m_data.interlock == INT_SHADING_RATE_ORDERED ||
-									  m_data.interlock == INT_SHADING_RATE_UNORDERED ? VK_TRUE : VK_FALSE;
+	VkBool32 shadingRateEnable = m_data.interlock == INT_SHADING_RATE_ORDERED ||
+								 m_data.interlock == INT_SHADING_RATE_UNORDERED ? VK_TRUE : VK_FALSE;
 
 	Move<VkPipeline> pipeline;
 	Move<VkRenderPass> renderPass;
@@ -659,26 +663,18 @@ tcu::TestStatus FSITestInstance::iterate (void)
 		VkViewport viewport = makeViewport(m_data.dim, m_data.dim);
 		VkRect2D scissor = makeRect2D(m_data.dim, m_data.dim);
 
-		VkShadingRatePaletteEntryNV paletteEntry = VK_SHADING_RATE_PALETTE_ENTRY_1_INVOCATION_PER_2X2_PIXELS_NV;
-		const VkShadingRatePaletteNV	shadingRatePalette	=
+		VkPipelineFragmentShadingRateStateCreateInfoKHR shadingRateStateCreateInfo =
 		{
-			1u,															// uint32_t								shadingRatePaletteEntryCount;
-			&paletteEntry,												// const VkShadingRatePaletteEntryNV*	pShadingRatePaletteEntries;
-		};
-
-		const VkPipelineViewportShadingRateImageStateCreateInfoNV	shadingRateCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV,	// VkStructureType							sType
-			DE_NULL,																		// const void*								pNext
-			shadingRateImageEnable,															// VkBool32									shadingRateImageEnable;
-			1u,																				// deUint32									viewportCount
-			&shadingRatePalette																// const VkShadingRatePaletteNV*			pShadingRatePalettes;
+			VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_SHADING_RATE_STATE_CREATE_INFO_KHR,								// VkStructureType						sType;
+			DE_NULL,																							// const void*							pNext;
+			{ 2, 2 },																							// VkExtent2D							fragmentSize;
+			{ VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR, VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR },	// VkFragmentShadingRateCombinerOpKHR	combinerOps[2];
 		};
 
 		const VkPipelineViewportStateCreateInfo			viewportStateCreateInfo				=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType							sType
-			shadingRateImageEnable ? &shadingRateCreateInfo : DE_NULL,	// const void*								pNext
+			DE_NULL,													// const void*								pNext
 			(VkPipelineViewportStateCreateFlags)0,						// VkPipelineViewportStateCreateFlags		flags
 			1u,															// deUint32									viewportCount
 			&viewport,													// const VkViewport*						pViewports
@@ -715,7 +711,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 		const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-			DE_NULL,											// const void*										pNext;
+			shadingRateEnable ? &shadingRateStateCreateInfo : DE_NULL,		// const void*										pNext;
 			(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
 			numStages,											// deUint32											stageCount;
 			&shaderCreateInfo[0],								// const VkPipelineShaderStageCreateInfo*			pStages;
@@ -786,9 +782,6 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-	if (shadingRateImageEnable)
-		vk.cmdBindShadingRateImageNV(*cmdBuffer, DE_NULL, VK_IMAGE_LAYOUT_GENERAL);
-
 	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer,
 					makeRect2D(m_data.dim, m_data.dim),
 					0, DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
@@ -811,7 +804,7 @@ tcu::TestStatus FSITestInstance::iterate (void)
 	if (m_data.isSampleInterlock())
 		copyDimX *= m_data.samples;
 
-	if (shadingRateImageEnable)
+	if (shadingRateEnable)
 	{
 		copyDimX /= 2;
 		copyDimY /= 2;
