@@ -404,6 +404,11 @@ vk::Move<vk::VkImageView> createImageView (const vk::DeviceInterface&		vkd,
 										   vk::VkFormat						format,
 										   vk::VkSamplerYcbcrConversion		conversion)
 {
+	// Both mappings should be equivalent: alternate between the two for different formats.
+	const vk::VkComponentMapping	mappingA	= { vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY };
+	const vk::VkComponentMapping	mappingB	= { vk::VK_COMPONENT_SWIZZLE_R, vk::VK_COMPONENT_SWIZZLE_G, vk::VK_COMPONENT_SWIZZLE_B, vk::VK_COMPONENT_SWIZZLE_A };
+	const vk::VkComponentMapping&	mapping		= ((static_cast<int>(format) % 2 == 0) ? mappingA : mappingB);
+
 #if !defined(FAKE_COLOR_CONVERSION)
 	const vk::VkSamplerYcbcrConversionInfo	conversionInfo	=
 	{
@@ -427,12 +432,7 @@ vk::Move<vk::VkImageView> createImageView (const vk::DeviceInterface&		vkd,
 		image,
 		vk::VK_IMAGE_VIEW_TYPE_2D,
 		format,
-		{
-			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-			vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-		},
+		mapping,
 		{ vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },
 	};
 
@@ -1163,6 +1163,18 @@ struct ChromaLocationNamePair
 	vk::VkChromaLocation		value;
 };
 
+// Alternate between swizzle_identity and their equivalents. Both should work.
+const vk::VkComponentMapping& getIdentitySwizzle (void)
+{
+	static bool alternate = false;
+	static const vk::VkComponentMapping mappingA = { vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY, vk::VK_COMPONENT_SWIZZLE_IDENTITY };
+	static const vk::VkComponentMapping mappingB = { vk::VK_COMPONENT_SWIZZLE_R, vk::VK_COMPONENT_SWIZZLE_G, vk::VK_COMPONENT_SWIZZLE_B, vk::VK_COMPONENT_SWIZZLE_A };
+
+	const vk::VkComponentMapping& mapping = (alternate ? mappingB : mappingA);
+	alternate = (!alternate);
+	return mapping;
+}
+
 struct YCbCrConversionTestBuilder
 {
 	const std::vector<vk::VkFormat> noChromaSubsampledFormats =
@@ -1261,13 +1273,6 @@ struct YCbCrConversionTestBuilder
 	// Used by the chroma reconstruction tests
 	const vk::VkSamplerYcbcrModelConversion		defaultColorModel		= vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY;
 	const vk::VkSamplerYcbcrRange				defaultColorRange		= vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
-	const vk::VkComponentMapping				identitySwizzle			=
-	{
-		vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-		vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-		vk::VK_COMPONENT_SWIZZLE_IDENTITY,
-		vk::VK_COMPONENT_SWIZZLE_IDENTITY
-	};
 	const vk::VkComponentMapping				swappedChromaSwizzle	=
 	{
 		vk::VK_COMPONENT_SWIZZLE_B,
@@ -1351,7 +1356,7 @@ struct YCbCrConversionTestBuilder
 								string							samplerBindingName((samplerBindings[bindingNdx].value != 0) ? string("_") + samplerBindings[bindingNdx].name : string());
 								const TestConfig				config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 									textureFilter, chromaLocation, chromaLocation, false, false,
-									colorRange, colorModel, identitySwizzle, srcSize, dstSize, samplerBinding);
+									colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 								addFunctionCaseWithPrograms(colorModelGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 							}
@@ -1392,7 +1397,7 @@ struct YCbCrConversionTestBuilder
 									string						samplerBindingName((samplerBindings[bindingNdx].value != 0) ? string("_") + samplerBindings[bindingNdx].name : string());
 									const TestConfig			config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 										textureFilter, chromaLocation, chromaLocation, false, false,
-										colorRange, colorModel, identitySwizzle, srcSize, dstSize, samplerBinding);
+										colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 									addFunctionCaseWithPrograms(colorRangeGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 								}
@@ -1457,7 +1462,7 @@ struct YCbCrConversionTestBuilder
 									string							samplerBindingName((samplerBindings[bindingNdx].value != 0) ? string("_") + samplerBindings[bindingNdx].name : string());
 									const TestConfig				config(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 										vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-										colorRange, colorModel, identitySwizzle, srcSize, dstSize, samplerBinding);
+										colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 									addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + tilingName + "_" + xChromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 								}
@@ -1491,7 +1496,7 @@ struct YCbCrConversionTestBuilder
 										string						samplerBindingName((samplerBindings[bindingNdx].value != 0) ? string("_") + samplerBindings[bindingNdx].name : string());
 										const TestConfig			config(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 											vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-											colorRange, colorModel, identitySwizzle, srcSize, dstSize, samplerBinding);
+											colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 										addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + xChromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 									}
@@ -1541,7 +1546,7 @@ struct YCbCrConversionTestBuilder
 										const vk::VkChromaLocation		yChromaOffset(rng.choose<ChromaLocationNamePair>(begin(chromaLocations), end(chromaLocations)).value);
 										const TestConfig				config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 											vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-											defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize, 0);
+											defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
 									}
@@ -1563,7 +1568,7 @@ struct YCbCrConversionTestBuilder
 											const vk::VkChromaLocation		yChromaOffset(rng.choose<ChromaLocationNamePair>(begin(chromaLocations), end(chromaLocations)).value);
 											const TestConfig				config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 												vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-												defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize, 0);
+												defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
 											addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
 										}
@@ -1592,7 +1597,7 @@ struct YCbCrConversionTestBuilder
 										const vk::VkChromaLocation		chromaLocation(rng.choose<ChromaLocationNamePair>(begin(chromaLocations), end(chromaLocations)).value);
 										const TestConfig				config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 											vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
-											defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize, 0);
+											defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
 									}
@@ -1662,7 +1667,7 @@ struct YCbCrConversionTestBuilder
 									string								samplerBindingName((samplerBindings[bindingNdx].value != 0) ? string("_") + samplerBindings[bindingNdx].name : string());
 									const TestConfig					config(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 										vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
-										colorRange, colorModel, identitySwizzle, srcSize, dstSize, samplerBinding);
+										colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 									addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + chromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 								}
@@ -1695,7 +1700,7 @@ struct YCbCrConversionTestBuilder
 										string							samplerBindingName((samplerBindings[bindingNdx].value != 0) ? string("_") + samplerBindings[bindingNdx].name : string());
 										const TestConfig				config(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 											vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
-											colorRange, colorModel, identitySwizzle, srcSize, dstSize, samplerBinding);
+											colorRange, colorModel, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 										addFunctionCaseWithPrograms(conversionGroup.get(), string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + chromaOffsetName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 									}
@@ -1747,7 +1752,7 @@ struct YCbCrConversionTestBuilder
 											const glu::ShaderType	shaderType(rng.choose<glu::ShaderType>(begin(shaderTypes), end(shaderTypes)));
 											const TestConfig		config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 												vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-												defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize, 0);
+												defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
 											addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
 										}
@@ -1767,7 +1772,7 @@ struct YCbCrConversionTestBuilder
 												const glu::ShaderType	shaderType(rng.choose<glu::ShaderType>(begin(shaderTypes), end(shaderTypes)));
 												const TestConfig		config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 													vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-													defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize, 0);
+													defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
 												addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
 											}
@@ -1795,7 +1800,7 @@ struct YCbCrConversionTestBuilder
 										const vk::VkChromaLocation		chromaLocation(rng.choose<ChromaLocationNamePair>(begin(chromaLocations), end(chromaLocations)).value);
 										const TestConfig				config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 											vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
-											defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize, 0);
+											defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, dstSize, 0);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", checkSupport, createTestShaders, textureConversionTest, config);
 									}
@@ -1858,7 +1863,7 @@ struct YCbCrConversionTestBuilder
 
 							const TestConfig			config(shaderType, format, tiling, filter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 								filter, xChromaOffset, yChromaOffset, false, false,
-								defaultColorRange, defaultColorModel, identitySwizzle, srcSize, srcSize, 0);
+								defaultColorRange, defaultColorModel, getIdentitySwizzle(), srcSize, srcSize, 0);
 							std::ostringstream			testName;
 							testName << string("implicit_nearest_") << srcSize.x() << "x" << srcSize.y() << "_" << tilingName << "_" << xChromaOffsetName << "_" << yChromaOffsetName;
 
@@ -1896,7 +1901,7 @@ struct YCbCrConversionTestBuilder
 					// colorModel==VK_SAMPLER_YCBCR_MODEL_CONVERSION_LAST means that we want to create an array of samplers instead of a single sampler
 					const TestConfig				config(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 						textureFilter, chromaLocation, chromaLocation, false, false,
-						colorRange, vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_LAST, identitySwizzle, srcSize, dstSize, samplerBinding);
+						colorRange, vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_LAST, getIdentitySwizzle(), srcSize, dstSize, samplerBinding);
 
 					addFunctionCaseWithPrograms(samplerArrayGroup.get(), std::string(textureFilterName) + "_" + tilingName + samplerBindingName, "", checkSupport, createTestShaders, textureConversionTest, config);
 				}

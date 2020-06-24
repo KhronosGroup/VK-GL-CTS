@@ -835,8 +835,9 @@ MovePtr<tcu::TestCaseGroup> createSamplerMinFilterTests (tcu::TestContext& testC
 
 const VkComponentMapping reduceFilterComponentMappings[]	=
 {
-	// filterMinmaxImageComponentMapping  == false - compatible mapping:
+	// filterMinmaxImageComponentMapping  == false - compatible mappings:
 	{ VK_COMPONENT_SWIZZLE_IDENTITY,	VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,		VK_COMPONENT_SWIZZLE_ZERO	},
+	{ VK_COMPONENT_SWIZZLE_R,			VK_COMPONENT_SWIZZLE_ZERO,	VK_COMPONENT_SWIZZLE_ZERO,		VK_COMPONENT_SWIZZLE_ZERO	},
 
 	// other mappings
 	{ VK_COMPONENT_SWIZZLE_R,			VK_COMPONENT_SWIZZLE_G,		VK_COMPONENT_SWIZZLE_B,			VK_COMPONENT_SWIZZLE_A		},
