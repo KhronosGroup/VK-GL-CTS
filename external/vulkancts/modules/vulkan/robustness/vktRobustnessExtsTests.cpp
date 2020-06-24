@@ -32,6 +32,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vktRobustnessUtil.hpp"
 
 #include "vktTestGroupUtil.hpp"
@@ -43,6 +44,7 @@
 #include "deSharedPtr.hpp"
 #include "deString.h"
 
+#include "tcuVectorType.hpp"
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
 
@@ -64,6 +66,7 @@ enum RobustnessFeatureBits
 {
 	RF_IMG_ROBUSTNESS	= (1		),
 	RF_ROBUSTNESS2		= (1 << 1	),
+	SIF_INT64ATOMICS	= (1 << 2	),
 };
 
 using RobustnessFeatures = deUint32;
@@ -76,10 +79,11 @@ class SingletonDevice
 		: m_logicalDevice ()
 	{
 		// Note we are already checking the needed features are available in checkSupport().
-		VkPhysicalDeviceRobustness2FeaturesEXT		robustness2Features			= initVulkanStructure();
-		VkPhysicalDeviceImageRobustnessFeaturesEXT	imageRobustnessFeatures		= initVulkanStructure();
-		VkPhysicalDeviceScalarBlockLayoutFeatures	scalarBlockLayoutFeatures	= initVulkanStructure();
-		VkPhysicalDeviceFeatures2					features2					= initVulkanStructure();
+		VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
+		VkPhysicalDeviceImageRobustnessFeaturesEXT			imageRobustnessFeatures			= initVulkanStructure();
+		VkPhysicalDeviceScalarBlockLayoutFeatures			scalarBlockLayoutFeatures		= initVulkanStructure();
+		VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT	shaderImageAtomicInt64Features	= initVulkanStructure();
+		VkPhysicalDeviceFeatures2							features2						= initVulkanStructure();
 
 		features2.pNext = &scalarBlockLayoutFeatures;
 
@@ -95,6 +99,13 @@ class SingletonDevice
 			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
 			robustness2Features.pNext = features2.pNext;
 			features2.pNext = &robustness2Features;
+		}
+
+		if (FEATURES & SIF_INT64ATOMICS)
+		{
+			DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_shader_image_atomic_int64"));
+			shaderImageAtomicInt64Features.pNext = features2.pNext;
+			features2.pNext = &shaderImageAtomicInt64Features;
 		}
 
 		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
@@ -123,11 +134,15 @@ private:
 template <RobustnessFeatures FEATURES>
 SharedPtr<SingletonDevice<FEATURES>> SingletonDevice<FEATURES>::m_singletonDevice;
 
-constexpr RobustnessFeatures kImageRobustness	= RF_IMG_ROBUSTNESS;
-constexpr RobustnessFeatures kRobustness2		= RF_ROBUSTNESS2;
+constexpr RobustnessFeatures kImageRobustness			= RF_IMG_ROBUSTNESS;
+constexpr RobustnessFeatures kRobustness2				= RF_ROBUSTNESS2;
+constexpr RobustnessFeatures kShaderImageInt64Atomics	= SIF_INT64ATOMICS;
 
 using ImageRobustnessSingleton	= SingletonDevice<kImageRobustness>;
 using Robustness2Singleton		= SingletonDevice<kRobustness2>;
+
+using ImageRobustnessInt64AtomicsSingleton	= SingletonDevice<kImageRobustness | kShaderImageInt64Atomics>;
+using Robustness2Int64AtomicsSingleton		= SingletonDevice<kRobustness2 | kShaderImageInt64Atomics>;
 
 // Render target / compute grid dimensions
 static const deUint32 DIM = 8;
@@ -163,9 +178,28 @@ struct CaseDef
 	deUint32 imageDim[3]; // width, height, depth or layers
 };
 
+static bool formatIsR64(const VkFormat& f)
+{
+	switch (f)
+	{
+	case VK_FORMAT_R64_SINT:
+	case VK_FORMAT_R64_UINT:
+		return true;
+	default:
+		return false;
+	}
+}
+
 // Returns the appropriate singleton device for the given case.
 VkDevice getLogicalDevice (Context& ctx, const CaseDef& caseDef)
 {
+	if (formatIsR64(caseDef.format))
+	{
+		if (caseDef.testRobustness2)
+			return Robustness2Int64AtomicsSingleton::getDevice(ctx);
+		return ImageRobustnessInt64AtomicsSingleton::getDevice(ctx);
+	}
+
 	if (caseDef.testRobustness2)
 		return Robustness2Singleton::getDevice(ctx);
 	return ImageRobustnessSingleton::getDevice(ctx);
@@ -222,7 +256,7 @@ RobustnessExtsTestCase::~RobustnessExtsTestCase	(void)
 {
 }
 
-static bool formatIsFloat(VkFormat f)
+static bool formatIsFloat(const VkFormat& f)
 {
 	switch (f)
 	{
@@ -235,11 +269,12 @@ static bool formatIsFloat(VkFormat f)
 	}
 }
 
-static bool formatIsSignedInt(VkFormat f)
+static bool formatIsSignedInt(const VkFormat& f)
 {
 	switch (f)
 	{
 	case VK_FORMAT_R32_SINT:
+	case VK_FORMAT_R64_SINT:
 	case VK_FORMAT_R32G32_SINT:
 	case VK_FORMAT_R32G32B32A32_SINT:
 		return true;
@@ -262,6 +297,36 @@ static bool supportsStores(int descriptorType)
 	}
 }
 
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
+									  const VkDevice			device,
+									  const VkPipelineLayout	pipelineLayout,
+									  const VkShaderModule		shaderModule)
+{
+	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
+		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+		shaderModule,											// VkShaderModule						module;
+		"main",													// const char*							pName;
+		DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
+	};
+
+	const VkComputePipelineCreateInfo pipelineCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
+		DE_NULL,											// const void*						pNext;
+		0u,													// VkPipelineCreateFlags			flags;
+		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
+		pipelineLayout,										// VkPipelineLayout					layout;
+		(vk::VkPipeline)0,									// VkPipeline						basePipelineHandle;
+		0,													// deInt32							basePipelineIndex;
+	};
+
+	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+}
+
 void RobustnessExtsTestCase::checkSupport(Context& context) const
 {
 	const auto&	vki				= context.getInstanceInterface();
@@ -269,10 +334,10 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 
 	// We need to query feature support using the physical device instead of using the reported context features because robustness2
 	// and image robustness are always disabled in the default device but they may be available.
-	VkPhysicalDeviceRobustness2FeaturesEXT		robustness2Features		= initVulkanStructure();
-	VkPhysicalDeviceImageRobustnessFeaturesEXT	imageRobustnessFeatures	= initVulkanStructure();
-	VkPhysicalDeviceScalarBlockLayoutFeatures	scalarLayoutFeatures	= initVulkanStructure();
-	VkPhysicalDeviceFeatures2KHR				features2				= initVulkanStructure();
+	VkPhysicalDeviceRobustness2FeaturesEXT				robustness2Features				= initVulkanStructure();
+	VkPhysicalDeviceImageRobustnessFeaturesEXT			imageRobustnessFeatures			= initVulkanStructure();
+	VkPhysicalDeviceScalarBlockLayoutFeatures			scalarLayoutFeatures			= initVulkanStructure();
+	VkPhysicalDeviceFeatures2KHR						features2						= initVulkanStructure();
 
 	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
@@ -292,6 +357,41 @@ void RobustnessExtsTestCase::checkSupport(Context& context) const
 	}
 
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+	if (formatIsR64(m_data.format))
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		VkFormatProperties formatProperties;
+		vki.getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_data.format, &formatProperties);
+
+		switch (m_data.descriptorType)
+		{
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+			if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT) != VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT)
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT is not supported");
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+			if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) != VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT is not supported");
+			break;
+		case VERTEX_ATTRIBUTE_FETCH:
+			if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) != VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT)
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT is not supported");
+			break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT is not supported");
+			break;
+		default: DE_ASSERT(true);
+		}
+
+		if (m_data.samples > VK_SAMPLE_COUNT_1_BIT)
+		{
+			if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
+				TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT is not supported");
+		}
+	}
 
 	// Check needed properties and features
 	if (!scalarLayoutFeatures.scalarBlockLayout)
@@ -386,21 +486,40 @@ void generateLayout(Layout &layout, const CaseDef &caseDef)
 	if (caseDef.bufferLen == 0)
 	{
 		// Clear color values for image tests
-		static deUint32 urefData[4] = { 0x12345678, 0x23456789, 0x34567890, 0x45678901};
-		static float frefData[4] = { 123.f, 234.f, 345.f, 456.f };
+		static deUint32 urefData[4]		= { 0x12345678, 0x23456789, 0x34567890, 0x45678901 };
+		static deUint64 urefData64[4]	= { 0x1234567887654321, 0x234567899, 0x345678909, 0x456789019 };
+		static float frefData[4]		= { 123.f, 234.f, 345.f, 456.f };
 
-		layout.refData.resize(16);
-		deMemcpy(layout.refData.data(), formatIsFloat(caseDef.format) ? (const void *)frefData : (const void *)urefData, sizeof(frefData));
+		if (formatIsR64(caseDef.format))
+		{
+			layout.refData.resize(32);
+			deUint64 *ptr = (deUint64 *)layout.refData.data();
+
+			for (unsigned int i = 0; i < 4; ++i)
+			{
+				ptr[i] = urefData64[i];
+			}
+		}
+		else
+		{
+			layout.refData.resize(16);
+			deMemcpy(layout.refData.data(), formatIsFloat(caseDef.format) ? (const void *)frefData : (const void *)urefData, sizeof(frefData));
+		}
 	}
 	else
 	{
-		layout.refData.resize(caseDef.bufferLen & ~3);
-		for (unsigned int i = 0; i < caseDef.bufferLen / sizeof(deUint32); ++i)
+		layout.refData.resize(caseDef.bufferLen & (formatIsR64(caseDef.format) ? ~7: ~3));
+		for (unsigned int i = 0; i < caseDef.bufferLen / (formatIsR64(caseDef.format) ? sizeof(deUint64) : sizeof(deUint32)); ++i)
 		{
 			if (formatIsFloat(caseDef.format))
 			{
 				float *f = (float *)layout.refData.data() + i;
 				*f = 2.0f*(float)i + 3.0f;
+			}
+			if (formatIsR64(caseDef.format))
+			{
+				deUint64 *u = (deUint64 *)layout.refData.data() + i;
+				*u = 2 * i + 3;
 			}
 			else
 			{
@@ -541,10 +660,12 @@ static std::string getShaderImageFormatQualifier (const tcu::TextureFormat& form
 		case tcu::TextureFormat::FLOAT:				typePart = "32f";		break;
 		case tcu::TextureFormat::HALF_FLOAT:		typePart = "16f";		break;
 
+		case tcu::TextureFormat::UNSIGNED_INT64:	typePart = "64ui";		break;
 		case tcu::TextureFormat::UNSIGNED_INT32:	typePart = "32ui";		break;
 		case tcu::TextureFormat::UNSIGNED_INT16:	typePart = "16ui";		break;
 		case tcu::TextureFormat::UNSIGNED_INT8:		typePart = "8ui";		break;
 
+		case tcu::TextureFormat::SIGNED_INT64:		typePart = "64i";		break;
 		case tcu::TextureFormat::SIGNED_INT32:		typePart = "32i";		break;
 		case tcu::TextureFormat::SIGNED_INT16:		typePart = "16i";		break;
 		case tcu::TextureFormat::SIGNED_INT8:		typePart = "8i";		break;
@@ -621,26 +742,46 @@ string genCoordNorm(const CaseDef &caseDef, string c, int numCoords, int numNorm
 
 void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	VkFormat format = m_data.format;
+
 	Layout layout;
 	generateLayout(layout, m_data);
 
+	if (layout.layoutBindings.size() > 1 &&
+		layout.layoutBindings[1].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+	{
+		if (format == VK_FORMAT_R64_SINT)
+			format = VK_FORMAT_R32G32_SINT;
+
+		if (format == VK_FORMAT_R64_UINT)
+			format = VK_FORMAT_R32G32_UINT;
+	}
+
 	std::stringstream decls, checks;
 
+	const string	r64		= formatIsR64(format) ? "64" : "";
+	const string	i64Type	= formatIsR64(format) ? "64_t" : "";
+	const string	vecType	= formatIsFloat(format) ? "vec4" : (formatIsSignedInt(format) ? ("i" + r64 + "vec4") : ("u" + r64 + "vec4"));
+
 	decls << "uvec4 abs(uvec4 x) { return x; }\n";
+	if (formatIsR64(format))
+		decls << "u64vec4 abs(u64vec4 x) { return x; }\n";
 	decls << "int smod(int a, int b) { if (a < 0) a += b*(abs(a)/b+1); return a%b; }\n";
 
-	int refDataNumElements = deIntRoundToPow2((int)layout.refData.size() / 4, 4);
+
+	const int	componetsSize = (formatIsR64(format) ? 8 : 4);
+	int			refDataNumElements = deIntRoundToPow2(((int)layout.refData.size() / componetsSize), 4);
 	// Pad reference data to include zeros, up to max value of robustUniformBufferAccessSizeAlignment (256).
 	// robustStorageBufferAccessSizeAlignment is 4, so no extra padding needed.
 	if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
 		m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
 	{
-		refDataNumElements = deIntRoundToPow2(refDataNumElements, 256 / 4);
+		refDataNumElements = deIntRoundToPow2(refDataNumElements, 256 / (formatIsR64(format) ? 8 : 4));
 	}
 	if (m_data.nullDescriptor)
 		refDataNumElements = 4;
 
-	if (formatIsFloat(m_data.format))
+	if (formatIsFloat(format))
 	{
 		decls << "float refData[" << refDataNumElements << "] = {";
 		int i;
@@ -657,14 +798,28 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			decls << "0";
 			i++;
 		}
-		decls << "};\n";
-		decls << "vec4 zzzz = vec4(0);\n";
-		decls << "vec4 zzzo = vec4(0, 0, 0, 1);\n";
-		decls << "vec4 expectedIB;\n";
+	}
+	else if (formatIsR64(format))
+	{
+		decls << "int" << i64Type << " refData[" << refDataNumElements << "] = {";
+		int i;
+		for (i = 0; i < (int)layout.refData.size() / 8; ++i)
+		{
+			if (i != 0)
+				decls << ", ";
+			decls << ((const deUint64 *)layout.refData.data())[i] << "l";
+		}
+		while (i < refDataNumElements)
+		{
+			if (i != 0)
+				decls << ", ";
+			decls << "0l";
+			i++;
+		}
 	}
 	else
 	{
-		decls << "int refData[" << refDataNumElements << "] = {";
+		decls << "int" << " refData[" << refDataNumElements << "] = {";
 		int i;
 		for (i = 0; i < (int)layout.refData.size() / 4; ++i)
 		{
@@ -679,15 +834,16 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			decls << "0";
 			i++;
 		}
-		decls << "};\n";
-		decls << "ivec4 zzzz = ivec4(0);\n";
-		decls << "ivec4 zzzo = ivec4(0, 0, 0, 1);\n";
-		decls << "ivec4 expectedIB;\n";
 	}
-	string vecType = formatIsFloat(m_data.format) ? "vec4" : formatIsSignedInt(m_data.format) ? "ivec4" : "uvec4";
-	string imgprefix = formatIsFloat(m_data.format) ? "" : formatIsSignedInt(m_data.format) ? "i" : "u";
-	string imgqualif = m_data.formatQualifier ? getShaderImageFormatQualifier(mapVkFormat(m_data.format)) + ", " : "";
-	string outputimgqualif = getShaderImageFormatQualifier(mapVkFormat(m_data.format));
+
+	decls << "};\n";
+	decls << vecType << " zzzz = " << vecType << "(0);\n";
+	decls << vecType << " zzzo = " << vecType << "(0, 0, 0, 1);\n";
+	decls << vecType << " expectedIB;\n";
+
+	string imgprefix = (formatIsFloat(format) ? "" : formatIsSignedInt(format) ? "i" : "u") + r64;
+	string imgqualif = (m_data.formatQualifier) ? getShaderImageFormatQualifier(mapVkFormat(format)) + ", " : "";
+	string outputimgqualif = getShaderImageFormatQualifier(mapVkFormat(format));
 
 	string imageDim = "";
 	int numCoords, numNormalizedCoords;
@@ -722,10 +878,10 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		numCoords = 3;
 	}
 
-	int numComponents = tcu::getPixelSize(mapVkFormat(m_data.format)) / 4;
+	int numComponents = tcu::getPixelSize(mapVkFormat(format)) / tcu::getChannelSize(mapVkFormat(format).type);
 	string bufType;
 	if (numComponents == 1)
-		bufType = formatIsFloat(m_data.format) ? "float" : formatIsSignedInt(m_data.format) ? "int" : "uint";
+		bufType = string(formatIsFloat(format) ? "float" : formatIsSignedInt(format) ? "int" : "uint") + i64Type;
 	else
 		bufType = imgprefix + "vec" + std::to_string(numComponents);
 
@@ -759,7 +915,17 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		decls << "layout(scalar, set = 0, binding = 1) " << vol << "buffer sbodef0_1_unsized_pad { vec4 pad; " << bufType << " val[]; } ssbo0_1_unsized_pad;\n";
 		break;
 	case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-		decls << "layout(set = 0, binding = 1) uniform " << imgprefix << "textureBuffer texbo0_1;\n";
+		switch(format)
+		{
+		case VK_FORMAT_R64_SINT:
+			decls << "layout(set = 0, binding = 1) uniform itextureBuffer texbo0_1;\n";
+			break;
+		case VK_FORMAT_R64_UINT:
+			decls << "layout(set = 0, binding = 1) uniform utextureBuffer texbo0_1;\n";
+			break;
+		default:
+			decls << "layout(set = 0, binding = 1) uniform " << imgprefix << "textureBuffer texbo0_1;\n";
+		}
 		break;
 	case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 		decls << "layout(" << imgqualif << "set = 0, binding = 1) " << vol << "uniform " << imgprefix << "imageBuffer image0_1;\n";
@@ -768,10 +934,28 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		decls << "layout(" << imgqualif << "set = 0, binding = 1) " << vol << "uniform " << imgprefix << "image" << imageDim << " image0_1;\n";
 		break;
 	case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-		decls << "layout(set = 0, binding = 1) uniform " << imgprefix << "sampler" << imageDim << " texture0_1;\n";
+		switch (format)
+		{
+		case VK_FORMAT_R64_SINT:
+			decls << "layout(set = 0, binding = 1) uniform isampler" << imageDim << " texture0_1; \n";
+			break;
+		case VK_FORMAT_R64_UINT:
+			decls << "layout(set = 0, binding = 1) uniform usampler" << imageDim << " texture0_1; \n";
+			break;
+		default:
+			decls << "layout(set = 0, binding = 1) uniform " << imgprefix << "sampler" << imageDim << " texture0_1;\n";
+			break;
+		}
 		break;
 	case VERTEX_ATTRIBUTE_FETCH:
-		decls << "layout(location = 0) in " << vecType << " attr;\n";
+		if (formatIsR64(format))
+		{
+			decls << "layout(location = 0) in " << (formatIsSignedInt(format) ? ("int64_t") : ("uint64_t")) << " attr;\n";
+		}
+		else
+		{
+			decls << "layout(location = 0) in " << vecType << " attr;\n";
+		}
 		break;
 	default: DE_ASSERT(0);
 	}
@@ -874,7 +1058,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 		case VERTEX_ATTRIBUTE_FETCH:
-			checks << "    inboundcoords = " << layout.refData.size() / sizeof(deUint32) / numComponents << ";\n";
+			checks << "    inboundcoords = " << layout.refData.size() / (formatIsR64(format) ? sizeof(deUint64) : sizeof(deUint32)) / numComponents << ";\n";
 			break;
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
@@ -902,7 +1086,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 
 			checks << "    if (c < 0 || c >= " << inboundcoords << ") " << genStore(m_data.descriptorType, vecType, bufType, coord) << ";\n";
 			if (m_data.formatQualifier &&
-				(m_data.format == VK_FORMAT_R32_SINT || m_data.format == VK_FORMAT_R32_UINT))
+				(format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_UINT))
 			{
 				checks << "    if (c < 0 || c >= " << inboundcoords << ") " << genAtomic(m_data.descriptorType, bufType, coord) << ";\n";
 			}
@@ -930,8 +1114,19 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 
 		if (m_data.descriptorType == VERTEX_ATTRIBUTE_FETCH)
 		{
-			checks << "    temp = " << genFetch(m_data, numComponents, vecType, coord, "0") << ";\n";
-			checks << "    if (gl_VertexIndex >= 0 && gl_VertexIndex < inboundcoords) temp -= expectedIB; else temp -= " << expectedOOB << ";\n";
+			if (formatIsR64(format))
+			{
+				checks << "    temp.x = attr;\n";
+				checks << "    temp.y = 0l;\n";
+				checks << "    temp.z = 0l;\n";
+				checks << "    temp.w = 0l;\n";
+				checks << "    if (gl_VertexIndex >= 0 && gl_VertexIndex < inboundcoords) temp.x -= expectedIB.x; else temp -= zzzz;\n";
+			}
+			else
+			{
+				checks << "    temp = " << genFetch(m_data, numComponents, vecType, coord, "0") << ";\n";
+				checks << "    if (gl_VertexIndex >= 0 && gl_VertexIndex < inboundcoords) temp -= expectedIB; else temp -= " << expectedOOB << ";\n";
+			}
 			// Accumulate any incorrect values.
 			checks << "    accum += abs(temp);\n";
 		}
@@ -973,8 +1168,8 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 					 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) &&
 					 !m_data.nullDescriptor)
 				{
-					int len = m_data.bufferLen & ~3;
-					int mod = (int)((len / sizeof(deUint32)) % numComponents);
+					int len = m_data.bufferLen & (formatIsR64(format) ? ~7 : ~3);
+					int mod = (int)((len / (formatIsR64(format) ? sizeof(deUint64) : sizeof(deUint32))) % numComponents);
 					string sstoreValue = de::toString(storeValue);
 					switch (mod)
 					{
@@ -1143,7 +1338,10 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 		}
 	}
 	checks << "  }\n";
-
+	std::string SupportR64 = (formatIsR64(m_data.format) ?
+							std::string("#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+							"#extension GL_EXT_shader_image_int64 : require\n") :
+							std::string());
 	switch (m_data.stage)
 	{
 	default: DE_ASSERT(0); // Fallthrough
@@ -1157,6 +1355,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"#extension GL_EXT_samplerless_texture_functions : enable\n"
 				"#extension GL_EXT_control_flow_attributes : enable\n"
 				"#extension GL_EXT_shader_image_load_formatted : enable\n"
+				<< SupportR64
 				<< decls.str() <<
 				"layout(local_size_x = 1, local_size_y = 1) in;\n"
 				"void main()\n"
@@ -1169,7 +1368,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::ComputeSource(css.str())
-				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 			break;
 		}
 	case STAGE_RAYGEN:
@@ -1183,6 +1382,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 			"#extension GL_EXT_control_flow_attributes : enable\n"
 			"#extension GL_NV_ray_tracing : require\n"
 			"#extension GL_EXT_shader_image_load_formatted : enable\n"
+			<< SupportR64
 			<< decls.str() <<
 			"void main()\n"
 			"{\n"
@@ -1207,6 +1407,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_control_flow_attributes : enable\n"
 				"#extension GL_EXT_shader_image_load_formatted : enable\n"
+				<< SupportR64
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
@@ -1245,6 +1446,7 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				"#extension GL_EXT_nonuniform_qualifier : enable\n"
 				"#extension GL_EXT_control_flow_attributes : enable\n"
 				"#extension GL_EXT_shader_image_load_formatted : enable\n"
+				<< SupportR64
 				<< decls.str() <<
 				"void main()\n"
 				"{\n"
@@ -1259,6 +1461,43 @@ void RobustnessExtsTestCase::initPrograms (SourceCollections& programCollection)
 				<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 			break;
 		}
+	}
+
+
+	if ((m_data.samples > VK_SAMPLE_COUNT_1_BIT) && formatIsR64(m_data.format))
+	{
+		const std::string	ivecCords = (m_data.viewType == VK_IMAGE_VIEW_TYPE_2D ? "ivec2(gx, gy)" : "ivec3(gx, gy, gz)");
+		std::stringstream	fillShader;
+
+		fillShader <<
+			"#version 450\n"
+			<< SupportR64
+			<< "\n"
+			"layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+			"layout (" + getShaderImageFormatQualifier(mapVkFormat(m_data.format)) + ", binding=0) volatile uniform "
+			<< string(formatIsSignedInt(m_data.format) ? "i" : "u") + string(formatIsR64(m_data.format) ? "64" : "") << "image" << imageDim << +" u_resultImage;\n"
+			"\n"
+			"layout(std430, binding = 1) buffer inputBuffer\n"
+			"{\n"
+			"  int" << (formatIsR64(m_data.format) ? "64_t" : "") << " data[];\n"
+			"} inBuffer;\n"
+			"\n"
+			"void main(void)\n"
+			"{\n"
+			"  int gx = int(gl_GlobalInvocationID.x);\n"
+			"  int gy = int(gl_GlobalInvocationID.y);\n"
+			"  int gz = int(gl_GlobalInvocationID.z);\n"
+			"  uint index = gx + (gy * gl_NumWorkGroups.x) + (gz *gl_NumWorkGroups.x * gl_NumWorkGroups.y);\n";
+
+			for(int ndx = 0; ndx < static_cast<int>(m_data.samples); ++ndx)
+			{
+				fillShader << "  imageStore(u_resultImage, " << ivecCords << ", " << ndx << ", i64vec4(inBuffer.data[index]));\n";
+			}
+
+			fillShader << "}\n";
+
+		programCollection.glslSources.add("fillShader") << glu::ComputeSource(fillShader.str())
+			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
 	}
 
 }
@@ -1357,7 +1596,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	Move<vk::VkDescriptorSet>		descriptorSet;
 
 	int formatBytes = tcu::getPixelSize(mapVkFormat(m_data.format));
-	int numComponents = formatBytes / 4;
+	int numComponents = formatBytes / tcu::getChannelSize(mapVkFormat(m_data.format).type);
 
 	vector<VkDescriptorSetLayoutBinding> &bindings = layout.layoutBindings;
 
@@ -1396,6 +1635,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout, pNext);
 
 	de::MovePtr<BufferWithMemory> buffer;
+
 	deUint8 *bufferPtr = DE_NULL;
 	if (!m_data.nullDescriptor)
 	{
@@ -1446,8 +1686,15 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 	const deUint32 queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
-	Move<VkCommandPool>				cmdPool						= createCommandPool(vk, device, 0, queueFamilyIndex);
-	Move<VkCommandBuffer>			cmdBuffer					= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkDescriptorSetLayout>		descriptorSetLayoutR64;
+	Move<VkDescriptorPool>			descriptorPoolR64;
+	Move<VkDescriptorSet>			descriptorSetFillImage;
+	Move<VkShaderModule>			shaderModuleFillImage;
+	Move<VkPipelineLayout>			pipelineLayoutFillImage;
+	Move<VkPipeline>				pipelineFillImage;
+
+	Move<VkCommandPool>				cmdPool		= createCommandPool(vk, device, 0, queueFamilyIndex);
+	Move<VkCommandBuffer>			cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	VkQueue							queue;
 
 	vk.getDeviceQueue(device, queueFamilyIndex, 0, &queue);
@@ -1501,12 +1748,20 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	typedef de::SharedPtr<BufferViewHandleUp>	BufferViewHandleSp;
 	typedef de::SharedPtr<ImageWithMemory>		ImageWithMemorySp;
 	typedef de::SharedPtr<Unique<VkImageView> >	VkImageViewSp;
+	typedef de::MovePtr<BufferWithMemory>		BufferWithMemoryMp;
 
 	vector<BufferViewHandleSp>					bufferViews(1);
 
 	VkImageCreateFlags imageCreateFlags = 0;
 	if (m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE || m_data.viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
 		imageCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+	const bool featureSampledImage = ((getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(),
+										m_context.getPhysicalDevice(),
+										m_data.format).optimalTilingFeatures &
+										VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+
+	const VkImageUsageFlags usageSampledImage = (featureSampledImage ? VK_IMAGE_USAGE_SAMPLED_BIT : (VkImageUsageFlagBits)0);
 
 	const VkImageCreateInfo			outputImageCreateInfo			=
 	{
@@ -1525,7 +1780,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
 		VK_IMAGE_USAGE_STORAGE_BIT
-		| VK_IMAGE_USAGE_SAMPLED_BIT
+		| usageSampledImage
 		| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 		| VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
@@ -1541,6 +1796,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 						m_data.viewType != VK_IMAGE_VIEW_TYPE_1D &&
 						m_data.viewType != VK_IMAGE_VIEW_TYPE_2D &&
 						m_data.viewType != VK_IMAGE_VIEW_TYPE_3D ? m_data.imageDim[2] : 1;
+
+	const VkImageUsageFlags usageImage = (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ? VK_IMAGE_USAGE_STORAGE_BIT : (VkImageUsageFlagBits)0);
 
 	const VkImageCreateInfo			imageCreateInfo			=
 	{
@@ -1558,8 +1815,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		layers,									// deUint32					arrayLayers;
 		m_data.samples,							// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling			tiling;
-		(m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ? (VkImageUsageFlags)VK_IMAGE_USAGE_STORAGE_BIT : (VkImageUsageFlags)0)
-		| VK_IMAGE_USAGE_SAMPLED_BIT
+		usageImage
+		| usageSampledImage
 		| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 		| VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode			sharingMode;
@@ -1598,6 +1855,45 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	{
 		deUint32 *ptr = (deUint32 *)bufferPtr;
 		deMemcpy(ptr, layout.refData.data(), layout.refData.size());
+	}
+
+	BufferWithMemoryMp				bufferImageR64;
+	BufferWithMemoryMp				bufferOutputImageR64;
+	const VkDeviceSize				sizeOutputR64	= 8 * outputImageCreateInfo.extent.width * outputImageCreateInfo.extent.height * outputImageCreateInfo.extent.depth;
+	const VkDeviceSize				sizeOneLayers	= 8 * imageCreateInfo.extent.width * imageCreateInfo.extent.height * imageCreateInfo.extent.depth;
+	const VkDeviceSize				sizeImageR64	= sizeOneLayers * layers;
+
+	if (formatIsR64(m_data.format))
+	{
+		bufferOutputImageR64 = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+			vk, device, allocator,
+			makeBufferCreateInfo(sizeOutputR64, VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+			MemoryRequirement::HostVisible));
+
+		deUint64* bufferUint64Ptr = (deUint64 *)bufferOutputImageR64->getAllocation().getHostPtr();
+
+		for (int ndx = 0; ndx < static_cast<int>(sizeOutputR64 / 8); ++ndx)
+		{
+			bufferUint64Ptr[ndx] = 0;
+		}
+		flushAlloc(vk, device, bufferOutputImageR64->getAllocation());
+
+		bufferImageR64 = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+			vk, device, allocator,
+			makeBufferCreateInfo(sizeImageR64, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+			MemoryRequirement::HostVisible));
+
+		for (deUint32 layerNdx = 0; layerNdx < layers; ++layerNdx)
+		{
+			bufferUint64Ptr = (deUint64 *)bufferImageR64->getAllocation().getHostPtr();
+			bufferUint64Ptr = bufferUint64Ptr + ((sizeOneLayers * layerNdx) / 8);
+
+			for (int ndx = 0; ndx < static_cast<int>(sizeOneLayers / 8); ++ndx)
+			{
+				bufferUint64Ptr[ndx] = 0x1234567887654321 + ((m_data.viewType != VK_IMAGE_VIEW_TYPE_CUBE && m_data.viewType != VK_IMAGE_VIEW_TYPE_CUBE_ARRAY) ? layerNdx : 0);
+			}
+		}
+		flushAlloc(vk, device, bufferImageR64->getAllocation());
 	}
 
 	for (size_t b = 0; b < bindings.size(); ++b)
@@ -1645,6 +1941,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 			{
+				if (bindings.size() > 1 &&
+					bindings[1].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+				{
+					if (m_data.format == VK_FORMAT_R64_SINT)
+						imageViewCreateInfo.format = VK_FORMAT_R32G32_SINT;
+
+					if (m_data.format == VK_FORMAT_R64_UINT)
+						imageViewCreateInfo.format = VK_FORMAT_R32G32_UINT;
+				}
+
 				if (b == 0)
 				{
 					images[b] = ImageWithMemorySp(new ImageWithMemory(vk, device, allocator, outputImageCreateInfo, MemoryRequirement::Any));
@@ -1658,54 +1964,142 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 				imageViewCreateInfo.image = **images[b];
 				imageViews[b] = VkImageViewSp(new Unique<VkImageView>(createImageView(vk, device, &imageViewCreateInfo, NULL)));
 
-				VkImage img = **images[b];
+				VkImage						img			= **images[b];
+				const VkBuffer&				bufferR64= ((b == 0) ? *(*bufferOutputImageR64) : *(*(bufferImageR64)));
+				const VkImageCreateInfo&	imageInfo	= ((b == 0) ? outputImageCreateInfo : imageCreateInfo);
+				const deUint32				clearLayers	= b == 0 ? 1 : layers;
 
-				preImageBarrier.image	= img;
-				if (b == 1)
+				if (!formatIsR64(m_data.format))
 				{
-					if (formatIsFloat(m_data.format))
+					preImageBarrier.image	= img;
+					if (b == 1)
 					{
-						deMemcpy(&clearValue.float32[0], layout.refData.data(), layout.refData.size());
+						if (formatIsFloat(m_data.format))
+						{
+							deMemcpy(&clearValue.float32[0], layout.refData.data(), layout.refData.size());
+						}
+						else if (formatIsSignedInt(m_data.format))
+						{
+							deMemcpy(&clearValue.int32[0], layout.refData.data(), layout.refData.size());
+						}
+						else
+						{
+							deMemcpy(&clearValue.uint32[0], layout.refData.data(), layout.refData.size());
+						}
 					}
-					else if (formatIsSignedInt(m_data.format))
+					postImageBarrier.image	= img;
+
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
+
+					for (unsigned int i = 0; i < clearLayers; ++i)
 					{
-						deMemcpy(&clearValue.int32[0], layout.refData.data(), layout.refData.size());
+						const VkImageSubresourceRange	clearRange				=
+						{
+							VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
+							0u,							// deUint32				baseMipLevel;
+							VK_REMAINING_MIP_LEVELS,	// deUint32				levelCount;
+							i,							// deUint32				baseArrayLayer;
+							1							// deUint32				layerCount;
+						};
+
+						vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
+
+						// Use same data for all faces for cube(array), otherwise make value a function of the layer
+						if (m_data.viewType != VK_IMAGE_VIEW_TYPE_CUBE && m_data.viewType != VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+						{
+							if (formatIsFloat(m_data.format))
+								clearValue.float32[0] += 1;
+							else if (formatIsSignedInt(m_data.format))
+								clearValue.int32[0] += 1;
+							else
+								clearValue.uint32[0] += 1;
+						}
+					}
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+				}
+				else
+				{
+					if ((m_data.samples > VK_SAMPLE_COUNT_1_BIT) && (b == 1))
+					{
+						const VkImageSubresourceRange	subresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, clearLayers);
+						const VkImageMemoryBarrier		imageBarrierPre		= makeImageMemoryBarrier(0,
+																				VK_ACCESS_SHADER_WRITE_BIT,
+																				VK_IMAGE_LAYOUT_UNDEFINED,
+																				VK_IMAGE_LAYOUT_GENERAL,
+																				img,
+																				subresourceRange);
+						const VkImageMemoryBarrier		imageBarrierPost	= makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT,
+																				VK_ACCESS_SHADER_READ_BIT,
+																				VK_IMAGE_LAYOUT_GENERAL,
+																				VK_IMAGE_LAYOUT_GENERAL,
+																				img,
+																				subresourceRange);
+
+						descriptorSetLayoutR64 =
+							DescriptorSetLayoutBuilder()
+							.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
+							.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+							.build(vk, device);
+
+						descriptorPoolR64 =
+							DescriptorPoolBuilder()
+							.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1)
+							.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,1)
+							.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+
+						descriptorSetFillImage = makeDescriptorSet(vk,
+							device,
+							*descriptorPoolR64,
+							*descriptorSetLayoutR64);
+
+						shaderModuleFillImage	= createShaderModule(vk, device, m_context.getBinaryCollection().get("fillShader"), 0);
+						pipelineLayoutFillImage	= makePipelineLayout(vk, device, *descriptorSetLayoutR64);
+						pipelineFillImage		= makeComputePipeline(vk, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
+
+						const VkDescriptorImageInfo		descResultImageInfo		= makeDescriptorImageInfo(DE_NULL, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
+						const VkDescriptorBufferInfo	descResultBufferInfo	= makeDescriptorBufferInfo(bufferR64, 0, sizeImageR64);
+
+						DescriptorSetUpdateBuilder()
+							.writeSingle(*descriptorSetFillImage, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descResultImageInfo)
+							.writeSingle(*descriptorSetFillImage, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descResultBufferInfo)
+							.update(vk, device);
+
+						vk.cmdPipelineBarrier(*cmdBuffer,
+							VK_PIPELINE_STAGE_HOST_BIT,
+							VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+							(VkDependencyFlags)0,
+							0, (const VkMemoryBarrier*)DE_NULL,
+							0, (const VkBufferMemoryBarrier*)DE_NULL,
+							1, &imageBarrierPre);
+
+						vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineFillImage);
+						vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayoutFillImage, 0u, 1u, &(*descriptorSetFillImage), 0u, DE_NULL);
+
+						vk.cmdDispatch(*cmdBuffer, imageInfo.extent.width, imageInfo.extent.height, clearLayers);
+
+						vk.cmdPipelineBarrier(*cmdBuffer,
+									VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+									VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+									(VkDependencyFlags)0,
+									0, (const VkMemoryBarrier*)DE_NULL,
+									0, (const VkBufferMemoryBarrier*)DE_NULL,
+									1, &imageBarrierPost);
 					}
 					else
 					{
-						deMemcpy(&clearValue.uint32[0], layout.refData.data(), layout.refData.size());
+						VkDeviceSize					size			= ((b == 0) ? sizeOutputR64 : sizeImageR64);
+						const vector<VkBufferImageCopy>	bufferImageCopy	(1, makeBufferImageCopy(imageInfo.extent, makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, clearLayers)));
+
+						copyBufferToImage(vk,
+							*cmdBuffer,
+							bufferR64,
+							size,
+							bufferImageCopy,
+							VK_IMAGE_ASPECT_COLOR_BIT,
+							1,
+							clearLayers, img, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
 					}
 				}
-				postImageBarrier.image	= img;
-
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
-
-				deUint32 clearLayers = b == 0 ? 1 : layers;
-				for (unsigned int i = 0; i < clearLayers; ++i)
-				{
-					const VkImageSubresourceRange	clearRange				=
-					{
-						VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-						0u,							// deUint32				baseMipLevel;
-						VK_REMAINING_MIP_LEVELS,	// deUint32				levelCount;
-						i,							// deUint32				baseArrayLayer;
-						1							// deUint32				layerCount;
-					};
-
-					vk.cmdClearColorImage(*cmdBuffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue, 1, &clearRange);
-
-					// Use same data for all faces for cube(array), otherwise make value a function of the layer
-					if (m_data.viewType != VK_IMAGE_VIEW_TYPE_CUBE && m_data.viewType != VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
-					{
-						if (formatIsFloat(m_data.format))
-							clearValue.float32[0] += 1;
-						else if (formatIsSignedInt(m_data.format))
-							clearValue.int32[0] += 1;
-						else
-							clearValue.uint32[0] += 1;
-					}
-				}
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 			}
 			break;
 		}
@@ -1959,28 +2353,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 	{
 		const Unique<VkShaderModule>	shader(createShaderModule(vk, device, m_context.getBinaryCollection().get("test"), 0));
 
-		const VkPipelineShaderStageCreateInfo	shaderCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			(VkPipelineShaderStageCreateFlags)0,
-			VK_SHADER_STAGE_COMPUTE_BIT,								// stage
-			*shader,													// shader
-			"main",
-			DE_NULL,													// pSpecializationInfo
-		};
+		pipeline = makeComputePipeline(vk, device, *pipelineLayout, *shader);
 
-		const VkComputePipelineCreateInfo		pipelineCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-			DE_NULL,
-			0u,															// flags
-			shaderCreateInfo,											// cs
-			*pipelineLayout,											// layout
-			(vk::VkPipeline)0,											// basePipelineHandle
-			0u,															// basePipelineIndex
-		};
-		pipeline = createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo, NULL);
 	}
 	else if (m_data.stage == STAGE_RAYGEN)
 	{
@@ -2263,8 +2637,25 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 	vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipeline);
 
-	VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	VkClearValue clearColor = makeClearValueColorU32(0,0,0,0);
+	if (!formatIsR64(m_data.format))
+	{
+		VkImageSubresourceRange range = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+		VkClearValue clearColor = makeClearValueColorU32(0,0,0,0);
+
+		vk.cmdClearColorImage(*cmdBuffer, **images[0], VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
+	}
+	else
+	{
+		const vector<VkBufferImageCopy>	bufferImageCopy(1, makeBufferImageCopy(outputImageCreateInfo.extent, makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1)));
+		copyBufferToImage(vk,
+			*cmdBuffer,
+			*(*bufferOutputImageR64),
+			sizeOutputR64,
+			bufferImageCopy,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			1,
+			1, **images[0], VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+	}
 
 	VkMemoryBarrier					memBarrier =
 	{
@@ -2273,8 +2664,6 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 		0u,									// srcAccessMask
 		0u,									// dstAccessMask
 	};
-
-	vk.cmdClearColorImage(*cmdBuffer, **images[0], VK_IMAGE_LAYOUT_GENERAL, &clearColor.color, 1, &range);
 
 	memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
@@ -2331,7 +2720,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
-	deUint32 *ptr = (deUint32 *)copyBuffer->getAllocation().getHostPtr();
+	void *ptr = copyBuffer->getAllocation().getHostPtr();
+
 	invalidateAlloc(vk, device, copyBuffer->getAllocation());
 
 	qpTestResult res = QP_TEST_RESULT_PASS;
@@ -2345,9 +2735,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate (void)
 				res = QP_TEST_RESULT_FAIL;
 			}
 		}
+		else if (formatIsR64(m_data.format))
+		{
+			if (((deUint64 *)ptr)[i * numComponents] != 1)
+			{
+				res = QP_TEST_RESULT_FAIL;
+			}
+		}
 		else
 		{
-			if (ptr[i * numComponents] != 1)
+			if (((deUint32 *)ptr)[i * numComponents] != 1)
 			{
 				res = QP_TEST_RESULT_FAIL;
 			}
@@ -2381,6 +2778,8 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 		{ VK_FORMAT_R32G32B32A32_SINT,		"rgba32i",	""		},
 		{ VK_FORMAT_R32G32B32A32_UINT,		"rgba32ui",	""		},
 		{ VK_FORMAT_R32G32B32A32_SFLOAT,	"rgba32f",	""		},
+		{ VK_FORMAT_R64_SINT,				"r64i",		""		},
+		{ VK_FORMAT_R64_UINT,				"r64ui",	""		},
 	};
 
 	TestGroupCase fullDescCases[] =
@@ -2402,7 +2801,7 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,		"sampled_image",			""		},
 	};
 
-	TestGroupCase fullLenCases[] =
+	TestGroupCase fullLenCases32Bit[] =
 	{
 		{ ~0U,			"null_descriptor",	""		},
 		{ 0,			"img",				""		},
@@ -2421,6 +2820,27 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 		{ 252,			"len_252",			""		},
 		{ 256,			"len_256",			""		},
 		{ 260,			"len_260",			""		},
+	};
+
+	TestGroupCase fullLenCases64Bit[] =
+	{
+		{ ~0U,			"null_descriptor",	""		},
+		{ 0,			"img",				""		},
+		{ 8,			"len_8",			""		},
+		{ 16,			"len_16",			""		},
+		{ 24,			"len_24",			""		},
+		{ 32,			"len_32",			""		},
+		{ 40,			"len_40",			""		},
+		{ 62,			"len_62",			""		},
+		{ 64,			"len_64",			""		},
+		{ 66,			"len_66",			""		},
+		{ 70,			"len_70",			""		},
+		{ 72,			"len_72",			""		},
+		{ 78,			"len_78",			""		},
+		{ 80,			"len_80",			""		},
+		{ 504,			"len_504",			""		},
+		{ 512,			"len_512",			""		},
+		{ 520,			"len_520",			""		},
 	};
 
 	TestGroupCase imgLenCases[] =
@@ -2521,8 +2941,9 @@ static void createTests (tcu::TestCaseGroup* group, bool robustness2)
 									(descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || descCases[descNdx].count == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || descCases[descNdx].count == VERTEX_ATTRIBUTE_FETCH))
 									continue;
 
-								int numLenCases = robustness2 ? DE_LENGTH_OF_ARRAY(fullLenCases) : DE_LENGTH_OF_ARRAY(imgLenCases);
-								TestGroupCase *lenCases = robustness2 ? fullLenCases : imgLenCases;
+								const bool isR64 = formatIsR64((VkFormat)fmtCases[fmtNdx].count);
+								int numLenCases = robustness2 ? DE_LENGTH_OF_ARRAY((isR64 ? fullLenCases64Bit : fullLenCases32Bit)) : DE_LENGTH_OF_ARRAY(imgLenCases);
+								TestGroupCase *lenCases = robustness2 ? (isR64 ? fullLenCases64Bit : fullLenCases32Bit) : imgLenCases;
 
 								for (int lenNdx = 0; lenNdx < numLenCases; lenNdx++)
 								{
@@ -2648,6 +3069,8 @@ static void cleanupGroup (tcu::TestCaseGroup* group)
 {
 	DE_UNREF(group);
 	// Destroy singleton objects.
+	Robustness2Int64AtomicsSingleton::destroy();
+	ImageRobustnessInt64AtomicsSingleton::destroy();
 	ImageRobustnessSingleton::destroy();
 	Robustness2Singleton::destroy();
 }
