@@ -95,6 +95,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCopyTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorSetRandomTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateTests.cpp \
+	external/vulkancts/modules/vulkan/binding_model/vktBindingDynamicOffsetTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
 	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
