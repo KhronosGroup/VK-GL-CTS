@@ -5390,6 +5390,15 @@ struct VkPhysicalDevice4444FormatsFeaturesEXT
 	VkBool32		formatA4B4G4R4;
 };
 
+struct VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rasterizationOrderColorAttachmentAccess;
+	VkBool32		rasterizationOrderDepthAttachmentAccess;
+	VkBool32		rasterizationOrderStencilAttachmentAccess;
+};
+
 struct VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE
 {
 	VkStructureType	sType;
