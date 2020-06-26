@@ -211,8 +211,8 @@ struct TestConfig
 	float						minDepthBounds;
 	float						maxDepthBounds;
 
-	// Include passthrough geometry shader or not.
-	bool						useGeometryShader;
+	// Force inclusion of passthrough geometry shader or not.
+	bool						forceGeometryShader;
 
 	// Static and dynamic pipeline configuration.
 	CullModeConfig				cullModeConfig;
@@ -241,7 +241,7 @@ struct TestConfig
 		, expectedStencil				(0u)
 		, minDepthBounds				(0.0f)
 		, maxDepthBounds				(1.0f)
-		, useGeometryShader				(false)
+		, forceGeometryShader			(false)
 		, cullModeConfig				(static_cast<vk::VkCullModeFlags>(vk::VK_CULL_MODE_NONE))
 		, frontFaceConfig				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
 		// By default we will use a triangle fan with 6 vertices that could be wrongly interpreted as a triangle list with 2 triangles.
@@ -256,6 +256,26 @@ struct TestConfig
 		, stencilTestEnableConfig		(false)
 		, stencilOpConfig				(StencilOpVec(1u, kDefaultStencilOpParams))
 	{
+	}
+
+	// Get the proper viewport vector according to the test config.
+	const ViewportVec& getActiveViewportVec () const
+	{
+		return (viewportConfig.dynamicValue ? viewportConfig.dynamicValue.get() : viewportConfig.staticValue);
+	}
+
+	// Returns true if there is more than one viewport.
+	bool isMultiViewport () const
+	{
+		return (getActiveViewportVec().size() > 1);
+	}
+
+	// Returns true if the case needs a geometry shader.
+	bool needsGeometryShader () const
+	{
+		// Writing to gl_ViewportIndex from vertex or tesselation shaders needs the shaderOutputViewportIndex feature, which is less
+		// commonly supported than geometry shaders, so we will use a geometry shader if we need to write to it.
+		return (isMultiViewport() || forceGeometryShader);
 	}
 };
 
@@ -396,7 +416,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 
 	const auto&	dbTestEnable	= m_testConfig.depthBoundsTestEnableConfig;
 	const bool	useDepthBounds	= (dbTestEnable.staticValue || (dbTestEnable.dynamicValue && dbTestEnable.dynamicValue.get()));
-	if (useDepthBounds || m_testConfig.useGeometryShader)
+	if (useDepthBounds || m_testConfig.needsGeometryShader())
 	{
 		const auto features = vk::getPhysicalDeviceFeatures(vki, physicalDevice);
 
@@ -405,7 +425,7 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Depth bounds feature not supported");
 
 		// Check geometry shader support.
-		if (m_testConfig.useGeometryShader && !features.geometryShader)
+		if (m_testConfig.needsGeometryShader() && !features.geometryShader)
 			TCU_THROW(NotSupportedError, "Geometry shader not supported");
 	}
 
@@ -444,7 +464,6 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 
 	vertSource
 		<< "#version 450\n"
-		<< "#extension GL_ARB_shader_viewport_layer_array : require\n"
 		<< pushConstants
 		<< "layout(location=0) in vec2 position;\n"
 		<< "out gl_PerVertex\n"
@@ -453,7 +472,6 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "};\n"
 		<< "void main() {\n"
 		<< "    gl_Position = vec4(position.x * pushConstants.scaleX + pushConstants.offsetX, position.y * pushConstants.scaleY + pushConstants.offsetY, pushConstants.depthValue, 1.0);\n"
-		<< "    gl_ViewportIndex = pushConstants.viewPortIndex;\n"
 		<< "}\n"
 		;
 
@@ -466,7 +484,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 		<< "}\n"
 		;
 
-	if (m_testConfig.useGeometryShader)
+	if (m_testConfig.needsGeometryShader())
 	{
 		const auto			topologyClass	= getTopologyClass(m_testConfig.topologyConfig.staticValue);
 		const std::string	inputPrimitive	= ((topologyClass == TopologyClass::LINE) ? "lines" : "triangles");
@@ -477,6 +495,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "#version 450\n"
 			<< "layout (" << inputPrimitive << ") in;\n"
 			<< "layout (" << outputPrimitive << ", max_vertices=" << vertexCount << ") out;\n"
+			<< (m_testConfig.isMultiViewport() ? pushConstants : "")
 			<< "in gl_PerVertex\n"
 			<< "{\n"
 			<< "    vec4 gl_Position;\n"
@@ -486,6 +505,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 			<< "    vec4 gl_Position;\n"
 			<< "};\n"
 			<< "void main() {\n"
+			<< (m_testConfig.isMultiViewport() ? "    gl_ViewportIndex = pushConstants.viewPortIndex;\n" : "")
 			;
 
 		for (deUint32 i = 0; i < vertexCount; ++i)
@@ -503,7 +523,7 @@ void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programColle
 
 	programCollection.glslSources.add("vert") << glu::VertexSource(vertSource.str());
 	programCollection.glslSources.add("frag") << glu::FragmentSource(fragSource.str());
-	if (m_testConfig.useGeometryShader)
+	if (m_testConfig.needsGeometryShader())
 		programCollection.glslSources.add("geom") << glu::GeometrySource(geomSource.str());
 }
 
@@ -581,19 +601,13 @@ void setDynamicStates(const TestConfig& testConfig, const vk::DeviceInterface& v
 	}
 }
 
-// Get the proper viewport vector according to the test config.
-const ViewportVec& getActiveViewportVec(const TestConfig& testConfig)
-{
-	return (testConfig.viewportConfig.dynamicValue ? testConfig.viewportConfig.dynamicValue.get() : testConfig.viewportConfig.staticValue);
-}
-
 // Bind the appropriate vertex buffer with a dynamic stride if the test configuration needs a dynamic stride.
 // Return true if the vertex buffer was bound.
 bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::DeviceInterface& vkd, vk::VkCommandBuffer cmdBuffer, size_t meshIdx, vk::VkBuffer vertBuffer, vk::VkBuffer rvertBuffer, vk::VkDeviceSize vertBufferSize, vk::VkDeviceSize vertBufferOffset)
 {
 	if (testConfig.strideConfig.dynamicValue)
 	{
-		const auto& viewportVec = getActiveViewportVec(testConfig);
+		const auto& viewportVec = testConfig.getActiveViewportVec();
 		DE_UNREF(viewportVec); // For release builds.
 
 		// When dynamically setting the vertex buffer stride, we cannot bind the vertex buffer in advance for some sequence
@@ -736,8 +750,11 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
 
 	// Pipeline layout.
-	const vk::VkShaderStageFlags	pushConstantStageFlags	= (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
-	const vk::VkPushConstantRange	pushConstantRange		=
+	vk::VkShaderStageFlags pushConstantStageFlags = (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+	if (m_testConfig.isMultiViewport())
+		pushConstantStageFlags |= vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+
+	const vk::VkPushConstantRange pushConstantRange =
 	{
 		pushConstantStageFlags,							//	VkShaderStageFlags	stageFlags;
 		0u,												//	deUint32			offset;
@@ -849,7 +866,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const auto						fragModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 	vk::Move<vk::VkShaderModule>	geomModule;
 
-	if (m_testConfig.useGeometryShader)
+	if (m_testConfig.needsGeometryShader())
 		geomModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("geom"), 0u);
 
 	// Shader stages.
@@ -871,7 +888,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	shaderStageCreateInfo.module = fragModule.get();
 	shaderStages.push_back(shaderStageCreateInfo);
 
-	if (m_testConfig.useGeometryShader)
+	if (m_testConfig.needsGeometryShader())
 	{
 		shaderStageCreateInfo.stage = vk::VK_SHADER_STAGE_GEOMETRY_BIT;
 		shaderStageCreateInfo.module = geomModule.get();
@@ -1160,7 +1177,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			// Bind dynamic pipeline.
 			vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
 
-			const auto& viewportVec = getActiveViewportVec(m_testConfig);
+			const auto& viewportVec = m_testConfig.getActiveViewportVec();
 			for (size_t viewportIdx = 0u; viewportIdx < viewportVec.size(); ++viewportIdx)
 			{
 				for (size_t meshIdx = 0u; meshIdx < m_testConfig.meshParams.size(); ++meshIdx)
@@ -1412,7 +1429,7 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 
 			for (int i = 0; i < 2; ++i)
 			{
-				const bool useGeometryShader = (i > 0);
+				const bool forceGeometryShader = (i > 0);
 
 				static const struct
 				{
@@ -1427,13 +1444,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 				for (int topoCaseIdx = 0; topoCaseIdx < DE_LENGTH_OF_ARRAY(kTopologyCases); ++topoCaseIdx)
 				{
 					TestConfig config(baseConfig);
-					config.useGeometryShader			= useGeometryShader;
+					config.forceGeometryShader			= forceGeometryShader;
 					config.topologyConfig.staticValue	= kTopologyCases[topoCaseIdx].staticVal;
 					config.topologyConfig.dynamicValue	= tcu::just<vk::VkPrimitiveTopology>(kTopologyCases[topoCaseIdx].dynamicVal);
 
 					const std::string	className	= topologyClassName(getTopologyClass(config.topologyConfig.staticValue));
-					const std::string	name		= "topology_" + className + (useGeometryShader ? "_geom" : "");
-					const std::string	desc		= "Dynamically switch primitive topologies from the " + className + " class" + (useGeometryShader ? " and use a geometry shader" : "");
+					const std::string	name		= "topology_" + className + (forceGeometryShader ? "_geom" : "");
+					const std::string	desc		= "Dynamically switch primitive topologies from the " + className + " class" + (forceGeometryShader ? " and use a geometry shader" : "");
 					orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, name, desc, config));
 				}
 			}
