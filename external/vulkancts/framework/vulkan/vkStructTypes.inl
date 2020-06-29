@@ -4552,14 +4552,14 @@ struct VkDeviceDiagnosticsConfigCreateInfoNV
 	VkDeviceDiagnosticsConfigFlagsNV	flags;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapFeatures2EXT
+struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		fragmentDensityMapDeferred;
 };
 
-struct VkPhysicalDeviceFragmentDensityMapProperties2EXT
+struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;

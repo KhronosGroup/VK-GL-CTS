@@ -1074,7 +1074,7 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 	context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
 
 	const auto& fragmentDensityMapFeatures		= context.getFragmentDensityMapFeaturesEXT();
-	const auto& fragmentDensityMapProperties2	= context.getFragmentDensityMapProperties2EXT();
+	const auto& fragmentDensityMap2Properties	= context.getFragmentDensityMap2PropertiesEXT();
 
 	if (!fragmentDensityMapFeatures.fragmentDensityMap)
 		TCU_THROW(NotSupportedError, "fragmentDensityMap feature is not supported");
@@ -1086,19 +1086,19 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 	if (m_testParams.deferredDensityMap)
 	{
 		context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
-		if (!context.getFragmentDensityMapFeatures2EXT().fragmentDensityMapDeferred)
+		if (!context.getFragmentDensityMap2FeaturesEXT().fragmentDensityMapDeferred)
 			TCU_THROW(NotSupportedError, "fragmentDensityMapDeferred feature is not supported");
 	}
 	if (m_testParams.subsampledLoads)
 	{
 		context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
-		if (!fragmentDensityMapProperties2.subsampledLoads)
+		if (!fragmentDensityMap2Properties.subsampledLoads)
 			TCU_THROW(NotSupportedError, "subsampledLoads property is not supported");
 	}
 	if (m_testParams.coarseReconstruction)
 	{
 		context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
-		if (!fragmentDensityMapProperties2.subsampledCoarseReconstructionEarlyAccess)
+		if (!fragmentDensityMap2Properties.subsampledCoarseReconstructionEarlyAccess)
 			TCU_THROW(NotSupportedError, "subsampledCoarseReconstructionEarlyAccess property is not supported");
 	}
 
@@ -1111,7 +1111,7 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 		if (m_testParams.viewCount > 2)
 		{
 			context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
-			if (m_testParams.viewCount > fragmentDensityMapProperties2.maxSubsampledArrayLayers)
+			if (m_testParams.viewCount > fragmentDensityMap2Properties.maxSubsampledArrayLayers)
 				TCU_THROW(NotSupportedError, "Maximum number of VkImageView array layers for usages supporting subsampled samplers is to small");
 		}
 	}
@@ -1119,7 +1119,7 @@ void FragmentDensityMapTest::checkSupport(Context& context) const
 	if (!m_testParams.nonSubsampledImages && (m_testParams.samplersCount > 1))
 	{
 		context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
-		if (m_testParams.samplersCount > fragmentDensityMapProperties2.maxDescriptorSetSubsampledSamplers)
+		if (m_testParams.samplersCount > fragmentDensityMap2Properties.maxDescriptorSetSubsampledSamplers)
 			TCU_THROW(NotSupportedError, "Required number of subsampled samplers is not supported");
 	}
 #endif

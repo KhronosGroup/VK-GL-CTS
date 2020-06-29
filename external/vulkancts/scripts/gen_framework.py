@@ -1660,23 +1660,27 @@ def writeDeviceFeatures2(api, filename):
 		'VkPhysicalDeviceDescriptorIndexingFeatures',
 		'VkPhysicalDeviceTimelineSemaphoreFeatures',
 		'VkPhysicalDeviceFragmentDensityMapFeaturesEXT',
-		'VkPhysicalDeviceFragmentDensityMapFeatures2EXT'
+		'VkPhysicalDeviceFragmentDensityMap2FeaturesEXT'
 	]
 	# helper class used to encapsulate all data needed during generation
 	class StructureDetail:
 		def __init__ (self, name):
-			nameResult		= re.search('(.*)Features(.*)', name[len('VkPhysicalDevice'):])
-			nameSplit		= re.findall(r'[1-9A-Z]+(?:[a-z1-9]+|[A-Z]*(?=[A-Z]|$))', nameResult.group(1))
-			nameSplitUp		= map(str.upper, nameSplit)
-			nameSplitUp		= list(nameSplitUp) + ['FEATURES']
-			# check if there is no extension suffix
+			nameResult			= re.search('(.*)Features(.*)', name[len('VkPhysicalDevice'):])
+			nameSplitUp			= ''
+			# generate structure type name from structure name
+			# note that sometimes digits are separated with '_':
+			# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT
+			# but mostly they are not:
+			# VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES
+			if (nameResult.group(1) == 'FragmentDensityMap2'):
+				nameSplitUp		= ['FRAGMENT', 'DENSITY', 'MAP', '2', 'FEATURES']
+			else:
+				nameSplit		= re.findall(r'[1-9A-Z]+(?:[a-z1-9]+|[A-Z]*(?=[A-Z]|$))', nameResult.group(1))
+				nameSplitUp		= map(str.upper, nameSplit)
+				nameSplitUp		= list(nameSplitUp) + ['FEATURES']
+			# check if there is extension suffix
 			if (len(nameResult.group(2)) != 0):
-				# handle cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_2_EXT
-				suffixWithDigit = re.match(r'(\d+)(\w+)', nameResult.group(2))
-				if suffixWithDigit == None:
-					nameSplitUp.append(nameResult.group(2))
-				else:
-					nameSplitUp.extend([suffixWithDigit.group(1), suffixWithDigit.group(2)])
+				nameSplitUp.append(nameResult.group(2))
 			self.name			= name
 			self.sType			= 'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_' + '_'.join(nameSplitUp)
 			self.instanceName	= 'd' + name[11:]
@@ -1794,14 +1798,6 @@ def generateDeviceFeaturesDefs(src):
 	# construct final list
 	defs = []
 	for sType, sSuffix in matches:
-		# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_2_EXT
-		# where 2 is after FEATURES - to handle this we need to split suffix to two parts
-		sVerSuffix = ''
-		sExtSuffix = sSuffix
-		suffixStart = sSuffix.rfind('_')
-		if suffixStart > 0:
-			sVerSuffix = sSuffix[:suffixStart]
-			sExtSuffix = sSuffix[suffixStart:]
 		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
 		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features' + sSuffix.replace('_', '') + ')'
 		matchStructName		= re.search(ptrnStructName, src, re.IGNORECASE)
@@ -1814,11 +1810,11 @@ def generateDeviceFeaturesDefs(src):
 			if sType in {'VULKAN_1_1', 'VULKAN_1_2'}:
 				continue
 			# end handling special cases
-			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + sType + sVerSuffix + '_EXTENSION_NAME).+$'
+			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
-			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + sType + sVerSuffix + '_SPEC_VERSION).+$'
+			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sSuffix + '_' + sType + '_SPEC_VERSION).+$'
 			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
-			defs.append( (sType, sVerSuffix, sExtSuffix, matchStructName.group(1), \
+			defs.append( (sType, '', sSuffix, matchStructName.group(1), \
 							matchExtensionName.group(0)	if matchExtensionName	else None,
 							matchExtensionName.group(1)	if matchExtensionName	else None,
 							matchSpecVersion.group(1)	if matchSpecVersion		else '0') )
@@ -1835,7 +1831,7 @@ def generateDevicePropertiesDefs(src):
 		# handle special cases
 		if sType in {'VULKAN_1_1', 'VULKAN_1_2', 'GROUP', 'MEMORY_BUDGET', 'MEMORY', 'TOOL'}:
 			continue
-		# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_2_EXT
+		# there are cases like VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD
 		# where 2 is after PROPERTIES - to handle this we need to split suffix to two parts
 		sVerSuffix = ''
 		sExtSuffix = sSuffix
@@ -1859,7 +1855,7 @@ def generateDevicePropertiesDefs(src):
 			elif extType == "SHADER_CORE":
 				extType = "SHADER_CORE_PROPERTIES"
 			# end handling special cases
-			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + extType + sVerSuffix + '[_0-9]*_EXTENSION_NAME).+$'
+			ptrnExtensionName	= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + extType + sVerSuffix +'[_0-9]*_EXTENSION_NAME).+$'
 			matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
 			ptrnSpecVersion		= r'^\s*#define\s+(\w+' + sExtSuffix + '_' + extType + sVerSuffix + '[_0-9]*_SPEC_VERSION).+$'
 			matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
@@ -2207,7 +2203,7 @@ if __name__ == "__main__":
 	platformFuncs	= [Function.TYPE_PLATFORM]
 	instanceFuncs	= [Function.TYPE_INSTANCE]
 	deviceFuncs		= [Function.TYPE_DEVICE]
-
+	'''
 	dfd										= generateDeviceFeaturesDefs(src)
 	writeDeviceFeatures						(api, dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
@@ -2250,8 +2246,11 @@ if __name__ == "__main__":
 	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
+	'''
 	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR, "vkDeviceFeatures2.inl"))
+	'''
 	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
 	writeDriverIds							(     os.path.join(VULKAN_DIR, "vkKnownDriverIds.inl"))
+	'''

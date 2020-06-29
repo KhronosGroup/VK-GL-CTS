@@ -568,8 +568,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT:	return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_2_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_2_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_2_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_2_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
 	}
@@ -9593,9 +9593,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapFeatures2EXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value)
 {
-	s << "VkPhysicalDeviceFragmentDensityMapFeatures2EXT = {\n";
+	s << "VkPhysicalDeviceFragmentDensityMap2FeaturesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfragmentDensityMapDeferred = " << value.fragmentDensityMapDeferred << '\n';
@@ -9603,9 +9603,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensity
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapProperties2EXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value)
 {
-	s << "VkPhysicalDeviceFragmentDensityMapProperties2EXT = {\n";
+	s << "VkPhysicalDeviceFragmentDensityMap2PropertiesEXT = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsubsampledLoads = " << value.subsampledLoads << '\n';
