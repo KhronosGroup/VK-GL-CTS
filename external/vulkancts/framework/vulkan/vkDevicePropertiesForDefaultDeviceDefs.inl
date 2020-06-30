@@ -1,6 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
+const VkPhysicalDeviceAccelerationStructurePropertiesKHR&		getAccelerationStructureProperties			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceAccelerationStructurePropertiesKHR>();			}
 const VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		getBlendOperationAdvancedPropertiesEXT		(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>();		}
 const VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	getConservativeRasterizationPropertiesEXT	(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>();		}
 const VkPhysicalDeviceCooperativeMatrixPropertiesNV&			getCooperativeMatrixProperties				(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesNV>();				}
@@ -24,8 +25,8 @@ const VkPhysicalDevicePerformanceQueryPropertiesKHR&			getPerformanceQueryProper
 const VkPhysicalDevicePointClippingProperties&					getPointClippingProperties					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDevicePointClippingProperties>();					}
 const VkPhysicalDeviceProtectedMemoryProperties&				getProtectedMemoryProperties				(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceProtectedMemoryProperties>();					}
 const VkPhysicalDevicePushDescriptorPropertiesKHR&				getPushDescriptorProperties					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDevicePushDescriptorPropertiesKHR>();				}
-const VkPhysicalDeviceRayTracingPropertiesKHR&					getRayTracingProperties						(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceRayTracingPropertiesKHR>();					}
 const VkPhysicalDeviceRayTracingPropertiesNV&					getRayTracingPropertiesNV					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceRayTracingPropertiesNV>();						}
+const VkPhysicalDeviceRayTracingPipelinePropertiesKHR&			getRayTracingPipelineProperties				(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>();			}
 const VkPhysicalDeviceRobustness2PropertiesEXT&					getRobustness2PropertiesEXT					(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceRobustness2PropertiesEXT>();					}
 const VkPhysicalDeviceSamplerFilterMinmaxProperties&			getSamplerFilterMinmaxProperties			(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceSamplerFilterMinmaxProperties>();				}
 const VkPhysicalDeviceSampleLocationsPropertiesEXT&				getSampleLocationsPropertiesEXT				(void) const { return m_devicePropertiesFull.getPropertyType<VkPhysicalDeviceSampleLocationsPropertiesEXT>();				}

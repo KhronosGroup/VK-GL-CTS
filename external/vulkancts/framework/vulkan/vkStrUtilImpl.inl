@@ -32,6 +32,7 @@ template<> const char*	getTypeName<VkSurfaceKHR>						(void) { return "VkSurface
 template<> const char*	getTypeName<VkSwapchainKHR>						(void) { return "VkSwapchainKHR";					}
 template<> const char*	getTypeName<VkDisplayKHR>						(void) { return "VkDisplayKHR";						}
 template<> const char*	getTypeName<VkDisplayModeKHR>					(void) { return "VkDisplayModeKHR";					}
+template<> const char*	getTypeName<VkDeferredOperationKHR>				(void) { return "VkDeferredOperationKHR";			}
 template<> const char*	getTypeName<VkDebugReportCallbackEXT>			(void) { return "VkDebugReportCallbackEXT";			}
 template<> const char*	getTypeName<VkDebugUtilsMessengerEXT>			(void) { return "VkDebugUtilsMessengerEXT";			}
 template<> const char*	getTypeName<VkValidationCacheEXT>				(void) { return "VkValidationCacheEXT";				}
@@ -39,7 +40,6 @@ template<> const char*	getTypeName<VkAccelerationStructureKHR>			(void) { return
 template<> const char*	getTypeName<VkPerformanceConfigurationINTEL>	(void) { return "VkPerformanceConfigurationINTEL";	}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
 template<> const char*	getTypeName<VkPrivateDataSlotEXT>				(void) { return "VkPrivateDataSlotEXT";				}
-template<> const char*	getTypeName<VkDeferredOperationKHR>				(void) { return "VkDeferredOperationKHR";			}
 template<> const char*	getTypeName<VkAccelerationStructureNV>			(void) { return "VkAccelerationStructureNV";		}
 
 namespace pt
@@ -419,7 +419,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_TO_COLOR_STATE_CREATE_INFO_NV:					return "VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_TO_COLOR_STATE_CREATE_INFO_NV";
-		case VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR:						return "VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR:					return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR:					return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR:					return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR";
@@ -432,13 +431,16 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR:							return "VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR:					return "VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR:					return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR:						return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR:						return "VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR";
-		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR:					return "VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR";
-		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR:						return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV";
@@ -459,6 +461,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_GEOMETRY_NV:														return "VK_STRUCTURE_TYPE_GEOMETRY_NV";
 		case VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV:											return "VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV";
 		case VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV:												return "VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV";
+		case VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV:						return "VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV";
@@ -536,7 +539,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR:										return "VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR:												return "VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR:								return "VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR";
@@ -1898,6 +1900,7 @@ const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR 
 	{
 		case VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR:		return "VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR";
 		case VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR:	return "VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR";
+		case VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR:		return "VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR";
 		case VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR:		return "VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR";
 		default:												return DE_NULL;
 	}
@@ -2372,8 +2375,8 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,						"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,				"VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,			"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,				"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,	"VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,				"VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,				"VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,						"VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,						"VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV"),
@@ -2494,24 +2497,26 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,							"VK_BUFFER_USAGE_TRANSFER_SRC_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DST_BIT,							"VK_BUFFER_USAGE_TRANSFER_DST_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,					"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,					"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,						"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,						"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,							"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,							"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,						"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,					"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT,			"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT,	"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR,						"VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,						"VK_BUFFER_USAGE_RAY_TRACING_BIT_NV"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT,				"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR,				"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,						"VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,										"VK_BUFFER_USAGE_TRANSFER_SRC_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DST_BIT,										"VK_BUFFER_USAGE_TRANSFER_DST_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,								"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,								"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,									"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,									"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,										"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,										"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,									"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,								"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT,						"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT,				"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT,							"VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,	"VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,				"VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,							"VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,									"VK_BUFFER_USAGE_RAY_TRACING_BIT_NV"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT,							"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR,							"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM,									"VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -7307,6 +7312,17 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableInternalRep
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value)
+{
+	s << "VkPipelineLibraryCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlibraryCount = " << value.libraryCount << '\n';
+	s << "\tpLibraries = " << value.pLibraries << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";
@@ -8431,9 +8447,9 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateIn
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkBindAccelerationStructureMemoryInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkBindAccelerationStructureMemoryInfoNV& value)
 {
-	s << "VkBindAccelerationStructureMemoryInfoKHR = {\n";
+	s << "VkBindAccelerationStructureMemoryInfoNV = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\taccelerationStructure = " << value.accelerationStructure << '\n';
@@ -9637,96 +9653,6 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value)
-{
-	s << "VkAndroidSurfaceCreateInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getAndroidSurfaceCreateFlagsKHRStr(value.flags) << '\n';
-	s << "\twindow = " << value.window << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value)
-{
-	s << "VkAndroidHardwareBufferUsageANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tandroidHardwareBufferUsage = " << value.androidHardwareBufferUsage << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value)
-{
-	s << "VkAndroidHardwareBufferPropertiesANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tallocationSize = " << value.allocationSize << '\n';
-	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferFormatPropertiesANDROID& value)
-{
-	s << "VkAndroidHardwareBufferFormatPropertiesANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tformat = " << value.format << '\n';
-	s << "\texternalFormat = " << value.externalFormat << '\n';
-	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
-	s << "\tsamplerYcbcrConversionComponents = " << value.samplerYcbcrConversionComponents << '\n';
-	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
-	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
-	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
-	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value)
-{
-	s << "VkImportAndroidHardwareBufferInfoANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tbuffer = " << value.buffer << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value)
-{
-	s << "VkMemoryGetAndroidHardwareBufferInfoANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tmemory = " << value.memory << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
-{
-	s << "VkExternalFormatANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\texternalFormat = " << value.externalFormat << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value)
-{
-	s << "VkPipelineLibraryCreateInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tlibraryCount = " << value.libraryCount << '\n';
-	s << "\tpLibraries = " << value.pLibraries << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkDeviceOrHostAddressKHR& value)
 {
 	s << "VkDeviceOrHostAddressKHR = {\n";
@@ -9752,53 +9678,6 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureBuildRan
 	s << "\tprimitiveOffset = " << value.primitiveOffset << '\n';
 	s << "\tfirstVertex = " << value.firstVertex << '\n';
 	s << "\ttransformOffset = " << value.transformOffset << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkRayTracingShaderGroupCreateInfoKHR& value)
-{
-	s << "VkRayTracingShaderGroupCreateInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\ttype = " << value.type << '\n';
-	s << "\tgeneralShader = " << value.generalShader << '\n';
-	s << "\tclosestHitShader = " << value.closestHitShader << '\n';
-	s << "\tanyHitShader = " << value.anyHitShader << '\n';
-	s << "\tintersectionShader = " << value.intersectionShader << '\n';
-	s << "\tpShaderGroupCaptureReplayHandle = " << value.pShaderGroupCaptureReplayHandle << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkRayTracingPipelineInterfaceCreateInfoKHR& value)
-{
-	s << "VkRayTracingPipelineInterfaceCreateInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tmaxPayloadSize = " << value.maxPayloadSize << '\n';
-	s << "\tmaxAttributeSize = " << value.maxAttributeSize << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkRayTracingPipelineCreateInfoKHR& value)
-{
-	s << "VkRayTracingPipelineCreateInfoKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tflags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
-	s << "\tstageCount = " << value.stageCount << '\n';
-	s << "\tpStages = " << value.pStages << '\n';
-	s << "\tgroupCount = " << value.groupCount << '\n';
-	s << "\tpGroups = " << value.pGroups << '\n';
-	s << "\tmaxRecursionDepth = " << value.maxRecursionDepth << '\n';
-	s << "\tpLibraryInfo = " << value.pLibraryInfo << '\n';
-	s << "\tpLibraryInterface = " << value.pLibraryInterface << '\n';
-	s << "\tpDynamicState = " << value.pDynamicState << '\n';
-	s << "\tlayout = " << value.layout << '\n';
-	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
-	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
 	s << '}';
 	return s;
 }
@@ -9887,6 +9766,8 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateIn
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcreateFlags = " << getAccelerationStructureCreateFlagsKHRStr(value.createFlags) << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\toffset = " << value.offset << '\n';
 	s << "\tsize = " << value.size << '\n';
 	s << "\ttype = " << value.type << '\n';
 	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
@@ -9894,52 +9775,33 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateIn
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMemoryRequirementsInfoKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAccelerationStructureFeaturesKHR& value)
 {
-	s << "VkAccelerationStructureMemoryRequirementsInfoKHR = {\n";
+	s << "VkPhysicalDeviceAccelerationStructureFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tbuildType = " << value.buildType << '\n';
 	s << "\taccelerationStructure = " << value.accelerationStructure << '\n';
+	s << "\taccelerationStructureCaptureReplay = " << value.accelerationStructureCaptureReplay << '\n';
+	s << "\taccelerationStructureIndirectBuild = " << value.accelerationStructureIndirectBuild << '\n';
+	s << "\taccelerationStructureHostCommands = " << value.accelerationStructureHostCommands << '\n';
+	s << "\tdescriptorBindingAccelerationStructureUpdateAfterBind = " << value.descriptorBindingAccelerationStructureUpdateAfterBind << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingFeaturesKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAccelerationStructurePropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceRayTracingFeaturesKHR = {\n";
+	s << "VkPhysicalDeviceAccelerationStructurePropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\trayTracing = " << value.rayTracing << '\n';
-	s << "\trayTracingShaderGroupHandleCaptureReplay = " << value.rayTracingShaderGroupHandleCaptureReplay << '\n';
-	s << "\trayTracingShaderGroupHandleCaptureReplayMixed = " << value.rayTracingShaderGroupHandleCaptureReplayMixed << '\n';
-	s << "\trayTracingAccelerationStructureCaptureReplay = " << value.rayTracingAccelerationStructureCaptureReplay << '\n';
-	s << "\trayTracingIndirectTraceRays = " << value.rayTracingIndirectTraceRays << '\n';
-	s << "\trayTracingIndirectAccelerationStructureBuild = " << value.rayTracingIndirectAccelerationStructureBuild << '\n';
-	s << "\trayTracingHostAccelerationStructureCommands = " << value.rayTracingHostAccelerationStructureCommands << '\n';
-	s << "\trayQuery = " << value.rayQuery << '\n';
-	s << "\trayTracingPrimitiveCulling = " << value.rayTracingPrimitiveCulling << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingPropertiesKHR& value)
-{
-	s << "VkPhysicalDeviceRayTracingPropertiesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tshaderGroupHandleSize = " << value.shaderGroupHandleSize << '\n';
-	s << "\tmaxRecursionDepth = " << value.maxRecursionDepth << '\n';
-	s << "\tmaxShaderGroupStride = " << value.maxShaderGroupStride << '\n';
-	s << "\tshaderGroupBaseAlignment = " << value.shaderGroupBaseAlignment << '\n';
 	s << "\tmaxGeometryCount = " << value.maxGeometryCount << '\n';
 	s << "\tmaxInstanceCount = " << value.maxInstanceCount << '\n';
 	s << "\tmaxPrimitiveCount = " << value.maxPrimitiveCount << '\n';
+	s << "\tmaxPerStageDescriptorAccelerationStructures = " << value.maxPerStageDescriptorAccelerationStructures << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindAccelerationStructures = " << value.maxPerStageDescriptorUpdateAfterBindAccelerationStructures << '\n';
 	s << "\tmaxDescriptorSetAccelerationStructures = " << value.maxDescriptorSetAccelerationStructures << '\n';
-	s << "\tshaderGroupHandleCaptureReplaySize = " << value.shaderGroupHandleCaptureReplaySize << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindAccelerationStructures = " << value.maxDescriptorSetUpdateAfterBindAccelerationStructures << '\n';
 	s << "\tminAccelerationStructureScratchOffsetAlignment = " << value.minAccelerationStructureScratchOffsetAlignment << '\n';
-	s << "\tmaxRayDispatchInvocationCount = " << value.maxRayDispatchInvocationCount << '\n';
-	s << "\tshaderGroupHandleAlignment = " << value.shaderGroupHandleAlignment << '\n';
 	s << '}';
 	return s;
 }
@@ -9960,26 +9822,6 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureVersionI
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpVersionData = " << value.pVersionData << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressRegionKHR& value)
-{
-	s << "VkStridedDeviceAddressRegionKHR = {\n";
-	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
-	s << "\tstride = " << value.stride << '\n';
-	s << "\tsize = " << value.size << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkTraceRaysIndirectCommandKHR& value)
-{
-	s << "VkTraceRaysIndirectCommandKHR = {\n";
-	s << "\twidth = " << value.width << '\n';
-	s << "\theight = " << value.height << '\n';
-	s << "\tdepth = " << value.depth << '\n';
 	s << '}';
 	return s;
 }
@@ -10028,6 +9870,193 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureBuildSiz
 	s << "\taccelerationStructureSize = " << value.accelerationStructureSize << '\n';
 	s << "\tupdateScratchSize = " << value.updateScratchSize << '\n';
 	s << "\tbuildScratchSize = " << value.buildScratchSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRayTracingShaderGroupCreateInfoKHR& value)
+{
+	s << "VkRayTracingShaderGroupCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttype = " << value.type << '\n';
+	s << "\tgeneralShader = " << value.generalShader << '\n';
+	s << "\tclosestHitShader = " << value.closestHitShader << '\n';
+	s << "\tanyHitShader = " << value.anyHitShader << '\n';
+	s << "\tintersectionShader = " << value.intersectionShader << '\n';
+	s << "\tpShaderGroupCaptureReplayHandle = " << value.pShaderGroupCaptureReplayHandle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRayTracingPipelineInterfaceCreateInfoKHR& value)
+{
+	s << "VkRayTracingPipelineInterfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPipelineRayPayloadSize = " << value.maxPipelineRayPayloadSize << '\n';
+	s << "\tmaxPipelineRayHitAttributeSize = " << value.maxPipelineRayHitAttributeSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRayTracingPipelineCreateInfoKHR& value)
+{
+	s << "VkRayTracingPipelineCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPipelineCreateFlagsStr(value.flags) << '\n';
+	s << "\tstageCount = " << value.stageCount << '\n';
+	s << "\tpStages = " << value.pStages << '\n';
+	s << "\tgroupCount = " << value.groupCount << '\n';
+	s << "\tpGroups = " << value.pGroups << '\n';
+	s << "\tmaxPipelineRayRecursionDepth = " << value.maxPipelineRayRecursionDepth << '\n';
+	s << "\tpLibraryInfo = " << value.pLibraryInfo << '\n';
+	s << "\tpLibraryInterface = " << value.pLibraryInterface << '\n';
+	s << "\tpDynamicState = " << value.pDynamicState << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\tbasePipelineHandle = " << value.basePipelineHandle << '\n';
+	s << "\tbasePipelineIndex = " << value.basePipelineIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingPipelineFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceRayTracingPipelineFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingPipeline = " << value.rayTracingPipeline << '\n';
+	s << "\trayTracingPipelineShaderGroupHandleCaptureReplay = " << value.rayTracingPipelineShaderGroupHandleCaptureReplay << '\n';
+	s << "\trayTracingPipelineShaderGroupHandleCaptureReplayMixed = " << value.rayTracingPipelineShaderGroupHandleCaptureReplayMixed << '\n';
+	s << "\trayTracingPipelineTraceRaysIndirect = " << value.rayTracingPipelineTraceRaysIndirect << '\n';
+	s << "\trayTraversalPrimitiveCulling = " << value.rayTraversalPrimitiveCulling << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceRayTracingPipelinePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderGroupHandleSize = " << value.shaderGroupHandleSize << '\n';
+	s << "\tmaxRayRecursionDepth = " << value.maxRayRecursionDepth << '\n';
+	s << "\tmaxShaderGroupStride = " << value.maxShaderGroupStride << '\n';
+	s << "\tshaderGroupBaseAlignment = " << value.shaderGroupBaseAlignment << '\n';
+	s << "\tshaderGroupHandleCaptureReplaySize = " << value.shaderGroupHandleCaptureReplaySize << '\n';
+	s << "\tmaxRayDispatchInvocationCount = " << value.maxRayDispatchInvocationCount << '\n';
+	s << "\tshaderGroupHandleAlignment = " << value.shaderGroupHandleAlignment << '\n';
+	s << "\tmaxRayHitAttributeSize = " << value.maxRayHitAttributeSize << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressRegionKHR& value)
+{
+	s << "VkStridedDeviceAddressRegionKHR = {\n";
+	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
+	s << "\tstride = " << value.stride << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTraceRaysIndirectCommandKHR& value)
+{
+	s << "VkTraceRaysIndirectCommandKHR = {\n";
+	s << "\twidth = " << value.width << '\n';
+	s << "\theight = " << value.height << '\n';
+	s << "\tdepth = " << value.depth << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayQueryFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceRayQueryFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayQuery = " << value.rayQuery << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value)
+{
+	s << "VkAndroidSurfaceCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getAndroidSurfaceCreateFlagsKHRStr(value.flags) << '\n';
+	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value)
+{
+	s << "VkAndroidHardwareBufferUsageANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tandroidHardwareBufferUsage = " << value.androidHardwareBufferUsage << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value)
+{
+	s << "VkAndroidHardwareBufferPropertiesANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tallocationSize = " << value.allocationSize << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferFormatPropertiesANDROID& value)
+{
+	s << "VkAndroidHardwareBufferFormatPropertiesANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
+	s << "\tsamplerYcbcrConversionComponents = " << value.samplerYcbcrConversionComponents << '\n';
+	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
+	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
+	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
+	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value)
+{
+	s << "VkImportAndroidHardwareBufferInfoANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value)
+{
+	s << "VkMemoryGetAndroidHardwareBufferInfoANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
+{
+	s << "VkExternalFormatANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
 	s << '}';
 	return s;
 }

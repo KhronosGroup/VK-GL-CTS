@@ -311,15 +311,19 @@ void RayTracingTestCase::checkSupport(Context& context) const
 											|| pipelineFlagSkipTriangles
 											|| pipelineFlagSkipAABSs;
 
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 
-	if (cullingFlags && rayTracingFeaturesKHR.rayTracingPrimitiveCulling == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingPrimitiveCulling");
+	if (cullingFlags && rayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTraversalPrimitiveCulling");
 }
 
 const std::string RayTracingTestCase::getIntersectionPassthrough (void)
@@ -368,6 +372,8 @@ const std::string RayTracingTestCase::getHitPassthrough (void)
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	if (m_data.id == TEST_ID_LAUNCH_ID_EXT || m_data.id == TEST_ID_LAUNCH_SIZE_EXT)
 	{
 		const std::string	updateImage	=
@@ -392,14 +398,14 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					<< updateImage <<
 					"}\n";
 
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -415,18 +421,18 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -442,18 +448,18 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -470,19 +476,19 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"  reportIntersectionEXT(1.0f, 0);\n"
 						"}\n";
 
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_MISS_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -497,11 +503,11 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
 
 				break;
 			}
@@ -521,7 +527,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"  executeCallableEXT(0, 0);\n"
 						"}\n";
 
-					programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
 				{
@@ -537,12 +543,12 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("call") << glu::CallableSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("call") << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
@@ -576,7 +582,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		{
 			case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -592,21 +598,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -622,11 +628,11 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
 				{
@@ -642,7 +648,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"}\n";
 					const std::string intersectionShader		= condition.empty() ? getIntersectionPassthrough() : intersectionShaderSingle;
 
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 				}
 
 				break;
@@ -650,7 +656,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 
 			case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -666,12 +672,12 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"  reportIntersectionEXT(0.95f, 0);\n"
 						"}\n";
 
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
@@ -740,7 +746,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		{
 			case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -755,19 +761,19 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -783,21 +789,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -813,21 +819,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_MISS_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -841,14 +847,14 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 
 				break;
 			}
@@ -901,7 +907,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		{
 			case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -917,21 +923,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -947,21 +953,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -980,19 +986,19 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"  reportIntersectionEXT(0.4375f + 0.25f * a / b, gl_HitKindFrontFacingTriangleEXT);\n"
 						"}\n";
 
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_MISS_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(raygenShader)) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -1006,14 +1012,14 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(intersectionShader)) << buildOptions;
 
 				break;
 			}
@@ -1068,7 +1074,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		{
 			case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -1084,21 +1090,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -1114,21 +1120,21 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -1144,19 +1150,19 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						"  reportIntersectionEXT(0.95f, 0);\n"
 						"}\n";
 
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 				break;
 			}
 
 			case VK_SHADER_STAGE_MISS_BIT_KHR:
 			{
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 				{
 					std::stringstream css;
@@ -1170,14 +1176,14 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 						<< updateImage <<
 						"}\n";
 
-					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+					programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 				}
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
 
 				if (m_data.geomType == GEOM_TYPE_AABBS)
-					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough()));
+					programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough())) << buildOptions;
 
 				break;
 			}
@@ -2814,9 +2820,12 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		{ TEST_ID_HIT_T_EXT,					"HitTEXT"				,			A	|	C							, createScalarTests			},
 		{ TEST_ID_HIT_KIND_EXT,					"HitKindEXT"			,			A	|	C							, createScalarTests			},
 		{ TEST_ID_OBJECT_TO_WORLD_EXT,			"ObjectToWorldEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
-		{ TEST_ID_OBJECT_TO_WORLD_3X4_EXT,		"ObjectToWorld3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
 		{ TEST_ID_WORLD_TO_OBJECT_EXT,			"WorldToObjectEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
-		{ TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
+#if 0
+        // disable 3x4 tests due to glslang bug https://github.com/KhronosGroup/glslang/issues/2329
+        { TEST_ID_OBJECT_TO_WORLD_3X4_EXT,		"ObjectToWorld3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
+        { TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
+#endif
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin", "Ray tracing shader builtin tests"));

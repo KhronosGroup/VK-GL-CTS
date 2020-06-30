@@ -187,6 +187,12 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 
 void RayTracingTestCase::checkSupport(Context& context) const
 {
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+
 	context.requireDeviceFunctionality("VK_EXT_robustness2");
 
 	const vk::VkPhysicalDeviceRobustness2FeaturesEXT&	robustness2FeaturesEXT	= context.getRobustness2FeaturesEXT();
@@ -197,7 +203,9 @@ void RayTracingTestCase::checkSupport(Context& context) const
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
 {
-	programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 	{
 		std::stringstream css;
@@ -214,7 +222,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -232,7 +240,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -250,7 +258,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -267,7 +275,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 

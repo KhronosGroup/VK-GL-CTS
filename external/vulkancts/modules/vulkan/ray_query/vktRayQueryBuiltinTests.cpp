@@ -439,7 +439,9 @@ void GraphicsConfiguration::checkSupport (Context&			context,
 void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 										  const TestParams&		testParams)
 {
-	const std::string	testShaderBody	= testParams.testConfigShaderBodyText(testParams);
+	const vk::ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	const std::string				testShaderBody		= testParams.testConfigShaderBodyText(testParams);
 
 	switch (testParams.stage)
 	{
@@ -471,10 +473,10 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  }\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+				programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << buildOptions;
 			}
 
-			programCollection.glslSources.add("frag") << glu::FragmentSource(getGraphicsPassthrough());
+			programCollection.glslSources.add("frag") << glu::FragmentSource(getGraphicsPassthrough()) << buildOptions;
 
 			break;
 		}
@@ -496,7 +498,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  gl_Position = in_position;\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+				programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << buildOptions;
 			}
 
 			{
@@ -541,7 +543,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  gl_TessLevelOuter[gl_InvocationID] = 1;\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+				programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str()) << buildOptions;
 			}
 
 			{
@@ -559,7 +561,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  gl_Position = gl_in[0].gl_Position;\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+				programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str()) << buildOptions;
 			}
 
 			break;
@@ -582,7 +584,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  gl_Position = in_position;\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+				programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << buildOptions;
 			}
 
 			{
@@ -607,7 +609,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  gl_TessLevelOuter[gl_InvocationID] = 1;\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+				programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str()) << buildOptions;
 			}
 
 			{
@@ -646,7 +648,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  gl_Position = gl_in[0].gl_Position;\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+				programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str()) << buildOptions;
 			}
 
 			break;
@@ -654,7 +656,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 
 		case VK_SHADER_STAGE_GEOMETRY_BIT:
 		{
-			programCollection.glslSources.add("vert") << glu::VertexSource(getVertexPassthrough());
+			programCollection.glslSources.add("vert") << glu::VertexSource(getVertexPassthrough()) << buildOptions;
 
 			{
 				std::ostringstream src;
@@ -679,7 +681,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  testFunc(pos, size);\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("geom") << glu::GeometrySource(src.str());
+				programCollection.glslSources.add("geom") << glu::GeometrySource(src.str()) << buildOptions;
 			}
 
 			break;
@@ -687,7 +689,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 
 		case VK_SHADER_STAGE_FRAGMENT_BIT:
 		{
-			programCollection.glslSources.add("vert") << glu::VertexSource(getVertexPassthrough());
+			programCollection.glslSources.add("vert") << glu::VertexSource(getVertexPassthrough()) << buildOptions;
 
 			{
 				std::ostringstream src;
@@ -709,7 +711,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  testFunc(pos, size);\n"
 					<< "}\n";
 
-				programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+				programCollection.glslSources.add("frag") << glu::FragmentSource(src.str()) << buildOptions;
 			}
 
 			break;
@@ -1016,8 +1018,10 @@ void ComputeConfiguration::checkSupport (Context&			context,
 void ComputeConfiguration::initPrograms (SourceCollections&	programCollection,
 										 const TestParams&	testParams)
 {
-	const std::string	testShaderBody		= testParams.testConfigShaderBodyText(testParams);
-	const std::string	testBody			=
+	const vk::ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	const std::string				testShaderBody		= testParams.testConfigShaderBodyText(testParams);
+	const std::string				testBody			=
 		"  ivec3       pos      = ivec3(gl_WorkGroupID);\n"
 		"  ivec3       size     = ivec3(gl_NumWorkGroups);\n"
 		+ testShaderBody;
@@ -1038,7 +1042,7 @@ void ComputeConfiguration::initPrograms (SourceCollections&	programCollection,
 				<< testBody <<
 				"}\n";
 
-			programCollection.glslSources.add("comp") << glu::ComputeSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("comp") << glu::ComputeSource(updateRayTracingGLSL(css.str())) << buildOptions;
 
 			break;
 		}
@@ -1194,17 +1198,19 @@ void RayTracingConfiguration::checkSupport (Context&			context,
 {
 	DE_UNREF(testParams);
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
-
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 }
 
 void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection,
 											const TestParams&	testParams)
 {
-	const std::string	testShaderBody		= testParams.testConfigShaderBodyText(testParams);
-	const std::string	testBody			=
+	const vk::ShaderBuildOptions	buildOptions		(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	const std::string				testShaderBody		= testParams.testConfigShaderBodyText(testParams);
+	const std::string				testBody			=
 		"  ivec3       pos      = ivec3(gl_LaunchIDEXT);\n"
 		"  ivec3       size     = ivec3(gl_LaunchSizeEXT);\n"
 		+ testShaderBody;
@@ -1226,14 +1232,14 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 				<< testBody <<
 				"}\n";
 
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			{
 				std::stringstream css;
@@ -1251,18 +1257,18 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 					<< testBody <<
 					"}\n";
 
-				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			{
 				std::stringstream css;
@@ -1280,18 +1286,18 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 					<< testBody <<
 					"}\n";
 
-				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			{
 				std::stringstream css;
@@ -1310,19 +1316,19 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 					"  reportIntersectionEXT(1.0f, 0);\n"
 					"}\n";
 
-				programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_MISS_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			{
 				std::stringstream css;
@@ -1339,11 +1345,11 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 					<< testBody <<
 					"}\n";
 
-				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
 
 			break;
 		}
@@ -1364,7 +1370,7 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 					"  executeCallableEXT(0, 0);\n"
 					"}\n";
 
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
 			{
@@ -1382,12 +1388,12 @@ void RayTracingConfiguration::initPrograms (SourceCollections&	programCollection
 					<< testBody <<
 					"}\n";
 
-				programCollection.glslSources.add("call") << glu::CallableSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("call") << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 			break;
 		}
@@ -3639,12 +3645,16 @@ RayQueryBuiltinTestCase::~RayQueryBuiltinTestCase (void)
 
 void RayQueryBuiltinTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_query");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayQueryFeaturesKHR&				rayQueryFeaturesKHR					= context.getRayQueryFeatures();
+	if (rayQueryFeaturesKHR.rayQuery == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayQueryFeaturesKHR.rayQuery");
 
-	if (rayTracingFeaturesKHR.rayQuery == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayQuery");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_query requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 
 	m_data.pipelineCheckSupport(context, m_data);
 

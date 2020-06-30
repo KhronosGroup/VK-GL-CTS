@@ -265,7 +265,15 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_deferred_host_operations")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_pipeline_executable_properties")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_pipeline_library")
 	{
 		return;
 	}
@@ -776,24 +784,24 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_KHR_acceleration_structure")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_ray_tracing_pipeline")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_ray_query")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_android_surface")
 	{
 		functions.push_back("vkCreateAndroidSurfaceKHR");
 		return;
 	}
 	if (extName == "VK_ANDROID_external_memory_android_hardware_buffer")
-	{
-		return;
-	}
-	if (extName == "VK_KHR_deferred_host_operations")
-	{
-		return;
-	}
-	if (extName == "VK_KHR_pipeline_library")
-	{
-		return;
-	}
-	if (extName == "VK_KHR_ray_tracing")
 	{
 		return;
 	}
@@ -1173,11 +1181,24 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
 		return;
 	}
+	if (extName == "VK_KHR_deferred_host_operations")
+	{
+		functions.push_back("vkCreateDeferredOperationKHR");
+		functions.push_back("vkDestroyDeferredOperationKHR");
+		functions.push_back("vkGetDeferredOperationMaxConcurrencyKHR");
+		functions.push_back("vkGetDeferredOperationResultKHR");
+		functions.push_back("vkDeferredOperationJoinKHR");
+		return;
+	}
 	if (extName == "VK_KHR_pipeline_executable_properties")
 	{
 		functions.push_back("vkGetPipelineExecutablePropertiesKHR");
 		functions.push_back("vkGetPipelineExecutableStatisticsKHR");
 		functions.push_back("vkGetPipelineExecutableInternalRepresentationsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_pipeline_library")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_shader_non_semantic_info")
@@ -1494,7 +1515,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkDestroyAccelerationStructureKHR");
 		functions.push_back("vkDestroyAccelerationStructureNV");
 		functions.push_back("vkGetAccelerationStructureMemoryRequirementsNV");
-		functions.push_back("vkBindAccelerationStructureMemoryKHR");
 		functions.push_back("vkBindAccelerationStructureMemoryNV");
 		functions.push_back("vkCmdBuildAccelerationStructureNV");
 		functions.push_back("vkCmdCopyAccelerationStructureNV");
@@ -1776,6 +1796,38 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_acceleration_structure")
+	{
+		functions.push_back("vkCreateAccelerationStructureKHR");
+		functions.push_back("vkCmdBuildAccelerationStructuresKHR");
+		functions.push_back("vkCmdBuildAccelerationStructuresIndirectKHR");
+		functions.push_back("vkBuildAccelerationStructuresKHR");
+		functions.push_back("vkCopyAccelerationStructureKHR");
+		functions.push_back("vkCopyAccelerationStructureToMemoryKHR");
+		functions.push_back("vkCopyMemoryToAccelerationStructureKHR");
+		functions.push_back("vkWriteAccelerationStructuresPropertiesKHR");
+		functions.push_back("vkCmdCopyAccelerationStructureKHR");
+		functions.push_back("vkCmdCopyAccelerationStructureToMemoryKHR");
+		functions.push_back("vkCmdCopyMemoryToAccelerationStructureKHR");
+		functions.push_back("vkGetAccelerationStructureDeviceAddressKHR");
+		functions.push_back("vkGetDeviceAccelerationStructureCompatibilityKHR");
+		functions.push_back("vkGetAccelerationStructureBuildSizesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_ray_tracing_pipeline")
+	{
+		functions.push_back("vkCmdTraceRaysKHR");
+		functions.push_back("vkCreateRayTracingPipelinesKHR");
+		functions.push_back("vkGetRayTracingCaptureReplayShaderGroupHandlesKHR");
+		functions.push_back("vkCmdTraceRaysIndirectKHR");
+		functions.push_back("vkGetRayTracingShaderGroupStackSizeKHR");
+		functions.push_back("vkCmdSetRayTracingPipelineStackSizeKHR");
+		return;
+	}
+	if (extName == "VK_KHR_ray_query")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_android_surface")
 	{
 		return;
@@ -1784,44 +1836,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkGetAndroidHardwareBufferPropertiesANDROID");
 		functions.push_back("vkGetMemoryAndroidHardwareBufferANDROID");
-		return;
-	}
-	if (extName == "VK_KHR_deferred_host_operations")
-	{
-		functions.push_back("vkCreateDeferredOperationKHR");
-		functions.push_back("vkDestroyDeferredOperationKHR");
-		functions.push_back("vkGetDeferredOperationMaxConcurrencyKHR");
-		functions.push_back("vkGetDeferredOperationResultKHR");
-		functions.push_back("vkDeferredOperationJoinKHR");
-		return;
-	}
-	if (extName == "VK_KHR_pipeline_library")
-	{
-		return;
-	}
-	if (extName == "VK_KHR_ray_tracing")
-	{
-		functions.push_back("vkCreateAccelerationStructureKHR");
-		functions.push_back("vkGetAccelerationStructureMemoryRequirementsKHR");
-		functions.push_back("vkCmdBuildAccelerationStructureKHR");
-		functions.push_back("vkCmdBuildAccelerationStructureIndirectKHR");
-		functions.push_back("vkBuildAccelerationStructureKHR");
-		functions.push_back("vkCopyAccelerationStructureKHR");
-		functions.push_back("vkCopyAccelerationStructureToMemoryKHR");
-		functions.push_back("vkCopyMemoryToAccelerationStructureKHR");
-		functions.push_back("vkWriteAccelerationStructuresPropertiesKHR");
-		functions.push_back("vkCmdCopyAccelerationStructureKHR");
-		functions.push_back("vkCmdCopyAccelerationStructureToMemoryKHR");
-		functions.push_back("vkCmdCopyMemoryToAccelerationStructureKHR");
-		functions.push_back("vkCmdTraceRaysKHR");
-		functions.push_back("vkCreateRayTracingPipelinesKHR");
-		functions.push_back("vkGetAccelerationStructureDeviceAddressKHR");
-		functions.push_back("vkGetRayTracingCaptureReplayShaderGroupHandlesKHR");
-		functions.push_back("vkCmdTraceRaysIndirectKHR");
-		functions.push_back("vkGetDeviceAccelerationStructureCompatibilityKHR");
-		functions.push_back("vkGetRayTracingShaderGroupStackSizeKHR");
-		functions.push_back("vkCmdSetRayTracingPipelineStackSizeKHR");
-		functions.push_back("vkGetAccelerationStructureBuildSizesKHR");
 		return;
 	}
 	if (extName == "VK_FUCHSIA_imagepipe_surface")
@@ -1969,6 +1983,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_draw_indirect_count",
 	"VK_KHR_timeline_semaphore",
 	"VK_KHR_buffer_device_address",
+	"VK_KHR_deferred_host_operations",
 	"VK_KHR_pipeline_executable_properties",
 	"VK_EXT_debug_marker",
 	"VK_EXT_transform_feedback",
@@ -2000,9 +2015,9 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_EXT_extended_dynamic_state",
 	"VK_NV_device_generated_commands",
 	"VK_EXT_private_data",
+	"VK_KHR_acceleration_structure",
+	"VK_KHR_ray_tracing_pipeline",
 	"VK_ANDROID_external_memory_android_hardware_buffer",
-	"VK_KHR_deferred_host_operations",
-	"VK_KHR_ray_tracing",
 	"VK_KHR_external_memory_win32",
 	"VK_KHR_external_semaphore_win32",
 	"VK_KHR_external_fence_win32",

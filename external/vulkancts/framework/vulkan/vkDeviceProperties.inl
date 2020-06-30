@@ -5,6 +5,7 @@
 
 namespace vk
 {
+#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
 #define VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME "VK_EXT_blend_operation_advanced"
 #define VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME "VK_EXT_conservative_rasterization"
 #define VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME "VK_NV_cooperative_matrix"
@@ -28,8 +29,8 @@ namespace vk
 #define DECL_POINT_CLIPPING_EXTENSION_NAME "not_existent_property"
 #define DECL_PROTECTED_MEMORY_EXTENSION_NAME "not_existent_property"
 #define VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME "VK_KHR_push_descriptor"
-#define VK_KHR_RAY_TRACING_EXTENSION_NAME "VK_KHR_ray_tracing"
 #define VK_NV_RAY_TRACING_EXTENSION_NAME  "VK_NV_ray_tracing"
+#define VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME "VK_KHR_ray_tracing_pipeline"
 #define VK_EXT_ROBUSTNESS_2_EXTENSION_NAME "VK_EXT_robustness2"
 #define VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME "VK_EXT_sampler_filter_minmax"
 #define VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME "VK_EXT_sample_locations"
@@ -44,6 +45,7 @@ namespace vk
 #define VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME "VK_EXT_vertex_attribute_divisor"
 
 
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceAccelerationStructurePropertiesKHR>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION, 38); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT, VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME, VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION, 37); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT, VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, VK_EXT_CONSERVATIVE_RASTERIZATION_SPEC_VERSION, 36); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeMatrixPropertiesNV>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_SPEC_VERSION, 35); }
@@ -67,8 +69,8 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceQueryPropert
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePointClippingProperties>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES, DECL_POINT_CLIPPING_EXTENSION_NAME, 0, 17); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceProtectedMemoryProperties>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0, 16); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePushDescriptorPropertiesKHR>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION, 15); }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRayTracingPropertiesKHR>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR, VK_KHR_RAY_TRACING_EXTENSION_NAME, VK_KHR_RAY_TRACING_SPEC_VERSION, 14); }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRayTracingPropertiesNV>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV, VK_NV_RAY_TRACING_EXTENSION_NAME, VK_NV_RAY_TRACING_SPEC_VERSION, 13); }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRayTracingPropertiesNV>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV, VK_NV_RAY_TRACING_EXTENSION_NAME, VK_NV_RAY_TRACING_SPEC_VERSION, 14); }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_SPEC_VERSION, 13); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRobustness2PropertiesEXT>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, VK_EXT_ROBUSTNESS_2_SPEC_VERSION, 12); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSamplerFilterMinmaxProperties>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES, VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME, VK_EXT_SAMPLER_FILTER_MINMAX_SPEC_VERSION, 11); }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSampleLocationsPropertiesEXT>(void) { return PropertyDesc(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, VK_EXT_SAMPLE_LOCATIONS_SPEC_VERSION, 10); }
@@ -85,6 +87,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceVertexAttributeDivisorP
 
 static const PropertyStructMapItem propertyStructCreatorMap[] =
 {
+	{ createPropertyStructWrapper<VkPhysicalDeviceAccelerationStructurePropertiesKHR>, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT>, VK_EXT_BLEND_OPERATION_ADVANCED_EXTENSION_NAME, VK_EXT_BLEND_OPERATION_ADVANCED_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceConservativeRasterizationPropertiesEXT>, VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, VK_EXT_CONSERVATIVE_RASTERIZATION_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceCooperativeMatrixPropertiesNV>, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME, VK_NV_COOPERATIVE_MATRIX_SPEC_VERSION },
@@ -108,8 +111,8 @@ static const PropertyStructMapItem propertyStructCreatorMap[] =
 	{ createPropertyStructWrapper<VkPhysicalDevicePointClippingProperties>, DECL_POINT_CLIPPING_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDeviceProtectedMemoryProperties>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 	{ createPropertyStructWrapper<VkPhysicalDevicePushDescriptorPropertiesKHR>, VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, VK_KHR_PUSH_DESCRIPTOR_SPEC_VERSION },
-	{ createPropertyStructWrapper<VkPhysicalDeviceRayTracingPropertiesKHR>, VK_KHR_RAY_TRACING_EXTENSION_NAME, VK_KHR_RAY_TRACING_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRayTracingPropertiesNV>, VK_NV_RAY_TRACING_EXTENSION_NAME, VK_NV_RAY_TRACING_SPEC_VERSION },
+	{ createPropertyStructWrapper<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_TRACING_PIPELINE_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceRobustness2PropertiesEXT>, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, VK_EXT_ROBUSTNESS_2_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSamplerFilterMinmaxProperties>, VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME, VK_EXT_SAMPLER_FILTER_MINMAX_SPEC_VERSION },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSampleLocationsPropertiesEXT>, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, VK_EXT_SAMPLE_LOCATIONS_SPEC_VERSION },

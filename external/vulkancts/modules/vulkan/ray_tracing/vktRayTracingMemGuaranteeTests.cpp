@@ -243,12 +243,16 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 
 void RayTracingTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 }
 
 
@@ -298,6 +302,8 @@ const std::string RayTracingTestCase::getHitPassthrough (void)
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	const std::string	imageQualifiers		= (m_data.testType == TEST_TYPE_BETWEEN_STAGES ? " shadercallcoherent " : "");
 	const std::string	glslExtensions		= (m_data.testType == TEST_TYPE_BETWEEN_STAGES ? "#extension GL_KHR_memory_scope_semantics : require\n" : "");
 	const bool			calleeIsAnyHit		= (m_data.stage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
@@ -350,15 +356,15 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				<< updateImageCaller <<
 				"}\n";
 
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
-			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
+			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader)) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			std::stringstream css;
 			css <<
@@ -375,19 +381,19 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				<< updateImageCaller <<
 				"}\n";
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
-			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader));
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
+			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader)) << buildOptions;
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
-			programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough()));
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
+			programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough())) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_MISS_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			std::stringstream css;
 			css <<
@@ -402,19 +408,19 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				<< updateImageCaller <<
 				"}\n";
 
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
-			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader));
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
+			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader)) << buildOptions;
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough()));
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(getIntersectionPassthrough())) << buildOptions;
 
 			break;
 		}
 
 		case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 
 			std::stringstream css;
 			css <<
@@ -428,11 +434,11 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				<< updateImageCaller <<
 				"}\n";
 
-			programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(calleeShader));
+			programCollection.glslSources.add("sect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(calleeShader)) << buildOptions;
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough()));
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough()));
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(getHitPassthrough())) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(getMissPassthrough())) << buildOptions;
 
 			break;
 		}
@@ -453,7 +459,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					"  executeCallableEXT(1, 0);\n"
 					"}\n";
 
-				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
 			{
@@ -462,7 +468,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					"#version 460 core\n"
 					"#extension GL_EXT_ray_tracing : require\n"
 					+ glslExtensions +
-					"layout(location = 0) callableDataInEXT float dummyIn;\n"
+					"layout(location = 1) callableDataInEXT float dummyIn;\n"
 					"layout(location = 0) callableDataEXT float dummyOut;\n"
 					"layout(set = 0, binding = 0, r32ui)" + imageQualifiers + "uniform uimage2D result;\n"
 					"\n"
@@ -471,10 +477,10 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					<< updateImageCaller <<
 					"}\n";
 
-				programCollection.glslSources.add("call") << glu::CallableSource(updateRayTracingGLSL(css.str()));
+				programCollection.glslSources.add("call") << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 			}
 
-			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader));
+			programCollection.glslSources.add("cal0") << glu::CallableSource(updateRayTracingGLSL(calleeShader)) << buildOptions;
 
 			break;
 		}

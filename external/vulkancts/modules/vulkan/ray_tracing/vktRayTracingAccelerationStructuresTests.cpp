@@ -675,19 +675,24 @@ RayTracingASBasicTestCase::~RayTracingASBasicTestCase	(void)
 
 void RayTracingASBasicTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 
-	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && rayTracingFeaturesKHR.rayTracingHostAccelerationStructureCommands == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingHostAccelerationStructureCommands");
+	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
 }
 
 void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 	{
 		std::stringstream css;
 		css <<
@@ -707,7 +712,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n"
 			"}\n";
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -721,7 +726,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  hitValue = uvec4(2,0,0,1);\n"
 			"}\n";
 
-		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -736,7 +741,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  reportIntersectionEXT(0.5f, 0);\n"
 			"}\n";
 
-		programCollection.glslSources.add("isect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("isect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -750,7 +755,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  hitValue = uvec4(1,0,0,1);\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -777,7 +782,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n"
 			"}\n";
-		programCollection.glslSources.add("rgen_depth") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen_depth") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -791,7 +796,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  hitValue = vec4(gl_RayTmaxEXT,0.0,0.0,1.0);\n"
 			"}\n";
 
-		programCollection.glslSources.add("chit_depth") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit_depth") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -805,7 +810,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  hitValue = vec4(0.0,0.0,0.0,1.0);\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss_depth") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss_depth") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 
@@ -1205,114 +1210,6 @@ tcu::TestStatus RayTracingASBasicTestInstance::iterate (void)
 
 }	// anonymous
 
-struct MemoryRequirementsTestParams
-{
-	bool stub;
-};
-
-class RayTracingASMemoryRequirementsTestCase : public TestCase
-{
-	public:
-																	RayTracingASMemoryRequirementsTestCase		(tcu::TestContext& context, const char* name, const char* desc, const MemoryRequirementsTestParams& data);
-																	~RayTracingASMemoryRequirementsTestCase		(void);
-
-	void															checkSupport								(Context& context) const override;
-	void															initPrograms								(SourceCollections& programCollection) const override;
-	TestInstance*													createInstance								(Context& context) const override;
-private:
-	MemoryRequirementsTestParams									m_data;
-};
-
-class RayTracingASMemoryRequirementsTestInstance : public TestInstance
-{
-public:
-																	RayTracingASMemoryRequirementsTestInstance	(Context& context, const MemoryRequirementsTestParams& data);
-																	~RayTracingASMemoryRequirementsTestInstance	(void);
-	tcu::TestStatus													iterate										(void) override;
-private:
-	MemoryRequirementsTestParams									m_data;
-};
-
-RayTracingASMemoryRequirementsTestCase::RayTracingASMemoryRequirementsTestCase (tcu::TestContext& context, const char* name, const char* desc, const MemoryRequirementsTestParams& data)
-	: vkt::TestCase	(context, name, desc)
-	, m_data		(data)
-{
-}
-
-RayTracingASMemoryRequirementsTestCase::~RayTracingASMemoryRequirementsTestCase (void)
-{
-}
-
-void RayTracingASMemoryRequirementsTestCase::checkSupport (Context& context) const
-{
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
-
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
-
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
-}
-
-void RayTracingASMemoryRequirementsTestCase::initPrograms (SourceCollections& programCollection) const
-{
-	DE_UNREF(programCollection);
-}
-
-TestInstance* RayTracingASMemoryRequirementsTestCase::createInstance (Context& context) const
-{
-	return new RayTracingASMemoryRequirementsTestInstance(context, m_data);
-}
-
-RayTracingASMemoryRequirementsTestInstance::RayTracingASMemoryRequirementsTestInstance(Context& context, const MemoryRequirementsTestParams& data)
-	: vkt::TestInstance		(context)
-	, m_data				(data)
-{
-}
-
-RayTracingASMemoryRequirementsTestInstance::~RayTracingASMemoryRequirementsTestInstance(void)
-{
-}
-
-tcu::TestStatus RayTracingASMemoryRequirementsTestInstance::iterate (void)
-{
-	const DeviceInterface&									vkd												= m_context.getDeviceInterface();
-	const VkDevice											device											= m_context.getDevice();
-	DE_UNREF(m_data.stub);
-
-	const VkAccelerationStructureCreateInfoKHR				accelerationStructureCreateInfoKHR				=
-	{
-		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,	// VkStructureType                          sType;
-		DE_NULL,													// const void*                              pNext;
-		0u,															// VkAccelerationStructureCreateFlagsKHR    createFlags;
-		128,														// VkDeviceSize                             size;
-		VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,			// VkAccelerationStructureTypeKHR           type;
-		0u															// VkDeviceAddress                          deviceAddress;
-	};
-	Move<VkAccelerationStructureKHR>						m_accelerationStructureKHR						= createAccelerationStructureKHR(vkd, device, &accelerationStructureCreateInfoKHR, DE_NULL);
-
-	const VkAccelerationStructureMemoryRequirementsInfoKHR	accelerationStructureMemoryRequirementsInfoKHR	=
-	{
-		VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_KHR,	//  VkStructureType										sType;
-		DE_NULL,																//  const void*											pNext;
-		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,						//  VkAccelerationStructureBuildTypeKHR					buildType;
-		m_accelerationStructureKHR.get()										//  VkAccelerationStructureKHR							accelerationStructure;
-	};
-
-	VkMemoryRequirements2									memoryRequirements2								=
-	{
-		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,	//  VkStructureType			sType;
-		DE_NULL,									//  void*					pNext;
-		{0, 0, 0}									//  VkMemoryRequirements	memoryRequirements;
-	};
-	vkd.getAccelerationStructureMemoryRequirementsKHR(device, &accelerationStructureMemoryRequirementsInfoKHR, &memoryRequirements2);
-
-	// at least one memoryTypeBits must be set
-	if (memoryRequirements2.memoryRequirements.memoryTypeBits == 0)
-		return tcu::TestStatus::fail("Fail");
-
-	return tcu::TestStatus::pass("Pass");
-}
-
 void addBasicBuildingTests(tcu::TestCaseGroup* group)
 {
 	struct
@@ -1379,7 +1276,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 	BuildFlagsData lowMemoryTypes[] =
 	{
 		{ VkBuildAccelerationStructureFlagsKHR(0u),						"0" },
-		{ VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR,		"lowmemory" },
+		{ VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR,			"lowmemory" },
 	};
 
 	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
@@ -1603,11 +1500,6 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 	}
 }
 
-void addRequirementsTests(tcu::TestCaseGroup* group)
-{
-	group->addChild(new RayTracingASMemoryRequirementsTestCase(group->getTestContext(), "get_acceleration_structure_memory_requirements", "", MemoryRequirementsTestParams{ true }));
-}
-
 void addOperationTests (tcu::TestCaseGroup* group)
 {
 	addOperationTestsImpl(group, 0);
@@ -1638,7 +1530,6 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "flags", "Test building AS with different build types, build flags and geometries/instances using arrays or arrays of pointers", addBasicBuildingTests);
 	addTestGroup(group.get(), "format", "Test building AS with different vertex and index formats", addVertexIndexFormatsTests);
 	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
-	addTestGroup(group.get(), "requirements", "Test other requirements", addRequirementsTests);
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 
 	return group.release();

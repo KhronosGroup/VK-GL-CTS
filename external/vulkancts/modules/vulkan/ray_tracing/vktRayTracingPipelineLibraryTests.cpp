@@ -157,16 +157,22 @@ RayTracingPipelineLibraryTestCase::~RayTracingPipelineLibraryTestCase	(void)
 void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_pipeline_library");
-	context.requireDeviceFunctionality("VK_KHR_ray_tracing");
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 }
 
 void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	{
 		std::stringstream css;
 		css <<
@@ -186,7 +192,7 @@ void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& program
 			"  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n"
 			"}\n";
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -200,7 +206,7 @@ void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& program
 			"  hitValue = uvec4("<< RTPL_MAX_CHIT_SHADER_COUNT <<",0,0,1);\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	for(deUint32 i=0; i<RTPL_MAX_CHIT_SHADER_COUNT; ++i)
@@ -216,7 +222,7 @@ void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& program
 			"}\n";
 		std::stringstream csname;
 		csname << "chit" << i;
-		programCollection.glslSources.add(csname.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add(csname.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 

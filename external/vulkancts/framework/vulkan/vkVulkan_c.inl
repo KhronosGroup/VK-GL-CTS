@@ -35,7 +35,7 @@ extern "C" {
 #define VK_VERSION_1_0 1
 
 #define VK_MAKE_VERSION(major, minor, patch) \
-    (((major) << 22) | ((minor) << 12) | (patch))
+    ((((deUint32)(major)) << 22) | (((deUint32)(minor)) << 12) | ((deUint32)(patch)))
 
 // DEPRECATED: This define has been removed. Specific version defines (e.g. VK_API_VERSION_1_0), or the VK_MAKE_VERSION macro, should be used instead.
 //#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 0) // Patch version should always be set to 0
@@ -47,7 +47,7 @@ extern "C" {
 #define VK_VERSION_MINOR(version) (((deUint32)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((deUint32)(version) & 0xfff)
 // Version of this file
-#define VK_HEADER_VERSION 141
+#define VK_HEADER_VERSION 146
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_VERSION(1, 2, VK_HEADER_VERSION)
@@ -69,6 +69,7 @@ extern "C" {
 
 typedef deUint32 VkFlags;
 typedef deUint32 VkBool32;
+typedef deUint64 VkDeviceAddress;
 typedef deUint64 VkDeviceSize;
 typedef deUint32 VkSampleMask;
 VK_DEFINE_HANDLE(VkInstance)
@@ -455,7 +456,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT = 1000148001,
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT = 1000148002,
     VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_TO_COLOR_STATE_CREATE_INFO_NV = 1000149000,
-    VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR = 1000165006,
     VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR = 1000165007,
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR = 1000150000,
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR = 1000150002,
@@ -468,13 +468,16 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR = 1000150010,
     VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_TO_MEMORY_INFO_KHR = 1000150011,
     VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR = 1000150012,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_FEATURES_KHR = 1000150013,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_KHR = 1000150014,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR = 1000150013,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR = 1000150014,
+    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR = 1000150017,
+    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR = 1000150020,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR = 1000347000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR = 1000347001,
     VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR = 1000150015,
     VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR = 1000150016,
-    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR = 1000150017,
     VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR = 1000150018,
-    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR = 1000150020,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR = 1000348013,
     VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV = 1000152000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV = 1000154000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV = 1000154001,
@@ -495,6 +498,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_GEOMETRY_NV = 1000165003,
     VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV = 1000165004,
     VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV = 1000165005,
+    VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV = 1000165006,
     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV = 1000165008,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV = 1000165009,
     VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV = 1000165011,
@@ -572,7 +576,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT = 1000259002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT = 1000265000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT = 1000267000,
-    VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR = 1000268000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR = 1000269000,
     VK_STRUCTURE_TYPE_PIPELINE_INFO_KHR = 1000269001,
     VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_PROPERTIES_KHR = 1000269002,
@@ -687,7 +690,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_LAYOUT_SUPPORT_EXT = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_LAYOUT_SUPPORT,
-    VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV = VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_KHR,
     VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT_KHR = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT,
@@ -1279,7 +1281,7 @@ typedef enum VkDynamicState {
     VK_DYNAMIC_STATE_VIEWPORT_W_SCALING_NV = 1000087000,
     VK_DYNAMIC_STATE_DISCARD_RECTANGLE_EXT = 1000099000,
     VK_DYNAMIC_STATE_SAMPLE_LOCATIONS_EXT = 1000143000,
-    VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR = 1000150000,
+    VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR = 1000347000,
     VK_DYNAMIC_STATE_VIEWPORT_SHADING_RATE_PALETTE_NV = 1000164004,
     VK_DYNAMIC_STATE_VIEWPORT_COARSE_SAMPLE_ORDER_NV = 1000164006,
     VK_DYNAMIC_STATE_EXCLUSIVE_SCISSOR_NV = 1000205001,
@@ -1606,8 +1608,8 @@ typedef enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT = 0x00010000,
     VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT = 0x01000000,
     VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT = 0x00040000,
-    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR = 0x00200000,
     VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR = 0x02000000,
+    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR = 0x00200000,
     VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV = 0x00400000,
     VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV = 0x00080000,
     VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV = 0x00100000,
@@ -1713,8 +1715,10 @@ typedef enum VkBufferUsageFlagBits {
     VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT = 0x00000800,
     VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT = 0x00001000,
     VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT = 0x00000200,
-    VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR = 0x00000400,
-    VK_BUFFER_USAGE_RAY_TRACING_BIT_NV = VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR,
+    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR = 0x00080000,
+    VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR = 0x00100000,
+    VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR = 0x00000400,
+    VK_BUFFER_USAGE_RAY_TRACING_BIT_NV = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
     VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
     VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
     VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -4887,7 +4891,6 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupport(
 // Vulkan 1.2 version number
 #define VK_API_VERSION_1_2 VK_MAKE_VERSION(1, 2, 0)// Patch version should always be set to 0
 
-typedef deUint64 VkDeviceAddress;
 #define VK_MAX_DRIVER_NAME_SIZE           256
 #define VK_MAX_DRIVER_INFO_SIZE           256
 
@@ -7248,6 +7251,41 @@ VKAPI_ATTR deUint64 VKAPI_CALL vkGetDeviceMemoryOpaqueCaptureAddressKHR(
 #endif
 
 
+#define VK_KHR_deferred_host_operations 1
+VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDeferredOperationKHR)
+#define VK_KHR_DEFERRED_HOST_OPERATIONS_SPEC_VERSION 4
+#define VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME "VK_KHR_deferred_host_operations"
+typedef VkResult (VKAPI_PTR *PFN_vkCreateDeferredOperationKHR)(VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation);
+typedef void (VKAPI_PTR *PFN_vkDestroyDeferredOperationKHR)(VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator);
+typedef deUint32 (VKAPI_PTR *PFN_vkGetDeferredOperationMaxConcurrencyKHR)(VkDevice device, VkDeferredOperationKHR operation);
+typedef VkResult (VKAPI_PTR *PFN_vkGetDeferredOperationResultKHR)(VkDevice device, VkDeferredOperationKHR operation);
+typedef VkResult (VKAPI_PTR *PFN_vkDeferredOperationJoinKHR)(VkDevice device, VkDeferredOperationKHR operation);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDeferredOperationKHR(
+    VkDevice                                    device,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDeferredOperationKHR*                     pDeferredOperation);
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyDeferredOperationKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      operation,
+    const VkAllocationCallbacks*                pAllocator);
+
+VKAPI_ATTR deUint32 VKAPI_CALL vkGetDeferredOperationMaxConcurrencyKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      operation);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetDeferredOperationResultKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      operation);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkDeferredOperationJoinKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      operation);
+#endif
+
+
 #define VK_KHR_pipeline_executable_properties 1
 #define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_SPEC_VERSION 1
 #define VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME "VK_KHR_pipeline_executable_properties"
@@ -7336,6 +7374,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR
     deUint32*                                   pInternalRepresentationCount,
     VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
 #endif
+
+
+#define VK_KHR_pipeline_library 1
+#define VK_KHR_PIPELINE_LIBRARY_SPEC_VERSION 1
+#define VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME "VK_KHR_pipeline_library"
+typedef struct VkPipelineLibraryCreateInfoKHR {
+    VkStructureType      sType;
+    const void*          pNext;
+    deUint32             libraryCount;
+    const VkPipeline*    pLibraries;
+} VkPipelineLibraryCreateInfoKHR;
+
 
 
 #define VK_KHR_shader_non_semantic_info 1
@@ -9001,7 +9051,7 @@ typedef VkRayTracingShaderGroupTypeKHR VkRayTracingShaderGroupTypeNV;
 typedef enum VkGeometryTypeKHR {
     VK_GEOMETRY_TYPE_TRIANGLES_KHR = 0,
     VK_GEOMETRY_TYPE_AABBS_KHR = 1,
-    VK_GEOMETRY_TYPE_INSTANCES_KHR = 1000150000,
+    VK_GEOMETRY_TYPE_INSTANCES_KHR = 2,
     VK_GEOMETRY_TYPE_TRIANGLES_NV = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
     VK_GEOMETRY_TYPE_AABBS_NV = VK_GEOMETRY_TYPE_AABBS_KHR,
     VK_GEOMETRY_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
@@ -9012,6 +9062,7 @@ typedef VkGeometryTypeKHR VkGeometryTypeNV;
 typedef enum VkAccelerationStructureTypeKHR {
     VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR = 0,
     VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR = 1,
+    VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR = 2,
     VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
     VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
     VK_ACCELERATION_STRUCTURE_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
@@ -9165,17 +9216,15 @@ typedef struct VkAccelerationStructureCreateInfoNV {
     VkAccelerationStructureInfoNV    info;
 } VkAccelerationStructureCreateInfoNV;
 
-typedef struct VkBindAccelerationStructureMemoryInfoKHR {
-    VkStructureType               sType;
-    const void*                   pNext;
-    VkAccelerationStructureKHR    accelerationStructure;
-    VkDeviceMemory                memory;
-    VkDeviceSize                  memoryOffset;
-    deUint32                      deviceIndexCount;
-    const deUint32*               pDeviceIndices;
-} VkBindAccelerationStructureMemoryInfoKHR;
-
-typedef VkBindAccelerationStructureMemoryInfoKHR VkBindAccelerationStructureMemoryInfoNV;
+typedef struct VkBindAccelerationStructureMemoryInfoNV {
+    VkStructureType              sType;
+    const void*                  pNext;
+    VkAccelerationStructureNV    accelerationStructure;
+    VkDeviceMemory               memory;
+    VkDeviceSize                 memoryOffset;
+    deUint32                     deviceIndexCount;
+    const deUint32*              pDeviceIndices;
+} VkBindAccelerationStructureMemoryInfoNV;
 
 typedef struct VkWriteDescriptorSetAccelerationStructureKHR {
     VkStructureType                      sType;
@@ -9238,8 +9287,7 @@ typedef VkResult (VKAPI_PTR *PFN_vkCreateAccelerationStructureNV)(VkDevice devic
 typedef void (VKAPI_PTR *PFN_vkDestroyAccelerationStructureKHR)(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef void (VKAPI_PTR *PFN_vkDestroyAccelerationStructureNV)(VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator);
 typedef void (VKAPI_PTR *PFN_vkGetAccelerationStructureMemoryRequirementsNV)(VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
-typedef VkResult (VKAPI_PTR *PFN_vkBindAccelerationStructureMemoryKHR)(VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoKHR* pBindInfos);
-typedef VkResult (VKAPI_PTR *PFN_vkBindAccelerationStructureMemoryNV)(VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoKHR* pBindInfos);
+typedef VkResult (VKAPI_PTR *PFN_vkBindAccelerationStructureMemoryNV)(VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos);
 typedef void (VKAPI_PTR *PFN_vkCmdBuildAccelerationStructureNV)(VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkBuffer scratch, VkDeviceSize scratchOffset);
 typedef void (VKAPI_PTR *PFN_vkCmdCopyAccelerationStructureNV)(VkCommandBuffer commandBuffer, VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkCopyAccelerationStructureModeKHR mode);
 typedef void (VKAPI_PTR *PFN_vkCmdTraceRaysNV)(VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, deUint32 width, deUint32 height, deUint32 depth);
@@ -9273,15 +9321,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetAccelerationStructureMemoryRequirementsNV(
     const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo,
     VkMemoryRequirements2KHR*                   pMemoryRequirements);
 
-VKAPI_ATTR VkResult VKAPI_CALL vkBindAccelerationStructureMemoryKHR(
-    VkDevice                                    device,
-    deUint32                                    bindInfoCount,
-    const VkBindAccelerationStructureMemoryInfoKHR* pBindInfos);
-
 VKAPI_ATTR VkResult VKAPI_CALL vkBindAccelerationStructureMemoryNV(
     VkDevice                                    device,
     deUint32                                    bindInfoCount,
-    const VkBindAccelerationStructureMemoryInfoKHR* pBindInfos);
+    const VkBindAccelerationStructureMemoryInfoNV* pBindInfos);
 
 VKAPI_ATTR void VKAPI_CALL vkCmdBuildAccelerationStructureNV(
     VkCommandBuffer                             commandBuffer,
@@ -10911,6 +10954,428 @@ typedef struct VkDeviceDiagnosticsConfigCreateInfoNV {
 #define VK_QCOM_render_pass_store_ops 1
 #define VK_QCOM_render_pass_store_ops_SPEC_VERSION 2
 #define VK_QCOM_render_pass_store_ops_EXTENSION_NAME "VK_QCOM_render_pass_store_ops"
+
+
+
+#define VK_KHR_acceleration_structure 1
+#define VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION 10
+#define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
+
+typedef enum VkBuildAccelerationStructureModeKHR {
+    VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR = 0,
+    VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR = 1,
+    VK_BUILD_ACCELERATION_STRUCTURE_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkBuildAccelerationStructureModeKHR;
+
+typedef enum VkAccelerationStructureBuildTypeKHR {
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR = 0,
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR = 1,
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_OR_DEVICE_KHR = 2,
+    VK_ACCELERATION_STRUCTURE_BUILD_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkAccelerationStructureBuildTypeKHR;
+
+typedef enum VkAccelerationStructureCompatibilityKHR {
+    VK_ACCELERATION_STRUCTURE_COMPATIBILITY_COMPATIBLE_KHR = 0,
+    VK_ACCELERATION_STRUCTURE_COMPATIBILITY_INCOMPATIBLE_KHR = 1,
+    VK_ACCELERATION_STRUCTURE_COMPATIBILITY_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkAccelerationStructureCompatibilityKHR;
+
+typedef enum VkAccelerationStructureCreateFlagBitsKHR {
+    VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR = 0x00000001,
+    VK_ACCELERATION_STRUCTURE_CREATE_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkAccelerationStructureCreateFlagBitsKHR;
+typedef VkFlags VkAccelerationStructureCreateFlagsKHR;
+typedef union VkDeviceOrHostAddressKHR {
+    VkDeviceAddress    deviceAddress;
+    void*              hostAddress;
+} VkDeviceOrHostAddressKHR;
+
+typedef union VkDeviceOrHostAddressConstKHR {
+    VkDeviceAddress    deviceAddress;
+    const void*        hostAddress;
+} VkDeviceOrHostAddressConstKHR;
+
+typedef struct VkAccelerationStructureBuildRangeInfoKHR {
+    deUint32    primitiveCount;
+    deUint32    primitiveOffset;
+    deUint32    firstVertex;
+    deUint32    transformOffset;
+} VkAccelerationStructureBuildRangeInfoKHR;
+
+typedef struct VkAccelerationStructureGeometryTrianglesDataKHR {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkFormat                         vertexFormat;
+    VkDeviceOrHostAddressConstKHR    vertexData;
+    VkDeviceSize                     vertexStride;
+    deUint32                         maxVertex;
+    VkIndexType                      indexType;
+    VkDeviceOrHostAddressConstKHR    indexData;
+    VkDeviceOrHostAddressConstKHR    transformData;
+} VkAccelerationStructureGeometryTrianglesDataKHR;
+
+typedef struct VkAccelerationStructureGeometryAabbsDataKHR {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkDeviceOrHostAddressConstKHR    data;
+    VkDeviceSize                     stride;
+} VkAccelerationStructureGeometryAabbsDataKHR;
+
+typedef struct VkAccelerationStructureGeometryInstancesDataKHR {
+    VkStructureType                  sType;
+    const void*                      pNext;
+    VkBool32                         arrayOfPointers;
+    VkDeviceOrHostAddressConstKHR    data;
+} VkAccelerationStructureGeometryInstancesDataKHR;
+
+typedef union VkAccelerationStructureGeometryDataKHR {
+    VkAccelerationStructureGeometryTrianglesDataKHR    triangles;
+    VkAccelerationStructureGeometryAabbsDataKHR        aabbs;
+    VkAccelerationStructureGeometryInstancesDataKHR    instances;
+} VkAccelerationStructureGeometryDataKHR;
+
+typedef struct VkAccelerationStructureGeometryKHR {
+    VkStructureType                           sType;
+    const void*                               pNext;
+    VkGeometryTypeKHR                         geometryType;
+    VkAccelerationStructureGeometryDataKHR    geometry;
+    VkGeometryFlagsKHR                        flags;
+} VkAccelerationStructureGeometryKHR;
+
+typedef struct VkAccelerationStructureBuildGeometryInfoKHR {
+    VkStructureType                                     sType;
+    const void*                                         pNext;
+    VkAccelerationStructureTypeKHR                      type;
+    VkBuildAccelerationStructureFlagsKHR                flags;
+    VkBuildAccelerationStructureModeKHR                 mode;
+    VkAccelerationStructureKHR                          srcAccelerationStructure;
+    VkAccelerationStructureKHR                          dstAccelerationStructure;
+    deUint32                                            geometryCount;
+    const VkAccelerationStructureGeometryKHR*           pGeometries;
+    const VkAccelerationStructureGeometryKHR* const*    ppGeometries;
+    VkDeviceOrHostAddressKHR                            scratchData;
+} VkAccelerationStructureBuildGeometryInfoKHR;
+
+typedef struct VkAccelerationStructureCreateInfoKHR {
+    VkStructureType                          sType;
+    const void*                              pNext;
+    VkAccelerationStructureCreateFlagsKHR    createFlags;
+    VkBuffer                                 buffer;
+    VkDeviceSize                             offset;
+    VkDeviceSize                             size;
+    VkAccelerationStructureTypeKHR           type;
+    VkDeviceAddress                          deviceAddress;
+} VkAccelerationStructureCreateInfoKHR;
+
+typedef struct VkPhysicalDeviceAccelerationStructureFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           accelerationStructure;
+    VkBool32           accelerationStructureCaptureReplay;
+    VkBool32           accelerationStructureIndirectBuild;
+    VkBool32           accelerationStructureHostCommands;
+    VkBool32           descriptorBindingAccelerationStructureUpdateAfterBind;
+} VkPhysicalDeviceAccelerationStructureFeaturesKHR;
+
+typedef struct VkPhysicalDeviceAccelerationStructurePropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    deUint64           maxGeometryCount;
+    deUint64           maxInstanceCount;
+    deUint64           maxPrimitiveCount;
+    deUint32           maxPerStageDescriptorAccelerationStructures;
+    deUint32           maxPerStageDescriptorUpdateAfterBindAccelerationStructures;
+    deUint32           maxDescriptorSetAccelerationStructures;
+    deUint32           maxDescriptorSetUpdateAfterBindAccelerationStructures;
+    deUint32           minAccelerationStructureScratchOffsetAlignment;
+} VkPhysicalDeviceAccelerationStructurePropertiesKHR;
+
+typedef struct VkAccelerationStructureDeviceAddressInfoKHR {
+    VkStructureType               sType;
+    const void*                   pNext;
+    VkAccelerationStructureKHR    accelerationStructure;
+} VkAccelerationStructureDeviceAddressInfoKHR;
+
+typedef struct VkAccelerationStructureVersionInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    const deUint8*     pVersionData;
+} VkAccelerationStructureVersionInfoKHR;
+
+typedef struct VkCopyAccelerationStructureToMemoryInfoKHR {
+    VkStructureType                       sType;
+    const void*                           pNext;
+    VkAccelerationStructureKHR            src;
+    VkDeviceOrHostAddressKHR              dst;
+    VkCopyAccelerationStructureModeKHR    mode;
+} VkCopyAccelerationStructureToMemoryInfoKHR;
+
+typedef struct VkCopyMemoryToAccelerationStructureInfoKHR {
+    VkStructureType                       sType;
+    const void*                           pNext;
+    VkDeviceOrHostAddressConstKHR         src;
+    VkAccelerationStructureKHR            dst;
+    VkCopyAccelerationStructureModeKHR    mode;
+} VkCopyMemoryToAccelerationStructureInfoKHR;
+
+typedef struct VkCopyAccelerationStructureInfoKHR {
+    VkStructureType                       sType;
+    const void*                           pNext;
+    VkAccelerationStructureKHR            src;
+    VkAccelerationStructureKHR            dst;
+    VkCopyAccelerationStructureModeKHR    mode;
+} VkCopyAccelerationStructureInfoKHR;
+
+typedef struct VkAccelerationStructureBuildSizesInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkDeviceSize       accelerationStructureSize;
+    VkDeviceSize       updateScratchSize;
+    VkDeviceSize       buildScratchSize;
+} VkAccelerationStructureBuildSizesInfoKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkCreateAccelerationStructureKHR)(VkDevice                                           device, const VkAccelerationStructureCreateInfoKHR*        pCreateInfo, const VkAllocationCallbacks*       pAllocator, VkAccelerationStructureKHR*                        pAccelerationStructure);
+typedef void (VKAPI_PTR *PFN_vkCmdBuildAccelerationStructuresKHR)(VkCommandBuffer                                    commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
+typedef void (VKAPI_PTR *PFN_vkCmdBuildAccelerationStructuresIndirectKHR)(VkCommandBuffer                  commandBuffer, deUint32                                           infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress*             pIndirectDeviceAddresses, const deUint32*                    pIndirectStrides, const deUint32* const*             ppMaxPrimitiveCounts);
+typedef VkResult (VKAPI_PTR *PFN_vkBuildAccelerationStructuresKHR)(VkDevice                                           device, VkDeferredOperationKHR deferredOperation, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
+typedef VkResult (VKAPI_PTR *PFN_vkCopyAccelerationStructureKHR)(VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureInfoKHR* pInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkCopyAccelerationStructureToMemoryKHR)(VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkCopyMemoryToAccelerationStructureKHR)(VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkWriteAccelerationStructuresPropertiesKHR)(VkDevice device, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType  queryType, deUintptr       dataSize, void* pData, deUintptr stride);
+typedef void (VKAPI_PTR *PFN_vkCmdCopyAccelerationStructureKHR)(VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureInfoKHR* pInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdCopyAccelerationStructureToMemoryKHR)(VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryToAccelerationStructureKHR)(VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo);
+typedef VkDeviceAddress (VKAPI_PTR *PFN_vkGetAccelerationStructureDeviceAddressKHR)(VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo);
+typedef void (VKAPI_PTR *PFN_vkGetDeviceAccelerationStructureCompatibilityKHR)(VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility);
+typedef void (VKAPI_PTR *PFN_vkGetAccelerationStructureBuildSizesKHR)(VkDevice                                            device, VkAccelerationStructureBuildTypeKHR                 buildType, const VkAccelerationStructureBuildGeometryInfoKHR*  pBuildInfo, const deUint32* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR*           pSizeInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateAccelerationStructureKHR(
+    VkDevice                                    device,
+    const VkAccelerationStructureCreateInfoKHR* pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkAccelerationStructureKHR*                 pAccelerationStructure);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdBuildAccelerationStructuresKHR(
+    VkCommandBuffer                             commandBuffer,
+    deUint32                                    infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR* pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdBuildAccelerationStructuresIndirectKHR(
+    VkCommandBuffer                             commandBuffer,
+    deUint32                                    infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR* pInfos,
+    const VkDeviceAddress*                      pIndirectDeviceAddresses,
+    const deUint32*                             pIndirectStrides,
+    const deUint32* const*                      ppMaxPrimitiveCounts);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkBuildAccelerationStructuresKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      deferredOperation,
+    deUint32                                    infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR* pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCopyAccelerationStructureKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      deferredOperation,
+    const VkCopyAccelerationStructureInfoKHR*   pInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCopyAccelerationStructureToMemoryKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      deferredOperation,
+    const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCopyMemoryToAccelerationStructureKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      deferredOperation,
+    const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkWriteAccelerationStructuresPropertiesKHR(
+    VkDevice                                    device,
+    deUint32                                    accelerationStructureCount,
+    const VkAccelerationStructureKHR*           pAccelerationStructures,
+    VkQueryType                                 queryType,
+    deUintptr                                      dataSize,
+    void*                                       pData,
+    deUintptr                                      stride);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyAccelerationStructureKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkCopyAccelerationStructureInfoKHR*   pInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyAccelerationStructureToMemoryKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyMemoryToAccelerationStructureKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo);
+
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL vkGetAccelerationStructureDeviceAddressKHR(
+    VkDevice                                    device,
+    const VkAccelerationStructureDeviceAddressInfoKHR* pInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkGetDeviceAccelerationStructureCompatibilityKHR(
+    VkDevice                                    device,
+    const VkAccelerationStructureVersionInfoKHR* pVersionInfo,
+    VkAccelerationStructureCompatibilityKHR*    pCompatibility);
+
+VKAPI_ATTR void VKAPI_CALL vkGetAccelerationStructureBuildSizesKHR(
+    VkDevice                                    device,
+    VkAccelerationStructureBuildTypeKHR         buildType,
+    const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo,
+    const deUint32*                             pMaxPrimitiveCounts,
+    VkAccelerationStructureBuildSizesInfoKHR*   pSizeInfo);
+#endif
+
+
+#define VK_KHR_ray_tracing_pipeline 1
+#define VK_KHR_RAY_TRACING_PIPELINE_SPEC_VERSION 1
+#define VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME "VK_KHR_ray_tracing_pipeline"
+
+typedef enum VkShaderGroupShaderKHR {
+    VK_SHADER_GROUP_SHADER_GENERAL_KHR = 0,
+    VK_SHADER_GROUP_SHADER_CLOSEST_HIT_KHR = 1,
+    VK_SHADER_GROUP_SHADER_ANY_HIT_KHR = 2,
+    VK_SHADER_GROUP_SHADER_INTERSECTION_KHR = 3,
+    VK_SHADER_GROUP_SHADER_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkShaderGroupShaderKHR;
+typedef struct VkRayTracingShaderGroupCreateInfoKHR {
+    VkStructureType                   sType;
+    const void*                       pNext;
+    VkRayTracingShaderGroupTypeKHR    type;
+    deUint32                          generalShader;
+    deUint32                          closestHitShader;
+    deUint32                          anyHitShader;
+    deUint32                          intersectionShader;
+    const void*                       pShaderGroupCaptureReplayHandle;
+} VkRayTracingShaderGroupCreateInfoKHR;
+
+typedef struct VkRayTracingPipelineInterfaceCreateInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    deUint32           maxPipelineRayPayloadSize;
+    deUint32           maxPipelineRayHitAttributeSize;
+} VkRayTracingPipelineInterfaceCreateInfoKHR;
+
+typedef struct VkRayTracingPipelineCreateInfoKHR {
+    VkStructureType                                      sType;
+    const void*                                          pNext;
+    VkPipelineCreateFlags                                flags;
+    deUint32                                             stageCount;
+    const VkPipelineShaderStageCreateInfo*               pStages;
+    deUint32                                             groupCount;
+    const VkRayTracingShaderGroupCreateInfoKHR*          pGroups;
+    deUint32                                             maxPipelineRayRecursionDepth;
+    const VkPipelineLibraryCreateInfoKHR*                pLibraryInfo;
+    const VkRayTracingPipelineInterfaceCreateInfoKHR*    pLibraryInterface;
+    const VkPipelineDynamicStateCreateInfo*              pDynamicState;
+    VkPipelineLayout                                     layout;
+    VkPipeline                                           basePipelineHandle;
+    deInt32                                              basePipelineIndex;
+} VkRayTracingPipelineCreateInfoKHR;
+
+typedef struct VkPhysicalDeviceRayTracingPipelineFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rayTracingPipeline;
+    VkBool32           rayTracingPipelineShaderGroupHandleCaptureReplay;
+    VkBool32           rayTracingPipelineShaderGroupHandleCaptureReplayMixed;
+    VkBool32           rayTracingPipelineTraceRaysIndirect;
+    VkBool32           rayTraversalPrimitiveCulling;
+} VkPhysicalDeviceRayTracingPipelineFeaturesKHR;
+
+typedef struct VkPhysicalDeviceRayTracingPipelinePropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    deUint32           shaderGroupHandleSize;
+    deUint32           maxRayRecursionDepth;
+    deUint32           maxShaderGroupStride;
+    deUint32           shaderGroupBaseAlignment;
+    deUint32           shaderGroupHandleCaptureReplaySize;
+    deUint32           maxRayDispatchInvocationCount;
+    deUint32           shaderGroupHandleAlignment;
+    deUint32           maxRayHitAttributeSize;
+} VkPhysicalDeviceRayTracingPipelinePropertiesKHR;
+
+typedef struct VkStridedDeviceAddressRegionKHR {
+    VkDeviceAddress    deviceAddress;
+    VkDeviceSize       stride;
+    VkDeviceSize       size;
+} VkStridedDeviceAddressRegionKHR;
+
+typedef struct VkTraceRaysIndirectCommandKHR {
+    deUint32    width;
+    deUint32    height;
+    deUint32    depth;
+} VkTraceRaysIndirectCommandKHR;
+
+typedef void (VKAPI_PTR *PFN_vkCmdTraceRaysKHR)(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, deUint32 width, deUint32 height, deUint32 depth);
+typedef VkResult (VKAPI_PTR *PFN_vkCreateRayTracingPipelinesKHR)(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, deUint32 createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines);
+typedef VkResult (VKAPI_PTR *PFN_vkGetRayTracingCaptureReplayShaderGroupHandlesKHR)(VkDevice device, VkPipeline pipeline, deUint32 firstGroup, deUint32 groupCount, deUintptr dataSize, void* pData);
+typedef void (VKAPI_PTR *PFN_vkCmdTraceRaysIndirectKHR)(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress);
+typedef VkDeviceSize (VKAPI_PTR *PFN_vkGetRayTracingShaderGroupStackSizeKHR)(VkDevice device, VkPipeline pipeline, deUint32 group, VkShaderGroupShaderKHR groupShader);
+typedef void (VKAPI_PTR *PFN_vkCmdSetRayTracingPipelineStackSizeKHR)(VkCommandBuffer commandBuffer, deUint32 pipelineStackSize);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdTraceRaysKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkStridedDeviceAddressRegionKHR*      pRaygenShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR*      pMissShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR*      pHitShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR*      pCallableShaderBindingTable,
+    deUint32                                    width,
+    deUint32                                    height,
+    deUint32                                    depth);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateRayTracingPipelinesKHR(
+    VkDevice                                    device,
+    VkDeferredOperationKHR                      deferredOperation,
+    VkPipelineCache                             pipelineCache,
+    deUint32                                    createInfoCount,
+    const VkRayTracingPipelineCreateInfoKHR*    pCreateInfos,
+    const VkAllocationCallbacks*                pAllocator,
+    VkPipeline*                                 pPipelines);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetRayTracingCaptureReplayShaderGroupHandlesKHR(
+    VkDevice                                    device,
+    VkPipeline                                  pipeline,
+    deUint32                                    firstGroup,
+    deUint32                                    groupCount,
+    deUintptr                                      dataSize,
+    void*                                       pData);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdTraceRaysIndirectKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkStridedDeviceAddressRegionKHR*      pRaygenShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR*      pMissShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR*      pHitShaderBindingTable,
+    const VkStridedDeviceAddressRegionKHR*      pCallableShaderBindingTable,
+    VkDeviceAddress                             indirectDeviceAddress);
+
+VKAPI_ATTR VkDeviceSize VKAPI_CALL vkGetRayTracingShaderGroupStackSizeKHR(
+    VkDevice                                    device,
+    VkPipeline                                  pipeline,
+    deUint32                                    group,
+    VkShaderGroupShaderKHR                      groupShader);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetRayTracingPipelineStackSizeKHR(
+    VkCommandBuffer                             commandBuffer,
+    deUint32                                    pipelineStackSize);
+#endif
+
+
+#define VK_KHR_ray_query 1
+#define VK_KHR_RAY_QUERY_SPEC_VERSION     1
+#define VK_KHR_RAY_QUERY_EXTENSION_NAME   "VK_KHR_ray_query"
+typedef struct VkPhysicalDeviceRayQueryFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           rayQuery;
+} VkPhysicalDeviceRayQueryFeaturesKHR;
+
 
 #ifdef __cplusplus
 }

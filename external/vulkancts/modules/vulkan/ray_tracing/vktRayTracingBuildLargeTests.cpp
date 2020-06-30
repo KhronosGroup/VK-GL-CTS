@@ -199,15 +199,19 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 
 void RayTracingTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 
-	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && rayTracingFeaturesKHR.rayTracingHostAccelerationStructureCommands == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingHostAccelerationStructureCommands");
+	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
 
 	if (m_data.deferredOperation)
 		context.requireDeviceFunctionality("VK_KHR_deferred_host_operations");
@@ -232,6 +236,7 @@ std::string RayTracingTestCase::generateDummyWork (const deUint32 shaderNdx) con
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 	{
 		std::stringstream css;
 		css <<
@@ -246,7 +251,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  executeCallableEXT(n, 0);\n"
 			"}\n";
 
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	for (deUint32 y = 0; y < m_data.height; ++y)
@@ -268,7 +273,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("call" + de::toString(shaderNdx)) << glu::CallableSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("call" + de::toString(shaderNdx)) << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 

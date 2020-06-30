@@ -145,6 +145,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pDeferredOperation = allocateNonDispHandle<DeferredOperationKHR, VkDeferredOperationKHR>(device, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
 {
 	DE_UNREF(pAllocator);
@@ -187,22 +193,16 @@ VKAPI_ATTR VkResult VKAPI_CALL createPrivateDataSlotEXT (VkDevice device, const 
 	VK_NULL_RETURN((*pPrivateDataSlot = allocateNonDispHandle<PrivateDataSlotEXT, VkPrivateDataSlotEXT>(device, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((*pDeferredOperation = allocateNonDispHandle<DeferredOperationKHR, VkDeferredOperationKHR>(device, pAllocator)));
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure)
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pAccelerationStructure = allocateNonDispHandle<AccelerationStructureKHR, VkAccelerationStructureKHR>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL createImagePipeSurfaceFUCHSIA (VkInstance instance, const VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
@@ -413,6 +413,12 @@ VKAPI_ATTR void VKAPI_CALL destroySwapchainKHR (VkDevice device, VkSwapchainKHR 
 	freeNonDispHandle<SwapchainKHR, VkSwapchainKHR>(swapchain, pAllocator);
 }
 
+VKAPI_ATTR void VKAPI_CALL destroyDeferredOperationKHR (VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<DeferredOperationKHR, VkDeferredOperationKHR>(operation, pAllocator);
+}
+
 VKAPI_ATTR void VKAPI_CALL destroyDebugReportCallbackEXT (VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(instance);
@@ -453,12 +459,6 @@ VKAPI_ATTR void VKAPI_CALL destroyPrivateDataSlotEXT (VkDevice device, VkPrivate
 {
 	DE_UNREF(device);
 	freeNonDispHandle<PrivateDataSlotEXT, VkPrivateDataSlotEXT>(privateDataSlot, pAllocator);
-}
-
-VKAPI_ATTR void VKAPI_CALL destroyDeferredOperationKHR (VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator)
-{
-	DE_UNREF(device);
-	freeNonDispHandle<DeferredOperationKHR, VkDeferredOperationKHR>(operation, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties)
@@ -1638,6 +1638,27 @@ VKAPI_ATTR VkResult VKAPI_CALL getDisplayPlaneCapabilities2KHR (VkPhysicalDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR uint32_t VKAPI_CALL getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation)
+{
+	DE_UNREF(device);
+	DE_UNREF(operation);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeferredOperationResultKHR (VkDevice device, VkDeferredOperationKHR operation)
+{
+	DE_UNREF(device);
+	DE_UNREF(operation);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL deferredOperationJoinKHR (VkDevice device, VkDeferredOperationKHR operation)
+{
+	DE_UNREF(device);
+	DE_UNREF(operation);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
 {
 	DE_UNREF(device);
@@ -2053,15 +2074,7 @@ VKAPI_ATTR void VKAPI_CALL getAccelerationStructureMemoryRequirementsNV (VkDevic
 	DE_UNREF(pMemoryRequirements);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryKHR (VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoKHR* pBindInfos)
-{
-	DE_UNREF(device);
-	DE_UNREF(bindInfoCount);
-	DE_UNREF(pBindInfos);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryNV (VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoKHR* pBindInfos)
+VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryNV (VkDevice device, deUint32 bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(bindInfoCount);
@@ -2490,43 +2503,7 @@ VKAPI_ATTR void VKAPI_CALL getPrivateDataEXT (VkDevice device, VkObjectType obje
 	DE_UNREF(pData);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
-{
-	DE_UNREF(device);
-	DE_UNREF(buffer);
-	DE_UNREF(pProperties);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR uint32_t VKAPI_CALL getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation)
-{
-	DE_UNREF(device);
-	DE_UNREF(operation);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getDeferredOperationResultKHR (VkDevice device, VkDeferredOperationKHR operation)
-{
-	DE_UNREF(device);
-	DE_UNREF(operation);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL deferredOperationJoinKHR (VkDevice device, VkDeferredOperationKHR operation)
-{
-	DE_UNREF(device);
-	DE_UNREF(operation);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL getAccelerationStructureMemoryRequirementsKHR (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoKHR* pInfo, VkMemoryRequirements2* pMemoryRequirements)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	DE_UNREF(pMemoryRequirements);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
+VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(infoCount);
@@ -2534,15 +2511,17 @@ VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureKHR (VkCommandBuffer com
 	DE_UNREF(ppBuildRangeInfos);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureIndirectKHR (VkCommandBuffer commandBuffer, const VkAccelerationStructureBuildGeometryInfoKHR* pInfo, VkDeviceAddress indirectDeviceAddress, deUint32 indirectStride)
+VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructuresIndirectKHR (VkCommandBuffer commandBuffer, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const deUint32* pIndirectStrides, const deUint32* const* ppMaxPrimitiveCounts)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(pInfo);
-	DE_UNREF(indirectDeviceAddress);
-	DE_UNREF(indirectStride);
+	DE_UNREF(infoCount);
+	DE_UNREF(pInfos);
+	DE_UNREF(pIndirectDeviceAddresses);
+	DE_UNREF(pIndirectStrides);
+	DE_UNREF(ppMaxPrimitiveCounts);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL buildAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
+VKAPI_ATTR VkResult VKAPI_CALL buildAccelerationStructuresKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, deUint32 infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
 	DE_UNREF(device);
 	DE_UNREF(deferredOperation);
@@ -2606,6 +2585,29 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToAccelerationStructureKHR (VkCommandBuf
 	DE_UNREF(pInfo);
 }
 
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL getAccelerationStructureDeviceAddressKHR (VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility)
+{
+	DE_UNREF(device);
+	DE_UNREF(pVersionInfo);
+	DE_UNREF(pCompatibility);
+}
+
+VKAPI_ATTR void VKAPI_CALL getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const deUint32* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(buildType);
+	DE_UNREF(pBuildInfo);
+	DE_UNREF(pMaxPrimitiveCounts);
+	DE_UNREF(pSizeInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, deUint32 width, deUint32 height, deUint32 depth)
 {
 	DE_UNREF(commandBuffer);
@@ -2616,13 +2618,6 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const
 	DE_UNREF(width);
 	DE_UNREF(height);
 	DE_UNREF(depth);
-}
-
-VKAPI_ATTR VkDeviceAddress VKAPI_CALL getAccelerationStructureDeviceAddressKHR (VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo)
-{
-	DE_UNREF(device);
-	DE_UNREF(pInfo);
-	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, deUint32 firstGroup, deUint32 groupCount, deUintptr dataSize, void* pData)
@@ -2646,13 +2641,6 @@ VKAPI_ATTR void VKAPI_CALL cmdTraceRaysIndirectKHR (VkCommandBuffer commandBuffe
 	DE_UNREF(indirectDeviceAddress);
 }
 
-VKAPI_ATTR void VKAPI_CALL getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility)
-{
-	DE_UNREF(device);
-	DE_UNREF(pVersionInfo);
-	DE_UNREF(pCompatibility);
-}
-
 VKAPI_ATTR VkDeviceSize VKAPI_CALL getRayTracingShaderGroupStackSizeKHR (VkDevice device, VkPipeline pipeline, deUint32 group, VkShaderGroupShaderKHR groupShader)
 {
 	DE_UNREF(device);
@@ -2668,13 +2656,12 @@ VKAPI_ATTR void VKAPI_CALL cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer
 	DE_UNREF(pipelineStackSize);
 }
 
-VKAPI_ATTR void VKAPI_CALL getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const deUint32* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
+VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
 	DE_UNREF(device);
-	DE_UNREF(buildType);
-	DE_UNREF(pBuildInfo);
-	DE_UNREF(pMaxPrimitiveCounts);
-	DE_UNREF(pSizeInfo);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL getPhysicalDeviceWaylandPresentationSupportKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, pt::WaylandDisplayPtr display)
@@ -3114,6 +3101,11 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetBufferDeviceAddressKHR,							getBufferDeviceAddress),
 	VK_NULL_FUNC_ENTRY(vkGetBufferOpaqueCaptureAddressKHR,					getBufferOpaqueCaptureAddress),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceMemoryOpaqueCaptureAddressKHR,			getDeviceMemoryOpaqueCaptureAddress),
+	VK_NULL_FUNC_ENTRY(vkCreateDeferredOperationKHR,						createDeferredOperationKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyDeferredOperationKHR,						destroyDeferredOperationKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeferredOperationMaxConcurrencyKHR,				getDeferredOperationMaxConcurrencyKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeferredOperationResultKHR,						getDeferredOperationResultKHR),
+	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,							deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,				getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,				getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,	getPipelineExecutableInternalRepresentationsKHR),
@@ -3165,7 +3157,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureNV,					destroyAccelerationStructureNV),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureMemoryRequirementsNV,		getAccelerationStructureMemoryRequirementsNV),
-	VK_NULL_FUNC_ENTRY(vkBindAccelerationStructureMemoryKHR,				bindAccelerationStructureMemoryKHR),
 	VK_NULL_FUNC_ENTRY(vkBindAccelerationStructureMemoryNV,					bindAccelerationStructureMemoryNV),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructureNV,					cmdBuildAccelerationStructureNV),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyAccelerationStructureNV,					cmdCopyAccelerationStructureNV),
@@ -3221,18 +3212,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyPrivateDataSlotEXT,							destroyPrivateDataSlotEXT),
 	VK_NULL_FUNC_ENTRY(vkSetPrivateDataEXT,									setPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPrivateDataEXT,									getPrivateDataEXT),
-	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,			getAndroidHardwareBufferPropertiesANDROID),
-	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,				getMemoryAndroidHardwareBufferANDROID),
-	VK_NULL_FUNC_ENTRY(vkCreateDeferredOperationKHR,						createDeferredOperationKHR),
-	VK_NULL_FUNC_ENTRY(vkDestroyDeferredOperationKHR,						destroyDeferredOperationKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDeferredOperationMaxConcurrencyKHR,				getDeferredOperationMaxConcurrencyKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDeferredOperationResultKHR,						getDeferredOperationResultKHR),
-	VK_NULL_FUNC_ENTRY(vkDeferredOperationJoinKHR,							deferredOperationJoinKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
-	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureMemoryRequirementsKHR,		getAccelerationStructureMemoryRequirementsKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructureKHR,					cmdBuildAccelerationStructureKHR),
-	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructureIndirectKHR,			cmdBuildAccelerationStructureIndirectKHR),
-	VK_NULL_FUNC_ENTRY(vkBuildAccelerationStructureKHR,						buildAccelerationStructureKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,					cmdBuildAccelerationStructuresKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresIndirectKHR,			cmdBuildAccelerationStructuresIndirectKHR),
+	VK_NULL_FUNC_ENTRY(vkBuildAccelerationStructuresKHR,					buildAccelerationStructuresKHR),
 	VK_NULL_FUNC_ENTRY(vkCopyAccelerationStructureKHR,						copyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCopyAccelerationStructureToMemoryKHR,				copyAccelerationStructureToMemoryKHR),
 	VK_NULL_FUNC_ENTRY(vkCopyMemoryToAccelerationStructureKHR,				copyMemoryToAccelerationStructureKHR),
@@ -3240,15 +3223,17 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyAccelerationStructureKHR,					cmdCopyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyAccelerationStructureToMemoryKHR,			cmdCopyAccelerationStructureToMemoryKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToAccelerationStructureKHR,			cmdCopyMemoryToAccelerationStructureKHR),
+	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureDeviceAddressKHR,			getAccelerationStructureDeviceAddressKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceAccelerationStructureCompatibilityKHR,	getDeviceAccelerationStructureCompatibilityKHR),
+	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureBuildSizesKHR,				getAccelerationStructureBuildSizesKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysKHR,									cmdTraceRaysKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateRayTracingPipelinesKHR,						createRayTracingPipelinesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureDeviceAddressKHR,			getAccelerationStructureDeviceAddressKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingCaptureReplayShaderGroupHandlesKHR,	getRayTracingCaptureReplayShaderGroupHandlesKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysIndirectKHR,							cmdTraceRaysIndirectKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceAccelerationStructureCompatibilityKHR,	getDeviceAccelerationStructureCompatibilityKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupStackSizeKHR,				getRayTracingShaderGroupStackSizeKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdSetRayTracingPipelineStackSizeKHR,				cmdSetRayTracingPipelineStackSizeKHR),
-	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureBuildSizesKHR,				getAccelerationStructureBuildSizesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,			getAndroidHardwareBufferPropertiesANDROID),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,				getMemoryAndroidHardwareBufferANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,							getMemoryWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandlePropertiesKHR,					getMemoryWin32HandlePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkImportSemaphoreWin32HandleKHR,						importSemaphoreWin32HandleKHR),

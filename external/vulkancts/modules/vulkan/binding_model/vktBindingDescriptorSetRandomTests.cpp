@@ -581,6 +581,8 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 
 void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	RandomLayout randomLayout(m_data.numDescriptorSets);
 	generateRandomLayout(randomLayout, m_data);
 
@@ -854,13 +856,13 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 			"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("test") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("test") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		break;
 	}
 	case STAGE_INTERSECT:
 	{
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 		}
 
 		{
@@ -882,7 +884,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  reportIntersectionEXT(1.0f, 0);\n"
 				"}\n";
 
-			programCollection.glslSources.add("test") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("test") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		break;
@@ -890,7 +892,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 	case STAGE_ANY_HIT:
 	{
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 		}
 
 		{
@@ -911,7 +913,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 				"}\n";
 
-			programCollection.glslSources.add("test") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("test") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		break;
@@ -919,7 +921,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 	case STAGE_CLOSEST_HIT:
 	{
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 		}
 
 		{
@@ -940,7 +942,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 				"}\n";
 
-			programCollection.glslSources.add("test") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("test") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		break;
@@ -948,7 +950,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 	case STAGE_MISS:
 	{
 		{
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(getCommonRayGenerationShader())) << buildOptions;
 		}
 
 		{
@@ -968,7 +970,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 				"}\n";
 
-			programCollection.glslSources.add("test") << glu::MissSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("test") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		break;
@@ -989,7 +991,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  executeCallableEXT(0, 0);\n"
 				"}\n";
 
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1009,7 +1011,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  imageStore(image0_0, ivec2(gl_LaunchIDEXT.xy), color);\n"
 				"}\n";
 
-			programCollection.glslSources.add("test") << glu::CallableSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("test") << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 		break;
 	}

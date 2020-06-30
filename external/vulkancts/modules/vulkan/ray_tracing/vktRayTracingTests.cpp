@@ -47,7 +47,7 @@ namespace RayTracing
 
 tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing", "Ray tracing tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing_pipeline", "Ray tracing tests"));
 
 	group->addChild(createBuiltinTests(testCtx));
 	group->addChild(createBuildLargeShaderSetTests(testCtx));

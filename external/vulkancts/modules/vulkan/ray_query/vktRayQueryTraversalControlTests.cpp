@@ -1256,13 +1256,18 @@ RayQueryTraversalControlTestCase::~RayQueryTraversalControlTestCase (void)
 
 void RayQueryTraversalControlTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_query");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR	= context.getRayTracingFeatures();
-	const VkPhysicalDeviceFeatures2&				features2				= context.getDeviceFeatures2();
+	const VkPhysicalDeviceRayQueryFeaturesKHR&	rayQueryFeaturesKHR								= context.getRayQueryFeatures();
+	if (rayQueryFeaturesKHR.rayQuery == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayQueryFeaturesKHR.rayQuery");
 
-	if (rayTracingFeaturesKHR.rayQuery == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingFeaturesKHR.rayQuery");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_query requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+
+	const VkPhysicalDeviceFeatures2&			features2										= context.getDeviceFeatures2();
 
 	if ((m_data.shaderSourceType == SST_TESSELATION_CONTROL_SHADER ||
 		 m_data.shaderSourceType == SST_TESSELATION_EVALUATION_SHADER) &&
@@ -1273,18 +1278,26 @@ void RayQueryTraversalControlTestCase::checkSupport (Context& context) const
 		features2.features.geometryShader == DE_FALSE )
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceFeatures2.geometryShader");
 
-	if (( m_data.shaderSourceType == SST_RAY_GENERATION_SHADER ||
-		  m_data.shaderSourceType == SST_INTERSECTION_SHADER ||
-		  m_data.shaderSourceType == SST_ANY_HIT_SHADER ||
-		  m_data.shaderSourceType == SST_CLOSEST_HIT_SHADER ||
-		  m_data.shaderSourceType == SST_MISS_SHADER ||
-		  m_data.shaderSourceType == SST_CALLABLE_SHADER) &&
-		rayTracingFeaturesKHR.rayTracing == DE_FALSE )
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingFeaturesKHR.rayTracing");
+	if (m_data.shaderSourceType == SST_RAY_GENERATION_SHADER ||
+		m_data.shaderSourceType == SST_INTERSECTION_SHADER ||
+		m_data.shaderSourceType == SST_ANY_HIT_SHADER ||
+		m_data.shaderSourceType == SST_CLOSEST_HIT_SHADER ||
+		m_data.shaderSourceType == SST_MISS_SHADER ||
+		m_data.shaderSourceType == SST_CALLABLE_SHADER)
+	{
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+		const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR	= context.getRayTracingPipelineFeatures();
+
+		if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+	}
 }
 
 void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	// create parts of programs responsible for test execution
 	std::vector<std::vector<std::string>> rayQueryTest(2);
 	std::vector<std::vector<std::string>> rayQueryTestName(2);
@@ -1391,7 +1404,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"{\n"
 				"  gl_Position = vec4(position, 1.0);\n"
 				"}\n";
-			programCollection.glslSources.add("vert") << glu::VertexSource(css.str());
+			programCollection.glslSources.add("vert") << glu::VertexSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1414,7 +1427,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "vert_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::VertexSource(css.str());
+			programCollection.glslSources.add(cssName.str()) << glu::VertexSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1434,7 +1447,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  gl_TessLevelOuter[1] = 1;\n"
 				"  gl_TessLevelOuter[2] = 1;\n"
 				"}\n";
-			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(css.str());
+			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1465,7 +1478,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "tesc_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::TessellationControlSource(css.str());
+			programCollection.glslSources.add(cssName.str()) << glu::TessellationControlSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1492,7 +1505,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "tese_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::TessellationEvaluationSource(css.str());
+			programCollection.glslSources.add(cssName.str()) << glu::TessellationEvaluationSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1506,7 +1519,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  gl_Position = gl_in[0].gl_Position;\n"
 				"}\n";
 
-			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(css.str());
+			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1542,7 +1555,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "geom_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::GeometrySource(css.str());
+			programCollection.glslSources.add(cssName.str()) << glu::GeometrySource(css.str()) << buildOptions;
 		}
 
 		{
@@ -1563,7 +1576,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "frag_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::FragmentSource(css.str());
+			programCollection.glslSources.add(cssName.str()) << glu::FragmentSource(css.str()) << buildOptions;
 		}
 	}
 	else if (m_data.shaderSourcePipeline == SSP_COMPUTE_PIPELINE)
@@ -1586,7 +1599,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "comp_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::ComputeSource(css.str());
+			programCollection.glslSources.add(cssName.str()) << glu::ComputeSource(css.str()) << buildOptions;
 		}
 	}
 	else if (m_data.shaderSourcePipeline == SSP_RAY_TRACING_PIPELINE)
@@ -1610,7 +1623,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 				"}\n";
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1633,7 +1646,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "rgen_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add(cssName.str()) << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1656,7 +1669,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 0), uvec4(param.hitValue.x, 0, 0, 0));\n"
 				"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 1), uvec4(param.hitValue.y, 0, 0, 0));\n"
 				"}\n";
-			programCollection.glslSources.add("rgen_call") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("rgen_call") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1670,7 +1683,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  reportIntersectionEXT(0.5f, 0);\n"
 				"}\n";
 
-			programCollection.glslSources.add("isect") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("isect") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1691,7 +1704,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "isect_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add(cssName.str()) << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1710,7 +1723,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "ahit_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add(cssName.str()) << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1724,7 +1737,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  hitValue.y = 3;\n"
 				"}\n";
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1743,7 +1756,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "chit_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add(cssName.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1758,7 +1771,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  hitValue = hitAttrib;\n"
 				"}\n";
 
-			programCollection.glslSources.add("chit_isect") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("chit_isect") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1772,7 +1785,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 				"  hitValue.x = 4;\n"
 				"}\n";
 
-			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1791,7 +1804,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "miss_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::MissSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add(cssName.str()) << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 
 		{
@@ -1816,7 +1829,7 @@ void RayQueryTraversalControlTestCase::initPrograms (SourceCollections& programC
 			std::stringstream cssName;
 			cssName << "call_" << rayQueryTestName[m_data.bottomType][m_data.shaderTestType];
 
-			programCollection.glslSources.add(cssName.str()) << glu::CallableSource(updateRayTracingGLSL(css.str()));
+			programCollection.glslSources.add(cssName.str()) << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 		}
 	}
 }

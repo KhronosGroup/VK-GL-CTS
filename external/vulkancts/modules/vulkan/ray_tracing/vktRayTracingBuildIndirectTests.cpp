@@ -225,19 +225,21 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 
 void RayTracingTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
-
-	if (rayTracingFeaturesKHR.rayTracingIndirectAccelerationStructureBuild == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingIndirectAccelerationStructureBuild");
+	if (accelerationStructureFeaturesKHR.accelerationStructureIndirectBuild == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureIndirectBuild");
 }
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 	{
 		std::stringstream css;
 		css <<
@@ -261,7 +263,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  }\n"
 			"}\n";
 
-		programCollection.glslSources.add("wr-asb") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("wr-asb") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -284,7 +286,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  b_out.accelerationStructureBuildOffsetInfoKHR = uvec4(primitiveCount, primitiveOffset, firstVertex, transformOffset);\n"
 			"}\n";
 
-		programCollection.glslSources.add("wr-ast") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("wr-ast") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -309,7 +311,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
 			"}\n";
 
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -326,7 +328,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(result, ivec3(gl_LaunchIDEXT.xyz), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -342,7 +344,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 			"  imageStore(result, ivec3(gl_LaunchIDEXT.xyz), color);\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 
@@ -436,7 +438,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::prepareBuffer
 	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
 	const deUint32						shaderGroupBaseAlignment			= getShaderGroupBaseAlignment(vki, physicalDevice);
 
-	const VkBufferCreateInfo			bufferCreateInfo					= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_RAY_TRACING_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	const VkBufferCreateInfo			bufferCreateInfo					= makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
 	de::MovePtr<BufferWithMemory>		buffer								= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible));
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayout					= DescriptorSetLayoutBuilder()

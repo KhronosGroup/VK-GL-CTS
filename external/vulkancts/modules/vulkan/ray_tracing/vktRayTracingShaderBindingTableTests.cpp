@@ -664,16 +664,22 @@ ShaderBindingTableIndexingTestCase::~ShaderBindingTableIndexingTestCase (void)
 
 void ShaderBindingTableIndexingTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 }
 
 void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
 	std::vector<deUint32>	shaderCount	= getShaderCounts();
 
 	{
@@ -699,7 +705,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 			"  traceRayEXT(topLevelAS, 0, 0xFF, trParams.x, trParams.y, trParams.z, origin, tmin, direct, tmax, 0);\n"
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n"
 			"}\n";
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	for(deUint32 idx = 0; idx < shaderCount[STT_HIT]; ++idx)
@@ -716,7 +722,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 		std::stringstream csname;
 		csname << "chit_" << idx;
 
-		programCollection.glslSources.add(csname.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add(csname.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -733,7 +739,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 			"{\n"
 			"  hitValue = info;\n"
 			"}\n";
-		programCollection.glslSources.add("chit_shaderRecord") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit_shaderRecord") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	for (deUint32 idx = 0; idx < shaderCount[STT_CALL]; ++idx)
@@ -752,7 +758,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 		std::stringstream csname;
 		csname << "chit_call_" << idx;
 
-		programCollection.glslSources.add(csname.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add(csname.str()) << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	for (deUint32 idx = 0; idx < shaderCount[STT_MISS]; ++idx)
@@ -769,7 +775,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 		std::stringstream csname;
 		csname << "miss_" << idx;
 
-		programCollection.glslSources.add(csname.str()) << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add(csname.str()) << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -787,7 +793,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 			"  hitValue = info;\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss_shaderRecord") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss_shaderRecord") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	for (deUint32 idx = 0; idx < shaderCount[STT_CALL]; ++idx)
@@ -804,7 +810,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 		std::stringstream csname;
 		csname << "call_" << idx;
 
-		programCollection.glslSources.add(csname.str()) << glu::CallableSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add(csname.str()) << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -822,7 +828,7 @@ void ShaderBindingTableIndexingTestCase::initPrograms (SourceCollections& progra
 			"  result = info;\n"
 			"}\n";
 
-		programCollection.glslSources.add("call_shaderRecord") << glu::CallableSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("call_shaderRecord") << glu::CallableSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 

@@ -143,19 +143,24 @@ RayTracingTraceRaysIndirectTestCase::~RayTracingTraceRaysIndirectTestCase	(void)
 
 void RayTracingTraceRaysIndirectTestCase::checkSupport(Context& context) const
 {
-	context.requireDeviceFunctionality("VK_KHR_ray_tracing");
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipelineTraceRaysIndirect == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipelineTraceRaysIndirect");
 
-	if (rayTracingFeaturesKHR.rayTracingIndirectTraceRays == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracingIndirectTraceRays");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 }
 
 void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 	{
 		std::stringstream css;
 		css <<
@@ -181,7 +186,7 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& progr
 			"  indirectCommands.depth  = ubo.indirectCommands.depth;\n"
 			"}\n";
 
-		programCollection.glslSources.add("compute_indirect_command") << glu::ComputeSource(css.str());
+		programCollection.glslSources.add("compute_indirect_command") << glu::ComputeSource(css.str()) << buildOptions;
 	}
 
 	{
@@ -203,7 +208,7 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& progr
 			"  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
 			"  imageStore(result, ivec3(gl_LaunchIDEXT), hitValue);\n"
 			"}\n";
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -216,7 +221,7 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& progr
 			"{\n"
 			"  hitValue = uvec4(2,0,0,1);\n"
 			"}\n";
-		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -230,7 +235,7 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& progr
 			"  hitValue = uvec4(1,0,0,1);\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 

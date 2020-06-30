@@ -1,6 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
+const vk::VkPhysicalDeviceAccelerationStructurePropertiesKHR&		Context::getAccelerationStructureProperties			(void) const { return m_device->getAccelerationStructureProperties();			}
 const vk::VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT&		Context::getBlendOperationAdvancedPropertiesEXT		(void) const { return m_device->getBlendOperationAdvancedPropertiesEXT();		}
 const vk::VkPhysicalDeviceConservativeRasterizationPropertiesEXT&	Context::getConservativeRasterizationPropertiesEXT	(void) const { return m_device->getConservativeRasterizationPropertiesEXT();	}
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&			Context::getCooperativeMatrixProperties				(void) const { return m_device->getCooperativeMatrixProperties();				}
@@ -24,8 +25,8 @@ const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&			Context::getPerforman
 const vk::VkPhysicalDevicePointClippingProperties&					Context::getPointClippingProperties					(void) const { return m_device->getPointClippingProperties();					}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&				Context::getProtectedMemoryProperties				(void) const { return m_device->getProtectedMemoryProperties();					}
 const vk::VkPhysicalDevicePushDescriptorPropertiesKHR&				Context::getPushDescriptorProperties				(void) const { return m_device->getPushDescriptorProperties();					}
-const vk::VkPhysicalDeviceRayTracingPropertiesKHR&					Context::getRayTracingProperties					(void) const { return m_device->getRayTracingProperties();						}
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&					Context::getRayTracingPropertiesNV					(void) const { return m_device->getRayTracingPropertiesNV();					}
+const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&			Context::getRayTracingPipelineProperties			(void) const { return m_device->getRayTracingPipelineProperties();				}
 const vk::VkPhysicalDeviceRobustness2PropertiesEXT&					Context::getRobustness2PropertiesEXT				(void) const { return m_device->getRobustness2PropertiesEXT();					}
 const vk::VkPhysicalDeviceSamplerFilterMinmaxProperties&			Context::getSamplerFilterMinmaxProperties			(void) const { return m_device->getSamplerFilterMinmaxProperties();				}
 const vk::VkPhysicalDeviceSampleLocationsPropertiesEXT&				Context::getSampleLocationsPropertiesEXT			(void) const { return m_device->getSampleLocationsPropertiesEXT();				}

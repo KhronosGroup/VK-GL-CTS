@@ -422,16 +422,21 @@ TraversalControlTestCase::~TraversalControlTestCase (void)
 
 void TraversalControlTestCase::checkSupport (Context& context) const
 {
-	context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
-	const VkPhysicalDeviceRayTracingFeaturesKHR&	rayTracingFeaturesKHR = context.getRayTracingFeatures();
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE )
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 
-	if (rayTracingFeaturesKHR.rayTracing == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires rayTracingFeaturesKHR.rayTracing");
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 }
 
 void TraversalControlTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 	{
 		std::stringstream css;
 		css <<
@@ -452,7 +457,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 0), uvec4(hitValue.x, 0, 0, 0));\n"
 			"  imageStore(result, ivec3(gl_LaunchIDEXT.xy, 1), uvec4(hitValue.y, 0, 0, 0));\n"
 			"}\n";
-		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -467,7 +472,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  reportIntersectionEXT(0.5f, 0);\n"
 			"}\n";
 
-		programCollection.glslSources.add("isect_report") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("isect_report") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -479,7 +484,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"{\n"
 			"}\n";
 
-		programCollection.glslSources.add("isect_pass_through") << glu::IntersectionSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("isect_pass_through") << glu::IntersectionSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -493,7 +498,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  hitValue.x = 1;\n"
 			"}\n";
 
-		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("ahit") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -505,7 +510,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"{\n"
 			"}\n";
 
-		programCollection.glslSources.add("ahit_pass_through") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("ahit_pass_through") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -521,7 +526,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  hitValue.x = 2;\n"
 			"}\n";
 
-		programCollection.glslSources.add("ahit_ignore") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("ahit_ignore") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -537,7 +542,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  hitValue.x = 2;\n"
 			"}\n";
 
-		programCollection.glslSources.add("ahit_terminate") << glu::AnyHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("ahit_terminate") << glu::AnyHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -551,7 +556,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  hitValue.y = 3;\n"
 			"}\n";
 
-		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 
 	{
@@ -565,7 +570,7 @@ void TraversalControlTestCase::initPrograms (SourceCollections& programCollectio
 			"  hitValue.x = 4;\n"
 			"}\n";
 
-		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str()));
+		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
 }
 
