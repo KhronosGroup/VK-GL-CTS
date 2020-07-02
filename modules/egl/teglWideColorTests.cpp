@@ -1130,6 +1130,10 @@ void WideColorSurfaceTest::testFramebufferColorEncoding()
 		{
 			correct = framebufferColorEncoding == GL_LINEAR;
 		}
+		else if (m_redSize == 10)
+		{
+			correct = true;
+		}
 	}
 	else
 	{
