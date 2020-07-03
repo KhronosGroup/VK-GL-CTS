@@ -68,8 +68,7 @@ class BuildConfig:
 			for path in possiblePaths:
 				if os.path.exists(path):
 					return path
-
-		# Fall back to PATH - may fail later
+			raise FileNotFoundError("cmake executable file is not avaliable on the platform. It may not have been installed or added to PATH environment variable")
 		return "cmake"
 
 class CMakeGenerator:
