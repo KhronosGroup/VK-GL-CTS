@@ -290,7 +290,7 @@ size_t computeDeviceMemorySystemMemFootprint (const DeviceInterface& vk, VkDevic
 			1u,
 			0u,
 		};
-		const Unique<VkDeviceMemory>			memory			(allocateMemory(vk, device, &allocInfo));
+		const Unique<VkDeviceMemory>			memory			(allocateMemory(vk, device, &allocInfo, callbackRecorder.getCallbacks()));
 		AllocationCallbackValidationResults		validateRes;
 
 		validateAllocationCallbacks(callbackRecorder, &validateRes);
