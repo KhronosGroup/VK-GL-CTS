@@ -198,18 +198,18 @@ public:
 												 bool										usingSignalTimelineSemaphore = DE_FALSE) = 0;
 
 	virtual void			cmdPipelineBarrier	(vk::VkCommandBuffer						commandBuffer,
-												 vk::VkDependencyInfoKHR*					pDependencyInfo) = 0;
+												 const vk::VkDependencyInfoKHR*				pDependencyInfo) = 0;
 
 	virtual void			cmdSetEvent			(vk::VkCommandBuffer						commandBuffer,
 												 vk::VkEvent								event,
-												 vk::VkDependencyInfoKHR*					pDependencyInfo) = 0;
+												 const vk::VkDependencyInfoKHR*				pDependencyInfo) = 0;
 	virtual void			cmdResetEvent		(vk::VkCommandBuffer						commandBuffer,
 												 vk::VkEvent								event,
 												 vk::VkPipelineStageFlags2KHR				flag) = 0;
 	virtual void			cmdWaitEvents		(vk::VkCommandBuffer						commandBuffer,
 												 deUint32									eventCount,
 												 const vk::VkEvent*							pEvents,
-												 vk::VkDependencyInfoKHR*					pDependencyInfo) = 0;
+												 const vk::VkDependencyInfoKHR*				pDependencyInfo) = 0;
 
 	virtual vk::VkResult	queueSubmit			(vk::VkQueue								queue,
 												 vk::VkFence								fence) = 0;

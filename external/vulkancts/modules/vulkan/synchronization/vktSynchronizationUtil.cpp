@@ -26,6 +26,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "deStringUtil.hpp"
+#include <set>
 
 namespace vkt
 {
@@ -394,6 +395,98 @@ protected:
 		std::size_t		signalSemaphoreValueIndexPlusOne;
 	};
 
+	bool isStageFlagAllowed(VkPipelineStageFlags2KHR stage)
+	{
+		// synchronization2 suports more stages then legacy synchronization
+		// and so SynchronizationWrapper can only be used for cases that
+		// operate on stages also supported by legacy synchronization
+		// NOTE: if some tests hits assertion that uses this method then this
+		// test should not use synchronizationWrapper - it should be synchronization2 exclusive
+
+		static const std::set<deUint32> allowedStages
+		{
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+			VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+			VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT,
+			VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT,
+			VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+			VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_HOST_BIT,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
+			VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,
+			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+			VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+			VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV,
+			VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV,
+			VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV,
+			VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT,
+			VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_NV,
+			VK_PIPELINE_STAGE_NONE_KHR,
+		};
+
+		if (stage > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
+			return false;
+
+		return (allowedStages.find(static_cast<deUint32>(stage)) != allowedStages.end());
+	}
+
+	bool isAccessFlagAllowed(VkAccessFlags2KHR access)
+	{
+		// synchronization2 suports more access flags then legacy synchronization
+		// and so SynchronizationWrapper can only be used for cases that
+		// operate on access flags also supported by legacy synchronization
+		// NOTE: if some tests hits assertion that uses this method then this
+		// test should not use synchronizationWrapper - it should be synchronization2 exclusive
+
+		static const std::set<deUint32> allowedAccessFlags
+		{
+			VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+			VK_ACCESS_INDEX_READ_BIT,
+			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+			VK_ACCESS_UNIFORM_READ_BIT,
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_HOST_READ_BIT,
+			VK_ACCESS_HOST_WRITE_BIT,
+			VK_ACCESS_MEMORY_READ_BIT,
+			VK_ACCESS_MEMORY_WRITE_BIT,
+			VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,
+			VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,
+			VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,
+			VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,
+			VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,
+			VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+			VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+			VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV ,
+			VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,
+			VK_ACCESS_COMMAND_PREPROCESS_READ_BIT_NV,
+			VK_ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV,
+			VK_ACCESS_NONE_KHR,
+		};
+
+		if (access > static_cast<deUint64>(std::numeric_limits<deUint32>::max()))
+			return false;
+
+		return (allowedAccessFlags.find(static_cast<deUint32>(access)) != allowedAccessFlags.end());
+	}
+
 public:
 	LegacySynchronizationWrapper(const DeviceInterface& vk, bool usingTimelineSemaphores, deUint32 submitInfoCount = 1u)
 		: SynchronizationWrapperBase	(vk)
@@ -447,6 +540,7 @@ public:
 			si.waitSemaphoreIndex = m_waitSemaphores.size();
 			for (deUint32 i = 0; i < waitSemaphoreInfoCount; ++i)
 			{
+				DE_ASSERT(isStageFlagAllowed(pWaitSemaphoreInfos[i].stageMask));
 				m_waitSemaphores.push_back(pWaitSemaphoreInfos[i].semaphore);
 				m_waitDstStageMasks.push_back(static_cast<VkPipelineStageFlags>(pWaitSemaphoreInfos[i].stageMask));
 			}
@@ -469,7 +563,7 @@ public:
 		}
 	}
 
-	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) override
 	{
 		DE_ASSERT(pDependencyInfo);
 
@@ -490,6 +584,12 @@ public:
 			for (deUint32 i = 0; i < memoryBarrierCount; ++i)
 			{
 				const VkMemoryBarrier2KHR& pMemoryBarrier = pDependencyInfo->pMemoryBarriers[i];
+
+				DE_ASSERT(isStageFlagAllowed(pMemoryBarrier.srcStageMask));
+				DE_ASSERT(isStageFlagAllowed(pMemoryBarrier.dstStageMask));
+				DE_ASSERT(isAccessFlagAllowed(pMemoryBarrier.srcAccessMask));
+				DE_ASSERT(isAccessFlagAllowed(pMemoryBarrier.dstAccessMask));
+
 				srcStageMask |= static_cast<VkPipelineStageFlags>(pMemoryBarrier.srcStageMask);
 				dstStageMask |= static_cast<VkPipelineStageFlags>(pMemoryBarrier.dstStageMask);
 				memoryBarriers.push_back(makeMemoryBarrier(
@@ -508,6 +608,12 @@ public:
 			for (deUint32 i = 0; i < bufferMemoryBarrierCount; ++i)
 			{
 				const VkBufferMemoryBarrier2KHR& pBufferMemoryBarrier = pDependencyInfo->pBufferMemoryBarriers[i];
+
+				DE_ASSERT(isStageFlagAllowed(pBufferMemoryBarrier.srcStageMask));
+				DE_ASSERT(isStageFlagAllowed(pBufferMemoryBarrier.dstStageMask));
+				DE_ASSERT(isAccessFlagAllowed(pBufferMemoryBarrier.srcAccessMask));
+				DE_ASSERT(isAccessFlagAllowed(pBufferMemoryBarrier.dstAccessMask));
+
 				srcStageMask |= static_cast<VkPipelineStageFlags>(pBufferMemoryBarrier.srcStageMask);
 				dstStageMask |= static_cast<VkPipelineStageFlags>(pBufferMemoryBarrier.dstStageMask);
 				bufferMemoryBarriers.push_back(makeBufferMemoryBarrier(
@@ -531,6 +637,12 @@ public:
 			for (deUint32 i = 0; i < imageMemoryBarrierCount; ++i)
 			{
 				const VkImageMemoryBarrier2KHR& pImageMemoryBarrier = pDependencyInfo->pImageMemoryBarriers[i];
+
+				DE_ASSERT(isStageFlagAllowed(pImageMemoryBarrier.srcStageMask));
+				DE_ASSERT(isStageFlagAllowed(pImageMemoryBarrier.dstStageMask));
+				DE_ASSERT(isAccessFlagAllowed(pImageMemoryBarrier.srcAccessMask));
+				DE_ASSERT(isAccessFlagAllowed(pImageMemoryBarrier.dstAccessMask));
+
 				srcStageMask |= static_cast<VkPipelineStageFlags>(pImageMemoryBarrier.srcStageMask);
 				dstStageMask |= static_cast<VkPipelineStageFlags>(pImageMemoryBarrier.dstStageMask);
 				imageMemoryBarriers.push_back(makeImageMemoryBarrier(
@@ -561,7 +673,7 @@ public:
 		);
 	}
 
-	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) override
 	{
 		DE_ASSERT(pDependencyInfo);
 
@@ -573,16 +685,18 @@ public:
 		if (pDependencyInfo->pImageMemoryBarriers)
 			srcStageMask = pDependencyInfo->pImageMemoryBarriers[0].srcStageMask;
 
+		DE_ASSERT(isStageFlagAllowed(srcStageMask));
 		m_vk.cmdSetEvent(commandBuffer, event, static_cast<VkPipelineStageFlags>(srcStageMask));
 	}
 
 	void cmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2KHR flag) override
 	{
+		DE_ASSERT(isStageFlagAllowed(flag));
 		VkPipelineStageFlags legacyStageMask = static_cast<VkPipelineStageFlags>(flag);
 		m_vk.cmdResetEvent(commandBuffer, event, legacyStageMask);
 	}
 
-	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfo) override
 	{
 		DE_ASSERT(pDependencyInfo);
 
@@ -607,6 +721,8 @@ public:
 			for (deUint32 i = 0; i < memoryBarrierCount; ++i)
 			{
 				const VkMemoryBarrier2KHR& mb = pDependencyInfo->pMemoryBarriers[i];
+				DE_ASSERT(isAccessFlagAllowed(mb.srcAccessMask));
+				DE_ASSERT(isAccessFlagAllowed(mb.dstAccessMask));
 				memoryBarriers.push_back(
 					makeMemoryBarrier(
 						static_cast<VkAccessFlags>(mb.srcAccessMask),
@@ -625,6 +741,8 @@ public:
 			for (deUint32 i = 0; i < bufferMemoryBarrierCount; ++i)
 			{
 				const VkBufferMemoryBarrier2KHR& bmb = pDependencyInfo->pBufferMemoryBarriers[i];
+				DE_ASSERT(isAccessFlagAllowed(bmb.srcAccessMask));
+				DE_ASSERT(isAccessFlagAllowed(bmb.dstAccessMask));
 				bufferMemoryBarriers.push_back(
 					makeBufferMemoryBarrier(
 						static_cast<VkAccessFlags>(bmb.srcAccessMask),
@@ -648,6 +766,8 @@ public:
 			for (deUint32 i = 0; i < imageMemoryBarrierCount; ++i)
 			{
 				const VkImageMemoryBarrier2KHR& imb = pDependencyInfo->pImageMemoryBarriers[i];
+				DE_ASSERT(isAccessFlagAllowed(imb.srcAccessMask));
+				DE_ASSERT(isAccessFlagAllowed(imb.dstAccessMask));
 				imageMemoryBarriers.push_back(
 					makeImageMemoryBarrier(
 						static_cast<VkAccessFlags>(imb.srcAccessMask),
@@ -664,6 +784,8 @@ public:
 			pImageMemoryBarriers = &imageMemoryBarriers[0];
 		}
 
+		DE_ASSERT(isStageFlagAllowed(srcStageMask));
+		DE_ASSERT(isStageFlagAllowed(dstStageMask));
 		m_vk.cmdWaitEvents(commandBuffer, eventCount, pEvents,
 			static_cast<VkPipelineStageFlags>(srcStageMask), static_cast<VkPipelineStageFlags>(dstStageMask),
 			memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
@@ -777,17 +899,17 @@ public:
 		});
 	}
 
-	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdPipelineBarrier(VkCommandBuffer commandBuffer, const VkDependencyInfoKHR* pDependencyInfo) override
 	{
 		m_vk.cmdPipelineBarrier2KHR(commandBuffer, pDependencyInfo);
 	}
 
-	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfoKHR* pDependencyInfo) override
 	{
 		m_vk.cmdSetEvent2KHR(commandBuffer, event, pDependencyInfo);
 	}
 
-	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, VkDependencyInfoKHR* pDependencyInfo) override
+	void cmdWaitEvents(VkCommandBuffer commandBuffer, deUint32 eventCount, const VkEvent* pEvents, const VkDependencyInfoKHR* pDependencyInfo) override
 	{
 		m_vk.cmdWaitEvents2KHR(commandBuffer, eventCount, pEvents, pDependencyInfo);
 	}

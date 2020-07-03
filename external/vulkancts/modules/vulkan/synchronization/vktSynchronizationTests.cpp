@@ -34,6 +34,7 @@
 #include "vktSynchronizationSignalOrderTests.hpp"
 #include "vktSynchronizationTimelineSemaphoreTests.hpp"
 #include "vktSynchronizationWin32KeyedMutexTests.hpp"
+#include "vktSynchronizationNoneStageTests.hpp"
 #include "vktSynchronizationUtil.hpp"
 
 #include "deUniquePtr.hpp"
@@ -100,6 +101,7 @@ tcu::TestCaseGroup* createTestsInternal (tcu::TestContext& testCtx, Synchronizat
 	{
 		testGroup->addChild(createSynchronization2SmokeTests(testCtx));
 		testGroup->addChild(createSynchronization2TimelineSemaphoreTests(testCtx));
+		testGroup->addChild(createNoneStageTests(testCtx));
 	}
 	else // legacy synchronization
 	{

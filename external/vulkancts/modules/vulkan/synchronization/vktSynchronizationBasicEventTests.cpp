@@ -41,6 +41,12 @@ using namespace vk;
 #define SHORT_FENCE_WAIT	1000ull
 #define LONG_FENCE_WAIT		~0ull
 
+struct TestConfig
+{
+	SynchronizationType		type;
+	VkEventCreateFlags		flags;
+};
+
 tcu::TestStatus hostResetSetEventCase (Context& context)
 {
 	const DeviceInterface&		vk			= context.getDeviceInterface();
@@ -77,7 +83,7 @@ tcu::TestStatus hostResetSetEventCase (Context& context)
 	return tcu::TestStatus::pass("Tests set and reset event on host pass");
 }
 
-tcu::TestStatus deviceResetSetEventCase (Context& context, SynchronizationType type)
+tcu::TestStatus deviceResetSetEventCase (Context& context, TestConfig config)
 {
 	const DeviceInterface&				vk						= context.getDeviceInterface();
 	const VkDevice						device					= context.getDevice();
@@ -99,7 +105,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context, SynchronizationType t
 	VkDependencyInfoKHR					dependencyInfo			= makeCommonDependencyInfo(&memoryBarrier2);
 
 	{
-		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(type, vk, DE_FALSE);
+		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(config.type, vk, DE_FALSE);
 
 		beginCommandBuffer(vk, *cmdBuffer);
 		synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
@@ -123,7 +129,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context, SynchronizationType t
 		return tcu::TestStatus::fail("Event should be in signaled state after set");
 
 	{
-		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(type, vk, DE_FALSE);
+		SynchronizationWrapperPtr synchronizationWrapper = getSynchronizationWrapper(config.type, vk, DE_FALSE);
 
 		beginCommandBuffer(vk, *cmdBuffer);
 		synchronizationWrapper->cmdResetEvent(*cmdBuffer, *event, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR);
@@ -149,7 +155,7 @@ tcu::TestStatus deviceResetSetEventCase (Context& context, SynchronizationType t
 	return tcu::TestStatus::pass("Device set and reset event tests pass");
 }
 
-tcu::TestStatus singleSubmissionCase (Context& context, SynchronizationType type)
+tcu::TestStatus singleSubmissionCase (Context& context, TestConfig config)
 {
 	enum {SET=0, WAIT, COUNT};
 	const DeviceInterface&			vk							= context.getDeviceInterface();
@@ -160,13 +166,13 @@ tcu::TestStatus singleSubmissionCase (Context& context, SynchronizationType type
 	const Unique<VkCommandPool>		cmdPool						(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT]			= { makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool) };
 	VkCommandBuffer					cmdBuffers[COUNT]			= {*ptrCmdBuffer[SET], *ptrCmdBuffer[WAIT]};
-	const Unique<VkEvent>			event						(createEvent(vk, device));
+	const Unique<VkEvent>			event						(createEvent(vk, device, config.flags));
 	VkCommandBufferSubmitInfoKHR	commandBufferSubmitInfo[]	{
 																	makeCommonCommandBufferSubmitInfo(cmdBuffers[SET]),
 																	makeCommonCommandBufferSubmitInfo(cmdBuffers[WAIT])
 																};
 	VkDependencyInfoKHR				dependencyInfo				= makeCommonDependencyInfo();
-	SynchronizationWrapperPtr		synchronizationWrapper		= getSynchronizationWrapper(type, vk, DE_FALSE);
+	SynchronizationWrapperPtr		synchronizationWrapper		= getSynchronizationWrapper(config.type, vk, DE_FALSE);
 
 	synchronizationWrapper->addSubmitInfo(
 		0u,										// deUint32								waitSemaphoreInfoCount
@@ -193,7 +199,7 @@ tcu::TestStatus singleSubmissionCase (Context& context, SynchronizationType type
 	return tcu::TestStatus::pass("Wait and set even on device single submission tests pass");
 }
 
-tcu::TestStatus multiSubmissionCase(Context& context, SynchronizationType type)
+tcu::TestStatus multiSubmissionCase(Context& context, TestConfig config)
 {
 	enum { SET = 0, WAIT, COUNT };
 	const DeviceInterface&			vk					= context.getDeviceInterface();
@@ -205,7 +211,7 @@ tcu::TestStatus multiSubmissionCase(Context& context, SynchronizationType type)
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Move<VkCommandBuffer>		ptrCmdBuffer[COUNT] = { makeCommandBuffer(vk, device, *cmdPool), makeCommandBuffer(vk, device, *cmdPool) };
 	VkCommandBuffer					cmdBuffers[COUNT]	= { *ptrCmdBuffer[SET], *ptrCmdBuffer[WAIT] };
-	const Unique<VkEvent>			event				(createEvent(vk, device));
+	const Unique<VkEvent>			event				(createEvent(vk, device, config.flags));
 	VkCommandBufferSubmitInfoKHR	commandBufferSubmitInfo[] =
 	{
 		makeCommonCommandBufferSubmitInfo(cmdBuffers[SET]),
@@ -213,8 +219,8 @@ tcu::TestStatus multiSubmissionCase(Context& context, SynchronizationType type)
 	};
 	SynchronizationWrapperPtr		synchronizationWrapper[] =
 	{
-		getSynchronizationWrapper(type, vk, DE_FALSE),
-		getSynchronizationWrapper(type, vk, DE_FALSE)
+		getSynchronizationWrapper(config.type, vk, DE_FALSE),
+		getSynchronizationWrapper(config.type, vk, DE_FALSE)
 	};
 	VkDependencyInfoKHR				dependencyInfos[] =
 	{
@@ -257,7 +263,7 @@ tcu::TestStatus multiSubmissionCase(Context& context, SynchronizationType type)
 	return tcu::TestStatus::pass("Wait and set even on device multi submission tests pass");
 }
 
-tcu::TestStatus secondaryCommandBufferCase (Context& context, SynchronizationType type)
+tcu::TestStatus secondaryCommandBufferCase (Context& context, TestConfig config)
 {
 	enum {SET=0, WAIT, COUNT};
 	const DeviceInterface&					vk						= context.getDeviceInterface();
@@ -277,7 +283,7 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context, SynchronizationTyp
 																	};
 	const Move<VkCommandBuffer>				prtCmdBuffers[COUNT]	= {allocateCommandBuffer (vk, device, &cmdBufferInfo), allocateCommandBuffer (vk, device, &cmdBufferInfo)};
 	VkCommandBuffer							secondaryCmdBuffers[]	= {*prtCmdBuffers[SET], *prtCmdBuffers[WAIT]};
-	const Unique<VkEvent>					event					(createEvent(vk, device));
+	const Unique<VkEvent>					event					(createEvent(vk, device, config.flags));
 
 	const VkCommandBufferInheritanceInfo	secCmdBufInheritInfo	=
 																	{
@@ -303,7 +309,7 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context, SynchronizationTyp
 																		makeCommonDependencyInfo(),
 																		makeCommonDependencyInfo()
 																	};
-	SynchronizationWrapperPtr				synchronizationWrapper	= getSynchronizationWrapper(type, vk, DE_FALSE);
+	SynchronizationWrapperPtr				synchronizationWrapper	= getSynchronizationWrapper(config.type, vk, DE_FALSE);
 
 	synchronizationWrapper->addSubmitInfo(
 		0u,										// deUint32								waitSemaphoreInfoCount
@@ -334,9 +340,9 @@ tcu::TestStatus secondaryCommandBufferCase (Context& context, SynchronizationTyp
 	return tcu::TestStatus::pass("Wait and set even on device using secondary command buffers tests pass");
 }
 
-void checkSupport(Context& context, const SynchronizationType type)
+void checkSupport(Context& context, TestConfig config)
 {
-	if (type == SynchronizationType::SYNCHRONIZATION2)
+	if (config.type == SynchronizationType::SYNCHRONIZATION2)
 		context.requireDeviceFunctionality("VK_KHR_synchronization2");
 }
 
@@ -344,27 +350,42 @@ void checkSupport(Context& context, const SynchronizationType type)
 
 tcu::TestCaseGroup* createBasicEventTests (tcu::TestContext& testCtx)
 {
-	const SynchronizationType			type		(SynchronizationType::LEGACY);
-	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
+	TestConfig config
+	{
+		SynchronizationType::LEGACY,
+		0U
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> basicTests (new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
 
 	addFunctionCase(basicTests.get(), "host_set_reset", "Basic event tests set and reset on host", hostResetSetEventCase);
-	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, type);
-	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, type);
-	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, type);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, type);
+	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, config);
+	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, config);
+	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, config);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, config);
 
 	return basicTests.release();
 }
 
 tcu::TestCaseGroup* createSynchronization2BasicEventTests (tcu::TestContext& testCtx)
 {
-	const SynchronizationType			type		(SynchronizationType::SYNCHRONIZATION2);
-	de::MovePtr<tcu::TestCaseGroup>		basicTests	(new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
+	TestConfig config
+	{
+		SynchronizationType::SYNCHRONIZATION2,
+		0U
+	};
 
-	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, type);
-	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, type);
-	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, type);
-	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, type);
+	de::MovePtr<tcu::TestCaseGroup> basicTests (new tcu::TestCaseGroup(testCtx, "event", "Basic event tests"));
+
+	addFunctionCase(basicTests.get(), "device_set_reset", "Basic event tests set and reset on device", checkSupport, deviceResetSetEventCase, config);
+	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", "Wait and set event single submission on device", checkSupport, singleSubmissionCase, config);
+	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", "Wait and set event mutli submission on device", checkSupport, multiSubmissionCase, config);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", "Event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, config);
+
+	config.flags = VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR;
+	addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer_device_only", "Wait and set GPU-only event single submission", checkSupport, singleSubmissionCase, config);
+	addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer_device_only", "Wait and set GPU-only event mutli submission", checkSupport, multiSubmissionCase, config);
+	addFunctionCase(basicTests.get(), "multi_secondary_command_buffer_device_only", "GPU-only event used on secondary command buffer ", checkSupport, secondaryCommandBufferCase, config);
 
 	return basicTests.release();
 
