@@ -2203,7 +2203,7 @@ if __name__ == "__main__":
 	platformFuncs	= [Function.TYPE_PLATFORM]
 	instanceFuncs	= [Function.TYPE_INSTANCE]
 	deviceFuncs		= [Function.TYPE_DEVICE]
-	'''
+
 	dfd										= generateDeviceFeaturesDefs(src)
 	writeDeviceFeatures						(api, dfd, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))
 	writeDeviceFeaturesDefaultDeviceDefs	(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
@@ -2246,11 +2246,10 @@ if __name__ == "__main__":
 	writeSupportedExtenions					(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities				(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions					(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
-	'''
+
 	writeDeviceFeatures2					(api, os.path.join(VULKAN_DIR, "vkDeviceFeatures2.inl"))
-	'''
+
 	writeMandatoryFeatures					(     os.path.join(VULKAN_DIR, "vkMandatoryFeatures.inl"))
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkInstanceExtensions.inl"),				'INSTANCE')
 	writeExtensionList						(     os.path.join(VULKAN_DIR, "vkDeviceExtensions.inl"),				'DEVICE')
 	writeDriverIds							(     os.path.join(VULKAN_DIR, "vkKnownDriverIds.inl"))
-	'''
