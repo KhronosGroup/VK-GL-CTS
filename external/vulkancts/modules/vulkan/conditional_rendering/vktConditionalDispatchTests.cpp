@@ -311,6 +311,21 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 		vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
 	}
 
+	const vk::VkBufferMemoryBarrier outputBufferMemoryBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+		DE_NULL,
+		vk::VK_ACCESS_SHADER_WRITE_BIT,
+		vk::VK_ACCESS_HOST_READ_BIT,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		outputBuffer.get(),
+		0u,
+		VK_WHOLE_SIZE
+	};
+
+	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &outputBufferMemoryBarrier, 0u, DE_NULL);
+
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
