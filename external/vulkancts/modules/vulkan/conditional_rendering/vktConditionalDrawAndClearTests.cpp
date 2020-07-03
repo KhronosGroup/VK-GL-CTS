@@ -773,6 +773,21 @@ tcu::TestStatus ConditionalRenderingClearAttachmentsTestInstance::iterate (void)
 
 	copyResultImageToBuffer(m_testParams.m_testDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT, m_testParams.m_testDepth ? m_depthTargetImage->object() : m_colorTargetImage->object());
 
+	const vk::VkBufferMemoryBarrier bufferMemoryBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+		DE_NULL,
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+		vk::VK_ACCESS_HOST_READ_BIT,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		m_resultBuffer->object(),
+		0u,
+		VK_WHOLE_SIZE
+	};
+
+	m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferMemoryBarrier, 0u, DE_NULL);
+
 	endCommandBuffer(m_vkd, *m_cmdBufferPrimary);
 
 	submitCommandsAndWait(m_vkd, m_device, m_queue, *m_cmdBufferPrimary);
@@ -941,6 +956,21 @@ tcu::TestStatus ConditionalRenderingDrawTestInstance::iterate (void)
 					   VK_IMAGE_ASPECT_COLOR_BIT);																					//VkImageAspectFlags				flags
 
 	copyResultImageToBuffer(VK_IMAGE_ASPECT_COLOR_BIT, m_colorTargetImage->object());
+
+	const vk::VkBufferMemoryBarrier bufferMemoryBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+		DE_NULL,
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+		vk::VK_ACCESS_HOST_READ_BIT,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		m_resultBuffer->object(),
+		0u,
+		VK_WHOLE_SIZE
+	};
+
+	m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferMemoryBarrier, 0u, DE_NULL);
 
 	endCommandBuffer(m_vkd, *m_cmdBufferPrimary);
 
@@ -1221,6 +1251,21 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate (v
 
 	copyResultImageToBuffer(VK_IMAGE_ASPECT_COLOR_BIT, m_colorTargetImage->object());
 
+	const vk::VkBufferMemoryBarrier bufferMemoryBarrier =
+	{
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+		DE_NULL,
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+		vk::VK_ACCESS_HOST_READ_BIT,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		m_conditionalRenderingBuffer->object(),
+		0u,
+		VK_WHOLE_SIZE
+	};
+
+	m_vkd.cmdPipelineBarrier(*m_cmdBufferPrimary, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferMemoryBarrier, 0u, DE_NULL);
+
 	endCommandBuffer(m_vkd, *m_cmdBufferPrimary);
 
 	submitCommandsAndWait(m_vkd, m_device, m_queue, *m_cmdBufferPrimary);
@@ -1232,7 +1277,7 @@ tcu::TestStatus ConditionalRenderingUpdateBufferWithDrawTestInstance::iterate (v
 
 	m_testParams ? prepareReferenceImageOneColor(reference, tcu::Vec4(0,1,0,1)) : prepareReferenceImageOneColor(reference, clearColorInitial);
 
-	flushMappedMemoryRange(m_vkd, m_device, m_conditionalRenderingBuffer->getBoundMemory().getMemory(), m_conditionalRenderingBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
+	invalidateMappedMemoryRange(m_vkd, m_device, m_conditionalRenderingBuffer->getBoundMemory().getMemory(), m_conditionalRenderingBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 
 	if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Comparison", "Comparison", reference, result, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR))
 		return tcu::TestStatus::fail("Fail");

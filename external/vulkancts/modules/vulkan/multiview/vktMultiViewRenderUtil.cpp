@@ -269,7 +269,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 																			? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
 																			: VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	const VkAccessFlags							srcAccessMask				= dsAttacmentAvailable
-																			? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+																			? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
 																			: VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	vector <SubpassDep>							subpassDependencies;
 	for(deUint32 subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
