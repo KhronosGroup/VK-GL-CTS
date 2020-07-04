@@ -2,15 +2,11 @@
  * be lost! Modify the generating script instead.
  */
 
-inline VkAllocationCallbacks makeAllocationCallbacks (void* pUserData, PFN_vkAllocationFunction pfnAllocation, PFN_vkReallocationFunction pfnReallocation, PFN_vkFreeFunction pfnFree, PFN_vkInternalAllocationNotification pfnInternalAllocation, PFN_vkInternalFreeNotification pfnInternalFree)
+inline VkExtent2D makeExtent2D (deUint32 width, deUint32 height)
 {
-	VkAllocationCallbacks res;
-	res.pUserData				= pUserData;
-	res.pfnAllocation			= pfnAllocation;
-	res.pfnReallocation			= pfnReallocation;
-	res.pfnFree					= pfnFree;
-	res.pfnInternalAllocation	= pfnInternalAllocation;
-	res.pfnInternalFree			= pfnInternalFree;
+	VkExtent2D res;
+	res.width	= width;
+	res.height	= height;
 	return res;
 }
 
@@ -20,6 +16,76 @@ inline VkExtent3D makeExtent3D (deUint32 width, deUint32 height, deUint32 depth)
 	res.width	= width;
 	res.height	= height;
 	res.depth	= depth;
+	return res;
+}
+
+inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
+{
+	VkOffset2D res;
+	res.x	= x;
+	res.y	= y;
+	return res;
+}
+
+inline VkOffset3D makeOffset3D (deInt32 x, deInt32 y, deInt32 z)
+{
+	VkOffset3D res;
+	res.x	= x;
+	res.y	= y;
+	res.z	= z;
+	return res;
+}
+
+inline VkDispatchIndirectCommand makeDispatchIndirectCommand (deUint32 x, deUint32 y, deUint32 z)
+{
+	VkDispatchIndirectCommand res;
+	res.x	= x;
+	res.y	= y;
+	res.z	= z;
+	return res;
+}
+
+inline VkDrawIndexedIndirectCommand makeDrawIndexedIndirectCommand (deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
+{
+	VkDrawIndexedIndirectCommand res;
+	res.indexCount		= indexCount;
+	res.instanceCount	= instanceCount;
+	res.firstIndex		= firstIndex;
+	res.vertexOffset	= vertexOffset;
+	res.firstInstance	= firstInstance;
+	return res;
+}
+
+inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
+{
+	VkDrawIndirectCommand res;
+	res.vertexCount		= vertexCount;
+	res.instanceCount	= instanceCount;
+	res.firstVertex		= firstVertex;
+	res.firstInstance	= firstInstance;
+	return res;
+}
+
+inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, deUint32 baseMipLevel, deUint32 levelCount, deUint32 baseArrayLayer, deUint32 layerCount)
+{
+	VkImageSubresourceRange res;
+	res.aspectMask		= aspectMask;
+	res.baseMipLevel	= baseMipLevel;
+	res.levelCount		= levelCount;
+	res.baseArrayLayer	= baseArrayLayer;
+	res.layerCount		= layerCount;
+	return res;
+}
+
+inline VkAllocationCallbacks makeAllocationCallbacks (void* pUserData, PFN_vkAllocationFunction pfnAllocation, PFN_vkReallocationFunction pfnReallocation, PFN_vkFreeFunction pfnFree, PFN_vkInternalAllocationNotification pfnInternalAllocation, PFN_vkInternalFreeNotification pfnInternalFree)
+{
+	VkAllocationCallbacks res;
+	res.pUserData				= pUserData;
+	res.pfnAllocation			= pfnAllocation;
+	res.pfnReallocation			= pfnReallocation;
+	res.pfnFree					= pfnFree;
+	res.pfnInternalAllocation	= pfnInternalAllocation;
+	res.pfnInternalFree			= pfnInternalFree;
 	return res;
 }
 
@@ -70,15 +136,6 @@ inline VkImageSubresource makeImageSubresource (VkImageAspectFlags aspectMask, d
 	return res;
 }
 
-inline VkOffset3D makeOffset3D (deInt32 x, deInt32 y, deInt32 z)
-{
-	VkOffset3D res;
-	res.x	= x;
-	res.y	= y;
-	res.z	= z;
-	return res;
-}
-
 inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image, deUint32 bindCount, const VkSparseImageMemoryBind* pBinds)
 {
 	VkSparseImageMemoryBindInfo res;
@@ -106,17 +163,6 @@ inline VkComponentMapping makeComponentMapping (VkComponentSwizzle r, VkComponen
 	res.g	= g;
 	res.b	= b;
 	res.a	= a;
-	return res;
-}
-
-inline VkImageSubresourceRange makeImageSubresourceRange (VkImageAspectFlags aspectMask, deUint32 baseMipLevel, deUint32 levelCount, deUint32 baseArrayLayer, deUint32 layerCount)
-{
-	VkImageSubresourceRange res;
-	res.aspectMask		= aspectMask;
-	res.baseMipLevel	= baseMipLevel;
-	res.levelCount		= levelCount;
-	res.baseArrayLayer	= baseArrayLayer;
-	res.layerCount		= layerCount;
 	return res;
 }
 
@@ -170,22 +216,6 @@ inline VkViewport makeViewport (float x, float y, float width, float height, flo
 	return res;
 }
 
-inline VkOffset2D makeOffset2D (deInt32 x, deInt32 y)
-{
-	VkOffset2D res;
-	res.x	= x;
-	res.y	= y;
-	return res;
-}
-
-inline VkExtent2D makeExtent2D (deUint32 width, deUint32 height)
-{
-	VkExtent2D res;
-	res.width	= width;
-	res.height	= height;
-	return res;
-}
-
 inline VkStencilOpState makeStencilOpState (VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp, deUint32 compareMask, deUint32 writeMask, deUint32 reference)
 {
 	VkStencilOpState res;
@@ -222,22 +252,12 @@ inline VkPushConstantRange makePushConstantRange (VkShaderStageFlags stageFlags,
 	return res;
 }
 
-inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (deUint32 binding, VkDescriptorType descriptorType, deUint32 descriptorCount, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
+inline VkDescriptorBufferInfo makeDescriptorBufferInfo (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
 {
-	VkDescriptorSetLayoutBinding res;
-	res.binding				= binding;
-	res.descriptorType		= descriptorType;
-	res.descriptorCount		= descriptorCount;
-	res.stageFlags			= stageFlags;
-	res.pImmutableSamplers	= pImmutableSamplers;
-	return res;
-}
-
-inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, deUint32 descriptorCount)
-{
-	VkDescriptorPoolSize res;
-	res.type			= type;
-	res.descriptorCount	= descriptorCount;
+	VkDescriptorBufferInfo res;
+	res.buffer	= buffer;
+	res.offset	= offset;
+	res.range	= range;
 	return res;
 }
 
@@ -250,12 +270,22 @@ inline VkDescriptorImageInfo makeDescriptorImageInfo (VkSampler sampler, VkImage
 	return res;
 }
 
-inline VkDescriptorBufferInfo makeDescriptorBufferInfo (VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
+inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, deUint32 descriptorCount)
 {
-	VkDescriptorBufferInfo res;
-	res.buffer	= buffer;
-	res.offset	= offset;
-	res.range	= range;
+	VkDescriptorPoolSize res;
+	res.type			= type;
+	res.descriptorCount	= descriptorCount;
+	return res;
+}
+
+inline VkDescriptorSetLayoutBinding makeDescriptorSetLayoutBinding (deUint32 binding, VkDescriptorType descriptorType, deUint32 descriptorCount, VkShaderStageFlags stageFlags, const VkSampler* pImmutableSamplers)
+{
+	VkDescriptorSetLayoutBinding res;
+	res.binding				= binding;
+	res.descriptorType		= descriptorType;
+	res.descriptorCount		= descriptorCount;
+	res.stageFlags			= stageFlags;
+	res.pImmutableSamplers	= pImmutableSamplers;
 	return res;
 }
 
@@ -335,36 +365,6 @@ inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, deUint3
 	VkClearDepthStencilValue res;
 	res.depth	= depth;
 	res.stencil	= stencil;
-	return res;
-}
-
-inline VkDispatchIndirectCommand makeDispatchIndirectCommand (deUint32 x, deUint32 y, deUint32 z)
-{
-	VkDispatchIndirectCommand res;
-	res.x	= x;
-	res.y	= y;
-	res.z	= z;
-	return res;
-}
-
-inline VkDrawIndexedIndirectCommand makeDrawIndexedIndirectCommand (deUint32 indexCount, deUint32 instanceCount, deUint32 firstIndex, deInt32 vertexOffset, deUint32 firstInstance)
-{
-	VkDrawIndexedIndirectCommand res;
-	res.indexCount		= indexCount;
-	res.instanceCount	= instanceCount;
-	res.firstIndex		= firstIndex;
-	res.vertexOffset	= vertexOffset;
-	res.firstInstance	= firstInstance;
-	return res;
-}
-
-inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUint32 instanceCount, deUint32 firstVertex, deUint32 firstInstance)
-{
-	VkDrawIndirectCommand res;
-	res.vertexCount		= vertexCount;
-	res.instanceCount	= instanceCount;
-	res.firstVertex		= firstVertex;
-	res.firstInstance	= firstInstance;
 	return res;
 }
 
