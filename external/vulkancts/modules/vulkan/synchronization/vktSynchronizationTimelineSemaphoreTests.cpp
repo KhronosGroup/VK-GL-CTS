@@ -42,6 +42,7 @@
 
 #include "tcuTestLog.hpp"
 
+#include "deClock.h"
 #include "deRandom.hpp"
 #include "deThread.hpp"
 #include "deUniquePtr.hpp"
@@ -407,6 +408,111 @@ public:
 	}
 };
 
+class PollTestInstance : public TestInstance
+{
+public:
+	PollTestInstance (Context& context, bool signalFromDevice)
+		: TestInstance			(context)
+		, m_signalFromDevice	(signalFromDevice)
+	{
+	}
+
+	tcu::TestStatus iterate (void)
+	{
+		const DeviceInterface&								vk				= m_context.getDeviceInterface();
+		const VkDevice&										device			= m_context.getDevice();
+		const VkQueue										queue			= m_context.getUniversalQueue();
+		Unique<VkFence>										fence			(createFence(vk, device));
+		std::vector<SharedPtr<Move<VkSemaphore > > >		semaphorePtrs	(createTimelineSemaphores(vk, device, 100));
+		de::Random											rng				(1234);
+		std::vector<VkSemaphore>							semaphores;
+		std::vector<deUint64>								timelineValues;
+		const deUint64										secondInMicroSeconds	= 1000ull * 1000ull * 1000ull;
+		deUint64											startTime;
+
+		for (deUint32 i = 0; i < semaphorePtrs.size(); i++)
+		{
+			semaphores.push_back((*semaphorePtrs[i]).get());
+			timelineValues.push_back(rng.getInt(1, 10000));
+		}
+
+		for (deUint32 semIdx = 0; semIdx < semaphores.size(); semIdx++)
+		{
+			if (m_signalFromDevice)
+			{
+				deviceSignal(vk, device, queue, semIdx == (semaphores.size() - 1) ? *fence : DE_NULL, semaphores[semIdx], timelineValues[semIdx]);
+			}
+			else
+				hostSignal(vk, device, semaphores[semIdx], timelineValues[semIdx]);
+		}
+
+		startTime = deGetMicroseconds();
+
+		do
+		{
+			deUint64	value;
+			VkResult	result	=	vk.getSemaphoreCounterValue(device, semaphores.back(), &value);
+
+			if (result != VK_SUCCESS)
+				break;
+
+			if (value == timelineValues.back())
+			{
+				if (m_signalFromDevice)
+					VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~(0ull)));
+				VK_CHECK(vk.deviceWaitIdle(device));
+				return tcu::TestStatus::pass("Poll on timeline value succeeded");
+			}
+
+			if (value > timelineValues.back())
+				break;
+		} while ((deGetMicroseconds() - startTime) > secondInMicroSeconds);
+
+		VK_CHECK(vk.deviceWaitIdle(device));
+
+		if ((deGetMicroseconds() - startTime) < secondInMicroSeconds)
+			return tcu::TestStatus::fail("Fail");
+		return tcu::TestStatus::fail("Timeout");
+	}
+
+private:
+
+	std::vector<SharedPtr<Move<VkSemaphore > > > createTimelineSemaphores(const DeviceInterface& vk, const VkDevice& device, deUint32 count)
+	{
+		std::vector<SharedPtr<Move<VkSemaphore > > > semaphores;
+
+		for (deUint32 i = 0; i < count; i++)
+			semaphores.push_back(makeVkSharedPtr(createSemaphoreType(vk, device, VK_SEMAPHORE_TYPE_TIMELINE_KHR)));
+
+		return semaphores;
+	}
+
+	bool m_signalFromDevice;
+};
+
+class PollTestCase : public TestCase
+{
+public:
+	PollTestCase (tcu::TestContext& testCtx, const std::string& name, bool signalFromDevice)
+		: TestCase				(testCtx, name.c_str(), "")
+		, m_signalFromDevice	(signalFromDevice)
+	{
+	}
+
+	virtual void checkSupport(Context& context) const
+	{
+		context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+	}
+
+	TestInstance* createInstance (Context& context) const
+	{
+		return new PollTestInstance(context, m_signalFromDevice);
+	}
+
+private:
+	bool m_signalFromDevice;
+};
+
 class MonotonicallyIncrementChecker : public de::Thread
 {
 public:
@@ -610,6 +716,8 @@ public:
 		for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(waitCases); caseIdx++)
 			addChild(new WaitTestCase(m_testCtx, waitCases[caseIdx].name, waitCases[caseIdx].waitAll, waitCases[caseIdx].signalFromDevice));
 		addChild(new HostWaitBeforeSignalTestCase(m_testCtx, "host_wait_before_signal"));
+		addChild(new PollTestCase(m_testCtx, "poll_signal_from_device", true));
+		addChild(new PollTestCase(m_testCtx, "poll_signal_from_host", false));
 	}
 };
 
