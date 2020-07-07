@@ -85,6 +85,8 @@ DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType,				std::string);
 DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogDecompiledSpirv,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogEmptyLoginfo,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(ArchiveDir,					std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
@@ -195,6 +197,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<VKDeviceGroupID>				(DE_NULL,	"deqp-vk-device-group-id",					"Vulkan device Group ID (IDs start from 1)",							"1")
 		<< Option<LogImages>					(DE_NULL,	"deqp-log-images",							"Enable or disable logging of result images",		s_enableNames,		"enable")
 		<< Option<LogShaderSources>				(DE_NULL,	"deqp-log-shader-sources",					"Enable or disable logging of shader sources",		s_enableNames,		"enable")
+		<< Option<LogDecompiledSpirv>			(DE_NULL,	"deqp-log-decompiled-spirv",				"Enable or disable logging of decompiled spir-v",	s_enableNames,		"enable")
+		<< Option<LogEmptyLoginfo>				(DE_NULL,	"deqp-log-empty-loginfo",					"Logging of empty shader compile/link log info",	s_enableNames,		"enable")
 		<< Option<TestOOM>						(DE_NULL,	"deqp-test-oom",							"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
 		<< Option<ArchiveDir>					(DE_NULL,	"deqp-archive-dir",							"Path to test resource files",											".")
 		<< Option<LogFlush>						(DE_NULL,	"deqp-log-flush",							"Enable or disable log file fflush",				s_enableNames,		"enable")
@@ -790,6 +794,9 @@ bool CommandLine::parse (int argc, const char* const* argv)
 	if (!m_cmdLine.getOption<opt::LogFlush>())
 		m_logFlags |= QP_TEST_LOG_NO_FLUSH;
 
+	if (!m_cmdLine.getOption<opt::LogEmptyLoginfo>())
+		m_logFlags |= QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO;
+
 	if ((m_cmdLine.hasOption<opt::CasePath>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseList>()?1:0) +
 		(m_cmdLine.hasOption<opt::CaseListFile>()?1:0) +
@@ -861,6 +868,7 @@ int						CommandLine::getVKDeviceId					(void) const	{ return m_cmdLine.getOptio
 int						CommandLine::getVKDeviceGroupId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();						}
 bool					CommandLine::isValidationEnabled			(void) const	{ return m_cmdLine.getOption<opt::Validation>();							}
 bool					CommandLine::printValidationErrors			(void) const	{ return m_cmdLine.getOption<opt::PrintValidationErrors>();					}
+bool					CommandLine::isLogDecompiledSpirvEnabled	(void) const	{ return m_cmdLine.getOption<opt::LogDecompiledSpirv>();					}
 bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();								}
 bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();							}
 const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();			}

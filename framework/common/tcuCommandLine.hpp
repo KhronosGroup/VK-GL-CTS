@@ -230,6 +230,9 @@ public:
 	//! Print validation errors to standard error or keep them in the log only.
 	bool							printValidationErrors			(void) const;
 
+	//! Log of decompiled SPIR-V shader source (--deqp-log-decompiled-spirv)
+	bool							isLogDecompiledSpirvEnabled		(void) const;
+
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
 	bool							isOutOfMemoryTestEnabled		(void) const;
 

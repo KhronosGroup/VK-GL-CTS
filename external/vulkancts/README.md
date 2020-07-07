@@ -173,6 +173,16 @@ the following command line option may be used:
 
 	--deqp-waiver-file=<path>
 
+To make log more clear for high level shader source analysis
+output of decompiled SPIR-V shader sources can be disabled:
+
+	--deqp-log-decompiled-spirv=disable
+
+Also non-informative empty LogInfo sections can be removed
+from output into log by specifying:
+
+	--deqp-log-empty-loginfo=disable
+
 No other command line options are allowed.
 
 ### Win32
