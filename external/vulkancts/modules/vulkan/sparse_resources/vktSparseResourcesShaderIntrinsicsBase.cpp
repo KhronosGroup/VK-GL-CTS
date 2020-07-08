@@ -91,9 +91,9 @@ std::string getImageComponentTypeName (const vk::PlanarFormatDescription& descri
 	switch (description.channels[0].type)
 	{
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			return "%type_uint";
+			return (formatIsR64(description.planes[0].planeCompatibleFormat) ? "%type_uint64" : "%type_uint");
 		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			return "%type_int";
+			return (formatIsR64(description.planes[0].planeCompatibleFormat) ? "%type_int64" : "%type_int");
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
@@ -124,12 +124,13 @@ std::string getImageComponentVec4TypeName (const tcu::TextureFormat& format)
 
 std::string getImageComponentVec4TypeName (const vk::PlanarFormatDescription& description)
 {
+
 	switch (description.channels[0].type)
 	{
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			return "%type_uvec4";
+			return (formatIsR64(description.planes[0].planeCompatibleFormat) ? "%type_u64vec4" : "%type_uvec4");
 		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			return "%type_ivec4";
+			return (formatIsR64(description.planes[0].planeCompatibleFormat) ? "%type_i64vec4" : "%type_ivec4");
 		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
 		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
@@ -294,9 +295,11 @@ std::string getOpTypeImageSparse (const ImageType		imageType,
 		case VK_FORMAT_R8_SINT:										src <<	"R8i";			break;
 		case VK_FORMAT_R16_SINT:									src <<	"R16i";			break;
 		case VK_FORMAT_R32_SINT:									src <<	"R32i";			break;
+		case VK_FORMAT_R64_SINT:									src <<	"R64i";			break;
 		case VK_FORMAT_R8_UINT:										src <<	"R8ui";			break;
 		case VK_FORMAT_R16_UINT:									src <<	"R16ui";		break;
 		case VK_FORMAT_R32_UINT:									src <<	"R32ui";		break;
+		case VK_FORMAT_R64_UINT:									src <<	"R64ui";		break;
 		case VK_FORMAT_R8_SNORM:									src <<	"R8Snorm";		break;
 		case VK_FORMAT_R16_SNORM:									src <<	"R16Snorm";		break;
 		case VK_FORMAT_R8_UNORM:									src <<	"R8";			break;
@@ -429,6 +432,21 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	imageSparseInfo.sharingMode				= VK_SHARING_MODE_EXCLUSIVE;
 	imageSparseInfo.queueFamilyIndexCount	= 0u;
 	imageSparseInfo.pQueueFamilyIndices		= DE_NULL;
+
+	if (formatIsR64(m_format))
+	{
+		m_context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		if (m_context.getShaderImageAtomicInt64FeaturesEXT().shaderImageInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "shaderImageInt64Atomics is not supported");
+		}
+
+		if (m_context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
+		}
+	}
 
 	if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
 	{
@@ -736,9 +754,21 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 			const deUint32 mipLevelSizeinBytes	= getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
 			const deUint32 bufferOffset			= static_cast<deUint32>(bufferImageSparseCopy[mipmapNdx].bufferOffset);
 
-			for (deUint32 byteNdx = 0u; byteNdx < mipLevelSizeinBytes; ++byteNdx)
+			if (formatIsR64(m_format) &&
+				(m_function == SPARSE_SAMPLE_EXPLICIT_LOD || m_function == SPARSE_SAMPLE_IMPLICIT_LOD || m_function == SPARSE_GATHER))
 			{
-				referenceData[bufferOffset + byteNdx] = (deUint8)( (mipmapNdx + byteNdx) % 127u );
+				for (deUint32 byteNdx = 0u; byteNdx < mipLevelSizeinBytes/8; byteNdx += 8)
+				{
+					void* prtData = &referenceData[bufferOffset + byteNdx];
+					*(static_cast<deUint64*>(prtData)) = (deUint64)((mipmapNdx + byteNdx) % 0x0FFFFFFF);
+				}
+			}
+			else
+			{
+				for (deUint32 byteNdx = 0u; byteNdx < mipLevelSizeinBytes; ++byteNdx)
+				{
+					referenceData[bufferOffset + byteNdx] = (deUint8)( (mipmapNdx + byteNdx) % 127u );
+				}
 			}
 		}
 	}

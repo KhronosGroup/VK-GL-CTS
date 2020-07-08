@@ -102,6 +102,16 @@ void ImageBlockShapesCase::checkSupport (Context& context) const
 	// Check if device supports sparse operations for image type
 	if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
 		TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
+
+	if (formatIsR64(m_format))
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		if (context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
+		}
+	}
 }
 
 class ImageBlockShapesInstance : public SparseResourcesBaseInstance

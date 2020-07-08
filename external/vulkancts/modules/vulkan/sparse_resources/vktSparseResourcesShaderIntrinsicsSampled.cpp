@@ -26,6 +26,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
 using namespace vk;
 
@@ -150,6 +151,8 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 	std::ostringstream vs;
 
 	vs	<< "#version 440\n"
+		<< "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+		<< "#extension GL_EXT_shader_image_int64 : require\n"
 		<< "layout(location = 0) in highp vec2 vs_in_position;\n"
 		<< "layout(location = 1) in highp vec2 vs_in_texCoord;\n"
 		<< "\n"
@@ -215,9 +218,16 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "OpCapability SampledCubeArray\n"
 		<< "OpCapability ImageCubeArray\n"
 		<< "OpCapability SparseResidency\n"
-		<< "OpCapability StorageImageExtendedFormats\n"
+		<< "OpCapability StorageImageExtendedFormats\n";
 
-		<< "%ext_import = OpExtInstImport \"GLSL.std.450\"\n"
+	if (formatIsR64(m_format))
+	{
+		fs	<< "OpCapability Int64\n"
+			<< "OpCapability Int64ImageEXT\n"
+			<< "OpExtension \"SPV_EXT_shader_image_int64\"\n";
+	}
+
+	fs	<< "%ext_import = OpExtInstImport \"GLSL.std.450\"\n"
 		<< "OpMemoryModel Logical GLSL450\n"
 		<< "OpEntryPoint Fragment %func_main \"main\" %varying_texCoord %output_texel %output_residency\n"
 		<< "OpExecutionMode %func_main OriginUpperLeft\n"
@@ -261,14 +271,29 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< "%type_vec4							= OpTypeVector %type_float 4\n"
 		<< "%type_ivec4							= OpTypeVector %type_int 4\n"
 		<< "%type_uvec4							= OpTypeVector %type_uint 4\n"
-		<< "%type_uniformblock					= OpTypeStruct %type_uint %type_vec2\n"
-		<< "%type_struct_int_img_comp_vec4		= OpTypeStruct %type_int " << typeImgCompVec4 << "\n"
+		<< "%type_uniformblock					= OpTypeStruct %type_uint %type_vec2\n";
 
+		if (formatIsR64(m_format))
+		{
+			fs	<< "%type_int64						= OpTypeInt 64 1\n"
+				<< "%type_uint64					= OpTypeInt 64 0\n"
+				<< "%type_i64vec2					= OpTypeVector %type_int64 2\n"
+				<< "%type_i64vec3					= OpTypeVector %type_int64 3\n"
+				<< "%type_i64vec4					= OpTypeVector %type_int64 4\n"
+				<< "%type_u64vec3					= OpTypeVector %type_uint64 3\n"
+				<< "%type_u64vec4					= OpTypeVector %type_uint64 4\n";
+		}
+
+	fs	<< "%type_struct_int_img_comp_vec4		= OpTypeStruct %type_int "<< typeImgCompVec4 << "\n"
 		<< "%type_input_vec3					= OpTypePointer Input %type_vec3\n"
-		<< "%type_input_float					= OpTypePointer Input %type_float\n"
+		<< "%type_input_float					= OpTypePointer Input %type_float\n";
 
-		<< "%type_output_img_comp_vec4			= OpTypePointer Output " << typeImgCompVec4 << "\n"
-		<< "%type_output_uint					= OpTypePointer Output %type_uint\n"
+	if (formatIsR64(m_format))
+		fs	<< "%type_output_img_comp_vec4			= OpTypePointer Output " << "%type_ivec4" << "\n";
+	else
+		fs	<< "%type_output_img_comp_vec4			= OpTypePointer Output " << typeImgCompVec4 << "\n";
+
+	fs	<< "%type_output_uint					= OpTypePointer Output %type_uint\n"
 
 		<< "%type_function_int					= OpTypePointer Function %type_int\n"
 		<< "%type_function_img_comp_vec4		= OpTypePointer Function " << typeImgCompVec4 << "\n"
@@ -329,12 +354,20 @@ void SparseShaderIntrinsicsCaseSampledBase::initPrograms (vk::SourceCollections&
 		<< sparseImageOpString("%local_sparse_op_result", "%type_struct_int_img_comp_vec4", "%local_image_sparse", coordString, "%local_uniformblock_member_float_lod") << "\n"
 
 		// Load texel value
-		<< "%local_img_comp_vec4 = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_op_result 1\n"
+		<< "%local_img_comp_vec4 = OpCompositeExtract " << typeImgCompVec4 << " %local_sparse_op_result 1\n";
 
-		<< "OpStore %output_texel %local_img_comp_vec4\n"
+		if (formatIsR64(m_format))
+		{
+			fs	<< "%local_img_comp32b = OpSConvert %type_ivec4 %local_img_comp_vec4\n"
+				<< "OpStore %output_texel %local_img_comp32b\n";
+		}
+		else
+		{
+			fs	<< "OpStore %output_texel %local_img_comp_vec4\n";
+		}
 
 		// Load residency code
-		<< "%local_residency_code = OpCompositeExtract %type_int %local_sparse_op_result 0\n"
+	fs	<< "%local_residency_code = OpCompositeExtract %type_int %local_sparse_op_result 0\n"
 
 		// Check if loaded texel is placed in resident memory
 		<< "%local_texel_resident = OpImageSparseTexelsResident %type_bool %local_residency_code\n"
@@ -814,7 +847,6 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 		descriptorUpdateBuilder.writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(BINDING_IMAGE_SPARSE), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSparseDescInfo);
 		descriptorUpdateBuilder.update(deviceInterface, getDevice());
 
-		// Begin render pass
 		beginRenderPass(deviceInterface, commandBuffer, *m_renderPass, **m_framebuffers[mipLevelNdx], renderArea, (deUint32)clearValues.size(), &clearValues[0]);
 
 		// Bind graphics pipeline

@@ -69,9 +69,16 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 	src << "OpCapability Shader\n"
 		<< "OpCapability ImageCubeArray\n"
 		<< "OpCapability SparseResidency\n"
-		<< "OpCapability StorageImageExtendedFormats\n"
+		<< "OpCapability StorageImageExtendedFormats\n";
 
-		<< "%ext_import = OpExtInstImport \"GLSL.std.450\"\n"
+	if (formatIsR64(m_format))
+	{
+		src << "OpCapability Int64\n"
+			<< "OpCapability Int64ImageEXT\n"
+			<< "OpExtension \"SPV_EXT_shader_image_int64\"\n";
+	}
+
+	src << "%ext_import = OpExtInstImport \"GLSL.std.450\"\n"
 		<< "OpMemoryModel Logical GLSL450\n"
 		<< "OpEntryPoint GLCompute %func_main \"main\" %input_GlobalInvocationID\n"
 		<< "OpExecutionMode %func_main LocalSize 1 1 1\n"
@@ -110,8 +117,20 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "OpDecorate %uniform_image_residency NonReadable\n"
 
 		// Declare data types
-		<< "%type_bool						= OpTypeBool\n"
-		<< "%type_int						= OpTypeInt 32 1\n"
+		<< "%type_bool						= OpTypeBool\n";
+
+		if (formatIsR64(m_format))
+		{
+			src << "%type_int64							= OpTypeInt 64 1\n"
+				<< "%type_uint64						= OpTypeInt 64 0\n"
+				<< "%type_i64vec2						= OpTypeVector %type_int64  2\n"
+				<< "%type_i64vec3						= OpTypeVector %type_int64  3\n"
+				<< "%type_i64vec4						= OpTypeVector %type_int64  4\n"
+				<< "%type_u64vec3						= OpTypeVector %type_uint64 3\n"
+				<< "%type_u64vec4						= OpTypeVector %type_uint64 4\n";
+		}
+
+	src << "%type_int						= OpTypeInt 32 1\n"
 		<< "%type_uint						= OpTypeInt 32 0\n"
 		<< "%type_float						= OpTypeFloat 32\n"
 		<< "%type_ivec2						= OpTypeVector %type_int  2\n"
@@ -177,9 +196,10 @@ void SparseShaderIntrinsicsCaseStorage::initPrograms (vk::SourceCollections& pro
 		<< "%constant_int_1					= OpConstant %type_int 1\n"
 		<< "%constant_int_2					= OpConstant %type_int 2\n"
 		<< "%constant_bool_true				= OpConstantTrue %type_bool\n"
-		<< "%constant_uint_resident			= OpConstant %type_uint " << MEMORY_BLOCK_BOUND_VALUE << "\n"
+
+		<< "%constant_uint_resident			= OpConstant " << (formatIsR64(m_format) ? "%type_uint64" : "%type_uint") << " " << MEMORY_BLOCK_BOUND_VALUE << "\n"
 		<< "%constant_uvec4_resident		= OpConstantComposite %type_uvec4 %constant_uint_resident %constant_uint_resident %constant_uint_resident %constant_uint_resident\n"
-		<< "%constant_uint_not_resident		= OpConstant %type_uint " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
+		<< "%constant_uint_not_resident		= OpConstant " << (formatIsR64(m_format) ? "%type_uint64" : "%type_uint") << " " << MEMORY_BLOCK_NOT_BOUND_VALUE << "\n"
 		<< "%constant_uvec4_not_resident	= OpConstantComposite %type_uvec4 %constant_uint_not_resident %constant_uint_not_resident %constant_uint_not_resident %constant_uint_not_resident\n"
 
 		// Call main function

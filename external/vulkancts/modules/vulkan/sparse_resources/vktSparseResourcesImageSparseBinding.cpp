@@ -97,6 +97,16 @@ void ImageSparseBindingCase::checkSupport (Context& context) const
 
 	if (!isImageSizeSupported(context.getInstanceInterface(), context.getPhysicalDevice(), m_imageType, m_imageSize))
 		TCU_THROW(NotSupportedError, "Image size not supported for device");
+
+	if (formatIsR64(m_format))
+	{
+		context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
+
+		if (context.getShaderImageAtomicInt64FeaturesEXT().sparseImageInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "sparseImageInt64Atomics is not supported for device");
+		}
+	}
 }
 
 class ImageSparseBindingInstance : public SparseResourcesBaseInstance

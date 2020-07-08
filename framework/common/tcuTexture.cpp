@@ -289,10 +289,12 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 		case TextureFormat::SIGNED_INT8:		return (float)*((const deInt8*)value);
 		case TextureFormat::SIGNED_INT16:		return (float)*((const deInt16*)value);
 		case TextureFormat::SIGNED_INT32:		return (float)*((const deInt32*)value);
+		case TextureFormat::SIGNED_INT64:		return (float)*((const deInt64*)value);
 		case TextureFormat::UNSIGNED_INT8:		return (float)*((const deUint8*)value);
 		case TextureFormat::UNSIGNED_INT16:		return (float)*((const deUint16*)value);
 		case TextureFormat::UNSIGNED_INT24:		return (float)readUint24(value);
 		case TextureFormat::UNSIGNED_INT32:		return (float)*((const deUint32*)value);
+		case TextureFormat::UNSIGNED_INT64:		return (float)*((const deUint64*)value);
 		case TextureFormat::HALF_FLOAT:			return deFloat16To32(*(const deFloat16*)value);
 		case TextureFormat::FLOAT:				return *((const float*)value);
 		case TextureFormat::FLOAT64:			return (float)*((const double*)value);

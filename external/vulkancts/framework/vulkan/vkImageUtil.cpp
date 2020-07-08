@@ -1653,6 +1653,31 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 			return desc;
 		}
 
+
+		case VK_FORMAT_R64_SINT:
+		{
+			const PlanarFormatDescription	desc =
+			{
+				1, // planes
+				chanR,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	8,		1,		1,		VK_FORMAT_R64_SINT },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+					//		Plane	Type	Offs	Size	Stride
+						{	0,		sint,	0,		64,		8 },	// R
+						{	0,		0,		0,		0,		0 },	// G
+						{	0,		0,		0,		0,		0 },	// B
+						{	0,		0,		0,		0,		0 }		// A
+					}
+			};
+			return desc;
+		}
+
 		case VK_FORMAT_R8G8_SINT:
 		{
 			const PlanarFormatDescription	desc	=
@@ -1865,6 +1890,30 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 					{	0,		0,		0,		0,		0 },	// B
 					{	0,		0,		0,		0,		0 }		// A
 				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_R64_UINT:
+		{
+			const PlanarFormatDescription	desc =
+			{
+				1, // planes
+				chanR,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	8,		1,		1,		VK_FORMAT_R64_UINT },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+					//		Plane	Type	Offs	Size	Stride
+						{	0,		uint,	0,		64,		8 },	// R
+						{	0,		0,		0,		0,		0 },	// G
+						{	0,		0,		0,		0,		0 },	// B
+						{	0,		0,		0,		0,		0 }		// A
+					}
 			};
 			return desc;
 		}
@@ -3056,6 +3105,15 @@ tcu::TextureFormat getChannelAccessFormat (tcu::TextureChannelClass	type,
 			TextureFormat::FLOAT,				// float
 		};
 
+		static const TextureFormat::ChannelType	s_size64[tcu::TEXTURECHANNELCLASS_LAST] =
+		{
+			TextureFormat::CHANNELTYPE_LAST,	// snorm
+			TextureFormat::CHANNELTYPE_LAST,	// unorm
+			TextureFormat::SIGNED_INT64,		// sint
+			TextureFormat::UNSIGNED_INT64,		// uint
+			TextureFormat::FLOAT64,				// float
+		};
+
 		TextureFormat::ChannelType	chnType		= TextureFormat::CHANNELTYPE_LAST;
 
 		if (sizeBits == 8)
@@ -3064,6 +3122,8 @@ tcu::TextureFormat getChannelAccessFormat (tcu::TextureChannelClass	type,
 			chnType = s_size16[type];
 		else if (sizeBits == 32)
 			chnType = s_size32[type];
+		else if (sizeBits == 64)
+			chnType = s_size64[type];
 
 		if (chnType != TextureFormat::CHANNELTYPE_LAST)
 			return TextureFormat(TextureFormat::R, chnType);

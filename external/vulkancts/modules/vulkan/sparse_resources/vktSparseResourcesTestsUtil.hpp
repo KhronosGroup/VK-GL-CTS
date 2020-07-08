@@ -82,6 +82,8 @@ struct TestImageParameters
 	std::vector<TestFormat>	formats;
 };
 
+bool							formatIsR64							(const vk::VkFormat& format);
+
 std::vector<TestFormat>			getTestFormats						(const ImageType& imageType);
 
 vk::VkImageType					mapImageType						(const ImageType					imageType);
