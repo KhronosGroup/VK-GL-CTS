@@ -3894,11 +3894,14 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
 		makeCommandBuffer(context, *cmdPool));
 
 	Move<VkPipeline> *pipelines = new Move<VkPipeline>[localSizesToTestCount - 1];
+
+	context.getTestContext().touchWatchdog();
 	pipelines[0] =
 		makeComputePipeline(context, *pipelineLayout, *shaderModule,
 							pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, (VkPipeline) DE_NULL,
 							localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2],
 							isRequiredSubgroupSize ? subgroupSize : 0u);
+	context.getTestContext().touchWatchdog();
 
 	for (deUint32 index = 1; index < (localSizesToTestCount - 1); index++)
 	{
@@ -3906,11 +3909,13 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
 		const deUint32 nextY = localSizesToTest[index][1];
 		const deUint32 nextZ = localSizesToTest[index][2];
 
+		context.getTestContext().touchWatchdog();
 		pipelines[index] =
 			makeComputePipeline(context, *pipelineLayout, *shaderModule,
 								pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_DERIVATIVE_BIT, *pipelines[0],
 								nextX, nextY, nextZ,
 								isRequiredSubgroupSize ? subgroupSize : 0u);
+		context.getTestContext().touchWatchdog();
 	}
 
 	for (deUint32 index = 0; index < (localSizesToTestCount - 1); index++)
