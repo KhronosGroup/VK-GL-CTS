@@ -44,7 +44,7 @@ struct FeatureDesc
 };
 
 // Structure containg all feature blobs - this simplifies generated code
-struct AllBlobs
+struct AllFeaturesBlobs
 {
 	VkPhysicalDeviceVulkan11Features& vk11;
 	VkPhysicalDeviceVulkan12Features& vk12;
@@ -56,7 +56,7 @@ class FeatureStructWrapperBase
 {
 public:
 	virtual					~FeatureStructWrapperBase	(void) {}
-	virtual void			initializeFromBlob			(const AllBlobs& allBlobs) = 0;
+	virtual void			initializeFeatureFromBlob	(const AllFeaturesBlobs& allFeaturesBlobs) = 0;
 	virtual deUint32		getFeatureTypeId			(void) const = 0;
 	virtual FeatureDesc		getFeatureDesc				(void) const = 0;
 	virtual void**			getFeatureTypeNext			(void) = 0;
@@ -81,12 +81,12 @@ FeatureStructWrapperBase* createFeatureStructWrapper (void)
 }
 
 template<class FeatureType>
-void initFromBlob(FeatureType& featureType, const AllBlobs& allBlobs);
+void initFeatureFromBlob(FeatureType& featureType, const AllFeaturesBlobs& allFeaturesBlobs);
 
 template<class FeatureType>
-void initFromBlobWrapper(FeatureType& featureType, const AllBlobs& allBlobs)
+void initFeatureFromBlobWrapper(FeatureType& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	initFromBlob<FeatureType>(featureType, allBlobs);
+	initFeatureFromBlob<FeatureType>(featureType, allFeaturesBlobs);
 }
 
 class DeviceFeatures
@@ -162,9 +162,9 @@ public:
 		m_featureType.sType = featureDesc.sType;
 	}
 
-	void initializeFromBlob (const AllBlobs& allBlobs)
+	void initializeFeatureFromBlob (const AllFeaturesBlobs& allFeaturesBlobs)
 	{
-		initFromBlobWrapper(m_featureType, allBlobs);
+		initFeatureFromBlobWrapper(m_featureType, allFeaturesBlobs);
 	}
 
 	deUint32		getFeatureTypeId	(void) const	{ return m_featureDesc.typeId;	}

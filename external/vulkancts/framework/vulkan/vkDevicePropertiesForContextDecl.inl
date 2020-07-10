@@ -14,6 +14,7 @@ const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&			getExternalMemoryHo
 const vk::VkPhysicalDeviceFloatControlsProperties&					getFloatControlsProperties					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapPropertiesEXT&			getFragmentDensityMapPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&			getFragmentDensityMap2PropertiesEXT			(void) const;
+const vk::VkPhysicalDeviceIDProperties&								getIDProperties								(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockPropertiesEXT&			getInlineUniformBlockPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationPropertiesEXT&			getLineRasterizationPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;

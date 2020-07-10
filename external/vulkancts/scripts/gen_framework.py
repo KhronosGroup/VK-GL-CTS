@@ -1855,7 +1855,11 @@ def generateDevicePropertiesDefs(src):
 		if suffixStart > 0:
 			sVerSuffix = sSuffix[:suffixStart]
 			sExtSuffix = sSuffix[suffixStart:]
-		structName			= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
+		# handle special case
+		if sType == "ID":
+			structName	= sType
+		else:
+			structName	= re.sub("[_0-9][a-z]", lambda match: match.group(0).upper(), sType.capitalize()).replace('_', '')
 		ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Properties' + sSuffix.replace('_', '') + ')'
 		matchStructName		= re.search(ptrnStructName, src, re.M)
 		if matchStructName:
@@ -1923,9 +1927,9 @@ def writeDeviceFeatures(api, dfDefs, filename):
 				# add specialization for this feature structure
 				memberCopying = ""
 				for member in structureMembers:
-					memberCopying += "\tfeatureType.{0} = allBlobs.vk{1}.{0};\n".format(member.name, blobName)
+					memberCopying += "\tfeatureType.{0} = allFeaturesBlobs.vk{1}.{0};\n".format(member.name, blobName)
 				wholeFunction = \
-					"template<> void initFromBlob<{0}>({0}& featureType, const AllBlobs& allBlobs)\n" \
+					"template<> void initFeatureFromBlob<{0}>({0}& featureType, const AllFeaturesBlobs& allFeaturesBlobs)\n" \
 					"{{\n" \
 					"{1}" \
 					"}}".format(structureType.name, memberCopying)
@@ -1936,7 +1940,7 @@ def writeDeviceFeatures(api, dfDefs, filename):
 		# add empty template definition as on Fedora there are issue with
 		# linking using just generic template - all specializations are needed
 		if notPartOfBlob:
-			emptyFunction = "template<> void initFromBlob<{0}>({0}&, const AllBlobs&) {{}}"
+			emptyFunction = "template<> void initFeatureFromBlob<{0}>({0}&, const AllFeaturesBlobs&) {{}}"
 			emptyInitDefinitions.append(emptyFunction.format(structureType.name))
 	extensionDefines = []
 	makeFeatureDescDefinitions = []
@@ -2010,11 +2014,76 @@ def writeDeviceFeatures(api, dfDefs, filename):
 	stream.append('} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
-def writeDeviceProperties(dfDefs, filename):
+def writeDeviceProperties(api, dpDefs, filename):
+	# find VkPhysicalDeviceVulkan[1-9][0-9]Features blob structurs
+	# and construct dictionary with all of their attributes
+	blobMembers = {}
+	blobStructs = {}
+	blobPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Properties[0-9]*$")
+	for structureType in api.compositeTypes:
+		match = blobPattern.match(structureType.name)
+		if match:
+			allMembers = [member.name for member in structureType.members]
+			vkVersion = match.group(1)
+			blobMembers[vkVersion] = allMembers[2:]
+			blobStructs[vkVersion] = set()
+	initFromBlobDefinitions = []
+	emptyInitDefinitions = []
+	# iterate over all property structures
+	allPropertiesPattern = re.compile("^VkPhysicalDevice\w+Properties[1-9]*")
+	nonExtPropertiesPattern = re.compile("^VkPhysicalDevice\w+Properties[1-9]*$")
+	for structureType in api.compositeTypes:
+		# skip structures that are not property structures
+		if not allPropertiesPattern.match(structureType.name):
+			continue
+		# skip structures that were previously identified as blobs
+		if blobPattern.match(structureType.name):
+			continue
+		if structureType.isAlias:
+			continue
+		# skip sType and pNext and just grab third and next attributes
+		structureMembers = structureType.members[2:]
+		notPartOfBlob = True
+		if nonExtPropertiesPattern.match(structureType.name):
+			# check if this member is part of any of the blobs
+			for blobName, blobMemberList in blobMembers.items():
+				# if just one member is not part of this blob go to the next blob
+				# (we asume that all members are part of blob - no need to check all)
+				if structureMembers[0].name not in blobMemberList:
+					continue
+				# add another property structure name to this blob
+				blobStructs[blobName].add(structureType)
+				# add specialization for this property structure
+				memberCopying = ""
+				for member in structureMembers:
+					if not member.arraySize:
+						# handle special case
+						if structureType.name == "VkPhysicalDeviceSubgroupProperties" and "subgroup" not in member.name :
+							blobMemberName = "subgroup" + member.name[0].capitalize() + member.name[1:]
+							memberCopying += "\tpropertyType.{0} = allPropertiesBlobs.vk{1}.{2};\n".format(member.name, blobName, blobMemberName)
+						# end handling special case
+						else:
+							memberCopying += "\tpropertyType.{0} = allPropertiesBlobs.vk{1}.{0};\n".format(member.name, blobName)
+					else:
+						memberCopying += "\tmemcpy(propertyType.{0}, allPropertiesBlobs.vk{1}.{0}, sizeof({2}) * {3});\n".format(member.name, blobName, member.type[0], member.arraySize[1:-1])
+				wholeFunction = \
+					"template<> void initPropertyFromBlob<{0}>({0}& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)\n" \
+					"{{\n" \
+					"{1}" \
+					"}}".format(structureType.name, memberCopying)
+				initFromBlobDefinitions.append(wholeFunction)
+				notPartOfBlob = False
+				# assuming that all members are part of blob, goto next
+				break
+		# add empty template definition as on Fedora there are issue with
+		# linking using just generic template - all specializations are needed
+		if notPartOfBlob:
+			emptyFunction = "template<> void initPropertyFromBlob<{0}>({0}&, const AllPropertiesBlobs&) {{}}"
+			emptyInitDefinitions.append(emptyFunction.format(structureType.name))
 	extensionDefines = []
 	makePropertyDescDefinitions = []
 	propertyStructWrappers = []
-	for idx, (sType, sVerSuffix, sExtSuffix, extStruct, extLine, extName, specVer) in enumerate(dfDefs):
+	for idx, (sType, sVerSuffix, sExtSuffix, extStruct, extLine, extName, specVer) in enumerate(dpDefs):
 		extensionNameDefinition = extName
 		if not extensionNameDefinition:
 			extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
@@ -2026,20 +2095,47 @@ def writeDeviceProperties(dfDefs, filename):
 		# construct makePropertyDesc template function definitions
 		sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sVerSuffix + sExtSuffix)
 		makePropertyDescDefinitions.append("template<> PropertyDesc makePropertyDesc<{0}>(void) " \
-			"{{ return PropertyDesc({1}, {2}, {3}, {4}); }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dfDefs)-idx))
+			"{{ return PropertyDesc{{{1}, {2}, {3}, {4}}}; }}".format(extStruct, sTypeName, extensionNameDefinition, specVer, len(dpDefs)-idx))
 		# construct CreateProperty struct wrapper block
 		propertyStructWrappers.append("\t{{ createPropertyStructWrapper<{0}>, {1}, {2} }},".format(extStruct, extensionNameDefinition, specVer))
+			# construct method that will check if structure sType is part of blob
+	blobChecker = "bool isPartOfBlobProperties (VkStructureType sType)\n{\n" \
+				  "\tconst std::vector<VkStructureType> sTypeVect =" \
+				  "\t{\n"
+	# iterate over blobs with list of structures
+	for blobName in sorted(blobStructs.keys()):
+		blobChecker += "\t\t// Vulkan{0}\n".format(blobName)
+		# iterate over all feature structures in current blob
+		structuresList = list(blobStructs[blobName])
+		structuresList = sorted(structuresList, key=lambda s: s.name)
+		for structType in structuresList:
+			# find definition of this structure in dpDefs
+			structName = structType.name
+			structDef = [s for s in dpDefs if s[3] == structName][0]
+			sType = structDef[0]
+			sSuffix = structDef[1] + structDef[2]
+			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_{0}_PROPERTIES{1}".format(sType, sSuffix)
+			blobChecker += "\t\t{0},\n".format(sTypeName)
+	blobChecker += "\t};\n" \
+				   "\treturn de::contains(sTypeVect.begin(), sTypeVect.end(), sType);\n" \
+				   "}\n"
 	# combine all definition lists
 	stream = [
 	'#include "vkDeviceProperties.hpp"\n',
 	'namespace vk\n{']
 	stream.extend(extensionDefines)
 	stream.append('\n')
+	stream.extend(initFromBlobDefinitions)
+	stream.append('\n// generic template is not enough for some compilers')
+	stream.extend(emptyInitDefinitions)
+	stream.append('\n')
 	stream.extend(makePropertyDescDefinitions)
 	stream.append('\n')
-	stream.append('static const PropertyStructMapItem propertyStructCreatorMap[] =\n{')
+	stream.append('static const PropertyStructCreationData propertyStructCreationArray[] =\n{')
 	stream.extend(propertyStructWrappers)
-	stream.append('};\n} // vk\n')
+	stream.append('};\n')
+	stream.append(blobChecker)
+	stream.append('} // vk\n')
 	writeInlFile(filename, INL_HEADER, stream)
 
 def genericDeviceFeaturesWriter(dfDefs, pattern, filename):
@@ -2071,7 +2167,7 @@ def genericDevicePropertiesWriter(dfDefs, pattern, filename):
 	writeInlFile(filename, INL_HEADER, indentLines(stream))
 
 def writeDevicePropertiesDefaultDeviceDefs(dfDefs, filename):
-	pattern = "const {0}&\tget{1}\t(void) const {{ return m_devicePropertiesFull.getPropertyType<{0}>();\t}}"
+	pattern = "const {0}&\tget{1}\t(void) const {{ return m_deviceProperties.getPropertyType<{0}>();\t}}"
 	genericDevicePropertiesWriter(dfDefs, pattern, filename)
 
 def writeDevicePropertiesContextDecl(dfDefs, filename):
@@ -2227,7 +2323,7 @@ if __name__ == "__main__":
 	writeDeviceFeaturesContextDefs			(dfd, os.path.join(VULKAN_DIR, "vkDeviceFeaturesForContextDefs.inl"))
 
 	dpd										= generateDevicePropertiesDefs(src)
-	writeDeviceProperties					(dpd, os.path.join(VULKAN_DIR, "vkDeviceProperties.inl"))
+	writeDeviceProperties					(api, dpd, os.path.join(VULKAN_DIR, "vkDeviceProperties.inl"))
 
 	writeDevicePropertiesDefaultDeviceDefs	(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForDefaultDeviceDefs.inl"))
 	writeDevicePropertiesContextDecl		(dpd, os.path.join(VULKAN_DIR, "vkDevicePropertiesForContextDecl.inl"))

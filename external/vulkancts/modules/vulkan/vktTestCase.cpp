@@ -290,27 +290,29 @@ public:
 																	DefaultDevice							(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
 																	~DefaultDevice							(void);
 
-	VkInstance														getInstance								(void) const { return *m_instance;										}
-	const InstanceInterface&										getInstanceInterface					(void) const { return m_instanceInterface;								}
-	deUint32														getMaximumFrameworkVulkanVersion		(void) const { return m_maximumFrameworkVulkanVersion;					}
-	deUint32														getAvailableInstanceVersion				(void) const { return m_availableInstanceVersion;						}
-	deUint32														getUsedInstanceVersion					(void) const { return m_usedInstanceVersion;							}
-	const vector<string>&											getInstanceExtensions					(void) const { return m_instanceExtensions;								}
+	VkInstance														getInstance								(void) const { return *m_instance;											}
+	const InstanceInterface&										getInstanceInterface					(void) const { return m_instanceInterface;									}
+	deUint32														getMaximumFrameworkVulkanVersion		(void) const { return m_maximumFrameworkVulkanVersion;						}
+	deUint32														getAvailableInstanceVersion				(void) const { return m_availableInstanceVersion;							}
+	deUint32														getUsedInstanceVersion					(void) const { return m_usedInstanceVersion;								}
+	const vector<string>&											getInstanceExtensions					(void) const { return m_instanceExtensions;									}
 
-	VkPhysicalDevice												getPhysicalDevice						(void) const { return m_physicalDevice;									}
-	deUint32														getDeviceVersion						(void) const { return m_deviceVersion;									}
+	VkPhysicalDevice												getPhysicalDevice						(void) const { return m_physicalDevice;										}
+	deUint32														getDeviceVersion						(void) const { return m_deviceVersion;										}
 
 	bool															isDeviceFeatureInitialized				(VkStructureType sType) const { return m_deviceFeatures.isDeviceFeatureInitialized(sType);		}
-	const VkPhysicalDeviceFeatures&									getDeviceFeatures						(void) const { return m_deviceFeatures.getCoreFeatures2().features;		}
-	const VkPhysicalDeviceFeatures2&								getDeviceFeatures2						(void) const { return m_deviceFeatures.getCoreFeatures2();				}
-	const VkPhysicalDeviceVulkan11Features&							getVulkan11Features						(void) const { return m_deviceFeatures.getVulkan11Features(); }
-	const VkPhysicalDeviceVulkan12Features&							getVulkan12Features						(void) const { return m_deviceFeatures.getVulkan12Features(); }
+	const VkPhysicalDeviceFeatures&									getDeviceFeatures						(void) const { return m_deviceFeatures.getCoreFeatures2().features;			}
+	const VkPhysicalDeviceFeatures2&								getDeviceFeatures2						(void) const { return m_deviceFeatures.getCoreFeatures2();					}
+	const VkPhysicalDeviceVulkan11Features&							getVulkan11Features						(void) const { return m_deviceFeatures.getVulkan11Features();				}
+	const VkPhysicalDeviceVulkan12Features&							getVulkan12Features						(void) const { return m_deviceFeatures.getVulkan12Features();				}
 
 #include "vkDeviceFeaturesForDefaultDeviceDefs.inl"
 
-	bool															isDevicePropertyInitialized				(VkStructureType sType) const { return m_devicePropertiesFull.isDevicePropertyInitialized(sType);	}
-	const VkPhysicalDeviceProperties&								getDeviceProperties						(void) const { return m_deviceProperties;									}
-	const VkPhysicalDeviceProperties2&								getDeviceProperties2					(void) const { return m_devicePropertiesFull.getCoreProperties2();			}
+	bool															isDevicePropertyInitialized				(VkStructureType sType) const { return m_deviceProperties.isDevicePropertyInitialized(sType);	}
+	const VkPhysicalDeviceProperties&								getDeviceProperties						(void) const { return m_deviceProperties.getCoreProperties2().properties;	}
+	const VkPhysicalDeviceProperties2&								getDeviceProperties2					(void) const { return m_deviceProperties.getCoreProperties2();				}
+	const VkPhysicalDeviceVulkan11Properties&						getVulkan11Properties					(void) const { return m_deviceProperties.getVulkan11Properties();			}
+	const VkPhysicalDeviceVulkan12Properties&						getVulkan12Properties					(void) const { return m_deviceProperties.getVulkan12Properties();			}
 
 #include "vkDevicePropertiesForDefaultDeviceDefs.inl"
 
@@ -344,8 +346,7 @@ private:
 
 	const deUint32						m_universalQueueFamilyIndex;
 	const deUint32						m_sparseQueueFamilyIndex;
-	const VkPhysicalDeviceProperties	m_deviceProperties;
-	const DeviceProperties				m_devicePropertiesFull;
+	const DeviceProperties				m_deviceProperties;
 
 	const Unique<VkDevice>				m_device;
 	const DeviceDriver					m_deviceInterface;
@@ -374,8 +375,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_deviceFeatures					(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
 	, m_universalQueueFamilyIndex		(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_sparseQueueFamilyIndex			(m_deviceFeatures.getCoreFeatures2().features.sparseBinding ? findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) : 0)
-	, m_deviceProperties				(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_devicePropertiesFull			(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
+	, m_deviceProperties				(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
 	, m_device							(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(), m_deviceExtensions, cmdLine))
 	, m_deviceInterface					(vkPlatform, *m_instance, *m_device)
 {

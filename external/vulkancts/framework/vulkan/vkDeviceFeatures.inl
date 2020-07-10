@@ -72,163 +72,163 @@ namespace vk
 #define VK_EXT_YCBCR_IMAGE_ARRAYS_EXTENSION_NAME "VK_EXT_ycbcr_image_arrays"
 
 
-template<> void initFromBlob<VkPhysicalDevice16BitStorageFeatures>(VkPhysicalDevice16BitStorageFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDevice16BitStorageFeatures>(VkPhysicalDevice16BitStorageFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.storageBuffer16BitAccess = allBlobs.vk11.storageBuffer16BitAccess;
-	featureType.uniformAndStorageBuffer16BitAccess = allBlobs.vk11.uniformAndStorageBuffer16BitAccess;
-	featureType.storagePushConstant16 = allBlobs.vk11.storagePushConstant16;
-	featureType.storageInputOutput16 = allBlobs.vk11.storageInputOutput16;
+	featureType.storageBuffer16BitAccess = allFeaturesBlobs.vk11.storageBuffer16BitAccess;
+	featureType.uniformAndStorageBuffer16BitAccess = allFeaturesBlobs.vk11.uniformAndStorageBuffer16BitAccess;
+	featureType.storagePushConstant16 = allFeaturesBlobs.vk11.storagePushConstant16;
+	featureType.storageInputOutput16 = allFeaturesBlobs.vk11.storageInputOutput16;
 }
-template<> void initFromBlob<VkPhysicalDeviceMultiviewFeatures>(VkPhysicalDeviceMultiviewFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceMultiviewFeatures>(VkPhysicalDeviceMultiviewFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.multiview = allBlobs.vk11.multiview;
-	featureType.multiviewGeometryShader = allBlobs.vk11.multiviewGeometryShader;
-	featureType.multiviewTessellationShader = allBlobs.vk11.multiviewTessellationShader;
+	featureType.multiview = allFeaturesBlobs.vk11.multiview;
+	featureType.multiviewGeometryShader = allFeaturesBlobs.vk11.multiviewGeometryShader;
+	featureType.multiviewTessellationShader = allFeaturesBlobs.vk11.multiviewTessellationShader;
 }
-template<> void initFromBlob<VkPhysicalDeviceVariablePointersFeatures>(VkPhysicalDeviceVariablePointersFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceVariablePointersFeatures>(VkPhysicalDeviceVariablePointersFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.variablePointersStorageBuffer = allBlobs.vk11.variablePointersStorageBuffer;
-	featureType.variablePointers = allBlobs.vk11.variablePointers;
+	featureType.variablePointersStorageBuffer = allFeaturesBlobs.vk11.variablePointersStorageBuffer;
+	featureType.variablePointers = allFeaturesBlobs.vk11.variablePointers;
 }
-template<> void initFromBlob<VkPhysicalDeviceProtectedMemoryFeatures>(VkPhysicalDeviceProtectedMemoryFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceProtectedMemoryFeatures>(VkPhysicalDeviceProtectedMemoryFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.protectedMemory = allBlobs.vk11.protectedMemory;
+	featureType.protectedMemory = allFeaturesBlobs.vk11.protectedMemory;
 }
-template<> void initFromBlob<VkPhysicalDeviceSamplerYcbcrConversionFeatures>(VkPhysicalDeviceSamplerYcbcrConversionFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceSamplerYcbcrConversionFeatures>(VkPhysicalDeviceSamplerYcbcrConversionFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.samplerYcbcrConversion = allBlobs.vk11.samplerYcbcrConversion;
+	featureType.samplerYcbcrConversion = allFeaturesBlobs.vk11.samplerYcbcrConversion;
 }
-template<> void initFromBlob<VkPhysicalDeviceShaderDrawParametersFeatures>(VkPhysicalDeviceShaderDrawParametersFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderDrawParametersFeatures>(VkPhysicalDeviceShaderDrawParametersFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.shaderDrawParameters = allBlobs.vk11.shaderDrawParameters;
+	featureType.shaderDrawParameters = allFeaturesBlobs.vk11.shaderDrawParameters;
 }
-template<> void initFromBlob<VkPhysicalDevice8BitStorageFeatures>(VkPhysicalDevice8BitStorageFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDevice8BitStorageFeatures>(VkPhysicalDevice8BitStorageFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.storageBuffer8BitAccess = allBlobs.vk12.storageBuffer8BitAccess;
-	featureType.uniformAndStorageBuffer8BitAccess = allBlobs.vk12.uniformAndStorageBuffer8BitAccess;
-	featureType.storagePushConstant8 = allBlobs.vk12.storagePushConstant8;
+	featureType.storageBuffer8BitAccess = allFeaturesBlobs.vk12.storageBuffer8BitAccess;
+	featureType.uniformAndStorageBuffer8BitAccess = allFeaturesBlobs.vk12.uniformAndStorageBuffer8BitAccess;
+	featureType.storagePushConstant8 = allFeaturesBlobs.vk12.storagePushConstant8;
 }
-template<> void initFromBlob<VkPhysicalDeviceShaderAtomicInt64Features>(VkPhysicalDeviceShaderAtomicInt64Features& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicInt64Features>(VkPhysicalDeviceShaderAtomicInt64Features& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.shaderBufferInt64Atomics = allBlobs.vk12.shaderBufferInt64Atomics;
-	featureType.shaderSharedInt64Atomics = allBlobs.vk12.shaderSharedInt64Atomics;
+	featureType.shaderBufferInt64Atomics = allFeaturesBlobs.vk12.shaderBufferInt64Atomics;
+	featureType.shaderSharedInt64Atomics = allFeaturesBlobs.vk12.shaderSharedInt64Atomics;
 }
-template<> void initFromBlob<VkPhysicalDeviceShaderFloat16Int8Features>(VkPhysicalDeviceShaderFloat16Int8Features& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFloat16Int8Features>(VkPhysicalDeviceShaderFloat16Int8Features& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.shaderFloat16 = allBlobs.vk12.shaderFloat16;
-	featureType.shaderInt8 = allBlobs.vk12.shaderInt8;
+	featureType.shaderFloat16 = allFeaturesBlobs.vk12.shaderFloat16;
+	featureType.shaderInt8 = allFeaturesBlobs.vk12.shaderInt8;
 }
-template<> void initFromBlob<VkPhysicalDeviceDescriptorIndexingFeatures>(VkPhysicalDeviceDescriptorIndexingFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceDescriptorIndexingFeatures>(VkPhysicalDeviceDescriptorIndexingFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.shaderInputAttachmentArrayDynamicIndexing = allBlobs.vk12.shaderInputAttachmentArrayDynamicIndexing;
-	featureType.shaderUniformTexelBufferArrayDynamicIndexing = allBlobs.vk12.shaderUniformTexelBufferArrayDynamicIndexing;
-	featureType.shaderStorageTexelBufferArrayDynamicIndexing = allBlobs.vk12.shaderStorageTexelBufferArrayDynamicIndexing;
-	featureType.shaderUniformBufferArrayNonUniformIndexing = allBlobs.vk12.shaderUniformBufferArrayNonUniformIndexing;
-	featureType.shaderSampledImageArrayNonUniformIndexing = allBlobs.vk12.shaderSampledImageArrayNonUniformIndexing;
-	featureType.shaderStorageBufferArrayNonUniformIndexing = allBlobs.vk12.shaderStorageBufferArrayNonUniformIndexing;
-	featureType.shaderStorageImageArrayNonUniformIndexing = allBlobs.vk12.shaderStorageImageArrayNonUniformIndexing;
-	featureType.shaderInputAttachmentArrayNonUniformIndexing = allBlobs.vk12.shaderInputAttachmentArrayNonUniformIndexing;
-	featureType.shaderUniformTexelBufferArrayNonUniformIndexing = allBlobs.vk12.shaderUniformTexelBufferArrayNonUniformIndexing;
-	featureType.shaderStorageTexelBufferArrayNonUniformIndexing = allBlobs.vk12.shaderStorageTexelBufferArrayNonUniformIndexing;
-	featureType.descriptorBindingUniformBufferUpdateAfterBind = allBlobs.vk12.descriptorBindingUniformBufferUpdateAfterBind;
-	featureType.descriptorBindingSampledImageUpdateAfterBind = allBlobs.vk12.descriptorBindingSampledImageUpdateAfterBind;
-	featureType.descriptorBindingStorageImageUpdateAfterBind = allBlobs.vk12.descriptorBindingStorageImageUpdateAfterBind;
-	featureType.descriptorBindingStorageBufferUpdateAfterBind = allBlobs.vk12.descriptorBindingStorageBufferUpdateAfterBind;
-	featureType.descriptorBindingUniformTexelBufferUpdateAfterBind = allBlobs.vk12.descriptorBindingUniformTexelBufferUpdateAfterBind;
-	featureType.descriptorBindingStorageTexelBufferUpdateAfterBind = allBlobs.vk12.descriptorBindingStorageTexelBufferUpdateAfterBind;
-	featureType.descriptorBindingUpdateUnusedWhilePending = allBlobs.vk12.descriptorBindingUpdateUnusedWhilePending;
-	featureType.descriptorBindingPartiallyBound = allBlobs.vk12.descriptorBindingPartiallyBound;
-	featureType.descriptorBindingVariableDescriptorCount = allBlobs.vk12.descriptorBindingVariableDescriptorCount;
-	featureType.runtimeDescriptorArray = allBlobs.vk12.runtimeDescriptorArray;
+	featureType.shaderInputAttachmentArrayDynamicIndexing = allFeaturesBlobs.vk12.shaderInputAttachmentArrayDynamicIndexing;
+	featureType.shaderUniformTexelBufferArrayDynamicIndexing = allFeaturesBlobs.vk12.shaderUniformTexelBufferArrayDynamicIndexing;
+	featureType.shaderStorageTexelBufferArrayDynamicIndexing = allFeaturesBlobs.vk12.shaderStorageTexelBufferArrayDynamicIndexing;
+	featureType.shaderUniformBufferArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderUniformBufferArrayNonUniformIndexing;
+	featureType.shaderSampledImageArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderSampledImageArrayNonUniformIndexing;
+	featureType.shaderStorageBufferArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderStorageBufferArrayNonUniformIndexing;
+	featureType.shaderStorageImageArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderStorageImageArrayNonUniformIndexing;
+	featureType.shaderInputAttachmentArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderInputAttachmentArrayNonUniformIndexing;
+	featureType.shaderUniformTexelBufferArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderUniformTexelBufferArrayNonUniformIndexing;
+	featureType.shaderStorageTexelBufferArrayNonUniformIndexing = allFeaturesBlobs.vk12.shaderStorageTexelBufferArrayNonUniformIndexing;
+	featureType.descriptorBindingUniformBufferUpdateAfterBind = allFeaturesBlobs.vk12.descriptorBindingUniformBufferUpdateAfterBind;
+	featureType.descriptorBindingSampledImageUpdateAfterBind = allFeaturesBlobs.vk12.descriptorBindingSampledImageUpdateAfterBind;
+	featureType.descriptorBindingStorageImageUpdateAfterBind = allFeaturesBlobs.vk12.descriptorBindingStorageImageUpdateAfterBind;
+	featureType.descriptorBindingStorageBufferUpdateAfterBind = allFeaturesBlobs.vk12.descriptorBindingStorageBufferUpdateAfterBind;
+	featureType.descriptorBindingUniformTexelBufferUpdateAfterBind = allFeaturesBlobs.vk12.descriptorBindingUniformTexelBufferUpdateAfterBind;
+	featureType.descriptorBindingStorageTexelBufferUpdateAfterBind = allFeaturesBlobs.vk12.descriptorBindingStorageTexelBufferUpdateAfterBind;
+	featureType.descriptorBindingUpdateUnusedWhilePending = allFeaturesBlobs.vk12.descriptorBindingUpdateUnusedWhilePending;
+	featureType.descriptorBindingPartiallyBound = allFeaturesBlobs.vk12.descriptorBindingPartiallyBound;
+	featureType.descriptorBindingVariableDescriptorCount = allFeaturesBlobs.vk12.descriptorBindingVariableDescriptorCount;
+	featureType.runtimeDescriptorArray = allFeaturesBlobs.vk12.runtimeDescriptorArray;
 }
-template<> void initFromBlob<VkPhysicalDeviceScalarBlockLayoutFeatures>(VkPhysicalDeviceScalarBlockLayoutFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceScalarBlockLayoutFeatures>(VkPhysicalDeviceScalarBlockLayoutFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.scalarBlockLayout = allBlobs.vk12.scalarBlockLayout;
+	featureType.scalarBlockLayout = allFeaturesBlobs.vk12.scalarBlockLayout;
 }
-template<> void initFromBlob<VkPhysicalDeviceVulkanMemoryModelFeatures>(VkPhysicalDeviceVulkanMemoryModelFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceVulkanMemoryModelFeatures>(VkPhysicalDeviceVulkanMemoryModelFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.vulkanMemoryModel = allBlobs.vk12.vulkanMemoryModel;
-	featureType.vulkanMemoryModelDeviceScope = allBlobs.vk12.vulkanMemoryModelDeviceScope;
-	featureType.vulkanMemoryModelAvailabilityVisibilityChains = allBlobs.vk12.vulkanMemoryModelAvailabilityVisibilityChains;
+	featureType.vulkanMemoryModel = allFeaturesBlobs.vk12.vulkanMemoryModel;
+	featureType.vulkanMemoryModelDeviceScope = allFeaturesBlobs.vk12.vulkanMemoryModelDeviceScope;
+	featureType.vulkanMemoryModelAvailabilityVisibilityChains = allFeaturesBlobs.vk12.vulkanMemoryModelAvailabilityVisibilityChains;
 }
-template<> void initFromBlob<VkPhysicalDeviceImagelessFramebufferFeatures>(VkPhysicalDeviceImagelessFramebufferFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceImagelessFramebufferFeatures>(VkPhysicalDeviceImagelessFramebufferFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.imagelessFramebuffer = allBlobs.vk12.imagelessFramebuffer;
+	featureType.imagelessFramebuffer = allFeaturesBlobs.vk12.imagelessFramebuffer;
 }
-template<> void initFromBlob<VkPhysicalDeviceUniformBufferStandardLayoutFeatures>(VkPhysicalDeviceUniformBufferStandardLayoutFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceUniformBufferStandardLayoutFeatures>(VkPhysicalDeviceUniformBufferStandardLayoutFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.uniformBufferStandardLayout = allBlobs.vk12.uniformBufferStandardLayout;
+	featureType.uniformBufferStandardLayout = allFeaturesBlobs.vk12.uniformBufferStandardLayout;
 }
-template<> void initFromBlob<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>(VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>(VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.shaderSubgroupExtendedTypes = allBlobs.vk12.shaderSubgroupExtendedTypes;
+	featureType.shaderSubgroupExtendedTypes = allFeaturesBlobs.vk12.shaderSubgroupExtendedTypes;
 }
-template<> void initFromBlob<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>(VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>(VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.separateDepthStencilLayouts = allBlobs.vk12.separateDepthStencilLayouts;
+	featureType.separateDepthStencilLayouts = allFeaturesBlobs.vk12.separateDepthStencilLayouts;
 }
-template<> void initFromBlob<VkPhysicalDeviceHostQueryResetFeatures>(VkPhysicalDeviceHostQueryResetFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceHostQueryResetFeatures>(VkPhysicalDeviceHostQueryResetFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.hostQueryReset = allBlobs.vk12.hostQueryReset;
+	featureType.hostQueryReset = allFeaturesBlobs.vk12.hostQueryReset;
 }
-template<> void initFromBlob<VkPhysicalDeviceTimelineSemaphoreFeatures>(VkPhysicalDeviceTimelineSemaphoreFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceTimelineSemaphoreFeatures>(VkPhysicalDeviceTimelineSemaphoreFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.timelineSemaphore = allBlobs.vk12.timelineSemaphore;
+	featureType.timelineSemaphore = allFeaturesBlobs.vk12.timelineSemaphore;
 }
-template<> void initFromBlob<VkPhysicalDeviceBufferDeviceAddressFeatures>(VkPhysicalDeviceBufferDeviceAddressFeatures& featureType, const AllBlobs& allBlobs)
+template<> void initFeatureFromBlob<VkPhysicalDeviceBufferDeviceAddressFeatures>(VkPhysicalDeviceBufferDeviceAddressFeatures& featureType, const AllFeaturesBlobs& allFeaturesBlobs)
 {
-	featureType.bufferDeviceAddress = allBlobs.vk12.bufferDeviceAddress;
-	featureType.bufferDeviceAddressCaptureReplay = allBlobs.vk12.bufferDeviceAddressCaptureReplay;
-	featureType.bufferDeviceAddressMultiDevice = allBlobs.vk12.bufferDeviceAddressMultiDevice;
+	featureType.bufferDeviceAddress = allFeaturesBlobs.vk12.bufferDeviceAddress;
+	featureType.bufferDeviceAddressCaptureReplay = allFeaturesBlobs.vk12.bufferDeviceAddressCaptureReplay;
+	featureType.bufferDeviceAddressMultiDevice = allFeaturesBlobs.vk12.bufferDeviceAddressMultiDevice;
 }
 
 // generic template is not enough for some compilers
-template<> void initFromBlob<VkPhysicalDevicePerformanceQueryFeaturesKHR>(VkPhysicalDevicePerformanceQueryFeaturesKHR&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShaderClockFeaturesKHR>(VkPhysicalDeviceShaderClockFeaturesKHR&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>(VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceTransformFeedbackFeaturesEXT>(VkPhysicalDeviceTransformFeedbackFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceCornerSampledImageFeaturesNV>(VkPhysicalDeviceCornerSampledImageFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT>(VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceASTCDecodeFeaturesEXT>(VkPhysicalDeviceASTCDecodeFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceConditionalRenderingFeaturesEXT>(VkPhysicalDeviceConditionalRenderingFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceDepthClipEnableFeaturesEXT>(VkPhysicalDeviceDepthClipEnableFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceInlineUniformBlockFeaturesEXT>(VkPhysicalDeviceInlineUniformBlockFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>(VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV>(VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShadingRateImageFeaturesNV>(VkPhysicalDeviceShadingRateImageFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>(VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>(VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceComputeShaderDerivativesFeaturesNV>(VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceMeshShaderFeaturesNV>(VkPhysicalDeviceMeshShaderFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV>(VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShaderImageFootprintFeaturesNV>(VkPhysicalDeviceShaderImageFootprintFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceExclusiveScissorFeaturesNV>(VkPhysicalDeviceExclusiveScissorFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL>(VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(VkPhysicalDeviceFragmentDensityMapFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>(VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceCoherentMemoryFeaturesAMD>(VkPhysicalDeviceCoherentMemoryFeaturesAMD&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceMemoryPriorityFeaturesEXT>(VkPhysicalDeviceMemoryPriorityFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>(VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT>(VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesNV>(VkPhysicalDeviceCooperativeMatrixFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceCoverageReductionModeFeaturesNV>(VkPhysicalDeviceCoverageReductionModeFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>(VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>(VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceLineRasterizationFeaturesEXT>(VkPhysicalDeviceLineRasterizationFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>(VkPhysicalDeviceIndexTypeUint8FeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>(VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>(VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV>(VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>(VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceRobustness2FeaturesEXT>(VkPhysicalDeviceRobustness2FeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceCustomBorderColorFeaturesEXT>(VkPhysicalDeviceCustomBorderColorFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDevicePrivateDataFeaturesEXT>(VkPhysicalDevicePrivateDataFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT>(VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>(VkPhysicalDeviceDiagnosticsConfigFeaturesNV&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceImageRobustnessFeaturesEXT>(VkPhysicalDeviceImageRobustnessFeaturesEXT&, const AllBlobs&) {}
-template<> void initFromBlob<VkPhysicalDeviceRayTracingFeaturesKHR>(VkPhysicalDeviceRayTracingFeaturesKHR&, const AllBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePerformanceQueryFeaturesKHR>(VkPhysicalDevicePerformanceQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderClockFeaturesKHR>(VkPhysicalDeviceShaderClockFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR>(VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceTransformFeedbackFeaturesEXT>(VkPhysicalDeviceTransformFeedbackFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCornerSampledImageFeaturesNV>(VkPhysicalDeviceCornerSampledImageFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT>(VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceASTCDecodeFeaturesEXT>(VkPhysicalDeviceASTCDecodeFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceConditionalRenderingFeaturesEXT>(VkPhysicalDeviceConditionalRenderingFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClipEnableFeaturesEXT>(VkPhysicalDeviceDepthClipEnableFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceInlineUniformBlockFeaturesEXT>(VkPhysicalDeviceInlineUniformBlockFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT>(VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV>(VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShadingRateImageFeaturesNV>(VkPhysicalDeviceShadingRateImageFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>(VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>(VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceComputeShaderDerivativesFeaturesNV>(VkPhysicalDeviceComputeShaderDerivativesFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceMeshShaderFeaturesNV>(VkPhysicalDeviceMeshShaderFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV>(VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderImageFootprintFeaturesNV>(VkPhysicalDeviceShaderImageFootprintFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceExclusiveScissorFeaturesNV>(VkPhysicalDeviceExclusiveScissorFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL>(VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(VkPhysicalDeviceFragmentDensityMapFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceSubgroupSizeControlFeaturesEXT>(VkPhysicalDeviceSubgroupSizeControlFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCoherentMemoryFeaturesAMD>(VkPhysicalDeviceCoherentMemoryFeaturesAMD&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceMemoryPriorityFeaturesEXT>(VkPhysicalDeviceMemoryPriorityFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>(VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT>(VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesNV>(VkPhysicalDeviceCooperativeMatrixFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCoverageReductionModeFeaturesNV>(VkPhysicalDeviceCoverageReductionModeFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>(VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>(VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceLineRasterizationFeaturesEXT>(VkPhysicalDeviceLineRasterizationFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceIndexTypeUint8FeaturesEXT>(VkPhysicalDeviceIndexTypeUint8FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>(VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT>(VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV>(VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>(VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceRobustness2FeaturesEXT>(VkPhysicalDeviceRobustness2FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCustomBorderColorFeaturesEXT>(VkPhysicalDeviceCustomBorderColorFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePrivateDataFeaturesEXT>(VkPhysicalDevicePrivateDataFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT>(VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>(VkPhysicalDeviceDiagnosticsConfigFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceImageRobustnessFeaturesEXT>(VkPhysicalDeviceImageRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingFeaturesKHR>(VkPhysicalDeviceRayTracingFeaturesKHR&, const AllFeaturesBlobs&) {}
 
 
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevice16BitStorageFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES, VK_KHR_16BIT_STORAGE_EXTENSION_NAME, VK_KHR_16BIT_STORAGE_SPEC_VERSION, 65}; }

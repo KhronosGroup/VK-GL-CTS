@@ -98,7 +98,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		// fill data from VkPhysicalDeviceVulkan1{1,2}Features
 		if (vk12Supported)
 		{
-			AllBlobs allBlobs =
+			AllFeaturesBlobs allBlobs =
 			{
 				m_vulkan11Features,
 				m_vulkan12Features,
@@ -106,7 +106,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 			};
 
 			for (auto feature : featuresToFillFromBlob)
-				feature->initializeFromBlob(allBlobs);
+				feature->initializeFeatureFromBlob(allBlobs);
 		}
 	}
 	else
