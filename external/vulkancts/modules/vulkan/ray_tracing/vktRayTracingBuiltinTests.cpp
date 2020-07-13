@@ -1494,8 +1494,8 @@ de::MovePtr<BottomLevelAccelerationStructure> RayTracingBuiltinLaunchTestInstanc
 
 		if (triangles)
 		{
-			geometryData.push_back(tcu::Vec3(-1.0f, y0, z));
 			geometryData.push_back(tcu::Vec3(-1.0f, y1, z));
+			geometryData.push_back(tcu::Vec3(-1.0f, y0, z));
 			geometryData.push_back(tcu::Vec3(+1.0f, y0, z));
 			geometryData.push_back(tcu::Vec3(-1.0f, y1, z));
 			geometryData.push_back(tcu::Vec3(+1.0f, y0, z));
