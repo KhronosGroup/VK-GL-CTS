@@ -70,8 +70,6 @@ inline std::string updateRayTracingGLSL (const std::string& str)
 
 std::string getCommonRayGenerationShader (void);
 
-const char* getRayTracingExtensionUsed (void);
-
 class RaytracedGeometryBase
 {
 public:

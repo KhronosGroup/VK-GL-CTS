@@ -62,11 +62,6 @@ std::string getCommonRayGenerationShader (void)
 		"}\n";
 }
 
-const char* getRayTracingExtensionUsed (void)
-{
-	return "VK_KHR_ray_tracing";
-}
-
 RaytracedGeometryBase::RaytracedGeometryBase (VkGeometryTypeKHR geometryType, VkFormat vertexFormat, VkIndexType indexType)
 	: m_geometryType	(geometryType)
 	, m_vertexFormat	(vertexFormat)

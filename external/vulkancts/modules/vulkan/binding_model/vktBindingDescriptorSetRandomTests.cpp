@@ -271,7 +271,16 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	}
 	else if (isRayTracingStageKHR(m_data.stage))
 	{
-		context.requireDeviceFunctionality(getRayTracingExtensionUsed());
+		context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+		context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+		const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
+		if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+
+		const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+		if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+			TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
 	}
 
 	if ((m_data.indexType == INDEX_TYPE_PUSHCONSTANT ||
