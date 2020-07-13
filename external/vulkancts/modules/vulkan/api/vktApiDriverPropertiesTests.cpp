@@ -49,6 +49,7 @@ enum TestType
 
 static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
+	makeConformanceVersion(1, 2, 3, 1),
 	makeConformanceVersion(1, 2, 3, 0),
 	makeConformanceVersion(1, 2, 2, 1),
 	makeConformanceVersion(1, 2, 2, 0),
