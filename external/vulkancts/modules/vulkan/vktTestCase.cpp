@@ -75,6 +75,7 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 		"VK_AMD_shader_image_load_store_lod",
 		"VK_AMD_shader_trinary_minmax",
 		"VK_AMD_texture_gather_bias_lod",
+		"VK_ANDROID_external_memory_android_hardware_buffer",
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
