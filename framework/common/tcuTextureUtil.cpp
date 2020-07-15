@@ -102,7 +102,7 @@ Vec4 linearToSRGB (const Vec4& cl)
 bool isSRGB (TextureFormat format)
 {
 	// make sure to update this if type table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	return	format.order == TextureFormat::sR		||
 			format.order == TextureFormat::sRG		||
@@ -130,7 +130,7 @@ bool isCombinedDepthStencilType (TextureFormat::ChannelType type)
 
 bool hasStencilComponent (TextureFormat::ChannelOrder order)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (order)
 	{
@@ -145,7 +145,7 @@ bool hasStencilComponent (TextureFormat::ChannelOrder order)
 
 bool hasDepthComponent (TextureFormat::ChannelOrder order)
 {
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (order)
 	{
@@ -1569,7 +1569,7 @@ tcu::TextureCubeArrayView getEffectiveTextureView (const tcu::TextureCubeArrayVi
 static const TextureSwizzle& getBorderColorReadSwizzle (TextureFormat::ChannelOrder order)
 {
 	// make sure to update these tables when channel orders are updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
 
 	static const TextureSwizzle INV		= {{ TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
 	static const TextureSwizzle R		= {{ TextureSwizzle::CHANNEL_0,		TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ZERO,	TextureSwizzle::CHANNEL_ONE	}};
@@ -1598,6 +1598,7 @@ static const TextureSwizzle& getBorderColorReadSwizzle (TextureFormat::ChannelOr
 		case TextureFormat::RGB:		swizzle = &RGB;		break;
 		case TextureFormat::RGBA:		swizzle = &RGBA;	break;
 		case TextureFormat::ARGB:		swizzle = &RGBA;	break;
+		case TextureFormat::ABGR:		swizzle = &RGBA;	break;
 		case TextureFormat::BGR:		swizzle = &RGB;		break;
 		case TextureFormat::BGRA:		swizzle = &RGBA;	break;
 		case TextureFormat::sR:			swizzle = &R;		break;

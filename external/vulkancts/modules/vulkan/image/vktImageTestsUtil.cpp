@@ -844,11 +844,12 @@ bool isComponentSwizzled (const vk::VkFormat format)
 {
 	const tcu::TextureFormat	textureFormat	= mapVkFormat(format);
 
-	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (textureFormat.order)
 	{
 		case tcu::TextureFormat::ARGB:
+		case tcu::TextureFormat::ABGR:
 		case tcu::TextureFormat::BGR:
 		case tcu::TextureFormat::BGRA:
 		case tcu::TextureFormat::sBGR:
@@ -863,7 +864,7 @@ bool isComponentSwizzled (const vk::VkFormat format)
 int getNumUsedChannels (const vk::VkFormat format)
 {
 	// make sure this function will be checked if type table is updated
-	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 22);
 
 	const tcu::TextureFormat	textureFormat	= mapVkFormat(format);
 
