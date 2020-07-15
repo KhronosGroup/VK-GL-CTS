@@ -481,7 +481,7 @@ VkImageAspectFlags getImageAspectFlags (VkFormat vkFormat)
 {
 	const tcu::TextureFormat format = mapVkFormat(vkFormat);
 
-	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (format.order)
 	{
@@ -1602,7 +1602,7 @@ void uploadBufferData (const DeviceInterface&	vk,
 
 VkImageAspectFlagBits getPrimaryImageAspect (tcu::TextureFormat::ChannelOrder order)
 {
-	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 21);
+	DE_STATIC_ASSERT(tcu::TextureFormat::CHANNELORDER_LAST == 22);
 
 	switch (order)
 	{

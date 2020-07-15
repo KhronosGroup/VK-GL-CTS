@@ -52,6 +52,7 @@ public:
 		RGB,
 		RGBA,
 		ARGB,
+		ABGR,
 		BGR,
 		BGRA,
 
