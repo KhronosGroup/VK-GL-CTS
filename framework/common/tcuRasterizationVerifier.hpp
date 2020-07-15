@@ -232,7 +232,7 @@ LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surfac
  *
  * Returns false if invalid rasterization interpolation is found.
  *//*--------------------------------------------------------------------*/
-bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool strictMode = true);
+bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool strictMode = true, const bool allowBresenhamForNonStrictLines = false);
 
 } // tcu
 

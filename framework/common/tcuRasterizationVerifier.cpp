@@ -1178,7 +1178,7 @@ static bool verifyMultisampleLineGroupInterpolationInternal (const tcu::Surface&
 		// with values effectively duplicated in the minor axis direction. In other cases, implementations
 		// will use the original parameters of the line to calculate attribute interpolation so it will
 		// follow the direction of the line-segment.
-		logStash.messages.push_back("Verify using trangle interpolator");
+		logStash.messages.push_back("Verify using triangle interpolator");
 		if (!verifyTriangleGroupInterpolationWithInterpolator(surface, triangleScene, args, logStash, TriangleInterpolator(triangleScene)))
 		{
 			logStash.messages.push_back("Verify using line interpolator");
@@ -1218,7 +1218,8 @@ static bool verifyMultisampleLineGroupInterpolation (const tcu::Surface&			surfa
 													 const LineSceneSpec&			scene,
 													 const RasterizationArguments&	args,
 													 tcu::TestLog&					log,
-													 const bool						strictMode = true)
+													 const bool						strictMode = true,
+													 const bool						allowBresenhamForNonStrictLines = false)
 {
 	bool										result					= false;
 	VerifyTriangleGroupInterpolationLogStash	nonStrictModeLogStash;
@@ -1261,7 +1262,7 @@ static bool verifyMultisampleLineGroupInterpolation (const tcu::Surface&			surfa
 		{
 			log << tcu::TestLog::Message << "Checking line rasterisation using verifySinglesampleNarrowLineGroupInterpolation for nonStrict lines" << tcu::TestLog::EndMessage;
 			if (args.numSamples <= 1 &&
-				scene.lineWidth == 1.0f &&
+				allowBresenhamForNonStrictLines &&
 				verifyLineGroupInterpolationWithProjectedWeights(surface, scene, args, log))
 			{
 				log << tcu::TestLog::Message << "verifySinglesampleNarrowLineGroupInterpolation for nonStrict lines Passed" << tcu::TestLog::EndMessage;
@@ -2835,9 +2836,9 @@ LineInterpolationMethod verifyLineGroupInterpolation (const tcu::Surface& surfac
 	}
 }
 
-bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool strictMode)
+bool verifyTriangulatedLineGroupInterpolation (const tcu::Surface& surface, const LineSceneSpec& scene, const RasterizationArguments& args, tcu::TestLog& log, const bool strictMode, const bool allowBresenhamForNonStrictLines)
 {
-	return verifyMultisampleLineGroupInterpolation(surface, scene, args, log, strictMode);
+	return verifyMultisampleLineGroupInterpolation(surface, scene, args, log, strictMode, allowBresenhamForNonStrictLines);
 }
 
 } // tcu

@@ -3858,7 +3858,7 @@ tcu::TestStatus LineInterpolationTestInstance::iterate (void)
 				case PRIMITIVESTRICTNESS_NONSTRICT:
 				case PRIMITIVESTRICTNESS_IGNORE:
 				{
-					if (!verifyTriangulatedLineGroupInterpolation(resultImage, scene, args, m_context.getTestContext().getLog(), false))
+					if (!verifyTriangulatedLineGroupInterpolation(resultImage, scene, args, m_context.getTestContext().getLog(), false, true))
 						m_allIterationsPassed = false;
 
 					break;
