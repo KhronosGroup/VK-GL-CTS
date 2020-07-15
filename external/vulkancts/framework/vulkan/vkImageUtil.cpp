@@ -2206,6 +2206,54 @@ PlanarFormatDescription getCorePlanarFormatDescription (VkFormat format)
 			return desc;
 		}
 
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG|chanB|chanA,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	8,		4,		2 },	// R
+					{	0,		unorm,	4,		4,		2 },	// G
+					{	0,		unorm,	0,		4,		2 },	// B
+					{	0,		unorm,	12,		4,		2 }		// A
+				}
+			};
+			return desc;
+		}
+
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:
+		{
+			const PlanarFormatDescription	desc	=
+			{
+				1, // planes
+				chanR|chanG|chanB|chanA,
+				1,1,
+				{
+				//		Size	WDiv	HDiv	planeCompatibleFormat
+					{	2,		1,		1,		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+					{	0,		0,		0,		VK_FORMAT_UNDEFINED },
+				},
+				{
+				//		Plane	Type	Offs	Size	Stride
+					{	0,		unorm,	0,		4,		2 },	// R
+					{	0,		unorm,	4,		4,		2 },	// G
+					{	0,		unorm,	8,		4,		2 },	// B
+					{	0,		unorm,	12,		4,		2 }		// A
+				}
+			};
+			return desc;
+		}
+
 
 		default:
 			TCU_THROW(InternalError, "Not implemented");
@@ -2653,6 +2701,9 @@ VkFormat mapTextureFormat (const tcu::TextureFormat& format)
 		case FMT_CASE(RGBA, USCALED_INT_1010102_REV):		return VK_FORMAT_A2B10G10R10_USCALED_PACK32;
 		case FMT_CASE(RGBA, SSCALED_INT_1010102_REV):		return VK_FORMAT_A2B10G10R10_SSCALED_PACK32;
 
+		case FMT_CASE(ARGB, UNORM_SHORT_4444):				return VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT;
+		case FMT_CASE(ABGR, UNORM_SHORT_4444):				return VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT;
+
 		default:
 			TCU_THROW(InternalError, "Unknown texture format");
 	}
@@ -2904,6 +2955,9 @@ tcu::TextureFormat mapVkFormat (VkFormat format)
 		case VK_FORMAT_R12X4_UNORM_PACK16_KHR:					return TextureFormat(TextureFormat::R,		TextureFormat::UNORM_SHORT_12);
 		case VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR:			return TextureFormat(TextureFormat::RG,		TextureFormat::UNORM_SHORT_12);
 		case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR:	return TextureFormat(TextureFormat::RGBA,	TextureFormat::UNORM_SHORT_12);
+
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:				return TextureFormat(TextureFormat::ARGB,	TextureFormat::UNORM_SHORT_4444);
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:				return TextureFormat(TextureFormat::ABGR,	TextureFormat::UNORM_SHORT_4444);
 
 		default:
 			TCU_THROW(InternalError, "Unknown image format");

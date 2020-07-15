@@ -1948,7 +1948,10 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 //		VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
 //		VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
 //		VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-//		VK_FORMAT_ASTC_12x12_SRGB_BLOCK
+//		VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 	};
 	const size_t	numOfColorImageFormatsToTest			= DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
 
