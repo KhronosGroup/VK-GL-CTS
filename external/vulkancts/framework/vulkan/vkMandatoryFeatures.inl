@@ -26,6 +26,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevice16BitStorageFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDevice4444FormatsFeaturesEXT physicalDevice4444FormatsFeaturesEXT;
+	deMemset(&physicalDevice4444FormatsFeaturesEXT, 0, sizeof(physicalDevice4444FormatsFeaturesEXT));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
+	{
+		physicalDevice4444FormatsFeaturesEXT.sType = getStructureType<VkPhysicalDevice4444FormatsFeaturesEXT>();
+		*nextPtr = &physicalDevice4444FormatsFeaturesEXT;
+		nextPtr  = &physicalDevice4444FormatsFeaturesEXT.pNext;
+	}
+
 	vk::VkPhysicalDevice8BitStorageFeaturesKHR physicalDevice8BitStorageFeaturesKHR;
 	deMemset(&physicalDevice8BitStorageFeaturesKHR, 0, sizeof(physicalDevice8BitStorageFeaturesKHR));
 
@@ -1133,6 +1143,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderImageInt64Atomics not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
+	{
+		if ( physicalDevice4444FormatsFeaturesEXT.formatA4R4G4B4 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature formatA4R4G4B4 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

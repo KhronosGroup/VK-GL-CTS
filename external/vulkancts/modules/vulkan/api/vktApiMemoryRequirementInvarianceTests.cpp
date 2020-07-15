@@ -489,7 +489,9 @@ tcu::TestStatus InvarianceInstance::iterate (void)
 		VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG,
 		VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG,
 		VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG,
-		VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG
+		VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG,
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 	};
 	int										formatCount						= (int)(sizeof(formatlist) / sizeof(unsigned int));
 

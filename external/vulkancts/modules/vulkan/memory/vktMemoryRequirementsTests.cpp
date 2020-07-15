@@ -1250,7 +1250,9 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
 		VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
 		VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
-		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR
+		VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR,
+		VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
+		VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 	};
 	const DeviceInterface&		vk				= context.getDeviceInterface();
 	const InstanceInterface&	vki				= context.getInstanceInterface();
