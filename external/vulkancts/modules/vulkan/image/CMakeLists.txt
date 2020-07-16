@@ -31,6 +31,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTranscodingSupportTests.hpp
 	vktImageMisalignedCubeTests.cpp
 	vktImageMisalignedCubeTests.hpp
+	vktImageSubresourceLayoutTests.cpp
+	vktImageSubresourceLayoutTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS
