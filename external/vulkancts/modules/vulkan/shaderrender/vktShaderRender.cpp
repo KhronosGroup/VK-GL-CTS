@@ -57,14 +57,7 @@ namespace sr
 
 using namespace vk;
 
-namespace
-{
-
-static const deUint32	MAX_RENDER_WIDTH	= 128;
-static const deUint32	MAX_RENDER_HEIGHT	= 128;
-static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
-
-static VkImageViewType textureTypeToImageViewType (TextureBinding::Type type)
+VkImageViewType textureTypeToImageViewType (TextureBinding::Type type)
 {
 	switch (type)
 	{
@@ -82,7 +75,7 @@ static VkImageViewType textureTypeToImageViewType (TextureBinding::Type type)
 	}
 }
 
-static VkImageType viewTypeToImageType (VkImageViewType type)
+VkImageType viewTypeToImageType (VkImageViewType type)
 {
 	switch (type)
 	{
@@ -99,6 +92,29 @@ static VkImageType viewTypeToImageType (VkImageViewType type)
 			return (VkImageType)0;
 	}
 }
+
+vk::VkImageUsageFlags textureUsageFlags (void)
+{
+	return (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+}
+
+vk::VkImageCreateFlags textureCreateFlags (vk::VkImageViewType viewType, ShaderRenderCaseInstance::ImageBackingMode backingMode)
+{
+	const bool			isCube				= (viewType == VK_IMAGE_VIEW_TYPE_CUBE || viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY);
+	VkImageCreateFlags	imageCreateFlags	= (isCube ? static_cast<VkImageCreateFlags>(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) : 0u);
+
+	if (backingMode == ShaderRenderCaseInstance::IMAGE_BACKING_MODE_SPARSE)
+		imageCreateFlags |= (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
+
+	return imageCreateFlags;
+}
+
+namespace
+{
+
+static const deUint32	MAX_RENDER_WIDTH	= 128;
+static const deUint32	MAX_RENDER_HEIGHT	= 128;
+static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
 
 /*! Gets the next multiple of a given divisor */
 static deUint32 getNextMultiple (deUint32 divisor, deUint32 value)
@@ -1553,7 +1569,8 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	const VkImageType				imageType			= viewTypeToImageType(imageViewType);
 	const VkSharingMode				sharingMode			= (queueFamilyIndex != sparseFamilyIndex) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 	const VkFormat					format				= mapTextureFormat(texFormat);
-	const bool						isCube				= imageViewType == VK_IMAGE_VIEW_TYPE_CUBE || imageViewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+	const VkImageUsageFlags			imageUsageFlags		= textureUsageFlags();
+	const VkImageCreateFlags		imageCreateFlags	= textureCreateFlags(imageViewType, m_imageBackingMode);
 
 	const deUint32					queueIndexCount		= (queueFamilyIndex != sparseFamilyIndex) ? 2 : 1;
 	const deUint32					queueIndices[]		=
@@ -1562,15 +1579,8 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 		sparseFamilyIndex
 	};
 
-	VkImageCreateFlags				imageCreateFlags	= isCube ? (VkImageCreateFlags)VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlags)0;
-	VkImageUsageFlags				imageUsageFlags		= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	Move<VkImage>					vkTexture;
 	de::MovePtr<Allocation>			allocation;
-
-	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
-	{
-		imageCreateFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
-	}
 
 	// Create image
 	const VkImageCreateInfo			imageParams =
@@ -1635,7 +1645,10 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 	}
 
 	// Create sampler
-	const VkSamplerCreateInfo		samplerParams	= mapSampler(refSampler, texFormat);
+	const auto&						minMaxLod		= textureParams.minMaxLod;
+	const VkSamplerCreateInfo		samplerParams	= (minMaxLod
+														? mapSampler(refSampler, texFormat, minMaxLod.get().minLod, minMaxLod.get().maxLod)
+														: mapSampler(refSampler, texFormat));
 	Move<VkSampler>					sampler			= createSampler(vk, vkDevice, &samplerParams);
 	const deUint32					baseMipLevel	= textureParams.baseMipLevel;
 	const vk::VkComponentMapping	components		= textureParams.componentMapping;

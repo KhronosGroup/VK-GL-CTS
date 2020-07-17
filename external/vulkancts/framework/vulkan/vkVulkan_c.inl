@@ -607,6 +607,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT = 1000297000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV = 1000300000,
     VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV = 1000300001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_2_EXT = 1000332000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_2_EXT = 1000332001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -1728,6 +1730,7 @@ typedef VkFlags VkBufferViewCreateFlags;
 
 typedef enum VkImageViewCreateFlagBits {
     VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT = 0x00000001,
+    VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DEFERRED_BIT_EXT = 0x00000002,
     VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageViewCreateFlagBits;
 typedef VkFlags VkImageViewCreateFlags;
@@ -11375,6 +11378,25 @@ typedef struct VkPhysicalDeviceRayQueryFeaturesKHR {
     void*              pNext;
     VkBool32           rayQuery;
 } VkPhysicalDeviceRayQueryFeaturesKHR;
+
+
+#define VK_EXT_fragment_density_map2 1
+#define VK_EXT_FRAGMENT_DENSITY_MAP_2_SPEC_VERSION 1
+#define VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME "VK_EXT_fragment_density_map2"
+typedef struct VkPhysicalDeviceFragmentDensityMapFeatures2EXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           fragmentDensityMapDeferred;
+} VkPhysicalDeviceFragmentDensityMapFeatures2EXT;
+
+typedef struct VkPhysicalDeviceFragmentDensityMapProperties2EXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           subsampledLoads;
+    VkBool32           subsampledCoarseReconstructionEarlyAccess;
+    deUint32           maxSubsampledArrayLayers;
+    deUint32           maxDescriptorSetSubsampledSamplers;
+} VkPhysicalDeviceFragmentDensityMapProperties2EXT;
 
 
 #ifdef __cplusplus

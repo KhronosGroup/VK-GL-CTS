@@ -173,12 +173,14 @@ void createAmberTestsFromIndexFile (tcu::TestContext& testCtx, tcu::TestCaseGrou
 	} while (testCase);
 }
 
-AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
-									const char*						name,
-									const char*						description,
-									const char*						category,
-									const std::string&				filename,
-									const std::vector<std::string>	requirements)
+AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
+									const char*									name,
+									const char*									description,
+									const char*									category,
+									const std::string&							filename,
+									const std::vector<std::string>				requirements,
+									const std::vector<vk::VkImageCreateInfo>	imageRequirements)
+
 {
 	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
 	std::string readFilename("vulkan/amber/");
@@ -190,6 +192,9 @@ AmberTestCase* createAmberTestCase (tcu::TestContext&				testCtx,
 
 	for (auto req : requirements)
 		testCase->addRequirement(req);
+
+	for (auto req : imageRequirements)
+		testCase->addImageRequirement(req);
 
 	return testCase;
 }

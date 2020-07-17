@@ -48,6 +48,9 @@
 
 #include <limits>
 #include <set>
+#include <iterator>
+#include <algorithm>
+#include <sstream>
 
 namespace vkt
 {
@@ -2038,6 +2041,273 @@ private:
 	PipelineCacheData	m_pipelineCacheData;
 };
 
+// Make a nonzero initial value for a semaphore. semId is assigned to each semaphore by callers.
+deUint64 getInitialValue (deUint32 semId)
+{
+	return (semId + 1ull) * 1000ull;
+}
+
+struct SparseBindParams
+{
+	deUint32 numWaitSems;
+	deUint32 numSignalSems;
+};
+
+class SparseBindCase : public vkt::TestCase
+{
+public:
+							SparseBindCase	(tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SparseBindParams& params);
+	virtual					~SparseBindCase	(void) {}
+
+	virtual TestInstance*	createInstance	(Context& context) const;
+	virtual void			checkSupport	(Context& context) const;
+
+private:
+	SparseBindParams m_params;
+};
+
+class SparseBindInstance : public vkt::TestInstance
+{
+public:
+								SparseBindInstance	(Context& context, const SparseBindParams& params);
+	virtual						~SparseBindInstance	(void) {}
+
+	virtual tcu::TestStatus		iterate				(void);
+
+private:
+	SparseBindParams m_params;
+};
+
+SparseBindCase::SparseBindCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const SparseBindParams& params)
+	: vkt::TestCase	(testCtx, name, description)
+	, m_params		(params)
+{}
+
+TestInstance* SparseBindCase::createInstance (Context& context) const
+{
+	return new SparseBindInstance(context, m_params);
+}
+
+void SparseBindCase::checkSupport (Context& context) const
+{
+	// Check support for sparse binding and timeline semaphores.
+	context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+	context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+}
+
+SparseBindInstance::SparseBindInstance (Context& context, const SparseBindParams& params)
+	: vkt::TestInstance	(context)
+	, m_params			(params)
+{
+}
+
+void queueBindSparse (const vk::DeviceInterface& vkd, vk::VkQueue queue, deUint32 bindInfoCount, const vk::VkBindSparseInfo *pBindInfo)
+{
+	VK_CHECK(vkd.queueBindSparse(queue, bindInfoCount, pBindInfo, DE_NULL));
+}
+
+struct SemaphoreWithInitial
+{
+	vk::Move<vk::VkSemaphore>	semaphore;
+	deUint64					initialValue;
+
+	SemaphoreWithInitial (vk::Move<vk::VkSemaphore>&& sem, deUint64 initVal)
+		: semaphore		(sem)
+		, initialValue	(initVal)
+	{}
+
+	SemaphoreWithInitial (SemaphoreWithInitial&& other)
+		: semaphore		(other.semaphore)
+		, initialValue	(other.initialValue)
+	{}
+};
+
+using SemaphoreVec	= std::vector<SemaphoreWithInitial>;
+using PlainSemVec	= std::vector<vk::VkSemaphore>;
+using ValuesVec		= std::vector<deUint64>;
+
+PlainSemVec getHandles (const SemaphoreVec& semVec)
+{
+	PlainSemVec handlesVec;
+	handlesVec.reserve(semVec.size());
+
+	const auto conversion = [](const SemaphoreWithInitial& s) { return s.semaphore.get(); };
+	std::transform(begin(semVec), end(semVec), std::back_inserter(handlesVec), conversion);
+
+	return handlesVec;
+}
+
+ValuesVec getInitialValues (const SemaphoreVec& semVec)
+{
+	ValuesVec initialValues;
+	initialValues.reserve(semVec.size());
+
+	const auto conversion = [](const SemaphoreWithInitial& s) { return s.initialValue; };
+	std::transform(begin(semVec), end(semVec), std::back_inserter(initialValues), conversion);
+
+	return initialValues;
+}
+
+// Increases values in the vector by one.
+ValuesVec getNextValues (const ValuesVec& values)
+{
+	ValuesVec nextValues;
+	nextValues.reserve(values.size());
+
+	std::transform(begin(values), end(values), std::back_inserter(nextValues), [](deUint64 v) { return v + 1ull; });
+	return nextValues;
+}
+
+SemaphoreWithInitial createTimelineSemaphore (const vk::DeviceInterface& vkd, vk::VkDevice device, deUint32 semId)
+{
+	const auto initialValue = getInitialValue(semId);
+	return SemaphoreWithInitial(createSemaphoreType(vkd, device, vk::VK_SEMAPHORE_TYPE_TIMELINE, 0u, initialValue), initialValue);
+}
+
+// Signal the given semaphores with the corresponding values.
+void hostSignal (const vk::DeviceInterface& vkd, vk::VkDevice device, const PlainSemVec& semaphores, const ValuesVec& signalValues)
+{
+	DE_ASSERT(semaphores.size() == signalValues.size());
+
+	for (size_t i = 0; i < semaphores.size(); ++i)
+		hostSignal(vkd, device, semaphores[i], signalValues[i]);
+}
+
+// Wait for the given semaphores and their corresponding values.
+void hostWait (const vk::DeviceInterface& vkd, vk::VkDevice device, const PlainSemVec& semaphores, const ValuesVec& waitValues)
+{
+	DE_ASSERT(semaphores.size() == waitValues.size() && !semaphores.empty());
+
+	constexpr deUint64 kTimeout = 10000000000ull; // 10 seconds in nanoseconds.
+
+	const vk::VkSemaphoreWaitInfo waitInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,	//	VkStructureType			sType;
+		nullptr,									//	const void*				pNext;
+		0u,											//	VkSemaphoreWaitFlags	flags;
+		static_cast<deUint32>(semaphores.size()),	//	deUint32				semaphoreCount;
+		semaphores.data(),							//	const VkSemaphore*		pSemaphores;
+		waitValues.data(),							//	const deUint64*			pValues;
+	};
+	VK_CHECK(vkd.waitSemaphores(device, &waitInfo, kTimeout));
+}
+
+tcu::TestStatus SparseBindInstance::iterate (void)
+{
+	const auto&	vkd		= m_context.getDeviceInterface();
+	const auto	device	= m_context.getDevice();
+	const auto	queue	= m_context.getSparseQueue();
+
+	SemaphoreVec waitSemaphores;
+	SemaphoreVec signalSemaphores;
+
+	// Create as many semaphores as needed to wait and signal.
+	for (deUint32 i = 0; i < m_params.numWaitSems; ++i)
+		waitSemaphores.emplace_back(createTimelineSemaphore(vkd, device, i));
+	for (deUint32 i = 0; i < m_params.numSignalSems; ++i)
+		signalSemaphores.emplace_back(createTimelineSemaphore(vkd, device, i + m_params.numWaitSems));
+
+	// Get handles for all semaphores.
+	const auto waitSemHandles	= getHandles(waitSemaphores);
+	const auto signalSemHandles	= getHandles(signalSemaphores);
+
+	// Get initial values for all semaphores.
+	const auto waitSemValues	= getInitialValues(waitSemaphores);
+	const auto signalSemValues	= getInitialValues(signalSemaphores);
+
+	// Get next expected values for all semaphores.
+	const auto waitNextValues	= getNextValues(waitSemValues);
+	const auto signalNextValues	= getNextValues(signalSemValues);
+
+	const vk::VkTimelineSemaphoreSubmitInfo timeLineSubmitInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,			//	VkStructureType	sType;
+		nullptr,														//	const void*		pNext;
+		static_cast<deUint32>(waitNextValues.size()),					//	deUint32		waitSemaphoreValueCount;
+		(waitNextValues.empty() ? nullptr : waitNextValues.data()),		//	const deUint64*	pWaitSemaphoreValues;
+		static_cast<deUint32>(signalNextValues.size()),					//	deUint32		signalSemaphoreValueCount;
+		(signalNextValues.empty() ? nullptr : signalNextValues.data()),	//	const deUint64*	pSignalSemaphoreValues;
+	};
+
+	const vk::VkBindSparseInfo bindInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,							//	VkStructureType								sType;
+		&timeLineSubmitInfo,											//	const void*									pNext;
+		static_cast<deUint32>(waitSemHandles.size()),					//	deUint32									waitSemaphoreCount;
+		(waitSemHandles.empty() ? nullptr : waitSemHandles.data()),		//	const VkSemaphore*							pWaitSemaphores;
+		0u,																//	deUint32									bufferBindCount;
+		nullptr,														//	const VkSparseBufferMemoryBindInfo*			pBufferBinds;
+		0u,																//	deUint32									imageOpaqueBindCount;
+		nullptr,														//	const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
+		0u,																//	deUint32									imageBindCount;
+		nullptr,														//	const VkSparseImageMemoryBindInfo*			pImageBinds;
+		static_cast<deUint32>(signalSemHandles.size()),					//	deUint32									signalSemaphoreCount;
+		(signalSemHandles.empty() ? nullptr : signalSemHandles.data()),	//	const VkSemaphore*							pSignalSemaphores;
+	};
+	queueBindSparse(vkd, queue, 1u, &bindInfo);
+
+	// If the device needs to wait and signal, check the signal semaphores have not been signaled yet.
+	if (!waitSemaphores.empty() && !signalSemaphores.empty())
+	{
+		deUint64 value;
+		for (size_t i = 0; i < signalSemaphores.size(); ++i)
+		{
+			value = 0;
+			VK_CHECK(vkd.getSemaphoreCounterValue(device, signalSemHandles[i], &value));
+
+			if (!value)
+				TCU_FAIL("Invalid value obtained from vkGetSemaphoreCounterValue()");
+
+			if (value != signalSemValues[i])
+			{
+				std::ostringstream msg;
+				msg << "vkQueueBindSparse() may not have waited before signaling semaphore " << i
+					<< " (expected value " << signalSemValues[i] << " but obtained " << value << ")";
+				TCU_FAIL(msg.str());
+			}
+		}
+	}
+
+	// Signal semaphores the sparse bind command is waiting on.
+	hostSignal(vkd, device, waitSemHandles, waitNextValues);
+
+	// Wait for semaphores the sparse bind command is supposed to signal.
+	if (!signalSemaphores.empty())
+		hostWait(vkd, device, signalSemHandles, signalNextValues);
+
+	VK_CHECK(vkd.deviceWaitIdle(device));
+	return tcu::TestStatus::pass("Pass");
+}
+
+class SparseBindGroup : public tcu::TestCaseGroup
+{
+public:
+	SparseBindGroup (tcu::TestContext& testCtx)
+		: tcu::TestCaseGroup (testCtx, "sparse_bind", "vkQueueBindSparse combined with timeline semaphores")
+	{}
+
+	virtual void init (void)
+	{
+		static const struct
+		{
+			deUint32	waitSems;
+			deUint32	sigSems;
+			std::string	name;
+			std::string	desc;
+		} kSparseBindCases[] =
+		{
+			{	0u,		0u,		"no_sems",			"No semaphores to wait for or signal"					},
+			{	0u,		1u,		"no_wait_sig",		"Signal semaphore without waiting for any other"		},
+			{	1u,		0u,		"wait_no_sig",		"Wait for semaphore but do not signal any other"		},
+			{	1u,		1u,		"wait_and_sig",		"Wait for semaphore and signal a second one"			},
+			{	2u,		2u,		"wait_and_sig_2",	"Wait for two semaphores and signal two other ones"		},
+		};
+
+		for (int i = 0; i < DE_LENGTH_OF_ARRAY(kSparseBindCases); ++i)
+			addChild(new SparseBindCase(m_testCtx, kSparseBindCases[i].name, kSparseBindCases[i].desc, SparseBindParams{kSparseBindCases[i].waitSems, kSparseBindCases[i].sigSems}));
+	}
+};
+
 } // anonymous
 
 tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
@@ -2048,6 +2318,7 @@ tcu::TestCaseGroup* createTimelineSemaphoreTests (tcu::TestContext& testCtx)
 	basicTests->addChild(new OneToNTests(testCtx));
 	basicTests->addChild(new WaitBeforeSignalTests(testCtx));
 	basicTests->addChild(new WaitTests(testCtx));
+	basicTests->addChild(new SparseBindGroup(testCtx));
 
 	return basicTests.release();
 }

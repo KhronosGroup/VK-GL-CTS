@@ -4811,6 +4811,23 @@ struct VkPhysicalDeviceRayQueryFeaturesKHR
 	VkBool32		rayQuery;
 };
 
+struct VkPhysicalDeviceFragmentDensityMapFeatures2EXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapDeferred;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapProperties2EXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		subsampledLoads;
+	VkBool32		subsampledCoarseReconstructionEarlyAccess;
+	deUint32		maxSubsampledArrayLayers;
+	deUint32		maxDescriptorSetSubsampledSamplers;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;
