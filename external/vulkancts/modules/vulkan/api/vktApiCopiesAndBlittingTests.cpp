@@ -47,8 +47,15 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include <set>
+#include <array>
+#include <algorithm>
+#include <iterator>
+#include <sstream>
 
 namespace vkt
 {
@@ -3755,6 +3762,7 @@ public:
 protected:
 	virtual tcu::TestStatus						checkTestResult				(tcu::ConstPixelBufferAccess result = tcu::ConstPixelBufferAccess());
 	void										copyMSImageToMSImage		(deUint32 copyArraySize);
+	tcu::TestStatus								checkIntermediateCopy		(void);
 private:
 	Move<VkImage>								m_multisampledImage;
 	de::MovePtr<Allocation>						m_multisampledImageAlloc;
@@ -3777,11 +3785,11 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 	: CopiesAndBlittingTestInstance	(context, params)
 	, m_options						(options)
 {
-	const InstanceInterface&	vki						= context.getInstanceInterface();
-	const DeviceInterface&		vk						= context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice			= context.getPhysicalDevice();
-	const VkDevice				vkDevice				= context.getDevice();
-	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const InstanceInterface&	vki						= m_context.getInstanceInterface();
+	const DeviceInterface&		vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice			= m_context.getPhysicalDevice();
+	const VkDevice				vkDevice				= m_context.getDevice();
+	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc				= m_context.getDefaultAllocator();
 
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
@@ -3813,7 +3821,9 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			getArraySize(m_params.src.image),										// deUint32					arrayLayers;
 			rasterizationSamples,													// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling			tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT										// VkImageUsageFlags		usage;
+				| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+				| VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode			sharingMode;
 			1u,																		// deUint32					queueFamilyIndexCount;
 			&queueFamilyIndex,														// const deUint32*			pQueueFamilyIndices;
@@ -3830,7 +3840,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		{
 			case COPY_MS_IMAGE_TO_MS_IMAGE:
 			{
-				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 				m_multisampledCopyImage			= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
 				m_multisampledCopyImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
@@ -3840,7 +3850,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 			case COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE:
 			{
-				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 				colorImageParams.arrayLayers	= getArraySize(m_params.dst.image);
 				m_multisampledCopyImage			= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
@@ -3902,7 +3912,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		}
 	};
 
-		// Create render pass.
+	// Create render pass.
 	{
 		const VkAttachmentDescription	attachmentDescriptions[1]	=
 		{
@@ -4226,6 +4236,15 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
+	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE)
+	{
+		// Verify the intermediate multisample copy operation happens properly instead of, for example, shuffling samples around or
+		// resolving the image and giving every sample the same value.
+		const auto intermediateResult = checkIntermediateCopy();
+		if (intermediateResult.getCode() != QP_TEST_RESULT_PASS)
+			return intermediateResult;
+	}
+
 	return checkTestResult(resultTextureLevel->getAccess());
 }
 
@@ -4262,6 +4281,293 @@ void ResolveImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess s
 	const tcu::PixelBufferAccess		dstSubRegion		= getSubregion (dstWithSrcFormat, dstOffset.x, dstOffset.y, dstOffset.z, extent.width, extent.height, extent.depth);
 
 	tcu::copy(dstSubRegion, srcSubRegion);
+}
+
+tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
+{
+	const		auto&	vkd					= m_context.getDeviceInterface();
+	const		auto	device				= m_context.getDevice();
+	const		auto	queue				= m_context.getUniversalQueue();
+	const		auto	queueIndex			= m_context.getUniversalQueueFamilyIndex();
+				auto&	alloc				= m_context.getDefaultAllocator();
+	const		auto	currentLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	const		auto	numDstLayers		= getArraySize(m_params.dst.image);
+	const		auto	numInputAttachments	= numDstLayers + 1u; // For the source image.
+	constexpr	auto	numSets				= 2u; // 1 for the output buffer, 1 for the input attachments.
+	const		auto	fbWidth				= m_params.src.image.extent.width;
+	const		auto	fbHeight			= m_params.src.image.extent.height;
+
+	// Push constants.
+	const std::array<int, 3> pushConstantData =
+	{{
+		static_cast<int>(fbWidth),
+		static_cast<int>(fbHeight),
+		static_cast<int>(m_params.samples),
+	}};
+	const auto pushConstantSize = static_cast<deUint32>(pushConstantData.size() * sizeof(decltype(pushConstantData)::value_type));
+
+	// Shader modules.
+	const auto vertexModule			= createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto verificationModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("verify"), 0u);
+
+	// Descriptor sets.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, numInputAttachments);
+	const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numSets);
+
+	DescriptorSetLayoutBuilder layoutBuilderBuffer;
+	layoutBuilderBuffer.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto outputBufferSetLayout = layoutBuilderBuffer.build(vkd, device);
+
+	DescriptorSetLayoutBuilder layoutBuilderAttachments;
+	for (deUint32 i = 0u; i < numInputAttachments; ++i)
+		layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto inputAttachmentsSetLayout = layoutBuilderAttachments.build(vkd, device);
+
+	const auto descriptorSetBuffer		= makeDescriptorSet(vkd, device, descriptorPool.get(), outputBufferSetLayout.get());
+	const auto descriptorSetAttachments	= makeDescriptorSet(vkd, device, descriptorPool.get(), inputAttachmentsSetLayout.get());
+
+	// Array with raw descriptor sets.
+	const std::array<VkDescriptorSet, numSets> descriptorSets =
+	{{
+		descriptorSetBuffer.get(),
+		descriptorSetAttachments.get(),
+	}};
+
+	// Pipeline layout.
+	const std::array<VkDescriptorSetLayout, numSets> setLayouts =
+	{{
+		outputBufferSetLayout.get(),
+		inputAttachmentsSetLayout.get(),
+	}};
+
+	const VkPushConstantRange pushConstantRange =
+	{
+		VK_SHADER_STAGE_FRAGMENT_BIT,	//	VkShaderStageFlags	stageFlags;
+		0u,								//	deUint32			offset;
+		pushConstantSize,				//	deUint32			size;
+	};
+
+	const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,										//	const void*						pNext;
+		0u,												//	VkPipelineLayoutCreateFlags		flags;
+		static_cast<deUint32>(setLayouts.size()),		//	deUint32						setLayoutCount;
+		setLayouts.data(),								//	const VkDescriptorSetLayout*	pSetLayouts;
+		1u,												//	deUint32						pushConstantRangeCount;
+		&pushConstantRange,								//	const VkPushConstantRange*		pPushConstantRanges;
+	};
+
+	const auto pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutInfo);
+
+	// Render pass.
+	const VkAttachmentDescription commonAttachmentDescription =
+	{
+		0u,									//	VkAttachmentDescriptionFlags	flags;
+		m_params.src.image.format,			//	VkFormat						format;
+		m_params.samples,					//	VkSampleCountFlagBits			samples;
+		VK_ATTACHMENT_LOAD_OP_LOAD,			//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,		//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,	//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,	//	VkAttachmentStoreOp				stencilStoreOp;
+		currentLayout,						//	VkImageLayout					initialLayout;
+		currentLayout,						//	VkImageLayout					finalLayout;
+	};
+	const std::vector<VkAttachmentDescription> attachmentDescriptions(numInputAttachments, commonAttachmentDescription);
+
+	std::vector<VkAttachmentReference> inputAttachmentReferences;
+	inputAttachmentReferences.reserve(numInputAttachments);
+	for (deUint32 i = 0u; i < numInputAttachments; ++i)
+	{
+		const VkAttachmentReference reference = { i, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+		inputAttachmentReferences.push_back(reference);
+	}
+
+	const VkSubpassDescription subpassDescription =
+	{
+		0u,															//	VkSubpassDescriptionFlags		flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,							//	VkPipelineBindPoint				pipelineBindPoint;
+		static_cast<deUint32>(inputAttachmentReferences.size()),	//	deUint32						inputAttachmentCount;
+		inputAttachmentReferences.data(),							//	const VkAttachmentReference*	pInputAttachments;
+		0u,															//	deUint32						colorAttachmentCount;
+		nullptr,													//	const VkAttachmentReference*	pColorAttachments;
+		nullptr,													//	const VkAttachmentReference*	pResolveAttachments;
+		nullptr,													//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,															//	deUint32						preserveAttachmentCount;
+		nullptr,													//	const deUint32*					pPreserveAttachments;
+	};
+
+	const VkRenderPassCreateInfo renderPassInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,				//	VkStructureType					sType;
+		nullptr,												//	const void*						pNext;
+		0u,														//	VkRenderPassCreateFlags			flags;
+		static_cast<deUint32>(attachmentDescriptions.size()),	//	deUint32						attachmentCount;
+		attachmentDescriptions.data(),							//	const VkAttachmentDescription*	pAttachments;
+		1u,														//	deUint32						subpassCount;
+		&subpassDescription,									//	const VkSubpassDescription*		pSubpasses;
+		0u,														//	deUint32						dependencyCount;
+		nullptr,												//	const VkSubpassDependency*		pDependencies;
+	};
+
+	const auto renderPass = createRenderPass(vkd, device, &renderPassInfo);
+
+	// Framebuffer.
+	std::vector<Move<VkImageView>>	imageViews;
+	std::vector<VkImageView>		imageViewsRaw;
+
+	imageViews.push_back(makeImageView(vkd, device, m_multisampledImage.get(), VK_IMAGE_VIEW_TYPE_2D, m_params.src.image.format, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
+	for (deUint32 i = 0u; i < numDstLayers; ++i)
+	{
+		const auto subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, i, 1u);
+		imageViews.push_back(makeImageView(vkd, device, m_multisampledCopyImage.get(), VK_IMAGE_VIEW_TYPE_2D, m_params.dst.image.format, subresourceRange));
+	}
+
+	imageViewsRaw.reserve(imageViews.size());
+	std::transform(begin(imageViews), end(imageViews), std::back_inserter(imageViewsRaw), [](const Move<VkImageView>& ptr) { return ptr.get(); });
+
+	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(imageViewsRaw.size()), imageViewsRaw.data(), fbWidth, fbHeight);
+
+	// Storage buffer.
+	const auto			bufferCount	= static_cast<size_t>(fbWidth * fbHeight * m_params.samples);
+	const auto			bufferSize	= static_cast<VkDeviceSize>(bufferCount * sizeof(deInt32));
+	BufferWithMemory	buffer		(vkd, device, alloc, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	auto&				bufferAlloc	= buffer.getAllocation();
+	void*				bufferData	= bufferAlloc.getHostPtr();
+
+	// Update descriptor sets.
+	DescriptorSetUpdateBuilder updater;
+
+	const auto bufferInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, bufferSize);
+	updater.writeSingle(descriptorSetBuffer.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+
+	std::vector<VkDescriptorImageInfo> imageInfos;
+	imageInfos.reserve(imageViewsRaw.size());
+	for (size_t i = 0; i < imageViewsRaw.size(); ++i)
+		imageInfos.push_back(makeDescriptorImageInfo(DE_NULL, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+	for (size_t i = 0; i < imageInfos.size(); ++i)
+		updater.writeSingle(descriptorSetAttachments.get(), DescriptorSetUpdateBuilder::Location::binding(static_cast<deUint32>(i)), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[i]);
+
+	updater.update(vkd, device);
+
+	// Vertex buffer.
+	std::vector<tcu::Vec4> fullScreenQuad;
+	{
+		// Full screen quad so every framebuffer pixel and sample location is verified by the shader.
+		const tcu::Vec4 topLeft		(-1.0f, -1.0f, 0.0f, 1.0f);
+		const tcu::Vec4 topRight	( 1.0f, -1.0f, 0.0f, 1.0f);
+		const tcu::Vec4 bottomLeft	(-1.0f,  1.0f, 0.0f, 1.0f);
+		const tcu::Vec4 bottomRight	( 1.0f,  1.0f, 0.0f, 1.0f);
+
+		fullScreenQuad.reserve(6u);
+		fullScreenQuad.push_back(topLeft);
+		fullScreenQuad.push_back(topRight);
+		fullScreenQuad.push_back(bottomRight);
+		fullScreenQuad.push_back(topLeft);
+		fullScreenQuad.push_back(bottomRight);
+		fullScreenQuad.push_back(bottomLeft);
+	}
+
+	const auto				vertexBufferSize	= static_cast<VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
+	const auto				vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const BufferWithMemory	vertexBuffer		(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+	const auto				vertexBufferHandler	= vertexBuffer.get();
+	auto&					vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*					vertexBufferData	= vertexBufferAlloc.getHostPtr();
+	const VkDeviceSize		vertexBufferOffset	= 0ull;
+
+	deMemcpy(vertexBufferData, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Graphics pipeline.
+	const std::vector<VkViewport>	viewports	(1, makeViewport(m_params.src.image.extent));
+	const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_params.src.image.extent));
+
+	const VkPipelineMultisampleStateCreateInfo	multisampleStateParams		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+		nullptr,													// const void*								pNext;
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													// VkBool32									sampleShadingEnable;
+		0.0f,														// float									minSampleShading;
+		nullptr,													// const VkSampleMask*						pSampleMask;
+		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
+		VK_FALSE													// VkBool32									alphaToOneEnable;
+	};
+
+	const auto graphicsPipeline = makeGraphicsPipeline(
+		vkd,									// const DeviceInterface&                        vk
+		device,									// const VkDevice                                device
+		pipelineLayout.get(),					// const VkPipelineLayout                        pipelineLayout
+		vertexModule.get(),						// const VkShaderModule                          vertexShaderModule
+		DE_NULL,								// const VkShaderModule                          tessellationControlModule
+		DE_NULL,								// const VkShaderModule                          tessellationEvalModule
+		DE_NULL,								// const VkShaderModule                          geometryShaderModule
+		verificationModule.get(),				// const VkShaderModule                          fragmentShaderModule
+		renderPass.get(),						// const VkRenderPass                            renderPass
+		viewports,								// const std::vector<VkViewport>&                viewports
+		scissors,								// const std::vector<VkRect2D>&                  scissors
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
+		0u,										// const deUint32                                subpass
+		0u,										// const deUint32                                patchControlPoints
+		nullptr,								// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		nullptr,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+		&multisampleStateParams);				// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+
+	// Command buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	// Make sure multisample copy data is available to the fragment shader.
+	const auto imagesBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+
+	// Make sure verification buffer data is available on the host.
+	const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+	// Record and submit command buffer.
+	beginCommandBuffer(vkd, cmdBuffer);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u, &imagesBarrier, 0u, nullptr, 0u, nullptr);
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), makeRect2D(m_params.src.image.extent));
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBufferHandler, &vertexBufferOffset);
+	vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pushConstantSize, pushConstantData.data());
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, static_cast<deUint32>(descriptorSets.size()), descriptorSets.data(), 0u, nullptr);
+	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(fullScreenQuad.size()), 1u, 0u, 0u);
+	endRenderPass(vkd, cmdBuffer);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Verify intermediate results.
+	invalidateAlloc(vkd, device, bufferAlloc);
+	std::vector<deInt32> outputFlags (bufferCount, 0);
+	deMemcpy(outputFlags.data(), bufferData, static_cast<size_t>(bufferSize));
+
+	auto& log = m_context.getTestContext().getLog();
+	log << tcu::TestLog::Message << "Verifying intermediate multisample copy results" << tcu::TestLog::EndMessage;
+
+	const auto sampleCount = static_cast<deUint32>(m_params.samples);
+
+	for (deUint32 x = 0u; x < fbWidth; ++x)
+	for (deUint32 y = 0u; y < fbHeight; ++y)
+	for (deUint32 s = 0u; s < sampleCount; ++s)
+	{
+		const auto index = (y * fbWidth + x) * sampleCount + s;
+		if (!outputFlags[index])
+		{
+			std::ostringstream msg;
+			msg << "Intermediate verification failed for coordinates (" << x << ", " << y << ") sample " << s;
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+
+	log << tcu::TestLog::Message << "Intermediate multisample copy verification passed" << tcu::TestLog::EndMessage;
+	return tcu::TestStatus::pass("Pass");
 }
 
 void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
@@ -4441,6 +4747,71 @@ void ResolveImageToImageTestCase::initPrograms (SourceCollections& programCollec
 		"{\n"
 		"	o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		"}\n");
+
+	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE)
+	{
+		// The shader verifies all layers in the copied image are the same as the source image.
+		// This needs an image view per layer in the copied image.
+		// Set 0 contains the output buffer.
+		// Set 1 contains the input attachments.
+
+		std::ostringstream verificationShader;
+
+		verificationShader
+			<< "#version 450\n"
+			<< "\n"
+			<< "layout (push_constant, std430) uniform PushConstants {\n"
+			<< "    int width;\n"
+			<< "    int height;\n"
+			<< "    int samples;\n"
+			<< "};\n"
+			<< "layout (set=0, binding=0) buffer VerificationResults {\n"
+			<< "    int verificationFlags[];\n"
+			<< "};\n"
+			<< "layout (input_attachment_index=0, set=1, binding=0) uniform subpassInputMS attachment0;\n"
+			;
+
+		const auto dstLayers = getArraySize(m_params.dst.image);
+		for (deUint32 layerNdx = 0u; layerNdx < dstLayers; ++layerNdx)
+		{
+			const auto i = layerNdx + 1u;
+			verificationShader << "layout (input_attachment_index=" << i << ", set=1, binding=" << i << ") uniform subpassInputMS attachment" << i << ";\n";
+		}
+
+		// Using a loop to iterate over each sample avoids the need for the sampleRateShading feature. The pipeline needs to be
+		// created with a single sample.
+		verificationShader
+			<< "\n"
+			<< "void main() {\n"
+			<< "    for (int sampleID = 0; sampleID < samples; ++sampleID) {\n"
+			<< "        vec4 orig = subpassLoad(attachment0, sampleID);\n"
+			;
+
+		for (deUint32 layerNdx = 0u; layerNdx < dstLayers; ++layerNdx)
+		{
+			const auto i = layerNdx + 1u;
+			verificationShader << "        vec4 copy" << i << " = subpassLoad(attachment" << i << ", sampleID);\n";
+		}
+
+		std::ostringstream testCondition;
+		for (deUint32 layerNdx = 0u; layerNdx < dstLayers; ++layerNdx)
+		{
+			const auto i = layerNdx + 1u;
+			testCondition << (layerNdx == 0u ? "" : " && ") << "orig == copy" << i;
+		}
+
+		verificationShader
+			<< "\n"
+			<< "        ivec3 coords  = ivec3(int(gl_FragCoord.x), int(gl_FragCoord.y), sampleID);\n"
+			<< "        int bufferPos = (coords.y * width + coords.x) * samples + coords.z;\n"
+			<< "\n"
+			<< "        verificationFlags[bufferPos] = ((" << testCondition.str() << ") ? 1 : 0); \n"
+			<< "    }\n"
+			<< "}\n"
+			;
+
+		programCollection.glslSources.add("verify") << glu::FragmentSource(verificationShader.str());
+	}
 }
 
 std::string getSampleCountCaseName (VkSampleCountFlagBits sampleFlag)
