@@ -354,7 +354,7 @@ static void getPixelFormatAttribs (const Functions& wgl, HDC deviceCtx, int pixe
 
 PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 {
-	static const int	s_attribsToQuery[] =
+	std::vector<int>	s_attribsToQuery
 	{
 		WGL_DRAW_TO_WINDOW_ARB,
 		WGL_DRAW_TO_BITMAP_ARB,
@@ -377,12 +377,14 @@ PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 		WGL_AUX_BUFFERS_ARB,
 		WGL_SAMPLE_BUFFERS_ARB,
 		WGL_SAMPLES_ARB,
-		WGL_COLORSPACE_EXT
 	};
+	if (getLibrary()->isWglExtensionSupported("WGL_EXT_colorspace"))
+		s_attribsToQuery.push_back(WGL_COLORSPACE_EXT);
+
 	const Functions&	wgl			= m_library->getFunctions();
 	std::map<int, int>	values;
 
-	getPixelFormatAttribs(wgl, deviceCtx, pixelFormat, DE_LENGTH_OF_ARRAY(s_attribsToQuery), &s_attribsToQuery[0], &values);
+	getPixelFormatAttribs(wgl, deviceCtx, pixelFormat, static_cast<int>(s_attribsToQuery.size()), s_attribsToQuery.data(), &values);
 
 	// Translate values.
 	PixelFormatInfo info;
@@ -409,7 +411,7 @@ PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 	info.numAuxBuffers		= values[WGL_AUX_BUFFERS_ARB];
 	info.sampleBuffers		= values[WGL_SAMPLE_BUFFERS_ARB];
 	info.samples			= values[WGL_SAMPLES_ARB];
-	info.sRGB				= values[WGL_COLORSPACE_EXT] == WGL_COLORSPACE_SRGB_EXT;
+	info.sRGB				= (getLibrary()->isWglExtensionSupported("WGL_EXT_colorspace")) ? (values[WGL_COLORSPACE_EXT] == WGL_COLORSPACE_SRGB_EXT) : false;
 
 	return info;
 }
