@@ -1934,6 +1934,31 @@ tcu::TestStatus testFenceSignalExportImportWait (Context&				context,
 	}
 }
 
+tcu::TestStatus testFenceImportSyncFdSignaled (Context&					context,
+											   const FenceTestConfig	config)
+{
+	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
+	const CustomInstance				instance			(createTestInstance(context, 0u, 0u, config.externalType));
+	const vk::InstanceDriver&			vki					(instance.getDriver());
+	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, instance, context.getTestContext().getCommandLine()));
+	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+	const vk::VkFenceImportFlags		flags				= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT : (vk::VkFenceImportFlagBits)0u;
+
+	checkFenceSupport(vki, physicalDevice, config.externalType);
+
+	{
+		const vk::Unique<vk::VkDevice>	device	(createTestDevice(context, vkp, instance, vki, physicalDevice, 0u, 0u, config.externalType, queueFamilyIndex));
+		const vk::DeviceDriver			vkd		(vkp, instance, *device);
+		NativeHandle					handle	= -1;
+		const vk::Unique<vk::VkFence>	fence	(createAndImportFence(vkd, *device, config.externalType, handle, flags));
+
+		if (vkd.waitForFences(*device, 1u, &*fence, VK_TRUE, 0) != vk::VK_SUCCESS)
+			return tcu::TestStatus::pass("Imported -1 sync fd isn't signaled");
+
+		return tcu::TestStatus::pass("Pass");
+	}
+}
+
 tcu::TestStatus testFenceExportSignalImportWait (Context&				context,
 												 const FenceTestConfig	config)
 {
@@ -3891,6 +3916,11 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 		addFunctionCase(fenceGroup.get(), std::string("signal_import_") + permanenceName,				"Test signaling and importing the fence.",								testFenceSignalImport,				config);
 		addFunctionCase(fenceGroup.get(), std::string("reset_") + permanenceName,						"Test resetting the fence.",											testFenceReset,						config);
 		addFunctionCase(fenceGroup.get(), std::string("transference_") + permanenceName,				"Test fences transference.",											testFenceTransference,				config);
+
+		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT)
+		{
+			addFunctionCase(fenceGroup.get(), std::string("import_signaled_") + permanenceName,			"Test import signaled fence fd.",										testFenceImportSyncFdSignaled,		config);
+		}
 
 		if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
