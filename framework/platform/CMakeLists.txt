@@ -19,7 +19,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			win32/tcuWin32VulkanPlatform.cpp
 			)
 
-	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND))
+	elseif ((DE_OS_IS_UNIX OR DE_OS_IS_OSX) AND (DEQP_USE_X11 OR DEQP_USE_WAYLAND OR DEQP_USE_HEADLESS))
 
 		set(TCUTIL_PLATFORM_SRCS
 			lnx/tcuLnx.cpp
@@ -81,6 +81,10 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 				lnx/wayland/tcuLnxWaylandEglDisplayFactory.hpp
 				)
 			include_directories(wayland)
+		endif()
+
+		if (DEQP_USE_HEADLESS)
+			add_definitions(-DDEQP_SUPPORT_HEADLESS=1)
 		endif()
 
 	elseif (DE_OS_IS_UNIX AND DEQP_USE_SURFACELESS)

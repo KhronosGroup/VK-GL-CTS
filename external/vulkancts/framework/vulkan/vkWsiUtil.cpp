@@ -71,6 +71,7 @@ const char* getName (Type wsiType)
 		"android",
 		"win32",
 		"macos",
+		"headless"
 	};
 	return de::getSizedArrayElement<TYPE_LAST>(s_names, wsiType);
 }
@@ -84,7 +85,8 @@ const char* getExtensionName (Type wsiType)
 		"VK_KHR_wayland_surface",
 		"VK_KHR_android_surface",
 		"VK_KHR_win32_surface",
-		"VK_MVK_macos_surface"
+		"VK_MVK_macos_surface",
+		"VK_EXT_headless_surface"
 	};
 	return de::getSizedArrayElement<TYPE_LAST>(s_extNames, wsiType);
 }
@@ -143,6 +145,13 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 			noDisplayLimit,
 			noWindowLimit,
 		},
+		// VK_EXT_headless_surface
+		{
+			0u,
+			PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE,
+			noDisplayLimit,
+			noWindowLimit,
+		},
 	};
 
 	return de::getSizedArrayElement<TYPE_LAST>(s_properties, wsiType);
@@ -157,7 +166,7 @@ VkResult createSurface (const InstanceInterface&		vki,
 						VkSurfaceKHR*					pSurface)
 {
 	// Update this function if you add more WSI implementations
-	DE_STATIC_ASSERT(TYPE_LAST == 6);
+	DE_STATIC_ASSERT(TYPE_LAST == 7);
 
 	switch (wsiType)
 	{
@@ -253,6 +262,18 @@ VkResult createSurface (const InstanceInterface&		vki,
 			return vki.createMacOSSurfaceMVK(instance, &createInfo, pAllocator, pSurface);
 		}
 
+		case TYPE_HEADLESS:
+		{
+			const VkHeadlessSurfaceCreateInfoEXT	createInfo		=
+			{
+				VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT,
+				DE_NULL,
+				(VkHeadlessSurfaceCreateFlagsEXT)0
+			};
+
+			return vki.createHeadlessSurfaceEXT(instance, &createInfo, pAllocator, pSurface);
+		}
+
 		default:
 			DE_FATAL("Unknown WSI type");
 			return VK_ERROR_SURFACE_LOST_KHR;
@@ -321,6 +342,7 @@ VkBool32 getPhysicalDevicePresentationSupport (const InstanceInterface&	vki,
 		{
 			return vki.getPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, queueFamilyIndex);
 		}
+		case TYPE_HEADLESS:
 		case TYPE_ANDROID:
 		case TYPE_MACOS:
 		{
