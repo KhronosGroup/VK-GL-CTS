@@ -297,20 +297,20 @@ string getCompare(Operator op, VkFormat format, string lhs, string rhs)
 			if (isMinMax)
 				return "(" + lhs + " == " + rhs + ")";
 			else
-				return "(abs(" + lhs + " - " + rhs + ") < " + formatName + "(0.1))";
+				return "(abs(" + lhs + " - " + rhs + ") < " + formatName + "(gl_SubgroupSize==128 ? 0.2: 0.1))";
 		case VK_FORMAT_R32_SFLOAT:
 		case VK_FORMAT_R64_SFLOAT:
 			if (isMinMax)
 				return "(" + lhs + " == " + rhs + ")";
 			else
-				return "(abs(" + lhs + " - " + rhs + ") < 0.00001)";
+				return "(abs(" + lhs + " - " + rhs + ") < (gl_SubgroupSize==128 ? 0.00002:0.00001))";
 		case VK_FORMAT_R16G16_SFLOAT:
 		case VK_FORMAT_R16G16B16_SFLOAT:
 		case VK_FORMAT_R16G16B16A16_SFLOAT:
 			if (isMinMax)
 				return "all(equal(" + lhs + ", " + rhs + "))";
 			else
-				return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName + "(0.1)))";
+				return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName + "(gl_SubgroupSize==128 ? 0.2: 0.1)))";
 		case VK_FORMAT_R32G32_SFLOAT:
 		case VK_FORMAT_R32G32B32_SFLOAT:
 		case VK_FORMAT_R32G32B32A32_SFLOAT:
@@ -320,6 +320,6 @@ string getCompare(Operator op, VkFormat format, string lhs, string rhs)
 			if (isMinMax)
 				return "all(equal(" + lhs + ", " + rhs + "))";
 			else
-				return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName + "(0.00001)))";
+				return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName + "(gl_SubgroupSize==128 ? 0.00002: 0.00001)))";
 	}
 }
