@@ -114,3 +114,12 @@ dEQP-VK.texture.filtering.2d.combinations.cubic.cubic.mirror_clamp_to_edge.mirro
 dEQP-VK.texture.filtering.2d.combinations.cubic.cubic.mirror_clamp_to_edge.clamp_to_edge
 dEQP-VK.texture.filtering.2d.combinations.cubic.cubic.mirror_clamp_to_edge.clamp_to_border
 dEQP-VK.texture.filtering.2d.combinations.cubic.cubic.mirror_clamp_to_edge.mirror_clamp_to_edge
+
+# VK-GL-CTS 1973 CL 4707
+# Intel/Windows is failing these ones.
+dEQP-VK.binding_model.descriptorset_random.sets4.unifindexed.noubo.nosbo.nosampledimg.outimgonly.noiub.uab.comp.noia.0
+dEQP-VK.binding_model.descriptorset_random.sets4.dynindexed.noubo.nosbo.nosampledimg.outimgonly.noiub.uab.comp.noia.0
+dEQP-VK.binding_model.descriptorset_random.sets4.runtimesize.noubo.nosbo.nosampledimg.outimgonly.noiub.uab.comp.noia.0
+dEQP-VK.binding_model.descriptorset_random.sets8.noarray.ubolimitlow.sbolimitlow.sampledimglow.outimgtexlow.iublimitlow.uab.comp.noia.0
+dEQP-VK.binding_model.descriptorset_random.sets8.unifindexed.noubo.nosbo.nosampledimg.outimgonly.noiub.uab.comp.noia.0
+dEQP-VK.binding_model.descriptorset_random.sets8.dynindexed.noubo.nosbo.nosampledimg.outimgonly.noiub.uab.comp.noia.0
