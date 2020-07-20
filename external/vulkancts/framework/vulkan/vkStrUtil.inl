@@ -854,6 +854,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkHeadlessSurfaceCreateInfoEXT&
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizationPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationLineStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceIndexTypeUint8FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT& value);

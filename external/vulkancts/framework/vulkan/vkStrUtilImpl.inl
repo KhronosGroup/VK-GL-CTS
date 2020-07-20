@@ -524,6 +524,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR:										return "VK_STRUCTURE_TYPE_DEFERRED_OPERATION_INFO_KHR";
@@ -1511,6 +1512,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_GGP_PROPRIETARY:				return "VK_DRIVER_ID_GGP_PROPRIETARY";
 		case VK_DRIVER_ID_BROADCOM_PROPRIETARY:			return "VK_DRIVER_ID_BROADCOM_PROPRIETARY";
 		case VK_DRIVER_ID_MESA_LLVMPIPE:				return "VK_DRIVER_ID_MESA_LLVMPIPE";
+		case VK_DRIVER_ID_MOLTENVK:						return "VK_DRIVER_ID_MOLTENVK";
 		case VK_DRIVER_ID_MAX_ENUM:						return "VK_DRIVER_ID_MAX_ENUM";
 		default:										return DE_NULL;
 	}
@@ -2963,6 +2965,7 @@ tcu::Format::Bitfield<32> getExternalSemaphoreHandleTypeFlagsStr (VkExternalSema
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,		"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT,				"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,					"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT,				"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D11_FENCE_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,			"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,		"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR"),
 		tcu::Format::BitDesc(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,	"VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR"),
@@ -9230,6 +9233,27 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationLineStat
 	s << "\tstippledLineEnable = " << value.stippledLineEnable << '\n';
 	s << "\tlineStippleFactor = " << value.lineStippleFactor << '\n';
 	s << "\tlineStipplePattern = " << value.lineStipplePattern << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderBufferFloat32Atomics = " << value.shaderBufferFloat32Atomics << '\n';
+	s << "\tshaderBufferFloat32AtomicAdd = " << value.shaderBufferFloat32AtomicAdd << '\n';
+	s << "\tshaderBufferFloat64Atomics = " << value.shaderBufferFloat64Atomics << '\n';
+	s << "\tshaderBufferFloat64AtomicAdd = " << value.shaderBufferFloat64AtomicAdd << '\n';
+	s << "\tshaderSharedFloat32Atomics = " << value.shaderSharedFloat32Atomics << '\n';
+	s << "\tshaderSharedFloat32AtomicAdd = " << value.shaderSharedFloat32AtomicAdd << '\n';
+	s << "\tshaderSharedFloat64Atomics = " << value.shaderSharedFloat64Atomics << '\n';
+	s << "\tshaderSharedFloat64AtomicAdd = " << value.shaderSharedFloat64AtomicAdd << '\n';
+	s << "\tshaderImageFloat32Atomics = " << value.shaderImageFloat32Atomics << '\n';
+	s << "\tshaderImageFloat32AtomicAdd = " << value.shaderImageFloat32AtomicAdd << '\n';
+	s << "\tsparseImageFloat32Atomics = " << value.sparseImageFloat32Atomics << '\n';
+	s << "\tsparseImageFloat32AtomicAdd = " << value.sparseImageFloat32AtomicAdd << '\n';
 	s << '}';
 	return s;
 }

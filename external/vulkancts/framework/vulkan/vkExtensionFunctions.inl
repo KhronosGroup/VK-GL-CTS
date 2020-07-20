@@ -724,6 +724,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_host_query_reset")
 	{
 		return;
@@ -1703,6 +1707,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	if (extName == "VK_EXT_line_rasterization")
 	{
 		functions.push_back("vkCmdSetLineStippleEXT");
+		return;
+	}
+	if (extName == "VK_EXT_shader_atomic_float")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_host_query_reset")

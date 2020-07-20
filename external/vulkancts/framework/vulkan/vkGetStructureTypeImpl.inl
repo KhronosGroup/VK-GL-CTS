@@ -1761,6 +1761,11 @@ template<> VkStructureType getStructureType<VkPipelineRasterizationLineStateCrea
 	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceIndexTypeUint8FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_EXT;
