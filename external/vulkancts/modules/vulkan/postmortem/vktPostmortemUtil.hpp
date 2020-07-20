@@ -1,3 +1,5 @@
+#ifndef _VKTPOSTMORTEMUTIL_HPP
+#define _VKTPOSTMORTEMUTIL_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -19,35 +21,33 @@
  */
 /*!
  * \file
- * \brief Experimental crash postmortem tests
+ * \brief Utilities for experimental crash postmortem tests
  */
 /*--------------------------------------------------------------------*/
 
-#include "vktPostmortemTests.hpp"
-#include "vktPostmortemShaderTimeoutTests.hpp"
-#include "vktPostmortemUseAfterFreeTests.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace postmortem
 {
-namespace
-{
 
-void createChildren(tcu::TestCaseGroup *postmortemTests)
+class PostmortemTestInstance : public vkt::TestInstance
 {
-	tcu::TestContext &testCtx = postmortemTests->getTestContext();
-	postmortemTests->addChild(createShaderTimeoutTests(testCtx));
-	postmortemTests->addChild(createUseAfterFreeTests(testCtx));
-}
+public:
+	PostmortemTestInstance(Context& context);
+	virtual ~PostmortemTestInstance();
 
-} // namespace
-
-tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
-{
-	return createTestGroup(testCtx, "postmortem", "Crash postmortem tests", createChildren);
-}
+protected:
+	vk::Unique<vk::VkDevice>	m_logicalDevice;
+	vk::DeviceDriver			m_deviceDriver;
+	deUint32					m_queueFamilyIndex;
+	vk::VkQueue					m_queue;
+	vk::SimpleAllocator			m_allocator;
+};
 
 } // namespace postmortem
 } // namespace vkt
+
+#endif // _VKTPOSTMORTEMUTIL_HPP

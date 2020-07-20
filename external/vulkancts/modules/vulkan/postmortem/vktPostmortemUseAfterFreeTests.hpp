@@ -1,3 +1,5 @@
+#ifndef _VKTPOSTMORTEMUSEAFTERFREETESTS_HPP
+#define _VKTPOSTMORTEMUSEAFTERFREETESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -16,38 +18,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- */
-/*!
+ *//*!
  * \file
- * \brief Experimental crash postmortem tests
- */
-/*--------------------------------------------------------------------*/
+ * \brief Experimental crash postmortem use of freed memory tests
+ *//*--------------------------------------------------------------------*/
 
-#include "vktPostmortemTests.hpp"
-#include "vktPostmortemShaderTimeoutTests.hpp"
-#include "vktPostmortemUseAfterFreeTests.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
 namespace vkt
 {
 namespace postmortem
 {
-namespace
-{
 
-void createChildren(tcu::TestCaseGroup *postmortemTests)
-{
-	tcu::TestContext &testCtx = postmortemTests->getTestContext();
-	postmortemTests->addChild(createShaderTimeoutTests(testCtx));
-	postmortemTests->addChild(createUseAfterFreeTests(testCtx));
-}
+tcu::TestCaseGroup* createUseAfterFreeTests(tcu::TestContext& testCtx);
 
-} // namespace
+} // postmortem
+} // vkt
 
-tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx)
-{
-	return createTestGroup(testCtx, "postmortem", "Crash postmortem tests", createChildren);
-}
-
-} // namespace postmortem
-} // namespace vkt
+#endif // _VKTPOSTMORTEMUSEAFTERFREETESTS_HPP

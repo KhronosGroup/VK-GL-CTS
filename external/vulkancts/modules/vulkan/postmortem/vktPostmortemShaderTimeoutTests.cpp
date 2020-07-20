@@ -35,6 +35,7 @@
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktPostmortemUtil.hpp"
 
 using namespace vk;
 
@@ -57,7 +58,7 @@ private:
 	deUint32 m_iterations;
 };
 
-class ShaderTimeoutInstance : public vkt::TestInstance
+class ShaderTimeoutInstance : public PostmortemTestInstance
 {
 public:
 	ShaderTimeoutInstance(Context& context, deUint32 iterations);
@@ -65,11 +66,6 @@ public:
 	tcu::TestStatus		iterate(void) override;
 
 private:
-	Unique<VkDevice>	m_logicalDevice;
-	DeviceDriver		m_deviceDriver;
-	deUint32			m_queueFamilyIndex;
-	VkQueue				m_queue;
-	SimpleAllocator		m_allocator;
 	deUint32			m_iterations;
 };
 
@@ -112,50 +108,11 @@ Move<VkPipeline> makeComputePipeline(const DeviceInterface&		vk,
 	return makeComputePipeline(vk, device, pipelineLayout, static_cast<VkPipelineCreateFlags>(0u), shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u));
 }
 
-Move<VkDevice> createPostmortemDevice(Context& context)
-{
-	const float queuePriority = 1.0f;
-
-	// Create a universal queue that supports graphics and compute
-	const VkDeviceQueueCreateInfo	queueParams =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// VkStructureType				sType;
-		DE_NULL,									// const void*					pNext;
-		0u,											// VkDeviceQueueCreateFlags		flags;
-		context.getUniversalQueueFamilyIndex(),		// deUint32						queueFamilyIndex;
-		1u,											// deUint32						queueCount;
-		&queuePriority								// const float*					pQueuePriorities;
-	};
-
-	const VkDeviceCreateInfo		deviceParams =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,								// const void*						pNext;
-		0u,										// VkDeviceCreateFlags				flags;
-		1u,										// deUint32							queueCreateInfoCount;
-		&queueParams,							// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,										// deUint32							enabledLayerCount;
-		DE_NULL,								// const char* const*				ppEnabledLayerNames;
-		0u,										// deUint32							enabledExtensionCount;
-		DE_NULL,								// const char* const*				ppEnabledExtensionNames;
-        DE_NULL									// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
-	};
-
-	return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-							  context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
-}
-
 ShaderTimeoutInstance::ShaderTimeoutInstance(Context& context, deUint32 iterations)
-	: TestInstance(context), m_logicalDevice(createPostmortemDevice(context)),
-	m_deviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice),
-	m_queueFamilyIndex(0),
-	m_queue(getDeviceQueue(m_deviceDriver, *m_logicalDevice, m_queueFamilyIndex, 0)),
-	m_allocator(m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice())),
-	m_iterations(iterations)
+	: PostmortemTestInstance(context), m_iterations(iterations)
 {
 
 }
-
 
 TestInstance* ShaderTimeoutCase::createInstance(Context& context) const
 {

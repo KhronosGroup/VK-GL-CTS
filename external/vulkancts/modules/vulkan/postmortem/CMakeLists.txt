@@ -7,6 +7,10 @@ set(DEQP_VK_POSTMORTEM_SRCS
 	vktPostmortemShaderTimeoutTests.hpp
 	vktPostmortemTests.hpp
 	vktPostmortemTests.cpp
+	vktPostmortemUseAfterFreeTests.hpp
+	vktPostmortemUseAfterFreeTests.cpp
+	vktPostmortemUtil.hpp
+	vktPostmortemUtil.cpp
 )
 
 set(DEQP_VK_POSTMORTEM_LIBS
