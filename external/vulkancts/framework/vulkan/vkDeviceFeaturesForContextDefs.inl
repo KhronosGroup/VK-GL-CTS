@@ -45,6 +45,7 @@ const vk::VkPhysicalDeviceRobustness2FeaturesEXT&						Context::getRobustness2Fe
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&				Context::getSamplerYcbcrConversionFeatures				(void) const { return m_device->getSamplerYcbcrConversionFeatures();			}
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&					Context::getScalarBlockLayoutFeatures					(void) const { return m_device->getScalarBlockLayoutFeatures();					}
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&			Context::getSeparateDepthStencilLayoutsFeatures			(void) const { return m_device->getSeparateDepthStencilLayoutsFeatures();		}
+const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&					Context::getShaderAtomicFloatFeaturesEXT				(void) const { return m_device->getShaderAtomicFloatFeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&					Context::getShaderAtomicInt64Features					(void) const { return m_device->getShaderAtomicInt64Features();					}
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						Context::getShaderClockFeatures							(void) const { return m_device->getShaderClockFeatures();						}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	Context::getShaderDemoteToHelperInvocationFeaturesEXT	(void) const { return m_device->getShaderDemoteToHelperInvocationFeaturesEXT();	}
