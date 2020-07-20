@@ -1,8 +1,10 @@
-/*-------------------------------------------------------------------------
+#ifndef _VKTPOSTMORTEMSHADERTIMEOUTTESTS_HPP
+#define _VKTPOSTMORTEMSHADERTIMEOUTTESTS_HPP
+/*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2020 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +20,20 @@
  *
  *//*!
  * \file
- * \brief Vulkan Test Package Entry Point.
+ * \brief Experimental crash postmortem shader timeout tests
  *//*--------------------------------------------------------------------*/
 
-#include "vktTestPackage.hpp"
+#include "tcuDefs.hpp"
+#include "tcuTestCase.hpp"
 
-// Register package to test executor.
-
-static tcu::TestPackage* createTestPackage (tcu::TestContext& testCtx)
+namespace vkt
 {
-	return new vkt::TestPackage(testCtx);
-}
-
-static tcu::TestPackage* createExperimentalTestPackage (tcu::TestContext& testCtx)
+namespace postmortem
 {
-	return new vkt::ExperimentalTestPackage(testCtx);
-}
 
-tcu::TestPackageDescriptor g_vktPackageDescriptor("dEQP-VK", createTestPackage);
-tcu::TestPackageDescriptor g_vktExperimentalPackageDescriptor("dEQP-VK-experimental", createExperimentalTestPackage);
+tcu::TestCaseGroup* createShaderTimeoutTests(tcu::TestContext& testCtx);
+
+} // postmortem
+} // vkt
+
+#endif // _VKTPOSTMORTEMSHADERTIMEOUTTESTS_HPP

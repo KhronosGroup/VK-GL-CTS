@@ -39,6 +39,7 @@ add_subdirectory(imageless_framebuffer)
 add_subdirectory(descriptor_indexing)
 add_subdirectory(fragment_shader_interlock)
 add_subdirectory(modifiers)
+add_subdirectory(postmortem)
 
 
 include_directories(
@@ -81,6 +82,7 @@ include_directories(
 	descriptor_indexing
 	fragment_shader_interlock
 	modifiers
+	postmortem
 	)
 
 set(DEQP_VK_SRCS
@@ -143,6 +145,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-descriptor-indexing
 	deqp-vk-fragment-shader-interlock
 	deqp-vk-modifiers
+	deqp-vk-postmortem
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

@@ -240,6 +240,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexOnlyTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp \
+	external/vulkancts/modules/vulkan/postmortem/vktPostmortemShaderTimeoutTests.cpp \
+	external/vulkancts/modules/vulkan/postmortem/vktPostmortemTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentClearTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemAttachmentLoadTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemBlitImageTests.cpp \
@@ -1170,6 +1172,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/multiview \
 	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/postmortem \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/protected_memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
