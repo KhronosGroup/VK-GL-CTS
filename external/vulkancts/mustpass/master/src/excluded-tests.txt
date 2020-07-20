@@ -2,9 +2,6 @@
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
 
-# Excluded Amber example tests
-dEQP-VK.amber-example.*
-
 #VK-GL-CTS 1274
 dEQP-VK.rasterization.interpolation.basic.lines_wide
 dEQP-VK.rasterization.interpolation.projected.line_strip_wide
