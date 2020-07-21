@@ -2818,11 +2818,8 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		{ TEST_ID_HIT_KIND_EXT,					"HitKindEXT"			,			A	|	C							, createScalarTests			},
 		{ TEST_ID_OBJECT_TO_WORLD_EXT,			"ObjectToWorldEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
 		{ TEST_ID_WORLD_TO_OBJECT_EXT,			"WorldToObjectEXT"		,			A	|	C	|	I					, createMultiOutputTests	},
-#if 0
-        // disable 3x4 tests due to glslang bug https://github.com/KhronosGroup/glslang/issues/2329
         { TEST_ID_OBJECT_TO_WORLD_3X4_EXT,		"ObjectToWorld3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
         { TEST_ID_WORLD_TO_OBJECT_3X4_EXT,		"WorldToObject3x4EXT"	,			A	|	C	|	I					, createMultiOutputTests	},
-#endif
 	};
 
 	de::MovePtr<tcu::TestCaseGroup> builtinGroup(new tcu::TestCaseGroup(testCtx, "builtin", "Ray tracing shader builtin tests"));
