@@ -29,6 +29,6 @@ Below are some key dates to acknowledge:
 
 2021-01-19 The affected releases are withdrawn.
 
-23 April 2020
+23 July 2020
 Alexander Galazin
 Vulkan CTS TSG Chair
