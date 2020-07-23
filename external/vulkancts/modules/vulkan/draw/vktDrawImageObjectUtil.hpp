@@ -81,6 +81,16 @@ public:
 													 unsigned int							mipLevel = 0,
 													 unsigned int							arrayElement = 0);
 
+	tcu::ConstPixelBufferAccess readDepth			(vk::VkQueue							queue,
+													 vk::Allocator&							allocator,
+													 vk::VkImageLayout						layout,
+													 vk::VkOffset3D							offset,
+													 int									width,
+													 int									height,
+													 vk::VkImageAspectFlagBits				aspect,
+													 unsigned int							mipLevel = 0,
+													 unsigned int							arrayElement = 0);
+
 	tcu::ConstPixelBufferAccess readSurface1D		(vk::VkQueue							queue,
 													 vk::Allocator&							allocator,
 													 vk::VkImageLayout						layout,

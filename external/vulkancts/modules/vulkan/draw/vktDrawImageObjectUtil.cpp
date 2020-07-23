@@ -188,6 +188,25 @@ tcu::ConstPixelBufferAccess Image::readSurface (vk::VkQueue					queue,
 	return tcu::ConstPixelBufferAccess(vk::mapVkFormat(m_format), width, height, 1, m_pixelAccessData.data());
 }
 
+tcu::ConstPixelBufferAccess Image::readDepth (vk::VkQueue				queue,
+											  vk::Allocator&			allocator,
+											  vk::VkImageLayout			layout,
+											  vk::VkOffset3D			offset,
+											  int						width,
+											  int						height,
+											  vk::VkImageAspectFlagBits	aspect,
+											  unsigned int				mipLevel,
+											  unsigned int				arrayElement)
+{
+	DE_ASSERT(aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT);
+	tcu::TextureFormat tcuFormat = (m_format == vk::VK_FORMAT_D32_SFLOAT_S8_UINT) ? tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT) : vk::mapVkFormat(m_format);
+	m_pixelAccessData.resize(width * height * tcuFormat.getPixelSize());
+	deMemset(m_pixelAccessData.data(), 0, m_pixelAccessData.size());
+
+	readUsingBuffer(queue, allocator, layout, offset, width, height, 1, mipLevel, arrayElement, aspect, m_pixelAccessData.data());
+	return tcu::ConstPixelBufferAccess(tcuFormat, width, height, 1, m_pixelAccessData.data());
+}
+
 tcu::ConstPixelBufferAccess Image::readVolume (vk::VkQueue					queue,
 											   vk::Allocator&				allocator,
 											   vk::VkImageLayout			layout,
@@ -280,6 +299,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 	if (!isCombinedType)
 		bufferSize = vk::mapVkFormat(m_format).getPixelSize() * width * height * depth;
 
+	deUint32 pixelMask = 0xffffffff;
 	if (isCombinedType)
 	{
 		int pixelSize = 0;
@@ -293,7 +313,9 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 				break;
 			case vk::VK_FORMAT_X8_D24_UNORM_PACK32:
 			case vk::VK_FORMAT_D24_UNORM_S8_UINT:
-				pixelSize = (aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT) ? 3 : 1;
+				// vkCmdCopyBufferToImage copies D24 data to 32-bit pixels.
+				pixelSize = (aspect == vk::VK_IMAGE_ASPECT_DEPTH_BIT) ? 4 : 1;
+				pixelMask = 0x00ffffff;
 				break;
 
 			default:
@@ -377,6 +399,16 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 
 	deUint8* destPtr = reinterpret_cast<deUint8*>(stagingResource->getBoundMemory().getHostPtr());
 	deMemcpy(data, destPtr, static_cast<size_t>(bufferSize));
+	if (pixelMask != 0xffffffff) {
+		/* data copied to or from the depth aspect of a
+           VK_FORMAT_X8_D24_UNORM_PACK32 or VK_FORMAT_D24_UNORM_S8_UINT format
+           is packed with one 32-bit word per texel with the D24 value in the
+           LSBs of the word, and *undefined* values in the eight MSBs. */
+		deUint32* const data32 = static_cast<deUint32*>(data);
+		const vk::VkDeviceSize data32Count = bufferSize / sizeof(deUint32);
+		for(vk::VkDeviceSize i = 0; i < data32Count; ++i)
+			data32[i] &= pixelMask;
+	}
 }
 
 tcu::ConstPixelBufferAccess Image::readSurfaceLinear (vk::VkOffset3D				offset,
