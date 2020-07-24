@@ -828,7 +828,13 @@ void clearStencil (const PixelBufferAccess& access, int stencil)
 	clear(getEffectiveDepthStencilAccess(access, Sampler::MODE_STENCIL), tcu::UVec4(stencil, 0u, 0u, 0u));
 }
 
-static void fillWithComponentGradients1D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+enum GradientStyle
+{
+	GRADIENT_STYLE_OLD = 0,
+	GRADIENT_STYLE_NEW = 1
+};
+
+static void fillWithComponentGradients1D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle)
 {
 	DE_ASSERT(access.getHeight() == 1);
 	for (int x = 0; x < access.getWidth(); x++)
@@ -844,7 +850,7 @@ static void fillWithComponentGradients1D (const PixelBufferAccess& access, const
 	}
 }
 
-static void fillWithComponentGradients2D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+static void fillWithComponentGradients2D (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle)
 {
 	for (int y = 0; y < access.getHeight(); y++)
 	{
@@ -863,7 +869,7 @@ static void fillWithComponentGradients2D (const PixelBufferAccess& access, const
 	}
 }
 
-static void fillWithComponentGradients3D (const PixelBufferAccess& dst, const Vec4& minVal, const Vec4& maxVal)
+static void fillWithComponentGradients3D (const PixelBufferAccess& dst, const Vec4& minVal, const Vec4& maxVal, GradientStyle style)
 {
 	for (int z = 0; z < dst.getDepth(); z++)
 	{
@@ -875,10 +881,24 @@ static void fillWithComponentGradients3D (const PixelBufferAccess& dst, const Ve
 				float t = ((float)y + 0.5f) / (float)dst.getHeight();
 				float p = ((float)z + 0.5f) / (float)dst.getDepth();
 
-				float r = linearInterpolate(s,						minVal.x(), maxVal.x());
-				float g = linearInterpolate(t,						minVal.y(), maxVal.y());
-				float b = linearInterpolate(p,						minVal.z(), maxVal.z());
-				float a = linearInterpolate(1.0f - (s+t+p)/3.0f,	minVal.w(), maxVal.w());
+				float r, g, b, a;
+
+				if (style == GRADIENT_STYLE_NEW)
+				{
+					// R, G, B and A all depend on every coordinate.
+					r = linearInterpolate((s+t+p)/3.0f,							minVal.x(), maxVal.x());
+					g = linearInterpolate((s + (1.0f - (t+p)*0.5f)*2.0f)/3.0f,	minVal.y(), maxVal.y());
+					b = linearInterpolate(((1.0f - (s+t)*0.5f)*2.0f + p)/3.0f,	minVal.z(), maxVal.z());
+					a = linearInterpolate(1.0f - (s+t+p)/3.0f,					minVal.w(), maxVal.w());
+				}
+				else // GRADIENT_STYLE_OLD
+				{
+					// Each of R, G and B only depend on X, Y and Z, respectively.
+					r = linearInterpolate(s,					minVal.x(), maxVal.x());
+					g = linearInterpolate(t,					minVal.y(), maxVal.y());
+					b = linearInterpolate(p,					minVal.z(), maxVal.z());
+					a = linearInterpolate(1.0f - (s+t+p)/3.0f,	minVal.w(), maxVal.w());
+				}
 
 				dst.setPixel(tcu::Vec4(r, g, b, a), x, y, z);
 			}
@@ -886,7 +906,7 @@ static void fillWithComponentGradients3D (const PixelBufferAccess& dst, const Ve
 	}
 }
 
-void fillWithComponentGradients (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+void fillWithComponentGradientsStyled (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal, GradientStyle style)
 {
 	if (isCombinedDepthStencilType(access.getFormat().type))
 	{
@@ -897,19 +917,29 @@ void fillWithComponentGradients (const PixelBufferAccess& access, const Vec4& mi
 
 		// For combined formats, treat D and S as separate channels
 		if (hasDepth)
-			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH), minVal, maxVal);
+			fillWithComponentGradientsStyled(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_DEPTH), minVal, maxVal, style);
 		if (hasStencil)
-			fillWithComponentGradients(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL), minVal.swizzle(3,2,1,0), maxVal.swizzle(3,2,1,0));
+			fillWithComponentGradientsStyled(getEffectiveDepthStencilAccess(access, tcu::Sampler::MODE_STENCIL), minVal.swizzle(3,2,1,0), maxVal.swizzle(3,2,1,0), style);
 	}
 	else
 	{
 		if (access.getHeight() == 1 && access.getDepth() == 1)
-			fillWithComponentGradients1D(access, minVal, maxVal);
+			fillWithComponentGradients1D(access, minVal, maxVal, style);
 		else if (access.getDepth() == 1)
-			fillWithComponentGradients2D(access, minVal, maxVal);
+			fillWithComponentGradients2D(access, minVal, maxVal, style);
 		else
-			fillWithComponentGradients3D(access, minVal, maxVal);
+			fillWithComponentGradients3D(access, minVal, maxVal, style);
 	}
+}
+
+void fillWithComponentGradients (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+{
+	fillWithComponentGradientsStyled(access, minVal, maxVal, GRADIENT_STYLE_OLD);
+}
+
+void fillWithComponentGradients2 (const PixelBufferAccess& access, const Vec4& minVal, const Vec4& maxVal)
+{
+	fillWithComponentGradientsStyled(access, minVal, maxVal, GRADIENT_STYLE_NEW);
 }
 
 static void fillWithGrid1D (const PixelBufferAccess& access, int cellSize, const Vec4& colorA, const Vec4& colorB)
