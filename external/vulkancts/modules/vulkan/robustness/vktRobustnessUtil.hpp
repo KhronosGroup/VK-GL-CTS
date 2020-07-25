@@ -37,7 +37,7 @@ namespace vkt
 namespace robustness
 {
 
-vk::Move<vk::VkDevice>	createRobustBufferAccessDevice		(Context& context);
+vk::Move<vk::VkDevice>	createRobustBufferAccessDevice		(Context& context, const vk::VkPhysicalDeviceFeatures2* enabledFeatures2 = DE_NULL);
 bool					areEqual							(float a, float b);
 bool					isValueZero							(const void* valuePtr, size_t valueSize);
 bool					isValueWithinBuffer					(const void* buffer, vk::VkDeviceSize bufferSize, const void* valuePtr, size_t valueSizeInBytes);

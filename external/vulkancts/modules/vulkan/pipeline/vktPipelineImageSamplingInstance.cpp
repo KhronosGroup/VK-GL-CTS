@@ -376,7 +376,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&						context,
 
 					m_componentMask = tcu::BVec4(true, false, false, false);
 
-					if (m_componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY)
+					if (m_componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY && m_componentMapping.r != VK_COMPONENT_SWIZZLE_R)
 					{
 						TCU_THROW(NotSupportedError, "filterMinmaxImageComponentMapping is not supported (R mapping is not IDENTITY)");
 					}

@@ -74,9 +74,20 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 					featuresToFillFromBlob.push_back(p);
 				else
 				{
-					// add to chain
-					*nextPtr = p->getFeatureTypeRaw();
-					nextPtr = p->getFeatureTypeNext();
+					if (p->getFeatureDesc().sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT)
+					{
+						VkPhysicalDeviceFeatures2 coreFeatures2 = initVulkanStructure();
+
+						coreFeatures2.pNext = p->getFeatureTypeRaw();
+
+						vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures2);
+					}
+					else
+					{
+						// add to chain
+						*nextPtr = p->getFeatureTypeRaw();
+						nextPtr = p->getFeatureTypeNext();
+					}
 				}
 				m_features.push_back(p);
 			}
@@ -87,7 +98,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 		// fill data from VkPhysicalDeviceVulkan1{1,2}Features
 		if (vk12Supported)
 		{
-			AllBlobs allBlobs =
+			AllFeaturesBlobs allBlobs =
 			{
 				m_vulkan11Features,
 				m_vulkan12Features,
@@ -95,7 +106,7 @@ DeviceFeatures::DeviceFeatures	(const InstanceInterface&			vki,
 			};
 
 			for (auto feature : featuresToFillFromBlob)
-				feature->initializeFromBlob(allBlobs);
+				feature->initializeFeatureFromBlob(allBlobs);
 		}
 	}
 	else

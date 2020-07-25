@@ -5,6 +5,8 @@ include_directories(..)
 set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessTests.cpp
 	vktRobustnessTests.hpp
+	vktRobustnessExtsTests.cpp
+	vktRobustnessExtsTests.hpp
 	vktRobustnessBufferAccessTests.cpp
 	vktRobustnessBufferAccessTests.hpp
 	vktRobustBufferAccessWithVariablePointersTests.cpp

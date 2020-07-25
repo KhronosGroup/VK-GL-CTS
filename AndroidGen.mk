@@ -58,7 +58,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
 	external/vulkancts/framework/vulkan/vkWsiUtil.cpp \
 	external/vulkancts/framework/vulkan/vkYCbCrImageWithMemory.cpp \
-	external/vulkancts/modules/vulkan/amber/vktAmberExampleTests.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberGlslTests.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberGraphicsFuzzTests.cpp \
 	external/vulkancts/modules/vulkan/amber/vktAmberHelper.cpp \
@@ -262,6 +261,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolPerformanceTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
+	external/vulkancts/modules/vulkan/rasterization/vktRasterizationFragShaderSideEffectsTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryAccelerationStructuresTests.cpp \
 	external/vulkancts/modules/vulkan/ray_query/vktRayQueryBuiltinTests.cpp \
@@ -297,6 +297,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedClearAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustBufferAccessWithVariablePointersTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustnessExtsTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp \
@@ -432,11 +433,13 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringExplicitLodTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureMipmapTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureMultisampleTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureShadowTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureSubgroupLodTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureSwizzleTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTestUtil.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureTexelBufferTests.cpp \
 	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackFuzzLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackFuzzLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackRandomLayoutCase.cpp \

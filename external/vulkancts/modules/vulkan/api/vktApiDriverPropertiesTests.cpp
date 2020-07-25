@@ -27,6 +27,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkKnownDriverIds.inl"
 
 using namespace vk;
 
@@ -46,25 +47,9 @@ enum TestType
 	TEST_TYPE_VERSION,
 };
 
-static const deUint32 knownDriverIds[] =
-{
-	// Specified in the Vulkan registry (vk.xml)
-	1,	// author = "Advanced Micro Devices, Inc."   comment = "AMD proprietary driver"
-	2,	// author = "Advanced Micro Devices, Inc."   comment = "AMD open-source driver"
-	3,	// author = "Mesa open source project"       comment = "Mesa RADV driver"
-	4,	// author = "NVIDIA Corporation"             comment = "NVIDIA proprietary driver"
-	5,	// author = "Intel Corporation"              comment = "Intel proprietary Windows driver"
-	6,	// author = "Intel Corporation"              comment = "Intel open-source Mesa driver"
-	7,	// author = "Imagination Technologies"       comment = "Imagination proprietary driver"
-	8,	// author = "Qualcomm Technologies, Inc."    comment = "Qualcomm proprietary driver"
-	9,	// author = "Arm Limited"                    comment = "Arm proprietary driver"
-	10,	// <enum value="10"      name="VK_DRIVER_ID_GOOGLE_SWIFTSHADER_KHR"        comment="Google LLC"/>
-	11,	// <enum value="11"      name="VK_DRIVER_ID_GGP_PROPRIETARY_KHR"           comment="Google LLC"/>
-	12,	// <enum value="12"      name="VK_DRIVER_ID_BROADCOM_PROPRIETARY_KHR"      comment="Broadcom Inc."/>
-};
-
 static const VkConformanceVersionKHR knownConformanceVersions[] =
 {
+	makeConformanceVersion(1, 2, 3, 1),
 	makeConformanceVersion(1, 2, 3, 0),
 	makeConformanceVersion(1, 2, 2, 1),
 	makeConformanceVersion(1, 2, 2, 0),
@@ -111,9 +96,9 @@ void checkSupport (Context& context, const TestType config)
 
 void testDriverMatch (const VkPhysicalDeviceDriverPropertiesKHR& deviceDriverProperties)
 {
-	for (const deUint32* pDriverId = knownDriverIds; pDriverId != DE_ARRAY_END(knownDriverIds); ++pDriverId)
+	for (deUint32 driverNdx = 0; driverNdx < DE_LENGTH_OF_ARRAY(driverIds); driverNdx++)
 	{
-		if (deviceDriverProperties.driverID == *pDriverId)
+		if (deviceDriverProperties.driverID == driverIds[driverNdx].id)
 			return;
 	}
 

@@ -450,33 +450,31 @@ void TrinaryMinMaxCase::checkSupport (Context& context) const
 	context.requireDeviceFunctionality("VK_KHR_storage_buffer_storage_class");
 	context.requireDeviceFunctionality("VK_AMD_shader_trinary_minmax");
 
-	const auto&	vki				= context.getInstanceInterface();
-	const auto	physicalDevice	= context.getPhysicalDevice();
-
-	const auto devFeatures	= vk::getPhysicalDeviceFeatures(vki, physicalDevice);
-	const auto vk11Features	= vk::getPhysicalDeviceVulkan11Features(vki, physicalDevice);
-	const auto vk12Features	= vk::getPhysicalDeviceVulkan12Features(vki, physicalDevice);
+	const auto devFeatures			= context.getDeviceFeatures();
+	const auto storage16BitFeatures	= context.get16BitStorageFeatures();
+	const auto storage8BitFeatures	= context.get8BitStorageFeatures();
+	const auto shaderFeatures		= context.getShaderFloat16Int8Features();
 
 	// Storage features.
 	if (m_params.typeSize == TypeSize::SIZE_8BIT)
 	{
 		// We will be using 8-bit types in storage buffers.
 		context.requireDeviceFunctionality("VK_KHR_8bit_storage");
-		if (!vk12Features.storageBuffer8BitAccess)
+		if (!storage8BitFeatures.storageBuffer8BitAccess)
 			TCU_THROW(NotSupportedError, "8-bit storage buffer access not supported");
 	}
 	else if (m_params.typeSize == TypeSize::SIZE_16BIT)
 	{
 		// We will be using 16-bit types in storage buffers.
 		context.requireDeviceFunctionality("VK_KHR_16bit_storage");
-		if (!vk11Features.storageBuffer16BitAccess)
+		if (!storage16BitFeatures.storageBuffer16BitAccess)
 			TCU_THROW(NotSupportedError, "16-bit storage buffer access not supported");
 	}
 
 	// Shader type features.
 	if (m_params.baseType == BaseType::TYPE_INT || m_params.baseType == BaseType::TYPE_UINT)
 	{
-		if (m_params.typeSize == TypeSize::SIZE_8BIT && !vk12Features.shaderInt8)
+		if (m_params.typeSize == TypeSize::SIZE_8BIT && !shaderFeatures.shaderInt8)
 			TCU_THROW(NotSupportedError, "8-bit integers not supported in shaders");
 		else if (m_params.typeSize == TypeSize::SIZE_16BIT && !devFeatures.shaderInt16)
 			TCU_THROW(NotSupportedError, "16-bit integers not supported in shaders");
@@ -486,7 +484,7 @@ void TrinaryMinMaxCase::checkSupport (Context& context) const
 	else // BaseType::TYPE_FLOAT
 	{
 		DE_ASSERT(m_params.typeSize != TypeSize::SIZE_8BIT);
-		if (m_params.typeSize == TypeSize::SIZE_16BIT && !vk12Features.shaderFloat16)
+		if (m_params.typeSize == TypeSize::SIZE_16BIT && !shaderFeatures.shaderFloat16)
 			TCU_THROW(NotSupportedError, "16-bit floats not supported in shaders");
 		else if (m_params.typeSize == TypeSize::SIZE_64BIT && !devFeatures.shaderFloat64)
 			TCU_THROW(NotSupportedError, "64-bit floats not supported in shaders");

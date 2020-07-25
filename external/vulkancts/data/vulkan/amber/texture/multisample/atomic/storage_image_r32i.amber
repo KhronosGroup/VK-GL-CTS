@@ -1,0 +1,98 @@
+#!amber
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_FEATURE shaderStorageImageMultisample
+
+SHADER compute compute_shader GLSL
+#version 430
+
+layout(local_size_x = 16, local_size_y = 16) in;
+uniform layout(set=0, binding=0, r32i) iimage2DMS texture;
+uniform layout(set=0, binding=1, rgba8) image2D result;
+
+void main()
+{
+    ivec2 loc = ivec2(gl_LocalInvocationID.xy);
+    // Partner location is a mirror in local workgroup space.
+    ivec2 partnerLoc = ivec2(15) - loc;
+    int id = loc.y * 16 + loc.x;
+    int partnerId = partnerLoc.y * 16 + partnerLoc.x;
+    ivec2 workGroupOffset = ivec2(gl_WorkGroupID.xy) * ivec2(16);
+
+    // Initialize texture with id + sample id
+    for (int s = 0; s < 4; s++)
+        imageStore(texture, loc + workGroupOffset, s, ivec4(s + id));
+
+    memoryBarrierImage();
+    barrier();
+
+    for (int s = 0; s < 4; s++)
+    {
+        // Add id to both location and partner location.
+        imageAtomicAdd(texture, loc + workGroupOffset, s, id);
+        imageAtomicAdd(texture, partnerLoc + workGroupOffset, s, id);
+
+        // Set MSB for location and the second MSB for partner.
+        imageAtomicOr(texture, loc + workGroupOffset, s, 1 << 31);
+        imageAtomicOr(texture, partnerLoc + workGroupOffset, s, 1 << 30);
+    }
+
+    memoryBarrierImage();
+    barrier();
+
+    for (int s = 0; s < 4; s++)
+    {
+        // XOR with two patterns in the second highest byte. Should set this
+        // byte to 0xc. The order of XOR operations don't matter.
+        imageAtomicXor(texture, loc + workGroupOffset, s, 0x0a000000);
+        imageAtomicXor(texture, partnerLoc + workGroupOffset, s, 0x06000000);
+    }
+
+    memoryBarrierImage();
+    barrier();
+
+    for (int s = 0; s < 4; s++)
+    {
+        // Finally mask out one of LSBs based on sample
+        imageAtomicAnd(texture, loc + workGroupOffset, s, ~(1 << s));
+    }
+
+    // Verification
+    bool ok = true;
+
+    for (int s = 0; s < 4; s++)
+    {
+        if (imageLoad(texture, loc + workGroupOffset, s).r != (((s + id * 2 + partnerId) | 0xcc000000) & ~(1 << s)))
+            ok = false;
+    }
+
+    vec4 color = ok ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
+    imageStore(result, loc + workGroupOffset, color);
+}
+END
+
+IMAGE texture FORMAT R32_SINT DIM_2D WIDTH 64 HEIGHT 64 SAMPLES 4
+IMAGE result FORMAT R8G8B8A8_UNORM DIM_2D WIDTH 64 HEIGHT 64 FILL 0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER texture AS storage_image DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER result AS storage_image DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 4 4 1
+
+EXPECT result IDX 0 0 SIZE 64 64 EQ_RGBA 0 255 0 255

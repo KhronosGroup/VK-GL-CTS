@@ -35,7 +35,10 @@
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkObjTypeImpl.inl"
 #include "vkObjUtil.hpp"
+
+#include "vktTestGroupUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuResultCollector.hpp"
@@ -2333,6 +2336,276 @@ tcu::TestStatus createMultipleSharedResourcesTest (Context& context, typename Ob
 	return tcu::TestStatus::pass("Ok");
 }
 
+
+// Class to wrap singleton devices used by private_data tests
+class SingletonDevice
+{
+	Move<VkDevice> createPrivateDataDevice(const Context &context, int idx)
+	{
+		const int requestedSlots[NUM_DEVICES][2] =
+		{
+			{0, 0},
+			{1, 0},
+			{1, 1},
+			{4, 4},
+			{1, 100},
+		};
+
+		const float	queuePriority					= 1.0;
+		const VkDeviceQueueCreateInfo	queues[]	=
+		{
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				DE_NULL,
+				(VkDeviceQueueCreateFlags)0,
+				context.getUniversalQueueFamilyIndex(),
+				1u,									// queueCount
+				&queuePriority,						// pQueuePriorities
+			}
+		};
+
+		VkDevicePrivateDataCreateInfoEXT pdci0 =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT,	// VkStructureType                       sType;
+			DE_NULL,												// const void*                           pNext;
+			0u,														// uint32_t                              privateDataSlotRequestCount;
+		};
+		VkDevicePrivateDataCreateInfoEXT pdci1 =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO_EXT,	// VkStructureType                       sType;
+			DE_NULL,												// const void*                           pNext;
+			0u,														// uint32_t                              privateDataSlotRequestCount;
+		};
+		void *pNext = DE_NULL;
+
+		if (requestedSlots[idx][0])
+		{
+			pNext = &pdci0;
+			pdci0.privateDataSlotRequestCount = requestedSlots[idx][0];
+			if (requestedSlots[idx][1])
+			{
+				pdci0.pNext = &pdci1;
+				pdci1.privateDataSlotRequestCount = requestedSlots[idx][1];
+			}
+		}
+
+		VkPhysicalDevicePrivateDataFeaturesEXT privateDataFeatures =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIVATE_DATA_FEATURES_EXT,	// VkStructureType    sType;
+			pNext,															// void*              pNext;
+			VK_TRUE,														// VkBool32           privateData;
+		};
+		pNext = &privateDataFeatures;
+
+		const char *extName = "VK_EXT_private_data";
+
+		const VkDeviceCreateInfo		deviceInfo	=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+			pNext,
+			(VkDeviceCreateFlags)0,
+			DE_LENGTH_OF_ARRAY(queues),
+			queues,
+			0u,										// enabledLayerNameCount
+			DE_NULL,								// ppEnabledLayerNames
+			1u,										// enabledExtensionNameCount
+			&extName,								// ppEnabledExtensionNames
+			DE_NULL,								// pEnabledFeatures
+		};
+
+		Move<VkDevice> device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
+												   context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceInfo, DE_NULL);
+		return device;
+	}
+
+	SingletonDevice	(const Context& context, int idx)
+		: m_logicalDevice	(createPrivateDataDevice(context, idx))
+	{
+	}
+
+
+public:
+
+	static const int NUM_DEVICES = 5;
+
+	static const Unique<vk::VkDevice>& getDevice(const Context& context, int idx)
+	{
+		if (!m_singletonDevice[idx])
+			m_singletonDevice[idx] = SharedPtr<SingletonDevice>(new SingletonDevice(context, idx));
+
+		DE_ASSERT(m_singletonDevice[idx]);
+		return m_singletonDevice[idx]->m_logicalDevice;
+	}
+
+	static void destroy()
+	{
+		for (int idx = 0; idx < NUM_DEVICES; ++idx)
+			m_singletonDevice[idx].clear();
+	}
+
+private:
+	const Unique<vk::VkDevice>					m_logicalDevice;
+	static SharedPtr<SingletonDevice>			m_singletonDevice[NUM_DEVICES];
+};
+
+SharedPtr<SingletonDevice>		SingletonDevice::m_singletonDevice[NUM_DEVICES];
+
+template<typename T> static deUint64 HandleToInt(T t) { return t.getInternal(); }
+template<typename T> static deUint64 HandleToInt(T *t) { return (deUint64)(deUintptr)(t); }
+
+template<typename Object>
+tcu::TestStatus createPrivateDataTest (Context& context, typename Object::Parameters params)
+{
+	if (!context.getPrivateDataFeaturesEXT().privateData)
+		TCU_THROW(NotSupportedError, "privateData not supported");
+
+	for (int d = 0; d < SingletonDevice::NUM_DEVICES; ++d)
+	{
+		const Unique<vk::VkDevice>&			device =			SingletonDevice::getDevice(context, d);
+		const Environment					env					(context.getPlatformInterface(),
+																 context.getUsedApiVersion(),
+																 context.getInstanceInterface(),
+																 context.getInstance(),
+																 context.getDeviceInterface(),
+																 *device,
+																 context.getUniversalQueueFamilyIndex(),
+																 context.getBinaryCollection(),
+																 DE_NULL,
+																 4u,
+																 context.getTestContext().getCommandLine());
+
+		const typename Object::Resources	res	(env, params);
+
+		const VkPrivateDataSlotCreateInfoEXT createInfo =
+		{
+			VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT,	// VkStructureType                    sType;
+			DE_NULL,												// const void*                        pNext;
+			0u,														// VkPrivateDataSlotCreateFlagsEXT    flags;
+		};
+
+		const int numSlots = 100;
+
+		typedef Unique<VkPrivateDataSlotEXT>				PrivateDataSlotUp;
+		typedef SharedPtr<PrivateDataSlotUp>				PrivateDataSlotSp;
+		vector<PrivateDataSlotSp> slots;
+
+		// interleave allocating objects and slots
+		for (int i = 0; i < numSlots / 2; ++i)
+		{
+			Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(env.vkd, *device, &createInfo, DE_NULL);
+			slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
+		}
+
+		Unique<typename Object::Type>	obj0	(Object::create(env, res, params));
+		Unique<typename Object::Type>	obj1	(Object::create(env, res, params));
+
+		for (int i = numSlots / 2; i < numSlots; ++i)
+		{
+			Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(env.vkd, *device, &createInfo, DE_NULL);
+			slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
+		}
+
+		Unique<typename Object::Type>	obj2	(Object::create(env, res, params));
+		Unique<typename Object::Type>	obj3	(Object::create(env, res, params));
+
+		Unique<typename Object::Type> *objs[4] = { &obj0, &obj1, &obj2, &obj3 };
+
+		for (int r = 0; r < 3; ++r)
+		{
+			deUint64 data;
+
+			// Test private data for the objects
+			for (int o = 0; o < 4; ++o)
+			{
+				auto &obj = *objs[o];
+				for (int i = 0; i < numSlots; ++i)
+				{
+					data = 1234;
+					env.vkd.getPrivateDataEXT(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], &data);
+					if (data != 0)
+						return tcu::TestStatus::fail("Expected initial value of zero");
+				}
+			}
+			for (int o = 0; o < 4; ++o)
+			{
+				auto &obj = *objs[o];
+				for (int i = 0; i < numSlots; ++i)
+					VK_CHECK(env.vkd.setPrivateDataEXT(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], i*i*i + o*o + 1));
+			}
+			for (int o = 0; o < 4; ++o)
+			{
+				auto &obj = *objs[o];
+				for (int i = 0; i < numSlots; ++i)
+				{
+					data = 1234;
+					env.vkd.getPrivateDataEXT(*device, getObjectType<typename Object::Type>(), HandleToInt(obj.get()), **slots[i], &data);
+					if (data != (deUint64)(i*i*i + o*o + 1))
+						return tcu::TestStatus::fail("Didn't read back set value");
+				}
+			}
+
+
+			// Test private data for the private data objects
+			for (int o = 0; o < numSlots; ++o)
+			{
+				auto &obj = **slots[o];
+				for (int i = 0; i < numSlots; ++i)
+				{
+					data = 1234;
+					env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], &data);
+					if (data != 0)
+						return tcu::TestStatus::fail("Expected initial value of zero");
+				}
+			}
+			for (int o = 0; o < numSlots; ++o)
+			{
+				auto &obj = **slots[o];
+				for (int i = 0; i < numSlots; ++i)
+					VK_CHECK(env.vkd.setPrivateDataEXT(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], i*i*i + o*o + 1));
+			}
+			for (int o = 0; o < numSlots; ++o)
+			{
+				auto &obj = **slots[o];
+				for (int i = 0; i < numSlots; ++i)
+				{
+					data = 1234;
+					env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT, HandleToInt<VkPrivateDataSlotEXT>(obj), **slots[i], &data);
+					if (data != (deUint64)(i*i*i + o*o + 1))
+						return tcu::TestStatus::fail("Didn't read back set value");
+				}
+			}
+
+			// Test private data for the device
+			for (int i = 0; i < numSlots; ++i)
+			{
+				data = 1234;
+				env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], &data);
+				if (data != 0)
+					return tcu::TestStatus::fail("Expected initial value of zero for device");
+			}
+			for (int i = 0; i < numSlots; ++i)
+				VK_CHECK(env.vkd.setPrivateDataEXT(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], i*i*i + r*r + 1));
+			for (int i = 0; i < numSlots; ++i)
+			{
+				data = 1234;
+				env.vkd.getPrivateDataEXT(*device, VK_OBJECT_TYPE_DEVICE, (deUint64)(deUintptr)(*device), **slots[i], &data);
+				if (data != (deUint64)(i*i*i + r*r + 1))
+					return tcu::TestStatus::fail("Didn't read back set value from device");
+			}
+
+			// Destroy and realloc slots for the next iteration
+			slots.clear();
+			for (int i = 0; i < numSlots; ++i)
+			{
+				Move<VkPrivateDataSlotEXT> s = createPrivateDataSlotEXT(env.vkd, *device, &createInfo, DE_NULL);
+				slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Ok");
+}
+
 template<typename Object>
 tcu::TestStatus createMaxConcurrentTest (Context& context, typename Object::Parameters params)
 {
@@ -2811,23 +3084,21 @@ struct CaseDescriptions
 };
 
 template<typename Object>
-void addCases (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<Object>& cases)
+void addCases (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
-		addFunctionCase(group.get(), cur->name, "", cases.function, cur->parameters);
+		addFunctionCase(group, cur->name, "", cases.function, cur->parameters);
 }
 
 template<typename Object>
-void addCasesWithProgs (const MovePtr<tcu::TestCaseGroup>& group, const CaseDescription<Object>& cases)
+void addCasesWithProgs (tcu::TestCaseGroup *group, const CaseDescription<Object>& cases)
 {
 	for (const NamedParameters<Object>* cur = cases.paramsBegin; cur != cases.paramsEnd; ++cur)
-		addFunctionCaseWithPrograms(group.get(), cur->name, "", Object::initPrograms, cases.function, cur->parameters);
+		addFunctionCaseWithPrograms(group, cur->name, "", Object::initPrograms, cases.function, cur->parameters);
 }
 
-tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+static void createTests (tcu::TestCaseGroup* group, CaseDescriptions cases)
 {
-	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
-
 	addCases			(group, cases.instance);
 	addCases			(group, cases.device);
 	addCases			(group, cases.deviceGroup);
@@ -2853,7 +3124,20 @@ tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, co
 	addCases			(group, cases.framebuffer);
 	addCases			(group, cases.commandPool);
 	addCases			(group, cases.commandBuffer);
+}
 
+static void cleanupGroup (tcu::TestCaseGroup* group, CaseDescriptions cases)
+{
+	DE_UNREF(group);
+	DE_UNREF(cases);
+	// Destroy singleton object
+	SingletonDevice::destroy();
+}
+
+tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, const char* desc, const CaseDescriptions& cases)
+{
+	MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, name, desc));
+	createTests(group.get(), cases);
 	return group.release();
 }
 
@@ -3299,6 +3583,36 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		CASE_DESC(allocCallbackFailMultipleObjectsTest <CommandBuffer>,			s_commandBufferCases),
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail_multiple", "Allocation callback failure creating multiple objects with one call", s_allocCallbackFailMultipleObjectsGroup));
+
+	const CaseDescriptions	s_privateDataResourcesGroup	=
+	{
+		EMPTY_CASE_DESC(Instance),		// Does not make sense
+		EMPTY_CASE_DESC(Device),		// Device is tested in each object test
+		EMPTY_CASE_DESC(DeviceGroup),	// Device is tested in each object test
+		CASE_DESC(createPrivateDataTest	<DeviceMemory>,				s_deviceMemCases),
+		CASE_DESC(createPrivateDataTest	<Buffer>,					s_bufferCases),
+		CASE_DESC(createPrivateDataTest	<BufferView>,				s_bufferViewCases),
+		CASE_DESC(createPrivateDataTest	<Image>,					s_imageCases),
+		CASE_DESC(createPrivateDataTest	<ImageView>,				s_imageViewCases),
+		CASE_DESC(createPrivateDataTest	<Semaphore>,				s_semaphoreCases),
+		CASE_DESC(createPrivateDataTest	<Event>,					s_eventCases),
+		CASE_DESC(createPrivateDataTest	<Fence>,					s_fenceCases),
+		CASE_DESC(createPrivateDataTest	<QueryPool>,				s_queryPoolCases),
+		CASE_DESC(createPrivateDataTest	<ShaderModule>,				s_shaderModuleCases),
+		CASE_DESC(createPrivateDataTest	<PipelineCache>,			s_pipelineCacheCases),
+		CASE_DESC(createPrivateDataTest	<PipelineLayout>,			s_pipelineLayoutCases),
+		CASE_DESC(createPrivateDataTest	<RenderPass>,				s_renderPassCases),
+		CASE_DESC(createPrivateDataTest	<GraphicsPipeline>,			s_graphicsPipelineCases),
+		CASE_DESC(createPrivateDataTest	<ComputePipeline>,			s_computePipelineCases),
+		CASE_DESC(createPrivateDataTest	<DescriptorSetLayout>,		s_descriptorSetLayoutCases),
+		CASE_DESC(createPrivateDataTest	<Sampler>,					s_samplerCases),
+		CASE_DESC(createPrivateDataTest	<DescriptorPool>,			s_descriptorPoolCases),
+		CASE_DESC(createPrivateDataTest	<DescriptorSet>,			s_descriptorSetCases),
+		CASE_DESC(createPrivateDataTest	<Framebuffer>,				s_framebufferCases),
+		CASE_DESC(createPrivateDataTest	<CommandPool>,				s_commandPoolCases),
+		CASE_DESC(createPrivateDataTest	<CommandBuffer>,			s_commandBufferCases),
+	};
+	objectMgmtTests->addChild(createTestGroup(testCtx, "private_data", "Multiple objects with private data", createTests, s_privateDataResourcesGroup, cleanupGroup));
 
 	return objectMgmtTests.release();
 }

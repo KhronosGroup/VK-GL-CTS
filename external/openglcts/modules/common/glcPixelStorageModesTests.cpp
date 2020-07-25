@@ -550,16 +550,16 @@ void TexImageUtils::setSignedRefcolour (glu::CallLogWrapper gl, glw::GLdouble co
 	const glw::GLdouble d_value = d_max * col;
 	const T t_value = (T)d_value;
 
-	unsigned int refcol[4] =
+	int refcol[4] =
 	{
-		(m_num_channels > 0 ? t_value : 0u),
-		(m_num_channels > 1 ? t_value : 0u),
-		(m_num_channels > 2 ? t_value : 0u),
-		255u,
+		(m_num_channels > 0 ? (int)t_value : 0),
+		(m_num_channels > 1 ? (int)t_value : 0),
+		(m_num_channels > 2 ? (int)t_value : 0),
+		255,
 	};
 
-	gl.glUniform4uiv(gl.glGetUniformLocation(prog->getProgram(), "refcolour"), 1,
-					 refcol);
+	gl.glUniform4iv(gl.glGetUniformLocation(prog->getProgram(), "refcolour"), 1,
+					refcol);
 }
 
 void TexImageUtils::setRGB10A2Refcolour (glu::CallLogWrapper gl, glw::GLdouble col)
@@ -768,8 +768,19 @@ void TexImage2DCase::createShader (void)
 	case GL_RG_INTEGER:
 	case GL_RGB_INTEGER:
 	case GL_RGBA_INTEGER:
-		params["SAMPLER_TYPE"] = "usampler2D";
-		params["COL_TYPE"]	   = "uvec4";
+		switch (m_type)
+		{
+		case GL_BYTE:
+		case GL_SHORT:
+		case GL_INT:
+			params["SAMPLER_TYPE"] = "isampler2D";
+			params["COL_TYPE"]	 = "ivec4";
+			break;
+		default:
+			params["SAMPLER_TYPE"] = "usampler2D";
+			params["COL_TYPE"]	   = "uvec4";
+			break;
+		}
 		break;
 	default:
 		params["SAMPLER_TYPE"] = "sampler2D";
@@ -1056,9 +1067,21 @@ void TexImage3DCase::createShader (void)
 	case GL_RG_INTEGER:
 	case GL_RGB_INTEGER:
 	case GL_RGBA_INTEGER:
-		params["SAMPLER_TYPE"] = "usampler2DArray";
-		params["COL_TYPE"]	   = "uvec4";
-		params["CONDITION"]	   = "all(lessThan(uvec4(abs(ivec4(colour) - ivec4(refcolour))).rgb, uvec3(2u)))";
+		switch (m_type)
+		{
+		case GL_BYTE:
+		case GL_SHORT:
+		case GL_INT:
+			params["SAMPLER_TYPE"] = "isampler2DArray";
+			params["COL_TYPE"]	 = "ivec4";
+			params["CONDITION"]	 = "all(lessThan(uvec4(abs(colour - refcolour)).rgb, uvec3(2u)))";
+			break;
+		default:
+			params["SAMPLER_TYPE"] = "usampler2DArray";
+			params["COL_TYPE"]	   = "uvec4";
+			params["CONDITION"]	   = "all(lessThan(uvec4(abs(ivec4(colour) - ivec4(refcolour))).rgb, uvec3(2u)))";
+			break;
+		}
 		break;
 	default:
 		const tcu::StringTemplate fs_condition ("all(lessThan((abs(colour - refcolour)).rgb, vec3(${EPS})))");

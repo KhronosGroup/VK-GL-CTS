@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRobustnessTests.hpp"
+#include "vktRobustnessExtsTests.hpp"
 #include "vktRobustnessBufferAccessTests.hpp"
 #include "vktRobustnessVertexAccessTests.hpp"
 #include "vktRobustBufferAccessWithVariablePointersTests.hpp"
@@ -72,6 +73,9 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
 		robustnessTests->addChild(bufferAccess.release());
 	}
+
+	robustnessTests->addChild(createRobustness2Tests(testCtx));
+	robustnessTests->addChild(createImageRobustnessTests(testCtx));
 
 	return robustnessTests.release();
 }

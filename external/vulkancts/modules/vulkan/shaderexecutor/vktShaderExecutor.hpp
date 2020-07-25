@@ -68,11 +68,13 @@ struct ShaderSpec
 	vk::ShaderBuildOptions	buildOptions;
 	bool					packFloat16Bit;
 	SpirVCaseT				spirvCase;
+	int						localSizeX;			// May be used for compute shaders.
 
 	ShaderSpec (void)
 		: glslVersion		(glu::GLSL_VERSION_450)
 		, packFloat16Bit	(false)
 		, spirvCase			(SPIRV_CASETYPE_NONE)
+		, localSizeX		(1)
 	{}
 };
 

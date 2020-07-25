@@ -59,6 +59,18 @@ class AmberIndexFileParser
 			m_idx++;
 	}
 
+	bool skipCommentLine (void)
+	{
+		skipWhitespace();
+		if (m_str[m_idx] == '#')
+		{
+			while (m_idx < m_len && m_str[m_idx] != '\n')
+				m_idx++;
+			return true;
+		}
+		return false;
+	}
+
 	void accept (char c)
 	{
 		if (m_str[m_idx] == c)
@@ -110,8 +122,12 @@ public:
 		// {"filename","test name","description"[,requirement[,requirement[,requirement..]]]}[,]
 		// Things inside [] are optional. Whitespace is allowed everywhere.
 		//
+		// Comments are allowed starting with "#" character.
+		//
 		// For example, test without requirements might be:
 		// {"testname.amber","test name","test description"},
+
+		while (skipCommentLine());
 
 		if (m_idx < m_len)
 		{

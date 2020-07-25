@@ -732,6 +732,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_host_query_reset")
 	{
 		return;
@@ -797,6 +801,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_EXT_fragment_density_map2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}
@@ -1725,6 +1733,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdSetLineStippleEXT");
 		return;
 	}
+	if (extName == "VK_EXT_shader_atomic_float")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_host_query_reset")
 	{
 		functions.push_back("vkResetQueryPoolEXT");
@@ -1833,6 +1845,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_EXT_fragment_density_map2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}

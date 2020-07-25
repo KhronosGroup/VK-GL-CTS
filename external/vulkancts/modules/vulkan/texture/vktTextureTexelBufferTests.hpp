@@ -1,11 +1,11 @@
-#ifndef _VKTAMBEREXAMPLETESTS_HPP
-#define _VKTAMBEREXAMPLETESTS_HPP
+#ifndef _VKTTEXTURETEXELBUFFERTESTS_HPP
+#define _VKTTEXTURETEXELBUFFERTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2019 Google LLC
- * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2020 The Khronos Group Inc.
+ * Copyright (c) 2020 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,20 +21,21 @@
  *
  *//*!
  * \file
- * \brief Functional tests using Amber
+ * \brief Texel buffer tests.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vktTestCase.hpp"
 
 namespace vkt
 {
-namespace cts_amber
+namespace texture
 {
 
-tcu::TestCaseGroup*	createExampleTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createTextureTexelBufferTests	(tcu::TestContext& testCtx);
 
-} // cts_amber
+} // texture
 } // vkt
 
-#endif // _VKTAMBEREXAMPLETESTS_HPP
+#endif // _VKTTEXTURETEXELBUFFERTESTS_HPP

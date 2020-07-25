@@ -26,6 +26,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktAmberTestCase.hpp"
 #include "vktRasterizationTests.hpp"
+#include "vktRasterizationFragShaderSideEffectsTests.hpp"
 #include "tcuRasterizationVerifier.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
@@ -3857,7 +3858,7 @@ tcu::TestStatus LineInterpolationTestInstance::iterate (void)
 				case PRIMITIVESTRICTNESS_NONSTRICT:
 				case PRIMITIVESTRICTNESS_IGNORE:
 				{
-					if (!verifyTriangulatedLineGroupInterpolation(resultImage, scene, args, m_context.getTestContext().getLog(), false))
+					if (!verifyTriangulatedLineGroupInterpolation(resultImage, scene, args, m_context.getTestContext().getLog(), false, true))
 						m_allIterationsPassed = false;
 
 					break;
@@ -4766,6 +4767,11 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 
 			lineContinuity->addChild(testCase);
 		}
+	}
+
+	// Fragment shader side effects.
+	{
+		rasterizationTests->addChild(createFragSideEffectsTests(testCtx));
 	}
 }
 

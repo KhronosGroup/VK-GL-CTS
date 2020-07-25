@@ -44,6 +44,93 @@ namespace vkt
 {
 namespace texture
 {
+namespace util
+{
+
+template <>
+void checkTextureSupport (Context& context, const Texture2DTestCaseParameters& testParameters)
+{
+	if (testParameters.minFilter == tcu::Sampler::Sampler::CUBIC || testParameters.minFilter == tcu::Sampler::Sampler::CUBIC_MIPMAP_NEAREST || testParameters.minFilter == tcu::Sampler::Sampler::CUBIC_MIPMAP_LINEAR ||
+		testParameters.magFilter == tcu::Sampler::Sampler::CUBIC)
+	{
+		context.requireDeviceFunctionality("VK_EXT_filter_cubic");
+
+		// check if image format supports cubic filtering
+		const vk::VkPhysicalDeviceImageViewImageFormatInfoEXT imageViewImageFormatInfo =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT,		// VkStructureType    sType;
+			DE_NULL,																// void*              pNext;
+			VK_IMAGE_VIEW_TYPE_2D													// VkImageViewType    imageViewType;
+		};
+
+		const vk::VkPhysicalDeviceImageFormatInfo2 formatInfo =
+		{
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,					// VkStructureType       sType;
+			&imageViewImageFormatInfo,												// const void*           pNext;
+			testParameters.format,													// VkFormat              format;
+			VK_IMAGE_TYPE_2D,														// VkImageType           type;
+			VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling         tiling;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT,										// VkImageUsageFlags     usage;
+			0u																		// VkImageCreateFlags    flags;
+		};
+
+		vk::VkFilterCubicImageViewImageFormatPropertiesEXT cubicImageViewProperties =
+		{
+			VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT,	// VkStructureType	sType;
+			DE_NULL,																// void*			pNext;
+			DE_FALSE,																// VkBool32		filterCubic;
+			DE_FALSE																// VkBool32		filterCubicMinmax;
+		};
+
+		vk::VkImageFormatProperties2 formatProperties =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,							// VkStructureType			sType;
+			&cubicImageViewProperties,												// void*					pNext;
+			vk::VkImageFormatProperties()											// VkImageFormatProperties	imageFormatProperties;
+		};
+
+		const vk::VkResult res = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &formatInfo, &formatProperties);
+		if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Image format not supported");
+		VK_CHECK(res);
+
+		if (!cubicImageViewProperties.filterCubic)
+			TCU_THROW(NotSupportedError, "Image format does not support cubic filtering");
+
+		VkFormatProperties formatProps;
+		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), testParameters.format, &formatProps);
+		if ((formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT) == 0)
+			TCU_THROW(NotSupportedError, "Format properties do not support cubic filtering feature");
+	}
+
+	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+}
+
+template <>
+void checkTextureSupport (Context& context, const TextureCubeTestCaseParameters& testParameters)
+{
+	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+}
+
+template <>
+void checkTextureSupport (Context& context, const Texture2DArrayTestCaseParameters& testParameters)
+{
+	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+}
+
+template <>
+void checkTextureSupport (Context& context, const Texture3DTestCaseParameters& testParameters)
+{
+	if (testParameters.wrapS == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapT == tcu::Sampler::Sampler::MIRRORED_ONCE || testParameters.wrapR == tcu::Sampler::Sampler::MIRRORED_ONCE)
+		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
+}
+
+} // util
 
 namespace
 {
@@ -131,9 +218,6 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
 	}
 
-	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE)
-		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
-
 	// Create 2 textures.
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -213,58 +297,6 @@ Texture2DFilteringTestInstance::~Texture2DFilteringTestInstance (void)
 tcu::TestStatus Texture2DFilteringTestInstance::iterate (void)
 {
 	tcu::TestLog&					log			= m_context.getTestContext().getLog();
-
-	if (m_testParameters.minFilter == Sampler::CUBIC || m_testParameters.minFilter == Sampler::CUBIC_MIPMAP_NEAREST || m_testParameters.minFilter == Sampler::CUBIC_MIPMAP_LINEAR ||
-		m_testParameters.magFilter == Sampler::CUBIC)
-	{
-		m_context.requireDeviceFunctionality("VK_EXT_filter_cubic");
-
-		// check if image format supports cubic filtering
-		const vk::VkPhysicalDeviceImageViewImageFormatInfoEXT imageViewImageFormatInfo = {
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT,		// VkStructureType    sType;
-			DE_NULL,																// void*              pNext;
-			VK_IMAGE_VIEW_TYPE_2D													// VkImageViewType    imageViewType;
-		};
-
-		const vk::VkPhysicalDeviceImageFormatInfo2 formatInfo = {
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,					// VkStructureType       sType;
-			&imageViewImageFormatInfo,												// const void*           pNext;
-			m_testParameters.format,												// VkFormat              format;
-			VK_IMAGE_TYPE_2D,														// VkImageType           type;
-			VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling         tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT,										// VkImageUsageFlags     usage;
-			0u																		// VkImageCreateFlags    flags;
-		};
-
-		vk::VkFilterCubicImageViewImageFormatPropertiesEXT cubicImageViewProperties = {
-			VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT,	// VkStructureType	sType;
-			DE_NULL,																// void*			pNext;
-			DE_FALSE,																// VkBool32		filterCubic;
-			DE_FALSE																// VkBool32		filterCubicMinmax;
-		};
-
-		vk::VkImageFormatProperties2 formatProperties = {
-			VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,							// VkStructureType			sType;
-			&cubicImageViewProperties,												// void*					pNext;
-			vk::VkImageFormatProperties()											// VkImageFormatProperties	imageFormatProperties;
-		};
-
-		const vk::VkResult res = m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(m_context.getPhysicalDevice(), &formatInfo, &formatProperties);
-		if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-			TCU_THROW(NotSupportedError, "Image format not supported");
-		VK_CHECK(res);
-
-		if (!cubicImageViewProperties.filterCubic)
-			TCU_THROW(NotSupportedError, "Image format does not support cubic filtering");
-
-		VkFormatProperties formatProps;
-		m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_testParameters.format, &formatProps);
-		if ((formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT) == 0)
-			TCU_THROW(NotSupportedError, "Format properties do not support cubic filtering feature");
-	}
-
 	const pipeline::TestTexture2D&	texture		= m_renderer.get2DTexture(m_cases[m_caseNdx].textureIndex);
 	const tcu::TextureFormat		texFmt		= texture.getTextureFormat();
 	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(texFmt);
@@ -401,9 +433,6 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance (Context& con
 		cBias												= fmtInfo.valueMin;
 		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
 	}
-
-	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE)
-		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -648,9 +677,6 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance (Contex
 		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
 	}
 
-	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE)
-		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
-
 	// Create textures.
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
@@ -868,9 +894,6 @@ Texture3DFilteringTestInstance::Texture3DFilteringTestInstance (Context& context
 		cBias												= fmtInfo.valueMin;
 		cScale												= fmtInfo.valueMax - fmtInfo.valueMin;
 	}
-
-	if (testParameters.wrapS == Sampler::MIRRORED_ONCE || testParameters.wrapT == Sampler::MIRRORED_ONCE || testParameters.wrapR == Sampler::MIRRORED_ONCE)
-		context.requireDeviceFunctionality("VK_KHR_sampler_mirror_clamp_to_edge");
 
 	// Create textures.
 	m_textures.reserve(2);

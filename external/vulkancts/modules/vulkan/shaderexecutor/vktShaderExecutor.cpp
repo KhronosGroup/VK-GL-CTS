@@ -2615,7 +2615,7 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 		if (!spec.globalDeclarations.empty())
 			src << spec.globalDeclarations << "\n";
 
-		src << "layout(local_size_x = 1) in;\n"
+		src << "layout(local_size_x = " << spec.localSizeX << ") in;\n"
 			<< "\n";
 
 		declareBufferBlocks(src, spec);
