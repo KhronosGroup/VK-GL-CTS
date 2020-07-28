@@ -70,6 +70,13 @@ inline std::string updateRayTracingGLSL (const std::string& str)
 
 std::string getCommonRayGenerationShader (void);
 
+// Get lowercase version of the format name with no VK_FORMAT_ prefix.
+std::string getFormatSimpleName (vk::VkFormat format);
+
+// Checks the given vertex buffer format is valid for acceleration structures.
+// Note: VK_KHR_get_physical_device_properties2 and VK_KHR_acceleration_structure are supposed to be supported.
+void checkAccelerationStructureVertexBufferFormat (const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice, vk::VkFormat format);
+
 class RaytracedGeometryBase
 {
 public:

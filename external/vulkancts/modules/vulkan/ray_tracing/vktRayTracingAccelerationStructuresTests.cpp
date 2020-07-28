@@ -675,6 +675,7 @@ RayTracingASBasicTestCase::~RayTracingASBasicTestCase	(void)
 
 void RayTracingASBasicTestCase::checkSupport(Context& context) const
 {
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
@@ -688,6 +689,9 @@ void RayTracingASBasicTestCase::checkSupport(Context& context) const
 
 	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
+
+	// Check supported vertex format.
+	checkAccelerationStructureVertexBufferFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_data.vertexFormat);
 }
 
 void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollection) const
@@ -1344,18 +1348,14 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
 	};
 
-	struct
+	const VkFormat vertexFormats[] =
 	{
-		VkFormat								format;
-		const char*								name;
-	} vertexFormats[] =
-	{
-		{ VK_FORMAT_R32G32_SFLOAT,				"r32g32_sfloat"			},
-		{ VK_FORMAT_R32G32B32_SFLOAT,			"r32g32b32_sfloat"		},
-		{ VK_FORMAT_R16G16_SFLOAT,				"r16g16_sfloat"			},
-		{ VK_FORMAT_R16G16B16A16_SFLOAT,		"r16g16b16a16_sfloat"	},
-		{ VK_FORMAT_R16G16_SNORM,				"r16g16_snorm"			},
-		{ VK_FORMAT_R16G16B16A16_SNORM,			"r16g16b16a16_snorm"	},
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R16G16_SFLOAT,
+		VK_FORMAT_R16G16B16A16_SFLOAT,
+		VK_FORMAT_R16G16_SNORM,
+		VK_FORMAT_R16G16B16A16_SNORM,
 	};
 
 	struct
@@ -1375,14 +1375,17 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 
 		for (size_t vertexFormatNdx = 0; vertexFormatNdx < DE_LENGTH_OF_ARRAY(vertexFormats); ++vertexFormatNdx)
 		{
-			de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), vertexFormats[vertexFormatNdx].name, ""));
+			const auto format		= vertexFormats[vertexFormatNdx];
+			const auto formatName	= getFormatSimpleName(format);
+
+			de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str(), ""));
 
 			for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
 			{
 				TestParams testParams
 				{
 					buildTypes[buildTypeNdx].buildType,
-					vertexFormats[vertexFormatNdx].format,
+					format,
 					indexFormats[indexFormatNdx].indexType,
 					BTT_TRIANGLES,
 					false,

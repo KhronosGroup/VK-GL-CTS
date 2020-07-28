@@ -28,6 +28,8 @@
 #include "vkObjUtil.hpp"
 #include "vkBarrierUtil.hpp"
 
+#include "deStringUtil.hpp"
+
 #include <vector>
 #include <string>
 #include <thread>
@@ -41,6 +43,48 @@ struct DeferredThreadParams
 	VkDeferredOperationKHR	deferredOperation;
 	VkResult				result;
 };
+
+std::string getFormatSimpleName (vk::VkFormat format)
+{
+	constexpr size_t kPrefixLen = 10; // strlen("VK_FORMAT_")
+	return de::toLower(de::toString(format).substr(kPrefixLen));
+}
+
+// Returns true if VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR needs to be supported for the given format.
+static bool isMandatoryAccelerationStructureVertexBufferFormat (vk::VkFormat format)
+{
+	bool mandatory = false;
+
+	switch (format)
+	{
+    case VK_FORMAT_R32G32_SFLOAT:
+    case VK_FORMAT_R32G32B32_SFLOAT:
+    case VK_FORMAT_R16G16_SFLOAT:
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+    case VK_FORMAT_R16G16_SNORM:
+    case VK_FORMAT_R16G16B16A16_SNORM:
+		mandatory = true;
+		break;
+	default:
+		break;
+	}
+
+	return mandatory;
+}
+
+void checkAccelerationStructureVertexBufferFormat (const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice, vk::VkFormat format)
+{
+	vk::VkFormatProperties2 formatProperties;
+	vki.getPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
+
+	if ((formatProperties.formatProperties.bufferFeatures & vk::VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR) == 0u)
+	{
+		const std::string errorMsg = "Format not supported for acceleration structure vertex buffers";
+		if (isMandatoryAccelerationStructureVertexBufferFormat(format))
+			TCU_FAIL(errorMsg);
+		TCU_THROW(NotSupportedError, errorMsg);
+	}
+}
 
 std::string getCommonRayGenerationShader (void)
 {
