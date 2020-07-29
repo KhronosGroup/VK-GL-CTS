@@ -141,6 +141,10 @@ bool isInt64SupportedForDevice(Context& context);
 
 bool isTessellationAndGeometryPointSizeSupported(Context& context);
 
+bool is16BitUBOStorageSupported(Context& context);
+
+bool is8BitUBOStorageSupported(Context& context);
+
 bool isSubgroupBroadcastDynamicIdSupported(Context& context);
 
 std::string getFormatNameForGLSL (vk::VkFormat format);
@@ -152,6 +156,8 @@ const std::vector<vk::VkFormat> getAllFormats ();
 bool isFormatSigned (vk::VkFormat format);
 bool isFormatUnsigned (vk::VkFormat format);
 bool isFormatFloat (vk::VkFormat format);
+bool isFormat8bitTy(vk::VkFormat format);
+bool isFormat16BitTy(vk::VkFormat format);
 
 void addGeometryShadersFromTemplate (const std::string& glslTemplate, const vk::ShaderBuildOptions& options, vk::GlslSourceCollection& collection);
 void addGeometryShadersFromTemplate (const std::string& spirvTemplate, const vk::SpirVAsmBuildOptions& options, vk::SpirVAsmCollection& collection);

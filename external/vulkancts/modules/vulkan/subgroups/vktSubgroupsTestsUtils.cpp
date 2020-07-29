@@ -1337,6 +1337,47 @@ bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& conte
 	return features.shaderTessellationAndGeometryPointSize ? true : false;
 }
 
+bool vkt::subgroups::is16BitUBOStorageSupported(Context& context) {
+	VkPhysicalDevice16BitStorageFeatures storage16bit;
+	deMemset(&storage16bit, 0, sizeof(storage16bit));
+	storage16bit.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
+	storage16bit.pNext = DE_NULL;
+
+	VkPhysicalDeviceFeatures2 features2;
+	deMemset(&features2, 0, sizeof(features2));
+	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.pNext = &storage16bit;
+
+	const PlatformInterface&		platformInterface = context.getPlatformInterface();
+	const VkInstance				instance = context.getInstance();
+	const InstanceDriver			instanceDriver(platformInterface, instance);
+
+	instanceDriver.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+	return bool(storage16bit.uniformAndStorageBuffer16BitAccess);
+}
+
+
+bool vkt::subgroups::is8BitUBOStorageSupported(Context& context) {
+
+	VkPhysicalDevice8BitStorageFeatures storage8bit;
+	deMemset(&storage8bit, 0, sizeof(storage8bit));
+	storage8bit.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+	storage8bit.pNext = DE_NULL;
+
+	VkPhysicalDeviceFeatures2 features2;
+	deMemset(&features2, 0, sizeof(features2));
+	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.pNext = &storage8bit;
+
+
+	const PlatformInterface&		platformInterface = context.getPlatformInterface();
+	const VkInstance				instance = context.getInstance();
+	const InstanceDriver			instanceDriver(platformInterface, instance);
+
+	instanceDriver.getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+	return bool(storage8bit.uniformAndStorageBuffer8BitAccess);
+}
+
 bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat format)
 {
 	VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures subgroupExtendedTypesFeatures;
@@ -1719,6 +1760,46 @@ bool vkt::subgroups::isFormatFloat (VkFormat format)
 		case VK_FORMAT_R64G64B64_SFLOAT:
 		case VK_FORMAT_R64G64B64A64_SFLOAT:
 			return true;
+	}
+}
+
+bool vkt::subgroups::isFormat8bitTy(VkFormat format)
+{
+	switch (format)
+	{
+	default:
+		return false;
+	case VK_FORMAT_R8_SINT:
+	case VK_FORMAT_R8G8_SINT:
+	case VK_FORMAT_R8G8B8_SINT:
+	case VK_FORMAT_R8G8B8A8_SINT:
+	case VK_FORMAT_R8_UINT:
+	case VK_FORMAT_R8G8_UINT:
+	case VK_FORMAT_R8G8B8_UINT:
+	case VK_FORMAT_R8G8B8A8_UINT:
+		return true;
+	}
+}
+
+bool vkt::subgroups::isFormat16BitTy(VkFormat format)
+{
+	switch (format)
+	{
+	default:
+		return false;
+	case VK_FORMAT_R16_SFLOAT:
+	case VK_FORMAT_R16G16_SFLOAT:
+	case VK_FORMAT_R16G16B16_SFLOAT:
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+	case VK_FORMAT_R16_SINT:
+	case VK_FORMAT_R16G16_SINT:
+	case VK_FORMAT_R16G16B16_SINT:
+	case VK_FORMAT_R16G16B16A16_SINT:
+	case VK_FORMAT_R16_UINT:
+	case VK_FORMAT_R16G16_UINT:
+	case VK_FORMAT_R16G16B16_UINT:
+	case VK_FORMAT_R16G16B16A16_UINT:
+		return true;
 	}
 }
 
