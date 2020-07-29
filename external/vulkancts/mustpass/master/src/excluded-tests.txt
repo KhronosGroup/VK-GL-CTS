@@ -14,9 +14,6 @@ dEQP-VK.pipeline.multisample.*.primitive_point_1px_sparse
 # Test shader length is excessive, excluding until such time as the test case can be re-visited.
 dEQP-VK.ssbo.layout.random.scalar.75
 
-# VK-GL-CTS 2457
-dEQP-VK.graphicsfuzz.return-mat2x3-value-from-func
-
 # VK-GL-CTS 2157, CL 5278
 # Excluded them as Intel HW is failing these tests.
 dEQP-VK.pipeline.blend.dual_source.format.r8g8b8a8_srgb.states.color_ca_1ms1a_sub_alpha_1msa_1mca_sub-color_1msc_da_max_alpha_o_da_add-color_s1c_s1a_max_alpha_dc_1ms1a_sub-color_s1a_z_sub_alpha_1msa_1msc_max

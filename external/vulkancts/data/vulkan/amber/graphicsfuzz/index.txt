@@ -183,7 +183,6 @@
 {	"return-float-from-while-loop.amber",														"return-float-from-while-loop",														"A fragment shader with unreachable while loop"										},
 {	"return-in-loop-in-function.amber",															"return-in-loop-in-function",														"A fragment shader with early return from loop in function"							},
 {	"return-inside-loop-in-function.amber",														"return-inside-loop-in-function",													"A fragment shader with return inside loop"											},
-{	"return-mat2x3-value-from-func.amber",														"return-mat2x3-value-from-func",													"A fragment shader that has a function with mat2x3"									},
 {	"returned-boolean-in-vector.amber",															"returned-boolean-in-vector",														"A fragment shader with returned boolean in vector"									},
 {	"set-color-in-one-iteration-while-loop.amber",												"set-color-in-one-iteration-while-loop",											"A frag shader that sets the color in one iter while loop"							},
 {	"similar-nested-ifs.amber",																	"similar-nested-ifs",																"A fragment shader with similar nested ifs and loops"								},
