@@ -139,41 +139,68 @@ inline T convertSatRte (float f)
 	return (T)intVal;
 }
 
-inline deInt16 deFloat32ToSNorm16 (float src)
+// Converts float to signed integer with variable width.
+// Source float is assumed to be in the [-1, 1] range.
+template <typename T>
+inline T deFloat32ToSNorm (float src)
 {
-	const deInt16	range = (deInt32)((1u << 15) - 1u);
-	const deInt16	intVal = convertSatRte<deInt16>(src * (float)range);
-	return de::clamp<deInt16>(intVal, -range, range);
+	DE_STATIC_ASSERT(std::numeric_limits<T>::is_integer && std::numeric_limits<T>::is_signed);
+	const T range	= std::numeric_limits<T>::max();
+	const T intVal	= convertSatRte<T>(src * static_cast<float>(range));
+	return de::clamp<T>(intVal, -range, range);
 }
 
 typedef tcu::Vector<deFloat16, 2>			Vec2_16;
+typedef tcu::Vector<deFloat16, 3>			Vec3_16;
 typedef tcu::Vector<deFloat16, 4>			Vec4_16;
 typedef tcu::Vector<deInt16, 2>				Vec2_16SNorm;
+typedef tcu::Vector<deInt16, 3>				Vec3_16SNorm;
 typedef tcu::Vector<deInt16, 4>				Vec4_16SNorm;
+typedef tcu::Vector<deInt8, 2>				Vec2_8SNorm;
+typedef tcu::Vector<deInt8, 3>				Vec3_8SNorm;
+typedef tcu::Vector<deInt8, 4>				Vec4_8SNorm;
 
-template<typename V>	VkFormat			vertexFormatFromType				()							{ TCU_THROW(TestError, "Unknown VkFormat"); }
+template<typename V>	VkFormat			vertexFormatFromType				();
 template<>				inline VkFormat		vertexFormatFromType<tcu::Vec2>		()							{ return VK_FORMAT_R32G32_SFLOAT; }
 template<>				inline VkFormat		vertexFormatFromType<tcu::Vec3>		()							{ return VK_FORMAT_R32G32B32_SFLOAT; }
+template<>				inline VkFormat		vertexFormatFromType<tcu::Vec4>		()							{ return VK_FORMAT_R32G32B32A32_SFLOAT; }
 template<>				inline VkFormat		vertexFormatFromType<Vec2_16>		()							{ return VK_FORMAT_R16G16_SFLOAT; }
+template<>				inline VkFormat		vertexFormatFromType<Vec3_16>		()							{ return VK_FORMAT_R16G16B16_SFLOAT; }
 template<>				inline VkFormat		vertexFormatFromType<Vec4_16>		()							{ return VK_FORMAT_R16G16B16A16_SFLOAT; }
 template<>				inline VkFormat		vertexFormatFromType<Vec2_16SNorm>	()							{ return VK_FORMAT_R16G16_SNORM; }
+template<>				inline VkFormat		vertexFormatFromType<Vec3_16SNorm>	()							{ return VK_FORMAT_R16G16B16_SNORM; }
 template<>				inline VkFormat		vertexFormatFromType<Vec4_16SNorm>	()							{ return VK_FORMAT_R16G16B16A16_SNORM; }
+template<>				inline VkFormat		vertexFormatFromType<tcu::DVec2>	()							{ return VK_FORMAT_R64G64_SFLOAT; }
+template<>				inline VkFormat		vertexFormatFromType<tcu::DVec3>	()							{ return VK_FORMAT_R64G64B64_SFLOAT; }
+template<>				inline VkFormat		vertexFormatFromType<tcu::DVec4>	()							{ return VK_FORMAT_R64G64B64A64_SFLOAT; }
+template<>				inline VkFormat		vertexFormatFromType<Vec2_8SNorm>	()							{ return VK_FORMAT_R8G8_SNORM; }
+template<>				inline VkFormat		vertexFormatFromType<Vec3_8SNorm>	()							{ return VK_FORMAT_R8G8B8_SNORM; }
+template<>				inline VkFormat		vertexFormatFromType<Vec4_8SNorm>	()							{ return VK_FORMAT_R8G8B8A8_SNORM; }
 
 struct EmptyIndex {};
-template<typename I>	VkIndexType			indexTypeFromType					()							{ TCU_THROW(TestError, "Unknown VkIndexType"); }
+template<typename I>	VkIndexType			indexTypeFromType					();
 template<>				inline VkIndexType	indexTypeFromType<deUint16>			()							{ return VK_INDEX_TYPE_UINT16; }
 template<>				inline VkIndexType	indexTypeFromType<deUint32>			()							{ return VK_INDEX_TYPE_UINT32; }
 template<>				inline VkIndexType	indexTypeFromType<EmptyIndex>		()							{ return VK_INDEX_TYPE_NONE_KHR; }
 
-template<typename V>	V					convertFloatTo						(const tcu::Vec3& vertex)	{ DE_UNREF(vertex); TCU_THROW(TestError, "Unknown data format"); }
+template<typename V>	V					convertFloatTo						(const tcu::Vec3& vertex);
 template<>				inline tcu::Vec2	convertFloatTo<tcu::Vec2>			(const tcu::Vec3& vertex)	{ return tcu::Vec2(vertex.x(), vertex.y()); }
 template<>				inline tcu::Vec3	convertFloatTo<tcu::Vec3>			(const tcu::Vec3& vertex)	{ return vertex; }
+template<>				inline tcu::Vec4	convertFloatTo<tcu::Vec4>			(const tcu::Vec3& vertex)	{ return tcu::Vec4(vertex.x(), vertex.y(), vertex.z(), 0.0f); }
 template<>				inline Vec2_16		convertFloatTo<Vec2_16>				(const tcu::Vec3& vertex)	{ return Vec2_16(deFloat32To16(vertex.x()), deFloat32To16(vertex.y())); }
+template<>				inline Vec3_16		convertFloatTo<Vec3_16>				(const tcu::Vec3& vertex)	{ return Vec3_16(deFloat32To16(vertex.x()), deFloat32To16(vertex.y()), deFloat32To16(vertex.z())); }
 template<>				inline Vec4_16		convertFloatTo<Vec4_16>				(const tcu::Vec3& vertex)	{ return Vec4_16(deFloat32To16(vertex.x()), deFloat32To16(vertex.y()), deFloat32To16(vertex.z()), deFloat32To16(0.0f)); }
-template<>				inline Vec2_16SNorm	convertFloatTo<Vec2_16SNorm>		(const tcu::Vec3& vertex)	{ return Vec2_16SNorm(deFloat32ToSNorm16(vertex.x()), deFloat32ToSNorm16(vertex.y())); }
-template<>				inline Vec4_16SNorm	convertFloatTo<Vec4_16SNorm>		(const tcu::Vec3& vertex)	{ return Vec4_16SNorm(deFloat32ToSNorm16(vertex.x()), deFloat32ToSNorm16(vertex.y()), deFloat32ToSNorm16(vertex.z()), deFloat32ToSNorm16(0.0f)); }
+template<>				inline Vec2_16SNorm	convertFloatTo<Vec2_16SNorm>		(const tcu::Vec3& vertex)	{ return Vec2_16SNorm(deFloat32ToSNorm<deInt16>(vertex.x()), deFloat32ToSNorm<deInt16>(vertex.y())); }
+template<>				inline Vec3_16SNorm	convertFloatTo<Vec3_16SNorm>		(const tcu::Vec3& vertex)	{ return Vec3_16SNorm(deFloat32ToSNorm<deInt16>(vertex.x()), deFloat32ToSNorm<deInt16>(vertex.y()), deFloat32ToSNorm<deInt16>(vertex.z())); }
+template<>				inline Vec4_16SNorm	convertFloatTo<Vec4_16SNorm>		(const tcu::Vec3& vertex)	{ return Vec4_16SNorm(deFloat32ToSNorm<deInt16>(vertex.x()), deFloat32ToSNorm<deInt16>(vertex.y()), deFloat32ToSNorm<deInt16>(vertex.z()), deFloat32ToSNorm<deInt16>(0.0f)); }
+template<>				inline tcu::DVec2	convertFloatTo<tcu::DVec2>			(const tcu::Vec3& vertex)	{ return tcu::DVec2(static_cast<double>(vertex.x()), static_cast<double>(vertex.y())); }
+template<>				inline tcu::DVec3	convertFloatTo<tcu::DVec3>			(const tcu::Vec3& vertex)	{ return tcu::DVec3(static_cast<double>(vertex.x()), static_cast<double>(vertex.y()), static_cast<double>(vertex.z())); }
+template<>				inline tcu::DVec4	convertFloatTo<tcu::DVec4>			(const tcu::Vec3& vertex)	{ return tcu::DVec4(static_cast<double>(vertex.x()), static_cast<double>(vertex.y()), static_cast<double>(vertex.z()), 0.0); }
+template<>				inline Vec2_8SNorm	convertFloatTo<Vec2_8SNorm>			(const tcu::Vec3& vertex)	{ return Vec2_8SNorm(deFloat32ToSNorm<deInt8>(vertex.x()), deFloat32ToSNorm<deInt8>(vertex.y())); }
+template<>				inline Vec3_8SNorm	convertFloatTo<Vec3_8SNorm>			(const tcu::Vec3& vertex)	{ return Vec3_8SNorm(deFloat32ToSNorm<deInt8>(vertex.x()), deFloat32ToSNorm<deInt8>(vertex.y()), deFloat32ToSNorm<deInt8>(vertex.z())); }
+template<>				inline Vec4_8SNorm	convertFloatTo<Vec4_8SNorm>			(const tcu::Vec3& vertex)	{ return Vec4_8SNorm(deFloat32ToSNorm<deInt8>(vertex.x()), deFloat32ToSNorm<deInt8>(vertex.y()), deFloat32ToSNorm<deInt8>(vertex.z()), deFloat32ToSNorm<deInt8>(0.0f)); }
 
-template<typename V>	V					convertIndexTo						(deUint32 index)			{ DE_UNREF(index); TCU_THROW(TestError, "Unknown index format"); }
+template<typename V>	V					convertIndexTo						(deUint32 index);
 template<>				inline EmptyIndex	convertIndexTo<EmptyIndex>			(deUint32 index)			{ DE_UNREF(index); TCU_THROW(TestError, "Cannot add empty index"); }
 template<>				inline deUint16		convertIndexTo<deUint16>			(deUint32 index)			{ return static_cast<deUint16>(index); }
 template<>				inline deUint32		convertIndexTo<deUint32>			(deUint32 index)			{ return index; }
