@@ -89,6 +89,7 @@ OpDecorate %b Binding 1
 OpDecorate %a_block Block
 OpMemberDecorate %a_block 0 Offset 0
 OpDecorate %rta ArrayStride 4
+OpDecorate %ptr_int_ssbo ArrayStride 4
 %void = OpTypeVoid
 %bool = OpTypeBool
 %int = OpTypeInt 32 0
