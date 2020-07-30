@@ -70,9 +70,20 @@ constexpr deUint32	kFramebufferWidth	= 64u;
 constexpr deUint32	kFramebufferHeight	= 64u;
 
 // Image formats.
-constexpr	vk::VkFormat	kColorFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
-constexpr	vk::VkFormat	kDepthStencilFormat	= vk::VK_FORMAT_D32_SFLOAT_S8_UINT;
-const		tcu::Vec4		kColorThreshold		(0.005f); // 1/255 < 0.005 < 2/255.
+constexpr	vk::VkFormat	kColorFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+const		tcu::Vec4		kColorThreshold	(0.005f); // 1/255 < 0.005 < 2/255.
+
+struct DepthStencilFormat
+{
+	vk::VkFormat	imageFormat;
+	float			depthThreshold;
+};
+
+const DepthStencilFormat kDepthStencilFormats[] =
+{
+	{ vk::VK_FORMAT_D32_SFLOAT_S8_UINT,	0.0f		},
+	{ vk::VK_FORMAT_D24_UNORM_S8_UINT,	1.0e-07f	},	// 1/(2**24-1) < 1.0e-07f < 2/(2**24-1)
+};
 
 // Vertices in buffers will have 2 components and a padding to properly test the stride.
 struct GeometryVertex
@@ -500,17 +511,12 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Geometry shader not supported");
 	}
 
-	// Check image format support.
-	const vk::VkFormatFeatureFlags kColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
-	const vk::VkFormatFeatureFlags kDSFeatures		= (vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+	// Check color image format support (depth/stencil will be chosen at runtime).
+	const vk::VkFormatFeatureFlags	kColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+	const auto						colorProperties	= vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kColorFormat);
 
-	const auto colorProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kColorFormat);
 	if ((colorProperties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
 		TCU_THROW(NotSupportedError, "Required color image features not supported");
-
-	const auto dsProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kDepthStencilFormat);
-	if ((dsProperties.optimalTilingFeatures & kDSFeatures) != kDSFeatures)
-		TCU_THROW(NotSupportedError, "Required depth/stencil image features not supported");
 }
 
 void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -700,19 +706,41 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	using ImageViewVec			= std::vector<vk::Move<vk::VkImageView>>;
 	using FramebufferVec		= std::vector<vk::Move<vk::VkFramebuffer>>;
 
+	const auto&	vki					= m_context.getInstanceInterface();
 	const auto&	vkd					= m_context.getDeviceInterface();
+	const auto	physicalDevice		= m_context.getPhysicalDevice();
 	const auto	device				= m_context.getDevice();
 	auto&		allocator			= m_context.getDefaultAllocator();
 	const auto	queue				= m_context.getUniversalQueue();
 	const auto	queueIndex			= m_context.getUniversalQueueFamilyIndex();
+	auto&		log					= m_context.getTestContext().getLog();
 
 	const auto	kReversed			= m_testConfig.isReversed();
 	const auto	kNumIterations		= m_testConfig.numIterations();
 	const auto	kSequenceOrdering	= m_testConfig.sequenceOrdering;
 
-	const auto					kFramebufferExtent	= vk::makeExtent3D(kFramebufferWidth, kFramebufferHeight, 1u);
-	const vk::VkImageUsageFlags kColorUsage			= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-	const vk::VkImageUsageFlags kDSUsage			= (vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto						kFramebufferExtent	= vk::makeExtent3D(kFramebufferWidth, kFramebufferHeight, 1u);
+	const vk::VkImageUsageFlags		kColorUsage			= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const vk::VkImageUsageFlags		kDSUsage			= (vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const vk::VkFormatFeatureFlags	kDSFeatures			= (vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+
+	// Choose depth/stencil format.
+	const DepthStencilFormat* dsFormatInfo = nullptr;
+
+	for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(kDepthStencilFormats); ++formatIdx)
+	{
+		const auto dsProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kDepthStencilFormats[formatIdx].imageFormat);
+		if ((dsProperties.optimalTilingFeatures & kDSFeatures) == kDSFeatures)
+		{
+			dsFormatInfo = kDepthStencilFormats + formatIdx;
+			break;
+		}
+	}
+
+	// Note: Not Supported insted of Fail because the transfer feature is not mandatory.
+	if (!dsFormatInfo)
+		TCU_THROW(NotSupportedError, "Required depth/stencil image features not supported");
+	log << tcu::TestLog::Message << "Chosen depth/stencil format: " << dsFormatInfo->imageFormat << tcu::TestLog::EndMessage;
 
 	// Swap static and dynamic values in the test configuration so the static pipeline ends up with the expected values for cases
 	// where we will bind the static pipeline last before drawing.
@@ -750,7 +778,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		nullptr,									//	const void*				pNext;
 		0u,											//	VkImageCreateFlags		flags;
 		vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
-		kDepthStencilFormat,						//	VkFormat				format;
+		dsFormatInfo->imageFormat,					//	VkFormat				format;
 		kFramebufferExtent,							//	VkExtent3D				extent;
 		1u,											//	deUint32				mipLevels;
 		1u,											//	deUint32				arrayLayers;
@@ -775,7 +803,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		colorImageViews.emplace_back(vk::makeImageView(vkd, device, img->get(), vk::VK_IMAGE_VIEW_TYPE_2D, kColorFormat, colorSubresourceRange));
 
 	for (const auto& img : dsImages)
-		dsImageViews.emplace_back(vk::makeImageView(vkd, device, img->get(), vk::VK_IMAGE_VIEW_TYPE_2D, kDepthStencilFormat, dsSubresourceRange));
+		dsImageViews.emplace_back(vk::makeImageView(vkd, device, img->get(), vk::VK_IMAGE_VIEW_TYPE_2D, dsFormatInfo->imageFormat, dsSubresourceRange));
 
 	// Vertex buffer.
 	const auto					topologyClass = getTopologyClass(m_testConfig.topologyConfig.staticValue);
@@ -914,7 +942,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	attachmentDescriptions.push_back(vk::VkAttachmentDescription
 	{
 		0u,														//	VkAttachmentDescriptionFlags	flags;
-		kDepthStencilFormat,									//	VkFormat						format;
+		dsFormatInfo->imageFormat,								//	VkFormat						format;
 		vk::VK_SAMPLE_COUNT_1_BIT,								//	VkSampleCountFlagBits			samples;
 		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						//	VkAttachmentLoadOp				loadOp;
 		vk::VK_ATTACHMENT_STORE_OP_STORE,						//	VkAttachmentStoreOp				storeOp;
@@ -1361,8 +1389,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	// Read result image aspects from the last used framebuffer.
 	const tcu::UVec2	renderSize		(kFramebufferWidth, kFramebufferHeight);
 	const auto			colorBuffer		= readColorAttachment(vkd, device, queue, queueIndex, allocator, colorImages.back()->get(), kColorFormat, renderSize);
-	const auto			depthBuffer		= readDepthAttachment(vkd, device, queue, queueIndex, allocator, dsImages.back()->get(), kDepthStencilFormat, renderSize);
-	const auto			stencilBuffer	= readStencilAttachment(vkd, device, queue, queueIndex, allocator, dsImages.back()->get(), kDepthStencilFormat, renderSize, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	const auto			depthBuffer		= readDepthAttachment(vkd, device, queue, queueIndex, allocator, dsImages.back()->get(), dsFormatInfo->imageFormat, renderSize);
+	const auto			stencilBuffer	= readStencilAttachment(vkd, device, queue, queueIndex, allocator, dsImages.back()->get(), dsFormatInfo->imageFormat, renderSize, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	const auto			colorAccess		= colorBuffer->getAccess();
 	const auto			depthAccess		= depthBuffer->getAccess();
 	const auto			stencilAccess	= stencilBuffer->getAccess();
@@ -1381,13 +1409,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const tcu::Vec4				kBad				(1.0f, 0.0f, 0.0f, 1.0f);
 
 	// Check expected values.
-	bool colorMatch		= true;
-	bool depthMatch		= true;
-	bool stencilMatch	= true;
-	bool match;
+	const auto	minDepth		= m_testConfig.expectedDepth - dsFormatInfo->depthThreshold;
+	const auto	maxDepth		= m_testConfig.expectedDepth + dsFormatInfo->depthThreshold;
+	bool		colorMatch		= true;
+	bool		depthMatch		= true;
+	bool		stencilMatch	= true;
+	bool		match;
 
-	for (int x = 0; x < kWidth; ++x)
 	for (int y = 0; y < kHeight; ++y)
+	for (int x = 0; x < kWidth; ++x)
 	{
 		const auto colorPixel = colorAccess.getPixel(x, y);
 		match = tcu::boolAll(tcu::lessThan(tcu::absDiff(colorPixel, m_testConfig.expectedColor), kColorThreshold));
@@ -1396,7 +1426,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			colorMatch = false;
 
 		const auto depthPixel = depthAccess.getPixDepth(x, y);
-		match = (depthPixel == m_testConfig.expectedDepth);
+		match = de::inRange(depthPixel, minDepth, maxDepth);
 		depthErrorAccess.setPixel((match ? kGood : kBad), x, y);
 		if (!match)
 			depthMatch = false;
@@ -1410,8 +1440,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	if (!(colorMatch && depthMatch && stencilMatch))
 	{
-		auto& log = m_context.getTestContext().getLog();
-
 		if (!colorMatch)
 			logErrors(log, "Color", "Result color image and error mask", colorAccess, colorErrorAccess);
 
