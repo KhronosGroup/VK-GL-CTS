@@ -1,0 +1,89 @@
+#!amber
+# Test GLSL.std.450 UMin instruction
+
+SHADER compute test SPIRV-ASM
+                         OpCapability Shader
+                 %glsl = OpExtInstImport "GLSL.std.450"
+
+                         OpMemoryModel Logical GLSL450
+                         OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationId
+                         OpExecutionMode %main LocalSize 1 1 1
+
+                         OpDecorate %gl_GlobalInvocationId BuiltIn GlobalInvocationId
+                         OpDecorate %ra_int ArrayStride 4
+                         OpDecorate %struct_int3 BufferBlock
+                         OpMemberDecorate %struct_int3 0 Offset 0
+                         OpDecorate %input0 DescriptorSet 0
+                         OpDecorate %input0 Binding 0
+                         OpDecorate %input1 DescriptorSet 0
+                         OpDecorate %input1 Binding 1
+                         OpDecorate %output DescriptorSet 0
+                         OpDecorate %output Binding 2
+
+                 %uint = OpTypeInt 32 0
+             %ptr_uint = OpTypePointer Uniform %uint
+       %ptr_input_uint = OpTypePointer Input %uint
+                %uint3 = OpTypeVector %uint 3
+      %ptr_input_uint3 = OpTypePointer Input %uint3
+                 %void = OpTypeVoid
+               %voidFn = OpTypeFunction %void
+
+               %uint_0 = OpConstant %uint 0
+               %uint_1 = OpConstant %uint 1
+                  %int = OpTypeInt 32 1
+               %ra_int = OpTypeRuntimeArray %int
+              %ra_uint = OpTypeRuntimeArray %uint
+         %struct_uint3 = OpTypeStruct %ra_uint
+     %ptr_struct_uint3 = OpTypePointer Uniform %struct_uint3
+                 %int3 = OpTypeVector %int 3
+              %ptr_int = OpTypePointer Uniform %int
+          %struct_int3 = OpTypeStruct %ra_int
+      %ptr_struct_int3 = OpTypePointer Uniform %struct_int3
+
+%gl_GlobalInvocationId = OpVariable %ptr_input_uint3 Input
+               %input0 = OpVariable %ptr_struct_int3 Uniform
+               %input1 = OpVariable %ptr_struct_int3 Uniform
+
+               %output = OpVariable %ptr_struct_int3 Uniform
+                 %main = OpFunction %void None %voidFn
+            %mainStart = OpLabel
+            %index_ptr = OpAccessChain %ptr_input_uint %gl_GlobalInvocationId %uint_0
+                %index = OpLoad %uint %index_ptr
+              %in_ptr0 = OpAccessChain %ptr_int %input0 %uint_0 %index
+             %invalue0 = OpLoad %int %in_ptr0
+              %in_ptr1 = OpAccessChain %ptr_int %input1 %uint_0 %index
+             %invalue1 = OpLoad %int %in_ptr1
+
+             %outvalue = OpExtInst %int %glsl UMin %invalue0 %invalue1
+              %out_ptr = OpAccessChain %ptr_int %output %uint_0 %index
+                         OpStore %out_ptr %outvalue
+
+                         OpReturn
+                         OpFunctionEnd
+END
+BUFFER data0 DATA_TYPE int32 DATA
+-7 -6 -5 -4 -3 -2 -1  0  1  2  3  4  5  6  7
+END
+
+BUFFER data1 DATA_TYPE int32 DATA
+ 7  6  5  4  3  2  1  0 -1 -2 -3 -4 -5 -6 -7
+END
+
+BUFFER data2 DATA_TYPE int32 DATA
+ 8  8  8  8  8  8  8  8  8  8  8  8  8  8  8
+END
+
+BUFFER expected0 DATA_TYPE int32 DATA
+ 7  6  5  4  3  2  1  0  1  2  3  4  5  6  7
+END
+
+PIPELINE compute compute_pipeline
+	ATTACH test
+	BIND BUFFER data0 AS storage DESCRIPTOR_SET 0 BINDING 0
+	BIND BUFFER data1 AS storage DESCRIPTOR_SET 0 BINDING 1
+	BIND BUFFER data2 AS storage DESCRIPTOR_SET 0 BINDING 2
+END
+
+RUN compute_pipeline 15 1 1
+
+EXPECT data2 EQ_BUFFER expected0

@@ -76,6 +76,7 @@
 #include "vktSpvAsmVaryingNameTests.hpp"
 #include "vktSpvAsmWorkgroupMemoryTests.hpp"
 #include "vktSpvAsmSignedIntCompareTests.hpp"
+#include "vktSpvAsmSignedOpTests.hpp"
 #include "vktSpvAsmPtrAccessChainTests.hpp"
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
 #include "vktSpvAsmNonSemanticInfoTests.hpp"
@@ -20461,6 +20462,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createWorkgroupMemoryComputeGroup(testCtx));
 	computeTests->addChild(createSpirvIdsAbuseGroup(testCtx));
 	computeTests->addChild(createSignedIntCompareGroup(testCtx));
+	computeTests->addChild(createSignedOpTestsGroup(testCtx));
 	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
 	computeTests->addChild(createHlslComputeGroup(testCtx));
