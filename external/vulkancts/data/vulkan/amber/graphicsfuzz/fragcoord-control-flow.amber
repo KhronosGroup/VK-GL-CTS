@@ -1,3 +1,5 @@
+#!amber
+
 # Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +15,7 @@
 # limitations under the License.
 
 # A test for a bug found by GraphicsFuzz.
+
 # A fragment shader that uses FragCoord and somewhat complex control flow.
 # Derived from the following GLSL fragment shader.
 # We check that the top-left pixel is red. The test passes because _GLF_color is
@@ -79,231 +82,243 @@
 #   } while (false);
 # }
 
-[vertex shader passthrough]
+SHADER vertex variant_vertex_shader PASSTHROUGH
 
-[fragment shader spirv]
+SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
-; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 206
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 125
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %_GLF_color %gl_FragCoord
-               OpExecutionMode %main OriginUpperLeft
+               OpEntryPoint Fragment %2 "main" %3 %4
+               OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %main "main"
-               OpName %_GLF_color "_GLF_color"
-               OpName %gl_FragCoord "gl_FragCoord"
-               OpDecorate %_GLF_color Location 0
-               OpDecorate %gl_FragCoord BuiltIn FragCoord
-       %void = OpTypeVoid
-          %3 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
- %_GLF_color = OpVariable %_ptr_Output_v4float Output
-    %float_1 = OpConstant %float 1
-    %float_0 = OpConstant %float 0
-         %12 = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1
-        %int = OpTypeInt 32 1
-      %int_0 = OpConstant %int 0
-      %int_1 = OpConstant %int 1
-       %bool = OpTypeBool
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-       %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-   %float_40 = OpConstant %float 40
-  %float_140 = OpConstant %float 140
-  %float_160 = OpConstant %float 160
-     %uint_1 = OpConstant %uint 1
-  %float_180 = OpConstant %float 180
-      %false = OpConstantFalse %bool
-       %true = OpConstantTrue %bool
-        %181 = OpUndef %v4float
-       %main = OpFunction %void None %3
-          %5 = OpLabel
-               OpBranch %157
-        %157 = OpLabel
-               OpStore %_GLF_color %12
-               OpLoopMerge %156 %159 None
-               OpBranch %17
-         %17 = OpLabel
-        %167 = OpPhi %int %int_0 %157 %44 %41
-         %25 = OpSLessThan %bool %167 %int_1
-               OpLoopMerge %19 %41 None
-               OpBranchConditional %25 %18 %19
-         %18 = OpLabel
-         %31 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_0
-         %32 = OpLoad %float %31
-         %33 = OpFOrdLessThan %bool %float_1 %32
-               OpSelectionMerge %35 None
-               OpBranchConditional %33 %34 %35
-         %34 = OpLabel
-               OpBranch %19
-         %35 = OpLabel
-         %39 = OpFOrdLessThan %bool %32 %float_0
-               OpSelectionMerge %201 None
-               OpBranchConditional %39 %40 %41
-         %40 = OpLabel
-               OpBranch %19
-        %201 = OpLabel
-               OpBranch %41
-         %41 = OpLabel
-         %44 = OpIAdd %int %167 %int_1
-               OpBranch %17
-         %19 = OpLabel
-        %168 = OpPhi %bool %false %17 %false %34 %true %40
-               OpSelectionMerge %163 None
-               OpBranchConditional %168 %156 %163
-        %163 = OpLabel
-               OpBranch %45
-         %45 = OpLabel
-               OpLoopMerge %47 %53 None
-               OpBranch %46
+               OpName %2 "main"
+               OpName %3 "_GLF_color"
+               OpName %4 "gl_FragCoord"
+               OpDecorate %3 Location 0
+               OpDecorate %4 BuiltIn FragCoord
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %7 = OpTypeFloat 32
+          %8 = OpTypeVector %7 4
+          %9 = OpTypePointer Output %8
+          %3 = OpVariable %9 Output
+         %10 = OpConstant %7 1
+         %11 = OpConstant %7 0
+         %12 = OpConstantComposite %8 %10 %11 %11 %10
+         %13 = OpTypeInt 32 1
+         %14 = OpConstant %13 0
+         %15 = OpConstant %13 1
+         %16 = OpTypeBool
+         %17 = OpTypePointer Input %8
+          %4 = OpVariable %17 Input
+         %18 = OpTypeInt 32 0
+         %19 = OpConstant %18 0
+         %20 = OpTypePointer Input %7
+         %21 = OpConstant %7 40
+         %22 = OpConstant %7 140
+         %23 = OpConstant %7 160
+         %24 = OpConstant %18 1
+         %25 = OpConstant %7 180
+         %26 = OpConstantFalse %16
+         %27 = OpConstantTrue %16
+         %28 = OpUndef %8
+          %2 = OpFunction %5 None %6
+         %29 = OpLabel
+               OpBranch %30
+         %30 = OpLabel
+               OpStore %3 %12
+               OpLoopMerge %31 %32 None
+               OpBranch %33
+         %33 = OpLabel
+         %34 = OpPhi %13 %14 %30 %35 %36
+         %37 = OpSLessThan %16 %34 %15
+               OpLoopMerge %38 %36 None
+               OpBranchConditional %37 %39 %38
+         %39 = OpLabel
+         %40 = OpAccessChain %20 %4 %19
+         %41 = OpLoad %7 %40
+         %42 = OpFOrdLessThan %16 %10 %41
+               OpSelectionMerge %43 None
+               OpBranchConditional %42 %44 %43
+         %44 = OpLabel
+               OpBranch %38
+         %43 = OpLabel
+         %45 = OpFOrdLessThan %16 %41 %11
+               OpSelectionMerge %46 None
+               OpBranchConditional %45 %47 %36
+         %47 = OpLabel
+               OpBranch %38
          %46 = OpLabel
-         %49 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_0
-         %50 = OpLoad %float %49
-         %52 = OpFOrdLessThan %bool %50 %float_40
-               OpSelectionMerge %202 None
-               OpBranchConditional %52 %53 %55
-        %202 = OpLabel
+               OpBranch %36
+         %36 = OpLabel
+         %35 = OpIAdd %13 %34 %15
+               OpBranch %33
+         %38 = OpLabel
+         %48 = OpPhi %16 %26 %33 %26 %44 %27 %47
+               OpSelectionMerge %49 None
+               OpBranchConditional %48 %31 %49
+         %49 = OpLabel
+               OpBranch %50
+         %50 = OpLabel
+               OpLoopMerge %51 %52 None
                OpBranch %53
          %53 = OpLabel
-               OpStore %_GLF_color %12
-               OpBranchConditional %false %45 %47
-         %55 = OpLabel
-         %59 = OpFOrdLessThan %bool %50 %float_140
-               OpSelectionMerge %61 None
-               OpBranchConditional %59 %60 %62
-         %60 = OpLabel
-               OpBranch %61
+         %54 = OpAccessChain %20 %4 %19
+         %55 = OpLoad %7 %54
+         %56 = OpFOrdLessThan %16 %55 %21
+               OpSelectionMerge %57 None
+               OpBranchConditional %56 %52 %58
+         %57 = OpLabel
+               OpBranch %52
+         %52 = OpLabel
+               OpStore %3 %12
+               OpBranchConditional %26 %50 %51
+         %58 = OpLabel
+         %59 = OpFOrdLessThan %16 %55 %22
+               OpSelectionMerge %60 None
+               OpBranchConditional %59 %61 %62
+         %61 = OpLabel
+               OpBranch %60
          %62 = OpLabel
-               OpBranch %64
-         %64 = OpLabel
-        %176 = OpPhi %v4float %181 %62 %197 %76
-        %171 = OpPhi %int %int_1 %62 %153 %76
-         %70 = OpSGreaterThan %bool %171 %int_0
-               OpLoopMerge %66 %76 None
-               OpBranchConditional %70 %65 %66
-         %65 = OpLabel
-         %74 = OpFOrdLessThan %bool %50 %float_160
-               OpSelectionMerge %203 None
-               OpBranchConditional %74 %75 %94
-         %75 = OpLabel
-               OpBranch %78
-         %78 = OpLabel
-        %185 = OpPhi %int %int_1 %75 %93 %90
-         %84 = OpSGreaterThan %bool %185 %int_0
-               OpLoopMerge %80 %90 None
-               OpBranchConditional %84 %79 %80
-         %79 = OpLabel
-         %86 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_1
-         %87 = OpLoad %float %86
-         %88 = OpFOrdLessThan %bool %87 %float_0
-               OpSelectionMerge %204 None
-               OpBranchConditional %88 %89 %91
-         %89 = OpLabel
-               OpBranch %90
-         %91 = OpLabel
-               OpStore %_GLF_color %12
-               OpBranch %90
-        %204 = OpLabel
-               OpBranch %90
-         %90 = OpLabel
-         %93 = OpISub %int %185 %int_1
-               OpBranch %78
-         %80 = OpLabel
-               OpBranch %76
-         %94 = OpLabel
-         %98 = OpFOrdLessThan %bool %50 %float_180
-               OpSelectionMerge %100 None
-               OpBranchConditional %98 %99 %111
-         %99 = OpLabel
-               OpBranch %102
-        %102 = OpLabel
-        %184 = OpPhi %int %int_1 %99 %110 %103
-        %108 = OpINotEqual %bool %184 %int_0
-               OpLoopMerge %104 %103 None
-               OpBranchConditional %108 %103 %104
-        %103 = OpLabel
-               OpStore %_GLF_color %12
-        %110 = OpISub %int %184 %int_1
-               OpBranch %102
-        %104 = OpLabel
-               OpBranch %100
-        %111 = OpLabel
-               OpSelectionMerge %116 None
-               OpBranchConditional %98 %115 %150
-        %115 = OpLabel
-               OpBranch %118
-        %118 = OpLabel
-        %172 = OpPhi %int %int_0 %115 %136 %128
-        %124 = OpINotEqual %bool %172 %int_1
-               OpLoopMerge %120 %128 None
-               OpBranchConditional %124 %119 %120
-        %119 = OpLabel
-               OpBranch %126
-        %126 = OpLabel
-        %182 = OpPhi %int %int_0 %119 %134 %127
-        %132 = OpSLessThan %bool %182 %int_1
-               OpLoopMerge %205 %127 None
-               OpBranchConditional %132 %127 %205
-        %127 = OpLabel
-               OpStore %_GLF_color %12
-        %134 = OpIAdd %int %182 %int_1
-               OpBranch %126
-        %205 = OpLabel
-               OpBranch %128
-        %128 = OpLabel
-        %136 = OpIAdd %int %172 %int_1
-               OpBranch %118
-        %120 = OpLabel
-               OpBranch %138
-        %138 = OpLabel
-        %174 = OpPhi %v4float %176 %120 %12 %139
-        %173 = OpPhi %int %int_1 %120 %148 %139
-        %144 = OpINotEqual %bool %173 %int_0
-               OpLoopMerge %140 %139 None
-               OpBranchConditional %144 %139 %140
-        %139 = OpLabel
-        %148 = OpISub %int %173 %int_1
-               OpBranch %138
-        %140 = OpLabel
-               OpStore %_GLF_color %174
-               OpBranch %116
-        %150 = OpLabel
-               OpKill
-        %116 = OpLabel
-               OpBranch %100
-        %100 = OpLabel
-        %200 = OpPhi %v4float %176 %104 %174 %116
-               OpBranch %76
-        %203 = OpLabel
+               OpBranch %63
+         %63 = OpLabel
+         %64 = OpPhi %8 %28 %62 %65 %66
+         %67 = OpPhi %13 %15 %62 %68 %66
+         %69 = OpSGreaterThan %16 %67 %14
+               OpLoopMerge %70 %66 None
+               OpBranchConditional %69 %71 %70
+         %71 = OpLabel
+         %72 = OpFOrdLessThan %16 %55 %23
+               OpSelectionMerge %73 None
+               OpBranchConditional %72 %74 %75
+         %74 = OpLabel
                OpBranch %76
          %76 = OpLabel
-        %197 = OpPhi %v4float %176 %80 %200 %100 %181 %203
-        %153 = OpISub %int %171 %int_1
-               OpBranch %64
+         %77 = OpPhi %13 %15 %74 %78 %79
+         %80 = OpSGreaterThan %16 %77 %14
+               OpLoopMerge %81 %79 None
+               OpBranchConditional %80 %82 %81
+         %82 = OpLabel
+         %83 = OpAccessChain %20 %4 %24
+         %84 = OpLoad %7 %83
+         %85 = OpFOrdLessThan %16 %84 %11
+               OpSelectionMerge %86 None
+               OpBranchConditional %85 %87 %88
+         %87 = OpLabel
+               OpBranch %79
+         %88 = OpLabel
+               OpStore %3 %12
+               OpBranch %79
+         %86 = OpLabel
+               OpBranch %79
+         %79 = OpLabel
+         %78 = OpISub %13 %77 %15
+               OpBranch %76
+         %81 = OpLabel
+               OpBranch %66
+         %75 = OpLabel
+         %89 = OpFOrdLessThan %16 %55 %25
+               OpSelectionMerge %90 None
+               OpBranchConditional %89 %91 %92
+         %91 = OpLabel
+               OpBranch %93
+         %93 = OpLabel
+         %94 = OpPhi %13 %15 %91 %95 %96
+         %97 = OpINotEqual %16 %94 %14
+               OpLoopMerge %98 %96 None
+               OpBranchConditional %97 %96 %98
+         %96 = OpLabel
+               OpStore %3 %12
+         %95 = OpISub %13 %94 %15
+               OpBranch %93
+         %98 = OpLabel
+               OpBranch %90
+         %92 = OpLabel
+               OpSelectionMerge %99 None
+               OpBranchConditional %89 %100 %101
+        %100 = OpLabel
+               OpBranch %102
+        %102 = OpLabel
+        %103 = OpPhi %13 %14 %100 %104 %105
+        %106 = OpINotEqual %16 %103 %15
+               OpLoopMerge %107 %105 None
+               OpBranchConditional %106 %108 %107
+        %108 = OpLabel
+               OpBranch %109
+        %109 = OpLabel
+        %110 = OpPhi %13 %14 %108 %111 %112
+        %113 = OpSLessThan %16 %110 %15
+               OpLoopMerge %114 %112 None
+               OpBranchConditional %113 %112 %114
+        %112 = OpLabel
+               OpStore %3 %12
+        %111 = OpIAdd %13 %110 %15
+               OpBranch %109
+        %114 = OpLabel
+               OpBranch %105
+        %105 = OpLabel
+        %104 = OpIAdd %13 %103 %15
+               OpBranch %102
+        %107 = OpLabel
+               OpBranch %115
+        %115 = OpLabel
+        %116 = OpPhi %8 %64 %107 %12 %117
+        %118 = OpPhi %13 %15 %107 %119 %117
+        %120 = OpINotEqual %16 %118 %14
+               OpLoopMerge %121 %117 None
+               OpBranchConditional %120 %117 %121
+        %117 = OpLabel
+        %119 = OpISub %13 %118 %15
+               OpBranch %115
+        %121 = OpLabel
+               OpStore %3 %116
+               OpBranch %99
+        %101 = OpLabel
+               OpKill
+         %99 = OpLabel
+               OpBranch %90
+         %90 = OpLabel
+        %122 = OpPhi %8 %64 %98 %116 %99
+               OpBranch %66
+         %73 = OpLabel
+               OpBranch %66
          %66 = OpLabel
-               OpBranch %61
-         %61 = OpLabel
-               OpBranch %47
-         %47 = OpLabel
-        %194 = OpPhi %bool %true %61 %168 %53
-               OpSelectionMerge %165 None
-               OpBranchConditional %194 %156 %165
-        %165 = OpLabel
-               OpBranch %156
-        %159 = OpLabel
-               OpBranch %157
-        %156 = OpLabel
+         %65 = OpPhi %8 %64 %81 %122 %90 %28 %73
+         %68 = OpISub %13 %67 %15
+               OpBranch %63
+         %70 = OpLabel
+               OpBranch %60
+         %60 = OpLabel
+               OpBranch %51
+         %51 = OpLabel
+        %123 = OpPhi %16 %27 %60 %48 %52
+               OpSelectionMerge %124 None
+               OpBranchConditional %123 %31 %124
+        %124 = OpLabel
+               OpBranch %31
+         %32 = OpLabel
+               OpBranch %30
+         %31 = OpLabel
                OpReturn
                OpFunctionEnd
+END
 
-[test]
-draw rect -1 -1 2 2
-probe rgba (0, 0) (1, 0, 0, 1)
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 1 1 EQ_RGBA 255 0 0 255

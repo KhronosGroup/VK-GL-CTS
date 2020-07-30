@@ -1,3 +1,5 @@
+#!amber
+
 # Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +15,7 @@
 # limitations under the License.
 
 # A test for a bug found by GraphicsFuzz.
+
 # A fragment shader that uses vector swizzles, struct initializers, and min.
 # Derived from the following GLSL fragment shader.
 # We check that the top-left pixel is red. The test passes because the
@@ -47,90 +50,108 @@
 #  _GLF_color = vec4(v4.x, 0.0, 0.0, 1.0);
 # }
 
-[vertex shader passthrough]
+SHADER vertex variant_vertex_shader PASSTHROUGH
 
-[fragment shader spirv]
+SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
-; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 63
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 45
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %gl_FragCoord %_GLF_color
-               OpExecutionMode %main OriginUpperLeft
+               OpEntryPoint Fragment %2 "main" %3 %4
+               OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %main "main"
-               OpName %gl_FragCoord "gl_FragCoord"
-               OpName %_GLF_color "_GLF_color"
-               OpName %buf0 "buf0"
-               OpMemberName %buf0 0 "injectionSwitch"
-               OpName %_ ""
-               OpDecorate %gl_FragCoord BuiltIn FragCoord
-               OpDecorate %_GLF_color Location 0
-               OpMemberDecorate %buf0 0 Offset 0
-               OpDecorate %buf0 Block
-               OpDecorate %_ DescriptorSet 0
-               OpDecorate %_ Binding 0
-       %void = OpTypeVoid
-          %3 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-       %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-%_ptr_Input_float = OpTypePointer Input %float
-   %float_10 = OpConstant %float 10
-       %bool = OpTypeBool
-%_ptr_Output_v4float = OpTypePointer Output %v4float
- %_GLF_color = OpVariable %_ptr_Output_v4float Output
-    %float_1 = OpConstant %float 1
-    %float_0 = OpConstant %float 0
-         %24 = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1
-    %v2float = OpTypeVector %float 2
-       %buf0 = OpTypeStruct %v2float
-%_ptr_Uniform_buf0 = OpTypePointer Uniform %buf0
-          %_ = OpVariable %_ptr_Uniform_buf0 Uniform
-        %int = OpTypeInt 32 1
-      %int_0 = OpConstant %int 0
-     %uint_1 = OpConstant %uint 1
-%_ptr_Uniform_float = OpTypePointer Uniform %float
-         %49 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
-       %main = OpFunction %void None %3
-          %5 = OpLabel
-               OpBranch %60
-         %60 = OpLabel
-               OpLoopMerge %59 %62 None
-               OpBranch %61
-         %61 = OpLabel
-         %13 = OpAccessChain %_ptr_Input_float %gl_FragCoord %uint_0
-         %14 = OpLoad %float %13
-         %17 = OpFOrdLessThan %bool %14 %float_10
-               OpSelectionMerge %19 None
-               OpBranchConditional %17 %18 %19
-         %18 = OpLabel
-               OpStore %_GLF_color %24
-               OpBranch %59
-         %19 = OpLabel
-         %36 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %uint_1
-         %37 = OpLoad %float %36
-         %38 = OpCompositeConstruct %v4float %37 %37 %37 %37
-         %48 = OpVectorShuffle %v4float %38 %38 4 5 2 3
-         %51 = OpExtInst %v4float %1 FMin %49 %48
-         %57 = OpCompositeExtract %float %51 0
-         %58 = OpCompositeConstruct %v4float %57 %float_0 %float_0 %float_1
-               OpStore %_GLF_color %58
-               OpBranch %59
-         %62 = OpLabel
-               OpBranch %60
-         %59 = OpLabel
+               OpName %2 "main"
+               OpName %3 "gl_FragCoord"
+               OpName %4 "_GLF_color"
+               OpName %5 "buf0"
+               OpMemberName %5 0 "injectionSwitch"
+               OpName %6 ""
+               OpDecorate %3 BuiltIn FragCoord
+               OpDecorate %4 Location 0
+               OpMemberDecorate %5 0 Offset 0
+               OpDecorate %5 Block
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 0
+          %7 = OpTypeVoid
+          %8 = OpTypeFunction %7
+          %9 = OpTypeFloat 32
+         %10 = OpTypeVector %9 4
+         %11 = OpTypePointer Input %10
+          %3 = OpVariable %11 Input
+         %12 = OpTypeInt 32 0
+         %13 = OpConstant %12 0
+         %14 = OpTypePointer Input %9
+         %15 = OpConstant %9 10
+         %16 = OpTypeBool
+         %17 = OpTypePointer Output %10
+          %4 = OpVariable %17 Output
+         %18 = OpConstant %9 1
+         %19 = OpConstant %9 0
+         %20 = OpConstantComposite %10 %18 %19 %19 %18
+         %21 = OpTypeVector %9 2
+          %5 = OpTypeStruct %21
+         %22 = OpTypePointer Uniform %5
+          %6 = OpVariable %22 Uniform
+         %23 = OpTypeInt 32 1
+         %24 = OpConstant %23 0
+         %25 = OpConstant %12 1
+         %26 = OpTypePointer Uniform %9
+         %27 = OpConstantComposite %10 %18 %18 %18 %18
+          %2 = OpFunction %7 None %8
+         %28 = OpLabel
+               OpBranch %29
+         %29 = OpLabel
+               OpLoopMerge %30 %31 None
+               OpBranch %32
+         %32 = OpLabel
+         %33 = OpAccessChain %14 %3 %13
+         %34 = OpLoad %9 %33
+         %35 = OpFOrdLessThan %16 %34 %15
+               OpSelectionMerge %36 None
+               OpBranchConditional %35 %37 %36
+         %37 = OpLabel
+               OpStore %4 %20
+               OpBranch %30
+         %36 = OpLabel
+         %38 = OpAccessChain %26 %6 %24 %25
+         %39 = OpLoad %9 %38
+         %40 = OpCompositeConstruct %10 %39 %39 %39 %39
+         %41 = OpVectorShuffle %10 %40 %40 4 5 2 3
+         %42 = OpExtInst %10 %1 FMin %27 %41
+         %43 = OpCompositeExtract %9 %42 0
+         %44 = OpCompositeConstruct %10 %43 %19 %19 %18
+               OpStore %4 %44
+               OpBranch %30
+         %31 = OpLabel
+               OpBranch %29
+         %30 = OpLabel
                OpReturn
                OpFunctionEnd
+END
 
+# uniforms for variant
 
-[test]
-uniform ubo 0:0 vec2 0 0.0 1.0
-draw rect -1 -1 2 2
-probe rgba (0, 0) (1, 0, 0, 1)
+# injectionSwitch
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 1 1 EQ_RGBA 255 0 0 255

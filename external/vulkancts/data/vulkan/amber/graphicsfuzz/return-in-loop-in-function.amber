@@ -1,3 +1,5 @@
+#!amber
+
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +18,8 @@
 
 # Short description: A fragment shader with early return from loop in function
 
-# The test passes because the fragment shader writes a red pixel, and then
-# terminates without further output manipulation (the other write of red
-# is not dynamically reachable)
+# The test passes because the fragment shader writes red. The f function always
+# returns 1.0, so c is unchanged.
 
 # Optimized using spirv-opt with the following arguments:
 # '--merge-blocks'
@@ -62,12 +63,9 @@
 #  _GLF_color = c;
 # }
 
-[require]
-fbsize 256 256
+SHADER vertex variant_vertex_shader PASSTHROUGH
 
-[vertex shader passthrough]
-
-[fragment shader spirv]
+SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
@@ -168,8 +166,19 @@ fbsize 256 256
          %16 = OpLabel
                OpReturnValue %25
                OpFunctionEnd
+END
 
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
 
-[test]
-draw rect -1 -1 2 2
-probe rgba (0, 0) (1, 0, 0, 1)
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255
