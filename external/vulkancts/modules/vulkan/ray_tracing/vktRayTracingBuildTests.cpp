@@ -399,7 +399,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (bool useGpuB
 
 	de::MovePtr<RayTracingPipeline>		rayTracingPipeline					= de::newMovePtr<RayTracingPipeline>();
 	Move<VkShaderModule>				raygenShader						= createShaderModule(vkd, device, m_context.getBinaryCollection().get("rgen"), 0);
-	Move<VkShaderModule>				hitShader							= createShaderModule(vkd, device, m_context.getBinaryCollection().get("ahit"), 0);
+	de::SharedPtr<Move<VkShaderModule>>	hitShader							= makeVkSharedPtr(createShaderModule(vkd, device, m_context.getBinaryCollection().get("ahit"), 0));
 	Move<VkShaderModule>				missShader							= createShaderModule(vkd, device, m_context.getBinaryCollection().get("miss"), 0);
 	Move<VkShaderModule>				intersectionShader					= createShaderModule(vkd, device, m_context.getBinaryCollection().get("sect"), 0);
 	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,		raygenShader,		0u);

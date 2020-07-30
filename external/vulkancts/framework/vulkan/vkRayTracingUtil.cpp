@@ -2008,6 +2008,11 @@ RayTracingPipeline::~RayTracingPipeline ()
 
 void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkShaderModule> shaderModule, deUint32 group)
 {
+	addShader(shaderStage, makeVkSharedPtr(shaderModule), group);
+}
+
+void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group)
+{
 	if (group >= m_shadersGroupCreateInfos.size())
 	{
 		for (size_t groupNdx = m_shadersGroupCreateInfos.size(); groupNdx <= group; ++groupNdx)
@@ -2076,7 +2081,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkSh
 			DE_NULL,												//  const void*							pNext;
 			(VkPipelineShaderStageCreateFlags)0,					//  VkPipelineShaderStageCreateFlags	flags;
 			shaderStage,											//  VkShaderStageFlagBits				stage;
-			*shaderModule,											//  VkShaderModule						module;
+			**shaderModule,											//  VkShaderModule						module;
 			"main",													//  const char*							pName;
 			DE_NULL,												//  const VkSpecializationInfo*			pSpecializationInfo;
 		};
@@ -2084,7 +2089,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkSh
 		m_shaderCreateInfos.push_back(shaderCreateInfo);
 	}
 
-	m_shadersModules.push_back(makeVkSharedPtr(shaderModule));
+	m_shadersModules.push_back(shaderModule);
 }
 
 void RayTracingPipeline::addLibrary (de::SharedPtr<de::MovePtr<RayTracingPipeline>> pipelineLibrary)

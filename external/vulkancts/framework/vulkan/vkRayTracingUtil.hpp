@@ -526,6 +526,9 @@ public:
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
 																							 Move<VkShaderModule>									shaderModule,
 																							 deUint32												group);
+	void														addShader					(VkShaderStageFlagBits									shaderStage,
+																							 de::SharedPtr<Move<VkShaderModule>>					shaderModule,
+																							 deUint32												group);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,
