@@ -97,19 +97,6 @@ public:
 
 		m_writeOp->recordCommands(*cmdBuffer);
 
-		VkMemoryBarrier2KHR memoryBarrier2
-		{
-			VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR,				// VkStructureType					sType
-			DE_NULL,											// const void*						pNext
-			writeSync.stageMask,								// VkPipelineStageFlags2KHR			srcStageMask
-			VK_ACCESS_2_NONE_KHR,								// VkAccessFlags2KHR				srcAccessMask
-			VK_PIPELINE_STAGE_2_HOST_BIT_KHR,					// VkPipelineStageFlags2KHR			dstStageMask
-			VK_ACCESS_2_HOST_READ_BIT_KHR						// VkAccessFlags2KHR				dstAccessMask
-		};
-
-		VkDependencyInfoKHR memoryDependencyInfo = makeCommonDependencyInfo(&memoryBarrier2);
-		synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &memoryDependencyInfo);
-
 		if (m_resource->getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(m_resource->getType()))
 		{
 			const VkBufferMemoryBarrier2KHR bufferMemoryBarrier2 = makeBufferMemoryBarrier2(
@@ -122,6 +109,7 @@ public:
 				m_resource->getBuffer().size					// VkDeviceSize						size
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, &bufferMemoryBarrier2);
+			synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
 			synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
 		}
 		else if (m_resource->getType() == RESOURCE_TYPE_IMAGE)
@@ -137,6 +125,7 @@ public:
 				m_resource->getImage().subresourceRange			// VkImageSubresourceRange			subresourceRange
 			);
 			VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(DE_NULL, DE_NULL, &imageMemoryBarrier2);
+			synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
 			synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
 		}
 

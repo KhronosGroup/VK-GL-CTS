@@ -165,10 +165,7 @@ tcu::TestStatus singleSubmissionCase (Context& context, SynchronizationType type
 																	makeCommonCommandBufferSubmitInfo(cmdBuffers[SET]),
 																	makeCommonCommandBufferSubmitInfo(cmdBuffers[WAIT])
 																};
-	VkDependencyInfoKHR				dependencyInfos[]			{
-																	makeCommonDependencyInfo(),
-																	makeCommonDependencyInfo()
-																};
+	VkDependencyInfoKHR				dependencyInfo				= makeCommonDependencyInfo();
 	SynchronizationWrapperPtr		synchronizationWrapper		= getSynchronizationWrapper(type, vk, DE_FALSE);
 
 	synchronizationWrapper->addSubmitInfo(
@@ -181,11 +178,11 @@ tcu::TestStatus singleSubmissionCase (Context& context, SynchronizationType type
 	);
 
 	beginCommandBuffer(vk, cmdBuffers[SET]);
-	synchronizationWrapper->cmdSetEvent(cmdBuffers[SET], *event, &dependencyInfos[SET]);
+	synchronizationWrapper->cmdSetEvent(cmdBuffers[SET], *event, &dependencyInfo);
 	endCommandBuffer(vk, cmdBuffers[SET]);
 
 	beginCommandBuffer(vk, cmdBuffers[WAIT]);
-	synchronizationWrapper->cmdWaitEvents(cmdBuffers[WAIT], 1u, &event.get(), &dependencyInfos[WAIT]);
+	synchronizationWrapper->cmdWaitEvents(cmdBuffers[WAIT], 1u, &event.get(), &dependencyInfo);
 	endCommandBuffer(vk, cmdBuffers[WAIT]);
 
 	VK_CHECK(synchronizationWrapper->queueSubmit(queue, *fence));
