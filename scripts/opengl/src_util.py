@@ -147,7 +147,7 @@ ALIASING_EXCEPTIONS = [
 	# registry insists that this aliases glRenderbufferStorageMultisample,
 	# and from a desktop GL / GLX perspective it *must*, but for ES they are
 	# unfortunately separate functions with different semantics.
-	'glRenderbufferStorageMultisampleEXT',
+	('GL_EXT_multisampled_render_to_texture', 'glRenderbufferStorageMultisampleEXT'),
 ]
 
 def getGLRegistry ():
@@ -180,7 +180,7 @@ def getHybridInterface (stripAliasedExtCommands = True):
 		strippedCmds = []
 
 		for command in iface.commands:
-			if command.alias == None or command.name in ALIASING_EXCEPTIONS:
+			if command.alias == None or (extension, command.name) in ALIASING_EXCEPTIONS:
 				strippedCmds.append(command)
 
 		iface.commands = strippedCmds

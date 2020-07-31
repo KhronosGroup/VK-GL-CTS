@@ -122,7 +122,7 @@ if (de::contains(extSet, "GL_EXT_texture_border_clamp"))
 if (de::contains(extSet, "GL_EXT_multisampled_render_to_texture"))
 {
 	gl->framebufferTexture2DMultisampleEXT	= (glFramebufferTexture2DMultisampleEXTFunc)	loader->get("glFramebufferTexture2DMultisampleEXT");
-	gl->renderbufferStorageMultisample		= (glRenderbufferStorageMultisampleFunc)		loader->get("glRenderbufferStorageMultisampleEXT");
+	gl->renderbufferStorageMultisampleEXT	= (glRenderbufferStorageMultisampleEXTFunc)		loader->get("glRenderbufferStorageMultisampleEXT");
 }
 
 if (de::contains(extSet, "GL_EXT_debug_marker"))
