@@ -4742,7 +4742,14 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 		TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits.");
 
 	const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[aspectIndex];
-	const VkExtent3D							imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
+	VkExtent3D									blockSize			= aspectRequirements.formatProperties.imageGranularity;
+
+	if (isCompressedFormat(imageCreateInfo.format))
+	{
+		// 28.4.3 block dimensions of block-compressed format
+		blockSize.width *= getBlockWidth(imageCreateInfo.format);
+		blockSize.height *= getBlockHeight(imageCreateInfo.format);
+	}
 
 	std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;
 	std::vector<VkSparseMemoryBind>				imageMipTailMemoryBinds;
@@ -4752,10 +4759,10 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 		for (deUint32 mipLevelNdx = 0; mipLevelNdx < aspectRequirements.imageMipTailFirstLod; ++mipLevelNdx)
 		{
 			const VkExtent3D	mipExtent		= mipLevelExtents(imageCreateInfo.extent, mipLevelNdx);
-			const tcu::UVec3	numSparseBinds	= alignedDivide(mipExtent, imageGranularity);
-			const tcu::UVec3	lastBlockExtent	= tcu::UVec3(mipExtent.width  % imageGranularity.width  ? mipExtent.width  % imageGranularity.width  : imageGranularity.width,
-															 mipExtent.height % imageGranularity.height ? mipExtent.height % imageGranularity.height : imageGranularity.height,
-															 mipExtent.depth  % imageGranularity.depth  ? mipExtent.depth  % imageGranularity.depth  : imageGranularity.depth );
+			const tcu::UVec3	numSparseBinds	= alignedDivide(mipExtent, blockSize);
+			const tcu::UVec3	lastBlockExtent	= tcu::UVec3(mipExtent.width  % blockSize.width  ? mipExtent.width  % blockSize.width  : blockSize.width,
+															 mipExtent.height % blockSize.height ? mipExtent.height % blockSize.height : blockSize.height,
+															 mipExtent.depth  % blockSize.depth  ? mipExtent.depth  % blockSize.depth  : blockSize.depth );
 
 			for (deUint32 z = 0; z < numSparseBinds.z(); ++z)
 			for (deUint32 y = 0; y < numSparseBinds.y(); ++y)
@@ -4773,14 +4780,14 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 				allocations.push_back(allocation);
 
 				VkOffset3D offset;
-				offset.x = x*imageGranularity.width;
-				offset.y = y*imageGranularity.height;
-				offset.z = z*imageGranularity.depth;
+				offset.x = x*blockSize.width;
+				offset.y = y*blockSize.height;
+				offset.z = z*blockSize.depth;
 
 				VkExtent3D extent;
-				extent.width	= (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
-				extent.height	= (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
-				extent.depth	= (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
+				extent.width	= (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : blockSize.width;
+				extent.height	= (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : blockSize.height;
+				extent.depth	= (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : blockSize.depth;
 
 				const VkSparseImageMemoryBind imageMemoryBind =
 				{

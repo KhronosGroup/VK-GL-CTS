@@ -55,6 +55,7 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 	textureTests->addChild(createTextureShadowTests				(testCtx));
 	textureTests->addChild(createFilteringAnisotropyTests		(testCtx));
 	textureTests->addChild(createTextureCompressedFormatTests	(testCtx));
+	textureTests->addChild(create3DTextureCompressedFormatTests	(testCtx));
 	textureTests->addChild(createTextureSwizzleTests			(testCtx));
 	textureTests->addChild(createTextureSubgroupLodTests		(testCtx));
 	textureTests->addChild(createTextureConversionTests			(testCtx));

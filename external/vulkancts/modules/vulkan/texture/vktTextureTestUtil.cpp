@@ -469,11 +469,17 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 const deUint16		TextureRenderer::s_vertexIndices[6] = { 0, 1, 2, 2, 1, 3 };
 const VkDeviceSize	TextureRenderer::s_vertexIndexBufferSize = sizeof(TextureRenderer::s_vertexIndices);
 
-TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, VkComponentMapping componentMapping)
+TextureRenderer::TextureRenderer(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, vk::VkComponentMapping componentMapping)
+	: TextureRenderer(context, sampleCount, renderWidth, renderHeight, 1u, componentMapping)
+{
+}
+
+TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, deUint32 renderDepth, VkComponentMapping componentMapping, VkImageType imageType, VkImageViewType imageViewType)
 	: m_context					(context)
 	, m_log						(context.getTestContext().getLog())
 	, m_renderWidth				(renderWidth)
 	, m_renderHeight			(renderHeight)
+	, m_renderDepth				(renderDepth)
 	, m_sampleCount				(sampleCount)
 	, m_multisampling			(m_sampleCount != VK_SAMPLE_COUNT_1_BIT)
 	, m_imageFormat				(VK_FORMAT_R8G8B8A8_UNORM)
@@ -501,7 +507,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 
 		if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
 																					 m_imageFormat,
-																					 VK_IMAGE_TYPE_2D,
+																					 imageType,
 																					 VK_IMAGE_TILING_OPTIMAL,
 																					 imageUsage,
 																					 0,
@@ -517,21 +523,21 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 
 		const VkImageCreateInfo					imageCreateInfo			=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			0u,											// VkImageCreateFlags		flags;
-			VK_IMAGE_TYPE_2D,							// VkImageType				imageType;
-			m_imageFormat,								// VkFormat					format;
-			{ m_renderWidth, m_renderHeight, 1u },		// VkExtent3D				extent;
-			1u,											// deUint32					mipLevels;
-			1u,											// deUint32					arrayLayers;
-			m_sampleCount,								// VkSampleCountFlagBits	samples;
-			VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
-			imageUsage,									// VkImageUsageFlags		usage;
-			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
-			1u,											// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,							// const deUint32*			pQueueFamilyIndices;
-			VK_IMAGE_LAYOUT_UNDEFINED					// VkImageLayout			initialLayout;
+			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,				// VkStructureType			sType;
+			DE_NULL,											// const void*				pNext;
+			0u,													// VkImageCreateFlags		flags;
+			imageType,											// VkImageType				imageType;
+			m_imageFormat,										// VkFormat					format;
+			{ m_renderWidth, m_renderHeight, m_renderDepth },	// VkExtent3D				extent;
+			1u,													// deUint32					mipLevels;
+			1u,													// deUint32					arrayLayers;
+			m_sampleCount,										// VkSampleCountFlagBits	samples;
+			VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
+			imageUsage,											// VkImageUsageFlags		usage;
+			VK_SHARING_MODE_EXCLUSIVE,							// VkSharingMode			sharingMode;
+			1u,													// deUint32					queueFamilyIndexCount;
+			&queueFamilyIndex,									// const deUint32*			pQueueFamilyIndices;
+			VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout			initialLayout;
 		};
 
 		m_image = vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
@@ -548,7 +554,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 			DE_NULL,									// const void*					pNext;
 			0u,											// VkImageViewCreateFlags		flags;
 			*m_image,									// VkImage						image;
-			VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
+			imageViewType,								// VkImageViewType				viewType;
 			m_imageFormat,								// VkFormat						format;
 			makeComponentMappingRGBA(),					// VkComponentMapping			components;
 			{
@@ -572,7 +578,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 
 			if ((m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(),
 																						 m_imageFormat,
-																						 VK_IMAGE_TYPE_2D,
+																						 imageType,
 																						 VK_IMAGE_TILING_OPTIMAL,
 																						 imageUsage,
 																						 0,
@@ -583,21 +589,21 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 
 			const VkImageCreateInfo					imageCreateInfo			=
 			{
-				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
-				DE_NULL,									// const void*				pNext;
-				0u,											// VkImageCreateFlags		flags;
-				VK_IMAGE_TYPE_2D,							// VkImageType				imageType;
-				m_imageFormat,								// VkFormat					format;
-				{ m_renderWidth, m_renderHeight, 1u },		// VkExtent3D				extent;
-				1u,											// deUint32					mipLevels;
-				1u,											// deUint32					arrayLayers;
-				VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
-				VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
-				imageUsage,									// VkImageUsageFlags		usage;
-				VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
-				1u,											// deUint32					queueFamilyIndexCount;
-				&queueFamilyIndex,							// const deUint32*			pQueueFamilyIndices;
-				VK_IMAGE_LAYOUT_UNDEFINED					// VkImageLayout			initialLayout;
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,				// VkStructureType			sType;
+				DE_NULL,											// const void*				pNext;
+				0u,													// VkImageCreateFlags		flags;
+				imageType,											// VkImageType				imageType;
+				m_imageFormat,										// VkFormat					format;
+				{ m_renderWidth, m_renderHeight, m_renderDepth },	// VkExtent3D				extent;
+				1u,													// deUint32					mipLevels;
+				1u,													// deUint32					arrayLayers;
+				VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits	samples;
+				VK_IMAGE_TILING_OPTIMAL,							// VkImageTiling			tiling;
+				imageUsage,											// VkImageUsageFlags		usage;
+				VK_SHARING_MODE_EXCLUSIVE,							// VkSharingMode			sharingMode;
+				1u,													// deUint32					queueFamilyIndexCount;
+				&queueFamilyIndex,									// const deUint32*			pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED							// VkImageLayout			initialLayout;
 			};
 
 			m_resolvedImage			= vk::createImage(vkd, vkDevice, &imageCreateInfo, DE_NULL);
@@ -613,7 +619,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 				DE_NULL,									// const void*					pNext;
 				0u,											// VkImageViewCreateFlags		flags;
 				*m_resolvedImage,							// VkImage						image;
-				VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType				viewType;
+				imageViewType,								// VkImageViewType				viewType;
 				m_imageFormat,								// VkFormat						format;
 				makeComponentMappingRGBA(),					// VkComponentMapping			components;
 				{
