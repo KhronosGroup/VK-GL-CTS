@@ -1,0 +1,580 @@
+#!amber
+
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A tessellation control shader test for FrexpStruct.
+
+DEVICE_FEATURE tessellationShader
+
+# SHADER vertex vert_shader GLSL
+# #version 430
+# precision highp float;
+#
+# const uint ndp = 1296;
+# const uint ndpSqrt = uint(sqrt(ndp));
+# const float halfGridElementSize = 1.0 / float(ndpSqrt);
+#
+# layout (location = 0) in vec2 position;
+# layout (location = 0) flat out uint ndx_out;
+#
+# void main ()
+# {
+#     uint xcoord = uint(ndpSqrt * ((position.x + halfGridElementSize + 1) / 2) - 1);
+#     uint ycoord = uint(ndpSqrt * ((position.y + halfGridElementSize + 1) / 2) - 1);
+#     ndx_out = xcoord + ycoord * ndpSqrt;
+#
+#     gl_Position = vec4(position, 0, 1);
+#
+#     return;
+# }
+# END
+
+SHADER vertex vert_shader SPIRV-ASM
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %position %ndx_out %_
+               OpDecorate %position Location 0
+               OpDecorate %ndx_out Flat
+               OpDecorate %ndx_out Location 0
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+   %position = OpVariable %_ptr_Input_v2float Input
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+    %float_1 = OpConstant %float 1
+     %uint_1 = OpConstant %uint 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+    %ndx_out = OpVariable %_ptr_Output_uint Output
+    %uint_36 = OpConstant %uint 36
+    %v4float = OpTypeVector %float 4
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_0 = OpConstant %float 0
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%float_1_02777779 = OpConstant %float 1.02777779
+   %float_18 = OpConstant %float 18
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %_ptr_Input_float %position %uint_0
+         %17 = OpLoad %float %16
+         %21 = OpFAdd %float %17 %float_1_02777779
+         %24 = OpFMul %float %21 %float_18
+         %25 = OpFSub %float %24 %float_1
+         %26 = OpConvertFToU %uint %25
+         %29 = OpAccessChain %_ptr_Input_float %position %uint_1
+         %30 = OpLoad %float %29
+         %32 = OpFAdd %float %30 %float_1_02777779
+         %34 = OpFMul %float %32 %float_18
+         %35 = OpFSub %float %34 %float_1
+         %36 = OpConvertFToU %uint %35
+         %42 = OpIMul %uint %36 %uint_36
+         %43 = OpIAdd %uint %26 %42
+               OpStore %ndx_out %43
+         %51 = OpLoad %v2float %position
+         %53 = OpCompositeExtract %float %51 0
+         %54 = OpCompositeExtract %float %51 1
+         %55 = OpCompositeConstruct %v4float %53 %54 %float_0 %float_1
+         %57 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %57 %55
+               OpReturn
+               OpFunctionEnd
+END
+
+# SHADER tessellation_control tesc_shader GLSL
+# #version 430
+# precision highp float;
+#
+# const uint ndp = 1296;
+#
+# layout (vertices = 3) out;
+#
+# layout (location = 0) flat in uint ndx_in[];
+# layout (location = 0) flat out float frexp_x_out[];
+# layout (location = 1) flat out float frexp_exp_out[];
+# layout (location = 2) flat out float frexpStruct_x_out[];
+# layout (location = 3) flat out float frexpStruct_exp_out[];
+#
+# layout(set = 0, binding = 0) readonly buffer block0 {
+#     uint in_values[ndp];
+# };
+#
+# struct frexpStructType
+# {
+#     float x;
+#     int exp;
+# };
+#
+# // Replaced with native function in SPIR-V.
+# frexpStructType frexpStruct (float orig)
+# {
+#     float x;
+#     int exp;
+#     x = frexp(orig, exp);
+#     frexpStructType res = { x, exp };
+#     return res;
+# }
+#
+# void main ()
+# {
+#     uint in_uint = in_values[ndx_in[gl_InvocationID]];
+#     float in_float = uintBitsToFloat(in_uint);
+#     float x;
+#     int exp;
+#     frexpStructType res;
+#
+#     x = frexp(in_float, exp);
+#     res = frexpStruct(in_float);
+#
+#     frexp_x_out[gl_InvocationID] = x;
+#     frexp_exp_out[gl_InvocationID] = intBitsToFloat(exp);
+#     frexpStruct_x_out[gl_InvocationID] = res.x;
+#     frexpStruct_exp_out[gl_InvocationID] = intBitsToFloat(res.exp);
+#
+#     gl_TessLevelInner[0] = 1.0;
+#     gl_TessLevelInner[1] = 1.0;
+#     gl_TessLevelOuter[0] = 1.0;
+#     gl_TessLevelOuter[1] = 1.0;
+#     gl_TessLevelOuter[2] = 1.0;
+#     gl_TessLevelOuter[3] = 1.0;
+#     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+# }
+# END
+
+SHADER tessellation_control tesc_shader SPIRV-ASM
+               OpCapability Tessellation
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %main "main" %ndx_in %gl_InvocationID %frexp_x_out %frexp_exp_out %frexpStruct_x_out %frexpStruct_exp_out %gl_TessLevelInner %gl_TessLevelOuter %gl_out %gl_in
+               OpExecutionMode %main OutputVertices 3
+               OpDecorate %_arr_uint_uint_1296 ArrayStride 4
+               OpMemberDecorate %block0 0 NonWritable
+               OpMemberDecorate %block0 0 Offset 0
+               OpDecorate %block0 BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %ndx_in Flat
+               OpDecorate %ndx_in Location 0
+               OpDecorate %gl_InvocationID BuiltIn InvocationId
+               OpDecorate %frexp_x_out Flat
+               OpDecorate %frexp_x_out Location 0
+               OpDecorate %frexp_exp_out Flat
+               OpDecorate %frexp_exp_out Location 1
+               OpDecorate %frexpStruct_x_out Flat
+               OpDecorate %frexpStruct_x_out Location 2
+               OpDecorate %frexpStruct_exp_out Flat
+               OpDecorate %frexpStruct_exp_out Location 3
+               OpDecorate %gl_TessLevelInner Patch
+               OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner
+               OpDecorate %gl_TessLevelOuter Patch
+               OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex Block
+               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex_0 Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+        %int = OpTypeInt 32 1
+%frexpStructType = OpTypeStruct %float %int
+         %10 = OpTypeFunction %frexpStructType %_ptr_Function_float
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Function_frexpStructType = OpTypePointer Function %frexpStructType
+       %uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+  %uint_1296 = OpConstant %uint 1296
+%_arr_uint_uint_1296 = OpTypeArray %uint %uint_1296
+     %block0 = OpTypeStruct %_arr_uint_uint_1296
+%_ptr_Uniform_block0 = OpTypePointer Uniform %block0
+          %_ = OpVariable %_ptr_Uniform_block0 Uniform
+      %int_0 = OpConstant %int 0
+    %uint_32 = OpConstant %uint 32
+%_arr_uint_uint_32 = OpTypeArray %uint %uint_32
+%_ptr_Input__arr_uint_uint_32 = OpTypePointer Input %_arr_uint_uint_32
+     %ndx_in = OpVariable %_ptr_Input__arr_uint_uint_32 Input
+%_ptr_Input_int = OpTypePointer Input %int
+%gl_InvocationID = OpVariable %_ptr_Input_int Input
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+     %uint_3 = OpConstant %uint 3
+%_arr_float_uint_3 = OpTypeArray %float %uint_3
+%_ptr_Output__arr_float_uint_3 = OpTypePointer Output %_arr_float_uint_3
+%frexp_x_out = OpVariable %_ptr_Output__arr_float_uint_3 Output
+%_ptr_Output_float = OpTypePointer Output %float
+%frexp_exp_out = OpVariable %_ptr_Output__arr_float_uint_3 Output
+%frexpStruct_x_out = OpVariable %_ptr_Output__arr_float_uint_3 Output
+%frexpStruct_exp_out = OpVariable %_ptr_Output__arr_float_uint_3 Output
+      %int_1 = OpConstant %int 1
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%_ptr_Output__arr_float_uint_2 = OpTypePointer Output %_arr_float_uint_2
+%gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output
+    %float_1 = OpConstant %float 1
+     %uint_4 = OpConstant %uint 4
+%_arr_float_uint_4 = OpTypeArray %float %uint_4
+%_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4
+%gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+    %v4float = OpTypeVector %float 4
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_arr_gl_PerVertex_uint_3 = OpTypeArray %gl_PerVertex %uint_3
+%_ptr_Output__arr_gl_PerVertex_uint_3 = OpTypePointer Output %_arr_gl_PerVertex_uint_3
+     %gl_out = OpVariable %_ptr_Output__arr_gl_PerVertex_uint_3 Output
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_arr_gl_PerVertex_0_uint_32 = OpTypeArray %gl_PerVertex_0 %uint_32
+%_ptr_Input__arr_gl_PerVertex_0_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_32
+      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_32 Input
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+    %in_uint = OpVariable %_ptr_Function_uint Function
+   %in_float = OpVariable %_ptr_Function_float Function
+        %x_0 = OpVariable %_ptr_Function_float Function
+      %exp_0 = OpVariable %_ptr_Function_int Function
+      %res_0 = OpVariable %_ptr_Function_frexpStructType Function
+         %42 = OpLoad %int %gl_InvocationID
+         %44 = OpAccessChain %_ptr_Input_uint %ndx_in %42
+         %45 = OpLoad %uint %44
+         %47 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %45
+         %48 = OpLoad %uint %47
+               OpStore %in_uint %48
+         %50 = OpLoad %uint %in_uint
+         %51 = OpBitcast %float %50
+               OpStore %in_float %51
+         %53 = OpLoad %float %in_float
+         %55 = OpExtInst %float %1 Frexp %53 %exp_0
+               OpStore %x_0 %55
+         %58 = OpLoad %float %in_float
+         %59 = OpExtInst %frexpStructType %1 FrexpStruct %58
+               OpStore %res_0 %59
+         %64 = OpLoad %int %gl_InvocationID
+         %65 = OpLoad %float %x_0
+         %67 = OpAccessChain %_ptr_Output_float %frexp_x_out %64
+               OpStore %67 %65
+         %69 = OpLoad %int %gl_InvocationID
+         %70 = OpLoad %int %exp_0
+         %71 = OpBitcast %float %70
+         %72 = OpAccessChain %_ptr_Output_float %frexp_exp_out %69
+               OpStore %72 %71
+         %74 = OpLoad %int %gl_InvocationID
+         %75 = OpAccessChain %_ptr_Function_float %res_0 %int_0
+         %76 = OpLoad %float %75
+         %77 = OpAccessChain %_ptr_Output_float %frexpStruct_x_out %74
+               OpStore %77 %76
+         %79 = OpLoad %int %gl_InvocationID
+         %81 = OpAccessChain %_ptr_Function_int %res_0 %int_1
+         %82 = OpLoad %int %81
+         %83 = OpBitcast %float %82
+         %84 = OpAccessChain %_ptr_Output_float %frexpStruct_exp_out %79
+               OpStore %84 %83
+         %90 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_0
+               OpStore %90 %float_1
+         %91 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_1
+               OpStore %91 %float_1
+         %96 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_0
+               OpStore %96 %float_1
+         %97 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_1
+               OpStore %97 %float_1
+         %99 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_2
+               OpStore %99 %float_1
+        %101 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_3
+               OpStore %101 %float_1
+        %109 = OpLoad %int %gl_InvocationID
+        %114 = OpLoad %int %gl_InvocationID
+        %116 = OpAccessChain %_ptr_Input_v4float %gl_in %114 %int_0
+        %117 = OpLoad %v4float %116
+        %119 = OpAccessChain %_ptr_Output_v4float %gl_out %109 %int_0
+               OpStore %119 %117
+               OpReturn
+               OpFunctionEnd
+END
+
+# SHADER tessellation_evaluation tese_shader GLSL
+# #version 430
+# precision highp float;
+#
+# layout (triangles) in;
+#
+# layout (location = 0) flat in float frexp_x_in[];
+# layout (location = 1) flat in float frexp_exp_in[];
+# layout (location = 2) flat in float frexpStruct_x_in[];
+# layout (location = 3) flat in float frexpStruct_exp_in[];
+#
+# layout (location = 0) flat out float frexp_x_out;
+# layout (location = 1) flat out float frexp_exp_out;
+# layout (location = 2) flat out float frexpStruct_x_out;
+# layout (location = 3) flat out float frexpStruct_exp_out;
+#
+# void main ()
+# {
+#     gl_Position = gl_TessCoord.x * gl_in[0].gl_Position +
+#                   gl_TessCoord.y * gl_in[1].gl_Position +
+#                   gl_TessCoord.z * gl_in[2].gl_Position;
+#
+#     frexp_x_out = frexp_x_in[0];
+#     frexp_exp_out = frexp_exp_in[0];
+#     frexpStruct_x_out = frexpStruct_x_in[0];
+#     frexpStruct_exp_out = frexpStruct_exp_in[0];
+# }
+# END
+
+SHADER tessellation_evaluation tese_shader SPIRV-ASM
+               OpCapability Tessellation
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationEvaluation %main "main" %_ %gl_TessCoord %gl_in %frexp_x_out %frexp_x_in %frexp_exp_out %frexp_exp_in %frexpStruct_x_out %frexpStruct_x_in %frexpStruct_exp_out %frexpStruct_exp_in
+               OpExecutionMode %main Triangles
+               OpExecutionMode %main SpacingEqual
+               OpExecutionMode %main VertexOrderCcw
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex Block
+               OpDecorate %gl_TessCoord BuiltIn TessCoord
+               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
+               OpDecorate %gl_PerVertex_0 Block
+               OpDecorate %frexp_x_out Flat
+               OpDecorate %frexp_x_out Location 0
+               OpDecorate %frexp_x_in Flat
+               OpDecorate %frexp_x_in Location 0
+               OpDecorate %frexp_exp_out Flat
+               OpDecorate %frexp_exp_out Location 1
+               OpDecorate %frexp_exp_in Flat
+               OpDecorate %frexp_exp_in Location 1
+               OpDecorate %frexpStruct_x_out Flat
+               OpDecorate %frexpStruct_x_out Location 2
+               OpDecorate %frexpStruct_x_in Flat
+               OpDecorate %frexpStruct_x_in Location 2
+               OpDecorate %frexpStruct_exp_out Flat
+               OpDecorate %frexpStruct_exp_out Location 3
+               OpDecorate %frexpStruct_exp_in Flat
+               OpDecorate %frexpStruct_exp_in Location 3
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %v3float = OpTypeVector %float 3
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+%gl_TessCoord = OpVariable %_ptr_Input_v3float Input
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1
+    %uint_32 = OpConstant %uint 32
+%_arr_gl_PerVertex_0_uint_32 = OpTypeArray %gl_PerVertex_0 %uint_32
+%_ptr_Input__arr_gl_PerVertex_0_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_0_uint_32
+      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_0_uint_32 Input
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+      %int_1 = OpConstant %int 1
+     %uint_2 = OpConstant %uint 2
+      %int_2 = OpConstant %int 2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Output_float = OpTypePointer Output %float
+%frexp_x_out = OpVariable %_ptr_Output_float Output
+%_arr_float_uint_32 = OpTypeArray %float %uint_32
+%_ptr_Input__arr_float_uint_32 = OpTypePointer Input %_arr_float_uint_32
+ %frexp_x_in = OpVariable %_ptr_Input__arr_float_uint_32 Input
+%frexp_exp_out = OpVariable %_ptr_Output_float Output
+%frexp_exp_in = OpVariable %_ptr_Input__arr_float_uint_32 Input
+%frexpStruct_x_out = OpVariable %_ptr_Output_float Output
+%frexpStruct_x_in = OpVariable %_ptr_Input__arr_float_uint_32 Input
+%frexpStruct_exp_out = OpVariable %_ptr_Output_float Output
+%frexpStruct_exp_in = OpVariable %_ptr_Input__arr_float_uint_32 Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %21 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_0
+         %22 = OpLoad %float %21
+         %29 = OpAccessChain %_ptr_Input_v4float %gl_in %int_0 %int_0
+         %30 = OpLoad %v4float %29
+         %31 = OpVectorTimesScalar %v4float %30 %22
+         %32 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_1
+         %33 = OpLoad %float %32
+         %35 = OpAccessChain %_ptr_Input_v4float %gl_in %int_1 %int_0
+         %36 = OpLoad %v4float %35
+         %37 = OpVectorTimesScalar %v4float %36 %33
+         %38 = OpFAdd %v4float %31 %37
+         %40 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_2
+         %41 = OpLoad %float %40
+         %43 = OpAccessChain %_ptr_Input_v4float %gl_in %int_2 %int_0
+         %44 = OpLoad %v4float %43
+         %45 = OpVectorTimesScalar %v4float %44 %41
+         %46 = OpFAdd %v4float %38 %45
+         %48 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %48 %46
+         %54 = OpAccessChain %_ptr_Input_float %frexp_x_in %int_0
+         %55 = OpLoad %float %54
+               OpStore %frexp_x_out %55
+         %58 = OpAccessChain %_ptr_Input_float %frexp_exp_in %int_0
+         %59 = OpLoad %float %58
+               OpStore %frexp_exp_out %59
+         %62 = OpAccessChain %_ptr_Input_float %frexpStruct_x_in %int_0
+         %63 = OpLoad %float %62
+               OpStore %frexpStruct_x_out %63
+         %66 = OpAccessChain %_ptr_Input_float %frexpStruct_exp_in %int_0
+         %67 = OpLoad %float %66
+               OpStore %frexpStruct_exp_out %67
+               OpReturn
+               OpFunctionEnd
+END
+
+# SHADER fragment frag_shader GLSL
+# #version 430
+# precision highp float;
+#
+# layout (location = 0) flat in float frexp_x_in;
+# layout (location = 1) flat in float frexp_exp_in;
+# layout (location = 2) flat in float frexpStruct_x_in;
+# layout (location = 3) flat in float frexpStruct_exp_in;
+#
+# layout (location = 0) out vec4 frexp_x_out;
+# layout (location = 1) out vec4 frexp_exp_out;
+# layout (location = 2) out vec4 frexpStruct_x_out;
+# layout (location = 3) out vec4 frexpStruct_exp_out;
+#
+# const vec4 clear_value = vec4(0.0, 0.0, 0.0, 1.0);
+#
+# void main ()
+# {
+#     frexp_x_out = clear_value;
+#     frexp_exp_out = clear_value;
+#     frexpStruct_x_out = clear_value;
+#     frexpStruct_exp_out = clear_value;
+#     frexp_x_out.r = frexp_x_in;
+#     frexp_exp_out.r = frexp_exp_in;
+#     frexpStruct_x_out.r = frexpStruct_x_in;
+#     frexpStruct_exp_out.r = frexpStruct_exp_in;
+# }
+# END
+
+SHADER fragment frag_shader SPIRV-ASM
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %frexp_x_out %frexp_exp_out %frexpStruct_x_out %frexpStruct_exp_out %frexp_x_in %frexp_exp_in %frexpStruct_x_in %frexpStruct_exp_in
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %frexp_x_out Location 0
+               OpDecorate %frexp_exp_out Location 1
+               OpDecorate %frexpStruct_x_out Location 2
+               OpDecorate %frexpStruct_exp_out Location 3
+               OpDecorate %frexp_x_in Flat
+               OpDecorate %frexp_x_in Location 0
+               OpDecorate %frexp_exp_in Flat
+               OpDecorate %frexp_exp_in Location 1
+               OpDecorate %frexpStruct_x_in Flat
+               OpDecorate %frexpStruct_x_in Location 2
+               OpDecorate %frexpStruct_exp_in Flat
+               OpDecorate %frexpStruct_exp_in Location 3
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%frexp_x_out = OpVariable %_ptr_Output_v4float Output
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+         %12 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
+%frexp_exp_out = OpVariable %_ptr_Output_v4float Output
+%frexpStruct_x_out = OpVariable %_ptr_Output_v4float Output
+%frexpStruct_exp_out = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_float = OpTypePointer Input %float
+ %frexp_x_in = OpVariable %_ptr_Input_float Input
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%_ptr_Output_float = OpTypePointer Output %float
+%frexp_exp_in = OpVariable %_ptr_Input_float Input
+%frexpStruct_x_in = OpVariable %_ptr_Input_float Input
+%frexpStruct_exp_in = OpVariable %_ptr_Input_float Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %frexp_x_out %12
+               OpStore %frexp_exp_out %12
+               OpStore %frexpStruct_x_out %12
+               OpStore %frexpStruct_exp_out %12
+         %18 = OpLoad %float %frexp_x_in
+         %22 = OpAccessChain %_ptr_Output_float %frexp_x_out %uint_0
+               OpStore %22 %18
+         %24 = OpLoad %float %frexp_exp_in
+         %25 = OpAccessChain %_ptr_Output_float %frexp_exp_out %uint_0
+               OpStore %25 %24
+         %27 = OpLoad %float %frexpStruct_x_in
+         %28 = OpAccessChain %_ptr_Output_float %frexpStruct_x_out %uint_0
+               OpStore %28 %27
+         %30 = OpLoad %float %frexpStruct_exp_in
+         %31 = OpAccessChain %_ptr_Output_float %frexpStruct_exp_out %uint_0
+               OpStore %31 %30
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER buf_in DATA_TYPE uint32 SIZE 1296 FILE TEXT input.txt
+BUFFER vertices DATA_TYPE vec2<float> SIZE 7776 FILE TEXT grid_vertices.txt
+
+BUFFER frexp_x FORMAT R32G32B32A32_SFLOAT
+BUFFER frexp_exp FORMAT R32G32B32A32_SFLOAT
+BUFFER frexpStruct_x FORMAT R32G32B32A32_SFLOAT
+BUFFER frexpStruct_exp FORMAT R32G32B32A32_SFLOAT
+
+PIPELINE graphics test_pipeline
+    FRAMEBUFFER_SIZE 144 144
+
+    ATTACH vert_shader
+    ATTACH tesc_shader
+    ATTACH tese_shader
+    ATTACH frag_shader
+
+    VERTEX_DATA vertices LOCATION 0
+
+    BIND BUFFER buf_in AS storage DESCRIPTOR_SET 0 BINDING 0
+    BIND BUFFER frexp_x AS color LOCATION 0
+    BIND BUFFER frexp_exp AS color LOCATION 1
+    BIND BUFFER frexpStruct_x AS color LOCATION 2
+    BIND BUFFER frexpStruct_exp AS color LOCATION 3
+END
+
+#RUN test_pipeline DRAW_GRID POS 0 0 SIZE 144 144 CELLS 144 144
+RUN test_pipeline DRAW_ARRAY AS PATCH_LIST START_IDX 0 COUNT 7776
+
+EXPECT frexp_x EQ_BUFFER frexpStruct_x
+EXPECT frexp_exp EQ_BUFFER frexpStruct_exp

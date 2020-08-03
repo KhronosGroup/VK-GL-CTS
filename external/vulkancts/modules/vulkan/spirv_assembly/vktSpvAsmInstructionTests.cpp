@@ -18801,7 +18801,8 @@ tcu::TestCaseGroup* createFloat32ComparisonComputeSet (tcu::TestContext& testCtx
 
 	const ComparisonCase			amberTests[]	=
 	{
-		{ "modfstruct",	"modf and modfStruct" }
+		{ "modfstruct",		"modf and modfStruct"	},
+		{ "frexpstruct",	"frexp and frexpStruct"	}
 	};
 
 	for (ComparisonCase test : amberTests)
@@ -18843,7 +18844,8 @@ tcu::TestCaseGroup* createFloat32ComparisonGraphicsSet (tcu::TestContext& testCt
 
 	const ComparisonCase			amberTests[]	=
 	{
-		{ "modfstruct",	"modf and modfStruct" }
+		{ "modfstruct",		"modf and modfStruct"	},
+		{ "frexpstruct",	"frexp and frexpStruct"	}
 	};
 
 	for (ComparisonCase test : amberTests)

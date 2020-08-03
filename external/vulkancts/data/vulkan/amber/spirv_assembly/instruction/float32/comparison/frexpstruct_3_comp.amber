@@ -1,0 +1,215 @@
+#!amber
+
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A compute shader test for FrexpStruct.
+
+# SHADER compute comp_shader GLSL
+# #version 430
+# precision highp float;
+#
+# const uint ndp = 1296 / 3;
+# const uint half_ndp = ndp / 2;
+#
+# layout(set = 0, binding = 0) readonly buffer block0 {
+#     uvec3 in_values[half_ndp];
+# };
+#
+# layout(set = 0, binding = 1) buffer block1 {
+#     vec3 frexp_out[ndp];
+# };
+#
+# layout(set = 0, binding = 2) buffer block2 {
+#     vec3 frexpStruct_out[ndp];
+# };
+#
+# struct frexpStructType
+# {
+#     vec3 x;
+#     ivec3 exp;
+# };
+#
+# // Replaced with native function in SPIR-V.
+# frexpStructType frexpStruct (vec3 orig)
+# {
+#     vec3 x;
+#     ivec3 exp;
+#     x = frexp(orig, exp);
+#     frexpStructType res = { x, exp };
+#     return res;
+# }
+#
+# void main ()
+# {
+#     for (uint ndx = 0; ndx < ndp; ndx += 2)
+#     {
+#         uvec3 in_uint = in_values[ndx/2];
+#         vec3 in_float = uintBitsToFloat(in_uint);
+#         vec3 x;
+#         ivec3 exp;
+#
+#         x = frexp(in_float, exp);
+#         frexpStructType res = frexpStruct(in_float);
+#
+#         frexp_out[ndx] = intBitsToFloat(exp);
+#         frexp_out[ndx+1] = x;
+#         frexpStruct_out[ndx] = intBitsToFloat(res.exp);
+#         frexpStruct_out[ndx+1] = res.x;
+#     }
+#
+#     return;
+# }
+# END
+
+SHADER compute comp_shader SPIRV-ASM
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_arr_v3uint_uint_216 ArrayStride 16
+               OpMemberDecorate %block0 0 NonWritable
+               OpMemberDecorate %block0 0 Offset 0
+               OpDecorate %block0 BufferBlock
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_arr_v3float_uint_432 ArrayStride 16
+               OpMemberDecorate %block1 0 Offset 0
+               OpDecorate %block1 BufferBlock
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 1
+               OpDecorate %_arr_v3float_uint_432_0 ArrayStride 16
+               OpMemberDecorate %block2 0 Offset 0
+               OpDecorate %block2 BufferBlock
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %__1 Binding 2
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+        %int = OpTypeInt 32 1
+      %v3int = OpTypeVector %int 3
+%frexpStructType = OpTypeStruct %v3float %v3int
+         %12 = OpTypeFunction %frexpStructType %_ptr_Function_v3float
+%_ptr_Function_v3int = OpTypePointer Function %v3int
+%_ptr_Function_frexpStructType = OpTypePointer Function %frexpStructType
+       %uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_0 = OpConstant %uint 0
+   %uint_432 = OpConstant %uint 432
+       %bool = OpTypeBool
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+   %uint_216 = OpConstant %uint 216
+%_arr_v3uint_uint_216 = OpTypeArray %v3uint %uint_216
+     %block0 = OpTypeStruct %_arr_v3uint_uint_216
+%_ptr_Uniform_block0 = OpTypePointer Uniform %block0
+          %_ = OpVariable %_ptr_Uniform_block0 Uniform
+      %int_0 = OpConstant %int 0
+     %uint_2 = OpConstant %uint 2
+%_ptr_Uniform_v3uint = OpTypePointer Uniform %v3uint
+%_arr_v3float_uint_432 = OpTypeArray %v3float %uint_432
+     %block1 = OpTypeStruct %_arr_v3float_uint_432
+%_ptr_Uniform_block1 = OpTypePointer Uniform %block1
+        %__0 = OpVariable %_ptr_Uniform_block1 Uniform
+%_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
+     %uint_1 = OpConstant %uint 1
+%_arr_v3float_uint_432_0 = OpTypeArray %v3float %uint_432
+     %block2 = OpTypeStruct %_arr_v3float_uint_432_0
+%_ptr_Uniform_block2 = OpTypePointer Uniform %block2
+        %__1 = OpVariable %_ptr_Uniform_block2 Uniform
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+        %ndx = OpVariable %_ptr_Function_uint Function
+    %in_uint = OpVariable %_ptr_Function_v3uint Function
+   %in_float = OpVariable %_ptr_Function_v3float Function
+        %x_0 = OpVariable %_ptr_Function_v3float Function
+      %exp_0 = OpVariable %_ptr_Function_v3int Function
+      %res_0 = OpVariable %_ptr_Function_frexpStructType Function
+               OpStore %ndx %uint_0
+               OpBranch %33
+         %33 = OpLabel
+               OpLoopMerge %35 %36 None
+               OpBranch %37
+         %37 = OpLabel
+         %38 = OpLoad %uint %ndx
+         %41 = OpULessThan %bool %38 %uint_432
+               OpBranchConditional %41 %34 %35
+         %34 = OpLabel
+         %51 = OpLoad %uint %ndx
+         %53 = OpUDiv %uint %51 %uint_2
+         %55 = OpAccessChain %_ptr_Uniform_v3uint %_ %int_0 %53
+         %56 = OpLoad %v3uint %55
+               OpStore %in_uint %56
+         %58 = OpLoad %v3uint %in_uint
+         %59 = OpBitcast %v3float %58
+               OpStore %in_float %59
+         %61 = OpLoad %v3float %in_float
+         %63 = OpExtInst %v3float %1 Frexp %61 %exp_0
+               OpStore %x_0 %63
+         %66 = OpLoad %v3float %in_float
+         %67 = OpExtInst %frexpStructType %1 FrexpStruct %66
+               OpStore %res_0 %67
+         %72 = OpLoad %uint %ndx
+         %73 = OpLoad %v3int %exp_0
+         %74 = OpBitcast %v3float %73
+         %76 = OpAccessChain %_ptr_Uniform_v3float %__0 %int_0 %72
+               OpStore %76 %74
+         %77 = OpLoad %uint %ndx
+         %79 = OpIAdd %uint %77 %uint_1
+         %80 = OpLoad %v3float %x_0
+         %81 = OpAccessChain %_ptr_Uniform_v3float %__0 %int_0 %79
+               OpStore %81 %80
+         %86 = OpLoad %uint %ndx
+         %88 = OpAccessChain %_ptr_Function_v3int %res_0 %int_1
+         %89 = OpLoad %v3int %88
+         %90 = OpBitcast %v3float %89
+         %91 = OpAccessChain %_ptr_Uniform_v3float %__1 %int_0 %86
+               OpStore %91 %90
+         %92 = OpLoad %uint %ndx
+         %93 = OpIAdd %uint %92 %uint_1
+         %94 = OpAccessChain %_ptr_Function_v3float %res_0 %int_0
+         %95 = OpLoad %v3float %94
+         %96 = OpAccessChain %_ptr_Uniform_v3float %__1 %int_0 %93
+               OpStore %96 %95
+               OpBranch %36
+         %36 = OpLabel
+         %97 = OpLoad %uint %ndx
+         %98 = OpIAdd %uint %97 %uint_2
+               OpStore %ndx %98
+               OpBranch %33
+         %35 = OpLabel
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER buf_in DATA_TYPE uint32 SIZE 1296 FILE TEXT input.txt
+
+BUFFER buf_frexp DATA_TYPE vec3<float> SIZE 432 FILL 0.0
+BUFFER buf_frexpStruct DATA_TYPE vec3<float> SIZE 432 FILL 1.0
+
+PIPELINE compute test_pipeline
+    ATTACH comp_shader
+
+    BIND BUFFER buf_in AS storage DESCRIPTOR_SET 0 BINDING 0
+    BIND BUFFER buf_frexp AS storage DESCRIPTOR_SET 0 BINDING 1
+    BIND BUFFER buf_frexpStruct AS storage DESCRIPTOR_SET 0 BINDING 2
+END
+
+RUN test_pipeline 1 1 1
+
+EXPECT buf_frexp EQ_BUFFER buf_frexpStruct
