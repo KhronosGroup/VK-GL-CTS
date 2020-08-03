@@ -562,6 +562,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
 		default:																				return DE_NULL;
@@ -938,6 +939,8 @@ const char* getFormatName (VkFormat value)
 		case VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK_EXT";
 		case VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK_EXT";
 		case VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT:					return "VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK_EXT";
+		case VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT:					return "VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT";
+		case VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT:					return "VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT";
 		case VK_FORMAT_MAX_ENUM:									return "VK_FORMAT_MAX_ENUM";
 		default:													return DE_NULL;
 	}
@@ -9648,6 +9651,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageRobustness
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustImageAccess = " << value.robustImageAccess << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value)
+{
+	s << "VkPhysicalDevice4444FormatsFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformatA4R4G4B4 = " << value.formatA4R4G4B4 << '\n';
+	s << "\tformatA4B4G4R4 = " << value.formatA4B4G4R4 << '\n';
 	s << '}';
 	return s;
 }

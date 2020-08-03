@@ -2,6 +2,7 @@
  * be lost! Modify the generating script instead.
  */
 const vk::VkPhysicalDevice16BitStorageFeatures&							Context::get16BitStorageFeatures						(void) const { return m_device->get16BitStorageFeatures();						}
+const vk::VkPhysicalDevice4444FormatsFeaturesEXT&						Context::get4444FormatsFeaturesEXT						(void) const { return m_device->get4444FormatsFeaturesEXT();					}
 const vk::VkPhysicalDevice8BitStorageFeatures&							Context::get8BitStorageFeatures							(void) const { return m_device->get8BitStorageFeatures();						}
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						Context::getASTCDecodeFeaturesEXT						(void) const { return m_device->getASTCDecodeFeaturesEXT();						}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlendOperationAdvancedFeaturesEXT			(void) const { return m_device->getBlendOperationAdvancedFeaturesEXT();			}
