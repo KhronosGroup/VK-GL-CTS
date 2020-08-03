@@ -2431,6 +2431,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	};
 	vk::Move<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutParams));
 
+	m_context.getTestContext().touchWatchdogAndDisableIntervalTimeLimit();
+
 	vk::Move<vk::VkShaderModule> shaderModule (createShaderModule(vk, device, m_context.getBinaryCollection().get("compute"), 0));
 	const vk::VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
@@ -2453,6 +2455,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		0,													// deInt32							basePipelineIndex;
 	};
 	vk::Move<vk::VkPipeline> pipeline(createComputePipeline(vk, device, DE_NULL, &pipelineCreateInfo));
+
+	m_context.getTestContext().touchWatchdogAndEnableIntervalTimeLimit();
 
 	vk::Move<vk::VkCommandPool> cmdPool (createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	vk::Move<vk::VkCommandBuffer> cmdBuffer (allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));

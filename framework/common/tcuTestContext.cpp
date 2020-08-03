@@ -58,6 +58,18 @@ void TestContext::touchWatchdog (void)
 		qpWatchDog_touch(m_watchDog);
 }
 
+void TestContext::touchWatchdogAndDisableIntervalTimeLimit (void)
+{
+	if (m_watchDog)
+		qpWatchDog_touchAndDisableIntervalTimeLimit(m_watchDog);
+}
+
+void TestContext::touchWatchdogAndEnableIntervalTimeLimit (void)
+{
+	if (m_watchDog)
+		qpWatchDog_touchAndEnableIntervalTimeLimit(m_watchDog);
+}
+
 void TestContext::setTestResult (qpTestResult testResult, const char* description)
 {
 	m_testResult		= testResult;
