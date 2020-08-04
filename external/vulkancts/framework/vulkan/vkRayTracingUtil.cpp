@@ -112,134 +112,150 @@ RaytracedGeometryBase::RaytracedGeometryBase (VkGeometryTypeKHR geometryType, Vk
 	, m_indexType		(indexType)
 	, m_geometryFlags	((VkGeometryFlagsKHR)0u)
 {
+	if (m_geometryType == VK_GEOMETRY_TYPE_AABBS_KHR)
+		DE_ASSERT(m_vertexFormat == VK_FORMAT_R32G32B32_SFLOAT);
 }
 
 RaytracedGeometryBase::~RaytracedGeometryBase ()
 {
 }
 
-de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR geometryType, VkFormat vertexFormat, VkIndexType indexType)
+struct GeometryBuilderParams
 {
+	VkGeometryTypeKHR	geometryType;
+	bool				usePadding;
+};
+
+template <typename V, typename I>
+RaytracedGeometryBase* buildRaytracedGeometry (const GeometryBuilderParams& params)
+{
+	return new RaytracedGeometry<V, I>(params.geometryType, (params.usePadding ? 1u : 0u));
+}
+
+de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR geometryType, VkFormat vertexFormat, VkIndexType indexType, bool padVertices)
+{
+	const GeometryBuilderParams builderParams { geometryType, padVertices };
+
 	switch (vertexFormat)
 	{
 		case VK_FORMAT_R32G32_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec2, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec2, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec2, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec2, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec2, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec2, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R32G32B32_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec3, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec3, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec3, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec3, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec3, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec3, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R32G32B32A32_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec4, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec4, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::Vec4, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec4, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec4, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::Vec4, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R16G16_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_16, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_16, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_16, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R16G16B16_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_16, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_16, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_16, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R16G16B16A16_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_16, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_16, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_16, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R16G16_SNORM:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_16SNorm, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_16SNorm, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_16SNorm, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16SNorm, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16SNorm, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_16SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R16G16B16_SNORM:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_16SNorm, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_16SNorm, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_16SNorm, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16SNorm, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16SNorm, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_16SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R16G16B16A16_SNORM:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_16SNorm, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_16SNorm, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_16SNorm, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16SNorm, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16SNorm, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_16SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R64G64_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec2, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec2, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec2, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec2, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec2, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec2, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R64G64B64_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec3, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec3, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec3, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec3, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec3, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec3, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R64G64B64A64_SFLOAT:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec4, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec4, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<tcu::DVec4, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec4, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec4, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<tcu::DVec4, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R8G8_SNORM:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_8SNorm, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_8SNorm, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec2_8SNorm, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_8SNorm, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_8SNorm, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec2_8SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R8G8B8_SNORM:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_8SNorm, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_8SNorm, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec3_8SNorm, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_8SNorm, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_8SNorm, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec3_8SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		case VK_FORMAT_R8G8B8A8_SNORM:
 			switch (indexType)
 			{
-				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_8SNorm, deUint16>(geometryType));
-				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_8SNorm, deUint32>(geometryType));
-				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(new RaytracedGeometry<Vec4_8SNorm, EmptyIndex>(geometryType));
+				case VK_INDEX_TYPE_UINT16:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, deUint16>(builderParams));
+				case VK_INDEX_TYPE_UINT32:		return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, deUint32>(builderParams));
+				case VK_INDEX_TYPE_NONE_KHR:	return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, EmptyIndex>(builderParams));
 				default:						TCU_THROW(InternalError, "Wrong index type");
 			};
 		default:

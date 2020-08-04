@@ -95,8 +95,8 @@ public:
 	virtual deUint32			getVertexCount					(void) const								= 0;
 	virtual const deUint8*		getVertexPointer				(void) const								= 0;
 	virtual VkDeviceSize		getVertexStride					(void) const								= 0;
-	virtual size_t				getVertexByteSize				(void) const								= 0;
 	virtual VkDeviceSize		getAABBStride					(void) const								= 0;
+	virtual size_t				getVertexByteSize				(void) const								= 0;
 	virtual deUint32			getIndexCount					(void) const								= 0;
 	virtual const deUint8*		getIndexPointer					(void) const								= 0;
 	virtual VkDeviceSize		getIndexStride					(void) const								= 0;
@@ -211,14 +211,14 @@ class RaytracedGeometry : public RaytracedGeometryBase
 public:
 						RaytracedGeometry			()									= delete;
 						RaytracedGeometry			(const RaytracedGeometry& geometry)	= delete;
-						RaytracedGeometry			(VkGeometryTypeKHR geometryType);
-						RaytracedGeometry			(VkGeometryTypeKHR geometryType, const std::vector<V>& vertices, const std::vector<I>& indices = std::vector<I>());
+						RaytracedGeometry			(VkGeometryTypeKHR geometryType, deUint32 paddingBlocks = 0u);
+						RaytracedGeometry			(VkGeometryTypeKHR geometryType, const std::vector<V>& vertices, const std::vector<I>& indices = std::vector<I>(), deUint32 paddingBlocks = 0u);
 
 	deUint32			getVertexCount				(void) const override;
 	const deUint8*		getVertexPointer			(void) const override;
 	VkDeviceSize		getVertexStride				(void) const override;
-	size_t				getVertexByteSize			(void) const override;
 	VkDeviceSize		getAABBStride				(void) const override;
+	size_t				getVertexByteSize			(void) const override;
 	deUint32			getIndexCount				(void) const override;
 	const deUint8*		getIndexPointer				(void) const override;
 	VkDeviceSize		getIndexStride				(void) const override;
@@ -227,53 +227,105 @@ public:
 
 	void				addVertex					(const tcu::Vec3& vertex) override;
 	void				addIndex					(const deUint32& index) override;
+
 private:
-	std::vector<V>		m_vertices;
-	std::vector<I>		m_indices;
+	void				init						();					// To be run in constructors.
+	void				checkGeometryType			() const;			// Checks geometry type is valid.
+	void				calcBlockSize				();					// Calculates and saves vertex buffer block size.
+	size_t				getBlockSize				() const;			// Return stored vertex buffer block size.
+	void				addNativeVertex				(const V& vertex);	// Adds new vertex in native format.
+
+	// The implementation below stores vertices as byte blocks to take the requested padding into account. m_vertices is the array
+	// of bytes containing vertex data.
+	//
+	// For triangles, the padding block has a size that is a multiple of the vertex size and each vertex is stored in a byte block
+	// equivalent to:
+	//
+	//	struct Vertex
+	//	{
+	//		V		vertex;
+	//		deUint8	padding[m_paddingBlocks * sizeof(V)];
+	//	};
+	//
+	// For AABBs, the padding block has a size that is a multiple of kAABBPadBaseSize (see below) and vertices are stored in pairs
+	// before the padding block. This is equivalent to:
+	//
+	//		struct VertexPair
+	//		{
+	//			V		vertices[2];
+	//			deUint8	padding[m_paddingBlocks * kAABBPadBaseSize];
+	//		};
+	//
+	// The size of each pseudo-structure above is saved to one of the correspoding union members below.
+	union BlockSize
+	{
+		size_t trianglesBlockSize;
+		size_t aabbsBlockSize;
+	};
+
+	const deUint32			m_paddingBlocks;
+	size_t					m_vertexCount;
+	std::vector<deUint8>	m_vertices;			// Vertices are stored as byte blocks.
+	std::vector<I>			m_indices;			// Indices are stored natively.
+	BlockSize				m_blockSize;		// For m_vertices.
+
+	// Data sizes.
+	static constexpr size_t	kVertexSize			= sizeof(V);
+	static constexpr size_t	kIndexSize			= sizeof(I);
+	static constexpr size_t	kAABBPadBaseSize	= 8; // As required by the spec.
 };
 
 template<typename V, typename I>
-RaytracedGeometry<V, I>::RaytracedGeometry (VkGeometryTypeKHR geometryType)
+RaytracedGeometry<V, I>::RaytracedGeometry (VkGeometryTypeKHR geometryType, deUint32 paddingBlocks)
 	: RaytracedGeometryBase(geometryType, vertexFormatFromType<V>(), indexTypeFromType<I>())
+	, m_paddingBlocks(paddingBlocks)
+	, m_vertexCount(0)
 {
+	init();
 }
 
 template<typename V, typename I>
-RaytracedGeometry<V,I>::RaytracedGeometry (VkGeometryTypeKHR geometryType, const std::vector<V>& vertices, const std::vector<I>& indices)
+RaytracedGeometry<V,I>::RaytracedGeometry (VkGeometryTypeKHR geometryType, const std::vector<V>& vertices, const std::vector<I>& indices, deUint32 paddingBlocks)
 	: RaytracedGeometryBase(geometryType, vertexFormatFromType<V>(), indexTypeFromType<I>())
-	, m_vertices(vertices)
+	, m_paddingBlocks(paddingBlocks)
+	, m_vertexCount(0)
+	, m_vertices()
 	, m_indices(indices)
 {
+	init();
+	for (const auto& vertex : vertices)
+		addNativeVertex(vertex);
 }
 
 template<typename V, typename I>
 deUint32 RaytracedGeometry<V,I>::getVertexCount (void) const
 {
-	return static_cast<deUint32>( isTrianglesType() ? m_vertices.size() : 0);
+	return (isTrianglesType() ? static_cast<deUint32>(m_vertexCount) : 0u);
 }
 
 template<typename V, typename I>
 const deUint8* RaytracedGeometry<V, I>::getVertexPointer (void) const
 {
-	return reinterpret_cast<const deUint8*>(m_vertices.empty() ? DE_NULL : m_vertices.data());
+	DE_ASSERT(!m_vertices.empty());
+	return reinterpret_cast<const deUint8*>(m_vertices.data());
 }
 
 template<typename V, typename I>
 VkDeviceSize RaytracedGeometry<V,I>::getVertexStride (void) const
 {
-	return static_cast<VkDeviceSize>(sizeof(V));
+	return ((!isTrianglesType()) ? 0ull : static_cast<VkDeviceSize>(getBlockSize()));
 }
 
 template<typename V, typename I>
 VkDeviceSize RaytracedGeometry<V, I>::getAABBStride (void) const
 {
-	return static_cast<VkDeviceSize>(2 * sizeof(V));
+	return (isTrianglesType() ? 0ull : static_cast<VkDeviceSize>(getBlockSize()));
 }
 
 template<typename V, typename I>
 size_t RaytracedGeometry<V, I>::getVertexByteSize (void) const
 {
-	return static_cast<size_t>(m_vertices.size() * sizeof(V));
+	return m_vertices.size();
 }
 
 template<typename V, typename I>
@@ -285,31 +337,79 @@ deUint32 RaytracedGeometry<V, I>::getIndexCount (void) const
 template<typename V, typename I>
 const deUint8* RaytracedGeometry<V, I>::getIndexPointer (void) const
 {
-	return reinterpret_cast<const deUint8*>(m_indices.empty() ? DE_NULL : m_indices.data());
+	const auto indexCount = getIndexCount();
+	DE_UNREF(indexCount); // For release builds.
+	DE_ASSERT(indexCount > 0u);
+
+	return reinterpret_cast<const deUint8*>(m_indices.data());
 }
 
 template<typename V, typename I>
 VkDeviceSize RaytracedGeometry<V, I>::getIndexStride (void) const
 {
-	return static_cast<VkDeviceSize>(sizeof(I));
+	return static_cast<VkDeviceSize>(kIndexSize);
 }
 
 template<typename V, typename I>
 size_t RaytracedGeometry<V, I>::getIndexByteSize (void) const
 {
-	return static_cast<size_t>(m_indices.size() * sizeof(I));
+	const auto indexCount = getIndexCount();
+	DE_ASSERT(indexCount > 0u);
+
+	return (indexCount * kIndexSize);
 }
 
 template<typename V, typename I>
 deUint32 RaytracedGeometry<V,I>::getPrimitiveCount (void) const
 {
-	return static_cast<deUint32>(isTrianglesType() ? (usesIndices() ? m_indices.size() / 3 : m_vertices.size() / 3) : (m_vertices.size() / 2));
+	return static_cast<deUint32>(isTrianglesType() ? (usesIndices() ? m_indices.size() / 3 : m_vertexCount / 3) : (m_vertexCount / 2));
 }
 
 template<typename V, typename I>
 void RaytracedGeometry<V, I>::addVertex (const tcu::Vec3& vertex)
 {
-	m_vertices.push_back(convertFloatTo<V>(vertex));
+	addNativeVertex(convertFloatTo<V>(vertex));
+}
+
+template<typename V, typename I>
+void RaytracedGeometry<V, I>::addNativeVertex (const V& vertex)
+{
+	const auto oldSize			= m_vertices.size();
+	const auto blockSize		= getBlockSize();
+
+	if (isTrianglesType())
+	{
+		// Reserve new block, copy vertex at the beginning of the new block.
+		m_vertices.resize(oldSize + blockSize, deUint8{0});
+		deMemcpy(&m_vertices[oldSize], &vertex, kVertexSize);
+	}
+	else // AABB
+	{
+		if (m_vertexCount % 2 == 0)
+		{
+			// New block needed.
+			m_vertices.resize(oldSize + blockSize, deUint8{0});
+			deMemcpy(&m_vertices[oldSize], &vertex, kVertexSize);
+		}
+		else
+		{
+			// Insert in the second position of last existing block.
+			//
+			//												Vertex Size
+			//												+-------+
+			//	+-------------+------------+----------------------------------------+
+			//	|             |            |      ...       | vertex vertex padding |
+			//	+-------------+------------+----------------+-----------------------+
+			//												+-----------------------+
+			//														Block Size
+			//	+-------------------------------------------------------------------+
+			//							Old Size
+			//
+			deMemcpy(&m_vertices[oldSize - blockSize + kVertexSize], &vertex, kVertexSize);
+		}
+	}
+
+	++m_vertexCount;
 }
 
 template<typename V, typename I>
@@ -318,7 +418,37 @@ void RaytracedGeometry<V, I>::addIndex (const deUint32& index)
 	m_indices.push_back(convertIndexTo<I>(index));
 }
 
-de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR geometryType, VkFormat vertexFormat, VkIndexType indexType);
+template<typename V, typename I>
+void RaytracedGeometry<V, I>::init ()
+{
+	checkGeometryType();
+	calcBlockSize();
+}
+
+template<typename V, typename I>
+void RaytracedGeometry<V, I>::checkGeometryType () const
+{
+	const auto geometryType = getGeometryType();
+	DE_UNREF(geometryType); // For release builds.
+	DE_ASSERT(geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR || geometryType == VK_GEOMETRY_TYPE_AABBS_KHR);
+}
+
+template<typename V, typename I>
+void RaytracedGeometry<V, I>::calcBlockSize ()
+{
+	if (isTrianglesType())
+		m_blockSize.trianglesBlockSize = kVertexSize * static_cast<size_t>(1u + m_paddingBlocks);
+	else
+		m_blockSize.aabbsBlockSize = 2 * kVertexSize + m_paddingBlocks * kAABBPadBaseSize;
+}
+
+template<typename V, typename I>
+size_t RaytracedGeometry<V, I>::getBlockSize () const
+{
+	return (isTrianglesType() ? m_blockSize.trianglesBlockSize : m_blockSize.aabbsBlockSize);
+}
+
+de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry (VkGeometryTypeKHR geometryType, VkFormat vertexFormat, VkIndexType indexType, bool padVertices = false);
 
 VkDeviceAddress getBufferDeviceAddress ( const DeviceInterface&	vkd,
 										 const VkDevice			device,

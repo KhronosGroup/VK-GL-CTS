@@ -161,6 +161,7 @@ struct TestParams
 	ShaderSourcePipeline					shaderSourcePipeline;
 	vk::VkAccelerationStructureBuildTypeKHR	buildType;		// are we making AS on CPU or GPU
 	VkFormat								vertexFormat;
+	bool									padVertices;
 	VkIndexType								indexType;
 	BottomTestType							bottomTestType; // what kind of geometry is stored in bottom AS
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
@@ -1156,7 +1157,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 		de::SharedPtr<RaytracedGeometryBase> geometry;
 		if (testParams.bottomTestType == BTT_TRIANGLES)
 		{
-			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 			{
 				geometry->addVertex(v0);
@@ -1183,7 +1184,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 		}
 		else // m_data.bottomTestType == BTT_AABBS
 		{
-			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType);
+			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			geometry->addVertex(tcu::Vec3(0.0f, 0.0f, -0.1f));
 			geometry->addVertex(tcu::Vec3(1.0f, 1.0f, 0.1f));
 		}
@@ -1213,7 +1214,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 			de::SharedPtr<RaytracedGeometryBase> geometry;
 			if (testParams.bottomTestType == BTT_TRIANGLES)
 			{
-				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 				{
 					geometry->addVertex(scale * (xyz + v0));
@@ -1240,7 +1241,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 			}
 			else // testParams.bottomTestType == BTT_AABBS
 			{
-				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType);
+				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				geometry->addVertex(scale * (xyz + tcu::Vec3(0.0f, 0.0f, -0.1f)));
 				geometry->addVertex(scale * (xyz + tcu::Vec3(1.0f, 1.0f, 0.1f)));
 			}
@@ -1315,12 +1316,12 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 class RayQueryASBasicTestCase : public TestCase
 {
 	public:
-							RayQueryASBasicTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
-							~RayQueryASBasicTestCase			(void);
+							RayQueryASBasicTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+							~RayQueryASBasicTestCase	(void);
 
-	virtual void			checkSupport								(Context& context) const;
-	virtual	void			initPrograms								(SourceCollections& programCollection) const;
-	virtual TestInstance*	createInstance								(Context& context) const;
+	virtual void			checkSupport				(Context& context) const;
+	virtual	void			initPrograms				(SourceCollections& programCollection) const;
+	virtual TestInstance*	createInstance				(Context& context) const;
 private:
 	TestParams				m_data;
 };
@@ -1328,16 +1329,16 @@ private:
 class RayQueryASBasicTestInstance : public TestInstance
 {
 public:
-																	RayQueryASBasicTestInstance		(Context& context,
-																									 const TestParams& data);
-																	~RayQueryASBasicTestInstance	(void);
-	tcu::TestStatus													iterate							(void);
+									RayQueryASBasicTestInstance		(Context& context,
+																	 const TestParams& data);
+									~RayQueryASBasicTestInstance	(void);
+	tcu::TestStatus					iterate							(void);
 protected:
-	bool															iterateNoWorkers				(void);
-	bool															iterateWithWorkers				(void);
-	de::MovePtr<BufferWithMemory>									runTest							(TestConfiguration* testConfiguration,
-																									 SceneBuilder* sceneBuilder,
-																									 const deUint32 workerThreadsCount);
+	bool							iterateNoWorkers				(void);
+	bool							iterateWithWorkers				(void);
+	de::MovePtr<BufferWithMemory>	runTest							(TestConfiguration* testConfiguration,
+																	 SceneBuilder* sceneBuilder,
+																	 const deUint32 workerThreadsCount);
 
 
 private:
@@ -2378,6 +2379,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 										shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
 										buildTypes[buildTypeNdx].buildType,
 										VK_FORMAT_R32G32B32_SFLOAT,
+										false,
 										VK_INDEX_TYPE_NONE_KHR,
 										bottomTestTypes[bottomNdx].testType,
 										bottomTestTypes[bottomNdx].usesAOP,
@@ -2471,6 +2473,16 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 		{ VK_INDEX_TYPE_UINT32 ,				"index_uint32"	},
 	};
 
+	struct
+	{
+		bool		padVertices;
+		const char*	name;
+	} paddingType[] =
+	{
+		{ false,	"nopadding"	},
+		{ true,		"padded"	},
+	};
+
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
@@ -2486,27 +2498,34 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 
 				de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str(), ""));
 
-				for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
+				for (int paddingIdx = 0; paddingIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingIdx)
 				{
-					TestParams testParams
+					de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingIdx].name, ""));
+
+					for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
 					{
-						shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-						shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-						buildTypes[buildTypeNdx].buildType,
-						format,
-						indexFormats[indexFormatNdx].indexType,
-						BTT_TRIANGLES,
-						false,
-						TTT_IDENTICAL_INSTANCES,
-						false,
-						VkBuildAccelerationStructureFlagsKHR(0u),
-						OT_NONE,
-						OP_NONE,
-						TEST_WIDTH,
-						TEST_HEIGHT,
-						0
-					};
-					vertexFormatGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+						TestParams testParams
+						{
+							shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+							shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+							buildTypes[buildTypeNdx].buildType,
+							format,
+							paddingType[paddingIdx].padVertices,
+							indexFormats[indexFormatNdx].indexType,
+							BTT_TRIANGLES,
+							false,
+							TTT_IDENTICAL_INSTANCES,
+							false,
+							VkBuildAccelerationStructureFlagsKHR(0u),
+							OT_NONE,
+							OP_NONE,
+							TEST_WIDTH,
+							TEST_HEIGHT,
+							0
+						};
+						paddingGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+					}
+					vertexFormatGroup->addChild(paddingGroup.release());
 				}
 				buildGroup->addChild(vertexFormatGroup.release());
 			}
@@ -2613,6 +2632,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 							shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
 							buildTypes[buildTypeNdx].buildType,
 							VK_FORMAT_R32G32B32_SFLOAT,
+							false,
 							VK_INDEX_TYPE_NONE_KHR,
 							bottomTestTypes[testTypeNdx].testType,
 							false,

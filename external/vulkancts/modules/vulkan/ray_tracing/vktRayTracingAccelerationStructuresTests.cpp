@@ -122,6 +122,7 @@ struct TestParams
 {
 	vk::VkAccelerationStructureBuildTypeKHR	buildType;		// are we making AS on CPU or GPU
 	VkFormat								vertexFormat;
+	bool									padVertices;
 	VkIndexType								indexType;
 	BottomTestType							bottomTestType; // what kind of geometry is stored in bottom AS
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
@@ -1310,6 +1311,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 								{
 									buildTypes[buildTypeNdx].buildType,
 									VK_FORMAT_R32G32B32_SFLOAT,
+									false,
 									VK_INDEX_TYPE_NONE_KHR,
 									bottomTestTypes[bottomNdx].testType,
 									bottomTestTypes[bottomNdx].usesAOP,
@@ -1381,6 +1383,16 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 		{ VK_INDEX_TYPE_UINT32 ,				"index_uint32"	},
 	};
 
+	struct
+	{
+		bool		padVertices;
+		const char*	name;
+	} paddingType[] =
+	{
+		{ false,	"nopadding"	},
+		{ true,		"padded"	},
+	};
+
 	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
@@ -1392,26 +1404,33 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 
 			de::MovePtr<tcu::TestCaseGroup> vertexFormatGroup(new tcu::TestCaseGroup(group->getTestContext(), formatName.c_str(), ""));
 
-			for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
+			for (int paddingIdx = 0; paddingIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingIdx)
 			{
-				TestParams testParams
+				de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingIdx].name, ""));
+
+				for (size_t indexFormatNdx = 0; indexFormatNdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatNdx)
 				{
-					buildTypes[buildTypeNdx].buildType,
-					format,
-					indexFormats[indexFormatNdx].indexType,
-					BTT_TRIANGLES,
-					false,
-					TTT_IDENTICAL_INSTANCES,
-					false,
-					VkBuildAccelerationStructureFlagsKHR(0u),
-					OT_NONE,
-					OP_NONE,
-					RTAS_DEFAULT_SIZE,
-					RTAS_DEFAULT_SIZE,
-					de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
-					0
-				};
-				vertexFormatGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+					TestParams testParams
+					{
+						buildTypes[buildTypeNdx].buildType,
+						format,
+						paddingType[paddingIdx].padVertices,
+						indexFormats[indexFormatNdx].indexType,
+						BTT_TRIANGLES,
+						false,
+						TTT_IDENTICAL_INSTANCES,
+						false,
+						VkBuildAccelerationStructureFlagsKHR(0u),
+						OT_NONE,
+						OP_NONE,
+						RTAS_DEFAULT_SIZE,
+						RTAS_DEFAULT_SIZE,
+						de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+						0
+					};
+					paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
+				}
+				vertexFormatGroup->addChild(paddingGroup.release());
 			}
 			buildGroup->addChild(vertexFormatGroup.release());
 		}
@@ -1489,6 +1508,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 					{
 						buildTypes[buildTypeNdx].buildType,
 						VK_FORMAT_R32G32B32_SFLOAT,
+						false,
 						VK_INDEX_TYPE_NONE_KHR,
 						bottomTestTypes[testTypeNdx].testType,
 						false,
