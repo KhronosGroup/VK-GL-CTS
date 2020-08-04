@@ -90,3 +90,4 @@ VK_KHR_pipeline_library						DEVICE
 VK_KHR_deferred_host_operations				DEVICE
 VK_KHR_fragment_shading_rate				DEVICE
 VK_KHR_zero_initialize_workgroup_memory		DEVICE
+VK_KHR_workgroup_memory_explicit_layout			DEVICE

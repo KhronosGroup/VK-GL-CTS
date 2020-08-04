@@ -406,6 +406,16 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVulkanMemoryModelFeaturesKHR.pNext;
 	}
 
+	vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR;
+	deMemset(&physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR, 0, sizeof(physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR));
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_workgroup_memory_explicit_layout")) )
+	{
+		physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.sType = getStructureType<VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+		*nextPtr = &physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR;
+		nextPtr  = &physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.pNext;
+	}
+
 	vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT physicalDeviceYcbcrImageArraysFeaturesEXT;
 	deMemset(&physicalDeviceYcbcrImageArraysFeaturesEXT, 0, sizeof(physicalDeviceYcbcrImageArraysFeaturesEXT));
 
@@ -1171,6 +1181,15 @@ bool checkMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR.shaderZeroInitializeWorkgroupMemory == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderZeroInitializeWorkgroupMemory not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionSupported(deviceExtensions, RequiredExtension("VK_KHR_workgroup_memory_explicit_layout")) )
+	{
+		if ( ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayoutScalarBlockLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout8BitAccess == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout16BitAccess == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature workgroupMemoryExplicitLayout or workgroupMemoryExplicitLayoutScalarBlockLayout or workgroupMemoryExplicitLayout8BitAccess or workgroupMemoryExplicitLayout16BitAccess not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

@@ -532,6 +532,8 @@ bool Context::isDeviceFunctionalitySupported (const std::string& extension) cons
 			return !!getExtendedDynamicStateFeaturesEXT().extendedDynamicState;
 		if (extension == "VK_EXT_shader_demote_to_helper_invocation")
 			return !!getShaderDemoteToHelperInvocationFeaturesEXT().shaderDemoteToHelperInvocation;
+		if (extension == "VK_KHR_workgroup_memory_explicit_layout")
+			return !!getWorkgroupMemoryExplicitLayoutFeatures().workgroupMemoryExplicitLayout;
 
 		return true;
 	}

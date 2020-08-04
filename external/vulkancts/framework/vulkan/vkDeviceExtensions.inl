@@ -71,5 +71,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_deferred_host_operations",
 	"VK_KHR_fragment_shading_rate",
 	"VK_KHR_zero_initialize_workgroup_memory",
+	"VK_KHR_workgroup_memory_explicit_layout",
 };
 

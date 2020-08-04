@@ -89,3 +89,4 @@ VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR		FEATURES ( shaderTerminate
 VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT			FEATURES ( shaderImageInt64Atomics )							REQUIREMENTS ( VK_EXT_shader_image_atomic_int64 )
 VkPhysicalDevice4444FormatsFeaturesEXT			            FEATURES ( formatA4R4G4B4 )										REQUIREMENTS ( VK_EXT_4444_formats )
 VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR	FEATURES ( shaderZeroInitializeWorkgroupMemory )				REQUIREMENTS ( VK_KHR_zero_initialize_workgroup_memory )
+VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR		FEATURES ( workgroupMemoryExplicitLayout workgroupMemoryExplicitLayoutScalarBlockLayout workgroupMemoryExplicitLayout8BitAccess workgroupMemoryExplicitLayout16BitAccess )		    REQUIREMENTS ( VK_KHR_workgroup_memory_explicit_layout )
