@@ -26,7 +26,7 @@
 #include "vktRayTracingBuildLargeTests.hpp"
 #include "vktRayTracingBuildTests.hpp"
 #include "vktRayTracingCallableShadersTests.hpp"
-#include "vktRayTracingTraceRaysIndirectTests.hpp"
+#include "vktRayTracingTraceRaysTests.hpp"
 #include "vktRayTracingShaderBindingTableTests.hpp"
 #include "vktRayTracingTraversalControlTests.hpp"
 #include "vktRayTracingAccelerationStructuresTests.hpp"
@@ -56,7 +56,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	group->addChild(createBuildLargeShaderSetTests(testCtx));
 	group->addChild(createBuildTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));
-	group->addChild(createTraceRaysIndirectTests(testCtx));
+	group->addChild(createTraceRaysTests(testCtx));
 	group->addChild(createShaderBindingTableTests(testCtx));
 	group->addChild(createTraversalControlTests(testCtx));
 	group->addChild(createAccelerationStructuresTests(testCtx));

@@ -2439,9 +2439,6 @@ void cmdTraceRays (const DeviceInterface&					vk,
 	DE_ASSERT(missShaderBindingTableRegion		!= DE_NULL);
 	DE_ASSERT(hitShaderBindingTableRegion		!= DE_NULL);
 	DE_ASSERT(callableShaderBindingTableRegion	!= DE_NULL);
-	DE_ASSERT(width > 0);
-	DE_ASSERT(height > 0);
-	DE_ASSERT(depth > 0);
 
 	return cmdTraceRaysKHR(vk,
 						   commandBuffer,

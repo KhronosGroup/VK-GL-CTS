@@ -1,5 +1,5 @@
-#ifndef _VKTRAYTRACINGTRACERAYSINDIRECTTESTS_HPP
-#define _VKTRAYTRACINGTRACERAYSINDIRECTTESTS_HPP
+#ifndef _VKTRAYTRACINGTRACERAYSTESTS_HPP
+#define _VKTRAYTRACINGTRACERAYSTESTS_HPP
 /*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief Testing cmdTraceRaysIndirect
+ * \brief Basic cmdTraceRays* tests.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -31,9 +31,9 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createTraceRaysIndirectTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createTraceRaysTests(tcu::TestContext& testCtx);
 
 } // RayTracing
 } // vkt
 
-#endif // _VKTRAYTRACINGTRACERAYSINDIRECTTESTS_HPP
+#endif // _VKTRAYTRACINGTRACERAYSTESTS_HPP

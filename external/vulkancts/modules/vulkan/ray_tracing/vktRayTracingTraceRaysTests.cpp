@@ -18,10 +18,10 @@
  *
  *//*!
  * \file
- * \brief Testing cmdTraceRaysIndirect
+ * \brief Basic cmdTraceRays* tests.
  *//*--------------------------------------------------------------------*/
 
-#include "vktRayTracingTraceRaysIndirectTests.hpp"
+#include "vktRayTracingTraceRaysTests.hpp"
 
 #include "vkDefs.hpp"
 
@@ -53,10 +53,21 @@ static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
 												| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
 												| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
+constexpr deUint32		kClearColorValue	= 0xFFu;
+constexpr deUint32		kHitColorValue		= 2u;
+constexpr deUint32		kMissColorValue		= 1u;
+
+enum class TraceType
+{
+	DIRECT			= 0,
+	INDIRECT_CPU	= 1,
+	INDIRECT_GPU	= 2,
+};
+
 struct TestParams
 {
-	bool							fillBufferOnGPU;
-	VkTraceRaysIndirectCommandKHR	indirectCommand;
+	TraceType						traceType;
+	VkTraceRaysIndirectCommandKHR	traceDimensions;	// Note: to be used for both direct and indirect variants.
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -75,6 +86,16 @@ deUint32 getShaderGroupBaseAlignment (const InstanceInterface&	vki,
 
 	rayTracingPropertiesKHR = makeRayTracingProperties(vki, physicalDevice);
 	return rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+}
+
+bool isNullTrace (const VkTraceRaysIndirectCommandKHR& cmd)
+{
+	return (cmd.width == 0u || cmd.height == 0u || cmd.depth == 0u);
+}
+
+VkExtent3D getImageExtent (const VkTraceRaysIndirectCommandKHR& cmd)
+{
+	return (isNullTrace(cmd) ? makeExtent3D(8u, 8u, 1u) : makeExtent3D(cmd.width, cmd.height, cmd.depth));
 }
 
 VkImageCreateInfo makeImageCreateInfo (deUint32 width, deUint32 height, deUint32 depth, VkFormat format)
@@ -128,6 +149,7 @@ protected:
 	de::MovePtr<BufferWithMemory>									runTest								();
 private:
 	TestParams														m_data;
+	const VkExtent3D												m_imageExtent;
 };
 
 
@@ -219,7 +241,7 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& progr
 			"layout(location = 0) rayPayloadInEXT uvec4 hitValue;\n"
 			"void main()\n"
 			"{\n"
-			"  hitValue = uvec4(2,0,0,1);\n"
+			"  hitValue = uvec4(" << kHitColorValue << ",0,0,1);\n"
 			"}\n";
 		programCollection.glslSources.add("chit") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
 	}
@@ -232,7 +254,7 @@ void RayTracingTraceRaysIndirectTestCase::initPrograms (SourceCollections& progr
 			"layout(location = 0) rayPayloadInEXT uvec4 hitValue;\n"
 			"void main()\n"
 			"{\n"
-			"  hitValue = uvec4(1,0,0,1);\n"
+			"  hitValue = uvec4(" << kMissColorValue << ",0,0,1);\n"
 			"}\n";
 
 		programCollection.glslSources.add("miss") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
@@ -247,6 +269,7 @@ TestInstance* RayTracingTraceRaysIndirectTestCase::createInstance (Context& cont
 RayTracingTraceRaysIndirectTestInstance::RayTracingTraceRaysIndirectTestInstance (Context& context, const TestParams& data)
 	: vkt::TestInstance		(context)
 	, m_data				(data)
+	, m_imageExtent			(getImageExtent(data.traceDimensions))
 {
 }
 
@@ -266,9 +289,9 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingTraceRay
 	tcu::Vec3 v2(1.0, 1.0, 0.0);
 	tcu::Vec3 v3(1.0, 0.0, 0.0);
 
-	for (deUint32 z = 0; z < m_data.indirectCommand.depth; ++z)
-	for (deUint32 y = 0; y < m_data.indirectCommand.height; ++y)
-	for (deUint32 x = 0; x < m_data.indirectCommand.width; ++x)
+	for (deUint32 z = 0; z < m_imageExtent.depth; ++z)
+	for (deUint32 y = 0; y < m_imageExtent.height; ++y)
+	for (deUint32 x = 0; x < m_imageExtent.width; ++x)
 	{
 		// let's build a 3D chessboard of geometries
 		if (((x + y + z) % 2) == 0)
@@ -297,20 +320,19 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingTraceRay
 de::MovePtr<TopLevelAccelerationStructure> RayTracingTraceRaysIndirectTestInstance::initTopAccelerationStructure (VkCommandBuffer													cmdBuffer,
 																													  std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >&	bottomLevelAccelerationStructures)
 {
-	const DeviceInterface&						vkd			= m_context.getDeviceInterface();
-	const VkDevice								device		= m_context.getDevice();
-	Allocator&									allocator	= m_context.getDefaultAllocator();
-
-	deUint32 instanceCount = m_data.indirectCommand.depth * m_data.indirectCommand.width * m_data.indirectCommand.height / 2;
+	const DeviceInterface&						vkd				= m_context.getDeviceInterface();
+	const VkDevice								device			= m_context.getDevice();
+	Allocator&									allocator		= m_context.getDefaultAllocator();
+	const deUint32								instanceCount	= m_imageExtent.depth * m_imageExtent.height * m_imageExtent.width / 2;
 
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(instanceCount);
 
 	deUint32 currentInstanceIndex = 0;
 
-	for (deUint32 z = 0; z < m_data.indirectCommand.depth; ++z)
-	for (deUint32 y = 0; y < m_data.indirectCommand.height; ++y)
-	for (deUint32 x = 0; x < m_data.indirectCommand.width; ++x)
+	for (deUint32 z = 0; z < m_imageExtent.depth; ++z)
+	for (deUint32 y = 0; y < m_imageExtent.height; ++y)
+	for (deUint32 x = 0; x < m_imageExtent.width; ++x)
 	{
 		if (((x + y + z) % 2) == 0)
 			continue;
@@ -330,7 +352,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 	const deUint32						queueFamilyIndex					= m_context.getUniversalQueueFamilyIndex();
 	const VkQueue						queue								= m_context.getUniversalQueue();
 	Allocator&							allocator							= m_context.getDefaultAllocator();
-	const deUint32						pixelCount							= m_data.indirectCommand.depth * m_data.indirectCommand.width * m_data.indirectCommand.height;
+	const deUint32						pixelCount							= m_imageExtent.depth * m_imageExtent.height * m_imageExtent.width;
 	const deUint32						shaderGroupHandleSize				= getShaderGroupSize(vki, physicalDevice);
 	const deUint32						shaderGroupBaseAlignment			= getShaderGroupBaseAlignment(vki, physicalDevice);
 
@@ -340,7 +362,8 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 	Move<VkPipelineLayout>				computePipelineLayout;
 	Move<VkShaderModule>				computeShader;
 	Move<VkPipeline>					computePipeline;
-	if (m_data.fillBufferOnGPU)
+
+	if (m_data.traceType == TraceType::INDIRECT_GPU)
 	{
 		computeDescriptorSetLayout			= DescriptorSetLayoutBuilder()
 													.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -405,35 +428,41 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	const VkFormat						imageFormat							= VK_FORMAT_R32_UINT;
-	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_data.indirectCommand.width, m_data.indirectCommand.height, m_data.indirectCommand.depth, imageFormat);
+	const VkImageCreateInfo				imageCreateInfo						= makeImageCreateInfo(m_imageExtent.width, m_imageExtent.height, m_imageExtent.depth, imageFormat);
 	const VkImageSubresourceRange		imageSubresourceRange				= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
 	const de::MovePtr<ImageWithMemory>	image								= de::MovePtr<ImageWithMemory>(new ImageWithMemory(vkd, device, allocator, imageCreateInfo, MemoryRequirement::Any));
 	const Move<VkImageView>				imageView							= makeImageView(vkd, device, **image, VK_IMAGE_VIEW_TYPE_3D, imageFormat, imageSubresourceRange);
 
 	const VkBufferCreateInfo			resultBufferCreateInfo				= makeBufferCreateInfo(pixelCount*sizeof(deUint32), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	const VkImageSubresourceLayers		resultBufferImageSubresourceLayers	= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
-	const VkBufferImageCopy				resultBufferImageRegion				= makeBufferImageCopy(makeExtent3D(m_data.indirectCommand.width, m_data.indirectCommand.height, m_data.indirectCommand.depth), resultBufferImageSubresourceLayers);
+	const VkBufferImageCopy				resultBufferImageRegion				= makeBufferImageCopy(m_imageExtent, resultBufferImageSubresourceLayers);
 	de::MovePtr<BufferWithMemory>		resultBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
 
 	const VkDescriptorImageInfo			descriptorImageInfo					= makeDescriptorImageInfo(DE_NULL, *imageView, VK_IMAGE_LAYOUT_GENERAL);
 
 	// create indirect command buffer and fill it with parameter values
-	VkBufferUsageFlags					indirectBufferUsageFlags			= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | ( m_data.fillBufferOnGPU ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT );
-	const VkBufferCreateInfo			indirectBufferCreateInfo			= makeBufferCreateInfo(sizeof(VkTraceRaysIndirectCommandKHR), indirectBufferUsageFlags);
-	vk::MemoryRequirement				indirectBufferMemoryRequirement		= MemoryRequirement::DeviceAddress | ( m_data.fillBufferOnGPU ? MemoryRequirement::Any : MemoryRequirement::HostVisible );
-	de::MovePtr<BufferWithMemory>		indirectBuffer						= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, indirectBufferCreateInfo, indirectBufferMemoryRequirement));
-
+	de::MovePtr<BufferWithMemory>		indirectBuffer;
 	de::MovePtr<BufferWithMemory>		uniformBuffer;
-	if (m_data.fillBufferOnGPU)
+
+	if (m_data.traceType != TraceType::DIRECT)
+	{
+		const bool							indirectGpu							= (m_data.traceType == TraceType::INDIRECT_GPU);
+		VkBufferUsageFlags					indirectBufferUsageFlags			= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | ( indirectGpu ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT );
+		const VkBufferCreateInfo			indirectBufferCreateInfo			= makeBufferCreateInfo(sizeof(VkTraceRaysIndirectCommandKHR), indirectBufferUsageFlags);
+		vk::MemoryRequirement				indirectBufferMemoryRequirement		= MemoryRequirement::DeviceAddress | ( indirectGpu ? MemoryRequirement::Any : MemoryRequirement::HostVisible );
+		indirectBuffer															= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, indirectBufferCreateInfo, indirectBufferMemoryRequirement));
+	}
+
+	if (m_data.traceType == TraceType::INDIRECT_GPU)
 	{
 		const VkBufferCreateInfo			uniformBufferCreateInfo			= makeBufferCreateInfo(sizeof(VkTraceRaysIndirectCommandKHR), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		uniformBuffer														= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, uniformBufferCreateInfo, MemoryRequirement::HostVisible));
-		deMemcpy(uniformBuffer->getAllocation().getHostPtr(), &m_data.indirectCommand, sizeof(VkTraceRaysIndirectCommandKHR));
+		deMemcpy(uniformBuffer->getAllocation().getHostPtr(), &m_data.traceDimensions, sizeof(VkTraceRaysIndirectCommandKHR));
 		flushMappedMemoryRange(vkd, device, uniformBuffer->getAllocation().getMemory(), uniformBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
 	}
-	else
+	else if (m_data.traceType == TraceType::INDIRECT_CPU)
 	{
-		deMemcpy(indirectBuffer->getAllocation().getHostPtr(), &m_data.indirectCommand, sizeof(VkTraceRaysIndirectCommandKHR));
+		deMemcpy(indirectBuffer->getAllocation().getHostPtr(), &m_data.traceDimensions, sizeof(VkTraceRaysIndirectCommandKHR));
 		flushMappedMemoryRange(vkd, device, indirectBuffer->getAllocation().getMemory(), indirectBuffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
 	}
 
@@ -450,7 +479,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 																					**image, imageSubresourceRange);
 		cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &preImageBarrier);
 
-		const VkClearValue					clearValue							= makeClearValueColorU32(0xFF, 0u, 0u, 0u);
+		const VkClearValue					clearValue							= makeClearValueColorU32(kClearColorValue, 0u, 0u, 0u);
 		vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1, &imageSubresourceRange);
 
 		const VkImageMemoryBarrier			postImageBarrier					= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
@@ -461,7 +490,7 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 		bottomLevelAccelerationStructures	= initBottomAccelerationStructures(*cmdBuffer);
 		topLevelAccelerationStructure		= initTopAccelerationStructure(*cmdBuffer, bottomLevelAccelerationStructures);
 
-		if (m_data.fillBufferOnGPU)
+		if (m_data.traceType == TraceType::INDIRECT_GPU)
 		{
 			const VkDescriptorBufferInfo	uniformBufferDescriptorInfo		= makeDescriptorBufferInfo(uniformBuffer->get(), 0ull, sizeof(VkTraceRaysIndirectCommandKHR));
 			const VkDescriptorBufferInfo	indirectBufferDescriptorInfo	= makeDescriptorBufferInfo(indirectBuffer->get(), 0ull, sizeof(VkTraceRaysIndirectCommandKHR));
@@ -497,22 +526,27 @@ de::MovePtr<BufferWithMemory> RayTracingTraceRaysIndirectTestInstance::runTest()
 
 		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
 
-		cmdTraceRaysIndirect(vkd,
-			*cmdBuffer,
-			&raygenShaderBindingTableRegion,
-			&missShaderBindingTableRegion,
-			&hitShaderBindingTableRegion,
-			&callableShaderBindingTableRegion,
-			getBufferDeviceAddress(vkd, device, indirectBuffer->get(), 0));
-
-		// Results should be the same as in the command below
-		//cmdTraceRays(vkd,
-		//	*cmdBuffer,
-		//	&raygenShaderBindingTableRegion,
-		//	&missShaderBindingTableRegion,
-		//	&hitShaderBindingTableRegion,
-		//	&callableShaderBindingTableRegion,
-		//	m_data.indirectCommand.width, m_data.indirectCommand.height, m_data.indirectCommand.depth);
+		// Both calls should give the same results.
+		if (m_data.traceType == TraceType::DIRECT)
+		{
+			cmdTraceRays(vkd,
+				*cmdBuffer,
+				&raygenShaderBindingTableRegion,
+				&missShaderBindingTableRegion,
+				&hitShaderBindingTableRegion,
+				&callableShaderBindingTableRegion,
+				m_data.traceDimensions.width, m_data.traceDimensions.height, m_data.traceDimensions.depth);
+		}
+		else
+		{
+			cmdTraceRaysIndirect(vkd,
+				*cmdBuffer,
+				&raygenShaderBindingTableRegion,
+				&missShaderBindingTableRegion,
+				&hitShaderBindingTableRegion,
+				&callableShaderBindingTableRegion,
+				getBufferDeviceAddress(vkd, device, indirectBuffer->get(), 0));
+		}
 
 		const VkMemoryBarrier							postTraceMemoryBarrier					= makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR, VK_ACCESS_TRANSFER_READ_BIT);
 		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
@@ -533,16 +567,17 @@ tcu::TestStatus RayTracingTraceRaysIndirectTestInstance::iterate (void)
 	// run test using arrays of pointers
 	const de::MovePtr<BufferWithMemory>	buffer		= runTest();
 	const deUint32*						bufferPtr	= (deUint32*)buffer->getAllocation().getHostPtr();
+	const bool							noWrites	= isNullTrace(m_data.traceDimensions);
 
 	deUint32							failures		= 0;
 	deUint32							pos				= 0;
 
 	// verify results
-	for (deUint32 z = 0; z < m_data.indirectCommand.depth; ++z)
-	for (deUint32 y = 0; y < m_data.indirectCommand.height; ++y)
-	for (deUint32 x = 0; x < m_data.indirectCommand.width; ++x)
+	for (deUint32 z = 0; z < m_imageExtent.depth; ++z)
+	for (deUint32 y = 0; y < m_imageExtent.height; ++y)
+	for (deUint32 x = 0; x < m_imageExtent.width; ++x)
 	{
-		deUint32 expectedResult = ((x + y + z) % 2) ? 2 : 1;
+		const deUint32 expectedResult = (noWrites ? kClearColorValue : (((x + y + z) % 2) ? kHitColorValue : kMissColorValue));
 		if (bufferPtr[pos] != expectedResult)
 			failures++;
 		++pos;
@@ -554,48 +589,57 @@ tcu::TestStatus RayTracingTraceRaysIndirectTestInstance::iterate (void)
 		return tcu::TestStatus::fail("Fail (failures=" + de::toString(failures) + ")");
 }
 
+std::string makeDimensionsName (const VkTraceRaysIndirectCommandKHR& cmd)
+{
+	std::ostringstream name;
+	name << cmd.width << "_" << cmd.height << "_" << cmd.depth;
+	return name.str();
+}
+
 }	// anonymous
 
-tcu::TestCaseGroup*	createTraceRaysIndirectTests(tcu::TestContext& testCtx)
+tcu::TestCaseGroup*	createTraceRaysTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "trace_rays_indirect", "Tests veryfying vkCmdTraceRaysIndirectKHR"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "trace_rays_cmds", "Tests veryfying vkCmdTraceRays* commands"));
 
 	struct BufferSourceTypeData
 	{
-		bool									fillBufferOnGPU;
+		TraceType								traceType;
 		const char*								name;
 	} bufferSourceTypes[] =
 	{
-		{ false,	"cpu"	},
-		{ true,		"gpu"	},
+		{ TraceType::DIRECT,		"direct"			},
+		{ TraceType::INDIRECT_CPU,	"indirect_cpu"		},
+		{ TraceType::INDIRECT_GPU,	"indirect_gpu"		},
 	};
 
-	struct SizeData
+	const VkTraceRaysIndirectCommandKHR traceDimensions[] =
 	{
-		VkTraceRaysIndirectCommandKHR		indirectCommand;
-		const char*								name;
-	} sizeData[] =
-	{
-		{ {8, 1, 1 },	"8_1_1"		},
-		{ {8, 8, 1 },	"8_8_1"		},
-		{ {8, 8, 8 },	"8_8_8"		},
-		{ {11, 1, 1 },	"11_1_1"	},
-		{ {11, 13, 1 },	"11_13_1"	},
-		{ {11, 13, 5 },	"11_13_5"	},
+		{  0,  0, 0 },
+		{  0,  1, 1 },
+		{  1,  0, 1 },
+		{  1,  1, 0 },
+		{  8,  1, 1 },
+		{  8,  8, 1 },
+		{  8,  8, 8 },
+		{ 11,  1, 1 },
+		{ 11, 13, 1 },
+		{ 11, 13, 5 },
 	};
 
 	for (size_t bufferSourceNdx = 0; bufferSourceNdx < DE_LENGTH_OF_ARRAY(bufferSourceTypes); ++bufferSourceNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> bufferSourceGroup(new tcu::TestCaseGroup(group->getTestContext(), bufferSourceTypes[bufferSourceNdx].name, ""));
 
-		for (size_t sizeDataNdx = 0; sizeDataNdx < DE_LENGTH_OF_ARRAY(sizeData); ++sizeDataNdx)
+		for (size_t traceDimensionsIdx = 0; traceDimensionsIdx < DE_LENGTH_OF_ARRAY(traceDimensions); ++traceDimensionsIdx)
 		{
 			TestParams testParams
 			{
-				bufferSourceTypes[bufferSourceNdx].fillBufferOnGPU,
-				sizeData[sizeDataNdx].indirectCommand
+				bufferSourceTypes[bufferSourceNdx].traceType,
+				traceDimensions[traceDimensionsIdx],
 			};
-			bufferSourceGroup->addChild(new RayTracingTraceRaysIndirectTestCase(group->getTestContext(), sizeData[sizeDataNdx].name, "", testParams));
+			const auto testName = makeDimensionsName(traceDimensions[traceDimensionsIdx]);
+			bufferSourceGroup->addChild(new RayTracingTraceRaysIndirectTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 		}
 
 		group->addChild(bufferSourceGroup.release());
