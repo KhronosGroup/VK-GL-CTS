@@ -78,10 +78,26 @@ enum RangeSizeCase
 	SIZE_CASE_UNSUPPORTED
 };
 
+enum CommandType
+{
+	CMD_BIND_PIPELINE_GRAPHICS = 0,
+	CMD_BIND_PIPELINE_COMPUTE,
+	CMD_PUSH_CONSTANT,
+	CMD_DRAW,
+	CMD_DISPATCH,
+	CMD_UNSUPPORTED
+};
+
+struct CommandData
+{
+	CommandType cType;
+	deInt32 rangeNdx;
+};
+
 struct PushConstantData
 {
 	struct PushConstantRange
-	{
+{
 		VkShaderStageFlags		shaderStage;
 		deUint32				offset;
 		deUint32				size;
@@ -147,8 +163,26 @@ std::string getShaderStageNameStr (VkShaderStageFlags stageFlags)
 	return shaderStageStr.str();
 }
 
-class PushConstantGraphicsTestInstance : public vkt::TestInstance
+std::vector<Vertex4RGBA> createQuad(const float size, const tcu::Vec4 &color)
 {
+	std::vector<Vertex4RGBA>	vertices;
+
+	const Vertex4RGBA			lowerLeftVertex		= {tcu::Vec4(-size, -size, 0.0f, 1.0f), color};
+	const Vertex4RGBA			lowerRightVertex	= {tcu::Vec4(size, -size, 0.0f, 1.0f), color};
+	const Vertex4RGBA			UpperLeftVertex		= {tcu::Vec4(-size, size, 0.0f, 1.0f), color};
+	const Vertex4RGBA			UpperRightVertex	= {tcu::Vec4(size, size, 0.0f, 1.0f), color};
+
+	vertices.push_back(lowerLeftVertex);
+	vertices.push_back(lowerRightVertex);
+	vertices.push_back(UpperLeftVertex);
+	vertices.push_back(UpperLeftVertex);
+	vertices.push_back(lowerRightVertex);
+	vertices.push_back(UpperRightVertex);
+
+	return vertices;
+}
+
+class PushConstantGraphicsTestInstance : public vkt::TestInstance {
 public:
 												PushConstantGraphicsTestInstance	(Context&					context,
 																					 const deUint32				rangeCount,
@@ -166,7 +200,6 @@ public:
 																					 const BinaryCollection&	programCollection,
 																					 const char*				name,
 																					 Move<VkShaderModule>*		module);
-	std::vector<Vertex4RGBA>					createQuad							(const float size);
 	tcu::TestStatus								verifyImage							(void);
 
 protected:
@@ -219,26 +252,6 @@ void PushConstantGraphicsTestInstance::createShaderModule (const DeviceInterface
 														   Move<VkShaderModule>*	module)
 {
 	*module = vk::createShaderModule(vk, device, programCollection.get(name), 0);
-}
-
-std::vector<Vertex4RGBA> PushConstantGraphicsTestInstance::createQuad(const float size)
-{
-	std::vector<Vertex4RGBA>	vertices;
-
-	const tcu::Vec4				color				= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	const Vertex4RGBA			lowerLeftVertex		= {tcu::Vec4(-size, -size, 0.0f, 1.0f), color};
-	const Vertex4RGBA			lowerRightVertex	= {tcu::Vec4(size, -size, 0.0f, 1.0f), color};
-	const Vertex4RGBA			UpperLeftVertex		= {tcu::Vec4(-size, size, 0.0f, 1.0f), color};
-	const Vertex4RGBA			UpperRightVertex	= {tcu::Vec4(size, size, 0.0f, 1.0f), color};
-
-	vertices.push_back(lowerLeftVertex);
-	vertices.push_back(lowerRightVertex);
-	vertices.push_back(UpperLeftVertex);
-	vertices.push_back(UpperLeftVertex);
-	vertices.push_back(lowerRightVertex);
-	vertices.push_back(UpperRightVertex);
-
-	return vertices;
 }
 
 PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				context,
@@ -504,7 +517,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 	// Create vertex buffer
 	{
-		m_vertices			= createQuad(1.0f);
+		m_vertices			= createQuad(1.0f, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
 		const VkBufferCreateInfo vertexBufferParams =
 		{
@@ -597,7 +610,7 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 	{
 		if (m_shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT)
 		{
-			m_vertices = createQuad(0.5f);
+			m_vertices = createQuad(0.5f, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 		}
 
 		setReferenceColor(m_vertices[0].color);
@@ -1884,6 +1897,704 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 	return tcu::TestStatus::pass("result image matches with reference");
 }
 
+class PushConstantLifetimeTest : public vkt::TestCase {
+public:
+	PushConstantLifetimeTest(tcu::TestContext &testContext,
+			const std::string &name,
+			const std::string &description,
+			const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
+			const std::vector<CommandData> &cmdList);
+
+	virtual                    ~PushConstantLifetimeTest(void);
+
+	virtual void initPrograms(SourceCollections &sourceCollections) const;
+
+	virtual TestInstance *createInstance(Context &context) const;
+
+private:
+	PushConstantData m_pushConstantRange[MAX_RANGE_COUNT];
+	std::vector<CommandData> m_cmdList;
+
+};
+
+class PushConstantLifetimeTestInstance : public vkt::TestInstance {
+public:
+	PushConstantLifetimeTestInstance(Context &context,
+			const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
+			const std::vector<CommandData> &cmdList);
+
+	virtual                                        ~PushConstantLifetimeTestInstance(void);
+
+	virtual tcu::TestStatus iterate(void);
+
+	void init(void);
+
+	tcu::TestStatus verify(deBool verifyGraphics, deBool verifyCompute);
+
+private:
+	PushConstantData m_pushConstantRange[MAX_RANGE_COUNT];
+	std::vector<CommandData> m_cmdList;
+
+	std::vector<Vertex4RGBA> m_vertices;
+
+	const tcu::UVec2 m_renderSize;
+	const VkFormat m_colorFormat;
+
+	VkImageCreateInfo m_colorImageCreateInfo;
+	Move<VkImage> m_colorImage;
+	de::MovePtr<Allocation> m_colorImageAlloc;
+	Move<VkImageView> m_colorAttachmentView;
+	Move<VkRenderPass> m_renderPass;
+	Move<VkFramebuffer> m_framebuffer;
+
+	Move<VkShaderModule> m_vertexShaderModule;
+	Move<VkShaderModule> m_fragmentShaderModule;
+	Move<VkShaderModule> m_computeShaderModule;
+
+	std::vector<VkPipelineShaderStageCreateInfo> m_shaderStage;
+
+	Move<VkBuffer> m_vertexBuffer;
+	de::MovePtr<Allocation> m_vertexBufferAlloc;
+
+	Move<VkBuffer> m_outBuffer;
+	de::MovePtr<Allocation> m_outBufferAlloc;
+	Move<VkDescriptorPool> m_descriptorPool;
+	Move<VkDescriptorSetLayout> m_descriptorSetLayout;
+	Move<VkDescriptorSet> m_descriptorSet;
+
+	Move<VkPipelineLayout> m_pipelineLayout[3];
+	Move<VkPipeline> m_graphicsPipeline[3];
+	Move<VkPipeline> m_computePipeline[3];
+
+	Move<VkCommandPool> m_cmdPool;
+	Move<VkCommandBuffer> m_cmdBuffer;
+};
+
+PushConstantLifetimeTest::PushConstantLifetimeTest(tcu::TestContext &testContext,
+		const std::string &name,
+		const std::string &description,
+		const PushConstantData pushConstantRange[MAX_RANGE_COUNT],
+		const std::vector<CommandData> &cmdList)
+		: vkt::TestCase(testContext, name, description), m_cmdList(cmdList) {
+	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
+}
+
+PushConstantLifetimeTest::~PushConstantLifetimeTest(void) {
+
+}
+
+void PushConstantLifetimeTest::initPrograms(SourceCollections &sourceCollections) const
+{
+	std::ostringstream	vertexSrc;
+
+	vertexSrc	<< "#version 450\n"
+				<< "layout(location = 0) in highp vec4 position;\n"
+				<< "layout(location = 1) in highp vec4 inColor;\n"
+				<< "layout(location = 0) out highp vec4 vtxColor;\n"
+				<< "out gl_PerVertex\n"
+				<< "{\n"
+				<< "  vec4 gl_Position;\n"
+				<< "};\n"
+				<< "layout(push_constant) uniform Material {\n"
+				<< "    layout(offset = 16) vec4 color;\n"
+				<< "}matInst;\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "    gl_Position = position;\n"
+				<< "    vtxColor = vec4(inColor.x + matInst.color.x,\n"
+				<< "                    inColor.y - matInst.color.y,\n"
+				<< "                    inColor.z + matInst.color.z,\n"
+				<< "					inColor.w + matInst.color.w);\n"
+				<< "}\n";
+
+	sourceCollections.glslSources.add("color_vert_lt") << glu::VertexSource(vertexSrc.str());
+
+	std::ostringstream	fragmentSrc;
+
+	fragmentSrc << "#version 450\n"
+				<< "layout(location = 0) in highp vec4 vtxColor;\n"
+				<< "layout(location = 0) out highp vec4 fragColor;\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    fragColor = vtxColor;\n"
+				<< "}\n";
+
+	sourceCollections.glslSources.add("color_frag_lt") << glu::FragmentSource(fragmentSrc.str());
+
+	std::ostringstream	computeSrc;
+
+	computeSrc  << "#version 450\n"
+				<< "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+				<< "layout(std140, set = 0, binding = 0) writeonly buffer Output {\n"
+				<< "  vec4 elements[];\n"
+				<< "} outData;\n"
+				<< "layout(push_constant) uniform Material{\n"
+				<< "    layout(offset = 16) vec4 element;\n"
+				<< "} matInst;\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "  outData.elements[gl_GlobalInvocationID.x] = matInst.element;\n"
+				<< "}\n";
+
+	sourceCollections.glslSources.add("compute_lt") << glu::ComputeSource(computeSrc.str());
+}
+
+TestInstance* PushConstantLifetimeTest::createInstance (Context& context) const
+{
+	return new PushConstantLifetimeTestInstance(context, m_pushConstantRange, m_cmdList);
+}
+
+PushConstantLifetimeTestInstance::PushConstantLifetimeTestInstance (Context&						context,
+																	const PushConstantData			pushConstantRange[MAX_RANGE_COUNT],
+																	const std::vector<CommandData>&	cmdList)
+		: vkt::TestInstance		(context)
+		, m_cmdList				(cmdList)
+		, m_renderSize			(32, 32)
+		, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+{
+	deMemcpy(m_pushConstantRange, pushConstantRange, sizeof(PushConstantData) * MAX_RANGE_COUNT);
+}
+
+void PushConstantLifetimeTestInstance::init (void)
+{
+	const DeviceInterface		&vk = m_context.getDeviceInterface();
+	const VkDevice				vkDevice = m_context.getDevice();
+	const deUint32				queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	SimpleAllocator				memAlloc(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+	const VkComponentMapping	componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
+
+	// Create color image
+	{
+		const VkImageCreateInfo colorImageParams =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									// VkStructureType			sType;
+				DE_NULL,																// const void*				pNext;
+				0u,																		// VkImageCreateFlags		flags;
+				VK_IMAGE_TYPE_2D,														// VkImageType				imageType;
+				m_colorFormat,															// VkFormat					format;
+				{ m_renderSize.x(), m_renderSize.y(), 1u },								// VkExtent3D				extent;
+				1u,																		// deUint32					mipLevels;
+				1u,																		// deUint32					arrayLayers;
+				VK_SAMPLE_COUNT_1_BIT,													// VkSampleCountFlagBits	samples;
+				VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling			tiling;
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// VkImageUsageFlags		usage;
+				VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode			sharingMode;
+				1u,																		// deUint32					queueFamilyIndexCount;
+				&queueFamilyIndex,														// const deUint32*			pQueueFamilyIndices;
+				VK_IMAGE_LAYOUT_UNDEFINED,												// VkImageLayout			initialLayout;
+			};
+
+		m_colorImageCreateInfo = colorImageParams;
+		m_colorImage = createImage(vk, vkDevice, &m_colorImageCreateInfo);
+
+		// Allocate and bind color image memory
+		m_colorImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
+		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
+	}
+
+	// Create color attachment view
+	{
+		const VkImageViewCreateInfo colorAttachmentViewParams =
+			{
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType				sType;
+				DE_NULL,										// const void*					pNext;
+				0u,												// VkImageViewCreateFlags		flags;
+				*m_colorImage,									// VkImage						image;
+				VK_IMAGE_VIEW_TYPE_2D,							// VkImageViewType				viewType;
+				m_colorFormat,									// VkFormat						format;
+				componentMappingRGBA,							// VkChannelMapping				channels;
+				{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange		subresourceRange;
+			};
+
+		m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
+	}
+
+	// Create render pass
+	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
+
+	// Create framebuffer
+	{
+		const VkImageView attachmentBindInfos[1] =
+			{
+				*m_colorAttachmentView
+			};
+
+		const VkFramebufferCreateInfo framebufferParams =
+			{
+				VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType				sType;
+				DE_NULL,									// const void*					pNext;
+				0u,											// VkFramebufferCreateFlags		flags;
+				*m_renderPass,								// VkRenderPass					renderPass;
+				1u,											// deUint32						attachmentCount;
+				attachmentBindInfos,						// const VkImageView*			pAttachments;
+				(deUint32)m_renderSize.x(),					// deUint32						width;
+				(deUint32)m_renderSize.y(),					// deUint32						height;
+				1u											// deUint32						layers;
+			};
+
+		m_framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
+	}
+
+	// Create data for pipeline layout
+	{
+		// create descriptor set layout
+		m_descriptorSetLayout = DescriptorSetLayoutBuilder().addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT).build(vk, vkDevice);
+
+		// create descriptor pool
+		m_descriptorPool = DescriptorPoolBuilder().addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u).build(vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+		// create storage buffer
+		const VkDeviceSize			bufferSize			= sizeof(tcu::Vec4) * 8;
+		const VkBufferCreateInfo	bufferCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
+				DE_NULL,													// const void*			pNext;
+				0u,															// VkBufferCreateFlags	flags
+				bufferSize,													// VkDeviceSize			size;
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// VkBufferUsageFlags	usage;
+				VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
+				1u,															// deUint32				queueFamilyCount;
+				&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
+			};
+
+		m_outBuffer			= createBuffer(vk, vkDevice, &bufferCreateInfo);
+		m_outBufferAlloc	= memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_outBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_outBuffer, m_outBufferAlloc->getMemory(), m_outBufferAlloc->getOffset()));
+
+		// create and update descriptor set
+		const VkDescriptorSetAllocateInfo	allocInfo				=
+			{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType                             sType;
+				DE_NULL,										// const void*                                 pNext;
+				*m_descriptorPool,								// VkDescriptorPool                            descriptorPool;
+				1u,												// deUint32                                    setLayoutCount;
+				&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*                pSetLayouts;
+			};
+		m_descriptorSet	= allocateDescriptorSet(vk, vkDevice, &allocInfo);
+
+		const VkDescriptorBufferInfo descriptorInfo = makeDescriptorBufferInfo(*m_outBuffer, (VkDeviceSize)0u, bufferSize);
+
+		DescriptorSetUpdateBuilder()
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
+				.update(vk, vkDevice);
+
+		// create push constant ranges
+		const VkPushConstantRange	pushConstantRanges[]
+			{
+				{
+						m_pushConstantRange[0].range.shaderStage,
+						m_pushConstantRange[0].range.offset,
+						m_pushConstantRange[0].range.size
+				},
+				{
+						m_pushConstantRange[1].range.shaderStage,
+						m_pushConstantRange[1].range.offset,
+						m_pushConstantRange[1].range.size
+				}
+			};
+
+		const VkPipelineLayoutCreateInfo pipelineLayoutParams[] =
+			{
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
+					DE_NULL,										// const void*					pNext;
+					0u,												// VkPipelineLayoutCreateFlags	flags;
+					1u,												// deUint32						descriptorSetCount;
+					&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
+					1u,												// deUint32						pushConstantRangeCount;
+					&(pushConstantRanges[0])
+				},
+				{
+					VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType				sType;
+					DE_NULL,										// const void*					pNext;
+					0u,												// VkPipelineLayoutCreateFlags	flags;
+					1u,												// deUint32						descriptorSetCount;
+					&(*m_descriptorSetLayout),						// const VkDescriptorSetLayout*	pSetLayouts;
+					1u,												// deUint32						pushConstantRangeCount;
+					&(pushConstantRanges[1])
+				}
+			};
+
+		m_pipelineLayout[0] = createPipelineLayout(vk, vkDevice, &(pipelineLayoutParams[0]));
+		m_pipelineLayout[1] = createPipelineLayout(vk, vkDevice, &(pipelineLayoutParams[1]));
+	}
+
+	m_vertexShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_vert_lt"), 0);
+	m_fragmentShaderModule	= createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("color_frag_lt"), 0);
+
+	// Create graphics pipelines
+	{
+		const VkVertexInputBindingDescription vertexInputBindingDescription =
+			{
+				0u,								// deUint32					binding;
+				sizeof(Vertex4RGBA),			// deUint32					strideInBytes;
+				VK_VERTEX_INPUT_RATE_VERTEX		// VkVertexInputStepRate	stepRate;
+			};
+
+		const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
+			{
+				{
+					0u,									// deUint32	location;
+					0u,									// deUint32	binding;
+					VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+					0u									// deUint32	offsetInBytes;
+				},
+				{
+					1u,									// deUint32	location;
+					0u,									// deUint32	binding;
+					VK_FORMAT_R32G32B32A32_SFLOAT,		// VkFormat	format;
+					DE_OFFSET_OF(Vertex4RGBA, color),	// deUint32	offset;
+				}
+			};
+
+		const VkPipelineVertexInputStateCreateInfo vertexInputStateParams =
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
+				DE_NULL,														// const void*								pNext;
+				0u,																// vkPipelineVertexInputStateCreateFlags	flags;
+				1u,																// deUint32									bindingCount;
+				&vertexInputBindingDescription,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+				2u,																// deUint32									attributeCount;
+				vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
+			};
+
+		const VkPrimitiveTopology		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+		const std::vector<VkViewport>	viewports(1, makeViewport(m_renderSize));
+		const std::vector<VkRect2D>		scissors(1, makeRect2D(m_renderSize));
+
+		m_graphicsPipeline[0] = makeGraphicsPipeline(vk,														// const DeviceInterface&                        vk
+													 vkDevice,													// const VkDevice                                device
+													 *(m_pipelineLayout[0]),									// const VkPipelineLayout                        pipelineLayout
+													 *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
+													 DE_NULL,													// const VkShaderModule                          tessellationControlShaderModule
+													 DE_NULL,													// const VkShaderModule                          tessellationEvalShaderModule
+													 DE_NULL,													// const VkShaderModule                          geometryShaderModule
+													 *m_fragmentShaderModule,									// const VkShaderModule                          fragmentShaderModule
+													 *m_renderPass,												// const VkRenderPass                            renderPass
+													 viewports,													// const std::vector<VkViewport>&                viewports
+													 scissors,													// const std::vector<VkRect2D>&                  scissors
+													 topology,													// const VkPrimitiveTopology                     topology
+													 0u,														// const deUint32                                subpass
+													 0u,														// const deUint32                                patchControlPoints
+													 &vertexInputStateParams);									// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+
+		m_graphicsPipeline[1] = makeGraphicsPipeline(vk,														// const DeviceInterface&                        vk
+													 vkDevice,													// const VkDevice                                device
+													 *(m_pipelineLayout[1]),									// const VkPipelineLayout                        pipelineLayout
+													 *m_vertexShaderModule,										// const VkShaderModule                          vertexShaderModule
+													 DE_NULL,													// const VkShaderModule                          tessellationControlShaderModule
+													 DE_NULL,													// const VkShaderModule                          tessellationEvalShaderModule
+													 DE_NULL,													// const VkShaderModule                          geometryShaderModule
+													 *m_fragmentShaderModule,									// const VkShaderModule                          fragmentShaderModule
+													 *m_renderPass,												// const VkRenderPass                            renderPass
+													 viewports,													// const std::vector<VkViewport>&                viewports
+													 scissors,													// const std::vector<VkRect2D>&                  scissors
+													 topology,													// const VkPrimitiveTopology                     topology
+													 0u,														// const deUint32                                subpass
+													 0u,														// const deUint32                                patchControlPoints
+													 &vertexInputStateParams);									// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+	}
+
+	// Create vertex buffer
+	{
+		m_vertices			= createQuad(1.0f, tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f));
+
+		const VkBufferCreateInfo vertexBufferParams =
+			{
+				VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,						// VkStructureType		sType;
+				DE_NULL,													// const void*			pNext;
+				0u,															// VkBufferCreateFlags	flags;
+				(VkDeviceSize) (sizeof(Vertex4RGBA) * m_vertices.size()),	// VkDeviceSize			size;
+				VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,							// VkBufferUsageFlags	usage;
+				VK_SHARING_MODE_EXCLUSIVE,									// VkSharingMode		sharingMode;
+				1u,															// deUint32				queueFamilyCount;
+				&queueFamilyIndex											// const deUint32*		pQueueFamilyIndices;
+			};
+
+		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
+		m_vertexBufferAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer),	MemoryRequirement::HostVisible);
+
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset()));
+
+		// Load vertices into vertex buffer
+		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
+	}
+
+	// Create compute pipelines
+	{
+		m_computeShaderModule = createShaderModule(vk, vkDevice, m_context.getBinaryCollection().get("compute_lt"), 0);
+
+		const VkPipelineShaderStageCreateInfo	stageCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
+				DE_NULL,												// const void*							pNext;
+				0u,														// VkPipelineShaderStageCreateFlags		flags;
+				VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
+				*m_computeShaderModule,									// VkShaderModule						module;
+				"main",													// const char*							pName;
+				DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo;
+			};
+
+		if (m_pushConstantRange[0].range.shaderStage & VK_SHADER_STAGE_COMPUTE_BIT)
+		{
+			const VkComputePipelineCreateInfo computePipelineLayoutParams =
+				{
+					VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType								sType;
+					DE_NULL,												// const void*									pNext;
+					0u,														// VkPipelineCreateFlags						flags;
+					stageCreateInfo,										// VkPipelineShaderStageCreateInfo				stage;
+					*m_pipelineLayout[0],									// VkPipelineLayout								layout;
+					(VkPipeline) 0,											// VkPipeline									basePipelineHandle;
+					0u,														// int32_t										basePipelineIndex;
+				};
+
+			m_computePipeline[0] = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache) 0u, &computePipelineLayoutParams);
+		}
+		if (m_pushConstantRange[1].range.shaderStage & VK_SHADER_STAGE_COMPUTE_BIT)
+		{
+			const VkComputePipelineCreateInfo computePipelineLayoutParams =
+				{
+					VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType								sType;
+					DE_NULL,												// const void*									pNext;
+					0u,														// VkPipelineCreateFlags						flags;
+					stageCreateInfo,										// VkPipelineShaderStageCreateInfo				stage;
+					*m_pipelineLayout[1],									// VkPipelineLayout								layout;
+					(VkPipeline) 0,											// VkPipeline									basePipelineHandle;
+					0u,														// int32_t										basePipelineIndex;
+				};
+
+			m_computePipeline[1] = createComputePipeline(vk, vkDevice, (vk::VkPipelineCache) 0u, &computePipelineLayoutParams);
+		}
+	}
+}
+
+PushConstantLifetimeTestInstance::~PushConstantLifetimeTestInstance (void)
+{
+
+}
+
+tcu::TestStatus PushConstantLifetimeTestInstance::iterate (void)
+{
+	const DeviceInterface		&vk				 = m_context.getDeviceInterface();
+	const VkDevice				vkDevice		 = m_context.getDevice();
+	const deUint32				queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+	const VkQueue				queue			 = m_context.getUniversalQueue();
+
+	deBool						verifyGraphics	 = false;
+	deBool						verifyCompute	 = false;
+
+	init();
+
+	// Create command pool
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+
+	// Create command buffer
+	{
+		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
+
+		// Set push constant value
+		tcu::Vec4	value[2] =
+				{
+					{0.25f, 0.75f, 0.75f, 1.0f},
+					{0.25f, 0.75f, 0.75f, 1.0f}
+				};
+
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+		for (size_t ndx = 0; ndx < m_cmdList.size(); ndx++)
+		{
+			const VkPushConstantRange pushConstantRange
+				{
+					m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.shaderStage,
+					m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.offset,
+					m_pushConstantRange[m_cmdList[ndx].rangeNdx].range.size
+				};
+
+			switch (m_cmdList[ndx].cType)
+			{
+				case CMD_PUSH_CONSTANT:
+				{
+					vk.cmdPushConstants(*m_cmdBuffer,
+										*m_pipelineLayout[m_cmdList[ndx].rangeNdx],
+										 pushConstantRange.stageFlags,
+										 pushConstantRange.offset,
+										 pushConstantRange.size,
+										 &value);
+					break;
+				}
+				case CMD_BIND_PIPELINE_COMPUTE:
+				{
+					vk.cmdBindDescriptorSets(*m_cmdBuffer,
+											  VK_PIPELINE_BIND_POINT_COMPUTE,
+											 *m_pipelineLayout[m_cmdList[ndx].rangeNdx],
+											  0,
+											  1u,
+											  &(*m_descriptorSet),
+											  0,
+											  DE_NULL);
+
+					vk.cmdBindPipeline(*m_cmdBuffer,
+										VK_PIPELINE_BIND_POINT_COMPUTE,
+										*m_computePipeline[m_cmdList[ndx].rangeNdx]);
+					break;
+				}
+				case CMD_BIND_PIPELINE_GRAPHICS:
+				{
+					vk.cmdBindPipeline(*m_cmdBuffer,
+									   VK_PIPELINE_BIND_POINT_GRAPHICS,
+									   *m_graphicsPipeline[m_cmdList[ndx].rangeNdx]);
+					break;
+				}
+				case CMD_DRAW:
+				{
+					const VkDeviceSize bufferOffset = 0;
+
+					const VkImageMemoryBarrier prePassBarrier =
+						{
+							VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					//		VkStructureType			sType;
+							DE_NULL,												//		const void*				pNext;
+							0,														//		VkAccessFlags			srcAccessMask;
+							VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					//		VkAccessFlags			dstAccessMask;
+							VK_IMAGE_LAYOUT_UNDEFINED,								//		VkImageLayout			oldLayout;
+							VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				//		VkImageLayout			newLayout;
+							VK_QUEUE_FAMILY_IGNORED,								//		uint32_t				srcQueueFamilyIndex;
+							VK_QUEUE_FAMILY_IGNORED,								//		uint32_t				dstQueueFamilyIndex;
+							*m_colorImage,											//		VkImage					image;
+							{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }			//		VkImageSubresourceRange	subresourceRange;
+						};
+
+					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &prePassBarrier);
+
+					beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
+
+					vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &bufferOffset);
+					vk.cmdDraw(*m_cmdBuffer, (deUint32) m_vertices.size(), 1, 0, 0);
+
+					endRenderPass(vk, *m_cmdBuffer);
+
+					const VkImageMemoryBarrier postPassBarrier =
+						{
+							VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					//		VkStructureType			sType;
+							DE_NULL,												//		const void*				pNext;
+							VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					//		VkAccessFlags			srcAccessMask;
+							VK_ACCESS_TRANSFER_WRITE_BIT,							//		VkAccessFlags			dstAccessMask;
+							VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				//		VkImageLayout			oldLayout;
+							VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				//		VkImageLayout			newLayout;
+							VK_QUEUE_FAMILY_IGNORED,								//		uint32_t				srcQueueFamilyIndex;
+							VK_QUEUE_FAMILY_IGNORED,								//		uint32_t				dstQueueFamilyIndex;
+							*m_colorImage,											//		VkImage					image;
+							{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }			//		VkImageSubresourceRange	subresourceRange;
+						};
+
+					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &postPassBarrier);
+
+					verifyGraphics = true;
+					break;
+				}
+				case CMD_DISPATCH:
+				{
+
+					vk.cmdDispatch(*m_cmdBuffer, 8, 1, 1);
+
+					const VkBufferMemoryBarrier outputBarrier =
+						{
+							VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,				//		VkStructureType			sType;
+							DE_NULL,												//		const void*				pNext;
+							VK_ACCESS_SHADER_WRITE_BIT,								//		VkAccessFlags			srcAccessMask;
+							VK_ACCESS_HOST_READ_BIT,								//		VkAccessFlags			dstAccessMask;
+							VK_QUEUE_FAMILY_IGNORED,								//		uint32_t				srcQueueFamilyIndex;
+							VK_QUEUE_FAMILY_IGNORED,								//		uint32_t				dstQueueFamilyIndex;
+							*m_outBuffer,											//		VkBuffer				buffer;
+							0,														//		VkDeviceSize			offset;
+							VK_WHOLE_SIZE											//		VkDeviceSize			size;
+						};
+
+					vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 0, DE_NULL, 1, &outputBarrier, 0, DE_NULL);
+
+					verifyCompute = true;
+					break;
+				}
+				case CMD_UNSUPPORTED:
+					break;
+				default:
+					break;
+			}
+		}
+
+		endCommandBuffer(vk, *m_cmdBuffer);
+	}
+
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+
+	return verify(verifyGraphics, verifyCompute);
+}
+
+tcu::TestStatus PushConstantLifetimeTestInstance::verify (deBool verifyGraphics, deBool verifyCompute)
+{
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkDevice				vkDevice		= m_context.getDevice();
+
+	const tcu::TextureFormat	tcuColorFormat	= mapVkFormat(m_colorFormat);
+	const tcu::TextureFormat	tcuDepthFormat	= tcu::TextureFormat();
+	const ColorVertexShader		vertexShader;
+	const ColorFragmentShader	fragmentShader	(tcuColorFormat, tcuDepthFormat);
+	const rr::Program			program			(&vertexShader, &fragmentShader);
+	ReferenceRenderer			refRenderer		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat, tcuDepthFormat, &program);
+
+	deBool						graphicsOk		= !verifyGraphics;
+	deBool						computeOk		= !verifyCompute;
+
+	// Compare result with reference image
+	if (verifyGraphics)
+	{
+		// Render reference image
+		{
+			rr::RenderState renderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
+			refRenderer.draw(renderState, rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
+		}
+
+		const VkQueue					queue				= m_context.getUniversalQueue();
+		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+		SimpleAllocator					allocator			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+		de::MovePtr<tcu::TextureLevel>	result				= readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize);
+
+		graphicsOk = tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
+															  "IntImageCompare",
+															  "Image comparison",
+															  refRenderer.getAccess(),
+															  result->getAccess(),
+															  tcu::UVec4(2, 2, 2, 2),
+															  tcu::IVec3(1, 1, 0),
+															  true,
+															  tcu::COMPARE_LOG_RESULT);
+	}
+
+	// Compare compute output
+	if (verifyCompute)
+	{
+		invalidateAlloc(vk, vkDevice, *m_outBufferAlloc);
+
+		// verify result
+		std::vector<tcu::Vec4>	expectValue(8, tcu::Vec4(0.25f, 0.75f, 0.75f, 1.0f));
+		if (deMemCmp((void*)(&expectValue[0]), m_outBufferAlloc->getHostPtr(), (size_t)(sizeof(tcu::Vec4) * 8)))
+			computeOk = false;
+		else
+			computeOk = true;
+	}
+
+	if (!graphicsOk)
+		return tcu::TestStatus::fail("Image mismatch");
+
+	if (!computeOk)
+		return tcu::TestStatus::fail("Wrong output value");
+
+	return tcu::TestStatus::pass("Result image matches reference");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
@@ -2079,6 +2790,148 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 		},
 	};
 
+	static const struct
+	{
+		const char*						name;
+		const char*						description;
+		PushConstantData				range[MAX_RANGE_COUNT];
+		std::vector<CommandData>		cmdList;
+	} lifetimeParams[] =
+	{
+		{
+			"push_range0_bind_layout1",
+			"bind different layout with the same range",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
+			},
+			{
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 1 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"push_range1_bind_layout1_push_range0",
+			"bind layout with same range then push different range",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
+			},
+			{
+				{ CMD_PUSH_CONSTANT, 1 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 1 },
+				{ CMD_DRAW, -1 },
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"push_range0_bind_layout0_push_range1_push_range0",
+			"same range same layout then same range from a different layout and same range from the same layout",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
+			},
+			{
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_PUSH_CONSTANT, 1 },
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"push_range0_bind_layout0_push_diff_overlapping_range1_push_range0",
+			"same range same layout then diff range and same range update",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
+			},
+			{
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_PUSH_CONSTANT, 1 },
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"push_range0_bind_layout1_bind_layout0",
+			"update push constant bind different layout with the same range then bind correct layout",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}}
+			},
+			{
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 1 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"push_range0_bind_layout1_overlapping_range_bind_layout0",
+			"update push constant then bind different layout with overlapping range then bind correct layout",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
+			},
+			{
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 1 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"bind_layout1_push_range0_bind_layout0",
+			"bind different layout with different range then update push constant and bind correct layout",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT, 16, 32}, {16, 32}}
+			},
+			{
+				{ CMD_BIND_PIPELINE_GRAPHICS, 1 },
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_DRAW, -1 },
+			}
+		},
+		{
+			"pipeline_change_same_range_bind_push_vert_and_comp",
+			"change pipeline same range, bind then push, stages vertex and compute",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}}
+			},
+			{
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_BIND_PIPELINE_COMPUTE, 1 },
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_DRAW, -1 },
+				{ CMD_PUSH_CONSTANT, 1 },
+				{ CMD_DISPATCH, -1 },
+			}
+		},
+		{
+			"pipeline_change_diff_range_bind_push_vert_and_comp",
+			"change pipeline different range overlapping, bind then push, stages vertex and compute",
+			{
+				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 0, 32}, {0, 32}},
+				{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, 16, 32}, {16, 32}}
+			},
+			{
+				{ CMD_BIND_PIPELINE_GRAPHICS, 0 },
+				{ CMD_BIND_PIPELINE_COMPUTE, 1 },
+				{ CMD_PUSH_CONSTANT, 0 },
+				{ CMD_DRAW, -1 },
+				{ CMD_PUSH_CONSTANT, 1 },
+				{ CMD_DISPATCH, -1 },
+			}
+		}
+	};
+
 	de::MovePtr<tcu::TestCaseGroup>	pushConstantTests	(new tcu::TestCaseGroup(testCtx, "push_constant", "PushConstant tests"));
 
 	de::MovePtr<tcu::TestCaseGroup>	graphicsTests	(new tcu::TestCaseGroup(testCtx, "graphics_pipeline", "graphics pipeline"));
@@ -2096,6 +2949,13 @@ tcu::TestCaseGroup* createPushConstantTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	computeTests	(new tcu::TestCaseGroup(testCtx, "compute_pipeline", "compute pipeline"));
 	computeTests->addChild(new PushConstantComputeTest(testCtx, computeParams[0].name, computeParams[0].description, computeParams[0].range));
 	pushConstantTests->addChild(computeTests.release());
+
+	de::MovePtr<tcu::TestCaseGroup>	lifetimeTests	(new tcu::TestCaseGroup(testCtx, "lifetime", "lifetime tests"));
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(lifetimeParams); ndx++)
+	{
+		lifetimeTests->addChild(new PushConstantLifetimeTest(testCtx, lifetimeParams[ndx].name, lifetimeParams[ndx].description, lifetimeParams[ndx].range, lifetimeParams[ndx].cmdList));
+	}
+	pushConstantTests->addChild(lifetimeTests.release());
 
 	return pushConstantTests.release();
 }
