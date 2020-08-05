@@ -303,6 +303,9 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 		{
 			TCU_THROW(NotSupportedError, "Unsupported subgroup size");
 		}
+
+		if ((subgroupSizeControlProperties.requiredSubgroupSizeStages & caseDef.shaderStage) != caseDef.shaderStage)
+			TCU_THROW(NotSupportedError, "Required subgroup size is not supported for shader stage");
 	}
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
