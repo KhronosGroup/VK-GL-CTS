@@ -242,7 +242,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 		de::SharedPtr<RaytracedGeometryBase> geometry;
 		if (testParams.bottomTestType == BTT_TRIANGLES)
 		{
-			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 			{
 				geometry->addVertex(v0);
@@ -269,9 +269,29 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 		}
 		else // m_data.bottomTestType == BTT_AABBS
 		{
-			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType);
-			geometry->addVertex(tcu::Vec3(0.0f, 0.0f, -0.1f));
-			geometry->addVertex(tcu::Vec3(1.0f, 1.0f, 0.1f));
+			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
+
+			if (!testParams.padVertices)
+			{
+				// Single AABB.
+				geometry->addVertex(tcu::Vec3(0.0f, 0.0f, -0.1f));
+				geometry->addVertex(tcu::Vec3(1.0f, 1.0f,  0.1f));
+			}
+			else
+			{
+				// Multiple AABBs covering the same space.
+				geometry->addVertex(tcu::Vec3(0.0f, 0.0f, -0.1f));
+				geometry->addVertex(tcu::Vec3(0.5f, 0.5f,  0.1f));
+
+				geometry->addVertex(tcu::Vec3(0.5f, 0.5f, -0.1f));
+				geometry->addVertex(tcu::Vec3(1.0f, 1.0f,  0.1f));
+
+				geometry->addVertex(tcu::Vec3(0.0f, 0.5f, -0.1f));
+				geometry->addVertex(tcu::Vec3(0.5f, 1.0f,  0.1f));
+
+				geometry->addVertex(tcu::Vec3(0.5f, 0.0f, -0.1f));
+				geometry->addVertex(tcu::Vec3(1.0f, 0.5f,  0.1f));
+			}
 		}
 
 		bottomLevelAccelerationStructure->addGeometry(geometry);
@@ -294,7 +314,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 			de::SharedPtr<RaytracedGeometryBase> geometry;
 			if (testParams.bottomTestType == BTT_TRIANGLES)
 			{
-				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 				{
 					geometry->addVertex(xyz + v0);
@@ -321,9 +341,29 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 			}
 			else // testParams.bottomTestType == BTT_AABBS
 			{
-				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType);
-				geometry->addVertex(xyz + tcu::Vec3(0.0f, 0.0f, -0.1f));
-				geometry->addVertex(xyz + tcu::Vec3(1.0f, 1.0f, 0.1f));
+				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_AABBS_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
+
+				if (!testParams.padVertices)
+				{
+					// Single AABB.
+					geometry->addVertex(xyz + tcu::Vec3(0.0f, 0.0f, -0.1f));
+					geometry->addVertex(xyz + tcu::Vec3(1.0f, 1.0f,  0.1f));
+				}
+				else
+				{
+					// Multiple AABBs covering the same space.
+					geometry->addVertex(xyz + tcu::Vec3(0.0f, 0.0f, -0.1f));
+					geometry->addVertex(xyz + tcu::Vec3(0.5f, 0.5f,  0.1f));
+
+					geometry->addVertex(xyz + tcu::Vec3(0.5f, 0.5f, -0.1f));
+					geometry->addVertex(xyz + tcu::Vec3(1.0f, 1.0f,  0.1f));
+
+					geometry->addVertex(xyz + tcu::Vec3(0.0f, 0.5f, -0.1f));
+					geometry->addVertex(xyz + tcu::Vec3(0.5f, 1.0f,  0.1f));
+
+					geometry->addVertex(xyz + tcu::Vec3(0.5f, 0.0f, -0.1f));
+					geometry->addVertex(xyz + tcu::Vec3(1.0f, 0.5f,  0.1f));
+				}
 			}
 
 			bottomLevelAccelerationStructure->addGeometry(geometry);
@@ -1647,6 +1687,16 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		{ VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR,			"lowmemory" },
 	};
 
+	struct
+	{
+		bool		padVertices;
+		const char*	name;
+	} paddingType[] =
+	{
+		{ false,	"nopadding"	},
+		{ true,		"padded"	},
+	};
+
 	for (size_t buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> buildGroup(new tcu::TestCaseGroup(group->getTestContext(), buildTypes[buildTypeNdx].name, ""));
@@ -1659,42 +1709,48 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 			{
 				de::MovePtr<tcu::TestCaseGroup> topGroup(new tcu::TestCaseGroup(group->getTestContext(), topTestTypes[topNdx].name, ""));
 
-				for (size_t optimizationNdx = 0; optimizationNdx < DE_LENGTH_OF_ARRAY(optimizationTypes); ++optimizationNdx)
+				for (int paddingTypeIdx = 0; paddingTypeIdx < DE_LENGTH_OF_ARRAY(paddingType); ++paddingTypeIdx)
 				{
-					for (size_t updateNdx = 0; updateNdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateNdx)
-					{
-						for (size_t compactionNdx = 0; compactionNdx < DE_LENGTH_OF_ARRAY(compactionTypes); ++compactionNdx)
-						{
-							for (size_t lowMemoryNdx = 0; lowMemoryNdx < DE_LENGTH_OF_ARRAY(lowMemoryTypes); ++lowMemoryNdx)
-							{
-								std::string testName =
-									std::string(optimizationTypes[optimizationNdx].name) + "_" +
-									std::string(updateTypes[updateNdx].name) + "_" +
-									std::string(compactionTypes[compactionNdx].name) + "_" +
-									std::string(lowMemoryTypes[lowMemoryNdx].name);
+					de::MovePtr<tcu::TestCaseGroup> paddingGroup(new tcu::TestCaseGroup(group->getTestContext(), paddingType[paddingTypeIdx].name, ""));
 
-								TestParams testParams
+					for (size_t optimizationNdx = 0; optimizationNdx < DE_LENGTH_OF_ARRAY(optimizationTypes); ++optimizationNdx)
+					{
+						for (size_t updateNdx = 0; updateNdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateNdx)
+						{
+							for (size_t compactionNdx = 0; compactionNdx < DE_LENGTH_OF_ARRAY(compactionTypes); ++compactionNdx)
+							{
+								for (size_t lowMemoryNdx = 0; lowMemoryNdx < DE_LENGTH_OF_ARRAY(lowMemoryTypes); ++lowMemoryNdx)
 								{
-									buildTypes[buildTypeNdx].buildType,
-									VK_FORMAT_R32G32B32_SFLOAT,
-									false,
-									VK_INDEX_TYPE_NONE_KHR,
-									bottomTestTypes[bottomNdx].testType,
-									bottomTestTypes[bottomNdx].usesAOP,
-									topTestTypes[topNdx].testType,
-									topTestTypes[topNdx].usesAOP,
-									optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
-									OT_NONE,
-									OP_NONE,
-									RTAS_DEFAULT_SIZE,
-									RTAS_DEFAULT_SIZE,
-									de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
-									0
-								};
-								topGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+									std::string testName =
+										std::string(optimizationTypes[optimizationNdx].name) + "_" +
+										std::string(updateTypes[updateNdx].name) + "_" +
+										std::string(compactionTypes[compactionNdx].name) + "_" +
+										std::string(lowMemoryTypes[lowMemoryNdx].name);
+
+									TestParams testParams
+									{
+										buildTypes[buildTypeNdx].buildType,
+										VK_FORMAT_R32G32B32_SFLOAT,
+										paddingType[paddingTypeIdx].padVertices,
+										VK_INDEX_TYPE_NONE_KHR,
+										bottomTestTypes[bottomNdx].testType,
+										bottomTestTypes[bottomNdx].usesAOP,
+										topTestTypes[topNdx].testType,
+										topTestTypes[topNdx].usesAOP,
+										optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
+										OT_NONE,
+										OP_NONE,
+										RTAS_DEFAULT_SIZE,
+										RTAS_DEFAULT_SIZE,
+										de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+										0
+									};
+									paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+								}
 							}
 						}
 					}
+					topGroup->addChild(paddingGroup.release());
 				}
 				bottomGroup->addChild(topGroup.release());
 			}
