@@ -96,7 +96,7 @@ public:
 
 private:
 	de::MovePtr<tcu::Texture2D>	createTestTexture2D	(void);
-	tcu::TestStatus				validateResult		(vk::VkImage			image,
+	bool						validateResult		(vk::VkImage			image,
 													 vk::VkImageLayout imageLayout,
 													 const tcu::Texture2D&	texture2D,
 													 const tcu::Sampler&	refSampler);
@@ -141,7 +141,7 @@ void StackTestCase::initPrograms (vk::SourceCollections& programCollection) cons
 	// Function p() returns specified protected memory element from the variable allocated on stack.
 	// Function u() returns specified protected memory element from the global variable.
 	// Values returned by p() and u() should be same.
-	// Test is repeated several times (16) to avoid coincidental matches.
+	// Test is repeated 2 times () in shader to avoid coincidental matches.
 	// In case of any mismatches it is signalized to inherited verifier function by setting 0 in result store image.
 	// Each invocation validates particular element (bytes) on stack.
 	// Number of invocations matches stack size specified in test parameters.
@@ -175,7 +175,7 @@ void StackTestCase::initPrograms (vk::SourceCollections& programCollection) cons
 		"    int checked_ndx = gy * w + gx;\n"
 		"    vec4 outColor;\n"
 		"\n"
-		"    for (int j = 0; j < 16; j++)\n"
+		"    for (int j = 0; j < 2; j++)\n"
 		"    {\n"
 		"        for (int i = 0; i < n; i++)\n"
 		"        {\n"
@@ -324,7 +324,14 @@ tcu::TestStatus StackTestInstance::iterate (void)
 		updateBuilder.update(vk, device);
 	}
 
+	// Calculate reference image
+	calculateRef(*texture2D);
+
+	bool result = true;
+
 	// Create compute commands & submit
+	// Command buffer load is repeated 8 times () to avoid coincidental matches.
+	for (int i = 0; (i < 8) && (result == true); i++)
 	{
 		const vk::Unique<vk::VkFence>		fence		(vk::createFence(vk, device));
 		vk::Unique<vk::VkPipeline>			pipeline	(makeComputePipeline(vk, device, *pipelineLayout, *computeShader, DE_NULL));
@@ -337,14 +344,18 @@ tcu::TestStatus StackTestInstance::iterate (void)
 		vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 		endCommandBuffer(vk, *cmdBuffer);
 
+
 		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, ~0ull));
+
+		VK_CHECK(vk.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
+
+	    result = validateResult(**imageDst, vk::VK_IMAGE_LAYOUT_GENERAL, *texture2D, refSampler);
 	}
 
-	// Calculate reference image
-	calculateRef(*texture2D);
-
-	// Validate result
-	return validateResult(**imageDst, vk::VK_IMAGE_LAYOUT_GENERAL, *texture2D, refSampler);
+	if (result == true)
+		return tcu::TestStatus::pass("Pass");
+	else
+		return tcu::TestStatus::fail("Result validation failed");
 }
 
 void StackTestInstance::calculateRef (tcu::Texture2D& texture2D)
@@ -357,7 +368,7 @@ void StackTestInstance::calculateRef (tcu::Texture2D& texture2D)
 		reference.setPixel(zero, x, y);
 }
 
-tcu::TestStatus StackTestInstance::validateResult (vk::VkImage image, vk::VkImageLayout imageLayout, const tcu::Texture2D& texture2D, const tcu::Sampler& refSampler)
+bool StackTestInstance::validateResult (vk::VkImage image, vk::VkImageLayout imageLayout, const tcu::Texture2D& texture2D, const tcu::Sampler& refSampler)
 {
 	de::Random			rnd			(getSeedValue(m_params));
 	ValidationData		refData;
@@ -373,9 +384,9 @@ tcu::TestStatus StackTestInstance::validateResult (vk::VkImage image, vk::VkImag
 	}
 
 	if (!m_validator.validateImage(m_protectedContext, refData, image, vk::VK_FORMAT_R8G8B8A8_UNORM, imageLayout))
-		return tcu::TestStatus::fail("Result validation failed");
+		return false;
 	else
-		return tcu::TestStatus::pass("Pass");
+		return true;
 }
 
 } // anonymous
