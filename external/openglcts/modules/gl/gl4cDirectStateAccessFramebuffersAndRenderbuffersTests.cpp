@@ -5792,7 +5792,7 @@ void DrawReadBuffersErrorsTest::Clean()
 	m_attachments_invalid[0] = 0;
 	m_attachments_invalid[1] = 0;
 
-	delete m_attachments_too_many;
+	delete[] m_attachments_too_many;
 
 	m_attachments_too_many = DE_NULL;
 
