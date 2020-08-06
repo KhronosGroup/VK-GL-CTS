@@ -379,7 +379,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 		const std::string	updateImage	=
 			"  ivec3 p = ivec3(gl_LaunchIDEXT);\n"
 			"  ivec3 v = ivec3(gl_" + std::string(m_data.name) + ");\n"
-			"  int   r = v.x + 256 * (v.y + 256 * v.z);\n"
+			"  int   r = v.x + 256 * (v.y + 256 * v.z) + 1;\n"
 			"  ivec4 c = ivec4(r,0,0,1);\n"
 			"  imageStore(result, p, c);\n";
 
@@ -1758,12 +1758,12 @@ std::vector<deInt32> RayTracingBuiltinLaunchTestInstance::expectedIntValuesBuffe
 		for (deUint32 z = 0; z < m_data.depth; ++z)
 		for (deUint32 y = 0; y < m_data.height; ++y)
 		for (deUint32 x = 0; x < m_data.width; ++x)
-			result.push_back(deInt32(x + 256 * (y + 256 * z)));
+			result.push_back(deInt32(x + 256 * (y + 256 * z)) + 1);
 	}
 	else if (m_data.id == TEST_ID_LAUNCH_SIZE_EXT)
 	{
 		const deUint32				expectedValue	= m_data.width + 256 * (m_data.height + 256 * m_data.depth);
-		const std::vector<deInt32>	result2			(m_data.depth * m_data.height * m_data.width, deInt32(expectedValue));
+		const std::vector<deInt32>	result2			(m_data.depth * m_data.height * m_data.width, deInt32(expectedValue) + 1);
 
 		result = result2;
 	}
