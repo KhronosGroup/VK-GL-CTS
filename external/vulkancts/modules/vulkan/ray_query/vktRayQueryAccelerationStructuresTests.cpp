@@ -165,8 +165,10 @@ struct TestParams
 	VkIndexType								indexType;
 	BottomTestType							bottomTestType; // what kind of geometry is stored in bottom AS
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
+	bool									bottomGeneric;	// Bottom created as generic AS type.
 	TopTestType								topTestType;	// If instances are identical then bottom geometries must have different vertices/aabbs
 	bool									topUsesAOP;		// does top AS use arrays, or arrays of pointers
+	bool									topGeneric;		// Top created as generic AS type.
 	VkBuildAccelerationStructureFlagsKHR	buildFlags;
 	OperationTarget							operationTarget;
 	OperationType							operationType;
@@ -2334,6 +2336,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 			blas->setBuildType						(m_data.buildType);
 			blas->setBuildFlags						(bottomBuildFlags);
 			blas->setUseArrayOfPointers				(m_data.bottomUsesAOP);
+			blas->setCreateGeneric					(m_data.bottomGeneric);
 			blas->createAndBuild					(vkd, device, *cmdBuffer, allocator);
 			accelerationStructureHandles.push_back	(*(blas->getPtr()));
 		}
@@ -2385,6 +2388,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					asCopy->setBuildType(m_data.buildType);
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
+					asCopy->setCreateGeneric(m_data.bottomGeneric);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), 0u, 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
@@ -2398,6 +2402,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					asCopy->setBuildType(m_data.buildType);
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
+					asCopy->setCreateGeneric(m_data.bottomGeneric);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
@@ -2423,6 +2428,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					asCopy->setBuildType(m_data.buildType);
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
+					asCopy->setCreateGeneric(m_data.bottomGeneric);
 					asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -2448,6 +2454,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 		topLevelAccelerationStructure->setBuildType					(m_data.buildType);
 		topLevelAccelerationStructure->setBuildFlags				(topBuildFlags);
 		topLevelAccelerationStructure->setUseArrayOfPointers		(m_data.topUsesAOP);
+		topLevelAccelerationStructure->setCreateGeneric				(m_data.topGeneric);
 		topLevelAccelerationStructure->createAndBuild				(vkd, device, *cmdBuffer, allocator);
 		topLevelStructureHandles.push_back							(*(topLevelAccelerationStructure->getPtr()));
 
@@ -2484,6 +2491,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
 					break;
 				}
@@ -2493,6 +2501,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
 					break;
 				}
@@ -2514,6 +2523,7 @@ de::MovePtr<BufferWithMemory> RayQueryASBasicTestInstance::runTest (TestConfigur
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
+					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					topLevelAccelerationStructureCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
 					break;
@@ -2702,6 +2712,19 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 		{ true,		"padded"	},
 	};
 
+	struct
+	{
+		bool		topGeneric;
+		bool		bottomGeneric;
+		const char*	suffix;
+	} createGenericParams[] =
+	{
+		{	false,	false,	""					},
+		{	false,	true,	"_bottomgeneric"	},
+		{	true,	false,	"_topgeneric"		},
+		{	true,	true,	"_bothgeneric"		},
+	};
+
 	for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
 	{
 		de::MovePtr<tcu::TestCaseGroup> sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderSourceTypes[shaderSourceNdx].name, ""));
@@ -2730,32 +2753,38 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 								{
 									for (size_t lowMemoryNdx = 0; lowMemoryNdx < DE_LENGTH_OF_ARRAY(lowMemoryTypes); ++lowMemoryNdx)
 									{
-										std::string testName =
-											std::string(optimizationTypes[optimizationNdx].name) + "_" +
-											std::string(updateTypes[updateNdx].name) + "_" +
-											std::string(compactionTypes[compactionNdx].name) + "_" +
-											std::string(lowMemoryTypes[lowMemoryNdx].name);
-
-										TestParams testParams
+										for (int createGenericIdx = 0; createGenericIdx < DE_LENGTH_OF_ARRAY(createGenericParams); ++createGenericIdx)
 										{
-											shaderSourceTypes[shaderSourceNdx].shaderSourceType,
-											shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
-											buildTypes[buildTypeNdx].buildType,
-											VK_FORMAT_R32G32B32_SFLOAT,
-											paddingType[paddingTypeIdx].padVertices,
-											VK_INDEX_TYPE_NONE_KHR,
-											bottomTestTypes[bottomNdx].testType,
-											bottomTestTypes[bottomNdx].usesAOP,
-											topTestTypes[topNdx].testType,
-											topTestTypes[topNdx].usesAOP,
-											optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
-											OT_NONE,
-											OP_NONE,
-											TEST_WIDTH,
-											TEST_HEIGHT,
-											0
-										};
-										paddingTypeGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+											std::string testName =
+												std::string(optimizationTypes[optimizationNdx].name) + "_" +
+												std::string(updateTypes[updateNdx].name) + "_" +
+												std::string(compactionTypes[compactionNdx].name) + "_" +
+												std::string(lowMemoryTypes[lowMemoryNdx].name) +
+												std::string(createGenericParams[createGenericIdx].suffix);
+
+											TestParams testParams
+											{
+												shaderSourceTypes[shaderSourceNdx].shaderSourceType,
+												shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline,
+												buildTypes[buildTypeNdx].buildType,
+												VK_FORMAT_R32G32B32_SFLOAT,
+												paddingType[paddingTypeIdx].padVertices,
+												VK_INDEX_TYPE_NONE_KHR,
+												bottomTestTypes[bottomNdx].testType,
+												bottomTestTypes[bottomNdx].usesAOP,
+												createGenericParams[createGenericIdx].bottomGeneric,
+												topTestTypes[topNdx].testType,
+												topTestTypes[topNdx].usesAOP,
+												createGenericParams[createGenericIdx].topGeneric,
+												optimizationTypes[optimizationNdx].flags | updateTypes[updateNdx].flags | compactionTypes[compactionNdx].flags | lowMemoryTypes[lowMemoryNdx].flags,
+												OT_NONE,
+												OP_NONE,
+												TEST_WIDTH,
+												TEST_HEIGHT,
+												0
+											};
+											paddingTypeGroup->addChild(new RayQueryASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
+										}
 									}
 								}
 							}
@@ -2879,7 +2908,9 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 							indexFormats[indexFormatNdx].indexType,
 							BTT_TRIANGLES,
 							false,
+							false,
 							TTT_IDENTICAL_INSTANCES,
+							false,
 							false,
 							VkBuildAccelerationStructureFlagsKHR(0u),
 							OT_NONE,
@@ -3001,7 +3032,9 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 							VK_INDEX_TYPE_NONE_KHR,
 							bottomTestTypes[testTypeNdx].testType,
 							false,
+							false,
 							topTest,
+							false,
 							false,
 							VkBuildAccelerationStructureFlagsKHR(0u),
 							operationTargets[operationTargetNdx].operationTarget,
@@ -3071,7 +3104,9 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			VK_INDEX_TYPE_NONE_KHR,
 			BTT_TRIANGLES,
 			false,
+			false,
 			TTT_IDENTICAL_INSTANCES,
+			false,
 			false,
 			VkBuildAccelerationStructureFlagsKHR(0u),
 			OT_NONE,

@@ -498,6 +498,7 @@ public:
 
 	virtual void										setBuildType							(const VkAccelerationStructureBuildTypeKHR		buildType) = DE_NULL;
 	virtual void										setCreateFlags							(const VkAccelerationStructureCreateFlagsKHR	createFlags) = DE_NULL;
+	virtual void										setCreateGeneric						(bool											createGeneric) = 0;
 	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR		buildFlags) = DE_NULL;
 	virtual void										setDeferredOperation					(const bool										deferredOperation,
 																								 const deUint32									workerThreadCount		= 0u ) = DE_NULL;
@@ -598,6 +599,7 @@ public:
 
 	virtual void													setBuildType						(const VkAccelerationStructureBuildTypeKHR			buildType) = DE_NULL;
 	virtual void													setCreateFlags						(const VkAccelerationStructureCreateFlagsKHR		createFlags) = DE_NULL;
+	virtual void													setCreateGeneric					(bool												createGeneric) = 0;
 	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			buildFlags) = DE_NULL;
 	virtual void													setDeferredOperation				(const bool											deferredOperation,
 																										 const deUint32										workerThreadCount = 0u) = DE_NULL;

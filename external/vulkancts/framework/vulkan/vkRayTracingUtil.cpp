@@ -751,6 +751,7 @@ public:
 
 	void													setBuildType									(const VkAccelerationStructureBuildTypeKHR		buildType) override;
 	void													setCreateFlags									(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
+	void													setCreateGeneric								(bool											createGeneric) override;
 	void													setBuildFlags									(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
 	void													setDeferredOperation							(const bool										deferredOperation,
 																											 const deUint32									workerThreadCount) override;
@@ -788,6 +789,7 @@ public:
 protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
+	bool													m_createGeneric;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_deferredOperation;
 	deUint32												m_workerThreadCount;
@@ -827,6 +829,7 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	: BottomLevelAccelerationStructure	()
 	, m_buildType						(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_createFlags						(0u)
+	, m_createGeneric					(false)
 	, m_buildFlags						(0u)
 	, m_deferredOperation				(false)
 	, m_workerThreadCount				(0)
@@ -850,6 +853,11 @@ void BottomLevelAccelerationStructureKHR::setBuildType (const VkAccelerationStru
 void BottomLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationStructureCreateFlagsKHR	createFlags)
 {
 	m_createFlags = createFlags;
+}
+
+void BottomLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
+{
+	m_createGeneric = createGeneric;
 }
 
 void BottomLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationStructureFlagsKHR	buildFlags)
@@ -946,7 +954,10 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	}
 
 	{
-		const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR
+		const VkAccelerationStructureTypeKHR		structureType						= (m_createGeneric
+																						   ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR
+																						   : VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
+		const VkAccelerationStructureCreateInfoKHR	accelerationStructureCreateInfoKHR
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,						//  VkStructureType											sType;
 			DE_NULL,																		//  const void*												pNext;
@@ -954,7 +965,7 @@ void BottomLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 			m_accelerationStructureBuffer->get(),											//  VkBuffer												buffer;
 			0u,																				//  VkDeviceSize											offset;
 			m_structureSize,																//  VkDeviceSize											size;
-			VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,								//  VkAccelerationStructureTypeKHR							type;
+			structureType,																	//  VkAccelerationStructureTypeKHR							type;
 			deviceAddress																	//  VkDeviceAddress											deviceAddress;
 		};
 
@@ -1495,6 +1506,7 @@ public:
 
 	void													setBuildType										(const VkAccelerationStructureBuildTypeKHR		buildType) override;
 	void													setCreateFlags										(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
+	void													setCreateGeneric									(bool											createGeneric) override;
 	void													setBuildFlags										(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
 	void													setDeferredOperation								(const bool										deferredOperation,
 																												 const deUint32									workerThreadCount) override;
@@ -1531,6 +1543,7 @@ public:
 protected:
 	VkAccelerationStructureBuildTypeKHR						m_buildType;
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
+	bool													m_createGeneric;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
 	bool													m_deferredOperation;
 	deUint32												m_workerThreadCount;
@@ -1564,6 +1577,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	: TopLevelAccelerationStructure	()
 	, m_buildType					(VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 	, m_createFlags					(0u)
+	, m_createGeneric				(false)
 	, m_buildFlags					(0u)
 	, m_deferredOperation			(false)
 	, m_workerThreadCount			(0)
@@ -1591,6 +1605,11 @@ void TopLevelAccelerationStructureKHR::setBuildType (const VkAccelerationStructu
 void TopLevelAccelerationStructureKHR::setCreateFlags (const VkAccelerationStructureCreateFlagsKHR	createFlags)
 {
 	m_createFlags = createFlags;
+}
+
+void TopLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
+{
+	m_createGeneric = createGeneric;
 }
 
 void TopLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationStructureFlagsKHR	buildFlags)
@@ -1683,7 +1702,10 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 	}
 
 	{
-		const VkAccelerationStructureCreateInfoKHR				accelerationStructureCreateInfoKHR					=
+		const VkAccelerationStructureTypeKHR		structureType						= (m_createGeneric
+																						   ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR
+																						   : VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
+		const VkAccelerationStructureCreateInfoKHR	accelerationStructureCreateInfoKHR	=
 		{
 			VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,	//  VkStructureType											sType;
 			DE_NULL,													//  const void*												pNext;
@@ -1691,7 +1713,7 @@ void TopLevelAccelerationStructureKHR::create (const DeviceInterface&				vk,
 			m_accelerationStructureBuffer->get(),						//  VkBuffer												buffer;
 			0u,															//  VkDeviceSize											offset;
 			m_structureSize,											//  VkDeviceSize											size;
-			VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,				//  VkAccelerationStructureTypeKHR							type;
+			structureType,												//  VkAccelerationStructureTypeKHR							type;
 			deviceAddress												//  VkDeviceAddress											deviceAddress;
 		};
 
