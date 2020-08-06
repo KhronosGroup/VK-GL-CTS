@@ -248,8 +248,8 @@ void InputAttachmentSparseFillingTest::checkSupport(Context& context) const
 
 	const vk::VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
 
-	if( m_testParams.activeInputAttachmentCount > limits.maxPerStageDescriptorInputAttachments )
-		TCU_THROW(NotSupportedError, "Input attachment count exceeds maxPerStageDescriptorInputAttachments");
+	if( 2u * m_testParams.activeInputAttachmentCount > limits.maxPerStageDescriptorInputAttachments )
+		TCU_THROW(NotSupportedError, "Input attachment count including unused elements exceeds maxPerStageDescriptorInputAttachments");
 
 	if ( 2u * m_testParams.activeInputAttachmentCount > limits.maxPerStageResources)
 		TCU_THROW(NotSupportedError, "Input attachment count including unused elements exceeds maxPerStageResources");
