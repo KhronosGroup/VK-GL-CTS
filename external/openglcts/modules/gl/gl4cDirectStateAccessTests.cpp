@@ -85,6 +85,7 @@ void Tests::init()
 	addChild(new Queries::DefaultsTest(m_context));
 	addChild(new Queries::ErrorsTest(m_context));
 	addChild(new Queries::FunctionalTest(m_context));
+	addChild(new Queries::ReuseTest(m_context));
 
 	/* Direct State Access of Buffer Objects */
 	addChild(new Buffers::CreationTest(m_context));
