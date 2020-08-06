@@ -273,6 +273,8 @@ void SpirvModulesPositiveTest::init()
 /** Stub de-init method */
 void SpirvModulesPositiveTest::deinit()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
+		return;
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	if (m_fbo)
@@ -857,6 +859,9 @@ void SpirvModulesErrorVerificationTest::init()
 /** Stub de-init method */
 void SpirvModulesErrorVerificationTest::deinit()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
+		return;
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	gl.deleteTextures(1, &m_textureId);
@@ -1968,6 +1973,8 @@ void SpirvGlslToSpirVSpecializationConstantsTest::init()
 /** Stub de-init method */
 void SpirvGlslToSpirVSpecializationConstantsTest::deinit()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
+		return;
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	if (m_fbo)

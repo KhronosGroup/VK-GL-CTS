@@ -10304,7 +10304,7 @@ void GPUShaderFP64Test7::releaseXFBVaryingNames()
 		delete[] m_xfb_varyings[n_varying];
 	}
 
-	delete m_xfb_varyings;
+	delete[] m_xfb_varyings;
 	m_xfb_varyings = DE_NULL;
 
 	m_n_xfb_varyings = 0;
