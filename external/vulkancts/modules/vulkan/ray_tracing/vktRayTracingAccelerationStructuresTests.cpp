@@ -86,6 +86,14 @@ enum OperationType
 	OP_SERIALIZE
 };
 
+enum class InstanceCullFlags
+{
+	NONE,
+	CULL_DISABLE,
+	COUNTERCLOCKWISE,
+	ALL,
+};
+
 static const deUint32 RTAS_DEFAULT_SIZE = 8u;
 
 struct TestParams;
@@ -125,6 +133,7 @@ struct TestParams
 	bool									padVertices;
 	VkIndexType								indexType;
 	BottomTestType							bottomTestType; // what kind of geometry is stored in bottom AS
+	InstanceCullFlags						cullFlags;		// Flags for instances, if needed.
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
 	bool									bottomGeneric;	// Bottom created as generic AS type.
 	TopTestType								topTestType;	// If instances are identical then bottom geometries must have different vertices/aabbs
@@ -198,6 +207,19 @@ Move<VkQueryPool> makeQueryPool(const DeviceInterface&		vk,
 	return createQueryPool(vk, device, &queryPoolCreateInfo);
 }
 
+VkGeometryInstanceFlagsKHR getCullFlags (InstanceCullFlags flags)
+{
+	VkGeometryInstanceFlagsKHR cullFlags = 0u;
+
+	if (flags == InstanceCullFlags::CULL_DISABLE || flags == InstanceCullFlags::ALL)
+		cullFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+
+	if (flags == InstanceCullFlags::COUNTERCLOCKWISE || flags == InstanceCullFlags::ALL)
+		cullFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR;
+
+	return cullFlags;
+}
+
 class CheckerboardConfiguration : public TestConfiguration
 {
 public:
@@ -230,7 +252,13 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 																														   TestParams&		testParams)
 {
 	DE_UNREF(context);
+
+	// Cull flags can only be used with triangles.
+	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BTT_TRIANGLES);
+
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
+
+	const auto instanceFlags = getCullFlags(testParams.cullFlags);
 
 	tcu::Vec3 v0(0.0, 1.0, 0.0);
 	tcu::Vec3 v1(0.0, 0.0, 0.0);
@@ -247,12 +275,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 			{
-				geometry->addVertex(v0);
-				geometry->addVertex(v1);
-				geometry->addVertex(v2);
-				geometry->addVertex(v2);
-				geometry->addVertex(v1);
-				geometry->addVertex(v3);
+				if (instanceFlags == 0u)
+				{
+					geometry->addVertex(v0);
+					geometry->addVertex(v1);
+					geometry->addVertex(v2);
+					geometry->addVertex(v2);
+					geometry->addVertex(v1);
+					geometry->addVertex(v3);
+				}
+				else // Counterclockwise so the flags will be needed for the geometry to be visible.
+				{
+					geometry->addVertex(v2);
+					geometry->addVertex(v1);
+					geometry->addVertex(v0);
+					geometry->addVertex(v3);
+					geometry->addVertex(v1);
+					geometry->addVertex(v2);
+				}
 			}
 			else // m_data.indexType != VK_INDEX_TYPE_NONE_KHR
 			{
@@ -261,12 +301,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 				geometry->addVertex(v2);
 				geometry->addVertex(v3);
 
-				geometry->addIndex(0);
-				geometry->addIndex(1);
-				geometry->addIndex(2);
-				geometry->addIndex(2);
-				geometry->addIndex(1);
-				geometry->addIndex(3);
+				if (instanceFlags == 0u)
+				{
+					geometry->addIndex(0);
+					geometry->addIndex(1);
+					geometry->addIndex(2);
+					geometry->addIndex(2);
+					geometry->addIndex(1);
+					geometry->addIndex(3);
+				}
+				else // Counterclockwise so the flags will be needed for the geometry to be visible.
+				{
+					geometry->addIndex(2);
+					geometry->addIndex(1);
+					geometry->addIndex(0);
+					geometry->addIndex(3);
+					geometry->addIndex(1);
+					geometry->addIndex(2);
+				}
 			}
 		}
 		else // m_data.bottomTestType == BTT_AABBS
@@ -319,12 +371,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 				{
-					geometry->addVertex(xyz + v0);
-					geometry->addVertex(xyz + v1);
-					geometry->addVertex(xyz + v2);
-					geometry->addVertex(xyz + v2);
-					geometry->addVertex(xyz + v1);
-					geometry->addVertex(xyz + v3);
+					if (instanceFlags == 0u)
+					{
+						geometry->addVertex(xyz + v0);
+						geometry->addVertex(xyz + v1);
+						geometry->addVertex(xyz + v2);
+						geometry->addVertex(xyz + v2);
+						geometry->addVertex(xyz + v1);
+						geometry->addVertex(xyz + v3);
+					}
+					else // Counterclockwise so the flags will be needed for the geometry to be visible.
+					{
+						geometry->addVertex(xyz + v2);
+						geometry->addVertex(xyz + v1);
+						geometry->addVertex(xyz + v0);
+						geometry->addVertex(xyz + v3);
+						geometry->addVertex(xyz + v1);
+						geometry->addVertex(xyz + v2);
+					}
 				}
 				else
 				{
@@ -333,12 +397,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 					geometry->addVertex(xyz + v2);
 					geometry->addVertex(xyz + v3);
 
-					geometry->addIndex(0);
-					geometry->addIndex(1);
-					geometry->addIndex(2);
-					geometry->addIndex(2);
-					geometry->addIndex(1);
-					geometry->addIndex(3);
+					if (instanceFlags == 0u)
+					{
+						geometry->addIndex(0);
+						geometry->addIndex(1);
+						geometry->addIndex(2);
+						geometry->addIndex(2);
+						geometry->addIndex(1);
+						geometry->addIndex(3);
+					}
+					else // Counterclockwise so the flags will be needed for the geometry to be visible.
+					{
+						geometry->addIndex(2);
+						geometry->addIndex(1);
+						geometry->addIndex(0);
+						geometry->addIndex(3);
+						geometry->addIndex(1);
+						geometry->addIndex(2);
+					}
 				}
 			}
 			else // testParams.bottomTestType == BTT_AABBS
@@ -381,7 +457,9 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 																									std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures)
 {
 	DE_UNREF(context);
-	deUint32 instanceCount = testParams.width * testParams.height / 2;
+
+	const auto instanceCount = testParams.width * testParams.height / 2u;
+	const auto instanceFlags = getCullFlags(testParams.cullFlags);
 
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(instanceCount);
@@ -402,7 +480,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 					{ 0.0f, 0.0f, 1.0f, 0.0f },
 				}
 			};
-			result->addInstance(bottomLevelAccelerationStructures[0], transformMatrixKHR);
+			result->addInstance(bottomLevelAccelerationStructures[0], transformMatrixKHR, 0u, 0xFFu, 0u, instanceFlags);
 		}
 	}
 	else // testParams.topTestType == TTT_IDENTICAL_INSTANCES
@@ -414,7 +492,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 		{
 			if (((x + y) % 2) == 0)
 				continue;
-			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++]);
+			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], identityMatrix3x4, 0u, 0xFFu, 0u, instanceFlags);
 		}
 	}
 
@@ -767,7 +845,7 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 			"  vec3  origin    = vec3(float(gl_LaunchIDEXT.x) + 0.5f, float(gl_LaunchIDEXT.y) + 0.5f, 0.5);\n"
 			"  vec3  direction = vec3(0.0,0.0,-1.0);\n"
 			"  hitValue        = uvec4(0,0,0,0);\n"
-			"  traceRayEXT(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
+			"  traceRayEXT(topLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0" : "gl_RayFlagsCullBackFacingTrianglesEXT") << ", 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
 			"  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);\n"
 			"}\n";
 		programCollection.glslSources.add("rgen") << glu::RaygenSource(updateRayTracingGLSL(css.str())) << buildOptions;
@@ -1760,6 +1838,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											paddingType[paddingTypeIdx].padVertices,
 											VK_INDEX_TYPE_NONE_KHR,
 											bottomTestTypes[bottomNdx].testType,
+											InstanceCullFlags::NONE,
 											bottomTestTypes[bottomNdx].usesAOP,
 											createGenericParams[createGenericIdx].bottomGeneric,
 											topTestTypes[topNdx].testType,
@@ -1868,6 +1947,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						paddingType[paddingIdx].padVertices,
 						indexFormats[indexFormatNdx].indexType,
 						BTT_TRIANGLES,
+						InstanceCullFlags::NONE,
 						false,
 						false,
 						TTT_IDENTICAL_INSTANCES,
@@ -1964,6 +2044,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						false,
 						VK_INDEX_TYPE_NONE_KHR,
 						bottomTestTypes[testTypeNdx].testType,
+						InstanceCullFlags::NONE,
 						false,
 						false,
 						topTest,
@@ -2033,6 +2114,7 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			false,
 			VK_INDEX_TYPE_NONE_KHR,
 			BTT_TRIANGLES,
+			InstanceCullFlags::NONE,
 			false,
 			false,
 			TTT_IDENTICAL_INSTANCES,
@@ -2051,6 +2133,97 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		InstanceCullFlags	cullFlags;
+		std::string			name;
+	} cullFlags[] =
+	{
+		{ InstanceCullFlags::NONE,				"noflags"		},
+		{ InstanceCullFlags::COUNTERCLOCKWISE,	"ccw"			},
+		{ InstanceCullFlags::CULL_DISABLE,		"nocull"		},
+		{ InstanceCullFlags::ALL,				"ccw_nocull"	},
+	};
+
+	const struct
+	{
+		TopTestType	topType;
+		std::string	name;
+	} topType[] =
+	{
+		{ TTT_DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
+		{ TTT_IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
+	};
+
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR	buildType;
+		std::string								name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	const struct
+	{
+		VkIndexType	indexType;
+		std::string	name;
+	} indexFormats[] =
+	{
+		{ VK_INDEX_TYPE_NONE_KHR ,	"index_none"	},
+		{ VK_INDEX_TYPE_UINT16 ,	"index_uint16"	},
+		{ VK_INDEX_TYPE_UINT32 ,	"index_uint32"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str(), ""));
+
+			for (int topTypeIdx = 0; topTypeIdx < DE_LENGTH_OF_ARRAY(topType); ++topTypeIdx)
+			{
+				for (int cullFlagsIdx = 0; cullFlagsIdx < DE_LENGTH_OF_ARRAY(cullFlags); ++cullFlagsIdx)
+				{
+					const std::string testName = topType[topTypeIdx].name + "_" + cullFlags[cullFlagsIdx].name;
+
+					TestParams testParams
+					{
+						buildTypes[buildTypeIdx].buildType,
+						VK_FORMAT_R32G32B32_SFLOAT,
+						false,
+						indexFormats[indexFormatIdx].indexType,
+						BTT_TRIANGLES,
+						cullFlags[cullFlagsIdx].cullFlags,
+						false,
+						false,
+						topType[topTypeIdx].topType,
+						false,
+						false,
+						VkBuildAccelerationStructureFlagsKHR(0u),
+						OT_NONE,
+						OP_NONE,
+						RTAS_DEFAULT_SIZE,
+						RTAS_DEFAULT_SIZE,
+						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
+						0u,
+					};
+					indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), "", testParams));
+				}
+			}
+			buildTypeGroup->addChild(indexTypeGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests"));
@@ -2060,6 +2233,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
+	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
 
 	return group.release();
 }

@@ -117,6 +117,14 @@ enum OperationType
 	OP_SERIALIZE
 };
 
+enum class InstanceCullFlags
+{
+	NONE,
+	CULL_DISABLE,
+	COUNTERCLOCKWISE,
+	ALL,
+};
+
 const deUint32			TEST_WIDTH			= 8;
 const deUint32			TEST_HEIGHT			= 8;
 
@@ -164,6 +172,7 @@ struct TestParams
 	bool									padVertices;
 	VkIndexType								indexType;
 	BottomTestType							bottomTestType; // what kind of geometry is stored in bottom AS
+	InstanceCullFlags						cullFlags;		// Flags for instances, if needed.
 	bool									bottomUsesAOP;	// does bottom AS use arrays, or arrays of pointers
 	bool									bottomGeneric;	// Bottom created as generic AS type.
 	TopTestType								topTestType;	// If instances are identical then bottom geometries must have different vertices/aabbs
@@ -287,6 +296,19 @@ bool registerShaderModule (const DeviceInterface&	vkd,
 		return false;
 	rayTracingPipeline.addShader(shaderStage, shaderModule, groupIndex);
 	return true;
+}
+
+VkGeometryInstanceFlagsKHR getCullFlags (InstanceCullFlags flags)
+{
+	VkGeometryInstanceFlagsKHR cullFlags = 0u;
+
+	if (flags == InstanceCullFlags::CULL_DISABLE || flags == InstanceCullFlags::ALL)
+		cullFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+
+	if (flags == InstanceCullFlags::COUNTERCLOCKWISE || flags == InstanceCullFlags::ALL)
+		cullFlags |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR;
+
+	return cullFlags;
 }
 
 class GraphicsConfiguration : public TestConfiguration
@@ -1145,7 +1167,13 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 																														  TestParams&		testParams)
 {
 	DE_UNREF(context);
+
+	// Cull flags can only be used with triangles.
+	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BTT_TRIANGLES);
+
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
+
+	const auto instanceFlags = getCullFlags(testParams.cullFlags);
 
 	tcu::Vec3 v0(0.0, 1.0, 0.0);
 	tcu::Vec3 v1(0.0, 0.0, 0.0);
@@ -1162,12 +1190,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 			geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 			if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 			{
-				geometry->addVertex(v0);
-				geometry->addVertex(v1);
-				geometry->addVertex(v2);
-				geometry->addVertex(v2);
-				geometry->addVertex(v1);
-				geometry->addVertex(v3);
+				if (instanceFlags == 0u)
+				{
+					geometry->addVertex(v0);
+					geometry->addVertex(v1);
+					geometry->addVertex(v2);
+					geometry->addVertex(v2);
+					geometry->addVertex(v1);
+					geometry->addVertex(v3);
+				}
+				else // Counterclockwise so the flags will be needed for the geometry to be visible.
+				{
+					geometry->addVertex(v2);
+					geometry->addVertex(v1);
+					geometry->addVertex(v0);
+					geometry->addVertex(v3);
+					geometry->addVertex(v1);
+					geometry->addVertex(v2);
+				}
 			}
 			else // m_data.indexType != VK_INDEX_TYPE_NONE_KHR
 			{
@@ -1176,12 +1216,25 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 				geometry->addVertex(v2);
 				geometry->addVertex(v3);
 
-				geometry->addIndex(0);
-				geometry->addIndex(1);
-				geometry->addIndex(2);
-				geometry->addIndex(2);
-				geometry->addIndex(1);
-				geometry->addIndex(3);
+				if (instanceFlags == 0u)
+				{
+					geometry->addIndex(0);
+					geometry->addIndex(1);
+					geometry->addIndex(2);
+					geometry->addIndex(2);
+					geometry->addIndex(1);
+					geometry->addIndex(3);
+				}
+				else // Counterclockwise so the flags will be needed for the geometry to be visible.
+				{
+					geometry->addIndex(2);
+					geometry->addIndex(1);
+					geometry->addIndex(0);
+					geometry->addIndex(3);
+					geometry->addIndex(1);
+					geometry->addIndex(2);
+				}
+
 			}
 		}
 		else // m_data.bottomTestType == BTT_AABBS
@@ -1239,12 +1292,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 				geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType, testParams.padVertices);
 				if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
 				{
-					geometry->addVertex(scale * (xyz + v0));
-					geometry->addVertex(scale * (xyz + v1));
-					geometry->addVertex(scale * (xyz + v2));
-					geometry->addVertex(scale * (xyz + v2));
-					geometry->addVertex(scale * (xyz + v1));
-					geometry->addVertex(scale * (xyz + v3));
+					if (instanceFlags == 0u)
+					{
+						geometry->addVertex(scale * (xyz + v0));
+						geometry->addVertex(scale * (xyz + v1));
+						geometry->addVertex(scale * (xyz + v2));
+						geometry->addVertex(scale * (xyz + v2));
+						geometry->addVertex(scale * (xyz + v1));
+						geometry->addVertex(scale * (xyz + v3));
+					}
+					else // Counterclockwise so the flags will be needed for the geometry to be visible.
+					{
+						geometry->addVertex(scale * (xyz + v2));
+						geometry->addVertex(scale * (xyz + v1));
+						geometry->addVertex(scale * (xyz + v0));
+						geometry->addVertex(scale * (xyz + v3));
+						geometry->addVertex(scale * (xyz + v1));
+						geometry->addVertex(scale * (xyz + v2));
+					}
 				}
 				else
 				{
@@ -1253,12 +1318,24 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardSceneBu
 					geometry->addVertex(scale * (xyz + v2));
 					geometry->addVertex(scale * (xyz + v3));
 
-					geometry->addIndex(0);
-					geometry->addIndex(1);
-					geometry->addIndex(2);
-					geometry->addIndex(2);
-					geometry->addIndex(1);
-					geometry->addIndex(3);
+					if (instanceFlags == 0u)
+					{
+						geometry->addIndex(0);
+						geometry->addIndex(1);
+						geometry->addIndex(2);
+						geometry->addIndex(2);
+						geometry->addIndex(1);
+						geometry->addIndex(3);
+					}
+					else // Counterclockwise so the flags will be needed for the geometry to be visible.
+					{
+						geometry->addIndex(2);
+						geometry->addIndex(1);
+						geometry->addIndex(0);
+						geometry->addIndex(3);
+						geometry->addIndex(1);
+						geometry->addIndex(2);
+					}
 				}
 			}
 			else // testParams.bottomTestType == BTT_AABBS
@@ -1301,7 +1378,9 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 																								   std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures)
 {
 	DE_UNREF(context);
-	deUint32 instanceCount = testParams.width * testParams.height / 2;
+
+	const auto instanceCount = testParams.width * testParams.height / 2u;
+	const auto instanceFlags = getCullFlags(testParams.cullFlags);
 
 	de::MovePtr<TopLevelAccelerationStructure>	result = makeTopLevelAccelerationStructure();
 	result->setInstanceCount(instanceCount);
@@ -1322,7 +1401,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 					{ 0.0f, 0.0f, 1.0f, 0.0f },
 				}
 			};
-			result->addInstance(bottomLevelAccelerationStructures[0], transformMatrixKHR);
+			result->addInstance(bottomLevelAccelerationStructures[0], transformMatrixKHR, 0u, 0xFFu, 0u, instanceFlags);
 		}
 	}
 	else // testParams.topTestType == TTT_IDENTICAL_INSTANCES
@@ -1348,7 +1427,7 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 		{
 			if (((x + y) % 2) == 0)
 				continue;
-			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], transformMatrixKHR);
+			result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++], transformMatrixKHR, 0u, 0xFFu, 0u, instanceFlags);
 		}
 	}
 
@@ -1470,7 +1549,7 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 			"  float tmax     = 1.0;\n"
 			"  vec3  direct   = vec3(0.0, 0.0, -1.0);\n"
 			"  rayQueryEXT rq;\n"
-			"  rayQueryInitializeEXT(rq, rqTopLevelAS, 0, 0xFF, origin, tmin, direct, tmax);\n"
+			"  rayQueryInitializeEXT(rq, rqTopLevelAS, " << ((m_data.cullFlags == InstanceCullFlags::NONE) ? "0" : "gl_RayFlagsCullBackFacingTrianglesEXT") << ", 0xFF, origin, tmin, direct, tmax);\n"
 			"  if(rayQueryProceedEXT(rq))\n"
 			"  {\n"
 			"    if (rayQueryGetIntersectionTypeEXT(rq, false)==gl_RayQueryCandidateIntersectionTriangleEXT)\n"
@@ -2771,6 +2850,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 												paddingType[paddingTypeIdx].padVertices,
 												VK_INDEX_TYPE_NONE_KHR,
 												bottomTestTypes[bottomNdx].testType,
+												InstanceCullFlags::NONE,
 												bottomTestTypes[bottomNdx].usesAOP,
 												createGenericParams[createGenericIdx].bottomGeneric,
 												topTestTypes[topNdx].testType,
@@ -2862,7 +2942,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 		const char*								name;
 	} indexFormats[] =
 	{
-		{ VK_INDEX_TYPE_NONE_KHR ,				"index_none"		},
+		{ VK_INDEX_TYPE_NONE_KHR ,				"index_none"	},
 		{ VK_INDEX_TYPE_UINT16 ,				"index_uint16"	},
 		{ VK_INDEX_TYPE_UINT32 ,				"index_uint32"	},
 	};
@@ -2907,6 +2987,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 							paddingType[paddingIdx].padVertices,
 							indexFormats[indexFormatNdx].indexType,
 							BTT_TRIANGLES,
+							InstanceCullFlags::NONE,
 							false,
 							false,
 							TTT_IDENTICAL_INSTANCES,
@@ -3031,6 +3112,7 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 							false,
 							VK_INDEX_TYPE_NONE_KHR,
 							bottomTestTypes[testTypeNdx].testType,
+							InstanceCullFlags::NONE,
 							false,
 							false,
 							topTest,
@@ -3103,6 +3185,7 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			false,
 			VK_INDEX_TYPE_NONE_KHR,
 			BTT_TRIANGLES,
+			InstanceCullFlags::NONE,
 			false,
 			false,
 			TTT_IDENTICAL_INSTANCES,
@@ -3120,6 +3203,125 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		ShaderSourceType						shaderSourceType;
+		ShaderSourcePipeline					shaderSourcePipeline;
+		std::string								name;
+	} shaderSourceTypes[] =
+	{
+		{ SST_VERTEX_SHADER,					SSP_GRAPHICS_PIPELINE,		"vertex_shader"				},
+		{ SST_TESSELATION_CONTROL_SHADER,		SSP_GRAPHICS_PIPELINE,		"tess_control_shader"		},
+		{ SST_TESSELATION_EVALUATION_SHADER,	SSP_GRAPHICS_PIPELINE,		"tess_evaluation_shader"	},
+		{ SST_GEOMETRY_SHADER,					SSP_GRAPHICS_PIPELINE,		"geometry_shader",			},
+		{ SST_FRAGMENT_SHADER,					SSP_GRAPHICS_PIPELINE,		"fragment_shader",			},
+		{ SST_COMPUTE_SHADER,					SSP_COMPUTE_PIPELINE,		"compute_shader",			},
+		{ SST_RAY_GENERATION_SHADER,			SSP_RAY_TRACING_PIPELINE,	"rgen_shader",				},
+		{ SST_INTERSECTION_SHADER,				SSP_RAY_TRACING_PIPELINE,	"isect_shader",				},
+		{ SST_ANY_HIT_SHADER,					SSP_RAY_TRACING_PIPELINE,	"ahit_shader",				},
+		{ SST_CLOSEST_HIT_SHADER,				SSP_RAY_TRACING_PIPELINE,	"chit_shader",				},
+		{ SST_MISS_SHADER,						SSP_RAY_TRACING_PIPELINE,	"miss_shader",				},
+		{ SST_CALLABLE_SHADER,					SSP_RAY_TRACING_PIPELINE,	"call_shader",				},
+	};
+
+	const struct
+	{
+		InstanceCullFlags	cullFlags;
+		std::string			name;
+	} cullFlags[] =
+	{
+		{ InstanceCullFlags::NONE,				"noflags"		},
+		{ InstanceCullFlags::COUNTERCLOCKWISE,	"ccw"			},
+		{ InstanceCullFlags::CULL_DISABLE,		"nocull"		},
+		{ InstanceCullFlags::ALL,				"ccw_nocull"	},
+	};
+
+	const struct
+	{
+		TopTestType	topType;
+		std::string	name;
+	} topType[] =
+	{
+		{ TTT_DIFFERENT_INSTANCES, "transformed"	},	// Each instance has its own transformation matrix.
+		{ TTT_IDENTICAL_INSTANCES, "notransform"	},	// "Identical" instances, different geometries.
+	};
+
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR	buildType;
+		std::string								name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	const struct
+	{
+		VkIndexType	indexType;
+		std::string	name;
+	} indexFormats[] =
+	{
+		{ VK_INDEX_TYPE_NONE_KHR ,	"index_none"	},
+		{ VK_INDEX_TYPE_UINT16 ,	"index_uint16"	},
+		{ VK_INDEX_TYPE_UINT32 ,	"index_uint32"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int shaderSourceIdx = 0; shaderSourceIdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> shaderSourceGroup(new tcu::TestCaseGroup(ctx, shaderSourceTypes[shaderSourceIdx].name.c_str(), ""));
+
+		for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+			for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
+			{
+				de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str(), ""));
+
+				for (int topTypeIdx = 0; topTypeIdx < DE_LENGTH_OF_ARRAY(topType); ++topTypeIdx)
+				{
+					for (int cullFlagsIdx = 0; cullFlagsIdx < DE_LENGTH_OF_ARRAY(cullFlags); ++cullFlagsIdx)
+					{
+						const std::string testName = topType[topTypeIdx].name + "_" + cullFlags[cullFlagsIdx].name;
+
+						TestParams testParams
+						{
+							shaderSourceTypes[shaderSourceIdx].shaderSourceType,
+							shaderSourceTypes[shaderSourceIdx].shaderSourcePipeline,
+							buildTypes[buildTypeIdx].buildType,
+							VK_FORMAT_R32G32B32_SFLOAT,
+							false,
+							indexFormats[indexFormatIdx].indexType,
+							BTT_TRIANGLES,
+							cullFlags[cullFlagsIdx].cullFlags,
+							false,
+							false,
+							topType[topTypeIdx].topType,
+							false,
+							false,
+							VkBuildAccelerationStructureFlagsKHR(0u),
+							OT_NONE,
+							OP_NONE,
+							TEST_WIDTH,
+							TEST_HEIGHT,
+							0
+						};
+						indexTypeGroup->addChild(new RayQueryASBasicTestCase(ctx, testName.c_str(), "", testParams));
+					}
+				}
+				buildTypeGroup->addChild(indexTypeGroup.release());
+			}
+			shaderSourceGroup->addChild(buildTypeGroup.release());
+		}
+		group->addChild(shaderSourceGroup.release());
+	}
+}
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests using rayQuery feature"));
@@ -3129,6 +3331,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
+	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
 
 	return group.release();
 }
