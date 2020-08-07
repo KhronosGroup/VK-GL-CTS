@@ -74,10 +74,9 @@ static bool isMandatoryAccelerationStructureVertexBufferFormat (vk::VkFormat for
 
 void checkAccelerationStructureVertexBufferFormat (const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice, vk::VkFormat format)
 {
-	vk::VkFormatProperties2 formatProperties;
-	vki.getPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
+	const vk::VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
 
-	if ((formatProperties.formatProperties.bufferFeatures & vk::VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR) == 0u)
+	if ((formatProperties.bufferFeatures & vk::VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR) == 0u)
 	{
 		const std::string errorMsg = "Format not supported for acceleration structure vertex buffers";
 		if (isMandatoryAccelerationStructureVertexBufferFormat(format))
@@ -2052,7 +2051,8 @@ bool queryAccelerationStructureSizeKHR (const DeviceInterface&							vk,
 	}
 	// buildType != VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR
 	results.resize(accelerationStructureHandles.size(), 0u);
-	vk.writeAccelerationStructuresPropertiesKHR(device, deUint32(accelerationStructureHandles.size()), accelerationStructureHandles.data(), queryType, sizeof(VkDeviceSize), results.data(), sizeof(VkDeviceSize));
+	vk.writeAccelerationStructuresPropertiesKHR(device, deUint32(accelerationStructureHandles.size()), accelerationStructureHandles.data(), queryType,
+												sizeof(VkDeviceSize) * accelerationStructureHandles.size(), results.data(), sizeof(VkDeviceSize));
 	// results will contain proper values
 	return true;
 }
