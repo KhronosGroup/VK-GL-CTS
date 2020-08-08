@@ -434,13 +434,13 @@ tcu::TestStatus basicExtensionTest (Context& context, Type wsiType)
 
 tcu::TestStatus surfaceFormatRenderTest (Context& context,
 										 Type wsiType,
+										 const InstanceHelper& instHelper,
+										 const DeviceHelper& devHelper,
 										 VkSurfaceKHR surface,
 										 VkSurfaceFormatKHR curFmt,
 										 deBool checkHdr = false)
 {
 	const tcu::UVec2					desiredSize		(256, 256);
-	const InstanceHelper				instHelper		(context, wsiType);
-	const DeviceHelper					devHelper		(context, instHelper.vki, instHelper.instance, surface);
 	const DeviceInterface&				vkd				= devHelper.vkd;
 	const VkDevice						device			= *devHelper.device;
 	SimpleAllocator						allocator		(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -593,7 +593,7 @@ tcu::TestStatus surfaceFormatRenderTests (Context& context, Type wsiType)
 																							 *surface);
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
-		surfaceFormatRenderTest(context, wsiType, *surface, *curFmt);
+		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt);
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
@@ -614,7 +614,7 @@ tcu::TestStatus surfaceFormatRenderWithHdrTests (Context& context, Type wsiType)
 																						  *surface);
 	for (vector<VkSurfaceFormatKHR>::const_iterator curFmt = formats.begin(); curFmt != formats.end(); ++curFmt)
 	{
-		surfaceFormatRenderTest(context, wsiType, *surface, *curFmt, true);
+		surfaceFormatRenderTest(context, wsiType, instHelper, devHelper, *surface, *curFmt, true);
 	}
 	return tcu::TestStatus::pass("Rendering tests succeeded");
 }
