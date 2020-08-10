@@ -437,12 +437,6 @@ VKAPI_ATTR void VKAPI_CALL destroyValidationCacheEXT (VkDevice device, VkValidat
 	freeNonDispHandle<ValidationCacheEXT, VkValidationCacheEXT>(validationCache, pAllocator);
 }
 
-VKAPI_ATTR void VKAPI_CALL destroyAccelerationStructureKHR (VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator)
-{
-	DE_UNREF(device);
-	freeNonDispHandle<AccelerationStructureKHR, VkAccelerationStructureKHR>(accelerationStructure, pAllocator);
-}
-
 VKAPI_ATTR void VKAPI_CALL destroyAccelerationStructureNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator)
 {
 	DE_UNREF(device);
@@ -459,6 +453,12 @@ VKAPI_ATTR void VKAPI_CALL destroyPrivateDataSlotEXT (VkDevice device, VkPrivate
 {
 	DE_UNREF(device);
 	freeNonDispHandle<PrivateDataSlotEXT, VkPrivateDataSlotEXT>(privateDataSlot, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyAccelerationStructureKHR (VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<AccelerationStructureKHR, VkAccelerationStructureKHR>(accelerationStructure, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceLayerProperties (deUint32* pPropertyCount, VkLayerProperties* pProperties)
@@ -2082,7 +2082,7 @@ VKAPI_ATTR VkResult VKAPI_CALL bindAccelerationStructureMemoryNV (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureNV (VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkBuffer scratch, VkDeviceSize scratchOffset)
+VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureNV (VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pInfo);
@@ -2095,7 +2095,7 @@ VKAPI_ATTR void VKAPI_CALL cmdBuildAccelerationStructureNV (VkCommandBuffer comm
 	DE_UNREF(scratchOffset);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyAccelerationStructureNV (VkCommandBuffer commandBuffer, VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkCopyAccelerationStructureModeKHR mode)
+VKAPI_ATTR void VKAPI_CALL cmdCopyAccelerationStructureNV (VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeKHR mode)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(dst);
@@ -2144,7 +2144,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getRayTracingShaderGroupHandlesNV (VkDevice devic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureKHR accelerationStructure, deUintptr dataSize, void* pData)
+VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, deUintptr dataSize, void* pData)
 {
 	DE_UNREF(device);
 	DE_UNREF(accelerationStructure);
@@ -2153,17 +2153,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getAccelerationStructureHandleNV (VkDevice device
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesKHR (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
-{
-	DE_UNREF(commandBuffer);
-	DE_UNREF(accelerationStructureCount);
-	DE_UNREF(pAccelerationStructures);
-	DE_UNREF(queryType);
-	DE_UNREF(queryPool);
-	DE_UNREF(firstQuery);
-}
-
-VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
+VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(accelerationStructureCount);
@@ -2590,6 +2580,16 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getAccelerationStructureDeviceAddressKHR (
 	DE_UNREF(device);
 	DE_UNREF(pInfo);
 	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdWriteAccelerationStructuresPropertiesKHR (VkCommandBuffer commandBuffer, deUint32 accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, deUint32 firstQuery)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(accelerationStructureCount);
+	DE_UNREF(pAccelerationStructures);
+	DE_UNREF(queryType);
+	DE_UNREF(queryPool);
+	DE_UNREF(firstQuery);
 }
 
 VKAPI_ATTR void VKAPI_CALL getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility)
@@ -3154,7 +3154,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdSetViewportShadingRatePaletteNV,				cmdSetViewportShadingRatePaletteNV),
 	VK_NULL_FUNC_ENTRY(vkCmdSetCoarseSampleOrderNV,							cmdSetCoarseSampleOrderNV),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureNV,						createAccelerationStructureNV),
-	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureNV,					destroyAccelerationStructureNV),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureMemoryRequirementsNV,		getAccelerationStructureMemoryRequirementsNV),
 	VK_NULL_FUNC_ENTRY(vkBindAccelerationStructureMemoryNV,					bindAccelerationStructureMemoryNV),
@@ -3165,7 +3164,6 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupHandlesKHR,				getRayTracingShaderGroupHandlesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetRayTracingShaderGroupHandlesNV,					getRayTracingShaderGroupHandlesNV),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureHandleNV,					getAccelerationStructureHandleNV),
-	VK_NULL_FUNC_ENTRY(vkCmdWriteAccelerationStructuresPropertiesKHR,		cmdWriteAccelerationStructuresPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdWriteAccelerationStructuresPropertiesNV,		cmdWriteAccelerationStructuresPropertiesNV),
 	VK_NULL_FUNC_ENTRY(vkCompileDeferredNV,									compileDeferredNV),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryHostPointerPropertiesEXT,					getMemoryHostPointerPropertiesEXT),
@@ -3213,6 +3211,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetPrivateDataEXT,									setPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPrivateDataEXT,									getPrivateDataEXT),
 	VK_NULL_FUNC_ENTRY(vkCreateAccelerationStructureKHR,					createAccelerationStructureKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroyAccelerationStructureKHR,					destroyAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresKHR,					cmdBuildAccelerationStructuresKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdBuildAccelerationStructuresIndirectKHR,			cmdBuildAccelerationStructuresIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkBuildAccelerationStructuresKHR,					buildAccelerationStructuresKHR),
@@ -3224,6 +3223,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyAccelerationStructureToMemoryKHR,			cmdCopyAccelerationStructureToMemoryKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToAccelerationStructureKHR,			cmdCopyMemoryToAccelerationStructureKHR),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureDeviceAddressKHR,			getAccelerationStructureDeviceAddressKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdWriteAccelerationStructuresPropertiesKHR,		cmdWriteAccelerationStructuresPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceAccelerationStructureCompatibilityKHR,	getDeviceAccelerationStructureCompatibilityKHR),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureBuildSizesKHR,				getAccelerationStructureBuildSizesKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdTraceRaysKHR,									cmdTraceRaysKHR),

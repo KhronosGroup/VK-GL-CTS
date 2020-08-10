@@ -183,9 +183,9 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsProp
 template<> void initPropertyFromBlob<VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT>(VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRobustness2PropertiesEXT>(VkPhysicalDeviceRobustness2PropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCustomBorderColorPropertiesEXT>(VkPhysicalDeviceCustomBorderColorPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>(VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceAccelerationStructurePropertiesKHR>(VkPhysicalDeviceAccelerationStructurePropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>(VkPhysicalDeviceRayTracingPipelinePropertiesKHR&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>(VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&, const AllPropertiesBlobs&) {}
 
 
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceAccelerationStructurePropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION, 39}; }

@@ -3683,12 +3683,12 @@ struct VkBindAccelerationStructureMemoryInfoNV
 	const deUint32*				pDeviceIndices;
 };
 
-struct VkWriteDescriptorSetAccelerationStructureKHR
+struct VkWriteDescriptorSetAccelerationStructureNV
 {
 	VkStructureType						sType;
 	const void*							pNext;
 	deUint32							accelerationStructureCount;
-	const VkAccelerationStructureKHR*	pAccelerationStructures;
+	const VkAccelerationStructureNV*	pAccelerationStructures;
 };
 
 struct VkAccelerationStructureMemoryRequirementsInfoNV
@@ -4578,6 +4578,30 @@ struct VkDeviceDiagnosticsConfigCreateInfoNV
 	VkDeviceDiagnosticsConfigFlagsNV	flags;
 };
 
+struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapDeferred;
+};
+
+struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		subsampledLoads;
+	VkBool32		subsampledCoarseReconstructionEarlyAccess;
+	deUint32		maxSubsampledArrayLayers;
+	deUint32		maxDescriptorSetSubsampledSamplers;
+};
+
+struct VkPhysicalDeviceImageRobustnessFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		robustImageAccess;
+};
+
 union VkDeviceOrHostAddressKHR
 {
 	VkDeviceAddress	deviceAddress;
@@ -4668,6 +4692,14 @@ struct VkAccelerationStructureCreateInfoKHR
 	VkDeviceSize							size;
 	VkAccelerationStructureTypeKHR			type;
 	VkDeviceAddress							deviceAddress;
+};
+
+struct VkWriteDescriptorSetAccelerationStructureKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							accelerationStructureCount;
+	const VkAccelerationStructureKHR*	pAccelerationStructures;
 };
 
 struct VkPhysicalDeviceAccelerationStructureFeaturesKHR
@@ -4827,30 +4859,6 @@ struct VkPhysicalDeviceRayQueryFeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		rayQuery;
-};
-
-struct VkPhysicalDeviceFragmentDensityMap2FeaturesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		fragmentDensityMapDeferred;
-};
-
-struct VkPhysicalDeviceFragmentDensityMap2PropertiesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		subsampledLoads;
-	VkBool32		subsampledCoarseReconstructionEarlyAccess;
-	deUint32		maxSubsampledArrayLayers;
-	deUint32		maxDescriptorSetSubsampledSamplers;
-};
-
-struct VkPhysicalDeviceImageRobustnessFeaturesEXT
-{
-	VkStructureType	sType;
-	void*			pNext;
-	VkBool32		robustImageAccess;
 };
 
 struct VkAndroidSurfaceCreateInfoKHR
@@ -5377,8 +5385,6 @@ typedef VkBufferOpaqueCaptureAddressCreateInfo VkBufferOpaqueCaptureAddressCreat
 typedef VkMemoryOpaqueCaptureAddressAllocateInfo VkMemoryOpaqueCaptureAddressAllocateInfoKHR;
 
 typedef VkDeviceMemoryOpaqueCaptureAddressInfo VkDeviceMemoryOpaqueCaptureAddressInfoKHR;
-
-typedef VkWriteDescriptorSetAccelerationStructureKHR VkWriteDescriptorSetAccelerationStructureNV;
 
 typedef VkTransformMatrixKHR VkTransformMatrixNV;
 

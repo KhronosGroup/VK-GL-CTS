@@ -228,11 +228,11 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceCustomBorderColorFeaturesEXT
 template<> void initFeatureFromBlob<VkPhysicalDevicePrivateDataFeaturesEXT>(VkPhysicalDevicePrivateDataFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT>(VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDiagnosticsConfigFeaturesNV>(VkPhysicalDeviceDiagnosticsConfigFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceImageRobustnessFeaturesEXT>(VkPhysicalDeviceImageRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(VkPhysicalDeviceAccelerationStructureFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(VkPhysicalDeviceRayTracingPipelineFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayQueryFeaturesKHR>(VkPhysicalDeviceRayQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceImageRobustnessFeaturesEXT>(VkPhysicalDeviceImageRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
 
 
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevice16BitStorageFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES, VK_KHR_16BIT_STORAGE_EXTENSION_NAME, VK_KHR_16BIT_STORAGE_SPEC_VERSION, 67}; }

@@ -149,12 +149,6 @@ void Deleter<VkValidationCacheEXT>::operator() (VkValidationCacheEXT obj) const
 }
 
 template<>
-void Deleter<VkAccelerationStructureKHR>::operator() (VkAccelerationStructureKHR obj) const
-{
-	m_deviceIface->destroyAccelerationStructureKHR(m_device, obj, m_allocator);
-}
-
-template<>
 void Deleter<VkAccelerationStructureNV>::operator() (VkAccelerationStructureNV obj) const
 {
 	m_deviceIface->destroyAccelerationStructureNV(m_device, obj, m_allocator);
@@ -170,6 +164,12 @@ template<>
 void Deleter<VkPrivateDataSlotEXT>::operator() (VkPrivateDataSlotEXT obj) const
 {
 	m_deviceIface->destroyPrivateDataSlotEXT(m_device, obj, m_allocator);
+}
+
+template<>
+void Deleter<VkAccelerationStructureKHR>::operator() (VkAccelerationStructureKHR obj) const
+{
+	m_deviceIface->destroyAccelerationStructureKHR(m_device, obj, m_allocator);
 }
 
 } // refdetails

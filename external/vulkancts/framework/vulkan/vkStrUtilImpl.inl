@@ -36,11 +36,11 @@ template<> const char*	getTypeName<VkDeferredOperationKHR>				(void) { return "V
 template<> const char*	getTypeName<VkDebugReportCallbackEXT>			(void) { return "VkDebugReportCallbackEXT";			}
 template<> const char*	getTypeName<VkDebugUtilsMessengerEXT>			(void) { return "VkDebugUtilsMessengerEXT";			}
 template<> const char*	getTypeName<VkValidationCacheEXT>				(void) { return "VkValidationCacheEXT";				}
-template<> const char*	getTypeName<VkAccelerationStructureKHR>			(void) { return "VkAccelerationStructureKHR";		}
+template<> const char*	getTypeName<VkAccelerationStructureNV>			(void) { return "VkAccelerationStructureNV";		}
 template<> const char*	getTypeName<VkPerformanceConfigurationINTEL>	(void) { return "VkPerformanceConfigurationINTEL";	}
 template<> const char*	getTypeName<VkIndirectCommandsLayoutNV>			(void) { return "VkIndirectCommandsLayoutNV";		}
 template<> const char*	getTypeName<VkPrivateDataSlotEXT>				(void) { return "VkPrivateDataSlotEXT";				}
-template<> const char*	getTypeName<VkAccelerationStructureNV>			(void) { return "VkAccelerationStructureNV";		}
+template<> const char*	getTypeName<VkAccelerationStructureKHR>			(void) { return "VkAccelerationStructureKHR";		}
 
 namespace pt
 {
@@ -103,7 +103,6 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:						return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
 		case VK_ERROR_VALIDATION_FAILED_EXT:						return "VK_ERROR_VALIDATION_FAILED_EXT";
 		case VK_ERROR_INVALID_SHADER_NV:							return "VK_ERROR_INVALID_SHADER_NV";
-		case VK_ERROR_INCOMPATIBLE_VERSION_KHR:						return "VK_ERROR_INCOMPATIBLE_VERSION_KHR";
 		case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT:	return "VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT";
 		case VK_ERROR_NOT_PERMITTED_EXT:							return "VK_ERROR_NOT_PERMITTED_EXT";
 		case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:			return "VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT";
@@ -452,6 +451,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV:											return "VK_STRUCTURE_TYPE_GEOMETRY_TRIANGLES_NV";
 		case VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV:												return "VK_STRUCTURE_TYPE_GEOMETRY_AABB_NV";
 		case VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV:						return "VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV";
+		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV:					return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV";
 		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV:				return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_NV";
@@ -638,6 +638,7 @@ const char* getObjectTypeName (VkObjectType value)
 		case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT:			return "VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT";
 		case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR:			return "VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR";
 		case VK_OBJECT_TYPE_VALIDATION_CACHE_EXT:				return "VK_OBJECT_TYPE_VALIDATION_CACHE_EXT";
+		case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV:			return "VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV";
 		case VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL:	return "VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL";
 		case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR:				return "VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR";
 		case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:		return "VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV";
@@ -994,6 +995,7 @@ const char* getQueryTypeName (VkQueryType value)
 		case VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR:							return "VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR:		return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR";
 		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR:	return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_SIZE_KHR";
+		case VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV:		return "VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_NV";
 		case VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL:							return "VK_QUERY_TYPE_PERFORMANCE_QUERY_INTEL";
 		case VK_QUERY_TYPE_MAX_ENUM:										return "VK_QUERY_TYPE_MAX_ENUM";
 		default:															return DE_NULL;
@@ -1354,6 +1356,7 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:			return "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT";
 		case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:	return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT";
 		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR";
+		case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:	return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV";
 		case VK_DESCRIPTOR_TYPE_MAX_ENUM:					return "VK_DESCRIPTOR_TYPE_MAX_ENUM";
 		default:											return DE_NULL;
 	}
@@ -1696,6 +1699,7 @@ const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
 		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_EXT:	return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR_EXT:	return "VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV_EXT";
 		case VK_DEBUG_REPORT_OBJECT_TYPE_MAX_ENUM_EXT:						return "VK_DEBUG_REPORT_OBJECT_TYPE_MAX_ENUM_EXT";
 		default:															return DE_NULL;
 	}
@@ -8469,9 +8473,9 @@ std::ostream& operator<< (std::ostream& s, const VkBindAccelerationStructureMemo
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSetAccelerationStructureKHR& value)
+std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSetAccelerationStructureNV& value)
 {
-	s << "VkWriteDescriptorSetAccelerationStructureKHR = {\n";
+	s << "VkWriteDescriptorSetAccelerationStructureNV = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\taccelerationStructureCount = " << value.accelerationStructureCount << '\n';
@@ -9682,6 +9686,39 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceDiagnosticsConfigCreate
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMap2FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentDensityMapDeferred = " << value.fragmentDensityMapDeferred << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMap2PropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsubsampledLoads = " << value.subsampledLoads << '\n';
+	s << "\tsubsampledCoarseReconstructionEarlyAccess = " << value.subsampledCoarseReconstructionEarlyAccess << '\n';
+	s << "\tmaxSubsampledArrayLayers = " << value.maxSubsampledArrayLayers << '\n';
+	s << "\tmaxDescriptorSetSubsampledSamplers = " << value.maxDescriptorSetSubsampledSamplers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceImageRobustnessFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trobustImageAccess = " << value.robustImageAccess << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDeviceOrHostAddressKHR& value)
 {
 	s << "VkDeviceOrHostAddressKHR = {\n";
@@ -9800,6 +9837,17 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureCreateIn
 	s << "\tsize = " << value.size << '\n';
 	s << "\ttype = " << value.type << '\n';
 	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSetAccelerationStructureKHR& value)
+{
+	s << "VkWriteDescriptorSetAccelerationStructureKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\taccelerationStructureCount = " << value.accelerationStructureCount << '\n';
+	s << "\tpAccelerationStructures = " << value.pAccelerationStructures << '\n';
 	s << '}';
 	return s;
 }
@@ -10007,39 +10055,6 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayQueryFeature
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trayQuery = " << value.rayQuery << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value)
-{
-	s << "VkPhysicalDeviceFragmentDensityMap2FeaturesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tfragmentDensityMapDeferred = " << value.fragmentDensityMapDeferred << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value)
-{
-	s << "VkPhysicalDeviceFragmentDensityMap2PropertiesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsubsampledLoads = " << value.subsampledLoads << '\n';
-	s << "\tsubsampledCoarseReconstructionEarlyAccess = " << value.subsampledCoarseReconstructionEarlyAccess << '\n';
-	s << "\tmaxSubsampledArrayLayers = " << value.maxSubsampledArrayLayers << '\n';
-	s << "\tmaxDescriptorSetSubsampledSamplers = " << value.maxDescriptorSetSubsampledSamplers << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value)
-{
-	s << "VkPhysicalDeviceImageRobustnessFeaturesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\trobustImageAccess = " << value.robustImageAccess << '\n';
 	s << '}';
 	return s;
 }

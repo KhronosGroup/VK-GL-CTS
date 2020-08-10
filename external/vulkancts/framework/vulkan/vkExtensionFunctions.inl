@@ -788,6 +788,14 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_fragment_density_map2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_robustness")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_acceleration_structure")
 	{
 		return;
@@ -797,14 +805,6 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 		return;
 	}
 	if (extName == "VK_KHR_ray_query")
-	{
-		return;
-	}
-	if (extName == "VK_EXT_fragment_density_map2")
-	{
-		return;
-	}
-	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}
@@ -1524,7 +1524,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	if (extName == "VK_NV_ray_tracing")
 	{
 		functions.push_back("vkCreateAccelerationStructureNV");
-		functions.push_back("vkDestroyAccelerationStructureKHR");
 		functions.push_back("vkDestroyAccelerationStructureNV");
 		functions.push_back("vkGetAccelerationStructureMemoryRequirementsNV");
 		functions.push_back("vkBindAccelerationStructureMemoryNV");
@@ -1535,7 +1534,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkGetRayTracingShaderGroupHandlesKHR");
 		functions.push_back("vkGetRayTracingShaderGroupHandlesNV");
 		functions.push_back("vkGetAccelerationStructureHandleNV");
-		functions.push_back("vkCmdWriteAccelerationStructuresPropertiesKHR");
 		functions.push_back("vkCmdWriteAccelerationStructuresPropertiesNV");
 		functions.push_back("vkCompileDeferredNV");
 		return;
@@ -1812,9 +1810,18 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_fragment_density_map2")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_image_robustness")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_acceleration_structure")
 	{
 		functions.push_back("vkCreateAccelerationStructureKHR");
+		functions.push_back("vkDestroyAccelerationStructureKHR");
 		functions.push_back("vkCmdBuildAccelerationStructuresKHR");
 		functions.push_back("vkCmdBuildAccelerationStructuresIndirectKHR");
 		functions.push_back("vkBuildAccelerationStructuresKHR");
@@ -1826,6 +1833,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		functions.push_back("vkCmdCopyAccelerationStructureToMemoryKHR");
 		functions.push_back("vkCmdCopyMemoryToAccelerationStructureKHR");
 		functions.push_back("vkGetAccelerationStructureDeviceAddressKHR");
+		functions.push_back("vkCmdWriteAccelerationStructuresPropertiesKHR");
 		functions.push_back("vkGetDeviceAccelerationStructureCompatibilityKHR");
 		functions.push_back("vkGetAccelerationStructureBuildSizesKHR");
 		return;
@@ -1841,14 +1849,6 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_KHR_ray_query")
-	{
-		return;
-	}
-	if (extName == "VK_EXT_fragment_density_map2")
-	{
-		return;
-	}
-	if (extName == "VK_EXT_image_robustness")
 	{
 		return;
 	}

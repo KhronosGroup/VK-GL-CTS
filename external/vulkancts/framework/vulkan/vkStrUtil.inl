@@ -791,7 +791,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkGeometryNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindAccelerationStructureMemoryInfoNV& value);
-std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetAccelerationStructureKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetAccelerationStructureNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureMemoryRequirementsInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTransformMatrixKHR& value);
@@ -897,6 +897,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPrivateDataSlotCreateInfoEXT&
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDiagnosticsConfigFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressConstKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildRangeInfoKHR& value);
@@ -907,6 +910,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometry
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureGeometryKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureBuildGeometryInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetAccelerationStructureKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAccelerationStructureFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAccelerationStructurePropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureDeviceAddressInfoKHR& value);
@@ -923,9 +927,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPipel
 std::ostream&	operator<<	(std::ostream& s, const VkStridedDeviceAddressRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayQueryFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2FeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMap2PropertiesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImageRobustnessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value);
