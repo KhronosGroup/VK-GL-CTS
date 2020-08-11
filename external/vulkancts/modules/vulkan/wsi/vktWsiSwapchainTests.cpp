@@ -1191,12 +1191,13 @@ typedef de::SharedPtr<Unique<VkSemaphore> >		SemaphoreSp;
 
 vector<FenceSp> createFences (const DeviceInterface&	vkd,
 							  const VkDevice			device,
-							  size_t					numFences)
+							  size_t					numFences,
+							  bool                      isSignaled = true)
 {
 	vector<FenceSp> fences(numFences);
 
 	for (size_t ndx = 0; ndx < numFences; ++ndx)
-		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device, vk::VK_FENCE_CREATE_SIGNALED_BIT)));
+		fences[ndx] = FenceSp(new Unique<VkFence>(createFence(vkd, device, (isSignaled) ? vk::VK_FENCE_CREATE_SIGNALED_BIT : 0)));
 
 	return fences;
 }
@@ -2526,7 +2527,7 @@ tcu::TestStatus acquireTooManyTest (Context& context, Type wsiType)
 	if (numImages < minImageCount) return tcu::TestStatus::fail("Get swapchain images returned less than minImageCount images");
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
-	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1);
+	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
 	deUint32 dummy;
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
 		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
@@ -2563,7 +2564,7 @@ tcu::TestStatus acquireTooManyTimeoutTest (Context& context, Type wsiType)
 	if (numImages < minImageCount) return tcu::TestStatus::fail("Get swapchain images returned less than minImageCount images");
 	const deUint32 numAcquirableImages = numImages - minImageCount + 1;
 
-	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1);
+	const auto fences = createFences(devHelper.vkd, *devHelper.device, numAcquirableImages + 1, false);
 	deUint32 dummy;
 	for (deUint32 i = 0; i < numAcquirableImages; ++i) {
 		VK_CHECK_WSI(devHelper.vkd.acquireNextImageKHR(*devHelper.device, *swapchain, std::numeric_limits<deUint64>::max(), (VkSemaphore)0, **fences[i], &dummy));
