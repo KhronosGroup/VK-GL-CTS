@@ -13,6 +13,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageAtomicSpirvShaders.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
+	vktImageMismatchedFormatsTests.cpp
+	vktImageMismatchedFormatsTests.hpp
 	vktImageMutableTests.cpp
 	vktImageMutableTests.hpp
 	vktImageQualifiersTests.cpp
