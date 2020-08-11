@@ -5,6 +5,8 @@ set(DEQP_VK_FRAGMENT_SHADING_RATE_SRCS
 	vktFragmentShadingRateTests.hpp
 	vktFragmentShadingRateBasic.cpp
 	vktFragmentShadingRateBasic.hpp
+	vktFragmentShadingRatePixelConsistency.hpp
+	vktFragmentShadingRatePixelConsistency.cpp
 )
 
 set(DEQP_VK_FRAGMENT_SHADING_RATE_LIBS

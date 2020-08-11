@@ -24,6 +24,7 @@
 
 #include "vktFragmentShadingRateTests.hpp"
 #include "vktFragmentShadingRateBasic.hpp"
+#include "vktFragmentShadingRatePixelConsistency.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -38,7 +39,8 @@ void createChildren (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&	testCtx		= group->getTestContext();
 
-	createBasicTests(testCtx, group);
+	createBasicTests		   (testCtx, group);
+	createPixelConsistencyTests(testCtx, group);
 }
 
 } // anonymous
