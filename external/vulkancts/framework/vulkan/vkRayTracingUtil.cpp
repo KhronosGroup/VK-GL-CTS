@@ -2121,7 +2121,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkSh
 	addShader(shaderStage, makeVkSharedPtr(shaderModule), group, specializationInfo);
 }
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfo)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfoPtr)
 {
 	if (group >= m_shadersGroupCreateInfos.size())
 	{
@@ -2193,7 +2193,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::Share
 			shaderStage,											//  VkShaderStageFlagBits				stage;
 			**shaderModule,											//  VkShaderModule						module;
 			"main",													//  const char*							pName;
-			specializationInfo,										//  const VkSpecializationInfo*			pSpecializationInfo;
+			specializationInfoPtr,									//  const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
 		m_shaderCreateInfos.push_back(shaderCreateInfo);
@@ -2406,6 +2406,8 @@ public:
 	virtual deUint64		getMaxInstanceCount							(void)	{ return m_accelerationStructureProperties.maxInstanceCount;						};
 	virtual deUint64		getMaxPrimitiveCount						(void)	{ return m_accelerationStructureProperties.maxPrimitiveCount;						};
 	virtual deUint32		getMaxDescriptorSetAccelerationStructures	(void)	{ return m_accelerationStructureProperties.maxDescriptorSetAccelerationStructures;	};
+	deUint32				getMaxRayDispatchInvocationCount			(void)	{ return m_rayTracingPipelineProperties.maxRayDispatchInvocationCount;				};
+	deUint32				getMaxRayHitAttributeSize					(void)	{ return m_rayTracingPipelineProperties.maxRayHitAttributeSize;						};
 
 protected:
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR	m_accelerationStructureProperties;

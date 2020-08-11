@@ -689,7 +689,7 @@ public:
 	void														addShader					(VkShaderStageFlagBits									shaderStage,
 																							 de::SharedPtr<Move<VkShaderModule>>					shaderModule,
 																							 deUint32												group,
-																							 const VkSpecializationInfo*							specializationInfo = nullptr);
+																							 const VkSpecializationInfo*							specializationInfoPtr = nullptr);
 	void														addLibrary					(de::SharedPtr<de::MovePtr<RayTracingPipeline>>			pipelineLibrary);
 	Move<VkPipeline>											createPipeline				(const DeviceInterface&									vk,
 																							 const VkDevice											device,
@@ -755,6 +755,8 @@ public:
 	virtual deUint64				getMaxInstanceCount							(void)	= DE_NULL;
 	virtual deUint64				getMaxPrimitiveCount						(void)	= DE_NULL;
 	virtual deUint32				getMaxDescriptorSetAccelerationStructures	(void)	= DE_NULL;
+	virtual deUint32				getMaxRayDispatchInvocationCount			(void)	= DE_NULL;
+	virtual deUint32				getMaxRayHitAttributeSize					(void)	= DE_NULL;
 };
 
 de::MovePtr<RayTracingProperties> makeRayTracingProperties (const InstanceInterface&	vki,
