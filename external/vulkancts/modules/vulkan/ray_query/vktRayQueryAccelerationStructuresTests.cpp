@@ -1315,15 +1315,24 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 
 class RayQueryASBasicTestCase : public TestCase
 {
-	public:
-							RayQueryASBasicTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+public:
+							RayQueryASBasicTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
 							~RayQueryASBasicTestCase	(void);
 
 	virtual void			checkSupport				(Context& context) const;
 	virtual	void			initPrograms				(SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance				(Context& context) const;
-private:
+protected:
 	TestParams				m_data;
+};
+
+class RayQueryASFuncArgTestCase : public RayQueryASBasicTestCase
+{
+public:
+							RayQueryASFuncArgTestCase		(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+							~RayQueryASFuncArgTestCase		(void) {}
+
+	virtual	void			initPrograms					(SourceCollections& programCollection) const;
 };
 
 class RayQueryASBasicTestInstance : public TestInstance
@@ -1345,7 +1354,7 @@ private:
 	TestParams														m_data;
 };
 
-RayQueryASBasicTestCase::RayQueryASBasicTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
+RayQueryASBasicTestCase::RayQueryASBasicTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
 	: vkt::TestCase	(context, name, desc)
 	, m_data		(data)
 {
@@ -1898,6 +1907,306 @@ void RayQueryASBasicTestCase::initPrograms (SourceCollections& programCollection
 TestInstance* RayQueryASBasicTestCase::createInstance (Context& context) const
 {
 	return new RayQueryASBasicTestInstance(context, m_data);
+}
+
+RayQueryASFuncArgTestCase::RayQueryASFuncArgTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
+	: RayQueryASBasicTestCase (context, name, desc, data)
+{
+}
+
+void RayQueryASFuncArgTestCase::initPrograms (SourceCollections& programCollection) const
+{
+	const vk::SpirVAsmBuildOptions	spvBuildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+
+	DE_ASSERT(m_data.shaderSourcePipeline == SSP_COMPUTE_PIPELINE);
+	DE_ASSERT(m_data.bottomTestType == BTT_TRIANGLES);
+
+	// The SPIR-V assembly shader below is based on the following GLSL code.
+	// In it, rayQueryInitializeBottomWrapper has been modified to take a
+	// bare AS as the second argument, instead of a pointer.
+	//
+	//	#version 460 core
+	//	#extension GL_EXT_ray_query : require
+	//	layout(r32ui, set = 0, binding = 0) uniform uimage3D result;
+	//	layout(set = 0, binding = 1) uniform accelerationStructureEXT rqTopLevelAS;
+	//
+	//	void rayQueryInitializeBottomWrapper(rayQueryEXT rayQuery,
+	//	       accelerationStructureEXT topLevel,
+	//	       uint rayFlags, uint cullMask, vec3 origin,
+	//	       float tMin, vec3 direction, float tMax)
+	//	{
+	//	  rayQueryInitializeEXT(rayQuery, topLevel, rayFlags, cullMask, origin, tMin, direction, tMax);
+	//	}
+	//
+	//	void rayQueryInitializeTopWrapper(rayQueryEXT rayQuery,
+	//	       accelerationStructureEXT topLevel,
+	//	       uint rayFlags, uint cullMask, vec3 origin,
+	//	       float tMin, vec3 direction, float tMax)
+	//	{
+	//	  rayQueryInitializeBottomWrapper(rayQuery, topLevel, rayFlags, cullMask, origin, tMin, direction, tMax);
+	//	}
+	//
+	//	void main()
+	//	{
+	//	  vec3  origin   = vec3(float(gl_GlobalInvocationID.x) + 0.5, float(gl_GlobalInvocationID.y) + 0.5, 0.5);
+	//	  uvec4 hitValue = uvec4(0,0,0,0);
+	//	  float tmin     = 0.0;
+	//	  float tmax     = 1.0;
+	//	  vec3  direct   = vec3(0.0, 0.0, -1.0);
+	//	  rayQueryEXT rq;
+	//	  rayQueryInitializeTopWrapper(rq, rqTopLevelAS, 0, 0xFF, origin, tmin, direct, tmax);
+	//	  if(rayQueryProceedEXT(rq))
+	//	  {
+	//	    if (rayQueryGetIntersectionTypeEXT(rq, false)==gl_RayQueryCandidateIntersectionTriangleEXT)
+	//	    {
+	//	      hitValue.y = 1;
+	//	      hitValue.x = 1;
+	//	    }
+	//	  }
+	//	  imageStore(result, ivec3(gl_GlobalInvocationID.xy, 0), uvec4(hitValue.x, 0, 0, 0));
+	//	  imageStore(result, ivec3(gl_GlobalInvocationID.xy, 1), uvec4(hitValue.y, 0, 0, 0));
+	//	}
+
+	std::stringstream css;
+	css
+		<< "; SPIR-V\n"
+		<< "; Version: 1.4\n"
+		<< "; Generator: Khronos Glslang Reference Front End; 10\n"
+		<< "; Bound: 139\n"
+		<< "; Schema: 0\n"
+		<< "OpCapability Shader\n"
+		<< "OpCapability RayQueryKHR\n"
+		<< "OpExtension \"SPV_KHR_ray_query\"\n"
+		<< "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+		<< "OpMemoryModel Logical GLSL450\n"
+		<< "OpEntryPoint GLCompute %4 \"main\" %60 %86 %114\n"
+		<< "OpExecutionMode %4 LocalSize 1 1 1\n"
+		<< "OpDecorate %60 BuiltIn GlobalInvocationId\n"
+		<< "OpDecorate %86 DescriptorSet 0\n"
+		<< "OpDecorate %86 Binding 1\n"
+		<< "OpDecorate %114 DescriptorSet 0\n"
+		<< "OpDecorate %114 Binding 0\n"
+		<< "%2 = OpTypeVoid\n"
+		<< "%3 = OpTypeFunction %2\n"
+
+		// Bare query type
+		<< "%6 = OpTypeRayQueryKHR\n"
+
+		// Pointer to query.
+		<< "%7 = OpTypePointer Function %6\n"
+
+		// Bare AS type.
+		<< "%8 = OpTypeAccelerationStructureKHR\n"
+
+		// Pointer to AS.
+		<< "%9 = OpTypePointer UniformConstant %8\n"
+
+		<< "%10 = OpTypeInt 32 0\n"
+		<< "%11 = OpTypePointer Function %10\n"
+		<< "%12 = OpTypeFloat 32\n"
+		<< "%13 = OpTypeVector %12 3\n"
+		<< "%14 = OpTypePointer Function %13\n"
+		<< "%15 = OpTypePointer Function %12\n"
+
+		// This is the function type for rayQueryInitializeTopWrapper and the old rayQueryInitializeBottomWrapper.
+		<< "%16 = OpTypeFunction %2 %7 %9 %11 %11 %14 %15 %14 %15\n"
+
+		// This is the new function type for the modified rayQueryInitializeBottomWrapper that uses a bare AS.
+		//<< "%16b = OpTypeFunction %2 %6 %8 %11 %11 %14 %15 %14 %15\n"
+		<< "%16b = OpTypeFunction %2 %7 %8 %11 %11 %14 %15 %14 %15\n"
+
+		<< "%58 = OpTypeVector %10 3\n"
+		<< "%59 = OpTypePointer Input %58\n"
+		<< "%60 = OpVariable %59 Input\n"
+		<< "%61 = OpConstant %10 0\n"
+		<< "%62 = OpTypePointer Input %10\n"
+		<< "%66 = OpConstant %12 0.5\n"
+		<< "%68 = OpConstant %10 1\n"
+		<< "%74 = OpTypeVector %10 4\n"
+		<< "%75 = OpTypePointer Function %74\n"
+		<< "%77 = OpConstantComposite %74 %61 %61 %61 %61\n"
+		<< "%79 = OpConstant %12 0\n"
+		<< "%81 = OpConstant %12 1\n"
+		<< "%83 = OpConstant %12 -1\n"
+		<< "%84 = OpConstantComposite %13 %79 %79 %83\n"
+		<< "%86 = OpVariable %9 UniformConstant\n"
+		<< "%87 = OpConstant %10 255\n"
+		<< "%99 = OpTypeBool\n"
+		<< "%103 = OpConstantFalse %99\n"
+		<< "%104 = OpTypeInt 32 1\n"
+		<< "%105 = OpConstant %104 0\n"
+		<< "%112 = OpTypeImage %10 3D 0 0 0 2 R32ui\n"
+		<< "%113 = OpTypePointer UniformConstant %112\n"
+		<< "%114 = OpVariable %113 UniformConstant\n"
+		<< "%116 = OpTypeVector %10 2\n"
+		<< "%119 = OpTypeVector %104 2\n"
+		<< "%121 = OpTypeVector %104 3\n"
+		<< "%132 = OpConstant %104 1\n"
+
+		// This is main().
+		<< "%4 = OpFunction %2 None %3\n"
+		<< "%5 = OpLabel\n"
+		<< "%57 = OpVariable %14 Function\n"
+		<< "%76 = OpVariable %75 Function\n"
+		<< "%78 = OpVariable %15 Function\n"
+		<< "%80 = OpVariable %15 Function\n"
+		<< "%82 = OpVariable %14 Function\n"
+		<< "%85 = OpVariable %7 Function\n"
+		<< "%88 = OpVariable %11 Function\n"
+		<< "%89 = OpVariable %11 Function\n"
+		<< "%90 = OpVariable %14 Function\n"
+		<< "%92 = OpVariable %15 Function\n"
+		<< "%94 = OpVariable %14 Function\n"
+		<< "%96 = OpVariable %15 Function\n"
+		<< "%63 = OpAccessChain %62 %60 %61\n"
+		<< "%64 = OpLoad %10 %63\n"
+		<< "%65 = OpConvertUToF %12 %64\n"
+		<< "%67 = OpFAdd %12 %65 %66\n"
+		<< "%69 = OpAccessChain %62 %60 %68\n"
+		<< "%70 = OpLoad %10 %69\n"
+		<< "%71 = OpConvertUToF %12 %70\n"
+		<< "%72 = OpFAdd %12 %71 %66\n"
+		<< "%73 = OpCompositeConstruct %13 %67 %72 %66\n"
+		<< "OpStore %57 %73\n"
+		<< "OpStore %76 %77\n"
+		<< "OpStore %78 %79\n"
+		<< "OpStore %80 %81\n"
+		<< "OpStore %82 %84\n"
+		<< "OpStore %88 %61\n"
+		<< "OpStore %89 %87\n"
+		<< "%91 = OpLoad %13 %57\n"
+		<< "OpStore %90 %91\n"
+		<< "%93 = OpLoad %12 %78\n"
+		<< "OpStore %92 %93\n"
+		<< "%95 = OpLoad %13 %82\n"
+		<< "OpStore %94 %95\n"
+		<< "%97 = OpLoad %12 %80\n"
+		<< "OpStore %96 %97\n"
+		<< "%98 = OpFunctionCall %2 %35 %85 %86 %88 %89 %90 %92 %94 %96\n"
+		<< "%100 = OpRayQueryProceedKHR %99 %85\n"
+		<< "OpSelectionMerge %102 None\n"
+		<< "OpBranchConditional %100 %101 %102\n"
+		<< "%101 = OpLabel\n"
+		<< "%106 = OpRayQueryGetIntersectionTypeKHR %10 %85 %105\n"
+		<< "%107 = OpIEqual %99 %106 %61\n"
+		<< "OpSelectionMerge %109 None\n"
+		<< "OpBranchConditional %107 %108 %109\n"
+		<< "%108 = OpLabel\n"
+		<< "%110 = OpAccessChain %11 %76 %68\n"
+		<< "OpStore %110 %68\n"
+		<< "%111 = OpAccessChain %11 %76 %61\n"
+		<< "OpStore %111 %68\n"
+		<< "OpBranch %109\n"
+		<< "%109 = OpLabel\n"
+		<< "OpBranch %102\n"
+		<< "%102 = OpLabel\n"
+		<< "%115 = OpLoad %112 %114\n"
+		<< "%117 = OpLoad %58 %60\n"
+		<< "%118 = OpVectorShuffle %116 %117 %117 0 1\n"
+		<< "%120 = OpBitcast %119 %118\n"
+		<< "%122 = OpCompositeExtract %104 %120 0\n"
+		<< "%123 = OpCompositeExtract %104 %120 1\n"
+		<< "%124 = OpCompositeConstruct %121 %122 %123 %105\n"
+		<< "%125 = OpAccessChain %11 %76 %61\n"
+		<< "%126 = OpLoad %10 %125\n"
+		<< "%127 = OpCompositeConstruct %74 %126 %61 %61 %61\n"
+		<< "OpImageWrite %115 %124 %127 ZeroExtend\n"
+		<< "%128 = OpLoad %112 %114\n"
+		<< "%129 = OpLoad %58 %60\n"
+		<< "%130 = OpVectorShuffle %116 %129 %129 0 1\n"
+		<< "%131 = OpBitcast %119 %130\n"
+		<< "%133 = OpCompositeExtract %104 %131 0\n"
+		<< "%134 = OpCompositeExtract %104 %131 1\n"
+		<< "%135 = OpCompositeConstruct %121 %133 %134 %132\n"
+		<< "%136 = OpAccessChain %11 %76 %68\n"
+		<< "%137 = OpLoad %10 %136\n"
+		<< "%138 = OpCompositeConstruct %74 %137 %61 %61 %61\n"
+		<< "OpImageWrite %128 %135 %138 ZeroExtend\n"
+		<< "OpReturn\n"
+		<< "OpFunctionEnd\n"
+
+		// This is rayQueryInitializeBottomWrapper, calling OpRayQueryInitializeKHR.
+		// We have modified the function type so it takes bare arguments.
+		//%25 = OpFunction %2 None %16
+		<< "%25 = OpFunction %2 None %16b\n"
+
+		// These is the modified parameter.
+		<< "%17 = OpFunctionParameter %7\n"
+		//<< "%17 = OpFunctionParameter %6\n"
+		//%18 = OpFunctionParameter %9
+		<< "%18 = OpFunctionParameter %8\n"
+
+		<< "%19 = OpFunctionParameter %11\n"
+		<< "%20 = OpFunctionParameter %11\n"
+		<< "%21 = OpFunctionParameter %14\n"
+		<< "%22 = OpFunctionParameter %15\n"
+		<< "%23 = OpFunctionParameter %14\n"
+		<< "%24 = OpFunctionParameter %15\n"
+		<< "%26 = OpLabel\n"
+
+		// We no longer need to load this parameter.
+		//%37 = OpLoad %8 %18
+
+		<< "%38 = OpLoad %10 %19\n"
+		<< "%39 = OpLoad %10 %20\n"
+		<< "%40 = OpLoad %13 %21\n"
+		<< "%41 = OpLoad %12 %22\n"
+		<< "%42 = OpLoad %13 %23\n"
+		<< "%43 = OpLoad %12 %24\n"
+
+		// We call OpRayQueryInitializeKHR with bare arguments.
+		// Note: some experimental lines to pass a bare rayQuery as the first argument have been commented out.
+		//OpRayQueryInitializeKHR %17 %37 %38 %39 %40 %41 %42 %43
+		<< "OpRayQueryInitializeKHR %17 %18 %38 %39 %40 %41 %42 %43\n"
+
+		<< "OpReturn\n"
+		<< "OpFunctionEnd\n"
+
+		// This is rayQueryInitializeTopWrapper, calling rayQueryInitializeBottomWrapper.
+		<< "%35 = OpFunction %2 None %16\n"
+		<< "%27 = OpFunctionParameter %7\n"
+		<< "%28 = OpFunctionParameter %9\n"
+		<< "%29 = OpFunctionParameter %11\n"
+		<< "%30 = OpFunctionParameter %11\n"
+		<< "%31 = OpFunctionParameter %14\n"
+		<< "%32 = OpFunctionParameter %15\n"
+		<< "%33 = OpFunctionParameter %14\n"
+		<< "%34 = OpFunctionParameter %15\n"
+		<< "%36 = OpLabel\n"
+		<< "%44 = OpVariable %11 Function\n"
+		<< "%46 = OpVariable %11 Function\n"
+		<< "%48 = OpVariable %14 Function\n"
+		<< "%50 = OpVariable %15 Function\n"
+		<< "%52 = OpVariable %14 Function\n"
+		<< "%54 = OpVariable %15 Function\n"
+
+		// We need to load the second argument.
+		//<< "%27b = OpLoad %6 %27\n"
+		<< "%28b = OpLoad %8 %28\n"
+
+		<< "%45 = OpLoad %10 %29\n"
+		<< "OpStore %44 %45\n"
+		<< "%47 = OpLoad %10 %30\n"
+		<< "OpStore %46 %47\n"
+		<< "%49 = OpLoad %13 %31\n"
+		<< "OpStore %48 %49\n"
+		<< "%51 = OpLoad %12 %32\n"
+		<< "OpStore %50 %51\n"
+		<< "%53 = OpLoad %13 %33\n"
+		<< "OpStore %52 %53\n"
+		<< "%55 = OpLoad %12 %34\n"
+		<< "OpStore %54 %55\n"
+
+		// We call rayQueryInitializeBottomWrapper with the loaded argument.
+		//%56 = OpFunctionCall %2 %25 %27 %28 %44 %46 %48 %50 %52 %54
+		//<< "%56 = OpFunctionCall %2 %25 %27b %28b %44 %46 %48 %50 %52 %54\n"
+		<< "%56 = OpFunctionCall %2 %25 %27 %28b %44 %46 %48 %50 %52 %54\n"
+
+		<< "OpReturn\n"
+		<< "OpFunctionEnd\n"
+		;
+
+	programCollection.spirvAsmSources.add("comp_as_triangle") << spvBuildOptions << css.str();
 }
 
 RayQueryASBasicTestInstance::RayQueryASBasicTestInstance (Context& context, const TestParams& data)
@@ -2680,6 +2989,46 @@ void addHostThreadingOperationTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addFuncArgTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		const char*											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+	{
+		TestParams testParams
+		{
+			SST_COMPUTE_SHADER,
+			SSP_COMPUTE_PIPELINE,
+			buildTypes[buildTypeNdx].buildType,
+			VK_FORMAT_R32G32B32_SFLOAT,
+			false,
+			VK_INDEX_TYPE_NONE_KHR,
+			BTT_TRIANGLES,
+			false,
+			TTT_IDENTICAL_INSTANCES,
+			false,
+			VkBuildAccelerationStructureFlagsKHR(0u),
+			OT_NONE,
+			OP_NONE,
+			TEST_WIDTH,
+			TEST_HEIGHT,
+			0u,
+		};
+
+		group->addChild(new RayQueryASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
+	}
+}
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests using rayQuery feature"));
@@ -2688,6 +3037,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "format", "Test building AS with different vertex and index formats", addVertexIndexFormatsTests);
 	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
+	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 
 	return group.release();
 }

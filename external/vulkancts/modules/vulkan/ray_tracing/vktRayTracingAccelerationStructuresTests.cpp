@@ -638,15 +638,26 @@ VkClearValue SingleTriangleConfiguration::getClearValue()
 
 class RayTracingASBasicTestCase : public TestCase
 {
-	public:
-																	RayTracingASBasicTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams data);
+public:
+																	RayTracingASBasicTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
 																	~RayTracingASBasicTestCase			(void);
 
 	void															checkSupport						(Context& context) const override;
 	void															initPrograms						(SourceCollections& programCollection) const override;
 	TestInstance*													createInstance						(Context& context) const override;
-private:
+protected:
 	TestParams														m_data;
+};
+
+// Same as RayTracingASBasicTestCase but it will only initialize programs for SingleTriangleConfiguration and use hand-tuned SPIR-V
+// assembly.
+class RayTracingASFuncArgTestCase : public RayTracingASBasicTestCase
+{
+public:
+																	RayTracingASFuncArgTestCase			(tcu::TestContext& context, const char* name, const char* desc, const TestParams& data);
+																	~RayTracingASFuncArgTestCase		(void) {}
+
+	void															initPrograms						(SourceCollections& programCollection) const override;
 };
 
 class RayTracingASBasicTestInstance : public TestInstance
@@ -664,7 +675,7 @@ private:
 	TestParams														m_data;
 };
 
-RayTracingASBasicTestCase::RayTracingASBasicTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams data)
+RayTracingASBasicTestCase::RayTracingASBasicTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
 	: vkt::TestCase	(context, name, desc)
 	, m_data		(data)
 {
@@ -822,6 +833,361 @@ void RayTracingASBasicTestCase::initPrograms (SourceCollections& programCollecti
 TestInstance* RayTracingASBasicTestCase::createInstance (Context& context) const
 {
 	return new RayTracingASBasicTestInstance(context, m_data);
+}
+
+RayTracingASFuncArgTestCase::RayTracingASFuncArgTestCase (tcu::TestContext& context, const char* name, const char* desc, const TestParams& data)
+	: RayTracingASBasicTestCase (context, name, desc, data)
+{
+}
+
+void RayTracingASFuncArgTestCase::initPrograms (SourceCollections& programCollection) const
+{
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+	const vk::SpirVAsmBuildOptions	spvBuildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+
+	{
+		// The SPIR-V assembly below is based on the following GLSL code. Some
+		// modifications have been made to make traceRaysBottomWrapper take a bare
+		// acceleration structure as its argument instead of a pointer to it, so we can
+		// test passing a pointer and a bare value in the same test.
+		//
+		//	#version 460 core
+		//	#extension GL_EXT_ray_tracing : require
+		//	layout(location = 0) rayPayloadEXT vec4 hitValue;
+		//	layout(r32f, set = 0, binding = 0) uniform image2D result;
+		//	layout(set = 0, binding = 1) uniform accelerationStructureEXT topLevelAS;
+		//
+		//	void traceRaysBottomWrapper(
+		//	  accelerationStructureEXT topLevel,
+		//	  uint rayFlags,
+		//	  uint cullMask,
+		//	  uint sbtRecordOffset,
+		//	  uint sbtRecordStride,
+		//	  uint missIndex,
+		//	  vec3 origin,
+		//	  float Tmin,
+		//	  vec3 direction,
+		//	  float Tmax)
+		//	{
+		//	  traceRayEXT(topLevel, rayFlags, cullMask, sbtRecordOffset, sbtRecordStride, missIndex, origin, Tmin, direction, Tmax, 0);
+		//	}
+		//
+		//	void traceRaysTopWrapper(
+		//	  accelerationStructureEXT topLevel,
+		//	  uint rayFlags,
+		//	  uint cullMask,
+		//	  uint sbtRecordOffset,
+		//	  uint sbtRecordStride,
+		//	  uint missIndex,
+		//	  vec3 origin,
+		//	  float Tmin,
+		//	  vec3 direction,
+		//	  float Tmax)
+		//	{
+		//	  traceRaysBottomWrapper(topLevel, rayFlags, cullMask, sbtRecordOffset, sbtRecordStride, missIndex, origin, Tmin, direction, Tmax);
+		//	}
+		//
+		//	vec3 calculateOrigin(vec3 zeroOrigin, vec3 xAxis, vec3 yAxis)
+		//	{
+		//	  return zeroOrigin + (float(gl_LaunchIDEXT.x)/float(gl_LaunchSizeEXT.x-1)) * xAxis + (float(gl_LaunchIDEXT.y)/float(gl_LaunchSizeEXT.y-1)) * yAxis;
+		//	}
+		//
+		//	void main()
+		//	{
+		//	  float tmin      = 0.0;
+		//	  float tmax      = 2.0;
+		//	  vec3  origin    = calculateOrigin( vec3(0.1,0.1,1.0), vec3(0.2,0.0,0.0), vec3(0.0,0.2,0.0) );
+		//	  vec3  direction = vec3(0.0,0.0,-1.0);
+		//	  hitValue        = vec4(0.0,0.0,0.0,0.0);
+		//	  traceRaysTopWrapper(topLevelAS, 0, 0xFF, 0, 0, 0, origin, tmin, direction, tmax);
+		//	  imageStore(result, ivec2(gl_LaunchIDEXT.xy), hitValue);
+		//	}
+
+		std::ostringstream rgen;
+		rgen
+			<< "; SPIR-V\n"
+			<< "; Version: 1.4\n"
+			<< "; Generator: Khronos Glslang Reference Front End; 10\n"
+			<< "; Bound: 156\n"
+			<< "; Schema: 0\n"
+			<< "OpCapability RayTracingKHR\n"
+			<< "OpExtension \"SPV_KHR_ray_tracing\"\n"
+			<< "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+			<< "OpMemoryModel Logical GLSL450\n"
+			<< "OpEntryPoint RayGenerationKHR %4 \"main\" %59 %82 %88 %130 %148\n"
+			<< "OpDecorate %59 Location 0\n"
+			<< "OpDecorate %82 BuiltIn LaunchIdKHR\n"
+			<< "OpDecorate %88 BuiltIn LaunchSizeKHR\n"
+			<< "OpDecorate %130 DescriptorSet 0\n"
+			<< "OpDecorate %130 Binding 1\n"
+			<< "OpDecorate %148 DescriptorSet 0\n"
+			<< "OpDecorate %148 Binding 0\n"
+			<< "%2 = OpTypeVoid\n"
+			<< "%3 = OpTypeFunction %2\n"
+
+			// This is the bare type.
+			<< "%6 = OpTypeAccelerationStructureKHR\n"
+
+			// This is the pointer type.
+			<< "%7 = OpTypePointer UniformConstant %6\n"
+
+			<< "%8 = OpTypeInt 32 0\n"
+			<< "%9 = OpTypePointer Function %8\n"
+			<< "%10 = OpTypeFloat 32\n"
+			<< "%11 = OpTypeVector %10 3\n"
+			<< "%12 = OpTypePointer Function %11\n"
+			<< "%13 = OpTypePointer Function %10\n"
+
+			// This is the type for traceRaysTopWrapper and also the original traceRaysBottomWrapper.
+			<< "%14 = OpTypeFunction %2 %7 %9 %9 %9 %9 %9 %12 %13 %12 %13\n"
+
+			// This is the modified type to take a bare AS as the first argument, for the modified version of traceRaysBottomWrapper.
+			<< "%14b = OpTypeFunction %2 %6 %9 %9 %9 %9 %9 %12 %13 %12 %13\n"
+
+			<< "%39 = OpTypeFunction %11 %12 %12 %12\n"
+			<< "%55 = OpTypeInt 32 1\n"
+			<< "%56 = OpConstant %55 0\n"
+			<< "%57 = OpTypeVector %10 4\n"
+			<< "%58 = OpTypePointer RayPayloadKHR %57\n"
+			<< "%59 = OpVariable %58 RayPayloadKHR\n"
+			<< "%80 = OpTypeVector %8 3\n"
+			<< "%81 = OpTypePointer Input %80\n"
+			<< "%82 = OpVariable %81 Input\n"
+			<< "%83 = OpConstant %8 0\n"
+			<< "%84 = OpTypePointer Input %8\n"
+			<< "%88 = OpVariable %81 Input\n"
+			<< "%91 = OpConstant %8 1\n"
+			<< "%112 = OpConstant %10 0\n"
+			<< "%114 = OpConstant %10 2\n"
+			<< "%116 = OpConstant %10 0.100000001\n"
+			<< "%117 = OpConstant %10 1\n"
+			<< "%118 = OpConstantComposite %11 %116 %116 %117\n"
+			<< "%119 = OpConstant %10 0.200000003\n"
+			<< "%120 = OpConstantComposite %11 %119 %112 %112\n"
+			<< "%121 = OpConstantComposite %11 %112 %119 %112\n"
+			<< "%127 = OpConstant %10 -1\n"
+			<< "%128 = OpConstantComposite %11 %112 %112 %127\n"
+			<< "%129 = OpConstantComposite %57 %112 %112 %112 %112\n"
+			<< "%130 = OpVariable %7 UniformConstant\n"
+			<< "%131 = OpConstant %8 255\n"
+			<< "%146 = OpTypeImage %10 2D 0 0 0 2 R32f\n"
+			<< "%147 = OpTypePointer UniformConstant %146\n"
+			<< "%148 = OpVariable %147 UniformConstant\n"
+			<< "%150 = OpTypeVector %8 2\n"
+			<< "%153 = OpTypeVector %55 2\n"
+
+			// This is main().
+			<< "%4 = OpFunction %2 None %3\n"
+			<< "%5 = OpLabel\n"
+			<< "%111 = OpVariable %13 Function\n"
+			<< "%113 = OpVariable %13 Function\n"
+			<< "%115 = OpVariable %12 Function\n"
+			<< "%122 = OpVariable %12 Function\n"
+			<< "%123 = OpVariable %12 Function\n"
+			<< "%124 = OpVariable %12 Function\n"
+			<< "%126 = OpVariable %12 Function\n"
+			<< "%132 = OpVariable %9 Function\n"
+			<< "%133 = OpVariable %9 Function\n"
+			<< "%134 = OpVariable %9 Function\n"
+			<< "%135 = OpVariable %9 Function\n"
+			<< "%136 = OpVariable %9 Function\n"
+			<< "%137 = OpVariable %12 Function\n"
+			<< "%139 = OpVariable %13 Function\n"
+			<< "%141 = OpVariable %12 Function\n"
+			<< "%143 = OpVariable %13 Function\n"
+			<< "OpStore %111 %112\n"
+			<< "OpStore %113 %114\n"
+			<< "OpStore %122 %118\n"
+			<< "OpStore %123 %120\n"
+			<< "OpStore %124 %121\n"
+			<< "%125 = OpFunctionCall %11 %43 %122 %123 %124\n"
+			<< "OpStore %115 %125\n"
+			<< "OpStore %126 %128\n"
+			<< "OpStore %59 %129\n"
+			<< "OpStore %132 %83\n"
+			<< "OpStore %133 %131\n"
+			<< "OpStore %134 %83\n"
+			<< "OpStore %135 %83\n"
+			<< "OpStore %136 %83\n"
+			<< "%138 = OpLoad %11 %115\n"
+			<< "OpStore %137 %138\n"
+			<< "%140 = OpLoad %10 %111\n"
+			<< "OpStore %139 %140\n"
+			<< "%142 = OpLoad %11 %126\n"
+			<< "OpStore %141 %142\n"
+			<< "%144 = OpLoad %10 %113\n"
+			<< "OpStore %143 %144\n"
+			<< "%145 = OpFunctionCall %2 %37 %130 %132 %133 %134 %135 %136 %137 %139 %141 %143\n"
+			<< "%149 = OpLoad %146 %148\n"
+			<< "%151 = OpLoad %80 %82\n"
+			<< "%152 = OpVectorShuffle %150 %151 %151 0 1\n"
+			<< "%154 = OpBitcast %153 %152\n"
+			<< "%155 = OpLoad %57 %59\n"
+			<< "OpImageWrite %149 %154 %155\n"
+			<< "OpReturn\n"
+			<< "OpFunctionEnd\n"
+
+			// This is traceRaysBottomWrapper, doing the OpTraceRayKHR call.
+			// We have modified the type so it takes a bare AS as the first argument.
+			// %25 = OpFunction %2 None %14
+			<< "%25 = OpFunction %2 None %14b\n"
+
+			// Also the type of the first argument here.
+			// %15 = OpFunctionParameter %7
+			<< "%15 = OpFunctionParameter %6\n"
+
+			<< "%16 = OpFunctionParameter %9\n"
+			<< "%17 = OpFunctionParameter %9\n"
+			<< "%18 = OpFunctionParameter %9\n"
+			<< "%19 = OpFunctionParameter %9\n"
+			<< "%20 = OpFunctionParameter %9\n"
+			<< "%21 = OpFunctionParameter %12\n"
+			<< "%22 = OpFunctionParameter %13\n"
+			<< "%23 = OpFunctionParameter %12\n"
+			<< "%24 = OpFunctionParameter %13\n"
+			<< "%26 = OpLabel\n"
+
+			// We no longer need to dereference the pointer here.
+			// %45 = OpLoad %6 %15
+
+			<< "%46 = OpLoad %8 %16\n"
+			<< "%47 = OpLoad %8 %17\n"
+			<< "%48 = OpLoad %8 %18\n"
+			<< "%49 = OpLoad %8 %19\n"
+			<< "%50 = OpLoad %8 %20\n"
+			<< "%51 = OpLoad %11 %21\n"
+			<< "%52 = OpLoad %10 %22\n"
+			<< "%53 = OpLoad %11 %23\n"
+			<< "%54 = OpLoad %10 %24\n"
+
+			// And we can use the first argument here directly.
+			// OpTraceRayKHR %45 %46 %47 %48 %49 %50 %51 %52 %53 %54 %59
+			<< "OpTraceRayKHR %15 %46 %47 %48 %49 %50 %51 %52 %53 %54 %59\n"
+
+			<< "OpReturn\n"
+			<< "OpFunctionEnd\n"
+
+			// This is traceRaysTopWrapper, which calls traceRaysBottomWrapper.
+			<< "%37 = OpFunction %2 None %14\n"
+
+			// First argument, pointer to AS.
+			<< "%27 = OpFunctionParameter %7\n"
+
+			<< "%28 = OpFunctionParameter %9\n"
+			<< "%29 = OpFunctionParameter %9\n"
+			<< "%30 = OpFunctionParameter %9\n"
+			<< "%31 = OpFunctionParameter %9\n"
+			<< "%32 = OpFunctionParameter %9\n"
+			<< "%33 = OpFunctionParameter %12\n"
+			<< "%34 = OpFunctionParameter %13\n"
+			<< "%35 = OpFunctionParameter %12\n"
+			<< "%36 = OpFunctionParameter %13\n"
+			<< "%38 = OpLabel\n"
+			<< "%60 = OpVariable %9 Function\n"
+			<< "%62 = OpVariable %9 Function\n"
+			<< "%64 = OpVariable %9 Function\n"
+			<< "%66 = OpVariable %9 Function\n"
+			<< "%68 = OpVariable %9 Function\n"
+			<< "%70 = OpVariable %12 Function\n"
+			<< "%72 = OpVariable %13 Function\n"
+			<< "%74 = OpVariable %12 Function\n"
+			<< "%76 = OpVariable %13 Function\n"
+
+			// Dereference the pointer to pass the AS as the first argument.
+			<< "%27b = OpLoad %6 %27\n"
+
+			<< "%61 = OpLoad %8 %28\n"
+			<< "OpStore %60 %61\n"
+			<< "%63 = OpLoad %8 %29\n"
+			<< "OpStore %62 %63\n"
+			<< "%65 = OpLoad %8 %30\n"
+			<< "OpStore %64 %65\n"
+			<< "%67 = OpLoad %8 %31\n"
+			<< "OpStore %66 %67\n"
+			<< "%69 = OpLoad %8 %32\n"
+			<< "OpStore %68 %69\n"
+			<< "%71 = OpLoad %11 %33\n"
+			<< "OpStore %70 %71\n"
+			<< "%73 = OpLoad %10 %34\n"
+			<< "OpStore %72 %73\n"
+			<< "%75 = OpLoad %11 %35\n"
+			<< "OpStore %74 %75\n"
+			<< "%77 = OpLoad %10 %36\n"
+			<< "OpStore %76 %77\n"
+
+			// %2 is void, %25 is traceRaysBottomWrapper and %27 was the first argument.
+			// We need to pass the loaded AS instead.
+			// %78 = OpFunctionCall %2 %25 %27 %60 %62 %64 %66 %68 %70 %72 %74 %76
+			<< "%78 = OpFunctionCall %2 %25 %27b %60 %62 %64 %66 %68 %70 %72 %74 %76\n"
+
+			<< "OpReturn\n"
+			<< "OpFunctionEnd\n"
+
+			// This is calculateOrigin().
+			<< "%43 = OpFunction %11 None %39\n"
+			<< "%40 = OpFunctionParameter %12\n"
+			<< "%41 = OpFunctionParameter %12\n"
+			<< "%42 = OpFunctionParameter %12\n"
+			<< "%44 = OpLabel\n"
+			<< "%79 = OpLoad %11 %40\n"
+			<< "%85 = OpAccessChain %84 %82 %83\n"
+			<< "%86 = OpLoad %8 %85\n"
+			<< "%87 = OpConvertUToF %10 %86\n"
+			<< "%89 = OpAccessChain %84 %88 %83\n"
+			<< "%90 = OpLoad %8 %89\n"
+			<< "%92 = OpISub %8 %90 %91\n"
+			<< "%93 = OpConvertUToF %10 %92\n"
+			<< "%94 = OpFDiv %10 %87 %93\n"
+			<< "%95 = OpLoad %11 %41\n"
+			<< "%96 = OpVectorTimesScalar %11 %95 %94\n"
+			<< "%97 = OpFAdd %11 %79 %96\n"
+			<< "%98 = OpAccessChain %84 %82 %91\n"
+			<< "%99 = OpLoad %8 %98\n"
+			<< "%100 = OpConvertUToF %10 %99\n"
+			<< "%101 = OpAccessChain %84 %88 %91\n"
+			<< "%102 = OpLoad %8 %101\n"
+			<< "%103 = OpISub %8 %102 %91\n"
+			<< "%104 = OpConvertUToF %10 %103\n"
+			<< "%105 = OpFDiv %10 %100 %104\n"
+			<< "%106 = OpLoad %11 %42\n"
+			<< "%107 = OpVectorTimesScalar %11 %106 %105\n"
+			<< "%108 = OpFAdd %11 %97 %107\n"
+			<< "OpReturnValue %108\n"
+			<< "OpFunctionEnd\n"
+			;
+
+		programCollection.spirvAsmSources.add("rgen_depth") << spvBuildOptions << rgen.str();
+	}
+
+	// chit_depth and miss_depth below have been left untouched.
+
+	{
+		std::stringstream css;
+		css <<
+			"#version 460 core\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			"layout(location = 0) rayPayloadInEXT vec4 hitValue;\n"
+			"void main()\n"
+			"{\n"
+			"  hitValue = vec4(gl_RayTmaxEXT,0.0,0.0,1.0);\n"
+			"}\n";
+
+		programCollection.glslSources.add("chit_depth") << glu::ClosestHitSource(updateRayTracingGLSL(css.str())) << buildOptions;
+	}
+
+	{
+		std::stringstream css;
+		css <<
+			"#version 460 core\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			"layout(location = 0) rayPayloadInEXT vec4 hitValue;\n"
+			"void main()\n"
+			"{\n"
+			"  hitValue = vec4(0.0,0.0,0.0,1.0);\n"
+			"}\n";
+
+		programCollection.glslSources.add("miss_depth") << glu::MissSource(updateRayTracingGLSL(css.str())) << buildOptions;
+	}
 }
 
 RayTracingASBasicTestInstance::RayTracingASBasicTestInstance (Context& context, const TestParams& data)
@@ -1555,6 +1921,45 @@ void addHostThreadingOperationTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addFuncArgTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		const char*											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeNdx = 0; buildTypeNdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeNdx)
+	{
+		TestParams testParams
+		{
+			buildTypes[buildTypeNdx].buildType,
+			VK_FORMAT_R32G32B32_SFLOAT,
+			false,
+			VK_INDEX_TYPE_NONE_KHR,
+			BTT_TRIANGLES,
+			false,
+			TTT_IDENTICAL_INSTANCES,
+			false,
+			VkBuildAccelerationStructureFlagsKHR(0u),
+			OT_NONE,
+			OP_NONE,
+			RTAS_DEFAULT_SIZE,
+			RTAS_DEFAULT_SIZE,
+			de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+			0u,
+		};
+
+		group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
+	}
+}
+
 tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "acceleration_structures", "Acceleration structure tests"));
@@ -1563,6 +1968,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "format", "Test building AS with different vertex and index formats", addVertexIndexFormatsTests);
 	addTestGroup(group.get(), "operations", "Test copying, compaction and serialization of AS", addOperationTests);
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
+	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 
 	return group.release();
 }
