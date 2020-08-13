@@ -170,6 +170,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/image/vktImageMutableTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageQualifiersTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSizeTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageSubresourceLayoutTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTexture.cpp \
@@ -466,6 +467,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayControlTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiFullScreenExclusiveTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \

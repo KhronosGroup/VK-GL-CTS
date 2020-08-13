@@ -55,7 +55,7 @@
 	<waiver vendorName="Imagination Technologies" vendorId="0x1010" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/336">
 		<description>GPU's are unable to correctly filter CEM corners with F32 textures, this includes the ability to gather texels for texel gather instructions.</description>
 		<device_list>
-			<!--TODO: plase let me know for which deviceIds this waiver should be defined -->
+			<!--TODO: plase specify for which deviceIds this waiver should be defined -->
 			<d>6200</d>
 		</device_list>
 		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.size_pot.compare_less.clamp_to_edge_repeat</t>
@@ -96,6 +96,55 @@
 		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_1</t>
 		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.level_2</t>
 		<t>dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_2</t>
+	</waiver>
+
+	<waiver vendorName="Imagination Technologies" vendorId="0x1010" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/229">
+		<description>Affected GPU families have a small error within the HW texture units bit replication logic for negative SNORM values prior to applying linear filtering.</description>
+		<device_list>
+			<d>0x24208504</d>
+		</device_list>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d_array.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d_array.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d_array.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d_array.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d_array.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.1d_array.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d_array.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d_array.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d_array.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d_array.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d_array.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.2d_array.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.3d.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.3d.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.3d.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.3d.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.3d.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.3d.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube.format.r8g8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8b8a8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8b8a8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8_snorm.mag_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8_snorm.min_filter.linear</t>
+		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8_snorm.mag_filter.linear</t>
 	</waiver>
 
 	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/757">

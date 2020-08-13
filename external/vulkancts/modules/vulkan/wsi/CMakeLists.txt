@@ -21,6 +21,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiDisplayTests.cpp
 	vktWsiColorSpaceTests.cpp
 	vktWsiColorSpaceTests.hpp
+	vktWsiFullScreenExclusiveTests.cpp
+	vktWsiFullScreenExclusiveTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

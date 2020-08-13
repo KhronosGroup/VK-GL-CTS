@@ -3718,7 +3718,7 @@ tcu::Sampler::FilterMode mapVkMagTexFilter (VkFilter filter)
 	return tcu::Sampler::FILTERMODE_LAST;
 }
 
-//! Get a format the matches the layout in buffer memory used for a
+//! Get a format that matches the layout in buffer memory used for a
 //! buffer<->image copy on a depth/stencil format.
 tcu::TextureFormat getDepthCopyFormat (VkFormat combinedFormat)
 {
@@ -3743,7 +3743,7 @@ tcu::TextureFormat getDepthCopyFormat (VkFormat combinedFormat)
 	}
 }
 
-//! Get a format the matches the layout in buffer memory used for a
+//! Get a format that matches the layout in buffer memory used for a
 //! buffer<->image copy on a depth/stencil format.
 tcu::TextureFormat getStencilCopyFormat (VkFormat combinedFormat)
 {

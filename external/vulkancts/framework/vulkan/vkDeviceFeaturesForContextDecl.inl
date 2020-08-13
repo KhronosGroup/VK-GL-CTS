@@ -2,6 +2,7 @@
  * be lost! Modify the generating script instead.
  */
 const vk::VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures							(void) const;
+const vk::VkPhysicalDevice4444FormatsFeaturesEXT&						get4444FormatsFeaturesEXT						(void) const;
 const vk::VkPhysicalDevice8BitStorageFeatures&							get8BitStorageFeatures							(void) const;
 const vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR&				getAccelerationStructureFeatures				(void) const;
 const vk::VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeaturesEXT						(void) const;

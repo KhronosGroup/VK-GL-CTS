@@ -927,6 +927,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingPipel
 std::ostream&	operator<<	(std::ostream& s, const VkStridedDeviceAddressRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayQueryFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice4444FormatsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidSurfaceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value);

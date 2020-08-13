@@ -37,6 +37,7 @@ class Window
 public:
 	virtual				~Window			(void) {}
 
+	virtual	void		setVisible		(bool visible);
 	virtual void		resize			(const tcu::UVec2& newSize);
 
 protected:

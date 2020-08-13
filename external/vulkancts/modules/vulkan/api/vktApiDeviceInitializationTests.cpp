@@ -892,6 +892,105 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void checkGlobalPrioritySupport (Context& context)
+{
+	context.requireDeviceFunctionality("VK_EXT_global_priority");
+}
+
+tcu::TestStatus createDeviceWithGlobalPriorityTest (Context& context)
+{
+	tcu::TestLog&							log						= context.getTestContext().getLog();
+	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
+	const CustomInstance					instance				(createCustomInstanceFromContext(context));
+	const InstanceDriver&					instanceDriver			(instance.getDriver());
+	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
+	const vector<float>						queuePriorities			(1, 1.0f);
+	const VkQueueGlobalPriorityEXT			globalPriorities[]		= { VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT, VK_QUEUE_GLOBAL_PRIORITY_REALTIME_EXT };
+
+	for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
+	{
+		const VkDeviceQueueGlobalPriorityCreateInfoEXT	queueGlobalPriority		=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT,	//sType;
+			DE_NULL,														//pNext;
+			globalPriority													//globalPriority;
+		};
+
+		const VkDeviceQueueCreateInfo	queueCreateInfo		=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//sType;
+			&queueGlobalPriority,						//pNext;
+			(VkDeviceQueueCreateFlags)0u,				//flags;
+			0,											//queueFamilyIndex;
+			1,											//queueCount;
+			queuePriorities.data()						//pQueuePriorities;
+		};
+
+		const VkDeviceCreateInfo		deviceCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	//sType;
+			DE_NULL,								//pNext;
+			(VkDeviceCreateFlags)0u,				//flags;
+			1,										//queueRecordCount;
+			&queueCreateInfo,						//pRequestedQueues;
+			0,										//layerCount;
+			DE_NULL,								//ppEnabledLayerNames;
+			0,										//extensionCount;
+			DE_NULL,								//ppEnabledExtensionNames;
+			DE_NULL,								//pEnabledFeatures;
+		};
+
+		const bool		mayBeDenied				= globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT;
+
+		try
+		{
+			const Unique<VkDevice>		device				(createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+			const DeviceDriver			deviceDriver		(platformInterface, instance, device.get());
+			const deUint32				queueFamilyIndex	= deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
+			const VkQueue				queue				= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, 0);
+			VkResult					result;
+
+			TCU_CHECK(!!queue);
+
+			result = deviceDriver.queueWaitIdle(queue);
+			if (result == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+			{
+				continue;
+			}
+
+			if (result != VK_SUCCESS)
+			{
+				log << TestLog::Message
+					<< "vkQueueWaitIdle failed"
+					<< ", globalPriority = " << globalPriority
+					<< ", queueCreateInfo " << queueCreateInfo
+					<< ", Error Code: " << result
+					<< TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
+		}
+		catch (const Error& error)
+		{
+			if (error.getError() == VK_ERROR_NOT_PERMITTED_EXT && mayBeDenied)
+			{
+				continue;
+			}
+			else
+			{
+				log << TestLog::Message
+					<< "exception thrown " << error.getMessage()
+					<< ", globalPriority = " << globalPriority
+					<< ", queueCreateInfo " << queueCreateInfo
+					<< ", Error Code: " << error.getError()
+					<< TestLog::EndMessage;
+				return tcu::TestStatus::fail("Fail");
+			}
+		}
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus createDeviceFeatures2Test (Context& context)
 {
 	const PlatformInterface&				vkp						= context.getPlatformInterface();
@@ -1627,6 +1726,7 @@ tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",							"", createMultipleDevicesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",				"", createDeviceWithVariousQueueCountsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_global_priority",					"", checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",							"", createDeviceFeatures2Test);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);
 	addFunctionCase(deviceInitializationTests.get(), "create_device_queue2",							"", createDeviceQueue2Test);

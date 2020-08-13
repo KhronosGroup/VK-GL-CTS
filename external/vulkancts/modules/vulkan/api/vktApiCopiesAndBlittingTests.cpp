@@ -47,8 +47,15 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include <set>
+#include <array>
+#include <algorithm>
+#include <iterator>
+#include <sstream>
 
 namespace vkt
 {
@@ -58,16 +65,16 @@ namespace api
 
 namespace
 {
-enum MirrorMode
-{
-	MIRROR_MODE_NONE = 0,
-	MIRROR_MODE_X = (1<<0),
-	MIRROR_MODE_Y = (1<<1),
-	MIRROR_MODE_Z = (1<<2),
-	MIRROR_MODE_XY = MIRROR_MODE_X | MIRROR_MODE_Y,
 
-	MIRROR_MODE_LAST = (1<<3)
+enum MirrorModeBits
+{
+	MIRROR_MODE_X		= (1<<0),
+	MIRROR_MODE_Y		= (1<<1),
+	MIRROR_MODE_Z		= (1<<2),
+	MIRROR_MODE_LAST	= (1<<3),
 };
+
+using MirrorMode = deUint32;
 
 enum AllocationKind
 {
@@ -399,7 +406,7 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 
 	if (mode == FILL_MODE_GRADIENT)
 	{
-		tcu::fillWithComponentGradients(buffer, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), maxValue);
+		tcu::fillWithComponentGradients2(buffer, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), maxValue);
 		return;
 	}
 
@@ -1211,6 +1218,15 @@ public:
 																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
 		{
 			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		// Check maxImageDimension1D
+		{
+			if (m_params.src.image.imageType == VK_IMAGE_TYPE_1D && m_params.src.image.extent.width > limits.maxImageDimension1D)
+				TCU_THROW(NotSupportedError, "Requested 1D src image dimensions not supported");
+
+			if (m_params.dst.image.imageType == VK_IMAGE_TYPE_1D && m_params.dst.image.extent.width > limits.maxImageDimension1D)
+				TCU_THROW(NotSupportedError, "Requested 1D dst image dimensions not supported");
 		}
 
 		// Check maxImageDimension2D
@@ -2744,7 +2760,7 @@ tcu::Vec4 linearToSRGBIfNeeded (const tcu::TextureFormat& format, const tcu::Vec
 	return isSRGB(format) ? linearToSRGB(color) : color;
 }
 
-void scaleFromWholeSrcBuffer (const tcu::PixelBufferAccess& dst, const tcu::ConstPixelBufferAccess& src, const VkOffset3D regionOffset, const VkOffset3D regionExtent, tcu::Sampler::FilterMode filter, const MirrorMode mirrorMode = MIRROR_MODE_NONE)
+void scaleFromWholeSrcBuffer (const tcu::PixelBufferAccess& dst, const tcu::ConstPixelBufferAccess& src, const VkOffset3D regionOffset, const VkOffset3D regionExtent, tcu::Sampler::FilterMode filter, const MirrorMode mirrorMode = 0u)
 {
 	DE_ASSERT(filter == tcu::Sampler::LINEAR || filter == tcu::Sampler::CUBIC);
 
@@ -2759,9 +2775,9 @@ void scaleFromWholeSrcBuffer (const tcu::PixelBufferAccess& dst, const tcu::Cons
 	for (int y = 0; y < dst.getHeight(); y++)
 	for (int x = 0; x < dst.getWidth(); x++)
 	{
-		float srcX = (mirrorMode & MIRROR_MODE_X) ? (float)regionExtent.x + (float)regionOffset.x - ((float)x + 0.5f) * sX : (float)regionOffset.x + ((float)x + 0.5f) * sX;
-		float srcY = (mirrorMode & MIRROR_MODE_Y) ? (float)regionExtent.y + (float)regionOffset.y - ((float)y + 0.5f) * sY : (float)regionOffset.y + ((float)y + 0.5f) * sY;
-		float srcZ = (mirrorMode & MIRROR_MODE_Z) ? (float)regionExtent.z + (float)regionOffset.z - ((float)y + 0.5f) * sZ : (float)regionOffset.z + ((float)y + 0.5f) * sZ;
+		float srcX = ((mirrorMode & MIRROR_MODE_X) != 0) ? (float)regionExtent.x + (float)regionOffset.x - ((float)x+0.5f)*sX : (float)regionOffset.x + ((float)x+0.5f)*sX;
+		float srcY = ((mirrorMode & MIRROR_MODE_Y) != 0) ? (float)regionExtent.y + (float)regionOffset.y - ((float)y+0.5f)*sY : (float)regionOffset.y + ((float)y+0.5f)*sY;
+		float srcZ = ((mirrorMode & MIRROR_MODE_Z) != 0) ? (float)regionExtent.z + (float)regionOffset.z - ((float)z+0.5f)*sZ : (float)regionOffset.z + ((float)z+0.5f)*sZ;
 		if (dst.getDepth() > 1)
 			dst.setPixel(linearToSRGBIfNeeded(dst.getFormat(), src.sample3D(sampler, filter, srcX, srcY, srcZ)), x, y, z);
 		else
@@ -2803,7 +2819,7 @@ void flipCoordinates (CopyRegion& region, const MirrorMode mirrorMode)
 	const VkOffset3D srcOffset0 = region.imageBlit.srcOffsets[0];
 	const VkOffset3D srcOffset1 = region.imageBlit.srcOffsets[1];
 
-	if (mirrorMode > MIRROR_MODE_NONE && mirrorMode < MIRROR_MODE_LAST)
+	if (mirrorMode != 0u)
 	{
 		//sourceRegion
 		region.imageBlit.srcOffsets[0].x = std::min(srcOffset0.x, srcOffset1.x);
@@ -2825,62 +2841,41 @@ void flipCoordinates (CopyRegion& region, const MirrorMode mirrorMode)
 	}
 }
 
-MirrorMode getMirrorMode(const VkOffset3D x1, const VkOffset3D x2)
+// Mirror X, Y and Z as required by the offset values in the 3 axes.
+MirrorMode getMirrorMode(const VkOffset3D from, const VkOffset3D to)
 {
-	if (x1.x >= x2.x && x1.y >= x2.y)
-	{
-		return MIRROR_MODE_XY;
-	}
-	else if (x1.x <= x2.x && x1.y <= x2.y)
-	{
-		if (x1.z >= x2.z)
-		{
-			return MIRROR_MODE_Z;
-		}
-		else
-		{
-			return MIRROR_MODE_NONE;
-		}
-	}
-	else if (x1.x <= x2.x && x1.y >= x2.y)
-	{
-		return MIRROR_MODE_Y;
-	}
-	else if (x1.x >= x2.x && x1.y <= x2.y)
-	{
-		return MIRROR_MODE_X;
-	}
-	return MIRROR_MODE_LAST;
+	MirrorMode mode = 0u;
+
+	if (from.x > to.x)
+		mode |= MIRROR_MODE_X;
+
+	if (from.y > to.y)
+		mode |= MIRROR_MODE_Y;
+
+	if (from.z > to.z)
+		mode |= MIRROR_MODE_Z;
+
+	return mode;
 }
 
+// Mirror the axes that are mirrored either in the source or destination, but not both.
 MirrorMode getMirrorMode(const VkOffset3D s1, const VkOffset3D s2, const VkOffset3D d1, const VkOffset3D d2)
 {
+	static const MirrorModeBits kBits[] = { MIRROR_MODE_X, MIRROR_MODE_Y, MIRROR_MODE_Z };
+
 	const MirrorMode source		 = getMirrorMode(s1, s2);
 	const MirrorMode destination = getMirrorMode(d1, d2);
 
-	if (source == destination)
+	MirrorMode mode = 0u;
+
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(kBits); ++i)
 	{
-		return MIRROR_MODE_NONE;
+		const MirrorModeBits bit = kBits[i];
+		if ((source & bit) != (destination & bit))
+			mode |= bit;
 	}
-	else if ((source == MIRROR_MODE_XY && destination == MIRROR_MODE_X)	  || (destination == MIRROR_MODE_XY && source == MIRROR_MODE_X) ||
-			 (source == MIRROR_MODE_Y && destination == MIRROR_MODE_NONE) || (destination == MIRROR_MODE_Y && source == MIRROR_MODE_NONE))
-	{
-		return MIRROR_MODE_Y;
-	}
-	else if ((source == MIRROR_MODE_XY && destination == MIRROR_MODE_Y)	  || (destination == MIRROR_MODE_XY && source == MIRROR_MODE_Y) ||
-			 (source == MIRROR_MODE_X && destination == MIRROR_MODE_NONE) || (destination == MIRROR_MODE_X && source == MIRROR_MODE_NONE))
-	{
-		return MIRROR_MODE_X;
-	}
-	else if ((source == MIRROR_MODE_Z && destination == MIRROR_MODE_NONE) || (destination == MIRROR_MODE_Z && source == MIRROR_MODE_NONE))
-	{
-		return MIRROR_MODE_Z;
-	}
-	else if ((source == MIRROR_MODE_XY && destination == MIRROR_MODE_NONE) || (destination == MIRROR_MODE_XY && source == MIRROR_MODE_NONE))
-	{
-		return MIRROR_MODE_XY;
-	}
-	return MIRROR_MODE_LAST;
+
+	return mode;
 }
 
 void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, tcu::PixelBufferAccess dst, CopyRegion region, deUint32 mipLevel)
@@ -2899,14 +2894,14 @@ void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, 
 	{
 		region.imageBlit.srcOffsets[1].x - srcOffset.x,
 		region.imageBlit.srcOffsets[1].y - srcOffset.y,
-		region.imageBlit.srcOffsets[1].z - srcOffset.z
+		region.imageBlit.srcOffsets[1].z - srcOffset.z,
 	};
 	const VkOffset3D					dstOffset		= region.imageBlit.dstOffsets[0];
 	const VkOffset3D					dstExtent		=
 	{
 		region.imageBlit.dstOffsets[1].x - dstOffset.x,
 		region.imageBlit.dstOffsets[1].y - dstOffset.y,
-		region.imageBlit.dstOffsets[1].z - dstOffset.z
+		region.imageBlit.dstOffsets[1].z - dstOffset.z,
 	};
 
 	tcu::Sampler::FilterMode		filter;
@@ -2921,6 +2916,7 @@ void BlittingImages::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src, 
 	if (tcu::isCombinedDepthStencilType(src.getFormat().type))
 	{
 		DE_ASSERT(src.getFormat() == dst.getFormat());
+
 		// Scale depth.
 		if (tcu::hasDepthComponent(src.getFormat().order))
 		{
@@ -3766,6 +3762,7 @@ public:
 protected:
 	virtual tcu::TestStatus						checkTestResult				(tcu::ConstPixelBufferAccess result = tcu::ConstPixelBufferAccess());
 	void										copyMSImageToMSImage		(deUint32 copyArraySize);
+	tcu::TestStatus								checkIntermediateCopy		(void);
 private:
 	Move<VkImage>								m_multisampledImage;
 	de::MovePtr<Allocation>						m_multisampledImageAlloc;
@@ -3788,11 +3785,11 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 	: CopiesAndBlittingTestInstance	(context, params)
 	, m_options						(options)
 {
-	const InstanceInterface&	vki						= context.getInstanceInterface();
-	const DeviceInterface&		vk						= context.getDeviceInterface();
-	const VkPhysicalDevice		vkPhysDevice			= context.getPhysicalDevice();
-	const VkDevice				vkDevice				= context.getDevice();
-	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const InstanceInterface&	vki						= m_context.getInstanceInterface();
+	const DeviceInterface&		vk						= m_context.getDeviceInterface();
+	const VkPhysicalDevice		vkPhysDevice			= m_context.getPhysicalDevice();
+	const VkDevice				vkDevice				= m_context.getDevice();
+	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc				= m_context.getDefaultAllocator();
 
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
@@ -3824,7 +3821,9 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			getArraySize(m_params.src.image),										// deUint32					arrayLayers;
 			rasterizationSamples,													// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,												// VkImageTiling			tiling;
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,	// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT										// VkImageUsageFlags		usage;
+				| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+				| VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
 			VK_SHARING_MODE_EXCLUSIVE,												// VkSharingMode			sharingMode;
 			1u,																		// deUint32					queueFamilyIndexCount;
 			&queueFamilyIndex,														// const deUint32*			pQueueFamilyIndices;
@@ -3841,7 +3840,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		{
 			case COPY_MS_IMAGE_TO_MS_IMAGE:
 			{
-				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 				m_multisampledCopyImage			= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
 				m_multisampledCopyImageAlloc	= allocateImage(vki, vk, vkPhysDevice, vkDevice, *m_multisampledCopyImage, MemoryRequirement::Any, memAlloc, m_params.allocationKind);
@@ -3851,7 +3850,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 			case COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE:
 			{
-				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				colorImageParams.usage			= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 				colorImageParams.arrayLayers	= getArraySize(m_params.dst.image);
 				m_multisampledCopyImage			= createImage(vk, vkDevice, &colorImageParams);
 				// Allocate and bind color image memory.
@@ -3913,7 +3912,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		}
 	};
 
-		// Create render pass.
+	// Create render pass.
 	{
 		const VkAttachmentDescription	attachmentDescriptions[1]	=
 		{
@@ -4237,6 +4236,15 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 
 	de::MovePtr<tcu::TextureLevel>	resultTextureLevel	= readImage(*m_destination, m_params.dst.image);
 
+	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE)
+	{
+		// Verify the intermediate multisample copy operation happens properly instead of, for example, shuffling samples around or
+		// resolving the image and giving every sample the same value.
+		const auto intermediateResult = checkIntermediateCopy();
+		if (intermediateResult.getCode() != QP_TEST_RESULT_PASS)
+			return intermediateResult;
+	}
+
 	return checkTestResult(resultTextureLevel->getAccess());
 }
 
@@ -4273,6 +4281,293 @@ void ResolveImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess s
 	const tcu::PixelBufferAccess		dstSubRegion		= getSubregion (dstWithSrcFormat, dstOffset.x, dstOffset.y, dstOffset.z, extent.width, extent.height, extent.depth);
 
 	tcu::copy(dstSubRegion, srcSubRegion);
+}
+
+tcu::TestStatus ResolveImageToImage::checkIntermediateCopy (void)
+{
+	const		auto&	vkd					= m_context.getDeviceInterface();
+	const		auto	device				= m_context.getDevice();
+	const		auto	queue				= m_context.getUniversalQueue();
+	const		auto	queueIndex			= m_context.getUniversalQueueFamilyIndex();
+				auto&	alloc				= m_context.getDefaultAllocator();
+	const		auto	currentLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	const		auto	numDstLayers		= getArraySize(m_params.dst.image);
+	const		auto	numInputAttachments	= numDstLayers + 1u; // For the source image.
+	constexpr	auto	numSets				= 2u; // 1 for the output buffer, 1 for the input attachments.
+	const		auto	fbWidth				= m_params.src.image.extent.width;
+	const		auto	fbHeight			= m_params.src.image.extent.height;
+
+	// Push constants.
+	const std::array<int, 3> pushConstantData =
+	{{
+		static_cast<int>(fbWidth),
+		static_cast<int>(fbHeight),
+		static_cast<int>(m_params.samples),
+	}};
+	const auto pushConstantSize = static_cast<deUint32>(pushConstantData.size() * sizeof(decltype(pushConstantData)::value_type));
+
+	// Shader modules.
+	const auto vertexModule			= createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+	const auto verificationModule	= createShaderModule(vkd, device, m_context.getBinaryCollection().get("verify"), 0u);
+
+	// Descriptor sets.
+	DescriptorPoolBuilder poolBuilder;
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, numInputAttachments);
+	const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, numSets);
+
+	DescriptorSetLayoutBuilder layoutBuilderBuffer;
+	layoutBuilderBuffer.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto outputBufferSetLayout = layoutBuilderBuffer.build(vkd, device);
+
+	DescriptorSetLayoutBuilder layoutBuilderAttachments;
+	for (deUint32 i = 0u; i < numInputAttachments; ++i)
+		layoutBuilderAttachments.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT);
+	const auto inputAttachmentsSetLayout = layoutBuilderAttachments.build(vkd, device);
+
+	const auto descriptorSetBuffer		= makeDescriptorSet(vkd, device, descriptorPool.get(), outputBufferSetLayout.get());
+	const auto descriptorSetAttachments	= makeDescriptorSet(vkd, device, descriptorPool.get(), inputAttachmentsSetLayout.get());
+
+	// Array with raw descriptor sets.
+	const std::array<VkDescriptorSet, numSets> descriptorSets =
+	{{
+		descriptorSetBuffer.get(),
+		descriptorSetAttachments.get(),
+	}};
+
+	// Pipeline layout.
+	const std::array<VkDescriptorSetLayout, numSets> setLayouts =
+	{{
+		outputBufferSetLayout.get(),
+		inputAttachmentsSetLayout.get(),
+	}};
+
+	const VkPushConstantRange pushConstantRange =
+	{
+		VK_SHADER_STAGE_FRAGMENT_BIT,	//	VkShaderStageFlags	stageFlags;
+		0u,								//	deUint32			offset;
+		pushConstantSize,				//	deUint32			size;
+	};
+
+	const VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	//	VkStructureType					sType;
+		nullptr,										//	const void*						pNext;
+		0u,												//	VkPipelineLayoutCreateFlags		flags;
+		static_cast<deUint32>(setLayouts.size()),		//	deUint32						setLayoutCount;
+		setLayouts.data(),								//	const VkDescriptorSetLayout*	pSetLayouts;
+		1u,												//	deUint32						pushConstantRangeCount;
+		&pushConstantRange,								//	const VkPushConstantRange*		pPushConstantRanges;
+	};
+
+	const auto pipelineLayout = createPipelineLayout(vkd, device, &pipelineLayoutInfo);
+
+	// Render pass.
+	const VkAttachmentDescription commonAttachmentDescription =
+	{
+		0u,									//	VkAttachmentDescriptionFlags	flags;
+		m_params.src.image.format,			//	VkFormat						format;
+		m_params.samples,					//	VkSampleCountFlagBits			samples;
+		VK_ATTACHMENT_LOAD_OP_LOAD,			//	VkAttachmentLoadOp				loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,		//	VkAttachmentStoreOp				storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,	//	VkAttachmentLoadOp				stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,	//	VkAttachmentStoreOp				stencilStoreOp;
+		currentLayout,						//	VkImageLayout					initialLayout;
+		currentLayout,						//	VkImageLayout					finalLayout;
+	};
+	const std::vector<VkAttachmentDescription> attachmentDescriptions(numInputAttachments, commonAttachmentDescription);
+
+	std::vector<VkAttachmentReference> inputAttachmentReferences;
+	inputAttachmentReferences.reserve(numInputAttachments);
+	for (deUint32 i = 0u; i < numInputAttachments; ++i)
+	{
+		const VkAttachmentReference reference = { i, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+		inputAttachmentReferences.push_back(reference);
+	}
+
+	const VkSubpassDescription subpassDescription =
+	{
+		0u,															//	VkSubpassDescriptionFlags		flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,							//	VkPipelineBindPoint				pipelineBindPoint;
+		static_cast<deUint32>(inputAttachmentReferences.size()),	//	deUint32						inputAttachmentCount;
+		inputAttachmentReferences.data(),							//	const VkAttachmentReference*	pInputAttachments;
+		0u,															//	deUint32						colorAttachmentCount;
+		nullptr,													//	const VkAttachmentReference*	pColorAttachments;
+		nullptr,													//	const VkAttachmentReference*	pResolveAttachments;
+		nullptr,													//	const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,															//	deUint32						preserveAttachmentCount;
+		nullptr,													//	const deUint32*					pPreserveAttachments;
+	};
+
+	const VkRenderPassCreateInfo renderPassInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,				//	VkStructureType					sType;
+		nullptr,												//	const void*						pNext;
+		0u,														//	VkRenderPassCreateFlags			flags;
+		static_cast<deUint32>(attachmentDescriptions.size()),	//	deUint32						attachmentCount;
+		attachmentDescriptions.data(),							//	const VkAttachmentDescription*	pAttachments;
+		1u,														//	deUint32						subpassCount;
+		&subpassDescription,									//	const VkSubpassDescription*		pSubpasses;
+		0u,														//	deUint32						dependencyCount;
+		nullptr,												//	const VkSubpassDependency*		pDependencies;
+	};
+
+	const auto renderPass = createRenderPass(vkd, device, &renderPassInfo);
+
+	// Framebuffer.
+	std::vector<Move<VkImageView>>	imageViews;
+	std::vector<VkImageView>		imageViewsRaw;
+
+	imageViews.push_back(makeImageView(vkd, device, m_multisampledImage.get(), VK_IMAGE_VIEW_TYPE_2D, m_params.src.image.format, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u)));
+	for (deUint32 i = 0u; i < numDstLayers; ++i)
+	{
+		const auto subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, i, 1u);
+		imageViews.push_back(makeImageView(vkd, device, m_multisampledCopyImage.get(), VK_IMAGE_VIEW_TYPE_2D, m_params.dst.image.format, subresourceRange));
+	}
+
+	imageViewsRaw.reserve(imageViews.size());
+	std::transform(begin(imageViews), end(imageViews), std::back_inserter(imageViewsRaw), [](const Move<VkImageView>& ptr) { return ptr.get(); });
+
+	const auto framebuffer = makeFramebuffer(vkd, device, renderPass.get(), static_cast<deUint32>(imageViewsRaw.size()), imageViewsRaw.data(), fbWidth, fbHeight);
+
+	// Storage buffer.
+	const auto			bufferCount	= static_cast<size_t>(fbWidth * fbHeight * m_params.samples);
+	const auto			bufferSize	= static_cast<VkDeviceSize>(bufferCount * sizeof(deInt32));
+	BufferWithMemory	buffer		(vkd, device, alloc, makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	auto&				bufferAlloc	= buffer.getAllocation();
+	void*				bufferData	= bufferAlloc.getHostPtr();
+
+	// Update descriptor sets.
+	DescriptorSetUpdateBuilder updater;
+
+	const auto bufferInfo = makeDescriptorBufferInfo(buffer.get(), 0ull, bufferSize);
+	updater.writeSingle(descriptorSetBuffer.get(), DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+
+	std::vector<VkDescriptorImageInfo> imageInfos;
+	imageInfos.reserve(imageViewsRaw.size());
+	for (size_t i = 0; i < imageViewsRaw.size(); ++i)
+		imageInfos.push_back(makeDescriptorImageInfo(DE_NULL, imageViewsRaw[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+	for (size_t i = 0; i < imageInfos.size(); ++i)
+		updater.writeSingle(descriptorSetAttachments.get(), DescriptorSetUpdateBuilder::Location::binding(static_cast<deUint32>(i)), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imageInfos[i]);
+
+	updater.update(vkd, device);
+
+	// Vertex buffer.
+	std::vector<tcu::Vec4> fullScreenQuad;
+	{
+		// Full screen quad so every framebuffer pixel and sample location is verified by the shader.
+		const tcu::Vec4 topLeft		(-1.0f, -1.0f, 0.0f, 1.0f);
+		const tcu::Vec4 topRight	( 1.0f, -1.0f, 0.0f, 1.0f);
+		const tcu::Vec4 bottomLeft	(-1.0f,  1.0f, 0.0f, 1.0f);
+		const tcu::Vec4 bottomRight	( 1.0f,  1.0f, 0.0f, 1.0f);
+
+		fullScreenQuad.reserve(6u);
+		fullScreenQuad.push_back(topLeft);
+		fullScreenQuad.push_back(topRight);
+		fullScreenQuad.push_back(bottomRight);
+		fullScreenQuad.push_back(topLeft);
+		fullScreenQuad.push_back(bottomRight);
+		fullScreenQuad.push_back(bottomLeft);
+	}
+
+	const auto				vertexBufferSize	= static_cast<VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
+	const auto				vertexBufferInfo	= makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const BufferWithMemory	vertexBuffer		(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+	const auto				vertexBufferHandler	= vertexBuffer.get();
+	auto&					vertexBufferAlloc	= vertexBuffer.getAllocation();
+	void*					vertexBufferData	= vertexBufferAlloc.getHostPtr();
+	const VkDeviceSize		vertexBufferOffset	= 0ull;
+
+	deMemcpy(vertexBufferData, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
+	flushAlloc(vkd, device, vertexBufferAlloc);
+
+	// Graphics pipeline.
+	const std::vector<VkViewport>	viewports	(1, makeViewport(m_params.src.image.extent));
+	const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_params.src.image.extent));
+
+	const VkPipelineMultisampleStateCreateInfo	multisampleStateParams		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+		nullptr,													// const void*								pNext;
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
+		VK_FALSE,													// VkBool32									sampleShadingEnable;
+		0.0f,														// float									minSampleShading;
+		nullptr,													// const VkSampleMask*						pSampleMask;
+		VK_FALSE,													// VkBool32									alphaToCoverageEnable;
+		VK_FALSE													// VkBool32									alphaToOneEnable;
+	};
+
+	const auto graphicsPipeline = makeGraphicsPipeline(
+		vkd,									// const DeviceInterface&                        vk
+		device,									// const VkDevice                                device
+		pipelineLayout.get(),					// const VkPipelineLayout                        pipelineLayout
+		vertexModule.get(),						// const VkShaderModule                          vertexShaderModule
+		DE_NULL,								// const VkShaderModule                          tessellationControlModule
+		DE_NULL,								// const VkShaderModule                          tessellationEvalModule
+		DE_NULL,								// const VkShaderModule                          geometryShaderModule
+		verificationModule.get(),				// const VkShaderModule                          fragmentShaderModule
+		renderPass.get(),						// const VkRenderPass                            renderPass
+		viewports,								// const std::vector<VkViewport>&                viewports
+		scissors,								// const std::vector<VkRect2D>&                  scissors
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
+		0u,										// const deUint32                                subpass
+		0u,										// const deUint32                                patchControlPoints
+		nullptr,								// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+		nullptr,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+		&multisampleStateParams);				// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+
+	// Command buffer.
+	const auto cmdPool		= makeCommandPool(vkd, device, queueIndex);
+	const auto cmdBufferPtr	= allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	const auto cmdBuffer	= cmdBufferPtr.get();
+
+	// Make sure multisample copy data is available to the fragment shader.
+	const auto imagesBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+
+	// Make sure verification buffer data is available on the host.
+	const auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+
+	// Record and submit command buffer.
+	beginCommandBuffer(vkd, cmdBuffer);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u, &imagesBarrier, 0u, nullptr, 0u, nullptr);
+	beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), makeRect2D(m_params.src.image.extent));
+	vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+	vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBufferHandler, &vertexBufferOffset);
+	vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pushConstantSize, pushConstantData.data());
+	vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, static_cast<deUint32>(descriptorSets.size()), descriptorSets.data(), 0u, nullptr);
+	vkd.cmdDraw(cmdBuffer, static_cast<deUint32>(fullScreenQuad.size()), 1u, 0u, 0u);
+	endRenderPass(vkd, cmdBuffer);
+	vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u, &bufferBarrier, 0u, nullptr, 0u, nullptr);
+	endCommandBuffer(vkd, cmdBuffer);
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+	// Verify intermediate results.
+	invalidateAlloc(vkd, device, bufferAlloc);
+	std::vector<deInt32> outputFlags (bufferCount, 0);
+	deMemcpy(outputFlags.data(), bufferData, static_cast<size_t>(bufferSize));
+
+	auto& log = m_context.getTestContext().getLog();
+	log << tcu::TestLog::Message << "Verifying intermediate multisample copy results" << tcu::TestLog::EndMessage;
+
+	const auto sampleCount = static_cast<deUint32>(m_params.samples);
+
+	for (deUint32 x = 0u; x < fbWidth; ++x)
+	for (deUint32 y = 0u; y < fbHeight; ++y)
+	for (deUint32 s = 0u; s < sampleCount; ++s)
+	{
+		const auto index = (y * fbWidth + x) * sampleCount + s;
+		if (!outputFlags[index])
+		{
+			std::ostringstream msg;
+			msg << "Intermediate verification failed for coordinates (" << x << ", " << y << ") sample " << s;
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+
+	log << tcu::TestLog::Message << "Intermediate multisample copy verification passed" << tcu::TestLog::EndMessage;
+	return tcu::TestStatus::pass("Pass");
 }
 
 void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
@@ -4452,6 +4747,71 @@ void ResolveImageToImageTestCase::initPrograms (SourceCollections& programCollec
 		"{\n"
 		"	o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
 		"}\n");
+
+	if (m_options == COPY_MS_IMAGE_TO_MS_IMAGE || m_options == COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE)
+	{
+		// The shader verifies all layers in the copied image are the same as the source image.
+		// This needs an image view per layer in the copied image.
+		// Set 0 contains the output buffer.
+		// Set 1 contains the input attachments.
+
+		std::ostringstream verificationShader;
+
+		verificationShader
+			<< "#version 450\n"
+			<< "\n"
+			<< "layout (push_constant, std430) uniform PushConstants {\n"
+			<< "    int width;\n"
+			<< "    int height;\n"
+			<< "    int samples;\n"
+			<< "};\n"
+			<< "layout (set=0, binding=0) buffer VerificationResults {\n"
+			<< "    int verificationFlags[];\n"
+			<< "};\n"
+			<< "layout (input_attachment_index=0, set=1, binding=0) uniform subpassInputMS attachment0;\n"
+			;
+
+		const auto dstLayers = getArraySize(m_params.dst.image);
+		for (deUint32 layerNdx = 0u; layerNdx < dstLayers; ++layerNdx)
+		{
+			const auto i = layerNdx + 1u;
+			verificationShader << "layout (input_attachment_index=" << i << ", set=1, binding=" << i << ") uniform subpassInputMS attachment" << i << ";\n";
+		}
+
+		// Using a loop to iterate over each sample avoids the need for the sampleRateShading feature. The pipeline needs to be
+		// created with a single sample.
+		verificationShader
+			<< "\n"
+			<< "void main() {\n"
+			<< "    for (int sampleID = 0; sampleID < samples; ++sampleID) {\n"
+			<< "        vec4 orig = subpassLoad(attachment0, sampleID);\n"
+			;
+
+		for (deUint32 layerNdx = 0u; layerNdx < dstLayers; ++layerNdx)
+		{
+			const auto i = layerNdx + 1u;
+			verificationShader << "        vec4 copy" << i << " = subpassLoad(attachment" << i << ", sampleID);\n";
+		}
+
+		std::ostringstream testCondition;
+		for (deUint32 layerNdx = 0u; layerNdx < dstLayers; ++layerNdx)
+		{
+			const auto i = layerNdx + 1u;
+			testCondition << (layerNdx == 0u ? "" : " && ") << "orig == copy" << i;
+		}
+
+		verificationShader
+			<< "\n"
+			<< "        ivec3 coords  = ivec3(int(gl_FragCoord.x), int(gl_FragCoord.y), sampleID);\n"
+			<< "        int bufferPos = (coords.y * width + coords.x) * samples + coords.z;\n"
+			<< "\n"
+			<< "        verificationFlags[bufferPos] = ((" << testCondition.str() << ") ? 1 : 0); \n"
+			<< "    }\n"
+			<< "}\n"
+			;
+
+		programCollection.glslSources.add("verify") << glu::FragmentSource(verificationShader.str());
+	}
 }
 
 std::string getSampleCountCaseName (VkSampleCountFlagBits sampleFlag)
@@ -4716,7 +5076,7 @@ void addImageToImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup* 
 	}
 }
 
-bool isAllowedImageToImageAllFormatsColorSrcFormatTests(CopyColorTestParams& testParams)
+bool isAllowedImageToImageAllFormatsColorSrcFormatTests(const CopyColorTestParams& testParams)
 {
 	bool result = true;
 
@@ -4734,9 +5094,13 @@ bool isAllowedImageToImageAllFormatsColorSrcFormatTests(CopyColorTestParams& tes
 
 void addImageToImageAllFormatsColorSrcFormatTests (tcu::TestCaseGroup* group, CopyColorTestParams testParams)
 {
-	for (int dstFormatIndex = 0; testParams.compatibleFormats[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
+	// If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format.
+	const VkFormat	srcFormatOnly[2]	= { testParams.params.src.image.format, VK_FORMAT_UNDEFINED };
+	const VkFormat*	formatList			= (testParams.compatibleFormats ? testParams.compatibleFormats : srcFormatOnly);
+
+	for (int dstFormatIndex = 0; formatList[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
 	{
-		testParams.params.dst.image.format = testParams.compatibleFormats[dstFormatIndex];
+		testParams.params.dst.image.format = formatList[dstFormatIndex];
 
 		const VkFormat		srcFormat	= testParams.params.src.image.format;
 		const VkFormat		dstFormat	= testParams.params.dst.image.format;
@@ -5048,32 +5412,6 @@ const VkFormat	dedicatedAllocationImageToImageFormatsToTest[]	=
 
 void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 {
-	TestParams	params;
-	params.src.image.imageType	= VK_IMAGE_TYPE_2D;
-	params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-	params.src.image.extent		= defaultExtent;
-	params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
-	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-	params.dst.image.extent		= defaultExtent;
-	params.allocationKind		= allocationKind;
-
-	for (deInt32 i = 0; i < defaultSize; i += defaultFourthSize)
-	{
-		const VkImageCopy				testCopy =
-		{
-			defaultSourceLayer,								// VkImageSubresourceLayers	srcSubresource;
-			{0, 0, 0},										// VkOffset3D				srcOffset;
-			defaultSourceLayer,								// VkImageSubresourceLayers	dstSubresource;
-			{i, defaultSize - i - defaultFourthSize, 0},	// VkOffset3D				dstOffset;
-			{defaultFourthSize, defaultFourthSize, 1},		// VkExtent3D				extent;
-		};
-
-		CopyRegion	imageCopy;
-		imageCopy.imageCopy = testCopy;
-
-		params.regions.push_back(imageCopy);
-	}
-
 	if (allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
 		const int numOfColorImageFormatsToTestFilter = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
@@ -5081,23 +5419,163 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 			dedicatedAllocationImageToImageFormatsToTestSet.insert(dedicatedAllocationImageToImageFormatsToTest[compatibleFormatsIndex]);
 	}
 
-	const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+	// 2D tests.
 	{
-		const VkFormat*	compatibleFormats	= colorImageFormatsToTest[compatibleFormatsIndex];
-		for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D copies"));
+
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.src.image.extent		= defaultExtent;
+		params.dst.image.extent		= defaultExtent;
+		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.allocationKind		= allocationKind;
+
+		for (deInt32 i = 0; i < defaultSize; i += defaultFourthSize)
 		{
-			params.src.image.format = compatibleFormats[srcFormatIndex];
-			if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
-				continue;
+			const VkImageCopy				testCopy =
+			{
+				defaultSourceLayer,								// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},										// VkOffset3D				srcOffset;
+				defaultSourceLayer,								// VkImageSubresourceLayers	dstSubresource;
+				{i, defaultSize - i - defaultFourthSize, 0},	// VkOffset3D				dstOffset;
+				{defaultFourthSize, defaultFourthSize, 1},		// VkExtent3D				extent;
+			};
 
-			CopyColorTestParams	testParams;
-			testParams.params				= params;
-			testParams.compatibleFormats	= compatibleFormats;
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy = testCopy;
 
-			const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
-			addTestGroup(group, getFormatCaseName(params.src.image.format), description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+			params.regions.push_back(imageCopy);
 		}
+
+		const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+		{
+			const VkFormat*	compatibleFormats	= colorImageFormatsToTest[compatibleFormatsIndex];
+			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+			{
+				params.src.image.format = compatibleFormats[srcFormatIndex];
+				if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
+					continue;
+
+				CopyColorTestParams	testParams;
+				testParams.params				= params;
+				testParams.compatibleFormats	= compatibleFormats;
+
+				const std::string testName		= getFormatCaseName(params.src.image.format);
+				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
+				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+			}
+		}
+
+		group->addChild(subGroup.release());
+	}
+
+	// 1D tests.
+	{
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D copies"));
+
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_1D;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_1D;
+		params.src.image.extent		= default1dExtent;
+		params.dst.image.extent		= default1dExtent;
+		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.allocationKind		= allocationKind;
+
+		for (deInt32 i = defaultFourthSize; i < defaultSize; i += defaultSize / 2)
+		{
+			const VkImageCopy				testCopy =
+			{
+				defaultSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},					// VkOffset3D				srcOffset;
+				defaultSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
+				{i, 0, 0},					// VkOffset3D				dstOffset;
+				{defaultFourthSize, 1, 1},	// VkExtent3D				extent;
+			};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+		{
+			const VkFormat*	compatibleFormats	= colorImageFormatsToTest[compatibleFormatsIndex];
+			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+			{
+				params.src.image.format = compatibleFormats[srcFormatIndex];
+				if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
+					continue;
+
+				CopyColorTestParams	testParams;
+				testParams.params				= params;
+				testParams.compatibleFormats	= nullptr;
+
+				const std::string testName		= getFormatCaseName(params.src.image.format);
+				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
+				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+			}
+		}
+
+		group->addChild(subGroup.release());
+	}
+
+	// 3D tests. Note we use smaller dimensions here for performance reasons.
+	{
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D copies"));
+
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_3D;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_3D;
+		params.src.image.extent		= default3dExtent;
+		params.dst.image.extent		= default3dExtent;
+		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.allocationKind		= allocationKind;
+
+		for (deInt32 i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
+		{
+			const VkImageCopy				testCopy =
+			{
+				defaultSourceLayer,													// VkImageSubresourceLayers	srcSubresource;
+				{0, 0, 0},															// VkOffset3D				srcOffset;
+				defaultSourceLayer,													// VkImageSubresourceLayers	dstSubresource;
+				{i, defaultFourthSize - i - defaultSixteenthSize, i},				// VkOffset3D				dstOffset;
+				{defaultSixteenthSize, defaultSixteenthSize, defaultSixteenthSize},	// VkExtent3D				extent;
+			};
+
+			CopyRegion	imageCopy;
+			imageCopy.imageCopy = testCopy;
+
+			params.regions.push_back(imageCopy);
+		}
+
+		const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+		{
+			const VkFormat*	compatibleFormats	= colorImageFormatsToTest[compatibleFormatsIndex];
+			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+			{
+				params.src.image.format = compatibleFormats[srcFormatIndex];
+				if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
+					continue;
+
+				CopyColorTestParams	testParams;
+				testParams.params				= params;
+				testParams.compatibleFormats	= nullptr;
+
+				const std::string testName		= getFormatCaseName(params.src.image.format);
+				const std::string description	= "Copy from source format " + getFormatCaseName(params.src.image.format);
+				addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsColorSrcFormatTests, testParams);
+			}
+		}
+
+		group->addChild(subGroup.release());
 	}
 }
 
@@ -5348,198 +5826,232 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 	};
 
 	// 2D tests.
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
-		params.src.image.extent				= defaultExtent;
-		params.dst.image.extent				= defaultExtent;
-		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
-		params.dst.image.format				= params.src.image.format;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.separateDepthStencilLayouts	= DE_FALSE;
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D copies"));
 
-		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
-		const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
-
-		for (deInt32 i = 0; i < defaultSize; i += defaultFourthSize)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
-			CopyRegion			copyRegion;
-			const VkOffset3D	srcOffset	= {0, 0, 0};
-			const VkOffset3D	dstOffset	= {i, defaultSize - i - defaultFourthSize, 0};
-			const VkExtent3D	extent		= {defaultFourthSize, defaultFourthSize, 1};
+			TestParams	params;
+			params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+			params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+			params.src.image.extent				= defaultExtent;
+			params.dst.image.extent				= defaultExtent;
+			params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
+			params.dst.image.format				= params.src.image.format;
+			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.allocationKind				= allocationKind;
+			params.separateDepthStencilLayouts	= DE_FALSE;
 
-			if (hasDepth)
+			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
+
+			const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
+			const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
+
+			for (deInt32 i = 0; i < defaultSize; i += defaultFourthSize)
 			{
-				const VkImageCopy				testCopy	=
-				{
-					defaultDepthSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-					srcOffset,					// VkOffset3D				srcOffset;
-					defaultDepthSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-					dstOffset,					// VkOffset3D				dstOffset;
-					extent,						// VkExtent3D				extent;
-				};
+				CopyRegion			copyRegion;
+				const VkOffset3D	srcOffset	= {0, 0, 0};
+				const VkOffset3D	dstOffset	= {i, defaultSize - i - defaultFourthSize, 0};
+				const VkExtent3D	extent		= {defaultFourthSize, defaultFourthSize, 1};
 
-				copyRegion.imageCopy	= testCopy;
-				params.regions.push_back(copyRegion);
+				if (hasDepth)
+				{
+					const VkImageCopy				testCopy	=
+					{
+						defaultDepthSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						srcOffset,					// VkOffset3D				srcOffset;
+						defaultDepthSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						dstOffset,					// VkOffset3D				dstOffset;
+						extent,						// VkExtent3D				extent;
+					};
+
+					copyRegion.imageCopy	= testCopy;
+					params.regions.push_back(copyRegion);
+				}
+				if (hasStencil)
+				{
+					const VkImageCopy				testCopy	=
+					{
+						defaultStencilSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						srcOffset,					// VkOffset3D				srcOffset;
+						defaultStencilSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						dstOffset,					// VkOffset3D				dstOffset;
+						extent,						// VkExtent3D				extent;
+					};
+
+					copyRegion.imageCopy	= testCopy;
+					params.regions.push_back(copyRegion);
+				}
 			}
-			if (hasStencil)
-			{
-				const VkImageCopy				testCopy	=
-				{
-					defaultStencilSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-					srcOffset,					// VkOffset3D				srcOffset;
-					defaultStencilSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-					dstOffset,					// VkOffset3D				dstOffset;
-					extent,						// VkExtent3D				extent;
-				};
 
-				copyRegion.imageCopy	= testCopy;
-				params.regions.push_back(copyRegion);
+			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
+			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+
+			if (hasDepth && hasStencil)
+			{
+				params.separateDepthStencilLayouts	= DE_TRUE;
+				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
+				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
-		const std::string testName		= "2d_"+ getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-		const std::string description	= "2D copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(group, testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+		group->addChild(subGroup.release());
 	}
 
 	// 1D tests.
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_1D;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_1D;
-		params.src.image.extent				= default1dExtent;
-		params.dst.image.extent				= default1dExtent;
-		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
-		params.dst.image.format				= params.src.image.format;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind				= allocationKind;
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D copies"));
 
-		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
-		const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
-
-		for (deInt32 i = defaultFourthSize; i < defaultSize; i += defaultSize / 2)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
-			CopyRegion			copyRegion;
-			const VkOffset3D	srcOffset	= {0, 0, 0};
-			const VkOffset3D	dstOffset	= {i, 0, 0};
-			const VkExtent3D	extent		= {defaultFourthSize, 1, 1};
+			TestParams	params;
+			params.src.image.imageType			= VK_IMAGE_TYPE_1D;
+			params.dst.image.imageType			= VK_IMAGE_TYPE_1D;
+			params.src.image.extent				= default1dExtent;
+			params.dst.image.extent				= default1dExtent;
+			params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
+			params.dst.image.format				= params.src.image.format;
+			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.allocationKind				= allocationKind;
 
-			if (hasDepth)
+			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
+
+			const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
+			const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
+
+			for (deInt32 i = defaultFourthSize; i < defaultSize; i += defaultSize / 2)
 			{
-				const VkImageCopy				testCopy	=
-				{
-					defaultDepthSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-					srcOffset,					// VkOffset3D				srcOffset;
-					defaultDepthSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-					dstOffset,					// VkOffset3D				dstOffset;
-					extent,						// VkExtent3D				extent;
-				};
+				CopyRegion			copyRegion;
+				const VkOffset3D	srcOffset	= {0, 0, 0};
+				const VkOffset3D	dstOffset	= {i, 0, 0};
+				const VkExtent3D	extent		= {defaultFourthSize, 1, 1};
 
-				copyRegion.imageCopy	= testCopy;
-				params.regions.push_back(copyRegion);
+				if (hasDepth)
+				{
+					const VkImageCopy				testCopy	=
+					{
+						defaultDepthSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						srcOffset,					// VkOffset3D				srcOffset;
+						defaultDepthSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						dstOffset,					// VkOffset3D				dstOffset;
+						extent,						// VkExtent3D				extent;
+					};
+
+					copyRegion.imageCopy	= testCopy;
+					params.regions.push_back(copyRegion);
+				}
+				if (hasStencil)
+				{
+					const VkImageCopy				testCopy	=
+					{
+						defaultStencilSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						srcOffset,					// VkOffset3D				srcOffset;
+						defaultStencilSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						dstOffset,					// VkOffset3D				dstOffset;
+						extent,						// VkExtent3D				extent;
+					};
+
+					copyRegion.imageCopy	= testCopy;
+					params.regions.push_back(copyRegion);
+				}
 			}
-			if (hasStencil)
-			{
-				const VkImageCopy				testCopy	=
-				{
-					defaultStencilSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-					srcOffset,					// VkOffset3D				srcOffset;
-					defaultStencilSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-					dstOffset,					// VkOffset3D				dstOffset;
-					extent,						// VkExtent3D				extent;
-				};
 
-				copyRegion.imageCopy	= testCopy;
-				params.regions.push_back(copyRegion);
+			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
+			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+
+			if (hasDepth && hasStencil)
+			{
+				params.separateDepthStencilLayouts	= DE_TRUE;
+				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
+				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
-		const std::string testName		= "1d_"+ getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-		const std::string description	= "1D copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(group, testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+		group->addChild(subGroup.release());
 	}
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_3D;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_3D;
-		params.src.image.extent				= default3dExtent;
-		params.dst.image.extent				= default3dExtent;
-		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
-		params.dst.image.format				= params.src.image.format;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind				= allocationKind;
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D copies"));
 
-		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
-		const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
-
-		for (deInt32 i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
-			CopyRegion			copyRegion;
-			const VkOffset3D	srcOffset	= {0, 0, 0};
-			const VkOffset3D	dstOffset	= {i, defaultFourthSize - i - defaultSixteenthSize, i};
-			const VkExtent3D	extent		= {defaultSixteenthSize, defaultSixteenthSize, defaultSixteenthSize};
+			TestParams	params;
+			params.src.image.imageType			= VK_IMAGE_TYPE_3D;
+			params.dst.image.imageType			= VK_IMAGE_TYPE_3D;
+			params.src.image.extent				= default3dExtent;
+			params.dst.image.extent				= default3dExtent;
+			params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
+			params.dst.image.format				= params.src.image.format;
+			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.allocationKind				= allocationKind;
 
-			if (hasDepth)
+			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
+
+			const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
+			const VkImageSubresourceLayers		defaultStencilSourceLayer	= { VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
+
+			for (deInt32 i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
 			{
-				const VkImageCopy				testCopy	=
-				{
-					defaultDepthSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-					srcOffset,					// VkOffset3D				srcOffset;
-					defaultDepthSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-					dstOffset,					// VkOffset3D				dstOffset;
-					extent,						// VkExtent3D				extent;
-				};
+				CopyRegion			copyRegion;
+				const VkOffset3D	srcOffset	= {0, 0, 0};
+				const VkOffset3D	dstOffset	= {i, defaultFourthSize - i - defaultSixteenthSize, i};
+				const VkExtent3D	extent		= {defaultSixteenthSize, defaultSixteenthSize, defaultSixteenthSize};
 
-				copyRegion.imageCopy	= testCopy;
-				params.regions.push_back(copyRegion);
+				if (hasDepth)
+				{
+					const VkImageCopy				testCopy	=
+					{
+						defaultDepthSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						srcOffset,					// VkOffset3D				srcOffset;
+						defaultDepthSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						dstOffset,					// VkOffset3D				dstOffset;
+						extent,						// VkExtent3D				extent;
+					};
+
+					copyRegion.imageCopy	= testCopy;
+					params.regions.push_back(copyRegion);
+				}
+				if (hasStencil)
+				{
+					const VkImageCopy				testCopy	=
+					{
+						defaultStencilSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+						srcOffset,					// VkOffset3D				srcOffset;
+						defaultStencilSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+						dstOffset,					// VkOffset3D				dstOffset;
+						extent,						// VkExtent3D				extent;
+					};
+
+					copyRegion.imageCopy	= testCopy;
+					params.regions.push_back(copyRegion);
+				}
 			}
-			if (hasStencil)
-			{
-				const VkImageCopy				testCopy	=
-				{
-					defaultStencilSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-					srcOffset,					// VkOffset3D				srcOffset;
-					defaultStencilSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-					dstOffset,					// VkOffset3D				dstOffset;
-					extent,						// VkExtent3D				extent;
-				};
 
-				copyRegion.imageCopy	= testCopy;
-				params.regions.push_back(copyRegion);
+			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+			const std::string description	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
+			addTestGroup(subGroup.get(), testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
+
+			if (hasDepth && hasStencil)
+			{
+				params.separateDepthStencilLayouts	= DE_TRUE;
+				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+				const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
+				addTestGroup(subGroup.get(), testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
-		const std::string testName		= "3d_"+ getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-		const std::string description	= "3D copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(group, testName, description, addImageToImageAllFormatsDepthStencilFormatsTests, params);
-
-		if (hasDepth && hasStencil)
-		{
-			params.separateDepthStencilLayouts	= DE_TRUE;
-			const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-			const std::string description2	= "Copy from " + getFormatCaseName(params.src.image.format) + " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-			addTestGroup(group, testName2, description2, addImageToImageAllFormatsDepthStencilFormatsTests, params);
-		}
+		group->addChild(subGroup.release());
 	}
 }
 
@@ -6966,11 +7478,34 @@ void addBlittingImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allo
 	addTestGroup(group, "without_scaling_partial_3d", "3D blit without scaling (partial)", addBlittingImageSimpleWithoutScalingPartialTests, params);
 }
 
+enum FilterMaskBits
+{
+	FILTER_MASK_NEAREST	= 0,			// Always tested.
+	FILTER_MASK_LINEAR	= (1u << 0),
+	FILTER_MASK_CUBIC	= (1u << 1),
+};
+
+using FilterMask = deUint32;
+
+FilterMask makeFilterMask (bool onlyNearest, bool discardCubicFilter)
+{
+	FilterMask mask = FILTER_MASK_NEAREST;
+
+	if (!onlyNearest)
+	{
+		mask |= FILTER_MASK_LINEAR;
+		if (!discardCubicFilter)
+			mask |= FILTER_MASK_CUBIC;
+	}
+
+	return mask;
+}
+
 struct BlitColorTestParams
 {
 	TestParams		params;
 	const VkFormat*	compatibleFormats;
-	deUint32		testFilters;
+	FilterMask		testFilters;
 };
 
 bool isAllowedBlittingAllFormatsColorSrcFormatTests(const BlitColorTestParams& testParams)
@@ -7111,15 +7646,15 @@ void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup*
 														  " to " + getBlitImageTilingLayoutCaseName(testParams.params.dst.image.tiling, testParams.params.dst.image.operationLayout);
 					group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest", description, testParams.params));
 
-					if (testParams.testFilters & 1u)
+					if (testParams.testFilters & FILTER_MASK_LINEAR)
 					{
 						testParams.params.filter = VK_FILTER_LINEAR;
 						group->addChild(new BlitImageTestCase(testCtx, testName + "_linear", description, testParams.params));
 					}
 
-					if (testParams.testFilters & 2u)
+					if (testParams.testFilters & FILTER_MASK_CUBIC)
 					{
-						testParams.params.filter		= VK_FILTER_CUBIC_EXT;
+						testParams.params.filter = VK_FILTER_CUBIC_EXT;
 						group->addChild(new BlitImageTestCase(testCtx, testName + "_cubic", description, testParams.params));
 					}
 				}
@@ -7130,9 +7665,13 @@ void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup*
 
 void addBlittingImageAllFormatsColorSrcFormatTests (tcu::TestCaseGroup* group, BlitColorTestParams testParams)
 {
-	for (int dstFormatIndex = 0; testParams.compatibleFormats[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
+	// If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format.
+	const VkFormat	srcFormatOnly[2]	= { testParams.params.src.image.format, VK_FORMAT_UNDEFINED };
+	const VkFormat*	formatList			= (testParams.compatibleFormats ? testParams.compatibleFormats : srcFormatOnly);
+
+	for (int dstFormatIndex = 0; formatList[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
 	{
-		testParams.params.dst.image.format	= testParams.compatibleFormats[dstFormatIndex];
+		testParams.params.dst.image.format	= formatList[dstFormatIndex];
 		if (!isSupportedByFramework(testParams.params.dst.image.format))
 			continue;
 
@@ -7385,55 +7924,6 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 
 	const int	numOfColorImageFormatsToTest		= DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
 
-	TestParams	params;
-	params.src.image.imageType	= VK_IMAGE_TYPE_2D;
-	params.src.image.extent		= defaultExtent;
-	params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-	params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
-	params.dst.image.extent		= defaultExtent;
-	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
-	params.allocationKind		= allocationKind;
-
-	CopyRegion	region;
-	for (int i = 0, j = 1; (i + defaultFourthSize / j < defaultSize) && (defaultFourthSize > j); i += defaultFourthSize / j++)
-	{
-		const VkImageBlit			imageBlit	=
-		{
-			defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-			{
-				{0, 0, 0},
-				{defaultSize, defaultSize, 1}
-			},					// VkOffset3D					srcOffsets[2];
-
-			defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-			{
-				{i, 0, 0},
-				{i + defaultFourthSize / j, defaultFourthSize / j, 1}
-			}					// VkOffset3D					dstOffset[2];
-		};
-		region.imageBlit	= imageBlit;
-		params.regions.push_back(region);
-	}
-	for (int i = 0; i < defaultSize; i += defaultFourthSize)
-	{
-		const VkImageBlit			imageBlit	=
-		{
-			defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
-			{
-				{i, i, 0},
-				{i + defaultFourthSize, i + defaultFourthSize, 1}
-			},					// VkOffset3D					srcOffsets[2];
-
-			defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
-			{
-				{i, defaultSize / 2, 0},
-				{i + defaultFourthSize, defaultSize / 2 + defaultFourthSize, 1}
-			}					// VkOffset3D					dstOffset[2];
-		};
-		region.imageBlit	= imageBlit;
-		params.regions.push_back(region);
-	}
-
 	if (allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
 		const int numOfColorImageFormatsToTestFilter = DE_LENGTH_OF_ARRAY(dedicatedAllocationBlittingFormatsToTest);
@@ -7441,26 +7931,240 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 			dedicatedAllocationBlittingFormatsToTestSet.insert(dedicatedAllocationBlittingFormatsToTest[compatibleFormatsIndex]);
 	}
 
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+	// 2D tests.
 	{
-		const VkFormat*	compatibleFormats	= colorImageFormatsToTestBlit[compatibleFormatsIndex].compatibleFormats;
-		const bool		onlyNearest			= colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
-		for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D blitting tests"));
+
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+		params.src.image.extent		= defaultExtent;
+		params.dst.image.extent		= defaultExtent;
+		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.allocationKind		= allocationKind;
+
+		CopyRegion	region;
+		for (int i = 0, j = 1; (i + defaultFourthSize / j < defaultSize) && (defaultFourthSize > j); i += defaultFourthSize / j++)
 		{
-			params.src.image.format	= compatibleFormats[srcFormatIndex];
-			if (!isSupportedByFramework(params.src.image.format))
-				continue;
+			const VkImageBlit			imageBlit	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{
+					{0, 0, 0},
+					{defaultSize, defaultSize, 1}
+				},					// VkOffset3D					srcOffsets[2];
 
-			const bool onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
-
-			BlitColorTestParams		testParams;
-			testParams.params				= params;
-			testParams.compatibleFormats	= compatibleFormats;
-			testParams.testFilters			= onlyNearest ? 0u : (onlyNearestAndLinear ? 1u : 3u );
-
-			const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
-			addTestGroup(group, getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{
+					{i, 0, 0},
+					{i + defaultFourthSize / j, defaultFourthSize / j, 1}
+				}					// VkOffset3D					dstOffset[2];
+			};
+			region.imageBlit	= imageBlit;
+			params.regions.push_back(region);
 		}
+		for (int i = 0; i < defaultSize; i += defaultFourthSize)
+		{
+			const VkImageBlit			imageBlit	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{
+					{i, i, 0},
+					{i + defaultFourthSize, i + defaultFourthSize, 1}
+				},					// VkOffset3D					srcOffsets[2];
+
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{
+					{i, defaultSize / 2, 0},
+					{i + defaultFourthSize, defaultSize / 2 + defaultFourthSize, 1}
+				}					// VkOffset3D					dstOffset[2];
+			};
+			region.imageBlit	= imageBlit;
+			params.regions.push_back(region);
+		}
+
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+		{
+			const VkFormat*	compatibleFormats	= colorImageFormatsToTestBlit[compatibleFormatsIndex].compatibleFormats;
+			const bool		onlyNearest			= colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
+			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+			{
+				params.src.image.format	= compatibleFormats[srcFormatIndex];
+				if (!isSupportedByFramework(params.src.image.format))
+					continue;
+
+				const bool onlyNearestAndLinear	= de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
+
+				BlitColorTestParams		testParams;
+				testParams.params				= params;
+				testParams.compatibleFormats	= compatibleFormats;
+				testParams.testFilters			= makeFilterMask(onlyNearest, onlyNearestAndLinear);
+
+				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
+				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+			}
+		}
+
+		group->addChild(subGroup.release());
+	}
+
+	// 1D tests.
+	{
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D blitting tests"));
+
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_1D;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_1D;
+		params.src.image.extent		= default1dExtent;
+		params.dst.image.extent		= default1dExtent;
+		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.allocationKind		= allocationKind;
+
+		CopyRegion	region;
+		for (int i = 0; i < defaultSize; i += defaultSize / 2)
+		{
+			const VkImageBlit			imageBlit	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{
+					{0, 0, 0},
+					{defaultSize, 1, 1}
+				},					// VkOffset3D					srcOffsets[2];
+
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{
+					{i, 0, 0},
+					{i + defaultFourthSize, 1, 1}
+				}					// VkOffset3D					dstOffset[2];
+			};
+			region.imageBlit	= imageBlit;
+			params.regions.push_back(region);
+		}
+
+		{
+			const VkImageBlit			imageBlit	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{
+					{0, 0, 0},
+					{defaultFourthSize, 1, 1}
+				},					// VkOffset3D					srcOffsets[2];
+
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{
+					{defaultFourthSize, 0, 0},
+					{2 * defaultFourthSize, 1, 1}
+				}					// VkOffset3D					dstOffset[2];
+			};
+			region.imageBlit	= imageBlit;
+			params.regions.push_back(region);
+		}
+
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+		{
+			const VkFormat*	compatibleFormats	= colorImageFormatsToTestBlit[compatibleFormatsIndex].compatibleFormats;
+			const bool		onlyNearest			= colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
+			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+			{
+				params.src.image.format	= compatibleFormats[srcFormatIndex];
+				if (!isSupportedByFramework(params.src.image.format))
+					continue;
+
+				// Cubic filtering can only be used with 2D images.
+				const bool onlyNearestAndLinear	= true;
+
+				BlitColorTestParams	testParams;
+				testParams.params				= params;
+				testParams.compatibleFormats	= nullptr;
+				testParams.testFilters			= makeFilterMask(onlyNearest, onlyNearestAndLinear);
+
+				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
+				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+			}
+		}
+
+		group->addChild(subGroup.release());
+	}
+
+	// 3D tests. Note we use smaller dimensions here for performance reasons.
+	{
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D blitting tests"));
+
+		TestParams	params;
+		params.src.image.imageType	= VK_IMAGE_TYPE_3D;
+		params.dst.image.imageType	= VK_IMAGE_TYPE_3D;
+		params.src.image.extent		= default3dExtent;
+		params.dst.image.extent		= default3dExtent;
+		params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
+		params.allocationKind		= allocationKind;
+
+		CopyRegion	region;
+		for (int i = 0, j = 1; (i + defaultSixteenthSize / j < defaultFourthSize) && (defaultSixteenthSize > j); i += defaultSixteenthSize / j++)
+		{
+			const VkImageBlit			imageBlit	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{
+					{0, 0, 0},
+					{defaultFourthSize, defaultFourthSize, defaultFourthSize}
+				},					// VkOffset3D					srcOffsets[2];
+
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{
+					{i, 0, i},
+					{i + defaultSixteenthSize / j, defaultSixteenthSize / j, i + defaultSixteenthSize / j}
+				}					// VkOffset3D					dstOffset[2];
+			};
+			region.imageBlit	= imageBlit;
+			params.regions.push_back(region);
+		}
+		for (int i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
+		{
+			const VkImageBlit			imageBlit	=
+			{
+				defaultSourceLayer,	// VkImageSubresourceLayers	srcSubresource;
+				{
+					{i, i, i},
+					{i + defaultSixteenthSize, i + defaultSixteenthSize, i + defaultSixteenthSize}
+				},					// VkOffset3D					srcOffsets[2];
+
+				defaultSourceLayer,	// VkImageSubresourceLayers	dstSubresource;
+				{
+					{i, defaultFourthSize / 2, i},
+					{i + defaultSixteenthSize, defaultFourthSize / 2 + defaultSixteenthSize, i + defaultSixteenthSize}
+				}					// VkOffset3D					dstOffset[2];
+			};
+			region.imageBlit	= imageBlit;
+			params.regions.push_back(region);
+		}
+
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest; ++compatibleFormatsIndex)
+		{
+			const VkFormat*	compatibleFormats	= colorImageFormatsToTestBlit[compatibleFormatsIndex].compatibleFormats;
+			const bool		onlyNearest			= colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
+			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+			{
+				params.src.image.format	= compatibleFormats[srcFormatIndex];
+				if (!isSupportedByFramework(params.src.image.format))
+					continue;
+
+				// Cubic filtering can only be used with 2D images.
+				const bool onlyNearestAndLinear	= true;
+
+				BlitColorTestParams	testParams;
+				testParams.params				= params;
+				testParams.compatibleFormats	= nullptr;
+				testParams.testFilters			= makeFilterMask(onlyNearest, onlyNearestAndLinear);
+
+				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
+				addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+			}
+		}
+
+		group->addChild(subGroup.release());
 	}
 }
 
@@ -7514,326 +8218,361 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 	const VkImageSubresourceLayers	defaultDSSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u };
 
 	// 2D tests
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
-		params.src.image.extent				= defaultExtent;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
-		params.dst.image.extent				= defaultExtent;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
-		params.dst.image.format				= params.src.image.format;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind				= allocationKind;
-		params.separateDepthStencilLayouts	= DE_FALSE;
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d", "2D blitting tests"));
 
-		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-		CopyRegion	region;
-		for (int i = 0, j = 1; (i + defaultFourthSize / j < defaultSize) && (defaultFourthSize > j); i += defaultFourthSize / j++)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
-			const VkOffset3D	srcOffset0	= {0, 0, 0};
-			const VkOffset3D	srcOffset1	= {defaultSize, defaultSize, 1};
-			const VkOffset3D	dstOffset0	= {i, 0, 0};
-			const VkOffset3D	dstOffset1	= {i + defaultFourthSize / j, defaultFourthSize / j, 1};
+			TestParams	params;
+			params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+			params.src.image.extent				= defaultExtent;
+			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
+			params.dst.image.extent				= defaultExtent;
+			params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+			params.dst.image.format				= params.src.image.format;
+			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.allocationKind				= allocationKind;
+			params.separateDepthStencilLayouts	= DE_FALSE;
 
-			if (hasDepth)
-			{
-				const VkImageBlit			imageBlit	=
-				{
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-			if (hasStencil)
-			{
-				const VkImageBlit			imageBlit	=
-				{
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-		}
-		for (int i = 0; i < defaultSize; i += defaultFourthSize)
-		{
-			const VkOffset3D	srcOffset0	= {i, i, 0};
-			const VkOffset3D	srcOffset1	= {i + defaultFourthSize, i + defaultFourthSize, 1};
-			const VkOffset3D	dstOffset0	= {i, defaultSize / 2, 0};
-			const VkOffset3D	dstOffset1	= {i + defaultFourthSize, defaultSize / 2 + defaultFourthSize, 1};
+			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
 
-			if (hasDepth)
+			CopyRegion	region;
+			for (int i = 0, j = 1; (i + defaultFourthSize / j < defaultSize) && (defaultFourthSize > j); i += defaultFourthSize / j++)
 			{
-				const VkImageBlit			imageBlit	=
+				const VkOffset3D	srcOffset0	= {0, 0, 0};
+				const VkOffset3D	srcOffset1	= {defaultSize, defaultSize, 1};
+				const VkOffset3D	dstOffset0	= {i, 0, 0};
+				const VkOffset3D	dstOffset1	= {i + defaultFourthSize / j, defaultFourthSize / j, 1};
+
+				if (hasDepth)
 				{
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasStencil)
+				{
+					const VkImageBlit			imageBlit	=
+					{
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
 			}
-			if (hasStencil)
+			for (int i = 0; i < defaultSize; i += defaultFourthSize)
 			{
-				const VkImageBlit			imageBlit	=
+				const VkOffset3D	srcOffset0	= {i, i, 0};
+				const VkOffset3D	srcOffset1	= {i + defaultFourthSize, i + defaultFourthSize, 1};
+				const VkOffset3D	dstOffset0	= {i, defaultSize / 2, 0};
+				const VkOffset3D	dstOffset1	= {i + defaultFourthSize, defaultSize / 2 + defaultFourthSize, 1};
+
+				if (hasDepth)
 				{
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasStencil)
+				{
+					const VkImageBlit			imageBlit	=
+					{
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasDepth && hasStencil)
+				{
+					const VkOffset3D			dstDSOffset0	= {i, 3 * defaultFourthSize, 0};
+					const VkOffset3D			dstDSOffset1	= {i + defaultFourthSize, defaultSize, 1};
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDSSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultDSSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
+						{ dstDSOffset0, dstDSOffset1 }	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
 			}
+
+			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+			const std::string description	= "Blit from " + getFormatCaseName(params.src.image.format) +
+											" to " + getFormatCaseName(params.dst.image.format);
+			addTestGroup(subGroup.get(), testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+
 			if (hasDepth && hasStencil)
 			{
-				const VkOffset3D			dstDSOffset0	= {i, 3 * defaultFourthSize, 0};
-				const VkOffset3D			dstDSOffset1	= {i + defaultFourthSize, defaultSize, 1};
-				const VkImageBlit			imageBlit	=
-				{
-					defaultDSSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultDSSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
-					{ dstDSOffset0, dstDSOffset1 }	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+				params.separateDepthStencilLayouts	= DE_TRUE;
+				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
+												getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+				const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
+												" to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
+				addTestGroup(subGroup.get(), testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
-		const std::string testName		= "2d_" + getFormatCaseName(params.src.image.format) + "_" +
-										  getFormatCaseName(params.dst.image.format);
-		const std::string description	= "2D blit from " + getFormatCaseName(params.src.image.format) +
-										  " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(group, testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+		group->addChild(subGroup.release());
 	}
 
 	// 1D tests
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_1D;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_1D;
-		params.src.image.extent				= default1dExtent;
-		params.dst.image.extent				= default1dExtent;
-		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
-		params.dst.image.format				= params.src.image.format;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind				= allocationKind;
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d", "1D blitting tests"));
 
-		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-		CopyRegion	region;
-		for (int i = 0; i < defaultSize; i += defaultSize / 2)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
-			const VkOffset3D	srcOffset0	= {0, 0, 0};
-			const VkOffset3D	srcOffset1	= {defaultSize, 1, 1};
-			const VkOffset3D	dstOffset0	= {i, 0, 0};
-			const VkOffset3D	dstOffset1	= {i + defaultFourthSize, 1, 1};
+			TestParams	params;
+			params.src.image.imageType			= VK_IMAGE_TYPE_1D;
+			params.dst.image.imageType			= VK_IMAGE_TYPE_1D;
+			params.src.image.extent				= default1dExtent;
+			params.dst.image.extent				= default1dExtent;
+			params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
+			params.dst.image.format				= params.src.image.format;
+			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.allocationKind				= allocationKind;
 
-			if (hasDepth)
-			{
-				const VkImageBlit			imageBlit	=
-				{
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-			if (hasStencil)
-			{
-				const VkImageBlit			imageBlit	=
-				{
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-		}
+			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
 
-		{
-			const VkOffset3D	srcOffset0	= {0, 0, 0};
-			const VkOffset3D	srcOffset1	= {defaultFourthSize, 1, 1};
-			const VkOffset3D	dstOffset0	= {defaultFourthSize, 0, 0};
-			const VkOffset3D	dstOffset1	= {2 * defaultFourthSize, 1, 1};
+			CopyRegion	region;
+			for (int i = 0; i < defaultSize; i += defaultSize / 2)
+			{
+				const VkOffset3D	srcOffset0	= {0, 0, 0};
+				const VkOffset3D	srcOffset1	= {defaultSize, 1, 1};
+				const VkOffset3D	dstOffset0	= {i, 0, 0};
+				const VkOffset3D	dstOffset1	= {i + defaultFourthSize, 1, 1};
 
-			if (hasDepth)
-			{
-				const VkImageBlit			imageBlit	=
+				if (hasDepth)
 				{
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-			if (hasStencil)
-			{
-				const VkImageBlit			imageBlit	=
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasStencil)
 				{
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+					const VkImageBlit			imageBlit	=
+					{
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
 			}
+
+			{
+				const VkOffset3D	srcOffset0	= {0, 0, 0};
+				const VkOffset3D	srcOffset1	= {defaultFourthSize, 1, 1};
+				const VkOffset3D	dstOffset0	= {defaultFourthSize, 0, 0};
+				const VkOffset3D	dstOffset1	= {2 * defaultFourthSize, 1, 1};
+
+				if (hasDepth)
+				{
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasStencil)
+				{
+					const VkImageBlit			imageBlit	=
+					{
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasDepth && hasStencil)
+				{
+					const VkOffset3D			dstDSOffset0	= {3 * defaultFourthSize, 0, 0};
+					const VkOffset3D			dstDSOffset1	= {3 * defaultFourthSize + defaultFourthSize / 2, 1, 1};
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDSSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultDSSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
+						{ dstDSOffset0, dstDSOffset1 }	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+			}
+
+			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+			const std::string description	= "Blit from " + getFormatCaseName(params.src.image.format) +
+											" to " + getFormatCaseName(params.dst.image.format);
+			addTestGroup(subGroup.get(), testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+
 			if (hasDepth && hasStencil)
 			{
-				const VkOffset3D			dstDSOffset0	= {3 * defaultFourthSize, 0, 0};
-				const VkOffset3D			dstDSOffset1	= {3 * defaultFourthSize + defaultFourthSize / 2, 1, 1};
-				const VkImageBlit			imageBlit	=
-				{
-					defaultDSSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultDSSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
-					{ dstDSOffset0, dstDSOffset1 }	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+				params.separateDepthStencilLayouts	= DE_TRUE;
+				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
+												getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+				const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
+												" to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
+				addTestGroup(subGroup.get(), testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
-		const std::string testName		= "1d_" + getFormatCaseName(params.src.image.format) + "_" +
-										  getFormatCaseName(params.dst.image.format);
-		const std::string description	= "1D blit from " + getFormatCaseName(params.src.image.format) +
-										  " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(group, testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+		group->addChild(subGroup.release());
 	}
 
 	// 3D tests. Note we use smaller dimensions here for performance reasons.
-	for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 	{
-		TestParams	params;
-		params.src.image.imageType			= VK_IMAGE_TYPE_3D;
-		params.dst.image.imageType			= VK_IMAGE_TYPE_3D;
-		params.src.image.extent				= default3dExtent;
-		params.dst.image.extent				= default3dExtent;
-		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
-		params.dst.image.format				= params.src.image.format;
-		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
-		params.allocationKind				= allocationKind;
+		de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d", "3D blitting tests"));
 
-		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-		bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-		CopyRegion	region;
-		for (int i = 0, j = 1; (i + defaultSixteenthSize / j < defaultFourthSize) && (defaultSixteenthSize > j); i += defaultSixteenthSize / j++)
+		for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats); ++compatibleFormatsIndex)
 		{
-			const VkOffset3D	srcOffset0	= {0, 0, 0};
-			const VkOffset3D	srcOffset1	= {defaultFourthSize, defaultFourthSize, defaultFourthSize};
-			const VkOffset3D	dstOffset0	= {i, 0, i};
-			const VkOffset3D	dstOffset1	= {i + defaultSixteenthSize / j, defaultSixteenthSize / j, i + defaultSixteenthSize / j};
+			TestParams	params;
+			params.src.image.imageType			= VK_IMAGE_TYPE_3D;
+			params.dst.image.imageType			= VK_IMAGE_TYPE_3D;
+			params.src.image.extent				= default3dExtent;
+			params.dst.image.extent				= default3dExtent;
+			params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
+			params.dst.image.format				= params.src.image.format;
+			params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+			params.allocationKind				= allocationKind;
 
-			if (hasDepth)
-			{
-				const VkImageBlit			imageBlit	=
-				{
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-			if (hasStencil)
-			{
-				const VkImageBlit			imageBlit	=
-				{
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
-			}
-		}
-		for (int i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
-		{
-			const VkOffset3D	srcOffset0	= {i, i, i};
-			const VkOffset3D	srcOffset1	= {i + defaultSixteenthSize, i + defaultSixteenthSize, i + defaultSixteenthSize};
-			const VkOffset3D	dstOffset0	= {i, defaultFourthSize / 2, i};
-			const VkOffset3D	dstOffset1	= {i + defaultSixteenthSize, defaultFourthSize / 2 + defaultSixteenthSize, i + defaultSixteenthSize};
+			bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
+			bool hasStencil	= tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
 
-			if (hasDepth)
+			CopyRegion	region;
+			for (int i = 0, j = 1; (i + defaultSixteenthSize / j < defaultFourthSize) && (defaultSixteenthSize > j); i += defaultSixteenthSize / j++)
 			{
-				const VkImageBlit			imageBlit	=
+				const VkOffset3D	srcOffset0	= {0, 0, 0};
+				const VkOffset3D	srcOffset1	= {defaultFourthSize, defaultFourthSize, defaultFourthSize};
+				const VkOffset3D	dstOffset0	= {i, 0, i};
+				const VkOffset3D	dstOffset1	= {i + defaultSixteenthSize / j, defaultSixteenthSize / j, i + defaultSixteenthSize / j};
+
+				if (hasDepth)
 				{
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasStencil)
+				{
+					const VkImageBlit			imageBlit	=
+					{
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0 , srcOffset1 },	// VkOffset3D					srcOffsets[2];
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0 , dstOffset1 },	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
 			}
-			if (hasStencil)
+			for (int i = 0; i < defaultFourthSize; i += defaultSixteenthSize)
 			{
-				const VkImageBlit			imageBlit	=
+				const VkOffset3D	srcOffset0	= {i, i, i};
+				const VkOffset3D	srcOffset1	= {i + defaultSixteenthSize, i + defaultSixteenthSize, i + defaultSixteenthSize};
+				const VkOffset3D	dstOffset0	= {i, defaultFourthSize / 2, i};
+				const VkOffset3D	dstOffset1	= {i + defaultSixteenthSize, defaultFourthSize / 2 + defaultSixteenthSize, i + defaultSixteenthSize};
+
+				if (hasDepth)
 				{
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
-					{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultDepthSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasStencil)
+				{
+					const VkImageBlit			imageBlit	=
+					{
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultStencilSourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+						{ dstOffset0, dstOffset1 }		// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
+				if (hasDepth && hasStencil)
+				{
+					const VkOffset3D			dstDSOffset0	= {i, 3 * defaultSixteenthSize, i};
+					const VkOffset3D			dstDSOffset1	= {i + defaultSixteenthSize, defaultFourthSize, i + defaultSixteenthSize};
+					const VkImageBlit			imageBlit	=
+					{
+						defaultDSSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
+						{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
+						defaultDSSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
+						{ dstDSOffset0, dstDSOffset1 }	// VkOffset3D					dstOffset[2];
+					};
+					region.imageBlit	= imageBlit;
+					params.regions.push_back(region);
+				}
 			}
+
+			const std::string testName		= getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+			const std::string description	= "Blit from " + getFormatCaseName(params.src.image.format) +
+											" to " + getFormatCaseName(params.dst.image.format);
+			addTestGroup(subGroup.get(), testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
+
 			if (hasDepth && hasStencil)
 			{
-				const VkOffset3D			dstDSOffset0	= {i, 3 * defaultSixteenthSize, i};
-				const VkOffset3D			dstDSOffset1	= {i + defaultSixteenthSize, defaultFourthSize, i + defaultSixteenthSize};
-				const VkImageBlit			imageBlit	=
-				{
-					defaultDSSourceLayer,			// VkImageSubresourceLayers	srcSubresource;
-					{ srcOffset0, srcOffset1 },		// VkOffset3D					srcOffsets[2];
-					defaultDSSourceLayer,			// VkImageSubresourceLayers	dstSubresource;
-					{ dstDSOffset0, dstDSOffset1 }	// VkOffset3D					dstOffset[2];
-				};
-				region.imageBlit	= imageBlit;
-				params.regions.push_back(region);
+				params.separateDepthStencilLayouts	= DE_TRUE;
+				const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
+												getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+				const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
+												" to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
+				addTestGroup(subGroup.get(), testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
 			}
 		}
 
-		const std::string testName		= "3d_" + getFormatCaseName(params.src.image.format) + "_" +
-										  getFormatCaseName(params.dst.image.format);
-		const std::string description	= "3D blit from " + getFormatCaseName(params.src.image.format) +
-										  " to " + getFormatCaseName(params.dst.image.format);
-		addTestGroup(group, testName, description, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
-
-		if (hasDepth && hasStencil)
-		{
-			params.separateDepthStencilLayouts	= DE_TRUE;
-			const std::string testName2		= getFormatCaseName(params.src.image.format) + "_" +
-											  getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-			const std::string description2	= "Blit from " + getFormatCaseName(params.src.image.format) +
-											  " to " + getFormatCaseName(params.dst.image.format) + " with separate depth/stencil layouts";
-			addTestGroup(group, testName2, description2, addBlittingImageAllFormatsDepthStencilFormatsTests, params);
-		}
+		group->addChild(subGroup.release());
 	}
 }
 
@@ -7866,13 +8605,13 @@ void addBlittingImageAllFormatsMipmapFormatTests (tcu::TestCaseGroup* group, Bli
 												  " to " + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
 			group->addChild(new BlitMipmapTestCase(testCtx, testName + "_nearest", description, testParams.params));
 
-			if (testParams.testFilters & 1u)
+			if (testParams.testFilters & FILTER_MASK_LINEAR)
 			{
 				testParams.params.filter = VK_FILTER_LINEAR;
 				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_linear", description, testParams.params));
 			}
 
-			if (testParams.testFilters & 2u)
+			if (testParams.testFilters & FILTER_MASK_CUBIC)
 			{
 				testParams.params.filter = VK_FILTER_CUBIC_EXT;
 				group->addChild(new BlitMipmapTestCase(testCtx, testName + "_cubic", description, testParams.params));
@@ -7973,7 +8712,7 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 				BlitColorTestParams testParams;
 				testParams.params				= params;
 				testParams.compatibleFormats	= compatibleFormats;
-				testParams.testFilters			= onlyNearest ? 0u : (onlyNearestAndLinear ? 1u : 3u);
+				testParams.testFilters			= makeFilterMask(onlyNearest, onlyNearestAndLinear);
 
 				testParams.params.src.image.extent.depth = layerCount;
 				testParams.params.dst.image.extent.depth = layerCount;
@@ -8086,7 +8825,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 				BlitColorTestParams	testParams;
 				testParams.params							= params;
 				testParams.compatibleFormats				= compatibleFormats;
-				testParams.testFilters						= onlyNearest ? 0u : (onlyNearestAndLinear ? 1u : 3u);
+				testParams.testFilters						= makeFilterMask(onlyNearest, onlyNearestAndLinear);
 
 				testParams.params.src.image.extent.depth	= layerCount;
 				testParams.params.dst.image.extent.depth	= layerCount;
@@ -8132,7 +8871,7 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 					BlitColorTestParams testParams;
 					testParams.params							= params;
 					testParams.compatibleFormats				= compatibleFormatsUInts;
-					testParams.testFilters						= 0;
+					testParams.testFilters						= FILTER_MASK_NEAREST;
 
 					testParams.params.src.image.extent.depth	= layerCount;
 					testParams.params.dst.image.extent.depth	= layerCount;

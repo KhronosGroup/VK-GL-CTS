@@ -1499,8 +1499,15 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage (void)
 		const deUint32						queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
 		SimpleAllocator						allocator					(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 		de::UniquePtr<tcu::TextureLevel>	result						(readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_colorImage, m_colorFormat, m_renderSize).release());
-		const tcu::Vec4						threshold					(getFormatThreshold(tcuColorFormat));
+		tcu::Vec4							threshold					(getFormatThreshold(tcuColorFormat));
 		tcu::TextureLevel					refLevel;
+
+		// For SRGB formats there is an extra precision loss due to doing
+		// the following conversions sRGB -> RGB -> blend -> RGB  -> sRGB with floats.
+		// Take that into account in the threshold. For example, VK_FORMAT_R8G8B8A8_SRGB
+		// threshold is 4/255f, but we changed it to be 10/255f.
+		if (tcu::isSRGB(tcuColorFormat))
+			threshold = 2.5f * threshold;
 
 		refLevel.setStorage(tcuColorFormat, m_renderSize.x(), m_renderSize.y(), 1);
 

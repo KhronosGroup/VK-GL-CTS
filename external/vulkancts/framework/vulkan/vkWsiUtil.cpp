@@ -44,6 +44,17 @@ using std::vector;
 #	endif // DEQP_SUPPORT_XCB
 #endif // DEQP_SUPPORT_X11
 
+#if defined (DEQP_SUPPORT_WAYLAND)
+#	include "tcuLnxWayland.hpp"
+#	define WAYLAND_DISPLAY DE_NULL
+#endif // DEQP_SUPPORT_WAYLAND
+
+#if ( DE_OS == DE_OS_WIN32 )
+	#define NOMINMAX
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
+#endif
+
 namespace vk
 {
 namespace wsi
@@ -489,6 +500,77 @@ std::vector<deUint32> getCompatibleQueueFamilyIndices (const InstanceInterface& 
 	}
 
 	return indices;
+}
+
+tcu::UVec2 getFullScreenSize (const vk::wsi::Type wsiType, const vk::wsi::Display& display, const tcu::UVec2& fallbackSize)
+{
+	tcu::UVec2 result = fallbackSize;
+
+	switch (wsiType)
+	{
+		case TYPE_XLIB:
+		{
+#if defined (DEQP_SUPPORT_X11)
+			const XlibDisplayInterface&			xlibDisplay		= dynamic_cast<const XlibDisplayInterface&>(display);
+			::Display*							displayPtr		= (::Display*)(xlibDisplay.getNative().internal);
+			const Screen*						screen			= ScreenOfDisplay(displayPtr, 0);
+			result.x()											= deUint32(screen->width);
+			result.y()											= deUint32(screen->height);
+#endif
+			break;
+		}
+		case TYPE_XCB:
+		{
+#if defined (DEQP_SUPPORT_XCB)
+//			const XcbDisplayInterface&			xcbDisplay		= dynamic_cast<const XcbDisplayInterface&>(display);
+//			xcb_connection_t*					connPtr			= (xcb_connection_t*)(xcbDisplay.getNative().internal);
+//			xcb_screen_t*						screen			= xcb_setup_roots_iterator(xcb_get_setup(connPtr)).data;
+//			result.x()											= deUint32(screen->width_in_pixels);
+//			result.y()											= deUint32(screen->height_in_pixels);
+#endif
+			break;
+		}
+		case TYPE_WAYLAND:
+		{
+#if defined (DEQP_SUPPORT_WAYLAND)
+#endif
+			break;
+		}
+		case TYPE_ANDROID:
+		{
+#if ( DE_OS == DE_OS_ANDROID )
+#endif
+			break;
+		}
+		case TYPE_WIN32:
+		{
+#if ( DE_OS == DE_OS_WIN32 )
+			de::MovePtr<Window>					nullWindow		(display.createWindow(tcu::nothing<tcu::UVec2>()));
+			const Win32WindowInterface&			win32Window		= dynamic_cast<const Win32WindowInterface&>(*nullWindow);
+			HMONITOR							hMonitor		= (HMONITOR)MonitorFromWindow((HWND)win32Window.getNative().internal, MONITOR_DEFAULTTONEAREST);
+			MONITORINFO							monitorInfo;
+			monitorInfo.cbSize									= sizeof(MONITORINFO);
+			GetMonitorInfo(hMonitor, &monitorInfo);
+			result.x()											= deUint32(abs(monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left));
+			result.y()											= deUint32(abs(monitorInfo.rcMonitor.top - monitorInfo.rcMonitor.bottom));
+#endif
+			break;
+		}
+
+		case TYPE_MACOS:
+		{
+#if ( DE_OS == DE_OS_OSX )
+#endif
+			break;
+		}
+
+		default:
+			DE_FATAL("Unknown WSI type");
+			break;
+	}
+
+	DE_UNREF(display);
+	return result;
 }
 
 Move<VkRenderPass> WsiTriangleRenderer::createRenderPass (const DeviceInterface&	vkd,

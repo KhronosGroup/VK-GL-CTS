@@ -2021,6 +2021,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevice4444FormatsFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkAndroidSurfaceCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;

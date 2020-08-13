@@ -44,9 +44,12 @@ public:
 	Maybe<T>&	operator=		(const Maybe<T>& other);
 
 	const T&	get				(void) const;
+	T&			get				(void);
 	const T&	operator*		(void) const { return get(); }
+	T&			operator*		(void) { return get(); }
 
 	const T*	operator->		(void) const;
+	T*			operator->		(void);
 				operator bool	(void) const { return !!m_ptr; }
 
 private:
@@ -135,7 +138,21 @@ const T* Maybe<T>::operator-> (void) const
 }
 
 template<typename T>
+T* Maybe<T>::operator-> (void)
+{
+	DE_ASSERT(m_ptr);
+	return m_ptr;
+}
+
+template<typename T>
 const T& Maybe<T>::get (void) const
+{
+	DE_ASSERT(m_ptr);
+	return *m_ptr;
+}
+
+template<typename T>
+T& Maybe<T>::get (void)
 {
 	DE_ASSERT(m_ptr);
 	return *m_ptr;

@@ -1,3 +1,5 @@
+#!amber
+
 # Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +15,7 @@
 # limitations under the License.
 
 # A test for a bug found by GraphicsFuzz.
+
 # A fragment shader that uses struct initializers.
 # Derived from the following GLSL fragment shader.
 # We check that all pixels are red. The test passes because main does
@@ -43,56 +46,69 @@
 #   _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
 # }
 
-[vertex shader passthrough]
+SHADER vertex variant_vertex_shader PASSTHROUGH
 
-[fragment shader spirv]
+SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
-; Generator: Khronos Glslang Reference Front End; 7
-; Bound: 26
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 23
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %_GLF_color
-               OpExecutionMode %main OriginUpperLeft
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %main "main"
-               OpName %S "S"
-               OpMemberName %S 0 "b"
-               OpName %foo_ "foo("
-               OpName %_GLF_color "_GLF_color"
-               OpDecorate %_GLF_color Location 0
-       %void = OpTypeVoid
-          %3 = OpTypeFunction %void
-       %bool = OpTypeBool
-          %S = OpTypeStruct %bool
-          %8 = OpTypeFunction %S
-       %true = OpConstantTrue %bool
-         %14 = OpConstantComposite %S %true
-      %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
- %_GLF_color = OpVariable %_ptr_Output_v4float Output
-    %float_1 = OpConstant %float 1
-    %float_0 = OpConstant %float 0
-         %25 = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1
-       %main = OpFunction %void None %3
-          %5 = OpLabel
-         %18 = OpFunctionCall %S %foo_
-               OpStore %_GLF_color %25
+               OpName %2 "main"
+               OpName %4 "S"
+               OpMemberName %4 0 "b"
+               OpName %5 "foo("
+               OpName %3 "_GLF_color"
+               OpDecorate %3 Location 0
+          %6 = OpTypeVoid
+          %7 = OpTypeFunction %6
+          %8 = OpTypeBool
+          %4 = OpTypeStruct %8
+          %9 = OpTypeFunction %4
+         %10 = OpConstantTrue %8
+         %11 = OpConstantComposite %4 %10
+         %12 = OpTypeFloat 32
+         %13 = OpTypeVector %12 4
+         %14 = OpTypePointer Output %13
+          %3 = OpVariable %14 Output
+         %15 = OpConstant %12 1
+         %16 = OpConstant %12 0
+         %17 = OpConstantComposite %13 %15 %16 %16 %15
+          %2 = OpFunction %6 None %7
+         %18 = OpLabel
+         %19 = OpFunctionCall %4 %5
+               OpStore %3 %17
                OpReturn
                OpFunctionEnd
-       %foo_ = OpFunction %S None %8
-         %10 = OpLabel
-               OpSelectionMerge %13 None
-               OpBranchConditional %true %12 %13
-         %12 = OpLabel
-               OpReturnValue %14
-         %13 = OpLabel
-               OpReturnValue %14
+          %5 = OpFunction %4 None %9
+         %20 = OpLabel
+               OpSelectionMerge %21 None
+               OpBranchConditional %10 %22 %21
+         %22 = OpLabel
+               OpReturnValue %11
+         %21 = OpLabel
+               OpReturnValue %11
                OpFunctionEnd
+END
 
-[test]
-draw rect -1 -1 2 2
-probe all rgba 1 0 0 1
+
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

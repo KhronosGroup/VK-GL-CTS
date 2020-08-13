@@ -1,3 +1,5 @@
+#!amber
+
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,56 +16,71 @@
 
 # A test for a bug found by GraphicsFuzz; reduced by spirv-fuzz and by hand.
 # A fragment shader with two nested loops. All loop conditions are false.
-# Block %45 is both a continue block and a merge block.
 # We check that all pixels are red. The test passes because the final statement
 # writes red to _GLF_color.
 
-[vertex shader passthrough]
+SHADER vertex variant_vertex_shader PASSTHROUGH
 
-[fragment shader spirv]
+SHADER fragment variant_fragment_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 22
+; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main" %_GLF_color
-               OpExecutionMode %main OriginUpperLeft
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
                OpSource ESSL 310
-               OpName %main "main"
-               OpName %_GLF_color "_GLF_color"
-               OpDecorate %_GLF_color Location 0
-       %void = OpTypeVoid
-          %6 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-    %float_1 = OpConstant %float 1
-    %float_0 = OpConstant %float 0
-    %v4float = OpTypeVector %float 4
-        %red = OpConstantComposite %v4float %float_1 %float_0 %float_0 %float_1
-%_ptr_Output_v4float = OpTypePointer Output %v4float
- %_GLF_color = OpVariable %_ptr_Output_v4float Output
-       %bool = OpTypeBool
-       %true = OpConstantTrue %bool
-      %false = OpConstantFalse %bool
-
-       %main = OpFunction %void None %6
-         %23 = OpLabel
-               OpBranch %42
-         %42 = OpLabel
-               OpLoopMerge %47 %45 None
-               OpBranchConditional %false %49 %47
-         %49 = OpLabel
-               OpLoopMerge %50 %52 None
-               OpBranchConditional %false %50 %50
-         %52 = OpLabel
-               OpBranch %49
-         %50 = OpLabel
-               OpBranch %45
-         %45 = OpLabel
-               OpBranch %42
-         %47 = OpLabel
-               OpStore %_GLF_color %red
+               OpName %2 "main"
+               OpName %3 "_GLF_color"
+               OpDecorate %3 Location 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpConstant %6 1
+          %8 = OpConstant %6 0
+          %9 = OpTypeVector %6 4
+         %10 = OpConstantComposite %9 %7 %8 %8 %7
+         %11 = OpTypePointer Output %9
+          %3 = OpVariable %11 Output
+         %12 = OpTypeBool
+         %13 = OpConstantTrue %12
+         %14 = OpConstantFalse %12
+          %2 = OpFunction %4 None %5
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpLoopMerge %17 %18 None
+               OpBranchConditional %14 %19 %17
+         %19 = OpLabel
+               OpLoopMerge %20 %21 None
+               OpBranchConditional %14 %20 %20
+         %21 = OpLabel
+               OpBranch %19
+         %20 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %16
+         %17 = OpLabel
+               OpStore %3 %10
                OpReturn
                OpFunctionEnd
+END
 
 
-[test]
-draw rect -1 -1 2 2
-probe all rgba 1 0 0 1
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 0 0 255

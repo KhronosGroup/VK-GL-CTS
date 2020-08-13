@@ -6,6 +6,7 @@
 namespace vk
 {
 #define VK_KHR_16BIT_STORAGE_EXTENSION_NAME "VK_KHR_16bit_storage"
+#define VK_EXT_4444_FORMATS_EXTENSION_NAME "VK_EXT_4444_formats"
 #define VK_KHR_8BIT_STORAGE_EXTENSION_NAME "VK_KHR_8bit_storage"
 #define VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME "VK_KHR_acceleration_structure"
 #define VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME "VK_EXT_astc_decode_mode"
@@ -233,9 +234,11 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceImageRobustnessFeaturesEXT>(
 template<> void initFeatureFromBlob<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(VkPhysicalDeviceAccelerationStructureFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(VkPhysicalDeviceRayTracingPipelineFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayQueryFeaturesKHR>(VkPhysicalDeviceRayQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevice4444FormatsFeaturesEXT>(VkPhysicalDevice4444FormatsFeaturesEXT&, const AllFeaturesBlobs&) {}
 
 
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDevice16BitStorageFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES, VK_KHR_16BIT_STORAGE_EXTENSION_NAME, VK_KHR_16BIT_STORAGE_SPEC_VERSION, 67}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevice16BitStorageFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES, VK_KHR_16BIT_STORAGE_EXTENSION_NAME, VK_KHR_16BIT_STORAGE_SPEC_VERSION, 68}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevice4444FormatsFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT, VK_EXT_4444_FORMATS_EXTENSION_NAME, VK_EXT_4444_FORMATS_SPEC_VERSION, 67}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevice8BitStorageFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES, VK_KHR_8BIT_STORAGE_EXTENSION_NAME, VK_KHR_8BIT_STORAGE_SPEC_VERSION, 66}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION, 65}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceASTCDecodeFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ASTC_DECODE_FEATURES_EXT, VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME, VK_EXT_ASTC_DECODE_MODE_SPEC_VERSION, 64}; }
@@ -307,6 +310,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceYcbcrImageArraysFeaturesE
 static const FeatureStructCreationData featureStructCreationArray[] =
 {
 	{ createFeatureStructWrapper<VkPhysicalDevice16BitStorageFeatures>, VK_KHR_16BIT_STORAGE_EXTENSION_NAME, VK_KHR_16BIT_STORAGE_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDevice4444FormatsFeaturesEXT>, VK_EXT_4444_FORMATS_EXTENSION_NAME, VK_EXT_4444_FORMATS_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevice8BitStorageFeatures>, VK_KHR_8BIT_STORAGE_EXTENSION_NAME, VK_KHR_8BIT_STORAGE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceAccelerationStructureFeaturesKHR>, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceASTCDecodeFeaturesEXT>, VK_EXT_ASTC_DECODE_MODE_EXTENSION_NAME, VK_EXT_ASTC_DECODE_MODE_SPEC_VERSION },

@@ -1,3 +1,5 @@
+#!amber
+
 # Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +18,9 @@
 
 # Short description: A fragment shader with return in nest of ifs, inside loop
 
-# The test passes because the fragment shader writes a red pixel, and then
-# terminates without further output manipulation (the other write of red
-# is not dynamically reachable)
+# The test passes because the fragment shader assigns red to _GLF_color then
+# assigns black to _GLF_color in the loop. The other assignment to _GLF_color
+# (in the if statement) is not dynamically reachable.
 
 # Derived from the following GLSL.
 
@@ -54,12 +56,9 @@
 #   }
 # }
 
-[require]
-fbsize 256 256
+SHADER vertex variant_vertex_shader PASSTHROUGH
 
-[vertex shader passthrough]
-
-[fragment shader spirv]
+SHADER fragment variant_fragment_shader SPIRV-ASM
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos Glslang Reference Front End; 7
@@ -148,12 +147,28 @@ fbsize 256 256
          %19 = OpLabel
                OpReturn
                OpFunctionEnd
+END
 
 
-[test]
-## Uniforms
+# uniforms for variant
+
 # injectionSwitch
-uniform ubo 0:0 vec2 0 0.0 1.0
+BUFFER variant_injectionSwitch DATA_TYPE vec2<float> DATA
+ 0.0 1.0
+END
 
-draw rect -1 -1 2 2
-probe rgba (0, 0) (1, 1, 1, 1)
+BUFFER variant_framebuffer FORMAT B8G8R8A8_UNORM
+
+PIPELINE graphics variant_pipeline
+  ATTACH variant_vertex_shader
+  ATTACH variant_fragment_shader
+  FRAMEBUFFER_SIZE 256 256
+  BIND BUFFER variant_framebuffer AS color LOCATION 0
+  BIND BUFFER variant_injectionSwitch AS uniform DESCRIPTOR_SET 0 BINDING 0
+END
+CLEAR_COLOR variant_pipeline 0 0 0 255
+
+CLEAR variant_pipeline
+RUN variant_pipeline DRAW_RECT POS 0 0 SIZE 256 256
+
+EXPECT variant_framebuffer IDX 0 0 SIZE 256 256 EQ_RGBA 255 255 255 255

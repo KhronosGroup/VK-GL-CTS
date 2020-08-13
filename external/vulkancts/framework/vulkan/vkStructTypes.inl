@@ -4861,6 +4861,14 @@ struct VkPhysicalDeviceRayQueryFeaturesKHR
 	VkBool32		rayQuery;
 };
 
+struct VkPhysicalDevice4444FormatsFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		formatA4R4G4B4;
+	VkBool32		formatA4B4G4R4;
+};
+
 struct VkAndroidSurfaceCreateInfoKHR
 {
 	VkStructureType						sType;

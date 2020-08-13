@@ -64,6 +64,11 @@ public:
 	{
 	}
 
+	void setVisible(bool visible)
+	{
+		m_window->setVisibility(visible);
+	}
+
 	void resize (const UVec2& newSize)
 	{
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
@@ -107,6 +112,11 @@ public:
 	{
 	}
 
+	void setVisible(bool visible)
+	{
+		m_window->setVisibility(visible);
+	}
+
 	void resize (const UVec2& newSize)
 	{
 		m_window->setDimensions((int)newSize.x(), (int)newSize.y());
@@ -146,6 +156,11 @@ public:
 		: vk::wsi::WaylandWindowInterface	(vk::pt::WaylandSurfacePtr(window->getSurface()))
 		, m_window							(window)
 	{
+	}
+
+	void setVisible(bool visible)
+	{
+		m_window->setVisibility(visible);
 	}
 
 	void resize (const UVec2& newSize)

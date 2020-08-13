@@ -226,6 +226,16 @@ public:
 	{
 	}
 
+	void setVisible(bool visible)
+	{
+		DE_UNREF(visible);
+	}
+
+	void resize(const UVec2& newSize)
+	{
+		DE_UNREF(newSize);
+	}
+
 	~VulkanWindow (void)
 	{
 		m_window.release();

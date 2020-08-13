@@ -293,7 +293,7 @@ ResultData create<GL_TEXTURE_1D, GL_RGBA8>(const Functions& gl)
 template <>
 ResultData create<GL_TEXTURE_1D, GL_DEPTH_COMPONENT16>(const Functions& gl)
 {
-	return createTexture1D<unsigned char>(gl, 1, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT);
+	return createTexture1D<unsigned short>(gl, 1, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT);
 }
 
 template <>

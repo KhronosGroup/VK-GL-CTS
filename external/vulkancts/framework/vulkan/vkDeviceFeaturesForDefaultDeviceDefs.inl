@@ -2,6 +2,7 @@
  * be lost! Modify the generating script instead.
  */
 const VkPhysicalDevice16BitStorageFeatures&							get16BitStorageFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice16BitStorageFeatures>();							}
+const VkPhysicalDevice4444FormatsFeaturesEXT&						get4444FormatsFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice4444FormatsFeaturesEXT>();						}
 const VkPhysicalDevice8BitStorageFeatures&							get8BitStorageFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice8BitStorageFeatures>();							}
 const VkPhysicalDeviceAccelerationStructureFeaturesKHR&				getAccelerationStructureFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceAccelerationStructureFeaturesKHR>();				}
 const VkPhysicalDeviceASTCDecodeFeaturesEXT&						getASTCDecodeFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceASTCDecodeFeaturesEXT>();							}

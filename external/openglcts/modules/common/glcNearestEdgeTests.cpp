@@ -265,6 +265,8 @@ void NearestEdgeTestCase::fillTexture ()
 	}
 
 	const auto internalFormat = glu::getInternalFormat(m_texFormat);
+	if (tcu::getPixelSize(m_texFormat) < 4)
+		gl.pixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	gl.texImage2D(kTextureType, 0, internalFormat, m_width,  m_height, 0 /* border */, m_transFormat.format, m_transFormat.dataType, m_texData.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D");
 }
@@ -323,6 +325,8 @@ bool NearestEdgeTestCase::verifyResults ()
 	const auto& gl = m_context.getRenderContext().getFunctions();
 
 	std::vector<deUint8> fbData(m_width * m_height * tcu::getPixelSize(m_texFormat));
+	if (tcu::getPixelSize(m_texFormat) < 4)
+		gl.pixelStorei(GL_PACK_ALIGNMENT, 1);
 	gl.readPixels(0, 0, m_width, m_height, m_transFormat.format, m_transFormat.dataType, fbData.data());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels");
 

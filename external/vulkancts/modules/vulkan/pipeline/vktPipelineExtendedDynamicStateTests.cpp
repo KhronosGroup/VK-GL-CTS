@@ -46,9 +46,11 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <utility>
 #include <iterator>
 #include <string>
 #include <limits>
+#include <memory>
 
 namespace vkt
 {
@@ -68,9 +70,20 @@ constexpr deUint32	kFramebufferWidth	= 64u;
 constexpr deUint32	kFramebufferHeight	= 64u;
 
 // Image formats.
-constexpr	vk::VkFormat	kColorFormat		= vk::VK_FORMAT_R8G8B8A8_UNORM;
-constexpr	vk::VkFormat	kDepthStencilFormat	= vk::VK_FORMAT_D32_SFLOAT_S8_UINT;
-const		tcu::Vec4		kColorThreshold		(0.005f); // 1/255 < 0.005 < 2/255.
+constexpr	vk::VkFormat	kColorFormat	= vk::VK_FORMAT_R8G8B8A8_UNORM;
+const		tcu::Vec4		kColorThreshold	(0.005f); // 1/255 < 0.005 < 2/255.
+
+struct DepthStencilFormat
+{
+	vk::VkFormat	imageFormat;
+	float			depthThreshold;
+};
+
+const DepthStencilFormat kDepthStencilFormats[] =
+{
+	{ vk::VK_FORMAT_D32_SFLOAT_S8_UINT,	0.0f		},
+	{ vk::VK_FORMAT_D24_UNORM_S8_UINT,	1.0e-07f	},	// 1/(2**24-1) < 1.0e-07f < 2/(2**24-1)
+};
 
 // Vertices in buffers will have 2 components and a padding to properly test the stride.
 struct GeometryVertex
@@ -131,6 +144,14 @@ struct StaticAndDynamicPair
 		, dynamicValue	(tcu::just<T>(dVal))
 	{
 	}
+
+	// If the dynamic value is present, swap static and dynamic values.
+	void swapValues (void)
+	{
+		if (!dynamicValue)
+			return;
+		std::swap(staticValue, dynamicValue.get());
+	}
 };
 
 // For anything boolean, see below.
@@ -186,6 +207,9 @@ enum class SequenceOrdering
 	BEFORE_DRAW			= 1,	// After binding dynamic pipeline and just before drawing.
 	BETWEEN_PIPELINES	= 2,	// After a static state pipeline has been bound but before the dynamic state pipeline has been bound.
 	AFTER_PIPELINES		= 3,	// After a static state pipeline and a second dynamic state pipeline have been bound.
+	BEFORE_GOOD_STATIC	= 4,	// Before a static state pipeline with the correct values has been bound.
+	TWO_DRAWS_DYNAMIC	= 5,	// Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again.
+	TWO_DRAWS_STATIC	= 6,	// Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again.
 };
 
 struct TestConfig
@@ -255,13 +279,14 @@ struct TestConfig
 		, depthBoundsTestEnableConfig	(false)
 		, stencilTestEnableConfig		(false)
 		, stencilOpConfig				(StencilOpVec(1u, kDefaultStencilOpParams))
+		, m_swappedValues				(false)
 	{
 	}
 
 	// Get the proper viewport vector according to the test config.
 	const ViewportVec& getActiveViewportVec () const
 	{
-		return (viewportConfig.dynamicValue ? viewportConfig.dynamicValue.get() : viewportConfig.staticValue);
+		return ((viewportConfig.dynamicValue && !m_swappedValues) ? viewportConfig.dynamicValue.get() : viewportConfig.staticValue);
 	}
 
 	// Returns true if there is more than one viewport.
@@ -277,6 +302,63 @@ struct TestConfig
 		// commonly supported than geometry shaders, so we will use a geometry shader if we need to write to it.
 		return (isMultiViewport() || forceGeometryShader);
 	}
+
+	// Returns true if we should use the static and dynamic values exchanged.
+	// This makes the static part of the pipeline have the actual expected values.
+	bool isReversed () const
+	{
+		return (sequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
+				sequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC);
+	}
+
+	// Swaps static and dynamic configuration values.
+	void swapValues ()
+	{
+		cullModeConfig.swapValues();
+		frontFaceConfig.swapValues();
+		topologyConfig.swapValues();
+		viewportConfig.swapValues();
+		scissorConfig.swapValues();
+		strideConfig.swapValues();
+		depthTestEnableConfig.swapValues();
+		depthWriteEnableConfig.swapValues();
+		depthCompareOpConfig.swapValues();
+		depthBoundsTestEnableConfig.swapValues();
+		stencilTestEnableConfig.swapValues();
+		stencilOpConfig.swapValues();
+
+		m_swappedValues = !m_swappedValues;
+	}
+
+	// Returns the number of iterations when recording commands.
+	deUint32 numIterations () const
+	{
+		deUint32 iterations = 0u;
+
+		switch (sequenceOrdering)
+		{
+		case SequenceOrdering::TWO_DRAWS_DYNAMIC:
+		case SequenceOrdering::TWO_DRAWS_STATIC:
+			iterations = 2u;
+			break;
+		default:
+			iterations = 1u;
+			break;
+		}
+
+		return iterations;
+	}
+
+private:
+	// Extended dynamic state cases as created by createExtendedDynamicStateTests() are based on the assumption that, when a state
+	// has a static and a dynamic value configured at the same time, the static value is wrong and the dynamic value will give
+	// expected results. That's appropriate for most test variants, but in some others we want to reverse the situation: a dynamic
+	// pipeline with wrong values and a static one with good values.
+	//
+	// Instead of modifying how tests are created, we use isReversed() and swapValues() above, allowing us to swap static and
+	// dynamic values and to know if we should do it for a given test case. However, we need to know were the good value is at any
+	// given point in time in order to correctly answer some questions while running the test. m_swappedValues tracks that state.
+	bool m_swappedValues;
 };
 
 struct PushConstants
@@ -429,17 +511,12 @@ void ExtendedDynamicStateTest::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Geometry shader not supported");
 	}
 
-	// Check image format support.
-	const vk::VkFormatFeatureFlags kColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
-	const vk::VkFormatFeatureFlags kDSFeatures		= (vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+	// Check color image format support (depth/stencil will be chosen at runtime).
+	const vk::VkFormatFeatureFlags	kColorFeatures	= (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+	const auto						colorProperties	= vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kColorFormat);
 
-	const auto colorProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kColorFormat);
 	if ((colorProperties.optimalTilingFeatures & kColorFeatures) != kColorFeatures)
 		TCU_THROW(NotSupportedError, "Required color image features not supported");
-
-	const auto dsProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kDepthStencilFormat);
-	if ((dsProperties.optimalTilingFeatures & kDSFeatures) != kDSFeatures)
-		TCU_THROW(NotSupportedError, "Required depth/stencil image features not supported");
 }
 
 void ExtendedDynamicStateTest::initPrograms (vk::SourceCollections& programCollection) const
@@ -625,17 +702,55 @@ bool maybeBindVertexBufferDynStride(const TestConfig& testConfig, const vk::Devi
 
 tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 {
+	using ImageWithMemoryVec	= std::vector<std::unique_ptr<vk::ImageWithMemory>>;
+	using ImageViewVec			= std::vector<vk::Move<vk::VkImageView>>;
+	using FramebufferVec		= std::vector<vk::Move<vk::VkFramebuffer>>;
+
+	const auto&	vki					= m_context.getInstanceInterface();
 	const auto&	vkd					= m_context.getDeviceInterface();
+	const auto	physicalDevice		= m_context.getPhysicalDevice();
 	const auto	device				= m_context.getDevice();
 	auto&		allocator			= m_context.getDefaultAllocator();
 	const auto	queue				= m_context.getUniversalQueue();
 	const auto	queueIndex			= m_context.getUniversalQueueFamilyIndex();
+	auto&		log					= m_context.getTestContext().getLog();
 
-	const auto					kFramebufferExtent	= vk::makeExtent3D(kFramebufferWidth, kFramebufferHeight, 1u);
-	const vk::VkImageUsageFlags kColorUsage			= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-	const vk::VkImageUsageFlags kDSUsage			= (vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const auto	kReversed			= m_testConfig.isReversed();
+	const auto	kNumIterations		= m_testConfig.numIterations();
+	const auto	kSequenceOrdering	= m_testConfig.sequenceOrdering;
+
+	const auto						kFramebufferExtent	= vk::makeExtent3D(kFramebufferWidth, kFramebufferHeight, 1u);
+	const vk::VkImageUsageFlags		kColorUsage			= (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const vk::VkImageUsageFlags		kDSUsage			= (vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+	const vk::VkFormatFeatureFlags	kDSFeatures			= (vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT);
+
+	// Choose depth/stencil format.
+	const DepthStencilFormat* dsFormatInfo = nullptr;
+
+	for (int formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(kDepthStencilFormats); ++formatIdx)
+	{
+		const auto dsProperties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kDepthStencilFormats[formatIdx].imageFormat);
+		if ((dsProperties.optimalTilingFeatures & kDSFeatures) == kDSFeatures)
+		{
+			dsFormatInfo = kDepthStencilFormats + formatIdx;
+			break;
+		}
+	}
+
+	// Note: Not Supported insted of Fail because the transfer feature is not mandatory.
+	if (!dsFormatInfo)
+		TCU_THROW(NotSupportedError, "Required depth/stencil image features not supported");
+	log << tcu::TestLog::Message << "Chosen depth/stencil format: " << dsFormatInfo->imageFormat << tcu::TestLog::EndMessage;
+
+	// Swap static and dynamic values in the test configuration so the static pipeline ends up with the expected values for cases
+	// where we will bind the static pipeline last before drawing.
+	if (kReversed)
+		m_testConfig.swapValues();
 
 	// Create color and depth/stencil images.
+	ImageWithMemoryVec colorImages;
+	ImageWithMemoryVec dsImages;
+
 	const vk::VkImageCreateInfo colorImageInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	//	VkStructureType			sType;
@@ -654,7 +769,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		&queueIndex,								//	const deUint32*			pQueueFamilyIndices;
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
 	};
-	vk::ImageWithMemory colorImage(vkd, device, allocator, colorImageInfo, vk::MemoryRequirement::Any);
+	for (deUint32 i = 0u; i < kNumIterations; ++i)
+		colorImages.emplace_back(new vk::ImageWithMemory(vkd, device, allocator, colorImageInfo, vk::MemoryRequirement::Any));
 
 	const vk::VkImageCreateInfo dsImageInfo =
 	{
@@ -662,7 +778,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		nullptr,									//	const void*				pNext;
 		0u,											//	VkImageCreateFlags		flags;
 		vk::VK_IMAGE_TYPE_2D,						//	VkImageType				imageType;
-		kDepthStencilFormat,						//	VkFormat				format;
+		dsFormatInfo->imageFormat,					//	VkFormat				format;
 		kFramebufferExtent,							//	VkExtent3D				extent;
 		1u,											//	deUint32				mipLevels;
 		1u,											//	deUint32				arrayLayers;
@@ -674,12 +790,20 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		&queueIndex,								//	const deUint32*			pQueueFamilyIndices;
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,				//	VkImageLayout			initialLayout;
 	};
-	vk::ImageWithMemory dsImage(vkd, device, allocator, dsImageInfo, vk::MemoryRequirement::Any);
+	for (deUint32 i = 0u; i < kNumIterations; ++i)
+		dsImages.emplace_back(new vk::ImageWithMemory(vkd, device, allocator, dsImageInfo, vk::MemoryRequirement::Any));
 
 	const auto colorSubresourceRange	= vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-	const auto colorImageView			= vk::makeImageView(vkd, device, colorImage.get(), vk::VK_IMAGE_VIEW_TYPE_2D, kColorFormat, colorSubresourceRange);
 	const auto dsSubresourceRange		= vk::makeImageSubresourceRange((vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, 1u);
-	const auto dsImageView				= vk::makeImageView(vkd, device, dsImage.get(), vk::VK_IMAGE_VIEW_TYPE_2D, kDepthStencilFormat, dsSubresourceRange);
+
+	ImageViewVec colorImageViews;
+	ImageViewVec dsImageViews;
+
+	for (const auto& img : colorImages)
+		colorImageViews.emplace_back(vk::makeImageView(vkd, device, img->get(), vk::VK_IMAGE_VIEW_TYPE_2D, kColorFormat, colorSubresourceRange));
+
+	for (const auto& img : dsImages)
+		dsImageViews.emplace_back(vk::makeImageView(vkd, device, img->get(), vk::VK_IMAGE_VIEW_TYPE_2D, dsFormatInfo->imageFormat, dsSubresourceRange));
 
 	// Vertex buffer.
 	const auto					topologyClass = getTopologyClass(m_testConfig.topologyConfig.staticValue);
@@ -818,7 +942,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	attachmentDescriptions.push_back(vk::VkAttachmentDescription
 	{
 		0u,														//	VkAttachmentDescriptionFlags	flags;
-		kDepthStencilFormat,									//	VkFormat						format;
+		dsFormatInfo->imageFormat,								//	VkFormat						format;
 		vk::VK_SAMPLE_COUNT_1_BIT,								//	VkSampleCountFlagBits			samples;
 		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,						//	VkAttachmentLoadOp				loadOp;
 		vk::VK_ATTACHMENT_STORE_OP_STORE,						//	VkAttachmentStoreOp				storeOp;
@@ -842,24 +966,31 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	};
 	const auto renderPass = vk::createRenderPass(vkd, device, &renderPassCreateInfo);
 
-	// Framebuffer.
-	std::vector<vk::VkImageView> attachments;
-	attachments.push_back(colorImageView.get());
-	attachments.push_back(dsImageView.get());
+	// Framebuffers.
+	FramebufferVec framebuffers;
 
-	const vk::VkFramebufferCreateInfo framebufferCreateInfo =
+	DE_ASSERT(colorImageViews.size() == dsImageViews.size());
+	for (size_t imgIdx = 0; imgIdx < colorImageViews.size(); ++imgIdx)
 	{
-		vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	//	VkStructureType				sType;
-		nullptr,										//	const void*					pNext;
-		0u,												//	VkFramebufferCreateFlags	flags;
-		renderPass.get(),								//	VkRenderPass				renderPass;
-		static_cast<deUint32>(attachments.size()),		//	deUint32					attachmentCount;
-		attachments.data(),								//	const VkImageView*			pAttachments;
-		kFramebufferWidth,								//	deUint32					width;
-		kFramebufferHeight,								//	deUint32					height;
-		1u,												//	deUint32					layers;
-	};
-	const auto framebuffer = vk::createFramebuffer(vkd, device, &framebufferCreateInfo);
+		std::vector<vk::VkImageView> attachments;
+		attachments.push_back(colorImageViews[imgIdx].get());
+		attachments.push_back(dsImageViews[imgIdx].get());
+
+		const vk::VkFramebufferCreateInfo framebufferCreateInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	//	VkStructureType				sType;
+			nullptr,										//	const void*					pNext;
+			0u,												//	VkFramebufferCreateFlags	flags;
+			renderPass.get(),								//	VkRenderPass				renderPass;
+			static_cast<deUint32>(attachments.size()),		//	deUint32					attachmentCount;
+			attachments.data(),								//	const VkImageView*			pAttachments;
+			kFramebufferWidth,								//	deUint32					width;
+			kFramebufferHeight,								//	deUint32					height;
+			1u,												//	deUint32					layers;
+		};
+
+		framebuffers.emplace_back(vk::createFramebuffer(vkd, device, &framebufferCreateInfo));
+	}
 
 	// Shader modules.
 	const auto						vertModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
@@ -932,33 +1063,40 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 		DE_ASSERT(m_testConfig.scissorConfig.staticValue.size() > 0u);
 
 	// The viewport and scissor counts must match in the static part, which will be used by the static pipeline.
-	const auto minCounter = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
+	const auto minStaticCount = static_cast<deUint32>(std::min(m_testConfig.viewportConfig.staticValue.size(), m_testConfig.scissorConfig.staticValue.size()));
 
 	// For the static pipeline.
 	const vk::VkPipelineViewportStateCreateInfo staticViewportStateCreateInfo =
 	{
-
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					//	VkStructureType						sType;
 		nullptr,																	//	const void*							pNext;
 		0u,																			//	VkPipelineViewportStateCreateFlags	flags;
-		minCounter,																	//	deUint32							viewportCount;
+		minStaticCount,																//	deUint32							viewportCount;
 		m_testConfig.viewportConfig.staticValue.data(),								//	const VkViewport*					pViewports;
-		minCounter,																	//	deUint32							scissorCount;
+		minStaticCount,																//	deUint32							scissorCount;
 		m_testConfig.scissorConfig.staticValue.data(),								//	const VkRect2D*						pScissors;
 	};
 
-	// For the dynamic pipeline. The viewport and scissor counts must be zero when a dynamic value will be provided, as per the spec.
+	// For the dynamic pipeline.
+	const auto finalDynamicViewportCount = (m_testConfig.viewportConfig.dynamicValue
+		? m_testConfig.viewportConfig.dynamicValue.get().size()
+		: m_testConfig.viewportConfig.staticValue.size());
+
+	const auto finalDynamicScissorCount = (m_testConfig.scissorConfig.dynamicValue
+		? m_testConfig.scissorConfig.dynamicValue.get().size()
+		: m_testConfig.scissorConfig.staticValue.size());
+
+	const auto minDynamicCount = static_cast<deUint32>(std::min(finalDynamicScissorCount, finalDynamicViewportCount));
+
+	// The viewport and scissor counts must be zero when a dynamic value will be provided, as per the spec.
 	const vk::VkPipelineViewportStateCreateInfo dynamicViewportStateCreateInfo =
 	{
-
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,					//	VkStructureType						sType;
 		nullptr,																	//	const void*							pNext;
 		0u,																			//	VkPipelineViewportStateCreateFlags	flags;
-		(m_testConfig.viewportConfig.dynamicValue) ? 0u :
-			static_cast<deUint32>(m_testConfig.viewportConfig.staticValue.size()),	//	deUint32							viewportCount;
+		(m_testConfig.viewportConfig.dynamicValue ? 0u : minDynamicCount),			//	deUint32							viewportCount;
 		m_testConfig.viewportConfig.staticValue.data(),								//	const VkViewport*					pViewports;
-		(m_testConfig.scissorConfig.dynamicValue) ? 0u :
-			static_cast<deUint32>(m_testConfig.scissorConfig.staticValue.size()),	//	deUint32							scissorCount;
+		(m_testConfig.scissorConfig.dynamicValue ? 0u : minDynamicCount),			//	deUint32							scissorCount;
 		m_testConfig.scissorConfig.staticValue.data(),								//	const VkRect2D*						pScissors;
 	};
 
@@ -1118,7 +1256,10 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	};
 
 	vk::Move<vk::VkPipeline>	staticPipeline;
-	const bool					useStaticPipeline	= (m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES || m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES);
+	const bool					bindStaticFirst		= (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES	||
+													   kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES	||
+													   kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC);
+	const bool					useStaticPipeline	= (bindStaticFirst || kReversed);
 
 	// Create static pipeline when needed.
 	if (useStaticPipeline)
@@ -1147,35 +1288,58 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	clearValues.push_back(vk::makeClearValueColor(m_testConfig.clearColorValue));
 	clearValues.push_back(vk::makeClearValueDepthStencil(m_testConfig.clearDepthValue, m_testConfig.clearStencilValue));
 
-	// Track in-advance vertex buffer binding.
-	bool boundInAdvance = false;
-
 	// Record command buffer.
 	vk::beginCommandBuffer(vkd, cmdBuffer);
 
+	for (deUint32 iteration = 0u; iteration < kNumIterations; ++iteration)
+	{
+		// Track in-advance vertex buffer binding.
+		bool boundInAdvance = false;
+
 		// Maybe set extended dynamic state here.
-		if (m_testConfig.sequenceOrdering == SequenceOrdering::CMD_BUFFER_START)
+		if (kSequenceOrdering == SequenceOrdering::CMD_BUFFER_START)
 		{
 			setDynamicStates(m_testConfig, vkd, cmdBuffer);
 			boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
 		}
 
 		// Begin render pass.
-		vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
+		vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffers[iteration].get(), vk::makeRect2D(kFramebufferWidth, kFramebufferHeight), static_cast<deUint32>(clearValues.size()), clearValues.data());
 
 			// Bind a static pipeline first if needed.
-			if (useStaticPipeline)
+			if (bindStaticFirst && iteration == 0u)
 				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, staticPipeline.get());
 
 			// Maybe set extended dynamic state here.
-			if (m_testConfig.sequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES)
+			if (kSequenceOrdering == SequenceOrdering::BETWEEN_PIPELINES)
 			{
 				setDynamicStates(m_testConfig, vkd, cmdBuffer);
 				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
 			}
 
 			// Bind dynamic pipeline.
-			vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+			if ((kSequenceOrdering != SequenceOrdering::TWO_DRAWS_DYNAMIC &&
+				 kSequenceOrdering != SequenceOrdering::TWO_DRAWS_STATIC) ||
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC && iteration > 0u) ||
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
+			{
+				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+			}
+
+			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_DYNAMIC && iteration > 0u) ||
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration == 0u))
+			{
+				setDynamicStates(m_testConfig, vkd, cmdBuffer);
+				boundInAdvance = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, 0u, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
+			}
+
+			// Bind a static pipeline last if needed.
+			if (kSequenceOrdering == SequenceOrdering::BEFORE_GOOD_STATIC ||
+				(kSequenceOrdering == SequenceOrdering::TWO_DRAWS_STATIC && iteration > 0u))
+			{
+				vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, staticPipeline.get());
+			}
 
 			const auto& viewportVec = m_testConfig.getActiveViewportVec();
 			for (size_t viewportIdx = 0u; viewportIdx < viewportVec.size(); ++viewportIdx)
@@ -1199,7 +1363,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 					bool boundBeforeDraw = false;
 
 					// Maybe set extended dynamic state here.
-					if (m_testConfig.sequenceOrdering == SequenceOrdering::BEFORE_DRAW || m_testConfig.sequenceOrdering == SequenceOrdering::AFTER_PIPELINES)
+					if (kSequenceOrdering == SequenceOrdering::BEFORE_DRAW || kSequenceOrdering == SequenceOrdering::AFTER_PIPELINES)
 					{
 						setDynamicStates(m_testConfig, vkd, cmdBuffer);
 						boundBeforeDraw = maybeBindVertexBufferDynStride(m_testConfig, vkd, cmdBuffer, meshIdx, vertBuffer.get(), rvertBuffer.get(), vertBufferSize, vertBufferOffset);
@@ -1215,16 +1379,18 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			}
 
 		vk::endRenderPass(vkd, cmdBuffer);
+	}
+
 	vk::endCommandBuffer(vkd, cmdBuffer);
 
 	// Submit commands.
 	vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
 
-	// Read result image aspects.
+	// Read result image aspects from the last used framebuffer.
 	const tcu::UVec2	renderSize		(kFramebufferWidth, kFramebufferHeight);
-	const auto			colorBuffer		= readColorAttachment(vkd, device, queue, queueIndex, allocator, colorImage.get(), kColorFormat, renderSize);
-	const auto			depthBuffer		= readDepthAttachment(vkd, device, queue, queueIndex, allocator, dsImage.get(), kDepthStencilFormat, renderSize);
-	const auto			stencilBuffer	= readStencilAttachment(vkd, device, queue, queueIndex, allocator, dsImage.get(), kDepthStencilFormat, renderSize, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	const auto			colorBuffer		= readColorAttachment(vkd, device, queue, queueIndex, allocator, colorImages.back()->get(), kColorFormat, renderSize);
+	const auto			depthBuffer		= readDepthAttachment(vkd, device, queue, queueIndex, allocator, dsImages.back()->get(), dsFormatInfo->imageFormat, renderSize);
+	const auto			stencilBuffer	= readStencilAttachment(vkd, device, queue, queueIndex, allocator, dsImages.back()->get(), dsFormatInfo->imageFormat, renderSize, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	const auto			colorAccess		= colorBuffer->getAccess();
 	const auto			depthAccess		= depthBuffer->getAccess();
 	const auto			stencilAccess	= stencilBuffer->getAccess();
@@ -1243,13 +1409,15 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 	const tcu::Vec4				kBad				(1.0f, 0.0f, 0.0f, 1.0f);
 
 	// Check expected values.
-	bool colorMatch		= true;
-	bool depthMatch		= true;
-	bool stencilMatch	= true;
-	bool match;
+	const auto	minDepth		= m_testConfig.expectedDepth - dsFormatInfo->depthThreshold;
+	const auto	maxDepth		= m_testConfig.expectedDepth + dsFormatInfo->depthThreshold;
+	bool		colorMatch		= true;
+	bool		depthMatch		= true;
+	bool		stencilMatch	= true;
+	bool		match;
 
-	for (int x = 0; x < kWidth; ++x)
 	for (int y = 0; y < kHeight; ++y)
+	for (int x = 0; x < kWidth; ++x)
 	{
 		const auto colorPixel = colorAccess.getPixel(x, y);
 		match = tcu::boolAll(tcu::lessThan(tcu::absDiff(colorPixel, m_testConfig.expectedColor), kColorThreshold));
@@ -1258,7 +1426,7 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 			colorMatch = false;
 
 		const auto depthPixel = depthAccess.getPixDepth(x, y);
-		match = (depthPixel == m_testConfig.expectedDepth);
+		match = de::inRange(depthPixel, minDepth, maxDepth);
 		depthErrorAccess.setPixel((match ? kGood : kBad), x, y);
 		if (!match)
 			depthMatch = false;
@@ -1272,8 +1440,6 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate (void)
 
 	if (!(colorMatch && depthMatch && stencilMatch))
 	{
-		auto& log = m_context.getTestContext().getLog();
-
 		if (!colorMatch)
 			logErrors(log, "Color", "Result color image and error mask", colorAccess, colorErrorAccess);
 
@@ -1345,10 +1511,13 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 		std::string			desc;
 	} kOrderingCases[] =
 	{
-		{ SequenceOrdering::CMD_BUFFER_START,	"cmd_buffer_start",		"Dynamic state set after command buffer start"																			},
-		{ SequenceOrdering::BEFORE_DRAW,		"before_draw",			"Dynamic state set just before drawing"																					},
-		{ SequenceOrdering::BETWEEN_PIPELINES,	"between_pipelines",	"Dynamic after a pipeline with static states has been bound and before a pipeline with dynamic states has been bound"	},
-		{ SequenceOrdering::AFTER_PIPELINES,	"after_pipelines",		"Dynamic state set after both a static-state pipeline and a second dynamic-state pipeline have been bound"				},
+		{ SequenceOrdering::CMD_BUFFER_START,	"cmd_buffer_start",		"Dynamic state set after command buffer start"																								},
+		{ SequenceOrdering::BEFORE_DRAW,		"before_draw",			"Dynamic state set just before drawing"																										},
+		{ SequenceOrdering::BETWEEN_PIPELINES,	"between_pipelines",	"Dynamic after a pipeline with static states has been bound and before a pipeline with dynamic states has been bound"						},
+		{ SequenceOrdering::AFTER_PIPELINES,	"after_pipelines",		"Dynamic state set after both a static-state pipeline and a second dynamic-state pipeline have been bound"									},
+		{ SequenceOrdering::BEFORE_GOOD_STATIC,	"before_good_static",	"Dynamic state set after a dynamic pipeline has been bound and before a second static-state pipeline with the right values has been bound"	},
+		{ SequenceOrdering::TWO_DRAWS_DYNAMIC,	"two_draws_dynamic",	"Bind bad static pipeline and draw, followed by binding correct dynamic pipeline and drawing again"											},
+		{ SequenceOrdering::TWO_DRAWS_STATIC,	"two_draws_static",		"Bind bad dynamic pipeline and draw, followed by binding correct static pipeline and drawing again"											},
 	};
 
 	for (int orderingIdx = 0; orderingIdx < DE_LENGTH_OF_ARRAY(kOrderingCases); ++orderingIdx)
@@ -1954,8 +2123,9 @@ tcu::TestCaseGroup* createExtendedDynamicStateTests (tcu::TestContext& testCtx)
 							{
 								// This is the dual case. We will set the front and back face values with two separate calls.
 								stencilOps.push_back(stencilOps.front());
-								stencilOps.front().faceMask	= vk::VK_STENCIL_FACE_FRONT_BIT;
-								stencilOps.back().faceMask	= vk::VK_STENCIL_FACE_BACK_BIT;
+								stencilOps.front().faceMask		= vk::VK_STENCIL_FACE_FRONT_BIT;
+								stencilOps.back().faceMask		= vk::VK_STENCIL_FACE_BACK_BIT;
+								staticStencilConfig.faceMask	= vk::VK_STENCIL_FACE_FRONT_AND_BACK;
 							}
 
 							config.stencilOpConfig.dynamicValue	= tcu::just(stencilOps);
