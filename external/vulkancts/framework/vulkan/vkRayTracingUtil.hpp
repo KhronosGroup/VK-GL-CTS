@@ -500,6 +500,8 @@ public:
 	virtual void										setCreateFlags							(const VkAccelerationStructureCreateFlagsKHR	createFlags) = DE_NULL;
 	virtual void										setCreateGeneric						(bool											createGeneric) = 0;
 	virtual void										setBuildFlags							(const VkBuildAccelerationStructureFlagsKHR		buildFlags) = DE_NULL;
+	virtual void										setBuildWithoutGeometries				(bool											buildWithoutGeometries) = 0;
+	virtual void										setBuildWithoutPrimitives				(bool											buildWithoutPrimitives) = 0;
 	virtual void										setDeferredOperation					(const bool										deferredOperation,
 																								 const deUint32									workerThreadCount		= 0u ) = DE_NULL;
 	virtual void										setUseArrayOfPointers					(const bool										useArrayOfPointers) = DE_NULL;
@@ -601,6 +603,8 @@ public:
 	virtual void													setCreateFlags						(const VkAccelerationStructureCreateFlagsKHR		createFlags) = DE_NULL;
 	virtual void													setCreateGeneric					(bool												createGeneric) = 0;
 	virtual void													setBuildFlags						(const VkBuildAccelerationStructureFlagsKHR			buildFlags) = DE_NULL;
+	virtual void													setBuildWithoutPrimitives			(bool												buildWithoutPrimitives) = 0;
+	virtual void													setInactiveInstances				(bool												inactiveInstances) = 0;
 	virtual void													setDeferredOperation				(const bool											deferredOperation,
 																										 const deUint32										workerThreadCount = 0u) = DE_NULL;
 	virtual void													setUseArrayOfPointers				(const bool											useArrayOfPointers) = DE_NULL;

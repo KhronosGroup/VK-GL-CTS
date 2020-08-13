@@ -36,11 +36,12 @@
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkRayTracingUtil.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
-#include "vkRayTracingUtil.hpp"
+#include "tcuFloat.hpp"
 
 namespace vkt
 {
@@ -92,6 +93,16 @@ enum class InstanceCullFlags
 	CULL_DISABLE,
 	COUNTERCLOCKWISE,
 	ALL,
+};
+
+enum class EmptyAccelerationStructureCase
+{
+	NOT_EMPTY				= 0,
+	INACTIVE_TRIANGLES		= 1,
+	INACTIVE_INSTANCES		= 2,
+	NO_GEOMETRIES_BOTTOM	= 3,	// geometryCount zero when building.
+	NO_PRIMITIVES_BOTTOM	= 4,	// primitiveCount zero when building.
+	NO_PRIMITIVES_TOP		= 5,	// primitiveCount zero when building.
 };
 
 static const deUint32 RTAS_DEFAULT_SIZE = 8u;
@@ -146,6 +157,7 @@ struct TestParams
 	deUint32								height;
 	de::SharedPtr<TestConfiguration>		testConfiguration;
 	deUint32								workerThreadsCount;
+	EmptyAccelerationStructureCase			emptyASCase;
 };
 
 deUint32 getShaderGroupSize (const InstanceInterface&	vki,
@@ -255,6 +267,9 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > CheckerboardConfig
 
 	// Cull flags can only be used with triangles.
 	DE_ASSERT(testParams.cullFlags == InstanceCullFlags::NONE || testParams.bottomTestType == BTT_TRIANGLES);
+
+	// Checkerboard configuration does not support empty geometry tests.
+	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
 
 	std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	result;
 
@@ -456,6 +471,9 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardConfiguration::initTopAcc
 																									TestParams&		testParams,
 																									std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >& bottomLevelAccelerationStructures)
 {
+	// Checkerboard configuration does not support empty geometry tests.
+	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
+
 	DE_UNREF(context);
 
 	const auto instanceCount = testParams.width * testParams.height / 2u;
@@ -539,6 +557,9 @@ void CheckerboardConfiguration::initShaderBindingTables(de::MovePtr<RayTracingPi
 
 bool CheckerboardConfiguration::verifyImage(BufferWithMemory* resultBuffer, Context& context, TestParams& testParams)
 {
+	// Checkerboard configuration does not support empty geometry tests.
+	DE_ASSERT(testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY);
+
 	DE_UNREF(context);
 	const deUint32*						bufferPtr	= (deUint32*)resultBuffer->getAllocation().getHostPtr();
 	deUint32							pos			= 0;
@@ -628,8 +649,19 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure> > SingleTriangleConf
 
 	de::SharedPtr<RaytracedGeometryBase> geometry;
 	geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
-	for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+
+	auto customVertices(vertices);
+
+	if (testParams.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_TRIANGLES)
+	{
+		const auto nanValue = tcu::Float32::nan().asFloat();
+		for (auto& vtx : customVertices)
+			vtx.x() = nanValue;
+	}
+
+	for (auto it = begin(customVertices), eit = end(customVertices); it != eit; ++it)
 		geometry->addVertex(*it);
+
 	if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
 	{
 		for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
@@ -734,7 +766,7 @@ bool SingleTriangleConfiguration::verifyImage(BufferWithMemory* resultBuffer, Co
 			float	x			= 0.1f + 0.2f * float(i) / float(testParams.width - 1);
 			float	z			= (abc.x()*x + abc.y()*y) / abc.z();
 			bool	inTriangle	= pointInTriangle2D(tcu::Vec3(x, y, z), v0, v1, v2);
-			float	refValue	= inTriangle ? 1.0f+z : 0.0f;
+			float	refValue	= ((inTriangle && testParams.emptyASCase == EmptyAccelerationStructureCase::NOT_EMPTY) ? 1.0f+z : 0.0f);
 			referenceAccess.setPixel(tcu::Vec4(refValue, 0.0f, 0.0f, 1.0f), i, j);
 		}
 	}
@@ -1403,6 +1435,10 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 		// build bottom level acceleration structures and their copies ( only when we are testing copying bottom level acceleration structures )
 		bool									bottomCompact		= m_data.operationType == OP_COMPACT && m_data.operationTarget == OT_BOTTOM_ACCELERATION;
 		bool									bottomSerial		= m_data.operationType == OP_SERIALIZE && m_data.operationTarget == OT_BOTTOM_ACCELERATION;
+		const bool								buildWithoutGeom	= (m_data.emptyASCase == EmptyAccelerationStructureCase::NO_GEOMETRIES_BOTTOM);
+		const bool								bottomNoPrimitives	= (m_data.emptyASCase == EmptyAccelerationStructureCase::NO_PRIMITIVES_BOTTOM);
+		const bool								topNoPrimitives		= (m_data.emptyASCase == EmptyAccelerationStructureCase::NO_PRIMITIVES_TOP);
+		const bool								inactiveInstances	= (m_data.emptyASCase == EmptyAccelerationStructureCase::INACTIVE_INSTANCES);
 		bottomLevelAccelerationStructures							= m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
 		VkBuildAccelerationStructureFlagsKHR	allowCompactionFlag	= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
 		VkBuildAccelerationStructureFlagsKHR	emptyCompactionFlag	= VkBuildAccelerationStructureFlagsKHR(0);
@@ -1418,6 +1454,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 			blas->setBuildFlags						(bottomBuildFlags);
 			blas->setUseArrayOfPointers				(m_data.bottomUsesAOP);
 			blas->setCreateGeneric					(m_data.bottomGeneric);
+			blas->setBuildWithoutGeometries			(buildWithoutGeom);
+			blas->setBuildWithoutPrimitives			(bottomNoPrimitives);
 			blas->createAndBuild					(vkd, device, *cmdBuffer, allocator);
 			accelerationStructureHandles.push_back	(*(blas->getPtr()));
 		}
@@ -1470,6 +1508,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
+					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), 0u, 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
@@ -1484,6 +1524,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
+					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, bottomLevelAccelerationStructures[i].get(), bottomBlasCompactSize[i], 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
 				}
@@ -1511,6 +1553,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					asCopy->setBuildFlags(m_data.buildFlags);
 					asCopy->setUseArrayOfPointers(m_data.bottomUsesAOP);
 					asCopy->setCreateGeneric(m_data.bottomGeneric);
+					asCopy->setBuildWithoutGeometries(buildWithoutGeom);
+					asCopy->setBuildWithoutPrimitives(bottomNoPrimitives);
 					asCopy->setDeferredOperation(htSerialize, workerThreadsCount);
 					asCopy->createAndDeserializeFrom(vkd, device, *cmdBuffer, allocator, storage.get(), 0u);
 					bottomLevelAccelerationStructureCopies.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(asCopy.release()));
@@ -1535,8 +1579,10 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 		topLevelAccelerationStructure								= m_data.testConfiguration->initTopAccelerationStructure(m_context, m_data, *bottomLevelAccelerationStructuresPtr);
 		topLevelAccelerationStructure->setBuildType					(m_data.buildType);
 		topLevelAccelerationStructure->setBuildFlags				(topBuildFlags);
+		topLevelAccelerationStructure->setBuildWithoutPrimitives	(topNoPrimitives);
 		topLevelAccelerationStructure->setUseArrayOfPointers		(m_data.topUsesAOP);
 		topLevelAccelerationStructure->setCreateGeneric				(m_data.topGeneric);
+		topLevelAccelerationStructure->setInactiveInstances			(inactiveInstances);
 		topLevelAccelerationStructure->createAndBuild				(vkd, device, *cmdBuffer, allocator);
 		topLevelStructureHandles.push_back							(*(topLevelAccelerationStructure->getPtr()));
 
@@ -1572,6 +1618,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy->setDeferredOperation(htCopy, workerThreadsCount);
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), 0u, 0u);
@@ -1582,6 +1630,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->createAndCopyFrom(vkd, device, *cmdBuffer, allocator, topLevelAccelerationStructure.get(), topBlasCompactSize[0], 0u);
@@ -1604,6 +1654,8 @@ de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUin
 					topLevelAccelerationStructureCopy = makeTopLevelAccelerationStructure();
 					topLevelAccelerationStructureCopy->setBuildType(m_data.buildType);
 					topLevelAccelerationStructureCopy->setBuildFlags(m_data.buildFlags);
+					topLevelAccelerationStructureCopy->setBuildWithoutPrimitives(topNoPrimitives);
+					topLevelAccelerationStructureCopy->setInactiveInstances(inactiveInstances);
 					topLevelAccelerationStructureCopy->setUseArrayOfPointers(m_data.topUsesAOP);
 					topLevelAccelerationStructureCopy->setCreateGeneric(m_data.topGeneric);
 					topLevelAccelerationStructureCopy->setDeferredOperation(htSerialize, workerThreadsCount);
@@ -1850,7 +1902,8 @@ void addBasicBuildingTests(tcu::TestCaseGroup* group)
 											RTAS_DEFAULT_SIZE,
 											RTAS_DEFAULT_SIZE,
 											de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
-											0
+											0u,
+											EmptyAccelerationStructureCase::NOT_EMPTY,
 										};
 										paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), testName.c_str(), "", testParams));
 									}
@@ -1959,7 +2012,8 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup* group)
 						RTAS_DEFAULT_SIZE,
 						RTAS_DEFAULT_SIZE,
 						de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
-						0
+						0u,
+						EmptyAccelerationStructureCase::NOT_EMPTY,
 					};
 					paddingGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), indexFormats[indexFormatNdx].name, "", testParams));
 				}
@@ -2056,7 +2110,8 @@ void addOperationTestsImpl (tcu::TestCaseGroup* group, const deUint32 workerThre
 						RTAS_DEFAULT_SIZE,
 						RTAS_DEFAULT_SIZE,
 						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
-						workerThreads
+						workerThreads,
+						EmptyAccelerationStructureCase::NOT_EMPTY,
 					};
 					operationTargetGroup->addChild(new RayTracingASBasicTestCase(group->getTestContext(), bottomTestTypes[testTypeNdx].name, "", testParams));
 				}
@@ -2127,6 +2182,7 @@ void addFuncArgTests (tcu::TestCaseGroup* group)
 			RTAS_DEFAULT_SIZE,
 			de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
 			0u,
+			EmptyAccelerationStructureCase::NOT_EMPTY,
 		};
 
 		group->addChild(new RayTracingASFuncArgTestCase(ctx, buildTypes[buildTypeNdx].name, "", testParams));
@@ -2214,9 +2270,88 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 						RTAS_DEFAULT_SIZE,
 						de::SharedPtr<TestConfiguration>(new CheckerboardConfiguration()),
 						0u,
+						EmptyAccelerationStructureCase::NOT_EMPTY,
 					};
 					indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, testName.c_str(), "", testParams));
 				}
+			}
+			buildTypeGroup->addChild(indexTypeGroup.release());
+		}
+		group->addChild(buildTypeGroup.release());
+	}
+}
+
+void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
+{
+	const struct
+	{
+		vk::VkAccelerationStructureBuildTypeKHR				buildType;
+		std::string											name;
+	} buildTypes[] =
+	{
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR,	"cpu_built"	},
+		{ VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,	"gpu_built"	},
+	};
+
+	const struct
+	{
+		VkIndexType								indexType;
+		std::string								name;
+	} indexFormats[] =
+	{
+		{ VK_INDEX_TYPE_NONE_KHR ,				"index_none"		},
+		{ VK_INDEX_TYPE_UINT16 ,				"index_uint16"	},
+		{ VK_INDEX_TYPE_UINT32 ,				"index_uint32"	},
+	};
+
+	const struct
+	{
+		EmptyAccelerationStructureCase	emptyASCase;
+		std::string						name;
+	} emptyCases[] =
+	{
+		{ EmptyAccelerationStructureCase::INACTIVE_TRIANGLES,	"inactive_triangles"	},
+		{ EmptyAccelerationStructureCase::INACTIVE_INSTANCES,	"inactive_instances"	},
+		{ EmptyAccelerationStructureCase::NO_GEOMETRIES_BOTTOM,	"no_geometries_bottom"	},
+		{ EmptyAccelerationStructureCase::NO_PRIMITIVES_TOP,	"no_primitives_top"		},
+		{ EmptyAccelerationStructureCase::NO_PRIMITIVES_BOTTOM,	"no_primitives_bottom"	},
+	};
+
+	auto& ctx = group->getTestContext();
+
+	for (int buildTypeIdx = 0; buildTypeIdx < DE_LENGTH_OF_ARRAY(buildTypes); ++buildTypeIdx)
+	{
+		de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str(), ""));
+
+		for (int indexFormatIdx = 0; indexFormatIdx < DE_LENGTH_OF_ARRAY(indexFormats); ++indexFormatIdx)
+		{
+			de::MovePtr<tcu::TestCaseGroup> indexTypeGroup(new tcu::TestCaseGroup(ctx, indexFormats[indexFormatIdx].name.c_str(), ""));
+
+			for (int emptyCaseIdx = 0; emptyCaseIdx < DE_LENGTH_OF_ARRAY(emptyCases); ++emptyCaseIdx)
+			{
+				TestParams testParams
+				{
+					buildTypes[buildTypeIdx].buildType,
+					VK_FORMAT_R32G32B32_SFLOAT,
+					false,
+					indexFormats[indexFormatIdx].indexType,
+					BTT_TRIANGLES,
+					InstanceCullFlags::NONE,
+					false,
+					false,
+					TTT_IDENTICAL_INSTANCES,
+					false,
+					false,
+					VkBuildAccelerationStructureFlagsKHR(0u),
+					OT_NONE,
+					OP_NONE,
+					RTAS_DEFAULT_SIZE,
+					RTAS_DEFAULT_SIZE,
+					de::SharedPtr<TestConfiguration>(new SingleTriangleConfiguration()),
+					0u,
+					emptyCases[emptyCaseIdx].emptyASCase,
+				};
+				indexTypeGroup->addChild(new RayTracingASBasicTestCase(ctx, emptyCases[emptyCaseIdx].name.c_str(), "", testParams));
 			}
 			buildTypeGroup->addChild(indexTypeGroup.release());
 		}
@@ -2234,6 +2369,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
+	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 
 	return group.release();
 }

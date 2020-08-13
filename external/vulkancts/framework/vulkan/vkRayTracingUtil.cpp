@@ -753,6 +753,8 @@ public:
 	void													setCreateFlags									(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
 	void													setCreateGeneric								(bool											createGeneric) override;
 	void													setBuildFlags									(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
+	void													setBuildWithoutGeometries						(bool											buildWithoutGeometries) override;
+	void													setBuildWithoutPrimitives						(bool											buildWithoutPrimitives) override;
 	void													setDeferredOperation							(const bool										deferredOperation,
 																											 const deUint32									workerThreadCount) override;
 	void													setUseArrayOfPointers							(const bool										useArrayOfPointers) override;
@@ -791,6 +793,8 @@ protected:
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
 	bool													m_createGeneric;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
+	bool													m_buildWithoutGeometries;
+	bool													m_buildWithoutPrimitives;
 	bool													m_deferredOperation;
 	deUint32												m_workerThreadCount;
 	bool													m_useArrayOfPointers;
@@ -831,6 +835,8 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR ()
 	, m_createFlags						(0u)
 	, m_createGeneric					(false)
 	, m_buildFlags						(0u)
+	, m_buildWithoutGeometries			(false)
+	, m_buildWithoutPrimitives			(false)
 	, m_deferredOperation				(false)
 	, m_workerThreadCount				(0)
 	, m_useArrayOfPointers				(false)
@@ -863,6 +869,16 @@ void BottomLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
 void BottomLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationStructureFlagsKHR	buildFlags)
 {
 	m_buildFlags = buildFlags;
+}
+
+void BottomLevelAccelerationStructureKHR::setBuildWithoutGeometries (bool buildWithoutGeometries)
+{
+	m_buildWithoutGeometries = buildWithoutGeometries;
+}
+
+void BottomLevelAccelerationStructureKHR::setBuildWithoutPrimitives (bool buildWithoutPrimitives)
+{
+	m_buildWithoutPrimitives = buildWithoutPrimitives;
 }
 
 void BottomLevelAccelerationStructureKHR::setDeferredOperation (const bool		deferredOperation,
@@ -1013,6 +1029,9 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 		VkDeviceOrHostAddressKHR							scratchData									= (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
 																										? makeDeviceOrHostAddressKHR(vk, device, m_scratchBuffer->get(), 0)
 																										: makeDeviceOrHostAddressKHR(m_scratchBuffer->getAllocation().getHostPtr());
+		const deUint32										geometryCount								= (m_buildWithoutGeometries
+																										? 0u
+																										: static_cast<deUint32>(accelerationStructureGeometriesKHR.size()));
 
 		VkAccelerationStructureBuildGeometryInfoKHR	accelerationStructureBuildGeometryInfoKHR	=
 		{
@@ -1023,7 +1042,7 @@ void BottomLevelAccelerationStructureKHR::build (const DeviceInterface&						vk,
 			VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,								//  VkBuildAccelerationStructureModeKHR					mode;
 			DE_NULL,																	//  VkAccelerationStructureKHR							srcAccelerationStructure;
 			m_accelerationStructureKHR.get(),											//  VkAccelerationStructureKHR							dstAccelerationStructure;
-			static_cast<deUint32>(accelerationStructureGeometriesKHR.size()),			//  deUint32											geometryCount;
+			geometryCount,																//  deUint32											geometryCount;
 			m_useArrayOfPointers ? DE_NULL : accelerationStructureGeometriesKHRPointer,	//  const VkAccelerationStructureGeometryKHR*			pGeometries;
 			m_useArrayOfPointers ? accelerationStructureGeometry : DE_NULL,				//  const VkAccelerationStructureGeometryKHR* const*	ppGeometries;
 			scratchData																	//  VkDeviceOrHostAddressKHR							scratchData;
@@ -1289,12 +1308,14 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries (const DeviceInterfa
 			geometryData->getGeometryFlags()						//  VkGeometryFlagsKHR						flags;
 		};
 
+		const deUint32 primitiveCount = (m_buildWithoutPrimitives ? 0u : geometryData->getPrimitiveCount());
+
 		const VkAccelerationStructureBuildRangeInfoKHR			accelerationStructureBuildRangeInfosKHR =
 		{
-			geometryData->getPrimitiveCount(),	//  deUint32	primitiveCount;
-			0,									//  deUint32	primitiveOffset;
-			0,									//  deUint32	firstVertex;
-			0									//  deUint32	firstTransform;
+			primitiveCount,	//  deUint32	primitiveCount;
+			0,				//  deUint32	primitiveOffset;
+			0,				//  deUint32	firstVertex;
+			0				//  deUint32	firstTransform;
 		};
 
 		accelerationStructureGeometriesKHR[geometryNdx]			= accelerationStructureGeometryKHR;
@@ -1445,7 +1466,8 @@ void updateInstanceBuffer (const DeviceInterface&											vk,
 						   std::vector<de::SharedPtr<BottomLevelAccelerationStructure> >	bottomLevelInstances,
 						   std::vector<InstanceData>										instanceData,
 						   BufferWithMemory*												instanceBuffer,
-						   VkAccelerationStructureBuildTypeKHR								buildType)
+						   VkAccelerationStructureBuildTypeKHR								buildType,
+						   bool																inactiveInstances)
 {
 	DE_ASSERT(bottomLevelInstances.size() != 0);
 	DE_ASSERT(bottomLevelInstances.size() == instanceData.size());
@@ -1473,9 +1495,18 @@ void updateInstanceBuffer (const DeviceInterface&											vk,
 			accelerationStructureAddress = vk.getAccelerationStructureDeviceAddressKHR(device, &asDeviceAddressInfo);
 		}
 
-		const deUint64 structureReference	= (buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
-											? deUint64(accelerationStructureAddress)
-											: deUint64(accelerationStructureKHR.getInternal());
+		deUint64 structureReference;
+		if (inactiveInstances)
+		{
+			// Instances will be marked inactive by making their references VK_NULL_HANDLE or having address zero.
+			structureReference = 0ull;
+		}
+		else
+		{
+			structureReference	= (buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+								? deUint64(accelerationStructureAddress)
+								: deUint64(accelerationStructureKHR.getInternal());
+		}
 
 		VkAccelerationStructureInstanceKHR	accelerationStructureInstanceKHR = makeVkAccelerationStructureInstanceKHR
 		(
@@ -1508,6 +1539,8 @@ public:
 	void													setCreateFlags										(const VkAccelerationStructureCreateFlagsKHR	createFlags) override;
 	void													setCreateGeneric									(bool											createGeneric) override;
 	void													setBuildFlags										(const VkBuildAccelerationStructureFlagsKHR		buildFlags) override;
+	void													setBuildWithoutPrimitives							(bool											buildWithoutPrimitives) override;
+	void													setInactiveInstances								(bool											inactiveInstances) override;
 	void													setDeferredOperation								(const bool										deferredOperation,
 																												 const deUint32									workerThreadCount) override;
 	void													setUseArrayOfPointers								(const bool										useArrayOfPointers) override;
@@ -1545,6 +1578,8 @@ protected:
 	VkAccelerationStructureCreateFlagsKHR					m_createFlags;
 	bool													m_createGeneric;
 	VkBuildAccelerationStructureFlagsKHR					m_buildFlags;
+	bool													m_buildWithoutPrimitives;
+	bool													m_inactiveInstances;
 	bool													m_deferredOperation;
 	deUint32												m_workerThreadCount;
 	bool													m_useArrayOfPointers;
@@ -1579,6 +1614,8 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR ()
 	, m_createFlags					(0u)
 	, m_createGeneric				(false)
 	, m_buildFlags					(0u)
+	, m_buildWithoutPrimitives		(false)
+	, m_inactiveInstances			(false)
 	, m_deferredOperation			(false)
 	, m_workerThreadCount			(0)
 	, m_useArrayOfPointers			(false)
@@ -1612,9 +1649,19 @@ void TopLevelAccelerationStructureKHR::setCreateGeneric (bool createGeneric)
 	m_createGeneric = createGeneric;
 }
 
+void TopLevelAccelerationStructureKHR::setInactiveInstances (bool inactiveInstances)
+{
+	m_inactiveInstances = inactiveInstances;
+}
+
 void TopLevelAccelerationStructureKHR::setBuildFlags (const VkBuildAccelerationStructureFlagsKHR	buildFlags)
 {
 	m_buildFlags = buildFlags;
+}
+
+void TopLevelAccelerationStructureKHR::setBuildWithoutPrimitives (bool buildWithoutPrimitives)
+{
+	m_buildWithoutPrimitives = buildWithoutPrimitives;
 }
 
 void TopLevelAccelerationStructureKHR::setDeferredOperation (const bool		deferredOperation,
@@ -1744,7 +1791,7 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 	DE_ASSERT(m_accelerationStructureKHR.get() != DE_NULL);
 	DE_ASSERT(m_buildScratchSize != 0);
 
-	updateInstanceBuffer(vk, device, m_bottomLevelInstances, m_instanceData, m_instanceBuffer.get(), m_buildType);
+	updateInstanceBuffer(vk, device, m_bottomLevelInstances, m_instanceData, m_instanceBuffer.get(), m_buildType, m_inactiveInstances);
 
 	VkAccelerationStructureGeometryKHR		accelerationStructureGeometryKHR;
 	std::vector<deUint32>					maxPrimitiveCounts;
@@ -1769,12 +1816,14 @@ void TopLevelAccelerationStructureKHR::build (const DeviceInterface&	vk,
 		scratchData																				//  VkDeviceOrHostAddressKHR							scratchData;
 	};
 
-	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfoKHR		=
+	const deUint32 primitiveCount = (m_buildWithoutPrimitives ? 0u : static_cast<deUint32>(m_bottomLevelInstances.size()));
+
+	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfoKHR =
 	{
-		(deUint32)m_bottomLevelInstances.size(),	//  deUint32	primitiveCount;
-		0,											//  deUint32	primitiveOffset;
-		0,											//  deUint32	firstVertex;
-		0											//  deUint32	transformOffset;
+		primitiveCount,	//  deUint32	primitiveCount;
+		0,				//  deUint32	primitiveOffset;
+		0,				//  deUint32	firstVertex;
+		0				//  deUint32	transformOffset;
 	};
 	VkAccelerationStructureBuildRangeInfoKHR* accelerationStructureBuildRangeInfoKHRPtr	= &accelerationStructureBuildRangeInfoKHR;
 
