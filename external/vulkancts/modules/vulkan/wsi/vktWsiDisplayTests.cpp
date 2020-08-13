@@ -333,6 +333,9 @@ bool DisplayCoverageTestInstance::getDisplays (DisplayVector& displays)
 		return false;
 	}
 
+	if (!countReported)
+		TCU_THROW(NotSupportedError, "No displays reported");
+
 	displaysProps.resize(countReported);
 
 	countRetrieved = countReported;
@@ -543,6 +546,9 @@ bool DisplayCoverageTestInstance::getDisplays2 (DisplayVector& displays)
 
 		return false;
 	}
+
+	if (!countReported)
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	displaysProps.resize(countReported, displayProperties2);
 
