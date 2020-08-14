@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief Ray Tracing Builtin tests
+ * \brief Ray Tracing Builtin and specialization constant tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
@@ -31,7 +31,8 @@ namespace vkt
 namespace RayTracing
 {
 
-tcu::TestCaseGroup*	createBuiltinTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createBuiltinTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx);
 
 } // RayTracing
 } // vkt

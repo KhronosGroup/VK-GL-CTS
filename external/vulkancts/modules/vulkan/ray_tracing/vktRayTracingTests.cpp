@@ -53,6 +53,7 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ray_tracing_pipeline", "Ray tracing tests"));
 
 	group->addChild(createBuiltinTests(testCtx));
+	group->addChild(createSpecConstantTests(testCtx));
 	group->addChild(createBuildLargeShaderSetTests(testCtx));
 	group->addChild(createBuildTests(testCtx));
 	group->addChild(createCallableShadersTests(testCtx));

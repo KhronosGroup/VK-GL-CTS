@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief Ray Tracing Builtin tests
+ * \brief Ray Tracing Builtin and specialization constant tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayTracingBuiltinTests.hpp"
@@ -126,6 +126,7 @@ struct CaseDef
 	bool					opaque;
 	bool					frontFace;
 	VkPipelineCreateFlags	pipelineCreateFlags;
+	bool					useSpecConstants;
 };
 
 const deUint32	DEFAULT_UINT_CLEAR_VALUE	= 0x8000;
@@ -191,7 +192,8 @@ public:
 protected:
 	void														checkSupportInInstance					(void) const;
 	Move<VkPipeline>											makePipeline							(de::MovePtr<RayTracingPipeline>&							rayTracingPipeline,
-																										 VkPipelineLayout											pipelineLayout);
+																										 VkPipelineLayout											pipelineLayout,
+																										 const VkSpecializationInfo*								specializationInfo);
 	std::vector<deInt32>										expectedIntValuesBuffer					(void);
 	std::vector<float>											expectedFloatValuesBuffer				(void);
 	std::vector<float>											expectedVectorValuesBuffer				(void);
@@ -372,14 +374,22 @@ const std::string RayTracingTestCase::getHitPassthrough (void)
 
 void RayTracingTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const bool useSC = m_data.useSpecConstants;
+	DE_ASSERT(!useSC || m_data.id == TEST_ID_LAUNCH_ID_EXT);
+
 	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
 	if (m_data.id == TEST_ID_LAUNCH_ID_EXT || m_data.id == TEST_ID_LAUNCH_SIZE_EXT)
 	{
-		const std::string	updateImage	=
+		const std::string	specConstants	=
+			"layout (constant_id=0) const highp int factor1 = 1;\n"
+			"layout (constant_id=1) const highp float factor2 = 2.0;\n"
+			;
+
+		const std::string	updateImage		=
 			"  ivec3 p = ivec3(gl_LaunchIDEXT);\n"
 			"  ivec3 v = ivec3(gl_" + std::string(m_data.name) + ");\n"
-			"  int   r = v.x + 256 * (v.y + 256 * v.z) + 1;\n"
+			"  int   r = v.x + " + (useSC ? "factor1" : "256") + " * (v.y + " + (useSC ? "int(factor2)" : "256") + " * v.z) + 1;\n"
 			"  ivec4 c = ivec4(r,0,0,1);\n"
 			"  imageStore(result, p, c);\n";
 
@@ -391,6 +401,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 				css <<
 					"#version 460 core\n"
 					"#extension GL_EXT_ray_tracing : require\n"
+					<< (useSC ? specConstants : "") <<
 					"layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
 					"\n"
 					"void main()\n"
@@ -412,6 +423,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					css <<
 						"#version 460 core\n"
 						"#extension GL_EXT_ray_tracing : require\n"
+						<< (useSC ? specConstants : "") <<
 						"hitAttributeEXT vec3 attribs;\n"
 						"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 						"layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
@@ -439,6 +451,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					css <<
 						"#version 460 core\n"
 						"#extension GL_EXT_ray_tracing : require\n"
+						<< (useSC ? specConstants : "") <<
 						"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 						"hitAttributeEXT vec3 attribs;\n"
 						"layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
@@ -466,6 +479,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					css <<
 						"#version 460 core\n"
 						"#extension GL_EXT_ray_tracing : require\n"
+						<< (useSC ? specConstants : "") <<
 						"hitAttributeEXT vec3 hitAttribute;\n"
 						"layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
 						"\n"
@@ -495,6 +509,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					css <<
 						"#version 460 core\n"
 						"#extension GL_EXT_ray_tracing : require\n"
+						<< (useSC ? specConstants : "") <<
 						"layout(location = 0) rayPayloadInEXT vec3 hitValue;\n"
 						"layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
 						"\n"
@@ -535,6 +550,7 @@ void RayTracingTestCase::initPrograms (SourceCollections& programCollection) con
 					css <<
 						"#version 460 core\n"
 						"#extension GL_EXT_ray_tracing : require\n"
+						<< (useSC ? specConstants : "") <<
 						"layout(location = 0) callableDataInEXT float dummy;"
 						"layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
 						"\n"
@@ -1541,18 +1557,19 @@ vector<de::SharedPtr<BottomLevelAccelerationStructure> > RayTracingBuiltinLaunch
 }
 
 Move<VkPipeline> RayTracingBuiltinLaunchTestInstance::makePipeline (de::MovePtr<RayTracingPipeline>&	rayTracingPipeline,
-																	VkPipelineLayout					pipelineLayout)
+																	VkPipelineLayout					pipelineLayout,
+																	const VkSpecializationInfo*			specializationInfo)
 {
 	const DeviceInterface&	vkd			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
 	vk::BinaryCollection&	collection	= m_context.getBinaryCollection();
 
-	if (0 != (m_shaders & VK_SHADER_STAGE_RAYGEN_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR		, createShaderModule(vkd, device, collection.get("rgen"), 0), m_raygenShaderGroup);
-	if (0 != (m_shaders & VK_SHADER_STAGE_ANY_HIT_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR		, createShaderModule(vkd, device, collection.get("ahit"), 0), m_hitShaderGroup);
-	if (0 != (m_shaders & VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR	, createShaderModule(vkd, device, collection.get("chit"), 0), m_hitShaderGroup);
-	if (0 != (m_shaders & VK_SHADER_STAGE_MISS_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR			, createShaderModule(vkd, device, collection.get("miss"), 0), m_missShaderGroup);
-	if (0 != (m_shaders & VK_SHADER_STAGE_INTERSECTION_BIT_KHR))	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR	, createShaderModule(vkd, device, collection.get("sect"), 0), m_hitShaderGroup);
-	if (0 != (m_shaders & VK_SHADER_STAGE_CALLABLE_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR		, createShaderModule(vkd, device, collection.get("call"), 0), m_callableShaderGroup);
+	if (0 != (m_shaders & VK_SHADER_STAGE_RAYGEN_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR		, createShaderModule(vkd, device, collection.get("rgen"), 0), m_raygenShaderGroup, specializationInfo);
+	if (0 != (m_shaders & VK_SHADER_STAGE_ANY_HIT_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_ANY_HIT_BIT_KHR		, createShaderModule(vkd, device, collection.get("ahit"), 0), m_hitShaderGroup, specializationInfo);
+	if (0 != (m_shaders & VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR	, createShaderModule(vkd, device, collection.get("chit"), 0), m_hitShaderGroup, specializationInfo);
+	if (0 != (m_shaders & VK_SHADER_STAGE_MISS_BIT_KHR))			rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR			, createShaderModule(vkd, device, collection.get("miss"), 0), m_missShaderGroup, specializationInfo);
+	if (0 != (m_shaders & VK_SHADER_STAGE_INTERSECTION_BIT_KHR))	rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR	, createShaderModule(vkd, device, collection.get("sect"), 0), m_hitShaderGroup, specializationInfo);
+	if (0 != (m_shaders & VK_SHADER_STAGE_CALLABLE_BIT_KHR))		rayTracingPipeline->addShader(VK_SHADER_STAGE_CALLABLE_BIT_KHR		, createShaderModule(vkd, device, collection.get("call"), 0), m_callableShaderGroup, specializationInfo);
 
 	if (m_data.pipelineCreateFlags != 0)
 		rayTracingPipeline->setCreateFlags(m_data.pipelineCreateFlags);
@@ -1584,6 +1601,50 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::createShaderB
 	return shaderBindingTable;
 }
 
+// Provides two spec constants, one integer and one float, both with value 256.
+class SpecConstantsHelper
+{
+public:
+								SpecConstantsHelper		();
+	const VkSpecializationInfo&	getSpecializationInfo	(void) const;
+private:
+	std::vector<deUint8>					m_data;
+	std::vector<VkSpecializationMapEntry>	m_mapEntries;
+	VkSpecializationInfo					m_specInfo;
+};
+
+SpecConstantsHelper::SpecConstantsHelper ()
+	: m_data		()
+	, m_mapEntries	()
+{
+	// To make things interesting, make both data unaligned and add some padding.
+	const deInt32	value1	= 256;
+	const float		value2	= 256.0f;
+
+	const size_t	offset1	= 1u;							// Offset of 1 byte.
+	const size_t	offset2	= 1u + sizeof(value1) + 2u;		// Offset of 3 bytes plus the size of value1.
+
+	m_data.resize(sizeof(value1) + sizeof(value2) + 5u);	// Some extra padding at the end too.
+	deMemcpy(&m_data[offset1], &value1, sizeof(value1));
+	deMemcpy(&m_data[offset2], &value2, sizeof(value2));
+
+	// Map entries.
+	m_mapEntries.reserve(2u);
+	m_mapEntries.push_back({ 0u, static_cast<deUint32>(offset1), static_cast<deUintptr>(sizeof(value1)) });
+	m_mapEntries.push_back({ 1u, static_cast<deUint32>(offset2), static_cast<deUintptr>(sizeof(value2))	});
+
+	// Specialization info.
+	m_specInfo.mapEntryCount	= static_cast<deUint32>(m_mapEntries.size());
+	m_specInfo.pMapEntries		= m_mapEntries.data();
+	m_specInfo.dataSize			= static_cast<deUintptr>(m_data.size());
+	m_specInfo.pData			= m_data.data();
+}
+
+const VkSpecializationInfo& SpecConstantsHelper::getSpecializationInfo (void) const
+{
+	return m_specInfo;
+}
+
 de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest (void)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
@@ -1612,7 +1673,9 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest (void
 	const Move<VkCommandBuffer>			cmdBuffer							= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	de::MovePtr<RayTracingPipeline>		rayTracingPipeline					= de::newMovePtr<RayTracingPipeline>();
-	const Move<VkPipeline>				pipeline							= makePipeline(rayTracingPipeline, *pipelineLayout);
+	const SpecConstantsHelper			specConstantHelper;
+	const VkSpecializationInfo*			specializationInfo					= (m_data.useSpecConstants ? &specConstantHelper.getSpecializationInfo() : nullptr);
+	const Move<VkPipeline>				pipeline							= makePipeline(rayTracingPipeline, *pipelineLayout, specializationInfo);
 	const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable			= createShaderBindingTable(vki, vkd, device, physicalDevice, *pipeline, allocator, rayTracingPipeline, m_raygenShaderGroup);
 	const de::MovePtr<BufferWithMemory>	missShaderBindingTable				= createShaderBindingTable(vki, vkd, device, physicalDevice, *pipeline, allocator, rayTracingPipeline, m_missShaderGroup);
 	const de::MovePtr<BufferWithMemory>	hitShaderBindingTable				= createShaderBindingTable(vki, vkd, device, physicalDevice, *pipeline, allocator, rayTracingPipeline, m_hitShaderGroup);
@@ -2466,7 +2529,8 @@ void createLaunchTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				false,					//  bool					skipAABSs;
 				false,					//  bool					opaque;
 				false,					//  bool					frontFace;
-				0						//  VkPipelineCreateFlags	pipelineCreateFlags;
+				0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
+				false,					//	bool					useSpecConstants;
 			};
 			const std::string	suffix		= de::toString(caseDef.width) + '_' + de::toString(caseDef.height) + '_' + de::toString(caseDef.depth);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + suffix;
@@ -2552,7 +2616,8 @@ void createScalarTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtinGr
 				false,					//  bool					skipAABSs;
 				false,					//  bool					opaque;
 				false,					//  bool					frontFace;
-				0						//  VkPipelineCreateFlags	pipelineCreateFlags;
+				0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
+				false,					//	bool					useSpecConstants;
 			};
 			const std::string	suffix		= '_' + de::toString(caseDef.width) + '_' + de::toString(caseDef.height);
 			const std::string	testName	= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name + (specializedTest ? "" : suffix);
@@ -2692,6 +2757,7 @@ void createRayFlagsTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* builtin
 							opaques[opaquesNdx].flag,						//  bool					opaque;
 							faces[facesNdx].flag,							//  bool					frontFace;
 							pipelineFlags[pipelineFlagsNdx].flag,			//  VkPipelineCreateFlags	pipelineCreateFlags;
+							false,											//	bool					useSpecConstants;
 						};
 						const std::string	testName				= string(stages[stageNdx].name) ;
 
@@ -2770,7 +2836,8 @@ void createMultiOutputTests (tcu::TestContext& testCtx, tcu::TestCaseGroup* buil
 			false,					//  bool					rayFlagSkipAABSs;
 			false,					//  bool					opaque;
 			false,					//  bool					frontFace;
-			0						//  VkPipelineCreateFlags	pipelineCreateFlags;
+			0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
+			false,					//	bool					useSpecConstants;
 		};
 		const std::string	testName				= string(stages[stageNdx].name) + '_' + geomTypes[geomTypesNdx].name;
 
@@ -2828,6 +2895,62 @@ tcu::TestCaseGroup*	createBuiltinTests (tcu::TestContext& testCtx)
 		tests[testNdx].createBuiltinTestsFunc(testCtx, builtinGroup.get(), tests[testNdx].id, tests[testNdx].name, tests[testNdx].stages);
 
 	return builtinGroup.release();
+}
+
+tcu::TestCaseGroup* createSpecConstantTests	(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "spec_constants", "Test using spec constants in ray tracing shader stages"));
+
+	const VkShaderStageFlags	stageFlags				= VK_SHADER_STAGE_RAYGEN_BIT_KHR
+														| VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+														| VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+														| VK_SHADER_STAGE_MISS_BIT_KHR
+														| VK_SHADER_STAGE_INTERSECTION_BIT_KHR
+														| VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+	const deUint32				width					= 256u;
+	const deUint32				height					= 256u;
+	const deUint32				depth					= 1u;
+	const bool					plain					= isPlain(width, height, depth);
+	const deUint32				k						= (plain ? 1 : 6);
+	const deUint32				largestGroup			= k * width * height * depth;
+	const deUint32				squaresGroupCount		= largestGroup;
+	const deUint32				geometriesGroupCount	= 1;
+	const deUint32				instancesGroupCount		= 1;
+
+	for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stages); ++stageNdx)
+	{
+		if ((stageFlags & stages[stageNdx].stage) == 0)
+			continue;
+
+		const CaseDef caseDef =
+		{
+			TEST_ID_LAUNCH_ID_EXT,	//  TestId					id;
+			"LaunchIDEXT",			//  const char*				name;
+			width,					//  deUint32				width;
+			height,					//  deUint32				height;
+			depth,					//  deUint32				depth;
+			depth,					//  deUint32				raysDepth;
+			VK_FORMAT_R32_SINT,		//  VkFormat				format;
+			false,					//  bool					fixedPointScalarOutput;
+			false,					//  bool					fixedPointVectorOutput;
+			false,					//  bool					fixedPointMatrixOutput;
+			GEOM_TYPE_TRIANGLES,	//  GeomType				geomType;
+			squaresGroupCount,		//  deUint32				squaresGroupCount;
+			geometriesGroupCount,	//  deUint32				geometriesGroupCount;
+			instancesGroupCount,	//  deUint32				instancesGroupCount;
+			stages[stageNdx].stage,	//  VkShaderStageFlagBits	stage;
+			false,					//  bool					skipTriangles;
+			false,					//  bool					skipAABSs;
+			false,					//  bool					opaque;
+			false,					//  bool					frontFace;
+			0u,						//  VkPipelineCreateFlags	pipelineCreateFlags;
+			true,					//	bool					useSpecConstants;
+		};
+
+		group->addChild(new RayTracingTestCase(testCtx, stages[stageNdx].name, "", caseDef));
+	}
+
+	return group.release();
 }
 
 }	// RayTracing

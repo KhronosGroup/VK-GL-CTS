@@ -2094,12 +2094,12 @@ RayTracingPipeline::~RayTracingPipeline ()
 	else															\
 		TCU_THROW(InternalError, "Attempt to reassign shader")
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkShaderModule> shaderModule, deUint32 group)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkShaderModule> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfo)
 {
-	addShader(shaderStage, makeVkSharedPtr(shaderModule), group);
+	addShader(shaderStage, makeVkSharedPtr(shaderModule), group, specializationInfo);
 }
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, VkSpecializationInfo* specializationInfoPtr)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, const VkSpecializationInfo* specializationInfo)
 {
 	if (group >= m_shadersGroupCreateInfos.size())
 	{
@@ -2171,7 +2171,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::Share
 			shaderStage,											//  VkShaderStageFlagBits				stage;
 			**shaderModule,											//  VkShaderModule						module;
 			"main",													//  const char*							pName;
-			specializationInfoPtr,									//  const VkSpecializationInfo*			pSpecializationInfo;
+			specializationInfo,										//  const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
 		m_shaderCreateInfos.push_back(shaderCreateInfo);
