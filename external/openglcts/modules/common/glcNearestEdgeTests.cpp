@@ -131,11 +131,13 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat (const tcu::PixelFormat&
 		tcu::TextureFormat	texFmt;
 	} pixelFormatMap[] =
 	{
-		{ tcu::PixelFormat(8,8,8,8),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT8)			},
-		{ tcu::PixelFormat(8,8,8,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_INT8)			},
-		{ tcu::PixelFormat(4,4,4,4),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_4444)	},
-		{ tcu::PixelFormat(5,5,5,1),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_5551)	},
-		{ tcu::PixelFormat(5,6,5,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_SHORT_565)	}
+		{ tcu::PixelFormat(8,8,8,8),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT8)				},
+		{ tcu::PixelFormat(8,8,8,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_INT8)				},
+		{ tcu::PixelFormat(4,4,4,4),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_4444)		},
+		{ tcu::PixelFormat(5,5,5,1),	tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_SHORT_5551)		},
+		{ tcu::PixelFormat(5,6,5,0),	tcu::TextureFormat(tcu::TextureFormat::RGB,		tcu::TextureFormat::UNORM_SHORT_565)		},
+		{ tcu::PixelFormat(10,10,10,2), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::UNORM_INT_1010102_REV)	},
+		{ tcu::PixelFormat(16,16,16,16), tcu::TextureFormat(tcu::TextureFormat::RGBA,	tcu::TextureFormat::HALF_FLOAT)				},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
