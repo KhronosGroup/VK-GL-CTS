@@ -2099,7 +2099,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, Move<VkSh
 	addShader(shaderStage, makeVkSharedPtr(shaderModule), group);
 }
 
-void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group)
+void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::SharedPtr<Move<VkShaderModule>> shaderModule, deUint32 group, VkSpecializationInfo* specializationInfoPtr)
 {
 	if (group >= m_shadersGroupCreateInfos.size())
 	{
@@ -2171,7 +2171,7 @@ void RayTracingPipeline::addShader (VkShaderStageFlagBits shaderStage, de::Share
 			shaderStage,											//  VkShaderStageFlagBits				stage;
 			**shaderModule,											//  VkShaderModule						module;
 			"main",													//  const char*							pName;
-			DE_NULL,												//  const VkSpecializationInfo*			pSpecializationInfo;
+			specializationInfoPtr,									//  const VkSpecializationInfo*			pSpecializationInfo;
 		};
 
 		m_shaderCreateInfos.push_back(shaderCreateInfo);

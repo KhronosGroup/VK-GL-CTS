@@ -54,7 +54,9 @@ enum class GeometryType
 	AABB		= FIRST,
 	TRIANGLES,
 
-	COUNT
+	COUNT,
+
+	AABB_AND_TRIANGLES, //< Only compatible with ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES AS layout.
 };
 
 enum class ShaderGroups
@@ -68,6 +70,7 @@ enum class ShaderGroups
 
 enum class TestType
 {
+	AABBS_AND_TRIS_IN_ONE_TL,
 	CULL_MASK,
 	NO_DUPLICATE_ANY_HIT
 };
@@ -81,7 +84,9 @@ enum class AccelerationStructureLayout
 	ONE_TL_MANY_BLS_ONE_GEOMETRY,
 	ONE_TL_MANY_BLS_MANY_GEOMETRIES,
 
-	COUNT
+	COUNT,
+
+	ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES
 };
 
 static const VkFlags	ALL_RAY_TRACING_STAGES	= VK_SHADER_STAGE_RAYGEN_BIT_KHR
@@ -154,7 +159,7 @@ public:
 		DE_UNREF(nBL);
 		DE_UNREF(nInstance);
 
-		return 0;
+		return 0xFF;
 	}
 
 	virtual deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const
@@ -213,15 +218,391 @@ public:
 		 m_gridSizeXYZ			(gridSizeXYZ),
 		 m_gridStartXYZ			(gridStartXYZ)
 	{
-		const auto nCellsNeeded = gridSizeXYZ.x() * gridSizeXYZ.y() * gridSizeXYZ.z();
+		fillVertexVec();
+	}
+
+	std::unique_ptr<TopLevelAccelerationStructure> createTLAS(	Context&							context,
+																const AccelerationStructureLayout&	asLayout,
+																VkCommandBuffer						cmdBuffer,
+																const VkGeometryFlagsKHR&			bottomLevelGeometryFlags,
+																const ASPropertyProvider*			optASPropertyProviderPtr	= nullptr) const final
+	{
+		Allocator&										allocator				= context.getDefaultAllocator		();
+		const DeviceInterface&							deviceInterface			= context.getDeviceInterface		();
+		const VkDevice									deviceVk				= context.getDevice					();
+		const auto										nCells					= m_gridSizeXYZ.x() * m_gridSizeXYZ.y() * m_gridSizeXYZ.z();
+		std::unique_ptr<TopLevelAccelerationStructure>	resultPtr;
+		de::MovePtr<TopLevelAccelerationStructure>		tlPtr					= makeTopLevelAccelerationStructure ();
+
+		DE_ASSERT(((asLayout == AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES) && (m_geometryType == GeometryType::AABB_AND_TRIANGLES)) ||
+				  ((asLayout != AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES) && (m_geometryType != GeometryType::AABB_AND_TRIANGLES)) );
+
+		switch (asLayout)
+		{
+			case AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY:
+			{
+				DE_ASSERT( (m_geometryType == GeometryType::AABB) || (m_geometryType == GeometryType::TRIANGLES) );
+
+				const auto&	vertexVec				= (m_geometryType == GeometryType::AABB)	? m_aabbVertexVec
+																								: m_triVertexVec;
+				const auto	cullMask				= (optASPropertyProviderPtr != nullptr)		? optASPropertyProviderPtr->getCullMask(0, 0)
+																								: static_cast<deUint8>(0xFF);
+				const auto	instanceCustomIndex		= (optASPropertyProviderPtr != nullptr)		? optASPropertyProviderPtr->getInstanceCustomIndex(0, 0)
+																								: 0;
+
+
+				tlPtr->setInstanceCount(1);
+
+				{
+					de::MovePtr<BottomLevelAccelerationStructure> blPtr = makeBottomLevelAccelerationStructure();
+
+					blPtr->setGeometryCount	(1u);
+					blPtr->addGeometry		(vertexVec,
+											 (m_geometryType == GeometryType::TRIANGLES),
+											 bottomLevelGeometryFlags);
+
+					blPtr->createAndBuild(	deviceInterface,
+											deviceVk,
+											cmdBuffer,
+											allocator);
+
+					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
+										identityMatrix3x4,
+										instanceCustomIndex,
+										cullMask);
+				}
+
+				if (m_gridASFeedbackPtr != nullptr)
+				{
+					for (auto	nCell = 0u;
+								nCell < nCells;
+								nCell++)
+					{
+						const auto cellX = (((nCell)												% m_gridSizeXYZ.x() ));
+						const auto cellY = (((nCell / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
+						const auto cellZ = (((nCell / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
+
+						m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
+																		cullMask);
+					}
+				}
+
+				break;
+			}
+
+			case AccelerationStructureLayout::ONE_TL_ONE_BL_MANY_GEOMETRIES:
+			{
+				DE_ASSERT( (m_geometryType == GeometryType::AABB) || (m_geometryType == GeometryType::TRIANGLES) );
+
+				const auto&	vertexVec				= (m_geometryType == GeometryType::AABB)	? m_aabbVertexVec
+																								: m_triVertexVec;
+				const auto	nVerticesPerPrimitive	= (m_geometryType == GeometryType::AABB)	? 2u
+																								: 12u /* tris */  * 3 /* verts */;
+				const auto	cullMask				= (optASPropertyProviderPtr != nullptr)		? optASPropertyProviderPtr->getCullMask(0, 0)
+																								: static_cast<deUint8>(0xFF);
+				const auto	instanceCustomIndex		= (optASPropertyProviderPtr	!= nullptr)		? optASPropertyProviderPtr->getInstanceCustomIndex(0, 0)
+																								: 0;
+
+				DE_ASSERT( (vertexVec.size() % nVerticesPerPrimitive) == 0);
+
+				tlPtr->setInstanceCount(1);
+
+				{
+					de::MovePtr<BottomLevelAccelerationStructure>	blPtr		= makeBottomLevelAccelerationStructure();
+					const auto										nGeometries = vertexVec.size() / nVerticesPerPrimitive;
+
+					blPtr->setGeometryCount	(nGeometries);
+
+					for (deUint32 nGeometry = 0; nGeometry < nGeometries; ++nGeometry)
+					{
+						std::vector<tcu::Vec3> currentGeometry(nVerticesPerPrimitive);
+
+						for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
+						{
+							currentGeometry.at(nVertex) = vertexVec.at(nGeometry * nVerticesPerPrimitive + nVertex);
+						}
+
+						blPtr->addGeometry	(currentGeometry,
+											 (m_geometryType == GeometryType::TRIANGLES),
+											 bottomLevelGeometryFlags);
+					}
+
+					blPtr->createAndBuild(	deviceInterface,
+											deviceVk,
+											cmdBuffer,
+											allocator);
+
+					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
+										identityMatrix3x4,
+										instanceCustomIndex,
+										cullMask);
+				}
+
+				if (m_gridASFeedbackPtr != nullptr)
+				{
+					for (auto	nCell = 0u;
+								nCell < nCells;
+								nCell++)
+					{
+						const auto cellX = (((nCell)												% m_gridSizeXYZ.x() ));
+						const auto cellY = (((nCell / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
+						const auto cellZ = (((nCell / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
+
+						m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
+																		cullMask);
+					}
+				}
+
+				break;
+			}
+
+			case AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY:
+			{
+				DE_ASSERT( (m_geometryType == GeometryType::AABB) || (m_geometryType == GeometryType::TRIANGLES) );
+
+				const auto&	vertexVec				= (m_geometryType == GeometryType::AABB)	? m_aabbVertexVec
+																								: m_triVertexVec;
+				const auto	nVerticesPerPrimitive	= (m_geometryType == GeometryType::AABB)	? 2u
+																								: 12u /* tris */  * 3 /* verts */;
+				const auto	nInstances				= vertexVec.size() / nVerticesPerPrimitive;
+
+				DE_ASSERT( (vertexVec.size() % nVerticesPerPrimitive) == 0);
+
+				tlPtr->setInstanceCount(nInstances);
+
+				for (deUint32 nInstance = 0; nInstance < nInstances; nInstance++)
+				{
+					de::MovePtr<BottomLevelAccelerationStructure>	blPtr						= makeBottomLevelAccelerationStructure();
+					const auto										cullMask					= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getCullMask(0, nInstance)
+																																		: static_cast<deUint8>(0xFF);
+					std::vector<tcu::Vec3>							currentInstanceVertexVec;
+					const auto										instanceCustomIndex			= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getInstanceCustomIndex(0, nInstance)
+																																		: 0;
+
+					for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
+					{
+						currentInstanceVertexVec.push_back(vertexVec.at(nInstance * nVerticesPerPrimitive + nVertex) );
+					}
+
+					blPtr->setGeometryCount	(1u);
+					blPtr->addGeometry		(currentInstanceVertexVec,
+											 (m_geometryType == GeometryType::TRIANGLES),
+											 bottomLevelGeometryFlags);
+
+					blPtr->createAndBuild(	deviceInterface,
+											deviceVk,
+											cmdBuffer,
+											allocator);
+
+					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
+										identityMatrix3x4,
+										instanceCustomIndex,
+										cullMask);
+
+
+					if (m_gridASFeedbackPtr != nullptr)
+					{
+						const auto cellX = (((nInstance)												% m_gridSizeXYZ.x() ));
+						const auto cellY = (((nInstance / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
+						const auto cellZ = (((nInstance / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
+
+						m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
+																		cullMask);
+					}
+				}
+
+				break;
+			}
+
+			case AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES:
+			{
+				DE_ASSERT( (m_geometryType == GeometryType::AABB) || (m_geometryType == GeometryType::TRIANGLES) );
+
+				const auto&	vertexVec				= (m_geometryType == GeometryType::AABB)	? m_aabbVertexVec
+																								: m_triVertexVec;
+				const auto	nVerticesPerPrimitive	= (m_geometryType == GeometryType::AABB)	? 2u
+																								: 12u /* tris */  * 3 /* verts */;
+				const auto	nPrimitivesDefined		= static_cast<deUint32>(vertexVec.size() / nVerticesPerPrimitive);
+				const auto	nPrimitivesPerBLAS		= 4;
+				const auto	nBottomLevelASes		= nPrimitivesDefined / nPrimitivesPerBLAS;
+
+				DE_ASSERT( (vertexVec.size()   % nVerticesPerPrimitive)	== 0);
+				DE_ASSERT( (nPrimitivesDefined % nPrimitivesPerBLAS)	== 0);
+
+				tlPtr->setInstanceCount(nBottomLevelASes);
+
+				for (deUint32 nBottomLevelAS = 0; nBottomLevelAS < nBottomLevelASes; nBottomLevelAS++)
+				{
+					de::MovePtr<BottomLevelAccelerationStructure>	blPtr				= makeBottomLevelAccelerationStructure();
+					const auto										cullMask			= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getCullMask(nBottomLevelAS, 0)
+																																: static_cast<deUint8>(0xFF);
+					const auto										instanceCustomIndex	= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getInstanceCustomIndex(nBottomLevelAS, 0)
+																																: 0;
+
+					blPtr->setGeometryCount(nPrimitivesPerBLAS);
+
+					for (deUint32 nGeometry = 0; nGeometry < nPrimitivesPerBLAS; nGeometry++)
+					{
+						std::vector<tcu::Vec3> currentVertexVec;
+
+						for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
+						{
+							currentVertexVec.push_back(vertexVec.at((nBottomLevelAS * nPrimitivesPerBLAS + nGeometry) * nVerticesPerPrimitive + nVertex) );
+						}
+
+						blPtr->addGeometry(	currentVertexVec,
+											(m_geometryType == GeometryType::TRIANGLES),
+											bottomLevelGeometryFlags);
+					}
+
+					blPtr->createAndBuild(	deviceInterface,
+											deviceVk,
+											cmdBuffer,
+											allocator);
+					tlPtr->addInstance(		de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
+											identityMatrix3x4,
+											instanceCustomIndex,
+											cullMask);
+
+					if (m_gridASFeedbackPtr != nullptr)
+					{
+						for (deUint32 cellIndex = nPrimitivesPerBLAS * nBottomLevelAS; cellIndex < nPrimitivesPerBLAS * (nBottomLevelAS + 1); cellIndex++)
+						{
+							const auto cellX = (((cellIndex)												% m_gridSizeXYZ.x() ));
+							const auto cellY = (((cellIndex / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
+							const auto cellZ = (((cellIndex / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
+
+							m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
+																			cullMask);
+						}
+					}
+				}
+
+				break;
+			}
+
+			case AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES:
+			{
+				DE_ASSERT(m_geometryType == GeometryType::AABB_AND_TRIANGLES);
+
+				const auto	nCellsDefined		= m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+				const auto	nPrimitivesPerBLAS	= 1;
+				const auto	nBottomLevelASes	= nCellsDefined / nPrimitivesPerBLAS;
+
+				DE_ASSERT( (nCellsDefined % nPrimitivesPerBLAS) == 0);
+
+				tlPtr->setInstanceCount(nBottomLevelASes);
+
+				for (deUint32 nBottomLevelAS = 0; nBottomLevelAS < nBottomLevelASes; nBottomLevelAS++)
+				{
+					de::MovePtr<BottomLevelAccelerationStructure>	blPtr					= makeBottomLevelAccelerationStructure();
+					const auto										cullMask				= (optASPropertyProviderPtr != nullptr)		? optASPropertyProviderPtr->getCullMask(nBottomLevelAS, 0)
+																																		: static_cast<deUint8>(0xFF);
+					const auto										instanceCustomIndex		= (optASPropertyProviderPtr != nullptr)		? optASPropertyProviderPtr->getInstanceCustomIndex(nBottomLevelAS, 0)
+																																		: 0;
+					const bool										usesAABB				= (nBottomLevelAS % 2) == 0;
+					const auto&										vertexVec				= (usesAABB)								? m_aabbVertexVec
+																																		: m_triVertexVec;
+					const auto										nVerticesPerPrimitive	= (usesAABB)								? 2u
+																																		: 12u /* tris */  * 3 /* verts */;
+
+					blPtr->setGeometryCount(nPrimitivesPerBLAS);
+
+					for (deUint32 nGeometry = 0; nGeometry < nPrimitivesPerBLAS; nGeometry++)
+					{
+						DE_ASSERT( (vertexVec.size() % nVerticesPerPrimitive) == 0);
+
+						std::vector<tcu::Vec3> currentVertexVec;
+
+						for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
+						{
+							currentVertexVec.push_back(vertexVec.at((nBottomLevelAS * nPrimitivesPerBLAS + nGeometry) * nVerticesPerPrimitive + nVertex) );
+						}
+
+						blPtr->addGeometry(	currentVertexVec,
+											!usesAABB,
+											bottomLevelGeometryFlags);
+					}
+
+					blPtr->createAndBuild	(	deviceInterface,
+												deviceVk,
+												cmdBuffer,
+												allocator);
+
+					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
+										identityMatrix3x4,
+										instanceCustomIndex,
+										cullMask);
+
+					if (m_gridASFeedbackPtr != nullptr)
+					{
+						for (deUint32 cellIndex = nPrimitivesPerBLAS * nBottomLevelAS; cellIndex < nPrimitivesPerBLAS * (nBottomLevelAS + 1); cellIndex++)
+						{
+							const auto cellX = (((cellIndex)												% m_gridSizeXYZ.x() ));
+							const auto cellY = (((cellIndex / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
+							const auto cellZ = (((cellIndex / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
+
+							m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
+																			cullMask);
+						}
+					}
+				}
+
+				break;
+			}
+
+			default:
+			{
+				deAssertFail("This should never happen", __FILE__, __LINE__);
+			}
+		}
+
+		tlPtr->createAndBuild(	deviceInterface,
+								deviceVk,
+								cmdBuffer,
+								allocator);
+
+		resultPtr = decltype(resultPtr)(tlPtr.release() );
+		return resultPtr;
+	}
+
+	deUint32 getNPrimitives() const final
+	{
+		return m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+	}
+
+	void setGridASFeedback(IGridASFeedback* feedbackPtr)
+	{
+		m_gridASFeedbackPtr = feedbackPtr;
+	}
+
+	void setProperties(	const tcu::Vec3&		gridStartXYZ,
+						const tcu::Vec3&		gridCellSizeXYZ,
+						const tcu::UVec3&		gridSizeXYZ,
+						const tcu::Vec3&		gridInterCellDeltaXYZ,
+						const GeometryType&		geometryType)
+	{
+		m_gridStartXYZ			= gridStartXYZ;
+		m_gridCellSizeXYZ		= gridCellSizeXYZ;
+		m_gridSizeXYZ			= gridSizeXYZ;
+		m_gridInterCellDeltaXYZ = gridInterCellDeltaXYZ;
+		m_geometryType			= geometryType;
+
+		fillVertexVec();
+	}
+
+private:
+	void fillVertexVec()
+	{
+		const auto nCellsNeeded = m_gridSizeXYZ.x() * m_gridSizeXYZ.y() * m_gridSizeXYZ.z();
 
 		for (auto	nCell = 0u;
 					nCell < nCellsNeeded;
 					nCell++)
 		{
-			const auto cellX = (((nCell)										% m_gridSizeXYZ.x() ));
-			const auto cellY = (((nCell / gridSizeXYZ.x() )						% m_gridSizeXYZ.y() ));
-			const auto cellZ = (((nCell / gridSizeXYZ.x() )	/ gridSizeXYZ.y() ) % m_gridSizeXYZ.z() );
+			const auto cellX = (((nCell)												% m_gridSizeXYZ.x() ));
+			const auto cellY = (((nCell / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
+			const auto cellZ = (((nCell / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
 
 			const auto cellX1Y1Z1 = tcu::Vec3(	m_gridStartXYZ.x() + static_cast<float>(cellX) * m_gridInterCellDeltaXYZ.x(),
 												m_gridStartXYZ.y() + static_cast<float>(cellY) * m_gridInterCellDeltaXYZ.y(),
@@ -230,13 +611,16 @@ public:
 												m_gridStartXYZ.y() + static_cast<float>(cellY) * m_gridInterCellDeltaXYZ.y() + m_gridCellSizeXYZ.y(),
 												m_gridStartXYZ.z() + static_cast<float>(cellZ) * m_gridInterCellDeltaXYZ.z() + m_gridCellSizeXYZ.z() );
 
-			if (m_geometryType == GeometryType::AABB)
+			if (m_geometryType == GeometryType::AABB				||
+				m_geometryType == GeometryType::AABB_AND_TRIANGLES)
 			{
 				/* Cell = AABB of the cell */
-				m_vertexVec.push_back(cellX1Y1Z1);
-				m_vertexVec.push_back(cellX2Y2Z2);
+				m_aabbVertexVec.push_back(cellX1Y1Z1);
+				m_aabbVertexVec.push_back(cellX2Y2Z2);
 			}
-			else
+
+			if (m_geometryType == GeometryType::AABB_AND_TRIANGLES ||
+				m_geometryType == GeometryType::TRIANGLES)
 			{
 				/* Cell == Six triangles forming a cube
 				 *
@@ -283,333 +667,71 @@ public:
 											cellX2Y2Z2.z() );
 
 				// Z = Z1 face
-				m_vertexVec.push_back(A);
-				m_vertexVec.push_back(C);
-				m_vertexVec.push_back(D);
+				m_triVertexVec.push_back(A);
+				m_triVertexVec.push_back(C);
+				m_triVertexVec.push_back(D);
 
-				m_vertexVec.push_back(D);
-				m_vertexVec.push_back(B);
-				m_vertexVec.push_back(A);
+				m_triVertexVec.push_back(D);
+				m_triVertexVec.push_back(B);
+				m_triVertexVec.push_back(A);
 
 				// Z = Z2 face
-				m_vertexVec.push_back(E);
-				m_vertexVec.push_back(H);
-				m_vertexVec.push_back(G);
+				m_triVertexVec.push_back(E);
+				m_triVertexVec.push_back(H);
+				m_triVertexVec.push_back(G);
 
-				m_vertexVec.push_back(H);
-				m_vertexVec.push_back(F);
-				m_vertexVec.push_back(E);
+				m_triVertexVec.push_back(H);
+				m_triVertexVec.push_back(F);
+				m_triVertexVec.push_back(E);
 
 				// X = X0 face
-				m_vertexVec.push_back(A);
-				m_vertexVec.push_back(C);
-				m_vertexVec.push_back(G);
+				m_triVertexVec.push_back(A);
+				m_triVertexVec.push_back(C);
+				m_triVertexVec.push_back(G);
 
-				m_vertexVec.push_back(G);
-				m_vertexVec.push_back(E);
-				m_vertexVec.push_back(A);
+				m_triVertexVec.push_back(G);
+				m_triVertexVec.push_back(E);
+				m_triVertexVec.push_back(A);
 
 				// X = X1 face
-				m_vertexVec.push_back(B);
-				m_vertexVec.push_back(D);
-				m_vertexVec.push_back(H);
+				m_triVertexVec.push_back(B);
+				m_triVertexVec.push_back(D);
+				m_triVertexVec.push_back(H);
 
-				m_vertexVec.push_back(H);
-				m_vertexVec.push_back(F);
-				m_vertexVec.push_back(B);
+				m_triVertexVec.push_back(H);
+				m_triVertexVec.push_back(F);
+				m_triVertexVec.push_back(B);
 
 				// Y = Y0 face
-				m_vertexVec.push_back(C);
-				m_vertexVec.push_back(D);
-				m_vertexVec.push_back(H);
+				m_triVertexVec.push_back(C);
+				m_triVertexVec.push_back(D);
+				m_triVertexVec.push_back(H);
 
-				m_vertexVec.push_back(H);
-				m_vertexVec.push_back(G);
-				m_vertexVec.push_back(C);
+				m_triVertexVec.push_back(H);
+				m_triVertexVec.push_back(G);
+				m_triVertexVec.push_back(C);
 
 				// Y = y1 face
-				m_vertexVec.push_back(A);
-				m_vertexVec.push_back(B);
-				m_vertexVec.push_back(E);
+				m_triVertexVec.push_back(A);
+				m_triVertexVec.push_back(B);
+				m_triVertexVec.push_back(E);
 
-				m_vertexVec.push_back(B);
-				m_vertexVec.push_back(F);
-				m_vertexVec.push_back(E);
+				m_triVertexVec.push_back(B);
+				m_triVertexVec.push_back(F);
+				m_triVertexVec.push_back(E);
 			}
 		}
 	}
 
-	std::unique_ptr<TopLevelAccelerationStructure> createTLAS(	Context&							context,
-																const AccelerationStructureLayout&	asLayout,
-																VkCommandBuffer						cmdBuffer,
-																const VkGeometryFlagsKHR&			bottomLevelGeometryFlags,
-																const ASPropertyProvider*			optASPropertyProviderPtr	= nullptr) const final
-	{
-		Allocator&										allocator				= context.getDefaultAllocator		();
-		const DeviceInterface&							deviceInterface			= context.getDeviceInterface		();
-		const VkDevice									deviceVk				= context.getDevice					();
-		const auto										nCells					= m_gridSizeXYZ.x() * m_gridSizeXYZ.y() * m_gridSizeXYZ.z();
-		std::unique_ptr<TopLevelAccelerationStructure>	resultPtr;
-		de::MovePtr<TopLevelAccelerationStructure>		tlPtr					= makeTopLevelAccelerationStructure ();
-
-		const auto	nVerticesPerPrimitive	= (m_geometryType == GeometryType::AABB)	? 2u
-																						: 12u /* tris */  * 3 /* verts */;
-
-		switch (asLayout)
-		{
-			case AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY:
-			{
-				const auto cullMask				= (optASPropertyProviderPtr) != nullptr	? optASPropertyProviderPtr->getCullMask(0, 0)
-																						: static_cast<deUint8>(0xFF);
-				const auto instanceCustomIndex	= (optASPropertyProviderPtr) != nullptr	? optASPropertyProviderPtr->getInstanceCustomIndex(0, 0)
-																						: 0;
-
-				tlPtr->setInstanceCount(1);
-
-				{
-					de::MovePtr<BottomLevelAccelerationStructure> blPtr = makeBottomLevelAccelerationStructure();
-
-					blPtr->setGeometryCount	(1u);
-					blPtr->addGeometry		(m_vertexVec,
-											 (m_geometryType == GeometryType::TRIANGLES),
-											 bottomLevelGeometryFlags);
-
-					blPtr->createAndBuild(	deviceInterface,
-											deviceVk,
-											cmdBuffer,
-											allocator);
-
-					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
-										identityMatrix3x4,
-										instanceCustomIndex,
-										cullMask);
-				}
-
-				if (m_gridASFeedbackPtr != nullptr)
-				{
-					for (auto	nCell = 0u;
-								nCell < nCells;
-								nCell++)
-					{
-						const auto cellX = (((nCell)												% m_gridSizeXYZ.x() ));
-						const auto cellY = (((nCell / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
-						const auto cellZ = (((nCell / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
-
-						m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
-																		cullMask);
-					}
-				}
-
-				break;
-			}
-
-			case AccelerationStructureLayout::ONE_TL_ONE_BL_MANY_GEOMETRIES:
-			{
-				const auto	cullMask			= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getCullMask(0, 0)
-																						: static_cast<deUint8>(0xFF);
-				const auto	instanceCustomIndex	= (optASPropertyProviderPtr) != nullptr	? optASPropertyProviderPtr->getInstanceCustomIndex(0, 0)
-																						: 0;
-
-				DE_ASSERT( (m_vertexVec.size() % nVerticesPerPrimitive) == 0);
-
-				tlPtr->setInstanceCount(1);
-
-				{
-					de::MovePtr<BottomLevelAccelerationStructure>	blPtr		= makeBottomLevelAccelerationStructure();
-					const auto										nGeometries = m_vertexVec.size() / nVerticesPerPrimitive;
-
-					blPtr->setGeometryCount	(nGeometries);
-
-					for (deUint32 nGeometry = 0; nGeometry < nGeometries; ++nGeometry)
-					{
-						std::vector<tcu::Vec3> currentGeometry(nVerticesPerPrimitive);
-
-						for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
-						{
-							currentGeometry.at(nVertex) = m_vertexVec.at(nGeometry * nVerticesPerPrimitive + nVertex);
-						}
-
-						blPtr->addGeometry	(currentGeometry,
-											 (m_geometryType == GeometryType::TRIANGLES),
-											 bottomLevelGeometryFlags);
-					}
-
-					blPtr->createAndBuild(	deviceInterface,
-											deviceVk,
-											cmdBuffer,
-											allocator);
-
-					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
-										identityMatrix3x4,
-										instanceCustomIndex,
-										cullMask);
-				}
-
-				if (m_gridASFeedbackPtr != nullptr)
-				{
-					for (auto	nCell = 0u;
-								nCell < nCells;
-								nCell++)
-					{
-						const auto cellX = (((nCell)												% m_gridSizeXYZ.x() ));
-						const auto cellY = (((nCell / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
-						const auto cellZ = (((nCell / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
-
-						m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
-																		cullMask);
-					}
-				}
-
-				break;
-			}
-
-			case AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY:
-			{
-				DE_ASSERT( (m_vertexVec.size() % nVerticesPerPrimitive) == 0);
-
-				const auto	nInstances	= m_vertexVec.size() / nVerticesPerPrimitive;
-
-				tlPtr->setInstanceCount(nInstances);
-
-				for (deUint32 nInstance = 0; nInstance < nInstances; nInstance++)
-				{
-					de::MovePtr<BottomLevelAccelerationStructure>	blPtr						= makeBottomLevelAccelerationStructure();
-					const auto										cullMask					= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getCullMask(0, nInstance)
-																																		: static_cast<deUint8>(0xFF);
-					std::vector<tcu::Vec3>							currentInstanceVertexVec;
-					const auto										instanceCustomIndex			= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getInstanceCustomIndex(0, nInstance)
-																																		: 0;
-
-					for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
-					{
-						currentInstanceVertexVec.push_back(m_vertexVec.at(nInstance * nVerticesPerPrimitive + nVertex) );
-					}
-
-					blPtr->setGeometryCount	(1u);
-					blPtr->addGeometry		(currentInstanceVertexVec,
-											 (m_geometryType == GeometryType::TRIANGLES),
-											 bottomLevelGeometryFlags);
-
-					blPtr->createAndBuild(	deviceInterface,
-											deviceVk,
-											cmdBuffer,
-											allocator);
-
-					tlPtr->addInstance(	de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
-										identityMatrix3x4,
-										instanceCustomIndex,
-										cullMask);
-
-
-					if (m_gridASFeedbackPtr != nullptr)
-					{
-						const auto cellX = (((nInstance)												% m_gridSizeXYZ.x() ));
-						const auto cellY = (((nInstance / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
-						const auto cellZ = (((nInstance / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
-
-						m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
-																		cullMask);
-					}
-				}
-
-				break;
-			}
-
-			case AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES:
-			{
-				const auto	nPrimitivesDefined	= static_cast<deUint32>(m_vertexVec.size() / nVerticesPerPrimitive);
-				const auto	nPrimitivesPerBLAS	= 4;
-				const auto	nBottomLevelASes	= nPrimitivesDefined / nPrimitivesPerBLAS;
-
-				DE_ASSERT( (m_vertexVec.size() % nVerticesPerPrimitive)							== 0);
-				DE_ASSERT( (nPrimitivesDefined % (nPrimitivesPerBLAS * nVerticesPerPrimitive))	== 0);
-
-				tlPtr->setInstanceCount(nBottomLevelASes);
-
-				for (deUint32 nBottomLevelAS = 0; nBottomLevelAS < nBottomLevelASes; nBottomLevelAS++)
-				{
-					de::MovePtr<BottomLevelAccelerationStructure>	blPtr				= makeBottomLevelAccelerationStructure();
-					const auto										cullMask			= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getCullMask(nBottomLevelAS, 0)
-																																: static_cast<deUint8>(0xFF);
-					const auto										instanceCustomIndex	= (optASPropertyProviderPtr != nullptr)	? optASPropertyProviderPtr->getInstanceCustomIndex(nBottomLevelAS, 0)
-																																: 0;
-
-					blPtr->setGeometryCount(nPrimitivesPerBLAS);
-
-					for (deUint32 nGeometry = 0; nGeometry < nPrimitivesPerBLAS; nGeometry++)
-					{
-						std::vector<tcu::Vec3> currentVertexVec;
-
-						for (deUint32 nVertex = 0; nVertex < nVerticesPerPrimitive; ++nVertex)
-						{
-							currentVertexVec.push_back(m_vertexVec.at((nBottomLevelAS * nPrimitivesPerBLAS + nGeometry) * nVerticesPerPrimitive + nVertex) );
-						}
-
-						blPtr->addGeometry(	currentVertexVec,
-											(m_geometryType == GeometryType::TRIANGLES),
-											bottomLevelGeometryFlags);
-					}
-
-					blPtr->createAndBuild(	deviceInterface,
-											deviceVk,
-											cmdBuffer,
-											allocator);
-					tlPtr->addInstance(		de::SharedPtr<BottomLevelAccelerationStructure>(blPtr.release() ),
-											identityMatrix3x4,
-											instanceCustomIndex,
-											cullMask);
-
-					if (m_gridASFeedbackPtr != nullptr)
-					{
-						for (deUint32 cellIndex = nPrimitivesPerBLAS * nBottomLevelAS; cellIndex < nPrimitivesPerBLAS * (nBottomLevelAS + 1); cellIndex++)
-						{
-							const auto cellX = (((cellIndex)												% m_gridSizeXYZ.x() ));
-							const auto cellY = (((cellIndex / m_gridSizeXYZ.x() )							% m_gridSizeXYZ.y() ));
-							const auto cellZ = (((cellIndex / m_gridSizeXYZ.x() )	/ m_gridSizeXYZ.y() )	% m_gridSizeXYZ.z() );
-
-							m_gridASFeedbackPtr->onCullMaskAssignedToCell(	tcu::UVec3(cellX, cellY, cellZ),
-																			cullMask);
-						}
-					}
-				}
-
-				break;
-			}
-
-			default:
-			{
-				deAssertFail("This should never happen", __FILE__, __LINE__);
-			}
-		}
-
-		tlPtr->createAndBuild(	deviceInterface,
-								deviceVk,
-								cmdBuffer,
-								allocator);
-
-		resultPtr = decltype(resultPtr)(tlPtr.release() );
-		return resultPtr;
-	}
-
-	deUint32 getNPrimitives() const final
-	{
-		return m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
-	}
-
-	void setGridASFeedback(IGridASFeedback* feedbackPtr)
-	{
-		m_gridASFeedbackPtr = feedbackPtr;
-	}
-
-private:
+	std::vector<tcu::Vec3> m_aabbVertexVec;
 	IGridASFeedback*       m_gridASFeedbackPtr;
-	std::vector<tcu::Vec3> m_vertexVec;
+	std::vector<tcu::Vec3> m_triVertexVec;
 
-	const GeometryType	m_geometryType;
-	const tcu::Vec3		m_gridCellSizeXYZ;
-	const tcu::Vec3		m_gridInterCellDeltaXYZ;
-	const tcu::UVec3	m_gridSizeXYZ;
-	const tcu::Vec3		m_gridStartXYZ;
+	GeometryType	m_geometryType;
+	tcu::Vec3		m_gridCellSizeXYZ;
+	tcu::Vec3		m_gridInterCellDeltaXYZ;
+	tcu::UVec3		m_gridSizeXYZ;
+	tcu::Vec3		m_gridStartXYZ;
 };
 
 
@@ -622,24 +744,311 @@ public:
 		/* Stub */
 	}
 
-	virtual VkGeometryFlagBitsKHR	getBottomLevelGeometryFlags	()										const = 0;
-	virtual tcu::UVec3				getDispatchSize				()										const = 0;
-	virtual deUint32				getResultBufferSize			()										const = 0;
-	virtual void					initPrograms				(SourceCollections& programCollection)	const = 0;
-	virtual bool					verifyResultBuffer			(const void*		inBufferPtr)		const = 0;
+	virtual tcu::UVec3									getDispatchSize				()												const	= 0;
+	virtual deUint32									getResultBufferSize			()												const	= 0;
+	virtual std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind			()												const	= 0;
+	virtual void										initAS						(	vkt::Context&			context,
+																						RayTracingProperties*	rtPropertiesPtr,
+																						VkCommandBuffer			commandBuffer)				= 0;
+	virtual void										initPrograms				(	SourceCollections&		programCollection)	const	= 0;
+	virtual bool										verifyResultBuffer			(	const void*				inBufferPtr)		const	= 0;
 
-	virtual const ASPropertyProvider* getASPropertyProviderPtr() const
+	virtual deUint32 getNTraceRayInvocationsNeeded() const
+	{
+		return 1;
+	}
+
+	virtual Move<VkPipelineLayout> getPipelineLayout(const vk::DeviceInterface&	deviceInterface,
+													 VkDevice					deviceVk,
+													 VkDescriptorSetLayout		descriptorSetLayout)
+	{
+		return makePipelineLayout(	deviceInterface,
+									deviceVk,
+									descriptorSetLayout);
+	}
+
+	virtual VkSpecializationInfo* getSpecializationInfoPtr(const VkShaderStageFlagBits& /* shaderStage */)
 	{
 		return nullptr;
 	}
+
+	virtual bool init(RayTracingProperties* /* rtPropsPtr */)
+	{
+		return true;
+	}
+
+	virtual void onBeforeCmdTraceRays(	const deUint32&		/* nDispatch      */,
+										vkt::Context&		/* context        */,
+										VkCommandBuffer		/* commandBuffer  */,
+										VkPipelineLayout	/* pipelineLayout */)
+	{
+		/* Stub */
+	}
+};
+
+class AABBTriTLTest :	public TestBase,
+						public ASPropertyProvider
+{
+public:
+	AABBTriTLTest(	const GeometryType&					geometryType,
+					const AccelerationStructureLayout&	asStructureLayout)
+		:	m_asStructureLayout				(asStructureLayout),
+			m_geometryType					(geometryType),
+			m_gridSize                      (tcu::UVec3(720, 1, 1) ),
+			m_lastCustomInstanceIndexUsed	(0)
+	{
+	}
+
+	~AABBTriTLTest()
+	{
+		/* Stub */
+	}
+
+	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
+	{
+		DE_UNREF(nBL);
+		DE_UNREF(nInstance);
+
+		return ++m_lastCustomInstanceIndexUsed;
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		return tcu::UVec3(m_gridSize[0], m_gridSize[1], m_gridSize[2]);
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		return static_cast<deUint32>((2 /* nHits, nMisses */ + m_gridSize[0] * m_gridSize[1] * m_gridSize[2] * 1 /* hit instance custom indices */) * sizeof(deUint32) );
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const final
+	{
+		DE_ASSERT(m_tlPtr != nullptr);
+
+		return {m_tlPtr.get() };
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		/* Each AS holds a single unit AABB / cube built of tris.
+		 *
+		 * Geometry in the zeroth acceleration structure starts at the origin. Subsequent ASes
+		 * hold geometry that is positioned so that geometry formed by the union of all ASes never
+		 * intersects.
+		 *
+		 * Each raygen shader invocation uses a unique origin+target pair for the traced ray, and
+		 * only one AS is expected to hold geometry that the ray can find intersection for.
+		 * The AS index is stored in the result buffer, which is later verified by the CPU.
+		 *
+		 * Due to the fact AccelerationStructureEXT array indexing must be dynamically uniform and
+		 * it is not guaranteed we can determine workgroup size on VK 1.1-conformant platforms,
+		 * we can only trace rays against the same AS in a single ray trace dispatch.
+		 */
+		std::unique_ptr<GridASProvider> asProviderPtr(
+			new GridASProvider(	tcu::Vec3 (0, 0, 0), /* gridStartXYZ          */
+								tcu::Vec3 (1, 1, 1), /* gridCellSizeXYZ       */
+								m_gridSize,
+								tcu::Vec3 (3, 0, 0), /* gridInterCellDeltaXYZ */
+								m_geometryType)
+		);
+
+		m_tlPtr  = asProviderPtr->createTLAS(	context,
+												m_asStructureLayout,
+												commandBuffer,
+												0,		/* bottomLevelGeometryFlags */
+												this);	/* optASPropertyProviderPtr */
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
+														vk::SPIRV_VERSION_1_4,
+														0u,		/* flags        */
+														true);	/* allowSpirv14 */
+
+		const char* hitPropsDefinition =
+			"struct HitProps\n"
+			"{\n"
+			"    uint instanceCustomIndex;\n"
+			"};\n";
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"\n"
+				+ de::toString(hitPropsDefinition) +
+				"\n"
+				"layout(location = 0) rayPayloadInEXT      uint   dummy;\n"
+				"layout(set      = 0, binding = 0, std430) buffer result\n"
+				"{\n"
+				"    uint     nHitsRegistered;\n"
+				"    uint     nMissesRegistered;\n"
+				"    HitProps hits[];\n"
+				"};\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint nHit = atomicAdd(nHitsRegistered, 1);\n"
+				"\n"
+				"    hits[nHit].instanceCustomIndex = gl_InstanceCustomIndexEXT;\n"
+				"}\n";
+
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"hitAttributeEXT vec3 hitAttribute;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    reportIntersectionEXT(0.95f, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				+ de::toString(hitPropsDefinition) +
+				"\n"
+				"layout(set = 0, binding = 0, std430) buffer result\n"
+				"{\n"
+				"    uint     nHitsRegistered;\n"
+				"    uint     nMissesRegistered;\n"
+				"    HitProps hits[];\n"
+				"};\n"
+				"\n"
+				"layout(location = 0) rayPayloadInEXT uint rayIndex;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    atomicAdd(nMissesRegistered, 1);\n"
+				"}\n";
+
+			programCollection.glslSources.add("miss") << glu::MissSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"    uint  rayFlags     = 0;\n"
+				"    float tmin         = 0.001;\n"
+				"    float tmax         = 9.0;\n"
+				"\n"
+				"    uint  cullMask     = 0xFF;\n"
+				"    vec3  cellStartXYZ = vec3(nInvocation * 3.0, 0.0, 0.0);\n"
+				"    vec3  cellEndXYZ   = cellStartXYZ + vec3(1.0);\n"
+				"    vec3  target       = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+				"    vec3  origin       = target - vec3(0, 2, 0);\n"
+				"    vec3  direct       = normalize(target - origin);\n"
+				"\n"
+				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+		}
+	}
+
+	bool verifyResultBuffer (const void* resultDataPtr) const final
+	{
+		const deUint32* resultU32Ptr	= reinterpret_cast<const deUint32*>(resultDataPtr);
+		bool			result			= false;
+
+		typedef struct
+		{
+			deUint32 instanceCustomIndex;
+		} HitProperties;
+
+		std::map<deUint32, deUint32>	customInstanceIndexToHitCountMap;
+		const auto						nHitsReported						= *resultU32Ptr;
+		const auto						nMissesReported						= *(resultU32Ptr + 1);
+
+		if (nHitsReported != m_gridSize[0] * m_gridSize[1] * m_gridSize[2])
+		{
+			goto end;
+		}
+
+		if (nMissesReported != 0)
+		{
+			goto end;
+		}
+
+		for (deUint32 nHit = 0; nHit < nHitsReported; ++nHit)
+		{
+			const HitProperties* hitPropsPtr = reinterpret_cast<const HitProperties*>(resultU32Ptr + 2 /* preamble ints */) + nHit;
+
+			customInstanceIndexToHitCountMap[hitPropsPtr->instanceCustomIndex]++;
+
+			if (customInstanceIndexToHitCountMap[hitPropsPtr->instanceCustomIndex] > 1)
+			{
+				goto end;
+			}
+		}
+
+		for (deUint32 nInstance = 0; nInstance < nHitsReported; ++nInstance)
+		{
+			if (customInstanceIndexToHitCountMap.find(1 + nInstance) == customInstanceIndexToHitCountMap.end() )
+			{
+				goto end;
+			}
+		}
+
+		result = true;
+end:
+		return result;
+	}
+
+private:
+	const AccelerationStructureLayout	m_asStructureLayout;
+	const GeometryType					m_geometryType;
+
+	const tcu::UVec3								m_gridSize;
+	mutable deUint32								m_lastCustomInstanceIndexUsed;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
 
 class CullMaskTest :	public TestBase,
 						public ASPropertyProvider
 {
 public:
-	CullMaskTest()
-		:m_nMaxHitsToRegister			(256),
+	CullMaskTest(	const AccelerationStructureLayout&	asLayout,
+					const GeometryType&					geometryType)
+		:m_asLayout						(asLayout),
+		 m_geometryType					(geometryType),
+		 m_nMaxHitsToRegister			(256),
 		 m_nRaysPerInvocation			(4),
 		 m_lastCustomInstanceIndexUsed	(0),
 		 m_nCullMasksUsed				(1)
@@ -650,16 +1059,6 @@ public:
 	~CullMaskTest()
 	{
 		/* Stub */
-	}
-
-	const ASPropertyProvider* getASPropertyProviderPtr() const final
-	{
-		return dynamic_cast<const ASPropertyProvider*>(this);
-	}
-
-	VkGeometryFlagBitsKHR getBottomLevelGeometryFlags() const final
-	{
-		return VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR;
 	}
 
 	deUint8 getCullMask(const deUint32& nBL, const deUint32& nInstance) const final
@@ -704,6 +1103,30 @@ public:
 	deUint32 getResultBufferSize() const final
 	{
 		return static_cast<deUint32>((1 + m_nMaxHitsToRegister * 2) * sizeof(deUint32) );
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const	final
+	{
+		return {m_tlPtr.get() };
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		m_asProviderPtr.reset(
+				new GridASProvider(	tcu::Vec3	(0,		0,		0),		/* gridStartXYZ          */
+									tcu::Vec3	(1,		1,		1),		/* gridCellSizeXYZ       */
+									tcu::UVec3	(3,		5,		17),	/* gridSizeXYZ           */
+									tcu::Vec3	(2.0f,	2.0f,	2.0f),  /* gridInterCellDeltaXYZ */
+									m_geometryType)
+			);
+
+		m_tlPtr  = m_asProviderPtr->createTLAS(	context,
+												m_asLayout,
+												commandBuffer,
+												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+												this);	/* optASPropertyProviderPtr */
 	}
 
 	void initPrograms(SourceCollections& programCollection) const final
@@ -941,32 +1364,36 @@ public:
 	}
 
 private:
-	const deUint32	m_nMaxHitsToRegister;
-	const deUint32	m_nRaysPerInvocation;
+
+	const AccelerationStructureLayout	m_asLayout;
+	const GeometryType					m_geometryType;
+	const deUint32						m_nMaxHitsToRegister;
+	const deUint32						m_nRaysPerInvocation;
 
 	mutable std::vector<deUint32>	m_instanceCustomIndexVec;
 	mutable deUint32				m_lastCustomInstanceIndexUsed;
 	mutable deUint32				m_nCullMasksUsed;
+
+	std::unique_ptr<GridASProvider>					m_asProviderPtr;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
 
 class NoDuplicateAnyHitTest : public TestBase
 {
 public:
-	NoDuplicateAnyHitTest(const deUint32& nTotalPrimitives)
-		:m_nRaysToTrace		(32),
-		 m_nTotalPrimitives	(nTotalPrimitives)
+	NoDuplicateAnyHitTest(	const AccelerationStructureLayout&	asLayout,
+							const GeometryType&					geometryType)
+		:m_asLayout			(asLayout),
+		 m_geometryType		(geometryType),
+		 m_gridSizeXYZ		(tcu::UVec3(4, 4, 4) ),
+		 m_nRaysToTrace		(32)
 	{
-		DE_ASSERT(nTotalPrimitives != 0);
+		/* Stub */
 	}
 
 	~NoDuplicateAnyHitTest()
 	{
 		/* Stub */
-	}
-
-	VkGeometryFlagBitsKHR getBottomLevelGeometryFlags() const final
-	{
-		return VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR;
 	}
 
 	tcu::UVec3 getDispatchSize() const final
@@ -976,7 +1403,33 @@ public:
 
 	deUint32 getResultBufferSize() const final
 	{
-		return static_cast<deUint32>((1 + 1 + 3 * m_nTotalPrimitives) * sizeof(deUint32) * m_nRaysToTrace);
+		const auto nPrimitives = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+
+		return static_cast<deUint32>((2 /* nHits, nMisses */ + 3 * nPrimitives /* instancePrimitiveIDPairsUsed */) * sizeof(deUint32) * m_nRaysToTrace);
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const	final
+	{
+		return {m_tlPtr.get() };
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		m_asProviderPtr.reset(
+			new GridASProvider(	tcu::Vec3	(0,		0,		0),		/* gridStartXYZ          */
+								tcu::Vec3	(1,		1,		1),		/* gridCellSizeXYZ       */
+								m_gridSizeXYZ,
+								tcu::Vec3	(2.0f,	2.0f,	2.0f),  /* gridInterCellDeltaXYZ */
+								m_geometryType)
+		);
+
+		m_tlPtr  = m_asProviderPtr->createTLAS(	context,
+												m_asLayout,
+												commandBuffer,
+												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+												nullptr);	/* optASPropertyProviderPtr */
 	}
 
 	void initPrograms(SourceCollections& programCollection) const final
@@ -986,11 +1439,12 @@ public:
 														0u,		/* flags        */
 														true);	/* allowSpirv14 */
 
-		const auto hitPropertiesDefinition =	"struct HitProperties\n"
+		const auto nTotalPrimitives			= m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+		const auto hitPropertiesDefinition	=	"struct HitProperties\n"
 												"{\n"
 												"    uint nHitsRegistered;\n"
 												"	 uint nMissRegistered;\n"
-												"    uint instancePrimitiveIDPairsUsed[3 * " + de::toString(m_nTotalPrimitives) + "];\n"
+												"    uint instancePrimitiveIDPairsUsed[3 * " + de::toString(nTotalPrimitives) + "];\n"
 												"};\n";
 
 		{
@@ -1005,7 +1459,7 @@ public:
 				"\n"
 				+ hitPropertiesDefinition +
 				"\n"
-				"layout(location = 0) rayPayloadInEXT      dummy { vec4 dummyVec;};\n"
+				"layout(location = 0) rayPayloadInEXT      dummy { vec3 dummyVec;};\n"
 				"layout(set      = 0, binding = 0, std430) buffer result\n"
 				"{\n"
 				"    HitProperties rayToHitProps[" << de::toString(m_nRaysToTrace) << "];\n"
@@ -1087,7 +1541,7 @@ public:
 				"    float tmin        = 0.001;\n"
 				"    float tmax        = 9.0;\n"
 				"    vec3  origin      = vec3(4,                                  4,                                  4);\n"
-				"    vec3  target      = vec3(float(gl_LaunchIDEXT.x * 2) + 1.0f, float(gl_LaunchIDEXT.y * 2) + 1.0f, float(gl_LaunchIDEXT.z * 2) + 1.0f);\n"
+				"    vec3  target      = vec3(float(gl_LaunchIDEXT.x * 2) + 0.5f, float(gl_LaunchIDEXT.y * 2) + 0.5f, float(gl_LaunchIDEXT.z * 2) + 0.5f);\n"
 				"    vec3  direct      = normalize(target - origin);\n"
 				"\n"
 				"    if (nInvocation >= " << m_nRaysToTrace << ")\n"
@@ -1104,12 +1558,13 @@ public:
 
 	bool verifyResultBuffer (const void* resultDataPtr) const final
 	{
-		bool result = true;
+		const auto	nTotalPrimitives	= m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+		bool		result				= true;
 
 		for (deUint32 nRay = 0; nRay < m_nRaysToTrace; ++nRay)
 		{
 			std::vector<std::tuple<deUint32, deUint32, deUint32> >	tupleVec;
-			const auto												rayProps	= reinterpret_cast<const deUint32*>(resultDataPtr) + (2 + 3 * m_nTotalPrimitives) * nRay;
+			const auto												rayProps	= reinterpret_cast<const deUint32*>(resultDataPtr) + (2 + 3 * nTotalPrimitives) * nRay;
 
 			// 1. At least one ahit invocation must have been made.
 			if (rayProps[0] == 0)
@@ -1120,11 +1575,11 @@ public:
 			}
 
 			// 2. It's OK for each ray to intersect many AABBs, but no AABB should have had >1 ahit invocation fired.
-			for (deUint32 nPrimitive = 0; nPrimitive < m_nTotalPrimitives; nPrimitive++)
+			for (deUint32 nPrimitive = 0; nPrimitive < nTotalPrimitives; nPrimitive++)
 			{
-				const auto instanceID    = rayProps[2 + 3 * nPrimitive + 0];
-				const auto primitiveID   = rayProps[2 + 3 * nPrimitive + 1];
-				const auto geometryIndex = rayProps[2 + 3 * nPrimitive + 2];
+				const auto instanceID    = rayProps[2 /* nHits, nMissesRegistered */ + 3 * nPrimitive + 0];
+				const auto primitiveID   = rayProps[2 /* nHits, nMissesRegistered */ + 3 * nPrimitive + 1];
+				const auto geometryIndex = rayProps[2 /* nHits, nMissesRegistered */ + 3 * nPrimitive + 2];
 
 				const auto currentTuple = std::tuple<deUint32, deUint32, deUint32>(instanceID, primitiveID, geometryIndex);
 
@@ -1159,8 +1614,13 @@ public:
 	}
 
 private:
-	const deUint32 m_nRaysToTrace;
-	const deUint32 m_nTotalPrimitives;
+	const AccelerationStructureLayout	m_asLayout;
+	const GeometryType					m_geometryType;
+	const tcu::UVec3					m_gridSizeXYZ;
+	const deUint32						m_nRaysToTrace;
+
+	std::unique_ptr<GridASProvider>					m_asProviderPtr;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
 
 
@@ -1170,8 +1630,7 @@ class RayTracingMiscTestInstance : public TestInstance
 public:
 	 RayTracingMiscTestInstance (	Context&				context,
 									const CaseDef&			data,
-									const ASProviderBase*	asProviderPtr,
-									const TestBase*			testPtr);
+									TestBase*				testPtr);
 	~RayTracingMiscTestInstance (	void);
 
 	bool			init	(void);
@@ -1184,21 +1643,17 @@ protected:
 private:
 	CaseDef	m_data;
 
-	const ASProviderBase*				m_asProviderPtr;
 	de::MovePtr<RayTracingProperties>	m_rayTracingPropsPtr;
-	const TestBase*						m_testPtr;
+	TestBase*							m_testPtr;
 };
 
 RayTracingMiscTestInstance::RayTracingMiscTestInstance (Context&					context,
 														const CaseDef&				data,
-														const ASProviderBase*		asProviderPtr,
-														const TestBase*				testPtr)
+														TestBase*					testPtr)
 	: vkt::TestInstance	(context)
 	, m_data			(data)
-	, m_asProviderPtr	(asProviderPtr)
 	, m_testPtr			(testPtr)
 {
-	DE_ASSERT(m_asProviderPtr != nullptr);
 }
 
 RayTracingMiscTestInstance::~RayTracingMiscTestInstance(void)
@@ -1227,6 +1682,10 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 	Allocator&				allocator			= m_context.getDefaultAllocator			();
 
 	de::MovePtr<BufferWithMemory>					resultBufferPtr;
+	auto											rtPropertiesPtr		= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice() );
+
+	m_testPtr->init(rtPropertiesPtr.get() );
+
 	const auto										resultBufferSize	= m_testPtr->getResultBufferSize();
 	std::unique_ptr<TopLevelAccelerationStructure>	tlPtr;
 
@@ -1251,9 +1710,9 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																					*descriptorPoolPtr,
 																					*descriptorSetLayoutPtr);
 
-	const Move<VkPipelineLayout>		pipelineLayoutPtr		= makePipelineLayout(	deviceInterface,
-																						deviceVk,
-																						descriptorSetLayoutPtr.get() );
+	const Move<VkPipelineLayout>		pipelineLayoutPtr		= m_testPtr->getPipelineLayout(	deviceInterface,
+																								deviceVk,
+																								descriptorSetLayoutPtr.get() );
 
 	const Move<VkCommandPool>			cmdPoolPtr				= createCommandPool(deviceInterface,
 																					deviceVk,
@@ -1289,20 +1748,25 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																			0); /* flags */
 
 		rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-											raygenShader,
-											static_cast<deUint32>(ShaderGroups::RAYGEN_GROUP) );
+											makeVkSharedPtr(raygenShader),
+											static_cast<deUint32>(ShaderGroups::RAYGEN_GROUP),
+											m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_RAYGEN_BIT_KHR) );
 		rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
-											hitShader,
-											static_cast<deUint32>(ShaderGroups::HIT_GROUP) );
+											makeVkSharedPtr(hitShader),
+											static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+											m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_ANY_HIT_BIT_KHR) );
 		rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_MISS_BIT_KHR,
-											missShader,
-											static_cast<deUint32>(ShaderGroups::MISS_GROUP) );
+											makeVkSharedPtr(missShader),
+											static_cast<deUint32>(ShaderGroups::MISS_GROUP),
+											m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_MISS_BIT_KHR) );
 
-		if (m_data.geometryType == GeometryType::AABB)
+		if (m_data.geometryType == GeometryType::AABB				||
+			m_data.geometryType == GeometryType::AABB_AND_TRIANGLES)
 		{
 			rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-												intersectionShader,
-												static_cast<deUint32>(ShaderGroups::HIT_GROUP) );
+												makeVkSharedPtr(intersectionShader),
+												static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+												m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_INTERSECTION_BIT_KHR) );
 		}
 
 		pipelineVkPtr = rayTracingPipelinePtr->createPipeline(	deviceInterface,
@@ -1351,11 +1815,17 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 						*cmdBufferPtr,
 						0u /* flags */);
 	{
-		tlPtr = m_asProviderPtr->createTLAS(m_context,
-											m_data.asLayout,
-											*cmdBufferPtr,
-											m_testPtr->getBottomLevelGeometryFlags(),
-											m_testPtr->getASPropertyProviderPtr   ());
+		m_testPtr->initAS(	m_context,
+							rtPropertiesPtr.get(),
+							*cmdBufferPtr);
+
+		std::vector<TopLevelAccelerationStructure*> tlasPtrVec = m_testPtr->getTLASPtrVecToBind();
+		std::vector<VkAccelerationStructureKHR>		tlasVkVec;
+
+		for (auto& currentTLASPtr : tlasPtrVec)
+		{
+			tlasVkVec.push_back(*currentTLASPtr->getPtr() );
+		}
 
 		deviceInterface.cmdFillBuffer(	*cmdBufferPtr,
 										**resultBufferPtr,
@@ -1382,8 +1852,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 			{
 				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	//  VkStructureType						sType;
 				DE_NULL,															//  const void*							pNext;
-				1u,																	//  deUint32							accelerationStructureCount;
-				tlPtr->getPtr(),													//  const VkAccelerationStructureKHR*	pAccelerationStructures;
+				static_cast<deUint32>(tlasVkVec.size() ),							//  deUint32							accelerationStructureCount;
+				tlasVkVec.data(),													//  const VkAccelerationStructureKHR*	pAccelerationStructures;
 			};
 
 			const auto descriptorResultBufferInfo = makeDescriptorBufferInfo(	**resultBufferPtr,
@@ -1395,9 +1865,10 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 								DescriptorSetUpdateBuilder::Location::binding(0u),
 								VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 								&descriptorResultBufferInfo)
-				.writeSingle(	*descriptorSetPtr,
+				.writeArray(	*descriptorSetPtr,
 								DescriptorSetUpdateBuilder::Location::binding(1u),
 								VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+								static_cast<deUint32>(tlasVkVec.size() ),
 								&accelerationStructureWriteDescriptorSet)
 				.update		(	deviceInterface,
 								deviceVk);
@@ -1428,6 +1899,7 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 		}
 
 		{
+			const auto	nTraceRaysInvocationsNeeded			= m_testPtr->getNTraceRayInvocationsNeeded();
 			const auto	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																														deviceVk,
 																														raygenShaderBindingTablePtr->get(),
@@ -1450,15 +1922,23 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																								0, /* stride */
 																								0  /* size   */);
 
-			cmdTraceRays(	deviceInterface,
-							*cmdBufferPtr,
-							&raygenShaderBindingTableRegion,
-							&missShaderBindingTableRegion,
-							&hitShaderBindingTableRegion,
-							&callableShaderBindingTableRegion,
-							m_testPtr->getDispatchSize()[0],
-							m_testPtr->getDispatchSize()[1],
-							m_testPtr->getDispatchSize()[2]);
+			for (deUint32 nInvocation = 0; nInvocation < nTraceRaysInvocationsNeeded; ++nInvocation)
+			{
+				m_testPtr->onBeforeCmdTraceRays(nInvocation,
+												m_context,
+												*cmdBufferPtr,
+												*pipelineLayoutPtr);
+
+				cmdTraceRays(	deviceInterface,
+								*cmdBufferPtr,
+								&raygenShaderBindingTableRegion,
+								&missShaderBindingTableRegion,
+								&hitShaderBindingTableRegion,
+								&callableShaderBindingTableRegion,
+								m_testPtr->getDispatchSize()[0],
+								m_testPtr->getDispatchSize()[1],
+								m_testPtr->getDispatchSize()[2]);
+			}
 		}
 
 		{
@@ -1518,9 +1998,8 @@ class RayTracingTestCase : public TestCase
 	void					initPrograms		(SourceCollections& programCollection)	const final;
 
 private:
-	mutable std::unique_ptr<ASProviderBase>	m_asProviderPtr;
-	CaseDef									m_data;
-	mutable std::unique_ptr<TestBase>		m_testPtr;
+	CaseDef								m_data;
+	mutable std::unique_ptr<TestBase>	m_testPtr;
 };
 
 RayTracingTestCase::RayTracingTestCase (tcu::TestContext&	context,
@@ -1532,41 +2011,6 @@ RayTracingTestCase::RayTracingTestCase (tcu::TestContext&	context,
 						desc)
 	, m_data		(	data)
 {
-	switch (m_data.type)
-	{
-		case TestType::CULL_MASK:
-		{
-			m_asProviderPtr.reset(
-				new GridASProvider(	tcu::Vec3	(0,		0,		0),		/* gridStartXYZ          */
-									tcu::Vec3	(1,		1,		1),		/* gridCellSizeXYZ       */
-									tcu::UVec3	(3,		5,		17),	/* gridSizeXYZ           */
-									tcu::Vec3	(2.0f,	2.0f,	2.0f),  /* gridInterCellDeltaXYZ */
-									data.geometryType)
-			);
-
-			break;
-		}
-
-		case TestType::NO_DUPLICATE_ANY_HIT:
-		{
-			m_asProviderPtr.reset(
-				new GridASProvider(	tcu::Vec3	(0,		0,		0),		/* gridStartXYZ          */
-									tcu::Vec3	(1,		1,		1),		/* gridCellSizeXYZ       */
-									tcu::UVec3	(4,		4,		4),		/* gridSizeXYZ           */
-									tcu::Vec3	(2.0f,	2.0f,	2.0f),  /* gridInterCellDeltaXYZ */
-									data.geometryType)
-			);
-
-			break;
-		}
-
-		default:
-		{
-			deAssertFail(	"This location should never be reached",
-							__FILE__,
-							__LINE__);
-		}
-	}
 }
 
 RayTracingTestCase::~RayTracingTestCase	(void)
@@ -1596,12 +2040,21 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 {
 	switch (m_data.type)
 	{
+		case TestType::AABBS_AND_TRIS_IN_ONE_TL:
+		{
+			m_testPtr.reset(
+				new AABBTriTLTest(m_data.geometryType, m_data.asLayout)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
 		case TestType::CULL_MASK:
 		{
-			DE_ASSERT(m_asProviderPtr != nullptr);
-
 			m_testPtr.reset(
-				new CullMaskTest()
+				new CullMaskTest(m_data.asLayout, m_data.geometryType)
 			);
 
 			m_testPtr->initPrograms(programCollection);
@@ -1611,10 +2064,8 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 
 		case TestType::NO_DUPLICATE_ANY_HIT:
 		{
-			DE_ASSERT(m_asProviderPtr != nullptr);
-
 			m_testPtr.reset(
-				new NoDuplicateAnyHitTest(m_asProviderPtr->getNPrimitives() )
+				new NoDuplicateAnyHitTest(m_data.asLayout, m_data.geometryType)
 			);
 
 			m_testPtr->initPrograms(programCollection);
@@ -1635,12 +2086,24 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 {
 	switch (m_data.type)
 	{
+		case TestType::AABBS_AND_TRIS_IN_ONE_TL:
+		{
+			if (m_testPtr == nullptr)
+			{
+				m_testPtr.reset(
+					new AABBTriTLTest(m_data.geometryType, m_data.asLayout)
+				);
+			}
+
+			break;
+		}
+
 		case TestType::CULL_MASK:
 		{
 			if (m_testPtr == nullptr)
 			{
 				m_testPtr.reset(
-					new CullMaskTest()
+					new CullMaskTest(m_data.asLayout, m_data.geometryType)
 				);
 			}
 
@@ -1652,7 +2115,7 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			if (m_testPtr == nullptr)
 			{
 				m_testPtr.reset(
-					new NoDuplicateAnyHitTest(m_asProviderPtr->getNPrimitives() )
+					new NoDuplicateAnyHitTest(m_data.asLayout, m_data.geometryType)
 				);
 			}
 
@@ -1669,7 +2132,6 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 
 	auto newTestInstancePtr = new RayTracingMiscTestInstance(	context,
 																m_data,
-																m_asProviderPtr.get	(),
 																m_testPtr.get		() );
 
 	newTestInstancePtr->init();
@@ -1707,10 +2169,19 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
 															newTestCaseName.data(),
 															"Verifies the NO_DUPLICATE_ANY_HIT flag is adhered to when tracing rays",
-															CaseDef{TestType::NO_DUPLICATE_ANY_HIT, GeometryType::AABB, currentASLayout});
+															CaseDef{TestType::NO_DUPLICATE_ANY_HIT, currentGeometryType, currentASLayout});
 
 			miscGroupPtr->addChild(newTestCasePtr);
 		}
+	}
+
+	{
+		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+														"mixedPrimTL",
+														"Verifies top-level acceleration structures built of AABB and triangle bottom-level AS instances work as expected",
+														CaseDef{TestType::AABBS_AND_TRIS_IN_ONE_TL, GeometryType::AABB_AND_TRIANGLES, AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES});
+
+		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
 	return miscGroupPtr.release();
