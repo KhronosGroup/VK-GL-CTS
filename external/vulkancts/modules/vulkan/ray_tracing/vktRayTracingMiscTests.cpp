@@ -74,6 +74,7 @@ enum class TestType
 	AS_STRESS_TEST,
 	CULL_MASK,
 	MAX_RAY_HIT_ATTRIBUTE_SIZE,
+	CULL_MASK_EXTRA_BITS,
 	NO_DUPLICATE_ANY_HIT
 };
 
@@ -1434,11 +1435,13 @@ class CullMaskTest :	public TestBase,
 {
 public:
 	CullMaskTest(	const AccelerationStructureLayout&	asLayout,
-					const GeometryType&					geometryType)
+					const GeometryType&					geometryType,
+					const bool&							useExtraCullMaskBits)
 		:m_asLayout						(asLayout),
 		 m_geometryType					(geometryType),
 		 m_nMaxHitsToRegister			(256),
 		 m_nRaysPerInvocation			(4),
+		 m_useExtraCullMaskBits			(useExtraCullMaskBits),
 		 m_lastCustomInstanceIndexUsed	(0),
 		 m_nCullMasksUsed				(1)
 	{
@@ -1644,7 +1647,14 @@ public:
 				"\n"
 				"    for (uint nRay = 0; nRay < nRaysPerInvocation; ++nRay)\n"
 				"    {\n"
-				"        uint  cullMask     = 1 + nInvocation * nRaysPerInvocation + nRay;\n"
+				"        uint  cullMask     = 1 + nInvocation * nRaysPerInvocation + nRay;\n";
+
+			if (m_useExtraCullMaskBits)
+			{
+				css << "cullMask |= 0x00FFFFFF;\n";
+			}
+
+			css <<
 				"        uint  nCell        = nInvocation * nRaysPerInvocation + nRay;\n"
 				"        uvec3 cellXYZ      = uvec3(nCell % gl_LaunchSizeEXT.x, (nCell / gl_LaunchSizeEXT.x) % gl_LaunchSizeEXT.y, (nCell / gl_LaunchSizeEXT.x / gl_LaunchSizeEXT.y) % gl_LaunchSizeEXT.z);\n"
 				"        vec3  cellStartXYZ = vec3(cellXYZ) * vec3(2.0);\n"
@@ -1764,6 +1774,7 @@ private:
 	const GeometryType					m_geometryType;
 	const deUint32						m_nMaxHitsToRegister;
 	const deUint32						m_nRaysPerInvocation;
+	const bool							m_useExtraCullMaskBits;
 
 	mutable std::vector<deUint32>	m_instanceCustomIndexVec;
 	mutable deUint32				m_lastCustomInstanceIndexUsed;
@@ -2781,6 +2792,7 @@ RayTracingTestCase::RayTracingTestCase (tcu::TestContext&	context,
 						desc)
 	, m_data		(	data)
 {
+	/* Stub */
 }
 
 RayTracingTestCase::~RayTracingTestCase	(void)
@@ -2835,9 +2847,10 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 		}
 
 		case TestType::CULL_MASK:
+		case TestType::CULL_MASK_EXTRA_BITS:
 		{
 			m_testPtr.reset(
-				new CullMaskTest(m_data.asLayout, m_data.geometryType)
+				new CullMaskTest(m_data.asLayout, m_data.geometryType, (m_data.type == TestType::CULL_MASK_EXTRA_BITS) )
 			);
 
 			m_testPtr->initPrograms(programCollection);
@@ -2905,11 +2918,12 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 		}
 
 		case TestType::CULL_MASK:
+		case TestType::CULL_MASK_EXTRA_BITS:
 		{
 			if (m_testPtr == nullptr)
 			{
 				m_testPtr.reset(
-					new CullMaskTest(m_data.asLayout, m_data.geometryType)
+					new CullMaskTest(m_data.asLayout, m_data.geometryType, (m_data.type == TestType::CULL_MASK_EXTRA_BITS) )
 				);
 			}
 
@@ -2968,26 +2982,19 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
 	{
-		const std::string newTestCaseName = "AS_stresstest_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
+		for (int nUseExtraCullMaskBits = 0; nUseExtraCullMaskBits < 2 /* false, true */; ++nUseExtraCullMaskBits)
+		{
+			const std::string	newTestCaseName	= "cullmask_" + de::toString(getSuffixForGeometryType(currentGeometryType) ) + de::toString((nUseExtraCullMaskBits) ? "_extrabits" : "");
+			const auto			testType		= (nUseExtraCullMaskBits == 0)	? TestType::CULL_MASK
+																				: TestType::CULL_MASK_EXTRA_BITS;
 
-		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
-														newTestCaseName.data(),
-														"Verifies raygen shader invocations can simultaneously access as many AS instances as reported",
-														CaseDef{TestType::AS_STRESS_TEST, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
+			auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+															newTestCaseName.data(),
+															"Verifies cull mask works as specified",
+															CaseDef{testType, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
 
-		miscGroupPtr->addChild(newTestCasePtr);
-	}
-
-	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
-	{
-		const std::string newTestCaseName = "cullmask_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
-
-		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
-														newTestCaseName.data(),
-														"Verifies cull mask works as specified",
-														CaseDef{TestType::CULL_MASK, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
-
-		miscGroupPtr->addChild(newTestCasePtr);
+			miscGroupPtr->addChild(newTestCasePtr);
+		}
 	}
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
