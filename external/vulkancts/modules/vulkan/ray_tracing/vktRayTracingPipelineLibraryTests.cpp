@@ -68,6 +68,7 @@ struct TestParams
 {
 	LibraryConfiguration				libraryConfiguration;
 	bool								multithreadedCompilation;
+	bool								pipelinesCreatedUsingDHO;
 	deUint32							width;
 	deUint32							height;
 };
@@ -167,6 +168,11 @@ void RayTracingPipelineLibraryTestCase::checkSupport(Context& context) const
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
 	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
 		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+
+	if (m_data.pipelinesCreatedUsingDHO)
+	{
+		context.requireDeviceFunctionality("VK_KHR_deferred_host_operations");
+	}
 }
 
 void RayTracingPipelineLibraryTestCase::initPrograms (SourceCollections& programCollection) const
@@ -399,6 +405,9 @@ de::MovePtr<BufferWithMemory> RayTracingPipelineLibraryTestInstance::runTest ()
 
 		// create pipeline objects
 		de::SharedPtr<de::MovePtr<RayTracingPipeline>> pipeline = makeVkSharedPtr(de::MovePtr<RayTracingPipeline>(new RayTracingPipeline));
+
+		(*pipeline)->setDeferredOperation(m_data.pipelinesCreatedUsingDHO);
+
 		// all pipelines are pipeline libraries, except for the main pipeline
 		if(idx>0)
 			pipeline->get()->setCreateFlags(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR);
@@ -590,11 +599,13 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 	struct ThreadData
 	{
 		bool									multithreaded;
+		bool									pipelinesCreatedUsingDHO;
 		const char*								name;
 	} threadData[] =
 	{
-		{ false,	"singlethreaded_compilation"	},
-		{ true,		"multithreaded_compilation"	},
+		{ false,	false,	"singlethreaded_compilation"	},
+		{ true,		false,	"multithreaded_compilation"		},
+		{ true,		true,	"multithreaded_compilation_dho"	},
 	};
 
 	struct LibraryConfigurationData
@@ -627,6 +638,7 @@ void addPipelineLibraryConfigurationsTests (tcu::TestCaseGroup* group)
 			{
 				libraryConfigurationData[libConfigNdx].libraryConfiguration,
 				threadData[threadNdx].multithreaded,
+				threadData[threadNdx].pipelinesCreatedUsingDHO,
 				RTPL_DEFAULT_SIZE,
 				RTPL_DEFAULT_SIZE
 			};
