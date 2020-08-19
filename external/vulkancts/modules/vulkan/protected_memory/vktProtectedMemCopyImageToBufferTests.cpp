@@ -82,10 +82,11 @@ public:
 														 const std::string&		name,
 														 vk::VkClearColorValue	fillValue,
 														 ValidationData<T>		data,
-														 CmdBufferType			cmdBufferType)
+														 CmdBufferType			cmdBufferType,
+														 vk::VkFormat			format)
 								: TestCase				(testCtx, name, "Copy image to buffer.")
 								, m_fillValue			(fillValue)
-								, m_validator			(data)
+								, m_validator			(data, format)
 								, m_cmdBufferType		(cmdBufferType)
 							{
 							}
@@ -366,7 +367,7 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 		DE_ASSERT(testData[ndx].data.positions[3].x() < MAX_POSITION);
 
 		const std::string name = "copy_" + de::toString(ndx + 1);
-		copyStaticTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdBufferType));
+		copyStaticTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
 	}
 
 	/* Add a few randomized tests */
@@ -394,7 +395,7 @@ tcu::TestCaseGroup*	createCopyImageToFloatBufferTests(tcu::TestContext& testCtx,
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		copyRandomTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), clearValue.color, data, cmdBufferType));
+		copyRandomTests->addChild(new CopyImageToBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), clearValue.color, data, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
 	}
 
 	std::string groupName = getCmdBufferTypeStr(cmdBufferType);

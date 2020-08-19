@@ -202,12 +202,13 @@ public:
 														 const char*				name,
 														 const tcu::UVec4			testInput,
 														 ValidationDataStorage<T>	validationData,
+														 vk::VkFormat				format,
 														 const std::string&			extraShader = "")
 									: TestCase		(testctx, name, getSSBOTestDescription(testType))
 									, m_testType	(testType)
 									, m_shaderType	(shaderType)
 									, m_testInput	(testInput)
-									, m_validator	(validationData)
+									, m_validator	(validationData, format)
 									, m_extraShader	(extraShader)
 								{
 								}
@@ -676,7 +677,7 @@ tcu::TestCaseGroup* createSpecifiedStorageBufferTests (tcu::TestContext&						te
 	for (size_t ndx = 0; ndx < testCount; ++ndx)
 	{
 		const std::string name = testTypeStr + "_" + de::toString(ndx + 1);
-		testGroup->addChild(new StorageBufferTestCase<tcu::UVec4>(testCtx, testType, shaderType, name.c_str(), testData[ndx].values, testData[ndx]));
+		testGroup->addChild(new StorageBufferTestCase<tcu::UVec4>(testCtx, testType, shaderType, name.c_str(), testData[ndx].values, testData[ndx], vk::VK_FORMAT_R32G32B32A32_UINT));
 	}
 
 	return testGroup.release();
@@ -871,7 +872,7 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testctx)
 				calculateAtomicOpData(atomicType, inputValue, atomicArg, atomicCall, refValue, testData[ndx].swapNdx);
 
 				ValidationDataStorage<tcu::UVec4>	validationData	= { refValue };
-				staticTests->addChild(new StorageBufferTestCase<tcu::UVec4>(testctx, SSBO_ATOMIC, shaderType, name.c_str(), inputValue, validationData, atomicCall));
+				staticTests->addChild(new StorageBufferTestCase<tcu::UVec4>(testctx, SSBO_ATOMIC, shaderType, name.c_str(), inputValue, validationData, vk::VK_FORMAT_R32G32B32A32_UINT, atomicCall));
 			}
 
 			de::MovePtr<tcu::TestCaseGroup>	randomTests		(new tcu::TestCaseGroup(testctx, "random", (atomicDesc + " with random input").c_str()));
@@ -889,7 +890,7 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testctx)
 				calculateAtomicOpData(atomicType, inputValue, atomicArg, atomicCall, refValue, ndx);
 
 				ValidationDataStorage<tcu::UVec4>	validationData	= { refValue };
-				randomTests->addChild(new StorageBufferTestCase<tcu::UVec4>(testctx, SSBO_ATOMIC, shaderType, name.c_str(), inputValue, validationData, atomicCall));
+				randomTests->addChild(new StorageBufferTestCase<tcu::UVec4>(testctx, SSBO_ATOMIC, shaderType, name.c_str(), inputValue, validationData, vk::VK_FORMAT_R32G32B32A32_UINT, atomicCall));
 
 			}
 

@@ -99,10 +99,11 @@ public:
 															 deUint32				fillValue,
 															 ValidationData<T>		data,
 															 CmdType				cmdType,
-															 CmdBufferType			cmdBufferType)
+															 CmdBufferType			cmdBufferType,
+															 vk::VkFormat			format)
 								: TestCase			(testCtx, name, getTestTypeName(cmdType))
 								, m_fillValue		(fillValue)
-								, m_validator		(data)
+								, m_validator		(data, format)
 								, m_cmdType			(cmdType)
 								, m_cmdBufferType	(cmdBufferType)
 							{
@@ -358,7 +359,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 
 		const std::string name = "test_" + de::toString(ndx + 1);
 		staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(
-							testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType));
+			testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
 	}
 
 	/* Add a few randomized tests */
@@ -390,7 +391,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferFloatTests (tcu::TestContext& test
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType, cmdBufferType));
+		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::Vec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SFLOAT));
 	}
 
 	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
@@ -469,7 +470,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 
 		const std::string name = "test_" + de::toString(ndx + 1);
 		staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::IVec4>(
-							testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType));
+			testCtx, name.c_str(), testData[ndx].fillValue.uint, testData[ndx].data, cmdType, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SINT));
 	}
 
 	/* Add a few randomized tests */
@@ -501,7 +502,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferIntegerTests (tcu::TestContext& te
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::IVec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType, cmdBufferType));
+		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::IVec4>(testCtx, name.c_str(), fillValue.uint, data, cmdType, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_SINT));
 	}
 
 	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
@@ -577,7 +578,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 
 		const std::string name = "test_" + de::toString(ndx + 1);
 		staticTests->addChild(new FillUpdateCopyBufferTestCase<tcu::UVec4>(
-							testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdType, cmdBufferType));
+			testCtx, name.c_str(), testData[ndx].fillValue, testData[ndx].data, cmdType, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_UINT));
 	}
 
 	/* Add a few randomized tests */
@@ -605,7 +606,7 @@ tcu::TestCaseGroup*	createFillUpdateCopyBufferUnsignedTests (tcu::TestContext& t
 		DE_ASSERT(data.positions[2].x() < MAX_POSITION);
 		DE_ASSERT(data.positions[3].x() < MAX_POSITION);
 
-		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::UVec4>(testCtx, name.c_str(), fillValue, data, cmdType, cmdBufferType));
+		randomTests->addChild(new FillUpdateCopyBufferTestCase<tcu::UVec4>(testCtx, name.c_str(), fillValue, data, cmdType, cmdBufferType, vk::VK_FORMAT_R32G32B32A32_UINT));
 	}
 
 	const std::string				groupName		= getCmdBufferTypeStr(cmdBufferType);
