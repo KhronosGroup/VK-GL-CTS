@@ -121,6 +121,7 @@ struct TestParams
 	deUint32							sbtOffset;
 	bool								shaderRecordPresent;
 	deUint32							sbtRecordOffset;
+	deUint32							sbtRecordOffsetPassedToTraceRay;
 	deUint32							sbtRecordStride;
 	deUint32							sbtRecordStridePassedToTraceRay;
 	de::SharedPtr<TestConfiguration>	testConfiguration;
@@ -289,17 +290,17 @@ de::MovePtr<BufferWithMemory> CheckerboardConfiguration::initUniformBuffer (Cont
 	{
 		case STT_HIT:
 		{
-			uniformValue = tcu::UVec4(testParams.sbtRecordOffset, testParams.sbtRecordStridePassedToTraceRay, 0, 0);
+			uniformValue = tcu::UVec4(testParams.sbtRecordOffsetPassedToTraceRay, testParams.sbtRecordStride, 0, 0);
 			break;
 		}
 		case STT_MISS:
 		{
-			uniformValue = tcu::UVec4(0, 0, testParams.sbtRecordOffset, 0);
+			uniformValue = tcu::UVec4(0, 0, testParams.sbtRecordOffsetPassedToTraceRay, 0);
 			break;
 		}
 		case STT_CALL:
 		{
-			uniformValue = tcu::UVec4(testParams.sbtRecordOffset, testParams.sbtRecordStridePassedToTraceRay, 0, 0);
+			uniformValue = tcu::UVec4(testParams.sbtRecordOffsetPassedToTraceRay, testParams.sbtRecordStride, 0, 0);
 			break;
 		}
 		default:
@@ -1032,10 +1033,12 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 			{
 				de::MovePtr<tcu::TestCaseGroup> shaderRecordGroup(new tcu::TestCaseGroup(group->getTestContext(), shaderRecords[shaderRecordNdx].name, ""));
 
-				deUint32 maxSbtRecordStride	= (shaderTestTypes[shaderTestNdx].shaderTestType == STT_HIT) ? MAX_HIT_SBT_RECORD_STRIDE + 1 : 1;
-				deUint32 maxSbtRecordOffset	= MAX_SBT_RECORD_OFFSET;
+				deUint32		maxSbtRecordStride				= (shaderTestTypes[shaderTestNdx].shaderTestType == STT_HIT) ? MAX_HIT_SBT_RECORD_STRIDE + 1 : 1;
+				deUint32		maxSbtRecordOffset				= MAX_SBT_RECORD_OFFSET;
+				const deUint32	maxSbtRecordOffsetWithExtraBits = (shaderTestTypes[shaderTestNdx].shaderTestType == STT_MISS)	? MAX_SBT_RECORD_OFFSET | (~((1u << 16) - 1))  //< Only 16 least significant bits matter for miss indices
+																																: MAX_SBT_RECORD_OFFSET | (~((1u << 4)  - 1)); //< Only 4 least significant bits matter for SBT record offsets
 
-				for (deUint32 sbtRecordOffset = 0; sbtRecordOffset <  maxSbtRecordOffset; ++sbtRecordOffset)
+				for (deUint32 sbtRecordOffset = 0; sbtRecordOffset <= maxSbtRecordOffset; ++sbtRecordOffset)
 				for (deUint32 sbtRecordStride = 0; sbtRecordStride <= maxSbtRecordStride; ++sbtRecordStride)
 				{
 					if ((shaderTestTypes[shaderTestNdx].shaderTestType	!= STT_HIT)				&&
@@ -1051,7 +1054,9 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 						shaderTestTypes[shaderTestNdx].shaderTestType,
 						shaderBufferOffsets[sbtOffsetNdx].sbtOffset,
 						shaderRecords[shaderRecordNdx].present,
-						sbtRecordOffset & ((1u << 4) - 1),
+						sbtRecordOffset,
+						(sbtRecordOffset == maxSbtRecordOffset)	? maxSbtRecordOffsetWithExtraBits
+																: sbtRecordOffset,
 						//< Only first 4 least significant bits matter for SBT record stride
 						sbtRecordStride,
 						(sbtRecordStride == maxSbtRecordStride)	? maxSbtRecordStride | (~((1u << 4) - 1))
@@ -1065,6 +1070,11 @@ tcu::TestCaseGroup*	createShaderBindingTableTests (tcu::TestContext& testCtx)
 					if (testParams.sbtRecordStride != testParams.sbtRecordStridePassedToTraceRay)
 					{
 						str << "_extraSBTRecordStrideBits";
+					}
+
+					if (testParams.sbtRecordOffset != testParams.sbtRecordOffsetPassedToTraceRay)
+					{
+						str << "_extrabits";
 					}
 
 					shaderRecordGroup->addChild(new ShaderBindingTableIndexingTestCase(group->getTestContext(), str.str().c_str(), "", testParams));
