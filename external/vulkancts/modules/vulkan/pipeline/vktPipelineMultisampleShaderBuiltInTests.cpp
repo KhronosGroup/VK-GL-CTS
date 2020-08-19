@@ -1543,6 +1543,10 @@ void WriteSampleMaskTestCase::checkSupport (Context& context) const
 	const auto&	vki				= context.getInstanceInterface();
 	const auto	physicalDevice	= context.getPhysicalDevice();
 
+	// Check if sampleRateShading is supported.
+	if(!vk::getPhysicalDeviceFeatures(vki, physicalDevice).sampleRateShading)
+		TCU_THROW(NotSupportedError, "Sample rate shading is not supported");
+
 	// Check the specific image format.
 	const auto properties = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, kImageFormat);
 	if (!(properties.optimalTilingFeatures & kFeatureFlags))

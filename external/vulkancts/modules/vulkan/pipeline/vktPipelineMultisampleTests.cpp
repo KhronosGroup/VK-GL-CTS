@@ -3676,6 +3676,10 @@ void VariableRateTestCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Variable multisample rate not supported");
 	}
 
+	// Check if sampleRateShading is supported.
+	if(!vk::getPhysicalDeviceFeatures(vki, physicalDevice).sampleRateShading)
+		TCU_THROW(NotSupportedError, "Sample rate shading is not supported");
+
 	// Make sure all subpass sample counts are supported.
 	const auto	properties		= vk::getPhysicalDeviceProperties(vki, physicalDevice);
 	const auto&	supportedCounts	= properties.limits.framebufferNoAttachmentsSampleCounts;
