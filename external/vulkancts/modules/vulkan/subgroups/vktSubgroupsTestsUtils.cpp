@@ -3974,14 +3974,15 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
 	const Unique<VkCommandBuffer> cmdBuffer(
 		makeCommandBuffer(context, *cmdPool));
 
-	Move<VkPipeline> *pipelines = new Move<VkPipeline>[localSizesToTestCount - 1];
+	std::vector<de::SharedPtr<Move<VkPipeline>>> pipelines(localSizesToTestCount);
 
 	context.getTestContext().touchWatchdog();
 	pipelines[0] =
-		makeComputePipeline(context, *pipelineLayout, *shaderModule,
-							pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, (VkPipeline) DE_NULL,
-							localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2],
-							isRequiredSubgroupSize ? subgroupSize : 0u);
+		de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(
+			makeComputePipeline(context, *pipelineLayout, *shaderModule,
+								pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT, (VkPipeline) DE_NULL,
+								localSizesToTest[0][0], localSizesToTest[0][1], localSizesToTest[0][2],
+								isRequiredSubgroupSize ? subgroupSize : 0u)));
 	context.getTestContext().touchWatchdog();
 
 	for (deUint32 index = 1; index < (localSizesToTestCount - 1); index++)
@@ -3992,10 +3993,11 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
 
 		context.getTestContext().touchWatchdog();
 		pipelines[index] =
-			makeComputePipeline(context, *pipelineLayout, *shaderModule,
-								pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_DERIVATIVE_BIT, *pipelines[0],
-								nextX, nextY, nextZ,
-								isRequiredSubgroupSize ? subgroupSize : 0u);
+			de::SharedPtr<Move<VkPipeline>>(new Move<VkPipeline>(
+				makeComputePipeline(context, *pipelineLayout, *shaderModule,
+									pipelineShaderStageCreateFlags, VK_PIPELINE_CREATE_DERIVATIVE_BIT, **pipelines[0],
+									nextX, nextY, nextZ,
+									isRequiredSubgroupSize ? subgroupSize : 0u)));
 		context.getTestContext().touchWatchdog();
 	}
 
@@ -4007,7 +4009,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
-		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelines[index]);
+		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, **pipelines[index]);
 
 		vk.cmdBindDescriptorSets(*cmdBuffer,
 				VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
@@ -4048,8 +4050,6 @@ tcu::TestStatus vkt::subgroups::makeComputeTestRequiredSubgroupSize(
 
 		vk.resetCommandBuffer(*cmdBuffer, 0);
 	}
-
-	delete[] pipelines;
 
 	if (0 < failedIterations)
 	{
