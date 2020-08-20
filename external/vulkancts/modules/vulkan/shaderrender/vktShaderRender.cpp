@@ -2277,7 +2277,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			vk.cmdDrawIndexed(*cmdBuffer, numIndices, 1, 0, 0, 0);
 		}
 		else
-			vk.cmdDraw(*cmdBuffer, numVertices,  1, 0, 1);
+			vk.cmdDraw(*cmdBuffer, numVertices,  1, 0, 0);
 
 		endRenderPass(vk, *cmdBuffer);
 		endCommandBuffer(vk, *cmdBuffer);
