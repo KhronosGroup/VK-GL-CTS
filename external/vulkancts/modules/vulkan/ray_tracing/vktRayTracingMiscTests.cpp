@@ -71,6 +71,7 @@ enum class ShaderGroups
 enum class TestType
 {
 	AABBS_AND_TRIS_IN_ONE_TL,
+	AS_STRESS_TEST,
 	CULL_MASK,
 	NO_DUPLICATE_ANY_HIT
 };
@@ -596,6 +597,9 @@ private:
 	{
 		const auto nCellsNeeded = m_gridSizeXYZ.x() * m_gridSizeXYZ.y() * m_gridSizeXYZ.z();
 
+		m_aabbVertexVec.clear();
+		m_triVertexVec.clear ();
+
 		for (auto	nCell = 0u;
 					nCell < nCellsNeeded;
 					nCell++)
@@ -753,6 +757,11 @@ public:
 	virtual void										initPrograms				(	SourceCollections&		programCollection)	const	= 0;
 	virtual bool										verifyResultBuffer			(	const void*				inBufferPtr)		const	= 0;
 
+	virtual deUint32 getASBindingArraySize() const
+	{
+		return 1u;
+	}
+
 	virtual deUint32 getNTraceRayInvocationsNeeded() const
 	{
 		return 1;
@@ -858,7 +867,7 @@ public:
 		m_tlPtr  = asProviderPtr->createTLAS(	context,
 												m_asStructureLayout,
 												commandBuffer,
-												0,		/* bottomLevelGeometryFlags */
+												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
 												this);	/* optASPropertyProviderPtr */
 	}
 
@@ -1039,6 +1048,363 @@ private:
 	mutable deUint32								m_lastCustomInstanceIndexUsed;
 	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
+
+class ASStressTest :	public TestBase,
+						public ASPropertyProvider
+{
+public:
+	ASStressTest(	const GeometryType&					geometryType,
+					const AccelerationStructureLayout&	asStructureLayout)
+		:	m_asStructureLayout				(asStructureLayout),
+			m_geometryType					(geometryType),
+			m_lastCustomInstanceIndexUsed	(0),
+			m_nASesToUse					(0),
+			m_nMaxASToUse					(16u)
+	{
+	}
+
+	~ASStressTest()
+	{
+		/* Stub */
+	}
+
+	deUint32 getASBindingArraySize() const final
+	{
+		DE_ASSERT(m_nASesToUse != 0);
+
+		return m_nASesToUse;
+	}
+
+	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
+	{
+		DE_UNREF(nBL);
+		DE_UNREF(nInstance);
+
+		return ++m_lastCustomInstanceIndexUsed;
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		return tcu::UVec3(1, 1, 1);
+	}
+
+	deUint32 getNTraceRayInvocationsNeeded() const final
+	{
+		return m_nMaxASToUse;
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		return static_cast<deUint32>((2 /* nHits, nMisses */ + 2 * m_nMaxASToUse /* hit instance custom indices + AS index */) * sizeof(deUint32) );
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const final
+	{
+		std::vector<TopLevelAccelerationStructure*> resultVec;
+
+		DE_ASSERT(m_tlPtrVec.size() != 0);
+
+		for (auto& currentTLPtr : m_tlPtrVec)
+		{
+			resultVec.push_back(currentTLPtr.get() );
+		}
+
+		return resultVec;
+	}
+
+	bool init(RayTracingProperties* rtPropertiesPtr) final
+	{
+		/* NOTE: We clamp the number below to a sensible value, in case the implementation has no restrictions on the number of
+		 *		 ASes accessible to shaders.
+		 */
+		m_nASesToUse = std::min(rtPropertiesPtr->getMaxDescriptorSetAccelerationStructures(),
+								m_nMaxASToUse);
+
+		return true;
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		/* Each AS holds a single unit AABB / cube built of tris.
+		 *
+		 * Geometry in the zeroth acceleration structure starts at the origin. Subsequent ASes
+		 * hold geometry that is positioned so that geometry formed by the union of all ASes never
+		 * intersects.
+		 *
+		 * Each raygen shader invocation uses a unique origin+target pair for the traced ray, and
+		 * only one AS is expected to hold geometry that the ray can find intersection for.
+		 * The AS index is stored in the result buffer, which is later verified by the CPU.
+		 *
+		 * Due to the fact AccelerationStructureEXT array indexing must be dynamically uniform and
+		 * it is not guaranteed we can determine workgroup size on VK 1.1-conformant platforms,
+		 * we can only trace rays against the same AS in a single ray trace dispatch.
+		 */
+		std::unique_ptr<GridASProvider> asProviderPtr(
+			new GridASProvider(	tcu::Vec3 (0, 0, 0), /* gridStartXYZ          */
+								tcu::Vec3 (1, 1, 1), /* gridCellSizeXYZ       */
+								tcu::UVec3(1, 1, 1), /* gridSizeXYZ           */
+								tcu::Vec3 (0, 0, 0), /* gridInterCellDeltaXYZ */
+								m_geometryType)
+		);
+
+		for (deUint32 nAS = 0; nAS < m_nASesToUse; ++nAS)
+		{
+			const auto origin = tcu::Vec3(3.0f * static_cast<float>(nAS), 0.0f, 0.0f);
+
+			asProviderPtr->setProperties(
+				origin,
+				tcu::Vec3(1, 1, 1),		/* gridCellSizeXYZ       */
+				tcu::UVec3(1, 1, 1),	/* gridSizeXYZ           */
+				tcu::Vec3(0, 0, 0),		/* gridInterCellDeltaXYZ */
+				m_geometryType
+			);
+
+			auto tlPtr = asProviderPtr->createTLAS(	context,
+													m_asStructureLayout,
+													commandBuffer,
+													VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+													this);	/* optASPropertyProviderPtr */
+
+			m_tlPtrVec.push_back(std::move(tlPtr) );
+		}
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
+														vk::SPIRV_VERSION_1_4,
+														0u,		/* flags        */
+														true);	/* allowSpirv14 */
+
+		const char* hitPropsDefinition =
+			"struct HitProps\n"
+			"{\n"
+			"    uint instanceCustomIndex;\n"
+			"    uint nAS;\n"
+			"};\n";
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"\n"
+				+ de::toString(hitPropsDefinition) +
+				"\n"
+				"layout(location = 0) rayPayloadInEXT      uint   nAS;\n"
+				"layout(set      = 0, binding = 0, std430) buffer result\n"
+				"{\n"
+				"    uint     nHitsRegistered;\n"
+				"    uint     nMissesRegistered;\n"
+				"    HitProps hits[];\n"
+				"};\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint nHit = atomicAdd(nHitsRegistered, 1);\n"
+				"\n"
+				"    hits[nHit].instanceCustomIndex = gl_InstanceCustomIndexEXT;\n"
+				"    hits[nHit].nAS                 = nAS;\n"
+				"}\n";
+
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"hitAttributeEXT vec3 hitAttribute;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    reportIntersectionEXT(0.95f, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				+ de::toString(hitPropsDefinition) +
+				"\n"
+				"layout(set = 0, binding = 0, std430) buffer result\n"
+				"{\n"
+				"    uint     nHitsRegistered;\n"
+				"    uint     nMissesRegistered;\n"
+				"    HitProps hits[];\n"
+				"};\n"
+				"\n"
+				"layout(location = 0) rayPayloadInEXT uint rayIndex;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    atomicAdd(nMissesRegistered, 1);\n"
+				"}\n";
+
+			programCollection.glslSources.add("miss") << glu::MissSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"layout(push_constant) uniform pcUB\n"
+				"{\n"
+				"    uint nAS;\n"
+				"} ub;\n"
+				"\n"
+				"layout(location = 0)              rayPayloadEXT uint               payload;\n"
+				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructures[" + de::toString(m_nMaxASToUse) + "];\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"    uint  rayFlags     = 0;\n"
+				"    float tmin         = 0.001;\n"
+				"    float tmax         = 9.0;\n"
+				"\n"
+				"    uint  cullMask     = 0xFF;\n"
+				"    vec3  cellStartXYZ = vec3(ub.nAS * 3.0, 0.0, 0.0);\n"
+				"    vec3  cellEndXYZ   = cellStartXYZ + vec3(1.0);\n"
+				"    vec3  target       = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+				"    vec3  origin       = target - vec3(0, 2, 0);\n"
+				"    vec3  direct       = normalize(target - origin);\n"
+				"\n"
+				"    payload = ub.nAS;\n"
+				"\n"
+				"    traceRayEXT(accelerationStructures[ub.nAS], rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+		}
+	}
+
+	Move<VkPipelineLayout> getPipelineLayout(	const vk::DeviceInterface&	deviceInterface,
+												VkDevice					deviceVk,
+												VkDescriptorSetLayout		descriptorSetLayout) final
+	{
+		VkPushConstantRange pushConstantRange;
+
+		pushConstantRange.offset		= 0;
+		pushConstantRange.size			= sizeof(deUint32);
+		pushConstantRange.stageFlags	= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+		return makePipelineLayout(	deviceInterface,
+									deviceVk,
+									1, /* setLayoutCount */
+									&descriptorSetLayout,
+									1, /* pushRangeCount */
+									&pushConstantRange);
+	}
+
+	void onBeforeCmdTraceRays(	const deUint32&		nDispatch,
+								vkt::Context&		context,
+								VkCommandBuffer		commandBuffer,
+								VkPipelineLayout	pipelineLayout) final
+	{
+		/* No need for a sync point in-between trace ray commands - all writes are atomic */
+		VkMemoryBarrier memBarrier;
+
+		memBarrier.dstAccessMask	= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+		memBarrier.pNext			= nullptr;
+		memBarrier.srcAccessMask	= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;;
+		memBarrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+
+		context.getDeviceInterface().cmdPipelineBarrier(commandBuffer,
+														VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,	/* srcStageMask       */
+														VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,	/* dstStageMask       */
+														0,												/* dependencyFlags    */
+														1,												/* memoryBarrierCount */
+														&memBarrier,
+														0,												/* bufferMemoryBarrierCount */
+														nullptr,										/* pBufferMemoryBarriers    */
+														0,												/* imageMemoryBarrierCount  */
+														nullptr);										/* pImageMemoryBarriers     */
+
+		context.getDeviceInterface().cmdPushConstants(	commandBuffer,
+														pipelineLayout,
+														VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+														0, /* offset */
+														sizeof(deUint32),
+														&nDispatch);
+	}
+
+	bool verifyResultBuffer (const void* resultDataPtr) const final
+	{
+		const deUint32* resultU32Ptr	= reinterpret_cast<const deUint32*>(resultDataPtr);
+		bool			result			= false;
+
+		typedef struct
+		{
+			deUint32 instanceCustomIndex;
+			deUint32 nAS;
+		} HitProperties;
+
+		const auto		nHitsReported	= *resultU32Ptr;
+		const auto		nMissesReported	= *(resultU32Ptr + 1);
+
+		if (nHitsReported != m_nMaxASToUse)
+		{
+			goto end;
+		}
+
+		if (nMissesReported != 0)
+		{
+			goto end;
+		}
+
+		for (deUint32 nHit = 0; nHit < nHitsReported; ++nHit)
+		{
+			const HitProperties* hitPropsPtr = reinterpret_cast<const HitProperties*>(resultU32Ptr + 2 /* preamble ints */) + nHit;
+
+			if (hitPropsPtr->instanceCustomIndex != (nHit + 1) )
+			{
+				goto end;
+			}
+
+			if (hitPropsPtr->nAS != nHit)
+			{
+				goto end;
+			}
+		}
+
+		result = true;
+end:
+		return result;
+	}
+
+private:
+	const AccelerationStructureLayout	m_asStructureLayout;
+	const GeometryType					m_geometryType;
+
+	mutable deUint32												m_lastCustomInstanceIndexUsed;
+	deUint32														m_nASesToUse;
+	std::vector<std::unique_ptr<TopLevelAccelerationStructure> >	m_tlPtrVec;
+
+	const deUint32 m_nMaxASToUse;
+};
+
 
 class CullMaskTest :	public TestBase,
 						public ASPropertyProvider
@@ -1692,14 +2058,16 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 	const Move<VkDescriptorSetLayout>	descriptorSetLayoutPtr	= DescriptorSetLayoutBuilder()
 																	.addSingleBinding(	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 																						ALL_RAY_TRACING_STAGES)
-																	.addSingleBinding(	VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+																	.addArrayBinding(	VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+																						m_testPtr->getASBindingArraySize(),
 																						ALL_RAY_TRACING_STAGES)
 																	.build			(	deviceInterface,
 																						deviceVk);
 
 	const Move<VkDescriptorPool>		descriptorPoolPtr		= DescriptorPoolBuilder()
 																	.addType(	VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-																	.addType(	VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+																	.addType(	VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+																				m_testPtr->getASBindingArraySize() )
 																	.build	(	deviceInterface,
 																				deviceVk,
 																				VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
@@ -2051,6 +2419,17 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 			break;
 		}
 
+		case TestType::AS_STRESS_TEST:
+		{
+			m_testPtr.reset(
+				new ASStressTest(m_data.geometryType, m_data.asLayout)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
 		case TestType::CULL_MASK:
 		{
 			m_testPtr.reset(
@@ -2092,6 +2471,18 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			{
 				m_testPtr.reset(
 					new AABBTriTLTest(m_data.geometryType, m_data.asLayout)
+				);
+			}
+
+			break;
+		}
+
+		case TestType::AS_STRESS_TEST:
+		{
+			if (m_testPtr == nullptr)
+			{
+				m_testPtr.reset(
+					new ASStressTest(m_data.geometryType, m_data.asLayout)
 				);
 			}
 
@@ -2147,6 +2538,18 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 			testCtx,
 			"misc",
 			"Miscellaneous ray-tracing tests"));
+
+	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
+	{
+		const std::string newTestCaseName = "AS_stresstest_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
+
+		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+														newTestCaseName.data(),
+														"Verifies raygen shader invocations can simultaneously access as many AS instances as reported",
+														CaseDef{TestType::AS_STRESS_TEST, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
+
+		miscGroupPtr->addChild(newTestCasePtr);
+	}
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
 	{
