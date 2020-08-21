@@ -595,13 +595,13 @@ namespace vkt
 				const de::MovePtr<BufferWithMemory>	raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, RAYGEN_GROUP, 1u);
 				const de::MovePtr<BufferWithMemory>	missShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, MISS_GROUP, 1u);
 				const de::MovePtr<BufferWithMemory>	hitShaderBindingTable = rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, HIT_GROUP, 1u);
-				const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
-				const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
-				const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize);
+				const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+				const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+				const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
 				const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion = makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 				const VkImageCreateInfo				imageCreateInfo = makeImageCreateInfo(m_data.width, m_data.height, m_data.depth, format);
-				const VkImageSubresourceRange		imageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, m_data.depth);
+				const VkImageSubresourceRange		imageSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0, 1u);
 				const de::MovePtr<ImageWithMemory>	image = de::MovePtr<ImageWithMemory>(new ImageWithMemory(vkd, device, allocator, imageCreateInfo, MemoryRequirement::Any));
 				const Move<VkImageView>				imageView = makeImageView(vkd, device, **image, (m_data.depth != 1) ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D, format, imageSubresourceRange);
 

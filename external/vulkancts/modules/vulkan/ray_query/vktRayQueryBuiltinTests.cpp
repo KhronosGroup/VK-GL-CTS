@@ -1513,10 +1513,10 @@ namespace vkt
 				m_hitShaderBindingTable = createShaderBindingTable(vki, vkd, device, physicalDevice, *m_pipeline, allocator, m_rayTracingPipeline, m_hitShaderGroup);
 				m_callableShaderBindingTable = createShaderBindingTable(vki, vkd, device, physicalDevice, *m_pipeline, allocator, m_rayTracingPipeline, m_callableShaderGroup);
 
-				m_raygenShaderBindingTableRegion = m_raygenShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-				m_missShaderBindingTableRegion = m_missShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-				m_hitShaderBindingTableRegion = m_hitShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-				m_callableShaderBindingTableRegion = m_callableShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_callableShaderBindingTable->get(), 0), 0, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+				m_raygenShaderBindingTableRegion = m_raygenShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+				m_missShaderBindingTableRegion = m_missShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+				m_hitShaderBindingTableRegion = m_hitShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+				m_callableShaderBindingTableRegion = m_callableShaderBindingTable.get() != NULL ? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, m_callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize) : makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 			}
 
 			void RayTracingConfiguration::fillCommandBuffer(Context& context,

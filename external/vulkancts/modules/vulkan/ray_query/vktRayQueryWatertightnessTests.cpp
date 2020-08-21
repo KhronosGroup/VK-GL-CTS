@@ -175,7 +175,7 @@ VkStridedDeviceAddressRegionKHR makeStridedDeviceAddressRegion (const DeviceInte
 {
 	const VkDeviceSize sizeFixed = ((buffer == DE_NULL) ? 0ull : size);
 
-	return makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, buffer, 0), 0, sizeFixed);
+	return makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, buffer, 0), sizeFixed, sizeFixed);
 }
 
 VkImageCreateInfo makeImageCreateInfo (VkFormat				format,

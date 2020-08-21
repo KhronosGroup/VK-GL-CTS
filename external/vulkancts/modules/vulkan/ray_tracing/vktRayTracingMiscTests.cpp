@@ -2272,19 +2272,19 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																														deviceVk,
 																														raygenShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								0, /* stride */
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
 			const auto	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																														deviceVk,
 																														missShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								0, /* stride */
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
 			const auto	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																														deviceVk,
 																														hitShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								0, /* stride */
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
 			const auto	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL,
 																								0, /* stride */
@@ -2388,6 +2388,8 @@ RayTracingTestCase::~RayTracingTestCase	(void)
 void RayTracingTestCase::checkSupport(Context& context) const
 {
 	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+	context.requireDeviceFunctionality("VK_KHR_deferred_host_operations");
 	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
 
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures	();

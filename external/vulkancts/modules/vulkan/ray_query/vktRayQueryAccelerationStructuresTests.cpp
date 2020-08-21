@@ -1052,10 +1052,10 @@ void RayTracingConfiguration::fillCommandBuffer (Context&						context,
 	vkd.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *rtPipeline);
 
 	deUint32							shaderGroupHandleSize				= getShaderGroupHandleSize(vki, physicalDevice);
-	VkStridedDeviceAddressRegionKHR		raygenShaderBindingTableRegion		= raygenShaderBindingTable.get() != DE_NULL		? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), 0, shaderGroupHandleSize)		: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-	VkStridedDeviceAddressRegionKHR		hitShaderBindingTableRegion			= hitShaderBindingTable.get() != DE_NULL		? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), 0, shaderGroupHandleSize)			: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-	VkStridedDeviceAddressRegionKHR		missShaderBindingTableRegion		= missShaderBindingTable.get() != DE_NULL		? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), 0, shaderGroupHandleSize)		: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
-	VkStridedDeviceAddressRegionKHR		callableShaderBindingTableRegion	= callableShaderBindingTable.get() != DE_NULL	? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0), 0, shaderGroupHandleSize)	: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR		raygenShaderBindingTableRegion		= raygenShaderBindingTable.get() != DE_NULL		? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize)		: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR		hitShaderBindingTableRegion			= hitShaderBindingTable.get() != DE_NULL		? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize)			: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR		missShaderBindingTableRegion		= missShaderBindingTable.get() != DE_NULL		? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, missShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize)		: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	VkStridedDeviceAddressRegionKHR		callableShaderBindingTableRegion	= callableShaderBindingTable.get() != DE_NULL	? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, callableShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize)	: makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
 
 	cmdTraceRays(vkd,
 		commandBuffer,

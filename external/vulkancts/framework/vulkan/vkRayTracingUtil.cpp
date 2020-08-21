@@ -2335,8 +2335,12 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 		DE_NULL,														// const void*		pNext;
 		deUint64(opaqueCaptureAddress)									// deUint64			opaqueCaptureAddress;
 	};
+
 	if (opaqueCaptureAddress != 0u)
+	{
 		sbtCreateInfo.pNext = &sbtCaptureAddressInfo;
+		sbtCreateInfo.flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+	}
 	const MemoryRequirement			sbtMemRequirements						= MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress | additionalMemoryRequirement;
 	de::MovePtr<BufferWithMemory>	sbtBuffer								= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vk, device, allocator, sbtCreateInfo, sbtMemRequirements));
 	vk::Allocation&					sbtAlloc								= sbtBuffer->getAllocation();
