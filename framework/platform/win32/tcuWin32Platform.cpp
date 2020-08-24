@@ -38,6 +38,15 @@ Platform::Platform (void)
 	// Set process priority to lower.
 	SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 
+
+	// Set process to be DPI aware
+	// This is requried for VK tests that manually enter exclusive mode
+	// using VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+	if (SetProcessDPIAware() == 0)
+	{
+		TCU_FAIL("SetProcessDPIAware  function failed");
+	}
+
 	{
 		wgl::ContextFactory* factory = DE_NULL;
 
