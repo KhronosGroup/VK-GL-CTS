@@ -321,22 +321,6 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 		createFlags |= vk::VK_BUFFER_CREATE_PROTECTED_BIT;
 	}
 
-	// Create a minimal buffer first to get the supported memory types
-	VkBufferCreateInfo				bufferParams					=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                       // VkStructureType          sType;
-		DE_NULL,                                                    // const void*              pNext;
-		createFlags,                                                // VkBufferCreateFlags      flags;
-		1u,                                                         // VkDeviceSize             size;
-		usageFlags,                                                 // VkBufferUsageFlags       usage;
-		sharingMode,                                                // VkSharingMode            sharingMode;
-		1u,                                                         // uint32_t                 queueFamilyIndexCount;
-		&queueFamilyIndex,                                          // const uint32_t*          pQueueFamilyIndices;
-	};
-
-	buffer = createBuffer(vkd, device, &bufferParams);
-	vkd.getBufferMemoryRequirements(device, *buffer, &memReqs);
-
 	DE_ASSERT(m_config.memoryAllocationCount <= MAX_ALLOCATION_COUNT);
 
 	if (m_memoryTypeIndex == 0)
@@ -358,6 +342,26 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 	{
 		const VkMemoryType		memoryType				= m_memoryProperties.memoryTypes[m_memoryTypeIndex];
 		const VkMemoryHeap		memoryHeap				= m_memoryProperties.memoryHeaps[memoryType.heapIndex];
+
+		// Create a buffer to get the required size
+		{
+			const VkDeviceSize bufferSize	= m_config.memorySize ? *m_config.memorySize : (VkDeviceSize) (*m_config.memoryPercentage * (float) memoryHeap.size);
+
+			VkBufferCreateInfo bufferParams =
+				{
+					VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                       // VkStructureType          sType;
+					DE_NULL,                                                    // const void*              pNext;
+					createFlags,                                                // VkBufferCreateFlags      flags;
+					bufferSize,                                                 // VkDeviceSize             size;
+					usageFlags,                                                 // VkBufferUsageFlags       usage;
+					sharingMode,                                                // VkSharingMode            sharingMode;
+					1u,                                                         // uint32_t                 queueFamilyIndexCount;
+					&queueFamilyIndex,                                          // const uint32_t*          pQueueFamilyIndices;
+				};
+
+			buffer = createBuffer(vkd, device, &bufferParams);
+			vkd.getBufferMemoryRequirements(device, *buffer, &memReqs);
+		}
 
 		const VkDeviceSize		allocationSize	= (m_config.memorySize ? memReqs.size : (VkDeviceSize)(*m_config.memoryPercentage * (float)memoryHeap.size));
 		const VkDeviceSize		roundedUpAllocationSize	 = roundUpToNextMultiple(allocationSize, m_memoryLimits.deviceMemoryAllocationGranularity);
