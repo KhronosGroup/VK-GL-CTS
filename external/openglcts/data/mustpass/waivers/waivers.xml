@@ -86,4 +86,16 @@
 		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide</t>
 	</waiver>
 
+	<waiver vendor="Google Inc." url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/2237">
+		<description>ANGLE is unable to capture individual array elements in transform feedback using VK_EXT_transform_feedback revision 1.</description>
+		<renderer_list>
+			<r>ANGLE (Vulkan*</r>
+		</renderer_list>
+		<t>dEQP-GLES3.functional.transform_feedback.array_element.*</t>
+		<t>dEQP-GLES3.functional.transform_feedback.random.*</t>
+		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.*_array_element</t>
+		<t>dEQP-GLES31.functional.program_interface_query.transform_feedback_varying.type.*.array.*</t>
+		<t>KHR-GLES31.core.program_interface_query.transform-feedback-types</t>
+	</waiver>
+
 </waiver_list>
