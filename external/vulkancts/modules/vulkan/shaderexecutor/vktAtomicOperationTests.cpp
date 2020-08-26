@@ -37,6 +37,8 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuResultCollector.hpp"
 
+#include "deFloat16.h"
+#include "deMath.hpp"
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
@@ -211,7 +213,8 @@ enum
 
 enum DataType
 {
-	DATA_TYPE_INT32 = 0,
+	DATA_TYPE_FLOAT16 = 0,
+	DATA_TYPE_INT32,
 	DATA_TYPE_UINT32,
 	DATA_TYPE_FLOAT32,
 	DATA_TYPE_INT64,
@@ -225,6 +228,7 @@ std::string dataType2Str(DataType type)
 {
 	static const char* const s_names[] =
 	{
+		"float16_t",
 		"int",
 		"uint",
 		"float",
@@ -345,6 +349,18 @@ public:
 
 };
 
+template<typename T>
+bool nanSafeSloppyEquals(T x, T y)
+{
+	if (deIsIEEENaN(x) && deIsIEEENaN(y))
+		return true;
+
+	if (deIsIEEENaN(x) || deIsIEEENaN(y))
+		return false;
+
+	return fabs(deToDouble(x) - deToDouble(y)) < 0.00001;
+}
+
 template<typename dataTypeT>
 class TestBufferFloatingPoint : public BufferInterface
 {
@@ -364,7 +380,7 @@ public:
 		T			input[NUM_ELEMENTS];
 		T			compare[NUM_ELEMENTS];
 		T			output[NUM_ELEMENTS];
-		T			invocationHitCount[NUM_ELEMENTS];
+		deInt32		invocationHitCount[NUM_ELEMENTS];
 		deInt32		index;
 	};
 
@@ -385,19 +401,35 @@ public:
 
 		for (int i = 0; i < NUM_ELEMENTS / 2; i++)
 		{
-			m_ptr->inout[i] = static_cast<dataTypeT>(rnd.getFloat());
-			// The first half of compare elements match with every even index.
-			// The second half matches with odd indices. This causes the
-			// overlapping operations to only select one.
-			m_ptr->compare[i] = m_ptr->inout[i] + (dataTypeT)(i % 2);
-			m_ptr->compare[i + NUM_ELEMENTS / 2] = m_ptr->inout[i] + (dataTypeT)(1 - (i % 2));
+			m_ptr->inout[i] = deToFloatType<dataTypeT>(rnd.getFloat());
+			// These aren't used by any of the float tests
+			m_ptr->compare[i] = deToFloatType<dataTypeT>(0.0);
 		}
+		// Add special cases for NaN and +/-0
+		// 0: min(sNaN, x)
+		m_ptr->inout[0] = deSignalingNaN<dataTypeT>();
+		// 1: min(x, sNaN)
+		m_ptr->input[1 * 2 + 0] = deSignalingNaN<dataTypeT>();
+		// 2: min(qNaN, x)
+		m_ptr->inout[2] = deQuietNaN<dataTypeT>();
+		// 3: min(x, qNaN)
+		m_ptr->input[3 * 2 + 0] = deQuietNaN<dataTypeT>();
+		// 4: min(NaN, NaN)
+		m_ptr->inout[4] = deSignalingNaN<dataTypeT>();
+		m_ptr->input[4 * 2 + 0] = deQuietNaN<dataTypeT>();
+		m_ptr->input[4 * 2 + 1] = deQuietNaN<dataTypeT>();
+		// 5: min(+0, -0)
+		m_ptr->inout[5] = deToFloatType<dataTypeT>(-0.0);
+		m_ptr->input[5 * 2 + 0] = deToFloatType<dataTypeT>(0.0);
+		m_ptr->input[5 * 2 + 1] = deToFloatType<dataTypeT>(0.0);
+
 		for (int i = 0; i < NUM_ELEMENTS; i++)
 		{
-			m_ptr->input[i] = static_cast<dataTypeT>(rnd.getFloat());
+			m_ptr->input[i] = deToFloatType<dataTypeT>(rnd.getFloat());
 			m_ptr->output[i] = pattern;
 			m_ptr->invocationHitCount[i] = 0;
 		}
+
 		m_ptr->index = 0;
 
 		// Take a copy to be used when calculating expected values.
@@ -424,11 +456,9 @@ public:
 
 		bool compare(T inout, T output0, T output1)
 		{
-			T diff1 = static_cast<T>(fabs(m_inout - inout));
-			T diff2 = static_cast<T>(fabs(m_output[0] - output0));
-			T diff3 = static_cast<T>(fabs(m_output[1] - output1));
-			const T epsilon = static_cast<T>(0.00001);
-			return (diff1 < epsilon) && (diff2 < epsilon) && (diff3 < epsilon);
+			return nanSafeSloppyEquals(m_inout, inout) &&
+			       nanSafeSloppyEquals(m_output[0], output0) &&
+			       nanSafeSloppyEquals(m_output[1], output1);
 		}
 	};
 
@@ -447,6 +477,8 @@ static BufferInterface* createTestBuffer(DataType type, AtomicOperation atomicOp
 {
 	switch (type)
 	{
+	case DATA_TYPE_FLOAT16:
+		return new TestBufferFloatingPoint<deFloat16>(atomicOp);
 	case DATA_TYPE_INT32:
 		return new TestBuffer<deInt32>(atomicOp);
 	case DATA_TYPE_UINT32:
@@ -591,6 +623,83 @@ void TestBuffer<T>::checkOperation (const BufferData<T>&	original,
 	}
 }
 
+template<typename T>
+void handleExceptionalFloatMinMaxValues(vector<T> &values, T x, T y)
+{
+
+	if (deIsSignalingNaN(x) && deIsSignalingNaN(y))
+	{
+		values.push_back(deQuietNaN<T>());
+		values.push_back(deSignalingNaN<T>());
+	}
+	else if (deIsSignalingNaN(x))
+	{
+		values.push_back(deQuietNaN<T>());
+		values.push_back(deSignalingNaN<T>());
+		if (!deIsIEEENaN(y))
+			values.push_back(y);
+	}
+	else if (deIsSignalingNaN(y))
+	{
+		values.push_back(deQuietNaN<T>());
+		values.push_back(deSignalingNaN<T>());
+		if (!deIsIEEENaN(x))
+			values.push_back(x);
+	}
+	else if (deIsIEEENaN(x) && deIsIEEENaN(y))
+	{
+		// Both quiet NaNs
+		values.push_back(deQuietNaN<T>());
+	}
+	else if (deIsIEEENaN(x))
+	{
+		// One quiet NaN and one non-NaN.
+		values.push_back(y);
+	}
+	else if (deIsIEEENaN(y))
+	{
+		// One quiet NaN and one non-NaN.
+		values.push_back(x);
+	}
+	else if ((deIsPositiveZero(x) && deIsNegativeZero(y)) || (deIsNegativeZero(x) && deIsPositiveZero(y)))
+	{
+		values.push_back(deToFloatType<T>(0.0));
+		values.push_back(deToFloatType<T>(-0.0));
+	}
+}
+
+template<typename T>
+T floatAdd(T x, T y)
+{
+	if (deIsIEEENaN(x) || deIsIEEENaN(y))
+		return deQuietNaN<T>();
+	return deToFloatType<T>(deToDouble(x) + deToDouble(y));
+}
+
+template<typename T>
+vector<T> floatMinValues(T x, T y)
+{
+	vector<T> values;
+	handleExceptionalFloatMinMaxValues(values, x, y);
+	if (values.empty())
+	{
+		values.push_back(deToDouble(x) < deToDouble(y) ? x : y);
+	}
+	return values;
+}
+
+template<typename T>
+vector<T> floatMaxValues(T x, T y)
+{
+	vector<T> values;
+	handleExceptionalFloatMinMaxValues(values, x, y);
+	if (values.empty())
+	{
+		values.push_back(deToDouble(x) > deToDouble(y) ? x : y);
+	}
+	return values;
+}
+
 // Use template to handle both float and double cases. SPIR-V should
 // have separate operations for both.
 template<typename T>
@@ -626,8 +735,60 @@ void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFlo
 		{
 		case ATOMIC_OP_ADD:
 		{
-			exp.push_back(Expected<T>(originalInout + input0 + input1, originalInout, originalInout + input0));
-			exp.push_back(Expected<T>(originalInout + input0 + input1, originalInout + input1, originalInout));
+			exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), originalInout, floatAdd(originalInout, input0)));
+			exp.push_back(Expected<T>(floatAdd(floatAdd(originalInout, input0), input1), floatAdd(originalInout, input1), originalInout));
+		}
+		break;
+
+		case ATOMIC_OP_MIN:
+		{
+			// The case where input0 is combined first
+			vector<T> minOriginalAndInput0 = floatMinValues(originalInout, input0);
+			for (T x : minOriginalAndInput0)
+			{
+				vector<T> minAll = floatMinValues(x, input1);
+				for (T y : minAll)
+				{
+					exp.push_back(Expected<T>(y, originalInout, x));
+				}
+			}
+
+			// The case where input1 is combined first
+			vector<T> minOriginalAndInput1 = floatMinValues(originalInout, input1);
+			for (T x : minOriginalAndInput1)
+			{
+				vector<T> minAll = floatMinValues(x, input0);
+				for (T y : minAll)
+				{
+					exp.push_back(Expected<T>(y, x, originalInout));
+				}
+			}
+		}
+		break;
+
+		case ATOMIC_OP_MAX:
+		{
+			// The case where input0 is combined first
+			vector<T> minOriginalAndInput0 = floatMaxValues(originalInout, input0);
+			for (T x : minOriginalAndInput0)
+			{
+				vector<T> minAll = floatMaxValues(x, input1);
+				for (T y : minAll)
+				{
+					exp.push_back(Expected<T>(y, originalInout, x));
+				}
+			}
+
+			// The case where input1 is combined first
+			vector<T> minOriginalAndInput1 = floatMaxValues(originalInout, input1);
+			for (T x : minOriginalAndInput1)
+			{
+				vector<T> minAll = floatMaxValues(x, input0);
+				for (T y : minAll)
+				{
+					exp.push_back(Expected<T>(y, x, originalInout));
+				}
+			}
 		}
 		break;
 
@@ -648,17 +809,37 @@ void TestBufferFloatingPoint<T>::checkOperationFloatingPoint(const BufferDataFlo
 		const T resOutput1 = result.output[elementNdx + NUM_ELEMENTS / 2];
 
 
-		if (!exp[0].compare(resIo, resOutput0, resOutput1) && !exp[1].compare(resIo, resOutput0, resOutput1))
+		bool hasMatch = false;
+		for (Expected<T> e : exp)
+		{
+			if (e.compare(resIo, resOutput0, resOutput1))
+			{
+				hasMatch = true;
+				break;
+			}
+		}
+		if (!hasMatch)
 		{
 			std::ostringstream errorMessage;
 			errorMessage << "ERROR: Result value check failed at index " << elementNdx
-				<< ". Expected one of the two outcomes: InOut = " << exp[0].m_inout
-				<< ", Output0 = " << exp[0].m_output[0] << ", Output1 = "
-				<< exp[0].m_output[1] << ", or InOut = " << exp[1].m_inout
-				<< ", Output0 = " << exp[1].m_output[0] << ", Output1 = "
-				<< exp[1].m_output[1] << ". Got: InOut = " << resIo
-				<< ", Output0 = " << resOutput0 << ", Output1 = "
-				<< resOutput1 << ". Using Input0 = " << original.input[elementNdx]
+				<< ". Expected one of the outcomes:";
+
+			bool first = true;
+			for (Expected<T> e : exp)
+			{
+				if (!first)
+					errorMessage << ", or";
+				first = false;
+
+				errorMessage << " InOut = " << e.m_inout
+					<< ", Output0 = " << e.m_output[0]
+					<< ", Output1 = " << e.m_output[1];
+			}
+
+			errorMessage << ". Got: InOut = " << resIo
+				<< ", Output0 = " << resOutput0
+				<< ", Output1 = " << resOutput1
+				<< ". Using Input0 = " << original.input[elementNdx]
 				<< " and Input1 = " << original.input[elementNdx + NUM_ELEMENTS / 2] << ".";
 
 			resultCollector.fail(errorMessage.str());
@@ -898,6 +1079,62 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 		}
 	}
 
+	if (m_dataType == DATA_TYPE_FLOAT16)
+	{
+		ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+		if (m_atomicOp == ATOMIC_OP_ADD)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat16AtomicAdd)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat16: 16-bit floating point shared add atomic operation not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderBufferFloat16AtomicAdd)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat16: 16-bit floating point buffer add atomic operation not supported");
+				}
+			}
+		}
+		if (m_atomicOp == ATOMIC_OP_MIN || m_atomicOp == ATOMIC_OP_MAX)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat16AtomicMinMax)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat16: 16-bit floating point shared min/max atomic operation not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderBufferFloat16AtomicMinMax)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat16: 16-bit floating point buffer min/max atomic operation not supported");
+				}
+			}
+		}
+		if (m_atomicOp == ATOMIC_OP_EXCHANGE)
+		{
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat16Atomics)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat16: 16-bit floating point shared atomic operations not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderBufferFloat16Atomics)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat16: 16-bit floating point buffer atomic operations not supported");
+				}
+			}
+		}
+	}
+
 	if (m_dataType == DATA_TYPE_FLOAT32)
 	{
 		ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float");
@@ -915,6 +1152,24 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat32AtomicAdd)
 				{
 					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point buffer add atomic operation not supported");
+				}
+			}
+		}
+		if (m_atomicOp == ATOMIC_OP_MIN || m_atomicOp == ATOMIC_OP_MAX)
+		{
+			ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat32AtomicMinMax)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point shared min/max atomic operation not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderBufferFloat32AtomicMinMax)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat32: 32-bit floating point buffer min/max atomic operation not supported");
 				}
 			}
 		}
@@ -954,6 +1209,24 @@ void AtomicOperationCase::checkSupport (Context& ctx) const
 				if (!ctx.getShaderAtomicFloatFeaturesEXT().shaderBufferFloat64AtomicAdd)
 				{
 					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point buffer add atomic operation not supported");
+				}
+			}
+		}
+		if (m_atomicOp == ATOMIC_OP_MIN || m_atomicOp == ATOMIC_OP_MAX)
+		{
+			ctx.requireDeviceFunctionality("VK_EXT_shader_atomic_float2");
+			if (m_shaderType.getMemoryType() == AtomicMemoryType::SHARED)
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderSharedFloat64AtomicMinMax)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point shared min/max atomic operation not supported");
+				}
+			}
+			else
+			{
+				if (!ctx.getShaderAtomicFloat2FeaturesEXT().shaderBufferFloat64AtomicMinMax)
+				{
+					TCU_THROW(NotSupportedError, "VkShaderAtomicFloat64: 64-bit floating point buffer min/max atomic operation not supported");
 				}
 			}
 		}
@@ -1138,10 +1411,12 @@ void AtomicOperationCase::createShaderSpec (void)
 			<< "#extension GL_EXT_shader_atomic_int64 : enable\n"
 			;
 	}
-	else if ((m_dataType == DATA_TYPE_FLOAT32) || (m_dataType == DATA_TYPE_FLOAT64))
+	else if ((m_dataType == DATA_TYPE_FLOAT16) || (m_dataType == DATA_TYPE_FLOAT32) || (m_dataType == DATA_TYPE_FLOAT64))
 	{
 		extensions
+			<< "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : enable\n"
 			<< "#extension GL_EXT_shader_atomic_float : enable\n"
+			<< "#extension GL_EXT_shader_atomic_float2 : enable\n"
 			<< "#extension GL_KHR_memory_scope_semantics : enable\n"
 			;
 	}
@@ -1213,6 +1488,7 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 		const char*		description;
 	} dataSign[] =
 	{
+		{ DATA_TYPE_FLOAT16,"float16",			"Tests using 16-bit float data"				},
 		{ DATA_TYPE_INT32,	"signed",			"Tests using signed data (int)"				},
 		{ DATA_TYPE_UINT32,	"unsigned",			"Tests using unsigned data (uint)"			},
 		{ DATA_TYPE_FLOAT32,"float32",			"Tests using 32-bit float data"				},
@@ -1244,9 +1520,12 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 			for (int shaderTypeNdx = 0; shaderTypeNdx < DE_LENGTH_OF_ARRAY(shaderTypes); shaderTypeNdx++)
 			{
 				// Only ADD and EXCHANGE are supported on floating-point
-				if (dataSign[signNdx].dataType == DATA_TYPE_FLOAT32 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT64)
+				if (dataSign[signNdx].dataType == DATA_TYPE_FLOAT16 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT32 || dataSign[signNdx].dataType == DATA_TYPE_FLOAT64)
 				{
-					if (atomicOp[opNdx].value != ATOMIC_OP_ADD && atomicOp[opNdx].value != ATOMIC_OP_EXCHANGE)
+					if (atomicOp[opNdx].value != ATOMIC_OP_ADD &&
+					    atomicOp[opNdx].value != ATOMIC_OP_MIN &&
+					    atomicOp[opNdx].value != ATOMIC_OP_MAX &&
+					    atomicOp[opNdx].value != ATOMIC_OP_EXCHANGE)
 					{
 						continue;
 					}
