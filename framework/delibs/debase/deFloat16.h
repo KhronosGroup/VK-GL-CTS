@@ -59,6 +59,37 @@ float		deFloat16To32		(deFloat16 val16);
  * \return Converted 64-bit floating-point value.
  *//*--------------------------------------------------------------------*/
 double		deFloat16To64		(deFloat16 val16);
+
+DE_INLINE deBool deHalfIsPositiveZero(deFloat16 x)
+{
+	return deFloat16To32(x) == 0 && (x >> 15) == 0;
+}
+
+DE_INLINE deBool deHalfIsNegativeZero(deFloat16 x)
+{
+	return deFloat16To32(x) == 0 && (x >> 15) != 0;
+}
+
+static const deFloat16 deFloat16SignalingNaN = 0x7c01;
+static const deFloat16 deFloat16QuietNaN = 0x7e01;
+
+DE_INLINE deBool deHalfIsIEEENaN(deFloat16 x)
+{
+	deUint16 e = (x & 0x7c00u) >> 10;
+	deUint16 m = (x & 0x03ffu);
+	return e == 0x1f && m != 0;
+}
+
+DE_INLINE deBool deHalfIsSignalingNaN(deFloat16 x)
+{
+	return deHalfIsIEEENaN(x) && (x & (1u << 9)) == 0;
+}
+
+DE_INLINE deBool deHalfIsQuietNaN(deFloat16 x)
+{
+	return deHalfIsIEEENaN(x) && (x & (1u << 9)) != 0;
+}
+
 DE_END_EXTERN_C
 
 #endif /* _DEFLOAT16_H */

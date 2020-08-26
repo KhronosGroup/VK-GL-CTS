@@ -17584,6 +17584,8 @@ dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d.notransfer.normal_read.normal_img.r64i_end_result
@@ -17592,6 +17594,8 @@ dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r32ui_end
 dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d.transfer.normal_read.normal_img.r64i_end_result
@@ -17600,6 +17604,8 @@ dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r
 dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d_array.notransfer.normal_read.normal_img.r64i_end_result
@@ -17608,6 +17614,8 @@ dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r32
 dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.1d_array.transfer.normal_read.normal_img.r64i_end_result
@@ -17616,6 +17624,8 @@ dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.normal_img.r64i_end_result
@@ -17624,6 +17634,8 @@ dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17632,6 +17644,8 @@ dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17640,6 +17654,8 @@ dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17648,6 +17664,8 @@ dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r32ui_end
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.normal_img.r64i_end_result
@@ -17656,6 +17674,8 @@ dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r32ui_end
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d.transfer.normal_read.sparse_img.r64i_end_result
@@ -17664,6 +17684,8 @@ dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.normal_img.r64i_end_result
@@ -17672,6 +17694,8 @@ dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17680,6 +17704,8 @@ dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17688,6 +17714,8 @@ dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17696,6 +17724,8 @@ dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r32
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.normal_img.r64i_end_result
@@ -17704,6 +17734,8 @@ dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r32
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.2d_array.transfer.normal_read.sparse_img.r64i_end_result
@@ -17712,6 +17744,8 @@ dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.normal_img.r64i_end_result
@@ -17720,6 +17754,8 @@ dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17728,6 +17764,8 @@ dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17736,6 +17774,8 @@ dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17744,6 +17784,8 @@ dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r32ui_end
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.normal_img.r64i_end_result
@@ -17752,6 +17794,8 @@ dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r32ui_end
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.3d.transfer.normal_read.sparse_img.r64i_end_result
@@ -17760,6 +17804,8 @@ dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r32ui
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.normal_img.r64i_end_result
@@ -17768,6 +17814,8 @@ dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r32ui
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17776,6 +17824,8 @@ dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r32ui
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17784,6 +17834,8 @@ dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r32ui
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17792,6 +17844,8 @@ dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.normal_img.r64i_end_result
@@ -17800,6 +17854,8 @@ dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube.transfer.normal_read.sparse_img.r64i_end_result
@@ -17808,6 +17864,8 @@ dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.normal_img.r64i_end_result
@@ -17816,6 +17874,8 @@ dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17824,6 +17884,8 @@ dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17832,6 +17894,8 @@ dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17840,6 +17904,8 @@ dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.normal_img.r64i_end_result
@@ -17848,14 +17914,22 @@ dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r64i_end_result
 dEQP-VK.image.atomic_operations.min.cube_array.transfer.normal_read.sparse_img.r64i_intermediate_values
+dEQP-VK.image.atomic_operations.min.buffer.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.buffer.notransfer.normal_read.normal_img.r32f_intermediate_values
+dEQP-VK.image.atomic_operations.min.buffer.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.min.buffer.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32ui_end_result
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.notransfer.normal_read.normal_img.r64i_end_result
@@ -17864,6 +17938,8 @@ dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r32ui_end
 dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d.transfer.normal_read.normal_img.r64i_end_result
@@ -17872,6 +17948,8 @@ dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r
 dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d_array.notransfer.normal_read.normal_img.r64i_end_result
@@ -17880,6 +17958,8 @@ dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r32
 dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.1d_array.transfer.normal_read.normal_img.r64i_end_result
@@ -17888,6 +17968,8 @@ dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.normal_img.r64i_end_result
@@ -17896,6 +17978,8 @@ dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17904,6 +17988,8 @@ dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17912,6 +17998,8 @@ dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17920,6 +18008,8 @@ dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r32ui_end
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.normal_img.r64i_end_result
@@ -17928,6 +18018,8 @@ dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r32ui_end
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d.transfer.normal_read.sparse_img.r64i_end_result
@@ -17936,6 +18028,8 @@ dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.normal_img.r64i_end_result
@@ -17944,6 +18038,8 @@ dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.normal_read.sparse_img.r64i_end_result
@@ -17952,6 +18048,8 @@ dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.normal_img.r64i_end_result
@@ -17960,6 +18058,8 @@ dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -17968,6 +18068,8 @@ dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r32
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.normal_img.r64i_end_result
@@ -17976,6 +18078,8 @@ dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r32
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.2d_array.transfer.normal_read.sparse_img.r64i_end_result
@@ -17984,6 +18088,8 @@ dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.normal_img.r64i_end_result
@@ -17992,6 +18098,8 @@ dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.normal_read.sparse_img.r64i_end_result
@@ -18000,6 +18108,8 @@ dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.normal_img.r64i_end_result
@@ -18008,6 +18118,8 @@ dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -18016,6 +18128,8 @@ dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r32ui_end
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.normal_img.r64i_end_result
@@ -18024,6 +18138,8 @@ dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r32ui_end
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.3d.transfer.normal_read.sparse_img.r64i_end_result
@@ -18032,6 +18148,8 @@ dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r32ui
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.normal_img.r64i_end_result
@@ -18040,6 +18158,8 @@ dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r32ui
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.normal_read.sparse_img.r64i_end_result
@@ -18048,6 +18168,8 @@ dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r32ui
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.normal_img.r64i_end_result
@@ -18056,6 +18178,8 @@ dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r32ui
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -18064,6 +18188,8 @@ dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.normal_img.r64i_end_result
@@ -18072,6 +18198,8 @@ dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r32ui_e
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube.transfer.normal_read.sparse_img.r64i_end_result
@@ -18080,6 +18208,8 @@ dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.normal_img.r64i_end_result
@@ -18088,6 +18218,8 @@ dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.normal_read.sparse_img.r64i_end_result
@@ -18096,6 +18228,8 @@ dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.normal_img.r64i_end_result
@@ -18104,6 +18238,8 @@ dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.notransfer.sparse_read.sparse_img.r64i_end_result
@@ -18112,6 +18248,8 @@ dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.normal_img.r64i_end_result
@@ -18120,10 +18258,16 @@ dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r32i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r32i_intermediate_values
+dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r64ui_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r64ui_intermediate_values
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r64i_end_result
 dEQP-VK.image.atomic_operations.max.cube_array.transfer.normal_read.sparse_img.r64i_intermediate_values
+dEQP-VK.image.atomic_operations.max.buffer.notransfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.buffer.notransfer.normal_read.normal_img.r32f_intermediate_values
+dEQP-VK.image.atomic_operations.max.buffer.transfer.normal_read.normal_img.r32f_end_result
+dEQP-VK.image.atomic_operations.max.buffer.transfer.normal_read.normal_img.r32f_intermediate_values
 dEQP-VK.image.atomic_operations.and.1d.notransfer.normal_read.normal_img.r32ui_end_result
 dEQP-VK.image.atomic_operations.and.1d.notransfer.normal_read.normal_img.r32ui_intermediate_values
 dEQP-VK.image.atomic_operations.and.1d.notransfer.normal_read.normal_img.r32i_end_result
