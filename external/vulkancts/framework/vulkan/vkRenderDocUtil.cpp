@@ -33,6 +33,8 @@
 
 #if (DE_OS == DE_OS_WIN32)
 #	define RENDERDOC_LIBRARY_NAME "renderdoc.dll"
+#elif (DE_OS == DE_OS_ANDROID)
+#	define RENDERDOC_LIBRARY_NAME "libVkLayer_GLES_RenderDoc.so"
 #else
 #	define RENDERDOC_LIBRARY_NAME "librenderdoc.so"
 #endif
