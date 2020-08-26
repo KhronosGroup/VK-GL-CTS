@@ -66,6 +66,49 @@ tcu::TestCaseGroup* createUniformTexelBufferTests (tcu::TestContext& testCtx)
 		}
 	}
 
+	// .snorm
+	{
+		tcu::TestCaseGroup* const	snorm		= new tcu::TestCaseGroup(testCtx, "snorm", "Test uniform texel buffer with SNORM formats");
+		static const char			dataDir[]	= "texture/texel_buffer/uniform/snorm";
+
+		static const struct {
+			std::string	testName;
+			bool		mandatoryFormat;
+			VkFormat	format;
+		} cases[]                               =
+		{
+			{	"b8g8r8-snorm",			false,	VK_FORMAT_B8G8R8_SNORM			},
+			{	"b8g8r8a8-snorm",		false,	VK_FORMAT_B8G8R8A8_SINT			},
+			{	"r16-snorm",			false,	VK_FORMAT_R16_SNORM				},
+			{	"r16g16-snorm",			false,	VK_FORMAT_R16G16_SNORM			},
+			{	"r16g16b16-snorm",		false,	VK_FORMAT_R16G16B16_SNORM		},
+			{	"r16g16b16a16-snorm",	false,	VK_FORMAT_R16G16B16A16_SNORM	},
+			{	"r8-snorm",				true,	VK_FORMAT_R8_SNORM				},
+			{	"r8g8-snorm",			true,	VK_FORMAT_R8G8_SNORM			},
+			{	"r8g8b8-snorm",			false,	VK_FORMAT_R8G8B8_SNORM			},
+			{	"r8g8b8a8-snorm",		false,	VK_FORMAT_R8G8B8A8_SNORM		}
+		};
+
+		uniform->addChild(snorm);
+
+		for (const auto& c : cases)
+		{
+			const std::string							fileName			= c.testName + ".amber";
+			std::vector<cts_amber::BufferRequirement>	bufferRequirements;
+
+			if (!c.mandatoryFormat)
+				bufferRequirements.push_back({c.format, VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT});
+
+			cts_amber::AmberTestCase*					testCase			= cts_amber::createAmberTestCase(testCtx, c.testName.c_str(), "",
+																											 dataDir, fileName,
+																											 std::vector<std::string>(),
+																											 std::vector<vk::VkImageCreateInfo>(),
+																											 bufferRequirements);
+
+			snorm->addChild(testCase);
+		}
+	}
+
 	return uniform.release();
 }
 

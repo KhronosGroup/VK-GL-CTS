@@ -26,10 +26,10 @@ void main()
 END
 
 BUFFER texel_buffer DATA_TYPE B10G11R11_UFLOAT_PACK32 DATA
-0x000003e0 # Unpacks to R = 1.0, G = 1.0, B = 1.0
-0x001f0000 # Unpacks to R = 1.0, G = 1.0, B = 1.0
-0x7c000000 # Unpacks to R = 1.0, G = 1.0, B = 1.0
-0x7c1f0000 # Unpacks to R = 1.0, G = 1.0, B = 1.0
+0x000003e0 # Unpacks to R = 1.0, G = 0.0, B = 0.0
+0x001f0000 # Unpacks to R = 0.0, G = 1.0, B = 0.0
+0x7c000000 # Unpacks to R = 0.0, G = 0.0, B = 1.0
+0x7c1f0000 # Unpacks to R = 0.0, G = 1.0, B = 1.0
 END
 
 BUFFER framebuffer FORMAT B8G8R8A8_UNORM

@@ -195,7 +195,8 @@ AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
 									const char*									category,
 									const std::string&							filename,
 									const std::vector<std::string>				requirements,
-									const std::vector<vk::VkImageCreateInfo>	imageRequirements)
+									const std::vector<vk::VkImageCreateInfo>	imageRequirements,
+									const std::vector<BufferRequirement>		bufferRequirements)
 
 {
 	// shader_test files are saved in <path>/external/vulkancts/data/vulkan/amber/<categoryname>/
@@ -211,6 +212,9 @@ AmberTestCase* createAmberTestCase (tcu::TestContext&							testCtx,
 
 	for (auto req : imageRequirements)
 		testCase->addImageRequirement(req);
+
+	for (auto req : bufferRequirements)
+		testCase->addBufferRequirement(req);
 
 	return testCase;
 }

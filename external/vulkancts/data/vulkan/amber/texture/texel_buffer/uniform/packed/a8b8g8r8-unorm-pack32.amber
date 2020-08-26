@@ -26,10 +26,10 @@ void main()
 END
 
 BUFFER texel_buffer DATA_TYPE A8B8G8R8_UNORM_PACK32 DATA
-0xff0000ff # Unpacks to R = 255, G = 255, B = 255, A = 255
-0xff00ff00 # Unpacks to R = 255, G = 255, B = 255, A = 255
-0xffff0000 # Unpacks to R = 255, G = 255, B = 255, A = 255
-0xffffff00 # Unpacks to R = 255, G = 255, B = 255, A = 255
+0xff0000ff # Unpacks to R = 255, G = 0, B = 0, A = 255
+0xff00ff00 # Unpacks to R = 0, G = 255, B = 0, A = 255
+0xffff0000 # Unpacks to R = 0, G = 0, B = 255, A = 255
+0xffffff00 # Unpacks to R = 0, G = 255, B = 255, A = 255
 END
 
 BUFFER framebuffer FORMAT B8G8R8A8_UNORM
