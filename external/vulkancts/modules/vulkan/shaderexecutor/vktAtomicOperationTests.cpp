@@ -1083,10 +1083,22 @@ void AtomicOperationCase::createShaderSpec (void)
 			;
 	}
 
-	nonVertexShaderTemplateStream
-		<< "int idx = atomicAdd(buf.data.index, 1);\n"
-		<< "buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
-		;
+	if (m_shaderType.getType() == glu::SHADERTYPE_FRAGMENT)
+	{
+		nonVertexShaderTemplateStream
+			<< "if (!gl_HelperInvocation) {\n"
+			<< "    int idx = atomicAdd(buf.data.index, 1);\n"
+			<< "    buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
+			<< "}\n"
+			;
+	}
+	else
+	{
+		nonVertexShaderTemplateStream
+			<< "int idx = atomicAdd(buf.data.index, 1);\n"
+			<< "buf.data.outputValues[idx] = ${ATOMICOP}(buf.data.inoutValues[idx % (${N}/2)], ${COMPARE_ARG}buf.data.inputValues[idx]);\n"
+			;
+	}
 
 	if (memoryType == AtomicMemoryType::SHARED)
 	{
