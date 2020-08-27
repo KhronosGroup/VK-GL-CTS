@@ -362,6 +362,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariableInitTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariablePointersTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVaryingNameTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVectorShuffleTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmWorkgroupMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutTests.cpp \

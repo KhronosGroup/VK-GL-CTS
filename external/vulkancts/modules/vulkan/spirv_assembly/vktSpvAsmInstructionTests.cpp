@@ -78,6 +78,7 @@
 #include "vktSpvAsmSignedIntCompareTests.hpp"
 #include "vktSpvAsmSignedOpTests.hpp"
 #include "vktSpvAsmPtrAccessChainTests.hpp"
+#include "vktSpvAsmVectorShuffleTests.hpp"
 #include "vktSpvAsmFloatControlsExtensionlessTests.hpp"
 #include "vktSpvAsmNonSemanticInfoTests.hpp"
 #include "vktSpvAsm64bitCompareTests.hpp"
@@ -20465,6 +20466,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createSignedOpTestsGroup(testCtx));
 	computeTests->addChild(createUnusedVariableComputeTests(testCtx));
 	computeTests->addChild(createPtrAccessChainGroup(testCtx));
+	computeTests->addChild(createVectorShuffleGroup(testCtx));
 	computeTests->addChild(createHlslComputeGroup(testCtx));
 	computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 	computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));

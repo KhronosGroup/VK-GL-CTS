@@ -1,0 +1,84 @@
+# Test OpVectorShuffle with indices of -1
+#
+# Derived from the following OpenCL C:
+#
+# kernel void swizzle (global float4 *p, global float *res)
+# {
+#   res[0] = p[0].x + p[0].y;
+# }
+
+[require]
+VariablePointerFeatures.variablePointers
+
+[compute shader spirv]
+; SPIR-V
+; Version: 1.0
+; Generator: Google Clspv; 0
+; Bound: 45
+; Schema: 0
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %21 "main"
+               OpSource OpenCL_C 120
+               OpDecorate %_runtimearr_v4float ArrayStride 16
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %_struct_4 Block
+               OpDecorate %_runtimearr_float ArrayStride 4
+               OpMemberDecorate %_struct_7 0 Offset 0
+               OpDecorate %_struct_7 Block
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 0
+               OpDecorate %18 DescriptorSet 0
+               OpDecorate %18 Binding 1
+               OpDecorate %12 SpecId 0
+               OpDecorate %13 SpecId 1
+               OpDecorate %14 SpecId 2
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_runtimearr_v4float = OpTypeRuntimeArray %v4float
+  %_struct_4 = OpTypeStruct %_runtimearr_v4float
+%_ptr_StorageBuffer__struct_4 = OpTypePointer StorageBuffer %_struct_4
+%_runtimearr_float = OpTypeRuntimeArray %float
+  %_struct_7 = OpTypeStruct %_runtimearr_float
+%_ptr_StorageBuffer__struct_7 = OpTypePointer StorageBuffer %_struct_7
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+         %12 = OpSpecConstant %uint 1
+         %13 = OpSpecConstant %uint 1
+         %14 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %12 %13 %14
+       %void = OpTypeVoid
+         %20 = OpTypeFunction %void
+%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
+     %uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+         %29 = OpUndef %v4float
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+         %16 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %17 = OpVariable %_ptr_StorageBuffer__struct_4 StorageBuffer
+         %18 = OpVariable %_ptr_StorageBuffer__struct_7 StorageBuffer
+         %21 = OpFunction %void None %20
+         %22 = OpLabel
+         %25 = OpAccessChain %_ptr_StorageBuffer_v4float %17 %uint_0 %uint_0
+         %27 = OpAccessChain %_ptr_StorageBuffer_float %18 %uint_0 %uint_0
+         %28 = OpLoad %v4float %25
+         %30 = OpVectorShuffle %v4float %28 %29 1 4294967295 4294967295 4294967295
+         %31 = OpFAdd %v4float %28 %30
+         %32 = OpCompositeExtract %float %31 0
+               OpStore %27 %32
+               OpReturn
+               OpFunctionEnd
+
+[test]
+# 'p'[]
+ssbo 0:0 subdata float 0  2.0 4.0 9.0 -3.0
+# The result buffer 'res' []
+ssbo 0:1 subdata float 0  0.0
+
+compute 1 1 1
+
+probe ssbo float 0:1 0 ==  6.0
