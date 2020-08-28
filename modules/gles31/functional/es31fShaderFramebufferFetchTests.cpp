@@ -370,8 +370,29 @@ string FramebufferFetchTestCase::genPassThroughVertSource (void)
 
 glu::ProgramSources FramebufferFetchTestCase::genShaderSources (void)
 {
-	const string		vecType	= getColorOutputType(m_texFmt);
-	std::ostringstream	fragShaderSource;
+	const string				vecType	= getColorOutputType(m_texFmt);
+	std::ostringstream			fragShaderSource;
+	tcu::TextureChannelClass	textureChannelClass = tcu::getTextureChannelClass(m_texFmt.type);
+	tcu::Vec4					maxValue = getTextureFormatInfo(m_texFmt).valueMax;
+	tcu::Vec4					minValue = getTextureFormatInfo(m_texFmt).valueMin;
+	string						maxStr;
+	string						minStr;
+
+	if (textureChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	{
+		maxStr = de::toString(maxValue.asUint());
+		minStr = de::toString(minValue.asUint());
+	}
+	else if (textureChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
+	{
+		maxStr = de::toString(maxValue.asInt());
+		minStr = de::toString(minValue.asInt());
+	}
+	else
+	{
+		maxStr = de::toString(maxValue);
+		minStr = de::toString(minValue);
+	}
 
 	fragShaderSource	<< "#version 310 es\n"
 						<< "#extension GL_EXT_shader_framebuffer_fetch : require\n"
@@ -380,7 +401,7 @@ glu::ProgramSources FramebufferFetchTestCase::genShaderSources (void)
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
-						<< "	o_color += u_color;\n"
+						<< "	o_color = clamp(o_color + u_color, " << vecType << minStr << ", " << vecType << maxStr << ");\n"
 						<< "}\n";
 
 	return glu::makeVtxFragSources(genPassThroughVertSource(), fragShaderSource.str());
@@ -568,24 +589,28 @@ tcu::TextureLevel TextureFormatTestCase::genReferenceTexture (const tcu::Vec4& f
 	tcu::TextureLevel			reference			(glu::mapGLTransferFormat(m_transferFmt.format, m_transferFmt.dataType), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 1);
 	tcu::TextureChannelClass	textureChannelClass = tcu::getTextureChannelClass(m_texFmt.type);
 
+	tcu::Vec4 formatMaxValue = getTextureFormatInfo(m_texFmt).valueMax;
+	tcu::Vec4 formatMinValue = getTextureFormatInfo(m_texFmt).valueMin;
+
+
 	if (textureChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
 	{
-		tcu::clear(reference.getAccess(), fbColor.asUint() + uniformColor.asUint());
+		tcu::clear(reference.getAccess(), tcu::clamp(fbColor.asUint() + uniformColor.asUint(), formatMinValue.asUint(), formatMaxValue.asUint()));
 	}
 	else if (textureChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER)
 	{
-		tcu::clear(reference.getAccess(), fbColor.asInt() + uniformColor.asInt());
+		tcu::clear(reference.getAccess(), tcu::clamp(fbColor.asInt() + uniformColor.asInt(), formatMinValue.asInt(), formatMaxValue.asInt()));
 	}
 	else
 	{
 		if (tcu::isSRGB(m_texFmt))
 		{
-			const tcu::Vec4	fragmentColor = tcu::sRGBToLinear(fbColor) + uniformColor;
+			const tcu::Vec4	fragmentColor = tcu::clamp(tcu::sRGBToLinear(fbColor) + uniformColor, formatMinValue, formatMaxValue);
 			tcu::clear(reference.getAccess(), tcu::linearToSRGB(fragmentColor));
 		}
 		else
 		{
-			tcu::clear(reference.getAccess(), fbColor + uniformColor);
+			tcu::clear(reference.getAccess(), tcu::clamp(fbColor + uniformColor, formatMinValue, formatMaxValue));
 		}
 	}
 
