@@ -704,15 +704,20 @@ protected:
 
 	void TrianglesAdjacencyGen(unsigned int drawSizeX, unsigned int drawSizeY, CColorArray& output)
 	{
+		// Add a small amount (quarter pixel) of jitter to add to the rectangle sides to avoid
+		// triangle edges landing precisely on fragment centers.
+		float jigX = 0.5f / getWindowWidth();
+		float jigY = 0.5f / getWindowHeight();
+
 		float sizeX = 1.0f / static_cast<float>(drawSizeX);
 		float sizeY = 1.0f / static_cast<float>(drawSizeY);
 
 		for (unsigned int i = 0; i < drawSizeX; ++i)
 		{
-			float offsetY = -0.5f + sizeY * static_cast<float>(i);
+			float offsetY = -0.5f + jigY + sizeY * static_cast<float>(i);
 			for (unsigned int j = 0; j < drawSizeY; ++j)
 			{
-				float offsetX = -0.5f + sizeX * static_cast<float>(j);
+				float offsetX = -0.5f + jigX + sizeX * static_cast<float>(j);
 
 				output.push_back(tcu::Vec4(offsetX, offsetY, 0.0f, 1.0f));
 				output.push_back(tcu::Vec4(offsetX - sizeX, offsetY + sizeY, 0.0f, 1.0f));
@@ -733,15 +738,20 @@ protected:
 
 	void TriangleStripAdjacencyGen(unsigned int drawSizeX, unsigned int drawSizeY, CColorArray& output)
 	{
+		// Add a small amount (quarter pixel) of jitter to add to the rectangle sides to avoid
+		// triangle edges landing precisely on fragment centers.
+		float jigX = 0.5f / getWindowWidth();
+		float jigY = 0.5f / getWindowHeight();
+
 		float sizeX = 1.0f / static_cast<float>(drawSizeX);
 		float sizeY = 1.0f / static_cast<float>(drawSizeY);
 
 		for (unsigned int i = 0; i < drawSizeX; ++i)
 		{
-			float offsetY = -0.5f + sizeY * static_cast<float>(i);
+			float offsetY = -0.5f + jigY + sizeY * static_cast<float>(i);
 			for (unsigned int j = 0; j < drawSizeY; ++j)
 			{
-				float offsetX = -0.5f + sizeX * static_cast<float>(j);
+				float offsetX = -0.5f + jigX + sizeX * static_cast<float>(j);
 
 				output.push_back(tcu::Vec4(offsetX, offsetY, 0.0f, 1.0f));
 				output.push_back(tcu::Vec4(offsetX - sizeX, offsetY + sizeY, 0.0f, 1.0f));
