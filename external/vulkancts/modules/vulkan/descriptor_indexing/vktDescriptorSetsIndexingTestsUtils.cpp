@@ -730,7 +730,7 @@ deUint32 DeviceProperties::computeMaxPerStageDescriptorCount	(VkDescriptorType	d
 		storageBuffersDynamic	= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageBuffers,					deviceProps.limits.maxDescriptorSetStorageBuffersDynamic);				// 8
 		sampledImages			= deMinu32(	deviceProps.limits.maxPerStageDescriptorSampledImages - reservedCount,	deviceProps.limits.maxDescriptorSetSampledImages - reservedCount);		// 1048576.
 		storageImages			= deMinu32(	deviceProps.limits.maxPerStageDescriptorStorageImages,					deviceProps.limits.maxDescriptorSetStorageImages);						// 1048576
-		inputAttachments		= deMinu32(	deviceProps.limits.maxPerStageDescriptorInputAttachments,				deviceProps.limits.maxDescriptorSetInputAttachments);					// 1048576
+		inputAttachments		= deMinu32(	deviceProps.limits.maxPerStageDescriptorInputAttachments - 1,			deviceProps.limits.maxDescriptorSetInputAttachments - 1);				// 1048576. -1 because tests use a prime number + 1 to reference subpass input attachment in shader
 	}
 
 	// adding arbitrary upper bound limits to restrain the size of the test ( we are testing big arrays, not the maximum size arrays )
