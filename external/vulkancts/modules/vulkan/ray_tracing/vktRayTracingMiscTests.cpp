@@ -758,6 +758,7 @@ public:
 	virtual tcu::UVec3									getDispatchSize				()												const	= 0;
 	virtual deUint32									getResultBufferSize			()												const	= 0;
 	virtual std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind			()												const	= 0;
+	virtual void										resetTLAS					()														= 0;
 	virtual void										initAS						(	vkt::Context&			context,
 																						RayTracingProperties*	rtPropertiesPtr,
 																						VkCommandBuffer			commandBuffer)				= 0;
@@ -843,6 +844,11 @@ public:
 		DE_ASSERT(m_tlPtr != nullptr);
 
 		return {m_tlPtr.get() };
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
 	}
 
 	void initAS(vkt::Context&			context,
@@ -1118,6 +1124,14 @@ public:
 		}
 
 		return resultVec;
+	}
+
+	void resetTLAS() final
+	{
+		for (auto& currentTLPtr : m_tlPtrVec)
+		{
+			currentTLPtr.reset();
+		}
 	}
 
 	bool init(RayTracingProperties* rtPropertiesPtr) final
@@ -1485,6 +1499,11 @@ public:
 		return {m_tlPtr.get() };
 	}
 
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
 	void initAS(vkt::Context&			context,
 				RayTracingProperties*	/* rtPropertiesPtr */,
 				VkCommandBuffer			commandBuffer) final
@@ -1812,6 +1831,11 @@ public:
 		return {m_tlPtr.get() };
 	}
 
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
 	bool init(RayTracingProperties*	rtPropertiesPtr) final
 	{
 		const auto maxRayHitAttributeSize = rtPropertiesPtr->getMaxRayHitAttributeSize();
@@ -2126,6 +2150,11 @@ public:
 	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const	final
 	{
 		return {m_tlPtr.get() };
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
 	}
 
 	void initAS(vkt::Context&			context,
@@ -2704,6 +2733,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 								resultBufferPtr->getAllocation().getMemory(),
 								resultBufferPtr->getAllocation().getOffset(),
 								resultBufferSize);
+
+	m_testPtr->resetTLAS();
 
 	return resultBufferPtr;
 }
