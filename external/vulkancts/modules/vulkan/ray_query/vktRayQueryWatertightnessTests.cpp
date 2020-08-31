@@ -508,7 +508,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "{\n"
 					<< "  vec4 gl_Position;\n"
 					<< "} gl_in[];\n"
-					<< "layout(vertices = 4) out;\n"
+					<< "layout(vertices = 3) out;\n"
 					<< "out gl_PerVertex\n"
 					<< "{\n"
 					<< "  vec4 gl_Position;\n"
@@ -525,12 +525,11 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "  if (gl_InvocationID == 0)\n"
 					<< "  {\n"
 					<< "    const ivec3 size = ivec3(" << testParams.width << ", " << testParams.height << ", 1);\n"
-					<< "    for (int y = 0; y < size.y; y++)\n"
-					<< "    for (int x = 0; x < size.x; x++)\n"
-					<< "    {\n"
-					<< "      const ivec3 pos = ivec3(x, y, 0);\n"
-					<< "      testFunc(pos, size);\n"
-					<< "    }\n"
+					<< "    int index = int(gl_in[gl_InvocationID].gl_Position.z);\n"
+					<< "    int x = index % size.x;\n"
+					<< "    int y = index / size.y;\n"
+					<< "    const ivec3 pos = ivec3(x, y, 0);\n"
+					<< "    testFunc(pos, size);\n"
 					<< "  }\n"
 					<< "\n"
 					<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
@@ -546,7 +545,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 				std::ostringstream src;
 				src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460) << "\n"
 					<< "#extension GL_EXT_tessellation_shader : require\n"
-					<< "layout(quads, equal_spacing, ccw) in;\n"
+					<< "layout(triangles, equal_spacing, ccw) in;\n"
 					<< "in gl_PerVertex\n"
 					<< "{\n"
 					<< "  vec4 gl_Position;\n"
@@ -591,7 +590,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "{\n"
 					<< "  vec4 gl_Position;\n"
 					<< "} gl_in[];\n"
-					<< "layout(vertices = 4) out;\n"
+					<< "layout(vertices = 3) out;\n"
 					<< "out gl_PerVertex\n"
 					<< "{\n"
 					<< "  vec4 gl_Position;\n"
@@ -615,7 +614,7 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "#extension GL_EXT_ray_query : require\n"
 					<< "layout(set = 0, binding = 0, r32i) uniform iimage3D result;\n"
 					<< "layout(set = 0, binding = 1) uniform accelerationStructureEXT rayQueryTopLevelAccelerationStructure;\n"
-					<< "layout(quads, equal_spacing, ccw) in;\n"
+					<< "layout(triangles, equal_spacing, ccw) in;\n"
 					<< "in gl_PerVertex\n"
 					<< "{\n"
 					<< "  vec4 gl_Position;\n"
@@ -628,20 +627,13 @@ void GraphicsConfiguration::initPrograms (SourceCollections&	programCollection,
 					<< "\n"
 					<< "void main(void)\n"
 					<< "{\n"
-					<< "  const ivec3 size = ivec3(" << testParams.width << ", " << testParams.height << ", 1);\n"
-					<< "\n"
-					<< "  if (gl_PrimitiveID == 0)\n"
-					<< "  {\n"
-					<< "    const ivec3 size = ivec3(" << testParams.width << ", " << testParams.height << ", 1);\n"
-					<< "    for (int y = 0; y < size.y; y++)\n"
-					<< "    for (int x = 0; x < size.x; x++)\n"
-					<< "    {\n"
-					<< "      const ivec3 pos = ivec3(x, y, 0);\n"
-					<< "      testFunc(pos, size);\n"
-					<< "    }\n"
-					<< "  }\n"
-					<< "\n"
-					<< "  gl_Position = gl_in[0].gl_Position;\n"
+					<< "	const ivec3 size = ivec3(" << testParams.width << ", " << testParams.height << ", 1);\n"
+					<< "	int index = int(gl_in[0].gl_Position.z);\n"
+					<< "	int x = index % size.x;\n"
+					<< "	int y = index / size.y;\n"
+					<< "	const ivec3 pos = ivec3(x, y, 0);\n"
+					<< "	testFunc(pos, size);\n"
+					<< "	gl_Position = gl_in[0].gl_Position;\n"
 					<< "}\n";
 
 				programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str()) << buildOptions;
@@ -731,8 +723,10 @@ void GraphicsConfiguration::initVertexBuffer (Context&		context,
 	switch (testParams.stage)
 	{
 		case VK_SHADER_STAGE_VERTEX_BIT:
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
 		{
-			const float z = 0.0f;
+			float z = 0.0f;
 			const float w = 1.0f;
 
 			vertices.reserve(3 * height * width);
@@ -750,41 +744,9 @@ void GraphicsConfiguration::initVertexBuffer (Context&		context,
 				vertices.push_back(tcu::Vec4(x0, y0, z, w));
 				vertices.push_back(tcu::Vec4(xm, y1, z, w));
 				vertices.push_back(tcu::Vec4(x1, ym, z, w));
+
+				z += 1.f;
 			}
-
-			break;
-		}
-
-		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-		{
-			const float		z = 0.0f;
-			const float		w = 1.0f;
-			const tcu::Vec4	a = tcu::Vec4(-1.0f, -1.0f, z, w);
-			const tcu::Vec4	b = tcu::Vec4(+1.0f, -1.0f, z, w);
-			const tcu::Vec4	c = tcu::Vec4(+1.0f, +1.0f, z, w);
-			const tcu::Vec4	d = tcu::Vec4(-1.0f, +1.0f, z, w);
-
-			vertices.push_back(a);
-			vertices.push_back(b);
-			vertices.push_back(c);
-			vertices.push_back(d);
-
-			break;
-		}
-
-		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-		{
-			const float		z = 0.0f;
-			const float		w = 1.0f;
-			const tcu::Vec4	a = tcu::Vec4(-1.0f, -1.0f, z, w);
-			const tcu::Vec4	b = tcu::Vec4(+1.0f, -1.0f, z, w);
-			const tcu::Vec4	c = tcu::Vec4(+1.0f, +1.0f, z, w);
-			const tcu::Vec4	d = tcu::Vec4(-1.0f, +1.0f, z, w);
-
-			vertices.push_back(a);
-			vertices.push_back(b);
-			vertices.push_back(c);
-			vertices.push_back(d);
 
 			break;
 		}
@@ -860,7 +822,7 @@ Move<VkPipeline> GraphicsConfiguration::makeGraphicsPipeline (Context&		context,
 	const VkDevice					device				= context.getDevice();
 	const bool						tessStageTest		= (testParams.stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT || testParams.stage == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 	const VkPrimitiveTopology		topology			= tessStageTest ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	const deUint32					patchControlPoints	= tessStageTest ? 4 : 0;
+	const deUint32					patchControlPoints	= tessStageTest ? 3 : 0;
 	const std::vector<VkViewport>	viewports			(1, makeViewport(testParams.width, testParams.height));
 	const std::vector<VkRect2D>		scissors			(1, makeRect2D(testParams.width, testParams.height));
 
