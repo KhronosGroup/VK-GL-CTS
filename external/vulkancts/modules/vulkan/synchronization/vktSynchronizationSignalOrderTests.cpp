@@ -1279,8 +1279,12 @@ public:
 			!context.getTimelineSemaphoreFeatures().timelineSemaphore)
 			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
 
+		VkQueueFlags writeOpQueueFlags = m_writeOpSupport->getQueueFlags(*m_operationContext);
 		for (deUint32 familyIdx = 0; familyIdx < queueFamilyProperties.size(); familyIdx++) {
-			if ((queueFamilyProperties[familyIdx].queueFlags & m_writeOpSupport->getQueueFlags(*m_operationContext)) == m_writeOpSupport->getQueueFlags(*m_operationContext)) {
+			if (((queueFamilyProperties[familyIdx].queueFlags & writeOpQueueFlags) == writeOpQueueFlags) ||
+			((writeOpQueueFlags == VK_QUEUE_TRANSFER_BIT) &&
+			(((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) ||
+			((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT)))) {
 				m_queueA = getDeviceQueue(m_deviceInterface, *m_device, familyIdx, 0);
 				m_queueFamilyIndexA = familyIdx;
 				break;
@@ -1289,8 +1293,12 @@ public:
 		if (m_queueA == DE_NULL)
 			TCU_THROW(NotSupportedError, "No queue supporting write operation");
 
+		VkQueueFlags readOpQueueFlags = m_readOpSupport->getQueueFlags(*m_operationContext);
 		for (deUint32 familyIdx = 0; familyIdx < queueFamilyProperties.size(); familyIdx++) {
-			if ((queueFamilyProperties[familyIdx].queueFlags & m_readOpSupport->getQueueFlags(*m_operationContext)) == m_readOpSupport->getQueueFlags(*m_operationContext)) {
+			if (((queueFamilyProperties[familyIdx].queueFlags & readOpQueueFlags) == readOpQueueFlags) ||
+			((readOpQueueFlags == VK_QUEUE_TRANSFER_BIT) &&
+			(((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) ||
+			((queueFamilyProperties[familyIdx].queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT)))) {
 				for (deUint32 queueIdx = 0; queueIdx < queueFamilyProperties[familyIdx].queueCount; queueIdx++) {
 					VkQueue queue = getDeviceQueue(m_deviceInterface, *m_device, familyIdx, queueIdx);
 
