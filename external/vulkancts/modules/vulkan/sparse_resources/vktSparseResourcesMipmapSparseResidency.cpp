@@ -437,6 +437,12 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 		for (deUint32 valueNdx = 0; valueNdx < imageSizeInBytes; ++valueNdx)
 		{
 			referenceData[valueNdx] = static_cast<deUint8>((valueNdx % imageMemoryRequirements.alignment) + 1u);
+
+			// Simply avoid using 0x80 which is out of range for 8bit SNORM
+			if (referenceData[valueNdx] == 0x80)
+			{
+				referenceData[valueNdx] = 0x81;
+			}
 		}
 
 		{
