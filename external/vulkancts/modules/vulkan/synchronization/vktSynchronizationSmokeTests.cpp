@@ -1092,6 +1092,9 @@ tcu::TestStatus testFences (Context& context)
 
 tcu::TestStatus testSemaphores (Context& context, VkSemaphoreType semaphoreType)
 {
+	if (semaphoreType == VK_SEMAPHORE_TYPE_TIMELINE_KHR && !context.getTimelineSemaphoreFeatures().timelineSemaphore)
+		TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+
 	TestLog&					log					= context.getTestContext().getLog();
 	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
