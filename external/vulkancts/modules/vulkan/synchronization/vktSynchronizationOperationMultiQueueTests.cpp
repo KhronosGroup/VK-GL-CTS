@@ -500,6 +500,9 @@ public:
 		deUint32				maxQueues		= 0;
 		std::vector<deUint32>	queueFamilies;
 
+		if (!context.getTimelineSemaphoreFeatures().timelineSemaphore)
+			TCU_THROW(NotSupportedError, "Timeline semaphore not supported");
+
 		if (m_queues->totalQueueCount() < 2)
 			TCU_THROW(NotSupportedError, "Not enough queues");
 
