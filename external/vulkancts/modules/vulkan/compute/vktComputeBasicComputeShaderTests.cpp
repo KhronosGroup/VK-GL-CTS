@@ -972,7 +972,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		const VkBufferMemoryBarrier inputBufferPostHostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
 
 		const VkImageMemoryBarrier imageLayoutBarrier = makeImageMemoryBarrier(
-			0u, 0u,
+			0u, VK_ACCESS_SHADER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 			*image, subresourceRange);
 

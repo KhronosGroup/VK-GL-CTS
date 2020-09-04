@@ -3730,7 +3730,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 
 		const VkImageLayout				initialLayouts[]			=
 		{
-			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		};
 

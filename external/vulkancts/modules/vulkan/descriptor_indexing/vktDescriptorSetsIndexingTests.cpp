@@ -1038,7 +1038,7 @@ void CommonDescriptorInstance::copyBuffersToImages					(IterateCommonVariables&	
 	DE_ASSERT(variables.descriptorsImages.size() == infoCount);
 	const VkPipelineStageFlagBits dstStageMask = (m_testParams.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT)
 		? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
-		: VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+		: VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	for (deUint32 infoIdx = 0; infoIdx < infoCount; ++infoIdx)
 	{
 		ut::recordCopyBufferToImage(

@@ -572,7 +572,7 @@ void MemoryQualifierInstanceImage::commandsBeforeCompute (const VkCommandBuffer 
 
 	const VkImageMemoryBarrier imageLayoutBarrier
 		= makeImageMemoryBarrier(0u,
-								 VK_ACCESS_SHADER_READ_BIT,
+								 VK_ACCESS_SHADER_WRITE_BIT,
 								 VK_IMAGE_LAYOUT_UNDEFINED,
 								 VK_IMAGE_LAYOUT_GENERAL,
 								 m_image->get(),

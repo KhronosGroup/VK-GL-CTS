@@ -411,7 +411,7 @@ void ImageSizeTestInstance::commandBeforeCompute (const VkCommandBuffer cmdBuffe
 
 	const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
 	const VkImageMemoryBarrier barrierSetImageLayout = makeImageMemoryBarrier(
-		0u, 0u,
+		0u, VK_ACCESS_SHADER_READ_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 		m_image->get(), subresourceRange);
 

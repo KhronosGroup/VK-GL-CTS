@@ -2427,12 +2427,27 @@ void TransferTestInstance::configCommandBuffer (void)
 	{
 		case TRANSFER_METHOD_COPY_BUFFER:
 			{
+				const vk::VkBufferMemoryBarrier bufferBarrier =
+					{
+						vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+						DE_NULL,										// const void*		pNext;
+						vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+						vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	dstAccessMask;
+						VK_QUEUE_FAMILY_IGNORED,						// deUint32			srcQueueFamilyIndex;
+						VK_QUEUE_FAMILY_IGNORED,						// deUint32			dstQueueFamilyIndex;
+						*m_dstBuffer,									// VkBuffer			buffer;
+						0ull,											// VkDeviceSize		offset;
+						VK_WHOLE_SIZE									// VkDeviceSize		size;
+					};
+
+				vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+
 				const VkBufferCopy  copyBufRegion =
-				{
-					0u,			// VkDeviceSize    srcOffset;
-					0u,			// VkDeviceSize    destOffset;
-					m_bufSize,	// VkDeviceSize    copySize;
-				};
+					{
+						0u,			// VkDeviceSize    srcOffset;
+						0u,			// VkDeviceSize    destOffset;
+						m_bufSize,	// VkDeviceSize    copySize;
+					};
 
 				vk.cmdCopyBuffer(*m_cmdBuffer, *m_srcBuffer, *m_dstBuffer, 1u, &copyBufRegion);
 				break;
@@ -2598,7 +2613,7 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType          sType;
 		DE_NULL,								// const void*              pNext;
 		0u,										// VkAccessFlags            srcAccessMask;
-		0u,										// VkAccessFlags            dstAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags            dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout            oldLayout;
 		layout,									// VkImageLayout            newLayout;
 		VK_QUEUE_FAMILY_IGNORED,				// uint32_t                 srcQueueFamilyIndex;
@@ -2607,7 +2622,7 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 		subRange								// VkImageSubresourceRange  subresourceRange;
 	};
 
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
 class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase

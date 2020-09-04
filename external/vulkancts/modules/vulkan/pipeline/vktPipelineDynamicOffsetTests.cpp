@@ -1197,6 +1197,20 @@ void DynamicOffsetComputeTestInstance::init (void)
 
 		for (deUint32 i = 0; i < m_params.numDescriptorSetBindings; i++)
 		{
+			// Create pipeline barrier
+			const vk::VkBufferMemoryBarrier bufferBarrier =
+				{
+					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+					DE_NULL,														// const void*		pNext;
+					vk::VK_ACCESS_SHADER_WRITE_BIT,									// VkAccessFlags	srcAccessMask;
+					vk::VK_ACCESS_SHADER_WRITE_BIT | vk::VK_ACCESS_HOST_READ_BIT,	// VkAccessFlags	dstAccessMask;
+					VK_QUEUE_FAMILY_IGNORED,										// deUint32			srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,										// deUint32			dstQueueFamilyIndex;
+					*m_outputBuffer,												// VkBuffer			buffer;
+					outputOffset,													// VkDeviceSize		offset;
+					VK_WHOLE_SIZE													// VkDeviceSize		size;
+				};
+
 			vector<deUint32> offsets;
 
 			// Offsets for input buffers
@@ -1212,6 +1226,8 @@ void DynamicOffsetComputeTestInstance::init (void)
 
 			// Dispatch
 			vk.cmdDispatch(**m_cmdBuffers[idx], 1, 1, 1);
+
+			vk.cmdPipelineBarrier(**m_cmdBuffers[idx], vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 		}
 
 		endCommandBuffer(vk, **m_cmdBuffers[idx]);

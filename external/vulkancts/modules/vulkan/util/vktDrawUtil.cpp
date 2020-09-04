@@ -649,7 +649,7 @@ void VulkanDrawContext::draw (void)
 				m_resolveImage = MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, allocator, resolveImageCreateInfo, MemoryRequirement::Any));
 
 				const VkImageMemoryBarrier resolveBarrier = makeImageMemoryBarrier(
-						0u, VK_ACCESS_TRANSFER_READ_BIT,
+						0u, VK_ACCESS_TRANSFER_WRITE_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 						**m_resolveImage, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
 

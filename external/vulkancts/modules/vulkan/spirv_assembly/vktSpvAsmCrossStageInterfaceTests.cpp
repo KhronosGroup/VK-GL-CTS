@@ -304,8 +304,8 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 
 		imageBarrier(vk, *cmdBuffer, *colorAttachmentImage, imageSubresourceRange,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			0u, 0u,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+			0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		vk.cmdClearColorImage(*cmdBuffer, *colorAttachmentImage,  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &renderPassClearValue.color, 1, &imageSubresourceRange);
 
