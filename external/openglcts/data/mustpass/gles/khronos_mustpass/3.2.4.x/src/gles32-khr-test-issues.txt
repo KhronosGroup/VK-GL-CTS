@@ -1,2 +1,0 @@
-#VK-GL-CTS 354i
-KHR-GLES32.robust.*

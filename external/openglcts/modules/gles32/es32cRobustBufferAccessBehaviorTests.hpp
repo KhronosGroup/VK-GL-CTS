@@ -46,7 +46,7 @@ class VertexBufferObjectsTest : public deqp::RobustBufferAccessBehavior::VertexB
 {
 public:
 	/* Public methods */
-	VertexBufferObjectsTest(deqp::Context& context);
+	VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~VertexBufferObjectsTest()
 	{
 	}
@@ -72,8 +72,8 @@ class TexelFetchTest : public deqp::RobustBufferAccessBehavior::TexelFetchTest
 {
 public:
 	/* Public methods */
-	TexelFetchTest(deqp::Context& context);
-	TexelFetchTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description);
+	TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType, const glw::GLchar* name, const glw::GLchar* description);
 	virtual ~TexelFetchTest()
 	{
 	}
@@ -102,7 +102,7 @@ class ImageLoadStoreTest : public TexelFetchTest
 {
 public:
 	/* Public methods */
-	ImageLoadStoreTest(deqp::Context& context);
+	ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~ImageLoadStoreTest()
 	{
 	}
@@ -126,7 +126,7 @@ class StorageBufferTest : public deqp::RobustBufferAccessBehavior::StorageBuffer
 {
 public:
 	/* Public methods */
-	StorageBufferTest(deqp::Context& context);
+	StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~StorageBufferTest()
 	{
 	}
@@ -149,7 +149,7 @@ class UniformBufferTest : public deqp::RobustBufferAccessBehavior::UniformBuffer
 {
 public:
 	/* Public methods */
-	UniformBufferTest(deqp::Context& context);
+	UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~UniformBufferTest()
 	{
 	}
@@ -170,7 +170,7 @@ class RobustBufferAccessBehaviorTests : public deqp::RobustBufferAccessBehaviorT
 {
 public:
 	/* Public methods */
-	RobustBufferAccessBehaviorTests(deqp::Context& context);
+	RobustBufferAccessBehaviorTests(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~RobustBufferAccessBehaviorTests(void)
 	{
 	}

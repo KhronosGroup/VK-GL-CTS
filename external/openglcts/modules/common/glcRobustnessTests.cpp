@@ -283,7 +283,7 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
 	bool test_result = true;
 
 	/* Iterate over all cases */
-	Program program(*context);
+	Program program(renderContext);
 
 	/* Compute Shader */
 	bool			   glslES320 = contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
@@ -530,14 +530,15 @@ tcu::TestNode::IterateResult ReadnPixelsTest::iterate()
 	static const GLuint n_vertices = 24;
 
 	/* GL entry points */
-	const Functions& gl = context->getRenderContext().getFunctions();
+	glu::RenderContext& renderContext = context->getRenderContext();
+	const Functions& gl = renderContext.getFunctions();
 
 	/* Test case objects */
-	Program		program(*context);
-	Texture		texture(*context);
-	Buffer		elements_buffer(*context);
-	Buffer		vertices_buffer(*context);
-	VertexArray vao(*context);
+	Program		program(renderContext);
+	Texture		texture(renderContext);
+	Buffer		elements_buffer(renderContext);
+	Buffer		vertices_buffer(renderContext);
+	VertexArray vao(renderContext);
 
 	/* Vertex array initialization */
 	VertexArray::Generate(gl, vao.m_id);

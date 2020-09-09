@@ -26,6 +26,8 @@
 #include "glcKHRDebugTests.hpp"
 #include "glcMultipleContextsTests.hpp"
 #include "glcNoErrorTests.hpp"
+#include "es32cRobustBufferAccessBehaviorTests.hpp"
+#include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcRobustnessTests.hpp"
 #include "gluRenderContext.hpp"
 
@@ -96,6 +98,7 @@ void NoDefaultContextPackage::init(void)
 
 	tcu::TestCaseGroup* gl43Group = new tcu::TestCaseGroup(getTestContext(), "gl43", "");
 	gl43Group->addChild(new glcts::KHRDebugTests(getTestContext(), glu::ApiType::core(4, 3)));
+	gl43Group->addChild(new deqp::RobustBufferAccessBehaviorTests(getTestContext(), glu::ApiType::core(4, 3)));
 	addChild(gl43Group);
 
 	tcu::TestCaseGroup* gl45Group = new tcu::TestCaseGroup(getTestContext(), "gl45", "");
@@ -110,6 +113,7 @@ void NoDefaultContextPackage::init(void)
 	tcu::TestCaseGroup* es32Group = new tcu::TestCaseGroup(getTestContext(), "es32", "");
 	es32Group->addChild(new glcts::RobustnessTests(getTestContext(), glu::ApiType::es(3, 2)));
 	es32Group->addChild(new glcts::ContextFlagsTests(getTestContext(), glu::ApiType::es(3, 2)));
+	es32Group->addChild(new es32cts::RobustBufferAccessBehaviorTests(getTestContext(), glu::ApiType::es(3, 2)));
 	addChild(es32Group);
 }
 

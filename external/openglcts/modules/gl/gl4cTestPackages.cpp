@@ -72,7 +72,6 @@
 #include "glcInfoTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
-#include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
@@ -231,7 +230,6 @@ void GL43TestPackage::init(void)
 		addChild(new glcts::DrawIndirectTestsGL43(getContext()));
 		addChild(new gl4cts::ProgramInterfaceQueryTests(getContext()));
 		addChild(new gl4cts::ComputeShaderTests(getContext()));
-		addChild(new deqp::RobustBufferAccessBehaviorTests(getContext()));
 		addChild(new gl4cts::ShaderStorageBufferObjectTests(getContext()));
 		addChild(new gl4cts::VertexAttribBindingTests(getContext()));
 		addChild(new gl4cts::ShaderImageSizeTests(getContext()));

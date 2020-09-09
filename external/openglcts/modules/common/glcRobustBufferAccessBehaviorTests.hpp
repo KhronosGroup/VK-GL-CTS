@@ -47,7 +47,7 @@ class Buffer
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Buffer(deqp::Context& context);
+	Buffer(glu::RenderContext& renderContext);
 	~Buffer();
 
 	/* Init & Release */
@@ -80,7 +80,7 @@ private:
 	/* Private enums */
 
 	/* Private fields */
-	deqp::Context& m_context;
+	glu::RenderContext& m_renderContext;
 	glw::GLenum	m_target;
 };
 
@@ -92,7 +92,7 @@ class Framebuffer
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Framebuffer(deqp::Context& context);
+	Framebuffer(glu::RenderContext& renderContext);
 	~Framebuffer();
 
 	/* Init & Release */
@@ -113,7 +113,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	glu::RenderContext& m_renderContext;
 };
 
 /** Represents shader instance.
@@ -124,7 +124,7 @@ class Shader
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Shader(deqp::Context& context);
+	Shader(glu::RenderContext& renderContext);
 	~Shader();
 
 	/* Init & Realese */
@@ -145,7 +145,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	glu::RenderContext& m_renderContext;
 };
 
 /** Represents program instance.
@@ -156,7 +156,7 @@ class Program
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Program(deqp::Context& context);
+	Program(glu::RenderContext& renderContext);
 	~Program();
 
 	/* Init & Release */
@@ -191,7 +191,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	glu::RenderContext& m_renderContext;
 };
 
 /** Represents texture instance
@@ -201,7 +201,7 @@ class Texture
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Texture(deqp::Context& context);
+	Texture(glu::RenderContext& renderContext);
 	~Texture();
 
 	/* Init & Release */
@@ -245,7 +245,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	glu::RenderContext& m_renderContext;
 };
 
 /** Represents Vertex array object
@@ -256,7 +256,7 @@ class VertexArray
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	VertexArray(deqp::Context& Context);
+	VertexArray(glu::RenderContext& renderContext);
 	~VertexArray();
 
 	/* Init & Release */
@@ -274,7 +274,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	glu::RenderContext& m_renderContext;
 };
 
 /** Implementation of test VertexBufferObjects. Description follows:
@@ -323,12 +323,12 @@ private:
  * - inspect contents of framebuffer, it is expected that it is filled with
  * value 1.
  **/
-class VertexBufferObjectsTest : public TestCase
+class VertexBufferObjectsTest : public tcu::TestCase
 {
 public:
 	/* Public methods */
-	VertexBufferObjectsTest(deqp::Context& context);
-	VertexBufferObjectsTest(deqp::Context& context, const char* name, const char* description);
+	VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType, const char* name, const char* description);
 	virtual ~VertexBufferObjectsTest()
 	{
 	}
@@ -344,6 +344,9 @@ protected:
 	virtual bool verifyInvalidResults(glw::GLuint texture_id);
 	virtual bool verifyValidResults(glw::GLuint texture_id);
 	virtual bool verifyResults(glw::GLuint texture_id);
+
+	glu::ApiType m_apiType;
+	glu::RenderContext* m_renderContext;
 };
 
 /** Implementation of test TexelFetch. Description follows:
@@ -374,12 +377,12 @@ protected:
  * - a texture with 4 samples.
  **/
 
-class TexelFetchTest : public TestCase
+class TexelFetchTest : public tcu::TestCase
 {
 public:
 	/* Public methods */
-	TexelFetchTest(deqp::Context& context);
-	TexelFetchTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description);
+	TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType, const char* name, const char* description);
 	virtual ~TexelFetchTest()
 	{
 	}
@@ -413,6 +416,8 @@ protected:
 
 	/* Protected fields */
 	TEST_CASES m_test_case;
+	glu::ApiType m_apiType;
+	glu::RenderContext* m_renderContext;
 
 protected:
 	/* Protected methods */
@@ -441,8 +446,8 @@ class ImageLoadStoreTest : public TexelFetchTest
 {
 public:
 	/* Public methods */
-	ImageLoadStoreTest(deqp::Context& context);
-	ImageLoadStoreTest(deqp::Context& context, const char* name, const char* description);
+	ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType, const char* name, const char* description);
 	virtual ~ImageLoadStoreTest()
 	{
 	}
@@ -484,12 +489,12 @@ protected:
  *   * value of src_index is equal to gl_LocalInvocationID.x + 16; It is
  *   expected that destination buffer will be filled with value 0.
  **/
-class StorageBufferTest : public TestCase
+class StorageBufferTest : public tcu::TestCase
 {
 public:
 	/* Public methods */
-	StorageBufferTest(deqp::Context& context);
-	StorageBufferTest(deqp::Context& context, const char* name, const char* description);
+	StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType, const char* name, const char* description);
 	virtual ~StorageBufferTest()
 	{
 	}
@@ -515,6 +520,8 @@ protected:
 	/* Protected fields */
 	VERSION m_test_case;
 	bool m_hasKhrRobustBufferAccess;
+	glu::ApiType m_apiType;
+	glu::RenderContext* m_renderContext;
 
 	/* Protected constants */
 	static const glw::GLfloat m_destination_data[4];
@@ -530,12 +537,12 @@ protected:
  * - use uniform buffer for source instead of storage buffer;
  * - ignore the case with invalid value of dst_index.
  **/
-class UniformBufferTest : public TestCase
+class UniformBufferTest : public tcu::TestCase
 {
 public:
 	/* Public methods */
-	UniformBufferTest(deqp::Context& context);
-	UniformBufferTest(deqp::Context& context, const char* name, const char* description);
+	UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType, const char* name, const char* description);
 	virtual ~UniformBufferTest()
 	{
 	}
@@ -559,20 +566,44 @@ protected:
 
 	/* Protected fields */
 	VERSION m_test_case;
+	glu::ApiType m_apiType;
+	glu::RenderContext* m_renderContext;
 };
+
+/** Class for creating robustness context */
+class RobustnessEnabledContext
+{
+public:
+
+	RobustnessEnabledContext(tcu::TestContext& testCtx, glu::ApiType apiType);
+
+	~RobustnessEnabledContext(void);
+
+	glu::RenderContext* getRenderContext() { return m_renderContext; }
+
+private:
+	tcu::TestContext&	m_testCtx;
+	glu::ApiType		m_apiType;
+	glu::RenderContext* m_renderContext;
+};
+
 } /* RobustBufferAccessBehavior */
 
 /** Group class for multi bind conformance tests */
-class RobustBufferAccessBehaviorTests : public deqp::TestCaseGroup
+class RobustBufferAccessBehaviorTests : public tcu::TestCaseGroup
 {
 public:
 	/* Public methods */
-	RobustBufferAccessBehaviorTests(deqp::Context& context);
+	RobustBufferAccessBehaviorTests(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~RobustBufferAccessBehaviorTests(void)
 	{
 	}
 
 	virtual void init(void);
+
+protected:
+	/* Protected fields */
+	glu::ApiType m_apiType;
 
 private:
 	/* Private methods */

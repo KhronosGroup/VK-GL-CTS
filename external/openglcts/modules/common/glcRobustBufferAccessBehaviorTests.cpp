@@ -64,9 +64,9 @@ const GLenum Buffer::m_targets[Buffer::m_n_targets] = {
 
 /** Constructor.
  *
- * @param context CTS context.
+ * @param renderContext CTS context.
  **/
-Buffer::Buffer(deqp::Context& context) : m_id(m_invalid_id), m_context(context), m_target(GL_ARRAY_BUFFER)
+Buffer::Buffer(glu::RenderContext& renderContext) : m_id(m_invalid_id), m_renderContext(renderContext), m_target(GL_ARRAY_BUFFER)
 {
 }
 
@@ -92,7 +92,7 @@ void Buffer::InitData(glw::GLenum target, glw::GLenum usage, glw::GLsizeiptr siz
 
 	m_target = target;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	Generate(gl, m_id);
 	Bind(gl, m_id, m_target);
@@ -106,7 +106,7 @@ void Buffer::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
+		const Functions& gl = m_renderContext.getFunctions();
 
 		gl.deleteBuffers(1, &m_id);
 		m_id = m_invalid_id;
@@ -118,7 +118,7 @@ void Buffer::Release()
  **/
 void Buffer::Bind() const
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	Bind(gl, m_id, m_target);
 }
@@ -129,7 +129,7 @@ void Buffer::Bind() const
  **/
 void Buffer::BindBase(glw::GLuint index) const
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	BindBase(gl, m_id, m_target, index);
 }
@@ -214,9 +214,9 @@ const GLuint Framebuffer::m_invalid_id = -1;
 
 /** Constructor.
  *
- * @param context CTS context.
+ * @param renderContext CTS context.
  **/
-Framebuffer::Framebuffer(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+Framebuffer::Framebuffer(glu::RenderContext& renderContext) : m_id(m_invalid_id), m_renderContext(renderContext)
 {
 	/* Nothing to done here */
 }
@@ -236,7 +236,7 @@ void Framebuffer::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
+		const Functions& gl = m_renderContext.getFunctions();
 
 		gl.deleteFramebuffers(1, &m_id);
 		m_id = m_invalid_id;
@@ -298,17 +298,17 @@ const GLuint Program::m_invalid_id = 0;
 
 /** Constructor.
  *
- * @param context CTS context.
+ * @param renderContext CTS context.
  **/
-Program::Program(deqp::Context& context)
+Program::Program(glu::RenderContext& renderContext)
 	: m_id(m_invalid_id)
-	, m_compute(context)
-	, m_fragment(context)
-	, m_geometry(context)
-	, m_tess_ctrl(context)
-	, m_tess_eval(context)
-	, m_vertex(context)
-	, m_context(context)
+	, m_compute(renderContext)
+	, m_fragment(renderContext)
+	, m_geometry(renderContext)
+	, m_tess_ctrl(renderContext)
+	, m_tess_eval(renderContext)
+	, m_vertex(renderContext)
+	, m_renderContext(renderContext)
 {
 	/* Nothing to be done here */
 }
@@ -338,7 +338,7 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	Release();
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	/* Initialize shaders */
 	m_compute.Init(GL_COMPUTE_SHADER, compute_shader);
@@ -366,7 +366,7 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
  **/
 void Program::Release()
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	if (m_invalid_id != m_id)
 	{
@@ -389,7 +389,7 @@ void Program::Release()
  **/
 void Program::Use() const
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	Use(gl, m_id);
 }
@@ -482,9 +482,9 @@ const GLuint Shader::m_invalid_id = 0;
 
 /** Constructor.
  *
- * @param context CTS context.
+ * @param renderContext CTS context.
  **/
-Shader::Shader(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+Shader::Shader(glu::RenderContext& renderContext) : m_id(m_invalid_id), m_renderContext(renderContext)
 {
 	/* Nothing to be done here */
 }
@@ -514,7 +514,7 @@ void Shader::Init(glw::GLenum stage, const std::string& source)
 	Release();
 
 	/* Create, set source and compile */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext.getFunctions();
 
 	Create(gl, stage, m_id);
 	Source(gl, m_id, source);
@@ -529,7 +529,7 @@ void Shader::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
+		const Functions& gl = m_renderContext.getFunctions();
 
 		gl.deleteShader(m_id);
 		m_id = m_invalid_id;
@@ -612,9 +612,9 @@ const GLuint Texture::m_invalid_id = -1;
 
 /** Constructor.
  *
- * @param context CTS context.
+ * @param renderContext CTS context.
  **/
-Texture::Texture(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+Texture::Texture(glu::RenderContext& renderContext) : m_id(m_invalid_id), m_renderContext(renderContext)
 {
 	/* Nothing to done here */
 }
@@ -634,7 +634,7 @@ void Texture::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
+		const Functions& gl = m_renderContext.getFunctions();
 
 		gl.deleteTextures(1, &m_id);
 		m_id = m_invalid_id;
@@ -937,9 +937,9 @@ const GLuint VertexArray::m_invalid_id = -1;
 
 /** Constructor.
  *
- * @param context CTS context.
+ * @param renderContext CTS context.
  **/
-VertexArray::VertexArray(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+VertexArray::VertexArray(glu::RenderContext& renderContext) : m_id(m_invalid_id), m_renderContext(renderContext)
 {
 }
 
@@ -958,7 +958,7 @@ void VertexArray::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
+		const Functions& gl = m_renderContext.getFunctions();
 
 		Bind(gl, 0);
 
@@ -1018,68 +1018,64 @@ void replaceToken(const GLchar* token, size_t& search_position, const GLchar* te
 }
 
 
-class RobustnessEnabledContext
-{
-public:
-	RobustnessEnabledContext(deqp::Context& context, const tcu::CommandLine& commandLine, tcu::Platform& platform);
-
-	~RobustnessEnabledContext(void);
-
-protected:
-	deqp::Context&		m_context;
-
-	glu::RenderContext* m_renderContext;
-	glu::RenderContext* m_previousRenderContext;
-};
-
-RobustnessEnabledContext::RobustnessEnabledContext(deqp::Context& context, const tcu::CommandLine& commandLine, tcu::Platform& platform)
-	: m_context			(context)
+RobustnessEnabledContext::RobustnessEnabledContext(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: m_testCtx			(testCtx)
+	, m_apiType			(apiType)
 	, m_renderContext	(DE_NULL)
 {
 
-	if (!context.getContextInfo().isExtensionSupported("GL_ARB_robustness") || !context.getContextInfo().isExtensionSupported("GL_ARB_robust_buffer_access_behavior"))
+	/* Create test context to verify if GL_ARB_robustness and GL_ARB_robust_buffer_access_behavior extensions are available */
 	{
-		throw tcu::NotSupportedError("GL_ARB_robustness and GL_ARB_robust_buffer_access_behavior must be supported to run this test case");
+		deqp::Context context(m_testCtx, glu::ContextType(m_apiType));
+		if (!(context.getContextInfo().isExtensionSupported("GL_ARB_robustness") &&
+			  context.getContextInfo().isExtensionSupported("GL_ARB_robust_buffer_access_behavior")) &&
+			!contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		{
+			throw tcu::NotSupportedError("GL_ARB_robustness and GL_ARB_robust_buffer_access_behavior or ES 3.2 must be supported to run this test case");
+		}
 	}
 
-	{
-		glu::RenderConfig		renderCfg(glu::ContextType(m_context.getRenderContext().getType().getAPI(), glu::CONTEXT_ROBUST));
-		glu::parseRenderConfig(&renderCfg, commandLine);
+	glu::RenderConfig		renderCfg(glu::ContextType(m_apiType, glu::CONTEXT_ROBUST));
+	const tcu::CommandLine& commandLine = m_testCtx.getCommandLine();
+	glu::parseRenderConfig(&renderCfg, commandLine);
 
-		m_renderContext = createRenderContext(platform, commandLine, renderCfg);
-		m_previousRenderContext = &m_context.getRenderContext();
-		m_context.setRenderContext(m_renderContext);
-	}
+	if (commandLine.getSurfaceType() != tcu::SURFACETYPE_WINDOW)
+		throw tcu::NotSupportedError("Test not supported in non-windowed context");
+
+	/* Try to create robustness context */
+	m_renderContext =  createRenderContext(m_testCtx.getPlatform(), commandLine, renderCfg);
 }
 
 RobustnessEnabledContext::~RobustnessEnabledContext()
 {
 	if (m_renderContext != DE_NULL)
 	{
-		m_context.setRenderContext(m_previousRenderContext);
-
 		delete m_renderContext;
-
-		m_context.getRenderContext().makeCurrent();
 	}
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context)
-	: TestCase(context, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero")
+VertexBufferObjectsTest::VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero")
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
 	/* Nothing to be done */
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const char* name, const char* description)
-	: TestCase(context, name, description)
+VertexBufferObjectsTest::VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType, const char* name, const char* description)
+	: TestCase(testCtx, name, description)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
 	/* Nothing to be done */
 }
@@ -1090,7 +1086,10 @@ VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const c
  **/
 tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 {
-	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
+	RobustnessEnabledContext context(m_testCtx, m_apiType);
+	m_renderContext = context.getRenderContext();
+	if (!m_renderContext)
+		return STOP;
 
 	static const GLuint invalid_elements[] = {
 		9, 1, 2, 10, 2, 3, 11, 3, 4, 12, 4, 5, 13, 5, 6, 14, 6, 7, 15, 7, 8, 16, 8, 1,
@@ -1117,19 +1116,19 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	static const GLuint width	  = 8;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
 
 	/* Test case objects */
-	Framebuffer framebuffer(m_context);
-	Buffer		invalid_elements_buffer(m_context);
-	Program		program(m_context);
-	Texture		texture(m_context);
-	Buffer		valid_elements_buffer(m_context);
-	Buffer		vertices_buffer(m_context);
-	VertexArray vao(m_context);
+	Framebuffer framebuffer(*m_renderContext);
+	Buffer		invalid_elements_buffer(*m_renderContext);
+	Program		program(*m_renderContext);
+	Texture		texture(*m_renderContext);
+	Buffer		valid_elements_buffer(*m_renderContext);
+	Buffer		vertices_buffer(*m_renderContext);
+	VertexArray vao(*m_renderContext);
 
 	/* Vertex array */
 	VertexArray::Generate(gl, vao.m_id);
@@ -1173,7 +1172,7 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 
 	if (false == verifyValidResults(texture.m_id))
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid result for valid input"
+		m_testCtx.getLog() << tcu::TestLog::Message << "Invalid result for valid input"
 											<< tcu::TestLog::EndMessage;
 
 		test_result = false;
@@ -1189,7 +1188,7 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 
 	if (false == verifyInvalidResults(texture.m_id))
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid result for invalid input"
+		m_testCtx.getLog() << tcu::TestLog::Message << "Invalid result for invalid input"
 											<< tcu::TestLog::EndMessage;
 
 		test_result = false;
@@ -1198,14 +1197,15 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
+	m_renderContext = DE_NULL;
 	return tcu::TestNode::STOP;
 }
 
@@ -1252,7 +1252,7 @@ void VertexBufferObjectsTest::cleanTexture(glw::GLuint texture_id)
 	static const GLuint height = 8;
 	static const GLuint width  = 8;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	GLubyte pixels[width * height];
 	for (GLuint i = 0; i < width * height; ++i)
@@ -1302,7 +1302,7 @@ bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
 	static const GLuint height = 8;
 	static const GLuint width  = 8;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	GLubyte pixels[width * height];
 	for (GLuint i = 0; i < width * height; ++i)
@@ -1322,7 +1322,7 @@ bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
 	{
 		if (255 != pixels[i])
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)pixels[i]
+			m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)pixels[i]
 												<< " at offset: " << i << tcu::TestLog::EndMessage;
 
 			return false;
@@ -1334,21 +1334,27 @@ bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-TexelFetchTest::TexelFetchTest(deqp::Context& context)
-	: TestCase(context, "texel_fetch", "Verifies that out-of-bound fetches from texture result in zero")
+TexelFetchTest::TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "texel_fetch", "Verifies that out-of-bound fetches from texture result in zero")
 	, m_test_case(R8)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
 	/* Nothing to be done */
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TestCase(context, name, description), m_test_case(R8)
+TexelFetchTest::TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType, const glw::GLchar* name, const glw::GLchar* description)
+	: TestCase(testCtx, name, description), m_test_case(R8)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
 	/* Nothing to be done */
 }
@@ -1359,14 +1365,17 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, 
  **/
 tcu::TestNode::IterateResult TexelFetchTest::iterate()
 {
-	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
+	RobustnessEnabledContext context(m_testCtx, m_apiType);
+	m_renderContext = context.getRenderContext();
+	if (!m_renderContext)
+		return STOP;
 
 	/* Constants */
 	static const GLuint height = 16;
 	static const GLuint width  = 16;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -1394,12 +1403,12 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		}
 
 		/* */
-		Texture		destination_texture(m_context);
-		Framebuffer framebuffer(m_context);
-		Program		invalid_program(m_context);
-		Texture		source_texture(m_context);
-		Program		valid_program(m_context);
-		VertexArray vao(m_context);
+		Texture		destination_texture(*m_renderContext);
+		Framebuffer framebuffer(*m_renderContext);
+		Program		invalid_program(*m_renderContext);
+		Texture		source_texture(*m_renderContext);
+		Program		valid_program(*m_renderContext);
+		VertexArray vao(*m_renderContext);
 
 		const std::string& fs_invalid = getFragmentShader(false);
 		const std::string& fs_valid   = getFragmentShader(true);
@@ -1429,7 +1438,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 				 * to upload the texture so max_image_samples >= 4
 				 * is also required.
 				 */
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
+				m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
 													<< " not supported" << tcu::TestLog::EndMessage;
 
 				continue;
@@ -1476,7 +1485,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		GLU_EXPECT_NO_ERROR(gl.getError(), "CheckFramebufferStatus");
 		if (GL_FRAMEBUFFER_COMPLETE != fbo_status)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
 												<< " not supported" << tcu::TestLog::EndMessage;
 
 			continue;
@@ -1542,7 +1551,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		/* Set test result */
 		if (false == case_result)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
 												<< " failed" << tcu::TestLog::EndMessage;
 
 			test_result = false;
@@ -1552,14 +1561,15 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
+	m_renderContext = DE_NULL;
 	return tcu::TestNode::STOP;
 }
 
@@ -1746,7 +1756,7 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
 	static const GLuint image_width  = 16;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	/* Texture storage parameters */
 	GLuint  height			= image_height;
@@ -1870,7 +1880,7 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
 								  "}\n"
 								  "\n";
 
-		Program program(m_context);
+		Program program(*m_renderContext);
 		program.Init(cs, "", "", "", "", "");
 		program.Use();
 
@@ -1901,7 +1911,7 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	bool result = true;
 
@@ -1931,7 +1941,7 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
 													<< ". Expected value: " << (GLuint)expected_red
 													<< " at offset: " << i << tcu::TestLog::EndMessage;
 
@@ -1969,7 +1979,7 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
 					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
 					<< ". At offset: " << i << tcu::TestLog::EndMessage;
@@ -2022,7 +2032,7 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 				((de::abs(expected_alpha_0 - drawn_alpha) > precision) &&
 				 (de::abs(expected_alpha_1 - drawn_alpha) > precision)))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
 					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
 					<< expected_green << ", " << expected_blue << ", " << expected_alpha_0 << " or " << expected_alpha_1
@@ -2059,7 +2069,7 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -2100,8 +2110,8 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 								  "}\n"
 								  "\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(*m_renderContext);
+		Texture destination_texture(*m_renderContext);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
@@ -2146,7 +2156,7 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -2171,7 +2181,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	bool result = true;
 
@@ -2201,7 +2211,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
 													<< ". Expected value: " << (GLuint)expected_red
 													<< " at offset: " << i << tcu::TestLog::EndMessage;
 
@@ -2239,7 +2249,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
 					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
 					<< ". At offset: " << i << tcu::TestLog::EndMessage;
@@ -2285,7 +2295,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 			if ((expected_red != drawn_red) || (expected_green != drawn_green) || (expected_blue != drawn_blue) ||
 				(expected_alpha != drawn_alpha))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
 					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
 					<< expected_green << ", " << expected_blue << ", " << expected_alpha << ". At offset: " << i
@@ -2322,7 +2332,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -2365,8 +2375,8 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 			"}\n"
 			"\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(*m_renderContext);
+		Texture destination_texture(*m_renderContext);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
@@ -2411,7 +2421,7 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -2426,20 +2436,22 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context)
-	: TexelFetchTest(context, "image_load_store", "Verifies that out-of-bound to image result in zero or is discarded")
+ImageLoadStoreTest::ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TexelFetchTest(testCtx, apiType, "image_load_store", "Verifies that out-of-bound to image result in zero or is discarded")
 {
 	/* Nothing to be done */
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TexelFetchTest(context, name, description)
+ImageLoadStoreTest::ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType, const glw::GLchar* name, const glw::GLchar* description)
+	: TexelFetchTest(testCtx, apiType, name, description)
 {
 	/* Nothing to be done */
 }
@@ -2450,14 +2462,17 @@ ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context, const glw::GLchar
  **/
 tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 {
-	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
+	RobustnessEnabledContext context(m_testCtx, m_apiType);
+	m_renderContext = context.getRenderContext();
+	if (!m_renderContext)
+		return STOP;
 
 	/* Constants */
 	static const GLuint height = 16;
 	static const GLuint width  = 16;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -2478,11 +2493,11 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		}
 
 		/* */
-		Texture destination_texture(m_context);
-		Program invalid_destination_program(m_context);
-		Program invalid_source_program(m_context);
-		Texture source_texture(m_context);
-		Program valid_program(m_context);
+		Texture destination_texture(*m_renderContext);
+		Program invalid_destination_program(*m_renderContext);
+		Program invalid_source_program(*m_renderContext);
+		Texture source_texture(*m_renderContext);
+		Program valid_program(*m_renderContext);
 
 		const std::string& cs_invalid_destination = getComputeShader(DESTINATION_INVALID);
 		const std::string& cs_invalid_source	  = getComputeShader(SOURCE_INVALID);
@@ -2509,7 +2524,7 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 				 * to upload the texture so max_image_samples >= 4
 				 * is also required.
 				 */
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
+				m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
 													<< " not supported" << tcu::TestLog::EndMessage;
 
 				continue;
@@ -2580,7 +2595,7 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		/* Set test result */
 		if (false == case_result)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
 												<< " failed" << tcu::TestLog::EndMessage;
 
 			test_result = false;
@@ -2590,14 +2605,15 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
+	m_renderContext = DE_NULL;
 	return tcu::TestNode::STOP;
 }
 
@@ -2762,7 +2778,7 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
  **/
 void ImageLoadStoreTest::setTextures(glw::GLuint id_destination, glw::GLuint id_source)
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	GLenum format = 0;
 	GLint  level  = 0;
@@ -2815,7 +2831,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 	gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
 
@@ -2847,7 +2863,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
 													<< ". Expected value: " << (GLuint)expected_red
 													<< " at offset: " << i << tcu::TestLog::EndMessage;
 
@@ -2885,7 +2901,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
 					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
 					<< ". At offset: " << i << tcu::TestLog::EndMessage;
@@ -2931,7 +2947,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 			if ((expected_red != drawn_red) || (expected_green != drawn_green) || (expected_blue != drawn_blue) ||
 				(expected_alpha != drawn_alpha))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
 					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
 					<< expected_green << ", " << expected_blue << ", " << expected_alpha << ". At offset: " << i
@@ -2968,7 +2984,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -3009,8 +3025,8 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 								  "}\n"
 								  "\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(*m_renderContext);
+		Texture destination_texture(*m_renderContext);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
@@ -3055,7 +3071,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -3080,7 +3096,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 	gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
 
@@ -3112,7 +3128,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
 													<< ". Expected value: " << (GLuint)expected_red
 													<< " at offset: " << i << tcu::TestLog::EndMessage;
 
@@ -3150,7 +3166,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
 					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
 					<< ". At offset: " << i << tcu::TestLog::EndMessage;
@@ -3196,7 +3212,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 			if ((expected_red != drawn_red) || (expected_green != drawn_green) || (expected_blue != drawn_blue) ||
 				(expected_alpha != drawn_alpha))
 			{
-				m_context.getTestContext().getLog()
+				m_testCtx.getLog()
 					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
 					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
 					<< expected_green << ", " << expected_blue << ", " << expected_alpha << ". At offset: " << i
@@ -3233,7 +3249,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -3276,8 +3292,8 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 			"}\n"
 			"\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(*m_renderContext);
+		Texture destination_texture(*m_renderContext);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
@@ -3322,7 +3338,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
 													<< ". Expected value: " << expected_red << " at offset: " << i
 													<< tcu::TestLog::EndMessage;
 
@@ -3341,24 +3357,32 @@ const GLfloat StorageBufferTest::m_source_data[4]		= { 2.0f, 3.0f, 4.0f, 5.0f };
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-StorageBufferTest::StorageBufferTest(deqp::Context& context)
-	: TestCase(context, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0")
+StorageBufferTest::StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0")
 	, m_test_case(VALID)
 	, m_hasKhrRobustBufferAccess(false)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
 	/* Nothing to be done here */
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TestCase(context, name, description), m_test_case(VALID)
+StorageBufferTest::StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType, const glw::GLchar* name, const glw::GLchar* description)
+	: TestCase(testCtx, name, description)
+	, m_test_case(VALID)
+	, m_hasKhrRobustBufferAccess(false)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
-	/* Nothing to be done */
+	/* Nothing to be done here */
 }
 
 /** Execute test
@@ -3367,13 +3391,17 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult StorageBufferTest::iterate()
 {
-	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
+	RobustnessEnabledContext context(m_testCtx, m_apiType);
+	m_renderContext = context.getRenderContext();
+	if (!m_renderContext)
+		return STOP;
+	de::MovePtr<glu::ContextInfo> contextInfo = de::MovePtr<glu::ContextInfo>(glu::ContextInfo::create(*m_renderContext));
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
-	m_hasKhrRobustBufferAccess = m_context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
-								 contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5));
+	m_hasKhrRobustBufferAccess = contextInfo->isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
+								 contextSupports(m_renderContext->getType(), glu::ApiType::core(4, 5));
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -3382,9 +3410,9 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 	while (LAST != m_test_case)
 	{
 		/* Test case objects */
-		Buffer  destination_buffer(m_context);
-		Buffer  source_buffer(m_context);
-		Program program(m_context);
+		Buffer  destination_buffer(*m_renderContext);
+		Buffer  source_buffer(*m_renderContext);
+		Program program(*m_renderContext);
 
 		/* Compute Shader */
 		const std::string& cs = getComputeShader();
@@ -3427,14 +3455,15 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
+	m_renderContext = DE_NULL;
 	return tcu::TestNode::STOP;
 }
 
@@ -3551,7 +3580,7 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 				}
 				if (!valid)
 				{
-					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+					m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
 														<< tcu::TestLog::EndMessage;
 				}
 			}
@@ -3590,7 +3619,7 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 				}
 				if (!valid)
 				{
-					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+					m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
 														<< tcu::TestLog::EndMessage;
 				}
 			}
@@ -3611,7 +3640,7 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 		int size = static_cast<int>(sizeof(GLfloat) * 4);
 		if (0 != memcmp(expected_data, buffer_data, size))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
 												<< tcu::TestLog::EndMessage;
 			return false;
 		}
@@ -3622,22 +3651,28 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-UniformBufferTest::UniformBufferTest(deqp::Context& context)
-	: TestCase(context, "uniform_buffer", "Verifies that out-of-bound access to UBO resutls in 0"), m_test_case(VALID)
+UniformBufferTest::UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "uniform_buffer", "Verifies that out-of-bound access to UBO resutls in 0"), m_test_case(VALID)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
 	/* Nothing to be done here */
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api Type
  **/
-UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TestCase(context, name, description), m_test_case(VALID)
+UniformBufferTest::UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType, const glw::GLchar* name, const glw::GLchar* description)
+	: TestCase(testCtx, name, description), m_test_case(VALID)
+	, m_apiType(apiType)
+	, m_renderContext(DE_NULL)
 {
-	/* Nothing to be done */
+	/* Nothing to be done here */
 }
 
 /** Execute test
@@ -3646,7 +3681,10 @@ UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult UniformBufferTest::iterate()
 {
-	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
+	RobustnessEnabledContext context(m_testCtx, m_apiType);
+	m_renderContext = context.getRenderContext();
+	if (!m_renderContext)
+		return STOP;
 
 	static const GLfloat destination_data[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	/* The source buffer is packed std140 so we need vec4s */
@@ -3655,7 +3693,7 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 	};
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = m_renderContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -3664,9 +3702,9 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 	while (LAST != m_test_case)
 	{
 		/* Test case objects */
-		Buffer  destination_buffer(m_context);
-		Buffer  source_buffer(m_context);
-		Program program(m_context);
+		Buffer  destination_buffer(*m_renderContext);
+		Buffer  source_buffer(*m_renderContext);
+		Program program(*m_renderContext);
 
 		/* Compute Shader */
 		const std::string& cs = getComputeShader();
@@ -3709,14 +3747,15 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
+	m_renderContext = DE_NULL;
 	return tcu::TestNode::STOP;
 }
 
@@ -3805,7 +3844,7 @@ bool UniformBufferTest::verifyResults(GLfloat* buffer_data)
 	/* Verify buffer data */
 	if (0 != memcmp(expected_data, buffer_data, size))
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+		m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
 											<< tcu::TestLog::EndMessage;
 		return false;
 	}
@@ -3818,9 +3857,10 @@ bool UniformBufferTest::verifyResults(GLfloat* buffer_data)
  *
  *  @param context Rendering context.
  **/
-RobustBufferAccessBehaviorTests::RobustBufferAccessBehaviorTests(deqp::Context& context)
-	: TestCaseGroup(context, "robust_buffer_access_behavior",
+RobustBufferAccessBehaviorTests::RobustBufferAccessBehaviorTests(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCaseGroup(testCtx, "robust_buffer_access_behavior",
 					"Verifies \"robust buffer access behavior\" functionality")
+	, m_apiType(apiType)
 {
 	/* Left blank on purpose */
 }
@@ -3830,11 +3870,11 @@ RobustBufferAccessBehaviorTests::RobustBufferAccessBehaviorTests(deqp::Context& 
  **/
 void RobustBufferAccessBehaviorTests::init(void)
 {
-	addChild(new RobustBufferAccessBehavior::VertexBufferObjectsTest(m_context));
-	addChild(new RobustBufferAccessBehavior::TexelFetchTest(m_context));
-	addChild(new RobustBufferAccessBehavior::ImageLoadStoreTest(m_context));
-	addChild(new RobustBufferAccessBehavior::StorageBufferTest(m_context));
-	addChild(new RobustBufferAccessBehavior::UniformBufferTest(m_context));
+	addChild(new RobustBufferAccessBehavior::VertexBufferObjectsTest(m_testCtx, m_apiType));
+	addChild(new RobustBufferAccessBehavior::TexelFetchTest(m_testCtx, m_apiType));
+	addChild(new RobustBufferAccessBehavior::ImageLoadStoreTest(m_testCtx, m_apiType));
+	addChild(new RobustBufferAccessBehavior::StorageBufferTest(m_testCtx, m_apiType));
+	addChild(new RobustBufferAccessBehavior::UniformBufferTest(m_testCtx, m_apiType));
 }
 
 } /* deqp */

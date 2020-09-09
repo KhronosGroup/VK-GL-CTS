@@ -23,7 +23,6 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es32cTestPackage.hpp"
-#include "es32cRobustBufferAccessBehaviorTests.hpp"
 #include "esextcTestPackage.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
@@ -159,9 +158,6 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
 		coreGroup->addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		addChild(coreGroup);
-		tcu::TestCaseGroup* robustGroup = new tcu::TestCaseGroup(getTestContext(), "robust", "");
-		robustGroup->addChild(new es32cts::RobustBufferAccessBehaviorTests(getContext()));
-		addChild(robustGroup);
 	}
 	catch (...)
 	{
