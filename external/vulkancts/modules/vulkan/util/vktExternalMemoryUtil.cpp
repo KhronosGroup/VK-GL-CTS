@@ -891,7 +891,8 @@ vk::Move<vk::VkSemaphore> createAndImportSemaphore (const vk::DeviceInterface&		
 
 deUint32 chooseMemoryType(deUint32 bits)
 {
-	DE_ASSERT(bits != 0);
+	if (bits == 0)
+		return 0;
 
 	for (deUint32 memoryTypeIndex = 0; (1u << memoryTypeIndex) <= bits; memoryTypeIndex++)
 	{
@@ -916,6 +917,21 @@ deUint32 chooseHostVisibleMemoryType (deUint32 bits, const vk::VkPhysicalDeviceM
 
 	TCU_THROW(NotSupportedError, "No supported memory type found");
 	return -1;
+}
+
+vk::VkMemoryRequirements getImageMemoryRequirements (const vk::DeviceInterface& vkd,
+													 vk::VkDevice device,
+													 vk::VkImage image,
+													 vk::VkExternalMemoryHandleTypeFlagBits externalType)
+{
+	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		return { 0u, 0u, 0u };
+	}
+	else
+	{
+		return vk::getImageMemoryRequirements(vkd, device, image);
+	}
 }
 
 vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface&					vkd,
@@ -1068,6 +1084,16 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 		ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, DE_NULL, DE_NULL);
 		DE_ASSERT(ahbApi->ahbFormatIsBlob(ahbFormat) || image != 0);
 
+		vk::VkAndroidHardwareBufferPropertiesANDROID ahbProperties =
+		{
+			vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+			DE_NULL,
+			0u,
+			0u
+		};
+
+		vkd.getAndroidHardwareBufferPropertiesANDROID(device, handle.getAndroidHardwareBuffer(), &ahbProperties);
+
 		vk::VkImportAndroidHardwareBufferInfoANDROID	importInfo =
 		{
 			vk::VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
@@ -1085,8 +1111,8 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 		{
 			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
-			requirements.size,
-			(memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits)  : memoryTypeIndex
+			ahbProperties.allocationSize,
+			(memoryTypeIndex == ~0U) ? chooseMemoryType(ahbProperties.memoryTypeBits)  : memoryTypeIndex
 		};
 		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
 
@@ -1202,6 +1228,9 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 										   deUint32										mipLevels,
 										   deUint32										arrayLayers)
 {
+	if (createFlags & vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && arrayLayers < 6u)
+		arrayLayers = 6u;
+
 	const vk::VkExternalMemoryImageCreateInfo		externalCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
