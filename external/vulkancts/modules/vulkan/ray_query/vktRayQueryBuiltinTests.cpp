@@ -83,6 +83,7 @@ namespace vkt
 				TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED,
 				TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE,
 				TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED,
+				TEST_TYPE_RAY_QUERY_TERMINATE,
 
 				TEST_TYPE_LAST
 			};
@@ -4818,6 +4819,186 @@ namespace vkt
 			}
 			/// </summary>
 
+						class TestConfigurationRayQueryTerminate: public TestConfiguration
+			{
+			public:
+				static const std::string getShaderBodyText(const TestParams& testParams);
+
+				virtual const VkAccelerationStructureKHR* initAccelerationStructures(Context& context,
+					TestParams& testParams,
+					VkCommandBuffer					cmdBuffer) override;
+
+				private:
+					static const deUint32 N_RAY_QUERIES_TO_USE;
+			};
+
+			const deUint32 TestConfigurationRayQueryTerminate::N_RAY_QUERIES_TO_USE = 8;
+
+			const VkAccelerationStructureKHR* TestConfigurationRayQueryTerminate::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			{
+				const DeviceInterface& vkd = context.getDeviceInterface();
+				const VkDevice								device = context.getDevice();
+				Allocator& allocator = context.getDefaultAllocator();
+				const deUint32								width = testParams.width;
+				const deUint32								height = testParams.height;
+				const deUint32								instancesGroupCount = testParams.instancesGroupCount;
+				const deUint32								geometriesGroupCount = testParams.geometriesGroupCount;
+				const deUint32								squaresGroupCount = testParams.squaresGroupCount;
+				deUint32									squareNdx = 0;
+				de::MovePtr<TopLevelAccelerationStructure>	rayQueryTopLevelAccelerationStructure = makeTopLevelAccelerationStructure();
+
+				DE_ASSERT(instancesGroupCount * geometriesGroupCount * squaresGroupCount == width * height);
+
+				m_topAccelerationStructure = de::SharedPtr<TopLevelAccelerationStructure>(rayQueryTopLevelAccelerationStructure.release());
+
+				m_topAccelerationStructure->setInstanceCount(instancesGroupCount);
+
+				m_expected.resize(width * height);
+
+				for (deUint32 instanceNdx = 0; instanceNdx < instancesGroupCount; ++instanceNdx)
+				{
+					for (deUint32 geometryNdx = 0; geometryNdx < geometriesGroupCount; ++geometryNdx)
+					{
+						for (deUint32 groupNdx = 0; groupNdx < squaresGroupCount; ++groupNdx, ++squareNdx)
+						{
+							std::vector<tcu::Vec3>							geometryData;
+							de::MovePtr<BottomLevelAccelerationStructure>	rayQueryBottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
+
+							for (deInt32 z = -2; z <= 0; ++z)
+							{
+								const auto	squareX = (squareNdx % width);
+								const auto	squareY = (squareNdx / width);
+
+								const float x0 = float(squareX + 0) / float(width);
+								const float y0 = float(squareY + 0) / float(height);
+								const float x1 = float(squareX + 1) / float(width);
+								const float y1 = float(squareY + 1) / float(height);
+
+								if (testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES)
+								{
+									if ((squareNdx % 2) == 0)
+									{
+										geometryData.push_back(tcu::Vec3(x0, y0, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x0, y1, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x1, y1, static_cast<float>(z) ));
+
+										geometryData.push_back(tcu::Vec3(x1, y1, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x1, y0, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x0, y0, static_cast<float>(z) ));
+									}
+									else
+									{
+										geometryData.push_back(tcu::Vec3(x1, y1, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x0, y1, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x0, y0, static_cast<float>(z) ));
+
+										geometryData.push_back(tcu::Vec3(x0, y0, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x1, y0, static_cast<float>(z) ));
+										geometryData.push_back(tcu::Vec3(x1, y1, static_cast<float>(z) ));
+									}
+								}
+								else
+								{
+									geometryData.push_back(tcu::Vec3(x0, y0, static_cast<float>(z) ));
+									geometryData.push_back(tcu::Vec3(x1, y1, static_cast<float>(z) ));
+								}
+							}
+
+							m_expected.at(squareNdx) = (1 << N_RAY_QUERIES_TO_USE) - 1;
+
+							rayQueryBottomLevelAccelerationStructure->addGeometry(	geometryData,
+																					(testParams.geomType == GeomType::GEOM_TYPE_TRIANGLES),
+																					VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
+
+							rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+							m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
+
+							m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4, instanceNdx + 1, 255U, m_expected.at(squareNdx));
+						}
+					}
+				}
+
+				m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+
+				return m_topAccelerationStructure.get()->getPtr();
+			}
+
+			const std::string TestConfigurationRayQueryTerminate::getShaderBodyText(const TestParams& testParams)
+			{
+				if (testParams.geomType == GEOM_TYPE_AABBS ||
+					testParams.geomType == GEOM_TYPE_TRIANGLES)
+				{
+					std::string result =
+						"  const int nQueries      = " + de::toString(N_RAY_QUERIES_TO_USE) + ";\n"
+						"  const int nPassingQuery = nQueries / 2;\n"
+						"\n"
+						"  const uint  rayFlags = 0;\n"
+						"  const uint  cullMask = 0xFF;\n"
+						"  const float tmin     = 0.0001;\n"
+						"  const float tmax     = 9.0;\n"
+						"\n"
+						"  rayQueryEXT rayQueries                     [nQueries];\n"
+						"  int         nSuccessfulRayQueryProceedCalls[nQueries];\n"
+						"\n"
+						"  int result_i32 = 0;\n"
+						"\n"
+						"  for (int nQuery = nQueries - 1; nQuery >= 0; --nQuery)\n"
+						"  {\n"
+						"      vec3 origin = vec3((float(pos.x) + 0.4f) / float(size.x), (float(pos.y) + 0.5f) / float(size.y),  0.2);\n"
+						"      vec3 direct = vec3(0,                                     0,                                     -1.0);\n"
+						"\n"
+						"      rayQueryInitializeEXT(rayQueries[nQuery], rayQueryTopLevelAccelerationStructure, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+						"\n"
+						"      nSuccessfulRayQueryProceedCalls[nQuery] = 0;\n"
+						"  }\n"
+						"\n"
+						"  while (true)\n"
+						"  {\n"
+						"    int nQueriesSuccessful = 0;\n"
+						"\n"
+						"    for (int nQuery = 0; nQuery < nQueries; ++nQuery)\n"
+						"    {\n"
+						"      if (rayQueryProceedEXT(rayQueries[nQuery]) )\n"
+						"      {\n"
+						"        nSuccessfulRayQueryProceedCalls[nQuery] ++;\n"
+						"        nQueriesSuccessful                      ++;\n"
+						"\n"
+						"        if (nQuery != nPassingQuery)\n"
+						"        {\n"
+						"            rayQueryTerminateEXT(rayQueries[nQuery]);\n"
+						"        }\n"
+						"      }\n"
+						"    }\n"
+						"\n"
+						"    if (nQueriesSuccessful == 0)\n"
+						"    {\n"
+						"      break;\n"
+						"    }\n"
+						"  }\n"
+						"\n"
+						"  for (int nQuery = 0; nQuery < nQueries; ++nQuery)\n"
+						"  {\n"
+						"    if (nPassingQuery != nQuery)\n"
+						"    {\n"
+						"       result_i32 |= (nSuccessfulRayQueryProceedCalls[nQuery] == 1) ? (1 << nQuery) : 0;\n"
+						"    }\n"
+						"    else\n"
+						"    {\n"
+						"       result_i32 |= (nSuccessfulRayQueryProceedCalls[nQuery] == 3) ? (1 << nQuery) : 0;\n"
+						"    }\n"
+						"  }\n"
+						"\n"
+						"  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
+						;
+
+					return result;
+				}
+				else
+				{
+					TCU_THROW(InternalError, "Unknown geometry type");
+				}
+			}
+
 			class RayQueryBuiltinTestInstance : public TestInstance
 			{
 			public:
@@ -4859,6 +5040,7 @@ namespace vkt
 				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED:									m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionBarycentrics());								break;
 				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset());	break;
 				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED:	m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset());	break;
+				case TEST_TYPE_RAY_QUERY_TERMINATE:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationRayQueryTerminate());										break;
 
 				default: TCU_THROW(InternalError, "Unknown test type");
 				}
@@ -5095,6 +5277,7 @@ namespace vkt
 				case TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED:									return TestConfigurationGetIntersectionBarycentrics::getShaderBodyTextCommitted;							break;
 				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE:	return TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::getShaderBodyTextCandidate;	break;
 				case TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED:	return TestConfigurationGetIntersectionInstanceShaderBindingTableRecordOffset::getShaderBodyTextCommitted;	break;
+				case TEST_TYPE_RAY_QUERY_TERMINATE:														return TestConfigurationRayQueryTerminate::getShaderBodyText;												break;
 
 				default:									TCU_THROW(InternalError, "Unknown test type");
 				}
@@ -5178,6 +5361,8 @@ namespace vkt
 				{ TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED,								"getintersectionbarycentricsCommitted"							},
 				{ TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_CANDIDATE,	"getintersectioninstanceshaderbindingtablerecordoffsetCandidate"},
 				{ TEST_TYPE_GET_INTERSECTION_INSTANCE_SHADER_BINDING_TABLE_RECORD_OFFSET_COMMITTED,	"getintersectioninstanceshaderbindingtablerecordoffsetCommitted"},
+				{ TEST_TYPE_RAY_QUERY_TERMINATE,													"rayqueryterminate"},
+
 			};
 
 			for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
@@ -5209,7 +5394,8 @@ namespace vkt
 					|| testType == TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_CANDIDATE
 					|| testType == TEST_TYPE_GET_INTERSECTION_GEOMETRY_INDEX_COMMITTED
 					|| testType == TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_CANDIDATE
-					|| testType == TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED;
+					|| testType == TEST_TYPE_GET_INTERSECTION_BARYCENTRICS_COMMITTED
+					|| testType == TEST_TYPE_RAY_QUERY_TERMINATE;
 				const deUint32					imageDepth = fixedPointMatrixOutput ? 4 * 4
 					: fixedPointVectorOutput ? 4
 					: 1;
