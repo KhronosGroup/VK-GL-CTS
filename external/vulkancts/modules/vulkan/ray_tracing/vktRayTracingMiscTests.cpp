@@ -65,13 +65,16 @@ enum class ShaderGroups
 	RAYGEN_GROUP	= FIRST_GROUP,
 	MISS_GROUP,
 	HIT_GROUP,
-	GROUP_COUNT
+
+	FIRST_CALLABLE_GROUP,
 };
 
 enum class TestType
 {
 	AABBS_AND_TRIS_IN_ONE_TL,
 	AS_STRESS_TEST,
+	CALLABLE_SHADER_STRESS_DYNAMIC_TEST,
+	CALLABLE_SHADER_STRESS_TEST,
 	CULL_MASK,
 	MAX_RAY_HIT_ATTRIBUTE_SIZE,
 	CULL_MASK_EXTRA_BITS,
@@ -771,6 +774,17 @@ public:
 		return 1u;
 	}
 
+	virtual std::vector<std::string> getCallableShaderCollectionNames() const
+	{
+		return std::vector<std::string>{};
+	}
+
+	virtual deUint32 getDynamicStackSize() const
+	{
+		DE_ASSERT(false);
+
+		return 0;
+	}
 	virtual deUint32 getNTraceRayInvocationsNeeded() const
 	{
 		return 1;
@@ -801,6 +815,21 @@ public:
 										VkPipelineLayout	/* pipelineLayout */)
 	{
 		/* Stub */
+	}
+
+	virtual void onShaderStackSizeDiscovered(	const VkDeviceSize& /* raygenShaderStackSize   */,
+												const VkDeviceSize& /* ahitShaderStackSize     */,
+												const VkDeviceSize& /* chitShaderStackSize     */,
+												const VkDeviceSize& /* missShaderStackSize     */,
+												const VkDeviceSize& /* callableShaderStackSize */,
+												const VkDeviceSize& /* isectShaderStackSize    */)
+	{
+		/* Stub */
+	}
+
+	virtual bool usesDynamicStackSize() const
+	{
+		return false;
 	}
 };
 
@@ -1429,6 +1458,641 @@ private:
 	const deUint32 m_nMaxASToUse;
 };
 
+class CallableShaderStressTest: public TestBase
+{
+public:
+	CallableShaderStressTest(	const GeometryType&					geometryType,
+								const AccelerationStructureLayout&	asStructureLayout,
+								const bool&							useDynamicStackSize)
+		:	m_asStructureLayout				(asStructureLayout),
+			m_geometryType					(geometryType),
+			m_gridSizeXYZ					(tcu::UVec3 (128, 1, 1) ),
+			m_nMaxCallableLevels			( (useDynamicStackSize)		? 8
+																		: 2 /* as per spec */),
+			m_maxPipelineRayRecursionDepth	(0),
+			m_useDynamicStackSize			(useDynamicStackSize),
+			m_ahitShaderStackSize			(0),
+			m_callableShaderStackSize		(0),
+			m_chitShaderStackSize			(0),
+			m_isectShaderStackSize			(0),
+			m_missShaderStackSize			(0),
+			m_raygenShaderStackSize			(0)
+	{
+	}
+
+	~CallableShaderStressTest()
+	{
+		/* Stub */
+	}
+
+	std::vector<std::string> getCallableShaderCollectionNames() const final
+	{
+		std::vector<std::string> resultVec(m_nMaxCallableLevels);
+
+		for (deUint32 nLevel = 0; nLevel < m_nMaxCallableLevels; nLevel++)
+		{
+			resultVec.at(nLevel) = "call" + de::toString(nLevel);
+		}
+
+		return resultVec;
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		DE_ASSERT(m_gridSizeXYZ[0] != 0);
+		DE_ASSERT(m_gridSizeXYZ[1] != 0);
+		DE_ASSERT(m_gridSizeXYZ[2] != 0);
+
+		return tcu::UVec3(m_gridSizeXYZ[0], m_gridSizeXYZ[1], m_gridSizeXYZ[2]);
+	}
+
+	deUint32 getDynamicStackSize() const final
+	{
+		deUint32	result									= 0;
+		const auto	maxStackSpaceNeededForZerothTrace		= static_cast<deUint32>(de::max(de::max(m_chitShaderStackSize, m_missShaderStackSize), m_isectShaderStackSize + m_ahitShaderStackSize) );
+		const auto	maxStackSpaceNeededForNonZerothTraces	= static_cast<deUint32>(de::max(m_chitShaderStackSize, m_missShaderStackSize) );
+
+		DE_ASSERT(m_useDynamicStackSize);
+
+		result =	static_cast<deUint32>(m_raygenShaderStackSize)														+
+					de::min(1u, m_maxPipelineRayRecursionDepth)		* maxStackSpaceNeededForZerothTrace					+
+					de::max(0u, m_maxPipelineRayRecursionDepth - 1)	* maxStackSpaceNeededForNonZerothTraces				+
+					m_nMaxCallableLevels							* static_cast<deUint32>(m_callableShaderStackSize);
+
+		DE_ASSERT(result != 0);
+		return result;
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		const auto nRaysTraced							= m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+		const auto nClosestHitShaderInvocationsExpected	= nRaysTraced / 2;
+		const auto nMissShaderInvocationsExpected		= nRaysTraced / 2;
+		const auto resultItemSize						= sizeof(deUint32) * 3 /* shaderStage, nOriginRay, nLevel */ + sizeof(float) * m_nMaxCallableLevels;
+
+		DE_ASSERT((nRaysTraced % 2)		== 0);
+		DE_ASSERT(m_nMaxCallableLevels	!= 0);
+		DE_ASSERT(m_gridSizeXYZ[0]		!= 0);
+		DE_ASSERT(m_gridSizeXYZ[1]		!= 0);
+		DE_ASSERT(m_gridSizeXYZ[2]		!= 0);
+
+		return static_cast<deUint32>(sizeof(deUint32) /* nItemsStored */ + (resultItemSize * m_nMaxCallableLevels) * (nRaysTraced + nMissShaderInvocationsExpected + nClosestHitShaderInvocationsExpected) );
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const final
+	{
+		DE_ASSERT(m_tlPtr != nullptr);
+
+		return {m_tlPtr.get() };
+	}
+
+	bool init(	RayTracingProperties*	rtPropertiesPtr) final
+	{
+		m_maxPipelineRayRecursionDepth = rtPropertiesPtr->getMaxRecursionDepth();
+
+		return true;
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		std::unique_ptr<GridASProvider> asProviderPtr(
+			new GridASProvider(	tcu::Vec3 (0, 0, 0), /* gridStartXYZ          */
+								tcu::Vec3 (1, 1, 1), /* gridCellSizeXYZ       */
+								m_gridSizeXYZ,
+								tcu::Vec3 (6, 0, 0), /* gridInterCellDeltaXYZ */
+								m_geometryType)
+		);
+
+		m_tlPtr  = asProviderPtr->createTLAS(	context,
+												m_asStructureLayout,
+												commandBuffer,
+												0,			/* bottomLevelGeometryFlags */
+												nullptr,	/* optASPropertyProviderPtr */
+												nullptr);	/* optASFeedbackPtr			*/
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
+														vk::SPIRV_VERSION_1_4,
+														0u,		/* flags        */
+														true);	/* allowSpirv14 */
+
+		std::vector<std::string>	callableDataDefinitions		(m_nMaxCallableLevels);
+		std::vector<std::string>	callableDataInDefinitions	(m_nMaxCallableLevels);
+
+		for (deUint32 nCallableDataLevel = 0; nCallableDataLevel < m_nMaxCallableLevels; ++nCallableDataLevel)
+		{
+			const auto locationsPerCallableData	= (3 /* uints */ + (nCallableDataLevel + 1) /* dataChunks */);
+			const auto callableDataLocation		= locationsPerCallableData * nCallableDataLevel;
+
+			callableDataDefinitions.at(nCallableDataLevel) =
+				"layout (location = " + de::toString(callableDataLocation) + ") callableDataEXT struct\n"
+				"{\n"
+				"    uint  shaderStage;\n"
+				"    uint  nOriginRay;\n"
+				"    uint  nLevel;\n"
+				"    float dataChunk[" + de::toString(nCallableDataLevel + 1) + "];\n"
+				"} callableData" + de::toString(nCallableDataLevel) + ";\n";
+
+			callableDataInDefinitions.at(nCallableDataLevel) =
+				"layout(location = " + de::toString(callableDataLocation) + ") callableDataInEXT struct\n"
+				"{\n"
+				"    uint  shaderStage;\n"
+				"    uint  nOriginRay;\n"
+				"    uint  nLevel;\n"
+				"    float dataChunk[" + de::toString(nCallableDataLevel + 1) + "];\n"
+				"} inData;\n";
+
+			m_callableDataLevelToCallableDataLocation[nCallableDataLevel] = callableDataLocation;
+		}
+
+		const auto resultBufferDefinition =
+			"struct ResultData\n"
+			"{\n"
+			"    uint  shaderStage;\n"
+			"    uint  nOriginRay;\n"
+			"    uint  nLevel;\n"
+			"    float dataChunk[" + de::toString(m_nMaxCallableLevels) + "];\n"
+			"};\n"
+			"\n"
+			"layout(set = 0, binding = 0, std430) buffer result\n"
+			"{\n"
+			"    uint       nInvocationsRegistered;\n"
+			"    ResultData resultData[];\n"
+			"};\n";
+
+		{
+			std::stringstream css;
+
+			/* NOTE: executeCallable() is unavailable in ahit stage */
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"layout(location = 128) rayPayloadInEXT uint dummy;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"}\n";
+
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"layout(location = 128) rayPayloadInEXT uint rayIndex;\n"
+				"\n"											+
+				de::toString(callableDataDefinitions.at(0) )	+
+				de::toString(resultBufferDefinition)			+
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"\n"
+				"    callableData0.shaderStage  = 3;\n"
+				"    callableData0.nOriginRay   = nInvocation;\n"
+				"    callableData0.nLevel       = 0;\n"
+				"    callableData0.dataChunk[0] = float(nInvocation);\n"
+				"\n"
+				"    executeCallableEXT(0 /* sbtRecordIndex */, " + de::toString(m_callableDataLevelToCallableDataLocation.at(0) ) + ");\n"
+				"}\n";
+
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			/* NOTE: executeCallable() is unavailable in isect stage */
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    reportIntersectionEXT(0.95f, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n" +
+				de::toString(callableDataDefinitions.at(0) )	+
+				de::toString(resultBufferDefinition)			+
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"\n"
+				"    callableData0.shaderStage  = 2;\n"
+				"    callableData0.nOriginRay   = nInvocation;\n"
+				"    callableData0.nLevel       = 0;\n"
+				"    callableData0.dataChunk[0] = float(nInvocation);\n"
+				"\n"
+				"    executeCallableEXT(0 /* sbtRecordIndex */, " + de::toString(m_callableDataLevelToCallableDataLocation.at(0) ) + ");\n"
+				"}\n";
+
+			programCollection.glslSources.add("miss") << glu::MissSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				+ de::toString(callableDataDefinitions.at(0) ) +
+				"layout(location = 128)            rayPayloadEXT uint               dummy;\n"
+				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"    uint  rayFlags     = 0;\n"
+				"    float tmin         = 0.001;\n"
+				"    float tmax         = 9.0;\n"
+				"\n"
+				"    uint  cullMask     = 0xFF;\n"
+				"    vec3  cellStartXYZ = vec3(nInvocation * 3.0, 0.0, 0.0);\n"
+				"    vec3  cellEndXYZ   = cellStartXYZ + vec3(1.0);\n"
+				"    vec3  target       = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+				"    vec3  origin       = target - vec3(0, 2, 0);\n"
+				"    vec3  direct       = normalize(target - origin);\n"
+				"\n"
+				"    callableData0.shaderStage  = 0;\n"
+				"    callableData0.nOriginRay   = nInvocation;\n"
+				"    callableData0.nLevel       = 0;\n"
+				"    callableData0.dataChunk[0] = float(nInvocation);\n"
+				"\n"
+				"    executeCallableEXT(0 /* sbtRecordIndex */, " + de::toString(m_callableDataLevelToCallableDataLocation.at(0) ) + ");\n"
+				"\n"
+				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 128);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+		}
+
+		for (deUint32 nCallableShader = 0; nCallableShader < m_nMaxCallableLevels; ++nCallableShader)
+		{
+			const bool        canInvokeExecutable = (nCallableShader != (m_nMaxCallableLevels - 1) );
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				+	de::toString(resultBufferDefinition);
+
+			if ((nCallableShader + 1) != m_nMaxCallableLevels)
+			{
+				css << de::toString(callableDataDefinitions.at(nCallableShader + 1) );
+			}
+
+			css <<
+				callableDataInDefinitions[nCallableShader]	+
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint nInvocation = atomicAdd(nInvocationsRegistered, 1);\n"
+				"\n"
+				"    resultData[nInvocation].shaderStage = inData.shaderStage;\n"
+				"    resultData[nInvocation].nOriginRay  = inData.nOriginRay;\n"
+				"    resultData[nInvocation].nLevel      = inData.nLevel;\n";
+
+			for (deUint32 nLevel = 0; nLevel < nCallableShader + 1; ++nLevel)
+			{
+				css <<
+					"    resultData[nInvocation].dataChunk[" + de::toString(nLevel) + "] = inData.dataChunk[" + de::toString(nLevel) + "];\n";
+			}
+
+			if (canInvokeExecutable)
+			{
+				css <<
+					"\n"
+					"    callableData" + de::toString(nCallableShader + 1) + ".shaderStage = 1;\n"
+					"    callableData" + de::toString(nCallableShader + 1) + ".nOriginRay  = inData.nOriginRay;\n"
+					"    callableData" + de::toString(nCallableShader + 1) + ".nLevel      = " + de::toString(nCallableShader) + ";\n"
+					"\n";
+
+				for (deUint32 nLevel = 0; nLevel <= nCallableShader + 1; ++nLevel)
+				{
+					css <<
+						"    callableData" + de::toString(nCallableShader + 1) + ".dataChunk[" + de::toString(nLevel) + "] = float(inData.nOriginRay + " + de::toString(nLevel) + ");\n";
+				}
+
+				css <<
+					"\n"
+					"    executeCallableEXT(" + de::toString(nCallableShader + 1) + ", " + de::toString(m_callableDataLevelToCallableDataLocation[nCallableShader + 1]) + ");\n";
+			}
+
+			css <<
+				"\n"
+				"};\n";
+
+			programCollection.glslSources.add("call" + de::toString(nCallableShader) ) << glu::CallableSource(css.str() ) << buildOptions;
+		}
+	}
+
+	void onShaderStackSizeDiscovered(	const VkDeviceSize& raygenShaderStackSize,
+										const VkDeviceSize& ahitShaderStackSize,
+										const VkDeviceSize& chitShaderStackSize,
+										const VkDeviceSize& missShaderStackSize,
+										const VkDeviceSize& callableShaderStackSize,
+										const VkDeviceSize& isectShaderStackSize) final
+	{
+		m_ahitShaderStackSize		= ahitShaderStackSize;
+		m_callableShaderStackSize	= callableShaderStackSize;
+		m_chitShaderStackSize		= chitShaderStackSize;
+		m_isectShaderStackSize		= isectShaderStackSize;
+		m_missShaderStackSize		= missShaderStackSize;
+		m_raygenShaderStackSize		= raygenShaderStackSize;
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
+	bool usesDynamicStackSize() const final
+	{
+		return m_useDynamicStackSize;
+	}
+
+	bool verifyResultBuffer (const void* resultDataPtr) const final
+	{
+		const deUint32* resultU32Ptr	= reinterpret_cast<const deUint32*>(resultDataPtr);
+		bool			result			= false;
+		const auto		nItemsStored	= *resultU32Ptr;
+
+		/* Convert raw binary data into a human-readable vector representation */
+		struct ResultItem
+		{
+			VkShaderStageFlagBits	shaderStage;
+			deUint32				nLevel;
+			std::vector<float>		dataChunk;
+
+			ResultItem()
+				:	shaderStage (VK_SHADER_STAGE_ALL),
+					nLevel		(0)
+			{
+				/* Stub */
+			}
+		};
+
+		std::map<deUint32, std::vector<ResultItem> > nRayToResultItemVecMap;
+
+		for (deUint32 nItem = 0; nItem < nItemsStored; ++nItem)
+		{
+			const deUint32* itemDataPtr = resultU32Ptr + 1 /* nItemsStored */ + nItem * (3 /* preamble ints */ + m_nMaxCallableLevels /* received data */);
+			ResultItem		item;
+			const auto&		nOriginRay  = *(itemDataPtr + 1);
+
+			item.dataChunk.resize(m_nMaxCallableLevels);
+
+			switch (*itemDataPtr)
+			{
+				case 0: item.shaderStage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;		break;
+				case 1: item.shaderStage = VK_SHADER_STAGE_CALLABLE_BIT_KHR;	break;
+				case 2: item.shaderStage = VK_SHADER_STAGE_MISS_BIT_KHR;		break;
+				case 3: item.shaderStage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;	break;
+
+				default:
+				{
+					deAssertFail("This should never happen", __FILE__, __LINE__);
+				}
+			}
+
+			item.nLevel = *(itemDataPtr + 2);
+
+			memcpy(	item.dataChunk.data(),
+					itemDataPtr + 3,
+					m_nMaxCallableLevels * sizeof(float) );
+
+			nRayToResultItemVecMap[nOriginRay].push_back(item);
+		}
+
+		for (deUint32 nRay = 0; nRay < m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2]; ++nRay)
+		{
+			/* 1. Make sure each ray generated the anticipated number of stores */
+			const bool		closestHitShaderInvoked			=	(nRay % 2) == 0;
+			const bool		missShaderInvoked				=	(nRay % 2) != 0;
+			const deUint32	nShaderStagesInvokingCallables	=	1										+ /* raygen */
+																((closestHitShaderInvoked)	? 1 : 0)	+
+																((missShaderInvoked)		? 1 : 0);
+			auto			rayIterator						= nRayToResultItemVecMap.find(nRay);
+
+			if (rayIterator == nRayToResultItemVecMap.end())
+			{
+				goto end;
+			}
+
+			if (rayIterator->second.size() != nShaderStagesInvokingCallables * m_nMaxCallableLevels)
+			{
+				goto end;
+			}
+
+			/* 2. Make sure each shader stage generated the anticipated number of result items */
+			{
+				deUint32 nCallableShaderStageItemsFound		= 0;
+				deUint32 nClosestHitShaderStageItemsFound	= 0;
+				deUint32 nMissShaderStageItemsFound			= 0;
+				deUint32 nRaygenShaderStageItemsFound		= 0;
+
+				for (const auto& currentItem : rayIterator->second)
+				{
+					if (currentItem.shaderStage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+					{
+						nRaygenShaderStageItemsFound++;
+					}
+					else
+					if (currentItem.shaderStage == VK_SHADER_STAGE_CALLABLE_BIT_KHR)
+					{
+						nCallableShaderStageItemsFound ++;
+					}
+					else
+					if (currentItem.shaderStage == VK_SHADER_STAGE_MISS_BIT_KHR)
+					{
+						nMissShaderStageItemsFound ++;
+					}
+					else
+					if (currentItem.shaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+					{
+						nClosestHitShaderStageItemsFound ++;
+					}
+					else
+					{
+						DE_ASSERT(false);
+					}
+				}
+
+				if (nRaygenShaderStageItemsFound != 1)
+				{
+					goto end;
+				}
+
+				/* Even rays hit geometry. Odd ones don't */
+				if (!missShaderInvoked)
+				{
+					if (nClosestHitShaderStageItemsFound == 0)
+					{
+						goto end;
+					}
+
+					if (nMissShaderStageItemsFound != 0)
+					{
+						goto end;
+					}
+				}
+				else
+				{
+					if (nClosestHitShaderStageItemsFound != 0)
+					{
+						goto end;
+					}
+
+					if (nMissShaderStageItemsFound != 1)
+					{
+						goto end;
+					}
+				}
+
+				if (nCallableShaderStageItemsFound != nShaderStagesInvokingCallables * (m_nMaxCallableLevels - 1) )
+				{
+					goto end;
+				}
+			}
+
+			/* 3. Verify data chunk's correctness */
+			{
+				for (const auto& currentItem : rayIterator->second)
+				{
+					const auto nValidItemsRequired =	(currentItem.shaderStage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)			? 1
+													:	(currentItem.shaderStage == VK_SHADER_STAGE_MISS_BIT_KHR)			? 1
+													:	(currentItem.shaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)	? 1
+																															: (currentItem.nLevel + 1);
+
+					for (deUint32 nItem = 0; nItem < nValidItemsRequired; ++nItem)
+					{
+						if (abs(currentItem.dataChunk.at(nItem) - static_cast<float>(nRay + nItem)) > 1e-3f)
+						{
+							goto end;
+						}
+					}
+				}
+			}
+
+			/* 4. Verify all shader levels have been reported for relevant shader stages */
+			{
+				std::map<VkShaderStageFlagBits, std::vector<deUint32> > shaderStageToLevelVecReportedMap;
+
+				for (const auto& currentItem : rayIterator->second)
+				{
+					shaderStageToLevelVecReportedMap[currentItem.shaderStage].push_back(currentItem.nLevel);
+				}
+
+				if (shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_RAYGEN_BIT_KHR).size()  != 1 ||
+					shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_RAYGEN_BIT_KHR).at  (0) != 0)
+				{
+					goto end;
+				}
+
+				if (closestHitShaderInvoked)
+				{
+					if (shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR).size()  != 1 ||
+						shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR).at  (0) != 0)
+					{
+						goto end;
+					}
+				}
+				else
+				{
+					if (shaderStageToLevelVecReportedMap.find(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) != shaderStageToLevelVecReportedMap.end() )
+					{
+						goto end;
+					}
+				}
+
+				if (missShaderInvoked)
+				{
+					if (shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_MISS_BIT_KHR).size()  != 1 ||
+						shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_MISS_BIT_KHR).at  (0) != 0)
+					{
+						goto end;
+					}
+				}
+				else
+				{
+					if (shaderStageToLevelVecReportedMap.find(VK_SHADER_STAGE_MISS_BIT_KHR) != shaderStageToLevelVecReportedMap.end() )
+					{
+						goto end;
+					}
+				}
+
+				if (shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_CALLABLE_BIT_KHR).size() != nShaderStagesInvokingCallables * (m_nMaxCallableLevels - 1))
+				{
+					goto end;
+				}
+
+				for (deUint32 nLevel = 0; nLevel < m_nMaxCallableLevels - 1; ++nLevel)
+				{
+					const auto& vec			= shaderStageToLevelVecReportedMap.at(VK_SHADER_STAGE_CALLABLE_BIT_KHR);
+					auto		vecIterator = std::find(vec.begin	(),
+														vec.end		(),
+														nLevel);
+
+					if (vecIterator == vec.end())
+					{
+						goto end;
+					}
+				}
+			}
+		}
+
+	result = true;
+end:
+	return result;
+}
+
+ private:
+
+	const AccelerationStructureLayout	m_asStructureLayout;
+	const GeometryType					m_geometryType;
+
+	const tcu::UVec3								m_gridSizeXYZ;
+	const deUint32									m_nMaxCallableLevels;
+	deUint32										m_maxPipelineRayRecursionDepth;
+	const bool										m_useDynamicStackSize;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
+
+	VkDeviceSize m_ahitShaderStackSize;
+	VkDeviceSize m_callableShaderStackSize;
+	VkDeviceSize m_chitShaderStackSize;
+	VkDeviceSize m_isectShaderStackSize;
+	VkDeviceSize m_missShaderStackSize;
+	VkDeviceSize m_raygenShaderStackSize;
+
+	mutable std::map<deUint32, deUint32>	m_callableDataLevelToCallableDataLocation;
+};
 
 class CullMaskTest :	public TestBase,
 						public ASPropertyProvider
@@ -2443,7 +3107,9 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 
 	m_testPtr->init(rtPropertiesPtr.get() );
 
-	const auto resultBufferSize	= m_testPtr->getResultBufferSize();
+	const auto	callableShaderCollectionNames	= m_testPtr->getCallableShaderCollectionNames	();
+	auto&		collection						= m_context.getBinaryCollection					();
+	const auto resultBufferSize					= m_testPtr->getResultBufferSize				();
 
 
 	const Move<VkDescriptorSetLayout>	descriptorSetLayoutPtr	= DescriptorSetLayoutBuilder()
@@ -2487,8 +3153,6 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 	de::MovePtr<RayTracingPipeline>		rayTracingPipelinePtr	= de::newMovePtr<RayTracingPipeline>();
 
 	{
-		auto& collection = m_context.getBinaryCollection();
-
 		Move<VkShaderModule>	raygenShader		= createShaderModule(	deviceInterface,
 																			deviceVk,
 																			collection.get("rgen"),
@@ -2548,9 +3212,105 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 												m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_INTERSECTION_BIT_KHR) );
 		}
 
+		for (deUint32 nCallableShader = 0; nCallableShader < static_cast<deUint32>(callableShaderCollectionNames.size() ); ++nCallableShader)
+		{
+			const auto&				currentCallableShaderName	= callableShaderCollectionNames.at	(	nCallableShader);
+			Move<VkShaderModule>	callableShader				= createShaderModule				(	deviceInterface,
+																										deviceVk,
+																										collection.get(currentCallableShaderName),
+																										0); /* flags */
+
+			rayTracingPipelinePtr->addShader(	VK_SHADER_STAGE_CALLABLE_BIT_KHR,
+												makeVkSharedPtr(callableShader),
+												static_cast<deUint32>(ShaderGroups::FIRST_CALLABLE_GROUP) + nCallableShader,
+												m_testPtr->getSpecializationInfoPtr(VK_SHADER_STAGE_CALLABLE_BIT_KHR) );
+		}
+
+		if (m_testPtr->usesDynamicStackSize() )
+		{
+			rayTracingPipelinePtr->addDynamicState(VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR);
+		}
+
 		pipelineVkPtr = rayTracingPipelinePtr->createPipeline(	deviceInterface,
 																deviceVk,
 																*pipelineLayoutPtr);
+	}
+
+	/* Cache shader stack size info */
+	{
+		VkDeviceSize ahitShaderStackSize		= 0;
+		VkDeviceSize callableShaderStackSize	= 0;
+		VkDeviceSize chitShaderStackSize		= 0;
+		VkDeviceSize isectShaderStackSize		= 0;
+		VkDeviceSize missShaderStackSize		= 0;
+		VkDeviceSize raygenShaderStackSize		= 0;
+
+		raygenShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(deviceVk,
+																					*pipelineVkPtr,
+																					static_cast<deUint32>(ShaderGroups::RAYGEN_GROUP),
+																					VK_SHADER_GROUP_SHADER_GENERAL_KHR);
+
+		if (collection.contains("ahit"))
+		{
+			ahitShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
+																						*pipelineVkPtr,
+																						static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+																						VK_SHADER_GROUP_SHADER_ANY_HIT_KHR);
+		}
+
+		if (collection.contains("chit") )
+		{
+			chitShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
+																						*pipelineVkPtr,
+																						static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+																						VK_SHADER_GROUP_SHADER_CLOSEST_HIT_KHR);
+		}
+
+		if (m_data.geometryType == GeometryType::AABB				||
+			m_data.geometryType == GeometryType::AABB_AND_TRIANGLES)
+		{
+			if (collection.contains("intersection") )
+			{
+				isectShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
+																								*pipelineVkPtr,
+																								static_cast<deUint32>(ShaderGroups::HIT_GROUP),
+																								VK_SHADER_GROUP_SHADER_INTERSECTION_KHR);
+			}
+		}
+
+		missShaderStackSize = deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
+																					*pipelineVkPtr,
+																					static_cast<deUint32>(ShaderGroups::MISS_GROUP),
+																					VK_SHADER_GROUP_SHADER_GENERAL_KHR);
+
+		for (deUint32 nCallableShader = 0; nCallableShader < static_cast<deUint32>(callableShaderCollectionNames.size() ); ++nCallableShader)
+		{
+			callableShaderStackSize += deviceInterface.getRayTracingShaderGroupStackSizeKHR(	deviceVk,
+																								*pipelineVkPtr,
+																								static_cast<deUint32>(ShaderGroups::FIRST_CALLABLE_GROUP) + nCallableShader,
+																								VK_SHADER_GROUP_SHADER_GENERAL_KHR);
+		}
+
+		m_testPtr->onShaderStackSizeDiscovered(	raygenShaderStackSize,
+												ahitShaderStackSize,
+												chitShaderStackSize,
+												missShaderStackSize,
+												callableShaderStackSize,
+												isectShaderStackSize);
+	}
+
+	auto callableShaderBindingTablePtr = de::MovePtr<BufferWithMemory>();
+
+	if (callableShaderCollectionNames.size() != 0)
+	{
+		callableShaderBindingTablePtr = rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
+																							deviceVk,
+																							*pipelineVkPtr,
+																							allocator,
+																							m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																							m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																							static_cast<deUint32>								(ShaderGroups::FIRST_CALLABLE_GROUP),
+																							static_cast<deUint32>								(callableShaderCollectionNames.size() )); /* groupCount */
 	}
 
 	const auto raygenShaderBindingTablePtr	= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
@@ -2697,9 +3457,22 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																														0 /* offset */),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
-			const auto	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL,
-																								0, /* stride */
-																								0  /* size   */);
+
+			const auto	callableShaderBindingTableRegion	=	(callableShaderCollectionNames.size() > 0)	? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
+																																										deviceVk,
+																																										callableShaderBindingTablePtr->get(),
+																																										0 /* offset */),
+																																				m_rayTracingPropsPtr->getShaderGroupHandleSize(), /* stride */
+																																				m_rayTracingPropsPtr->getShaderGroupHandleSize() * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
+																											: makeStridedDeviceAddressRegionKHR(DE_NULL,
+																																				0, /* stride */
+																																				0  /* size   */);
+
+			if (m_testPtr->usesDynamicStackSize() )
+			{
+				deviceInterface.cmdSetRayTracingPipelineStackSizeKHR(	*cmdBufferPtr,
+																		m_testPtr->getDynamicStackSize() );
+			}
 
 			for (deUint32 nInvocation = 0; nInvocation < nTraceRaysInvocationsNeeded; ++nInvocation)
 			{
@@ -2846,6 +3619,20 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 			break;
 		}
 
+		case TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST:
+		case TestType::CALLABLE_SHADER_STRESS_TEST:
+		{
+			const bool useDynamicStackSize = (m_data.type == TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST);
+
+			m_testPtr.reset(
+				new CallableShaderStressTest(m_data.geometryType, m_data.asLayout, useDynamicStackSize)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
 		case TestType::CULL_MASK:
 		case TestType::CULL_MASK_EXTRA_BITS:
 		{
@@ -2917,6 +3704,21 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			break;
 		}
 
+		case TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST:
+		case TestType::CALLABLE_SHADER_STRESS_TEST:
+		{
+			if (m_testPtr == nullptr)
+			{
+				const bool useDynamicStackSize = (m_data.type == TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST);
+
+				m_testPtr.reset(
+					new CallableShaderStressTest(m_data.geometryType, m_data.asLayout, useDynamicStackSize)
+				);
+			}
+
+			break;
+		}
+
 		case TestType::CULL_MASK:
 		case TestType::CULL_MASK_EXTRA_BITS:
 		{
@@ -2979,6 +3781,33 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 			testCtx,
 			"misc",
 			"Miscellaneous ray-tracing tests"));
+
+
+	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
+	{
+		for (auto currentASLayout = AccelerationStructureLayout::FIRST; currentASLayout != AccelerationStructureLayout::COUNT; currentASLayout = static_cast<AccelerationStructureLayout>(static_cast<deUint32>(currentASLayout) + 1) )
+		{
+			for (deUint32 nIteration = 0; nIteration < 2; ++nIteration)
+			{
+				const auto			testType		=	(nIteration == 0)	? TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST
+																			: TestType::CALLABLE_SHADER_STRESS_TEST;
+				const std::string	newTestCaseName =	"callableshaderstress_"														+
+														de::toString(getSuffixForASLayout(currentASLayout) )						+
+														"_"																			+
+														de::toString(getSuffixForGeometryType(currentGeometryType) )				+
+														"_"																			+
+														((testType == TestType::CALLABLE_SHADER_STRESS_DYNAMIC_TEST)	? "dynamic"
+																														: "static");
+
+				auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+																newTestCaseName.data(),
+																"Verifies that the maximum ray hit attribute size property reported by the implementation is actually supported.",
+																CaseDef{testType, currentGeometryType, currentASLayout});
+
+				miscGroupPtr->addChild(newTestCasePtr);
+			}
+		}
+	}
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
 	{

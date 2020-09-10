@@ -722,6 +722,8 @@ public:
 	void														setMaxAttributeSize			(const deUint32&										maxAttributeSize);
 	void														setDeferredOperation		(const bool												deferredOperation,
 																							 const deUint32											workerThreadCount = 0);
+	void														addDynamicState				(const VkDynamicState&									dynamicState);
+
 
 protected:
 	Move<VkPipeline>											createPipelineKHR			(const DeviceInterface&									vk,
@@ -739,6 +741,7 @@ protected:
 	deUint32													m_maxAttributeSize;
 	bool														m_deferredOperation;
 	deUint32													m_workerThreadCount;
+	std::vector<VkDynamicState>									m_dynamicStates;
 };
 
 class RayTracingProperties

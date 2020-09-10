@@ -2291,6 +2291,15 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 	if(m_deferredOperation)
 		VK_CHECK(vk.createDeferredOperationKHR(device, DE_NULL, &deferredOperation));
 
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,	// VkStructureType						sType;
+		DE_NULL,												// const void*							pNext;
+		0,														// VkPipelineDynamicStateCreateFlags	flags;
+		static_cast<deUint32>(m_dynamicStates.size() ),			// deUint32								dynamicStateCount;
+		m_dynamicStates.data(),									// const VkDynamicState*				pDynamicStates;
+	};
+
 	const VkRayTracingPipelineCreateInfoKHR				pipelineCreateInfo				=
 	{
 		VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,	//  VkStructureType								sType;
@@ -2303,7 +2312,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR (const DeviceInterface&		
 		m_maxRecursionDepth,									//  deUint32									maxRecursionDepth;
 		&librariesCreateInfo,									//  VkPipelineLibraryCreateInfoKHR*				pLibraryInfo;
 		pipelineInterfaceCreateInfoPtr,							//  VkRayTracingPipelineInterfaceCreateInfoKHR*	pLibraryInterface;
-		DE_NULL,												//  const VkPipelineDynamicStateCreateInfo*		pDynamicState;
+		&dynamicStateCreateInfo,								//  const VkPipelineDynamicStateCreateInfo*		pDynamicState;
 		pipelineLayout,											//  VkPipelineLayout							layout;
 		(VkPipeline)DE_NULL,									//  VkPipeline									basePipelineHandle;
 		0,														//  deInt32										basePipelineIndex;
@@ -2437,6 +2446,11 @@ void RayTracingPipeline::setDeferredOperation (const bool		deferredOperation,
 {
 	m_deferredOperation = deferredOperation;
 	m_workerThreadCount = workerThreadCount;
+}
+
+void RayTracingPipeline::addDynamicState(const VkDynamicState& dynamicState)
+{
+	m_dynamicStates.push_back(dynamicState);
 }
 
 class RayTracingPropertiesKHR : public RayTracingProperties
