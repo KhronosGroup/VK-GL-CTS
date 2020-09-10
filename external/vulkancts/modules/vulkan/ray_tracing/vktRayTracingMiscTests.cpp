@@ -4151,6 +4151,18 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
 	{
+		const std::string newTestCaseName = "AS_stresstest_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
+
+		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+														newTestCaseName.data(),
+														"Verifies raygen shader invocations can simultaneously access as many AS instances as reported",
+														CaseDef{TestType::AS_STRESS_TEST, currentGeometryType, AccelerationStructureLayout::ONE_TL_MANY_BLS_ONE_GEOMETRY});
+
+		miscGroupPtr->addChild(newTestCasePtr);
+	}
+
+	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
+	{
 		for (int nUseExtraCullMaskBits = 0; nUseExtraCullMaskBits < 2 /* false, true */; ++nUseExtraCullMaskBits)
 		{
 			const std::string	newTestCaseName	= "cullmask_" + de::toString(getSuffixForGeometryType(currentGeometryType) ) + de::toString((nUseExtraCullMaskBits) ? "_extrabits" : "");
