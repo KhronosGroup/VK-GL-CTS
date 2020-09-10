@@ -102,7 +102,25 @@
 		<description>Affected GPU families have a small error within the HW texture units bit replication logic for negative SNORM values prior to applying linear filtering.</description>
 		<device_list>
 			<d>0x24208504</d>
+			<d>0x6230</d>
+			<d>0x6430</d>
+			<d>0x6250</d>
+			<d>0x6450</d>
+			<d>0x6650</d>
+			<d>0x6110</d>
+			<d>0x6500</d>
+			<d>0x7400</d>
+			<d>0x15001064</d>
+			<d>0x22022025</d>
+			<d>0x22054025</d>
+			<d>0x22054030</d>
+			<d>0x22054038</d>
+			<d>0x22054330</d>
+			<d>0x22104018</d>
+			<d>0x22104218</d>
+			<d>0x22208318</d>
 		</device_list>
+
 		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8g8b8a8_snorm.min_filter.linear</t>
 		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8g8b8a8_snorm.mag_filter.linear</t>
 		<t>dEQP-VK.pipeline.sampler.view_type.1d.format.r8_snorm.min_filter.linear</t>
@@ -145,6 +163,42 @@
 		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8_snorm.mag_filter.linear</t>
 		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8_snorm.min_filter.linear</t>
 		<t>dEQP-VK.pipeline.sampler.view_type.cube_array.format.r8g8_snorm.mag_filter.linear</t>
+
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.b8g8r8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8b8a8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r8g8_snorm.solid_color.unnormalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.normalized_coords.edge_right</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.centered</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_left</t>
+		<t>dEQP-VK.pipeline.sampler.exact_sampling.r16_snorm.solid_color.unnormalized_coords.edge_right</t>
+
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.r8_snorm_linear</t>
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.r8g8_snorm_linear</t>
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.r8g8b8a8_snorm_linear</t>
+		<t>dEQP-VK.texture.explicit_lod.2d.formats.a8b8g8r8_snorm_pack32_linear</t>
 	</waiver>
 
 	<waiver vendorName="Broadcom" vendorId="0x14E4" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/757">
