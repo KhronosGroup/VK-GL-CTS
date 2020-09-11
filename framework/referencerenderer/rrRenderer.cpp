@@ -31,6 +31,7 @@
 #include "deMemory.h"
 
 #include <set>
+#include <limits>
 
 namespace rr
 {
@@ -163,7 +164,9 @@ ClipFloat getSegmentVolumeEdgeClip (const ClipFloat v0,
 									const ClipFloat w1,
 									const ClipFloat plane)
 {
-	return (plane*w0 - v0) / ((v1 - v0) - plane*(w1 - w0));
+	// The +epsilon avoids division by zero without causing a meaningful change in the calculation.
+	// Fixes divide by zero in builds when using the gcc toolset.
+	return (plane*w0 - v0) / ((v1 - v0) - plane*(w1 - w0) + std::numeric_limits<ClipFloat>::epsilon());
 }
 
 /*--------------------------------------------------------------------*//*!
