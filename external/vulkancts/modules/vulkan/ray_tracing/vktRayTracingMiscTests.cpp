@@ -80,6 +80,7 @@ enum class TestType
 	MAX_RT_INVOCATIONS_SUPPORTED,
 	CULL_MASK_EXTRA_BITS,
 	NO_DUPLICATE_ANY_HIT,
+	REPORT_INTERSECTION_RESULT,
 	RAY_PAYLOAD_IN
 };
 
@@ -3339,15 +3340,189 @@ private:
 	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
 
+// Test the return value of reportIntersectionEXT
+class ReportIntersectionResultTest : public TestBase
+{
+public:
+	ReportIntersectionResultTest(const AccelerationStructureLayout&	asLayout,
+		const GeometryType&				geometryType)
+		: m_asLayout(asLayout)
+		, m_geometryType(geometryType)
+		, m_gridSizeXYZ(tcu::UVec3(4, 4, 1))
+		, m_nRaysToTrace(16)
+	{
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		return m_gridSizeXYZ;
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		return static_cast<deUint32>(2u * sizeof(deUint32) * m_nRaysToTrace);
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const	final
+	{
+		return { m_tlPtr.get() };
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
+	void initAS(vkt::Context&			context,
+		RayTracingProperties*	/* rtPropertiesPtr */,
+		VkCommandBuffer			commandBuffer) final
+	{
+		m_asProviderPtr.reset(
+			new GridASProvider(tcu::Vec3(0, 0, 0),		// gridStartXYZ
+				tcu::Vec3(1, 1, 1),						// gridCellSizeXYZ
+				m_gridSizeXYZ,
+				tcu::Vec3(2.0f, 2.0f, 2.0f),			// gridInterCellDeltaXYZ
+				m_geometryType)
+		);
+
+		m_tlPtr = m_asProviderPtr->createTLAS(context,
+			m_asLayout,
+			commandBuffer,
+			0u,
+			nullptr,									// optASPropertyProviderPtr
+			nullptr);									// optASFedbackPtr
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+		const std::string				hitPropertiesDefinition =
+			"struct HitProperties\n"
+			"{\n"
+			"    uint nHitsRejected;\n"
+			"    uint nHitsAccepteded;\n"
+			"};\n";
+		const std::string hitPropertiesDeclaration =
+			"layout(set = 0, binding = 0, std430) buffer result\n"
+			"{\n"
+			"    HitProperties rayToHitProps[" + de::toString(m_nRaysToTrace) + "];\n"
+			"};\n";
+
+		programCollection.glslSources.add("ahit") << glu::AnyHitSource(std::string() +
+			"#version 460 core\n"
+			"\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			"\n"
+			"hitAttributeEXT vec3 dummyAttribute;\n"
+			"\n"
+			+ hitPropertiesDefinition +
+			"\n"
+			"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"
+			+ hitPropertiesDeclaration +
+			"\n"
+			"void main()\n"
+			"{\n"
+			"    uint nRay = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+			"    if ((gl_RayTmaxEXT > 0.6) && (gl_RayTmaxEXT < 0.8))\n"
+			"    {\n"
+			"        atomicAdd(rayToHitProps[nRay].nHitsRejected, 1);\n"
+			"        ignoreIntersectionEXT();\n"							// reportIntersectionEXT should return false
+			"    }\n"
+			"    else if ((gl_RayTmaxEXT > 0.1) && (gl_RayTmaxEXT < 0.3))\n"
+			"    {\n"
+			"        atomicAdd(rayToHitProps[nRay].nHitsAccepteded, 1);\n"
+			"    }\n"
+			"}\n")
+			<< buildOptions;
+
+		programCollection.glslSources.add("intersection") << glu::IntersectionSource(
+			"#version 460 core\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			"\n"
+			"hitAttributeEXT vec3 hitAttribute;\n"
+			"\n"
+			"void main()\n"
+			"{\n"
+			"    bool resultThatShouldBeRejected = reportIntersectionEXT(0.7f, 0);\n"
+			"    if (resultThatShouldBeRejected)\n"
+			"        reportIntersectionEXT(0.7f, 0);\n"
+			"    else\n"
+			"    {\n"
+			"         bool resultThatShouldBeAccepted = reportIntersectionEXT(0.2f, 0);\n"
+			"         if (!resultThatShouldBeAccepted)\n"
+			"             reportIntersectionEXT(0.2f, 0);\n"
+			"    }\n"
+			"}\n")
+			<< buildOptions;
+
+		programCollection.glslSources.add("miss") << glu::MissSource(std::string() +
+			"#version 460 core\n"
+			"\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			"\n"
+			+ hitPropertiesDefinition +
+			"layout(location = 0) rayPayloadInEXT vec3 dummy;\n"
+			+ hitPropertiesDeclaration +
+			"\n"
+			"void main()\n"
+			"{\n"
+			"}\n")
+			<< buildOptions;
+
+		programCollection.glslSources.add("rgen") << glu::RaygenSource(
+			"#version 460 core\n"
+			"\n"
+			"#extension GL_EXT_ray_tracing : require\n"
+			"\n"
+			+ hitPropertiesDefinition +
+			"layout(location = 0)              rayPayloadEXT vec3                     dummy;\n"
+			"layout(set      = 0, binding = 1) uniform       accelerationStructureEXT topLevelAS;\n"
+			"\n"
+			"void main()\n"
+			"{\n"
+			"    uint  rayFlags    = 0;\n"
+			"    uint  cullMask    = 0xFF;\n"
+			"    float tmin        = 0.001;\n"
+			"    float tmax        = 9.0;\n"
+			"    vec3  origin      = vec3(4, 4, 4);\n"
+			"    vec3  target      = vec3(float(gl_LaunchIDEXT.x * 2) + 0.5f, float(gl_LaunchIDEXT.y * 2) + 0.5f, float(gl_LaunchIDEXT.z * 2) + 0.5f);\n"
+			"    vec3  direct      = normalize(target - origin);\n"
+			"\n"
+			"    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+			"}\n")
+			<< buildOptions;
+	}
+
+	bool verifyResultBuffer(const void* resultDataPtr) const final
+	{
+		for (deUint32 nRay = 0; nRay < m_nRaysToTrace; ++nRay)
+		{
+			const deUint32* rayProps = reinterpret_cast<const deUint32*>(resultDataPtr) + 2 * nRay;
+			if ((rayProps[0] != 1) || (rayProps[1] != 1))
+				return false;
+		}
+		return true;
+	}
+
+private:
+	const AccelerationStructureLayout	m_asLayout;
+	const GeometryType					m_geometryType;
+	const tcu::UVec3					m_gridSizeXYZ;
+	const deUint32						m_nRaysToTrace;
+
+	std::unique_ptr<GridASProvider>					m_asProviderPtr;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
+};
+
 class RayPayloadInTest : public TestBase
- {
- public:
-	RayPayloadInTest(	const GeometryType&					geometryType,
-						const AccelerationStructureLayout&	asStructureLayout)
-		:	m_asStructureLayout	(asStructureLayout),
-			m_geometryType		(geometryType),
-			m_gridSizeXYZ		(tcu::UVec3 (512, 1, 1) ),
-			m_nRayPayloadU32s	(512)
+{
+public:
+	RayPayloadInTest(const GeometryType&					geometryType,
+		const AccelerationStructureLayout&	asStructureLayout)
+		: m_asStructureLayout(asStructureLayout),
+		m_geometryType(geometryType),
+		m_gridSizeXYZ(tcu::UVec3(512, 1, 1)),
+		m_nRayPayloadU32s(512)
 	{
 	}
 
@@ -3367,31 +3542,31 @@ class RayPayloadInTest : public TestBase
 
 	deUint32 getResultBufferSize() const final
 	{
-		DE_ASSERT(m_gridSizeXYZ[0]	!= 0);
-		DE_ASSERT(m_gridSizeXYZ[1]	!= 0);
-		DE_ASSERT(m_gridSizeXYZ[2]	!= 0);
-		DE_ASSERT(m_nRayPayloadU32s	!= 0);
+		DE_ASSERT(m_gridSizeXYZ[0] != 0);
+		DE_ASSERT(m_gridSizeXYZ[1] != 0);
+		DE_ASSERT(m_gridSizeXYZ[2] != 0);
+		DE_ASSERT(m_nRayPayloadU32s != 0);
 
 		const auto nRays = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
 
-		DE_ASSERT( nRays		!= 0);
-		DE_ASSERT((nRays % 2)	== 0);
+		DE_ASSERT(nRays != 0);
+		DE_ASSERT((nRays % 2) == 0);
 
-		const auto nMissShaderInvocationsExpected	= nRays / 2;
-		const auto nAHitShaderInvocationsExpected	= nRays / 2;
-		const auto nCHitShaderInvocationsExpected	= nAHitShaderInvocationsExpected;
-		const auto nResultStoresExpected			= nMissShaderInvocationsExpected + nAHitShaderInvocationsExpected + nCHitShaderInvocationsExpected;
+		const auto nMissShaderInvocationsExpected = nRays / 2;
+		const auto nAHitShaderInvocationsExpected = nRays / 2;
+		const auto nCHitShaderInvocationsExpected = nAHitShaderInvocationsExpected;
+		const auto nResultStoresExpected = nMissShaderInvocationsExpected + nAHitShaderInvocationsExpected + nCHitShaderInvocationsExpected;
 
-		return static_cast<deUint32>((1 /* nItems */ + m_nRayPayloadU32s * nResultStoresExpected) * sizeof(deUint32) );
+		return static_cast<deUint32>((1 /* nItems */ + m_nRayPayloadU32s * nResultStoresExpected) * sizeof(deUint32));
 	}
 
 	VkSpecializationInfo* getSpecializationInfoPtr(const VkShaderStageFlagBits& shaderStage) final
 	{
 		VkSpecializationInfo* resultPtr = nullptr;
 
-		if (shaderStage == VK_SHADER_STAGE_MISS_BIT_KHR			||
-			shaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR	||
-			shaderStage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR		||
+		if (shaderStage == VK_SHADER_STAGE_MISS_BIT_KHR ||
+			shaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR ||
+			shaderStage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR ||
 			shaderStage == VK_SHADER_STAGE_RAYGEN_BIT_KHR)
 		{
 			resultPtr = &m_specializationInfo;
@@ -3404,20 +3579,20 @@ class RayPayloadInTest : public TestBase
 	{
 		DE_ASSERT(m_tlPtr != nullptr);
 
-		return {m_tlPtr.get() };
+		return { m_tlPtr.get() };
 	}
 
 	bool init(	vkt::Context&			/* context	       */,
 				RayTracingProperties*	/* rtPropertiesPtr */) final
 	{
 		m_specializationInfoMapEntry.constantID = 1;
-		m_specializationInfoMapEntry.offset		= 0;
-		m_specializationInfoMapEntry.size		= sizeof(deUint32);
+		m_specializationInfoMapEntry.offset = 0;
+		m_specializationInfoMapEntry.size = sizeof(deUint32);
 
-		m_specializationInfo.dataSize			= sizeof(deUint32);
-		m_specializationInfo.mapEntryCount		= 1;
-		m_specializationInfo.pData				= reinterpret_cast<const void*>(&m_nRayPayloadU32s);
-		m_specializationInfo.pMapEntries		= &m_specializationInfoMapEntry;
+		m_specializationInfo.dataSize = sizeof(deUint32);
+		m_specializationInfo.mapEntryCount = 1;
+		m_specializationInfo.pData = reinterpret_cast<const void*>(&m_nRayPayloadU32s);
+		m_specializationInfo.pMapEntries = &m_specializationInfoMapEntry;
 
 		return true;
 	}
@@ -3428,31 +3603,31 @@ class RayPayloadInTest : public TestBase
 	}
 
 	void initAS(vkt::Context&			context,
-				RayTracingProperties*	/* rtPropertiesPtr */,
-				VkCommandBuffer			commandBuffer) final
+		RayTracingProperties*	/* rtPropertiesPtr */,
+		VkCommandBuffer			commandBuffer) final
 	{
 		std::unique_ptr<GridASProvider> asProviderPtr(
-			new GridASProvider(	tcu::Vec3 (0, 0, 0), /* gridStartXYZ          */
-								tcu::Vec3 (1, 1, 1), /* gridCellSizeXYZ       */
-								m_gridSizeXYZ,
-								tcu::Vec3 (6, 0, 0), /* gridInterCellDeltaXYZ */
-								m_geometryType)
+			new GridASProvider(tcu::Vec3(0, 0, 0), /* gridStartXYZ          */
+				tcu::Vec3(1, 1, 1), /* gridCellSizeXYZ       */
+				m_gridSizeXYZ,
+				tcu::Vec3(6, 0, 0), /* gridInterCellDeltaXYZ */
+				m_geometryType)
 		);
 
-		m_tlPtr  = asProviderPtr->createTLAS(	context,
-												m_asStructureLayout,
-												commandBuffer,
-												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
-												nullptr,
-												nullptr);
+		m_tlPtr = asProviderPtr->createTLAS(context,
+			m_asStructureLayout,
+			commandBuffer,
+			VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+			nullptr,
+			nullptr);
 	}
 
 	void initPrograms(SourceCollections& programCollection) const final
 	{
-		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
-														vk::SPIRV_VERSION_1_4,
-														0u,		/* flags        */
-														true);	/* allowSpirv14 */
+		const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion,
+			vk::SPIRV_VERSION_1_4,
+			0u,		/* flags        */
+			true);	/* allowSpirv14 */
 
 		const char* constantDefinitions =
 			"layout(constant_id = 1) const uint N_UINTS_IN_RAY_PAYLOAD = 1;\n";
@@ -3502,7 +3677,7 @@ class RayPayloadInTest : public TestBase
 				"    }\n"
 				"}\n";
 
-			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -3527,7 +3702,7 @@ class RayPayloadInTest : public TestBase
 				"    }\n"
 				"}\n";
 
-			programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str() ) << buildOptions;
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -3543,7 +3718,7 @@ class RayPayloadInTest : public TestBase
 				"    reportIntersectionEXT(0.95f, 0);\n"
 				"}\n";
 
-			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str() ) << buildOptions;
+			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -3554,9 +3729,9 @@ class RayPayloadInTest : public TestBase
 				"\n"
 				"#extension GL_EXT_ray_tracing : require\n"
 				"\n"
-				+	de::toString(constantDefinitions)
-				+	de::toString(resultBufferDefinition)
-				+	de::toString(rayPayloadInDefinition) +
+				+ de::toString(constantDefinitions)
+				+ de::toString(resultBufferDefinition)
+				+ de::toString(rayPayloadInDefinition) +
 				"\n"
 				"void main()\n"
 				"{\n"
@@ -3568,7 +3743,7 @@ class RayPayloadInTest : public TestBase
 				"    }\n"
 				"}\n";
 
-			programCollection.glslSources.add("miss") << glu::MissSource(css.str() ) << buildOptions;
+			programCollection.glslSources.add("miss") << glu::MissSource(css.str()) << buildOptions;
 		}
 
 		{
@@ -3581,8 +3756,8 @@ class RayPayloadInTest : public TestBase
 				"\n"
 				"layout(set = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
 				"\n"
-				+	de::toString(constantDefinitions)
-				+	de::toString(rayPayloadDefinition) +
+				+ de::toString(constantDefinitions)
+				+ de::toString(rayPayloadDefinition) +
 				"void main()\n"
 				"{\n"
 				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
@@ -3605,21 +3780,21 @@ class RayPayloadInTest : public TestBase
 				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
 				"}\n";
 
-			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str()) << buildOptions;
 		}
 	}
 
-	bool verifyResultBuffer (const void* resultDataPtr) const final
+	bool verifyResultBuffer(const void* resultDataPtr) const final
 	{
-		const deUint32* resultU32Ptr	= reinterpret_cast<const deUint32*>(resultDataPtr);
-		bool			result			= false;
+		const deUint32* resultU32Ptr = reinterpret_cast<const deUint32*>(resultDataPtr);
+		bool			result = false;
 
-		const auto nItemsStored						= *resultU32Ptr;
-		const auto nRays							= m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
-		const auto nMissShaderInvocationsExpected	= nRays / 2;
-		const auto nAHitShaderInvocationsExpected	= nRays / 2;
-		const auto nCHitShaderInvocationsExpected	= nAHitShaderInvocationsExpected;
-		const auto nResultStoresExpected			= nMissShaderInvocationsExpected + nAHitShaderInvocationsExpected + nCHitShaderInvocationsExpected;
+		const auto nItemsStored = *resultU32Ptr;
+		const auto nRays = m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2];
+		const auto nMissShaderInvocationsExpected = nRays / 2;
+		const auto nAHitShaderInvocationsExpected = nRays / 2;
+		const auto nCHitShaderInvocationsExpected = nAHitShaderInvocationsExpected;
+		const auto nResultStoresExpected = nMissShaderInvocationsExpected + nAHitShaderInvocationsExpected + nCHitShaderInvocationsExpected;
 
 		if (nItemsStored != nResultStoresExpected)
 		{
@@ -3632,7 +3807,7 @@ class RayPayloadInTest : public TestBase
 
 			for (deUint32 nValue = 0; nValue < m_nRayPayloadU32s; ++nValue)
 			{
-				if (resultItemDataPtr[nValue] != (1 + nValue) )
+				if (resultItemDataPtr[nValue] != (1 + nValue))
 				{
 					goto end;
 				}
@@ -3640,7 +3815,7 @@ class RayPayloadInTest : public TestBase
 		}
 
 		result = true;
-end:
+	end:
 		return result;
 	}
 
@@ -4292,6 +4467,17 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 			break;
 		}
 
+		case TestType::REPORT_INTERSECTION_RESULT:
+		{
+			m_testPtr.reset(
+				new ReportIntersectionResultTest(m_data.asLayout, m_data.geometryType)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
 		case TestType::RAY_PAYLOAD_IN:
 		{
 			m_testPtr.reset(
@@ -4398,6 +4584,18 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			{
 				m_testPtr.reset(
 					new NoDuplicateAnyHitTest(m_data.asLayout, m_data.geometryType)
+				);
+			}
+
+			break;
+		}
+
+		case TestType::REPORT_INTERSECTION_RESULT:
+		{
+			if (m_testPtr == nullptr)
+			{
+				m_testPtr.reset(
+					new ReportIntersectionResultTest(m_data.asLayout, m_data.geometryType)
 				);
 			}
 
@@ -4546,6 +4744,14 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
+	{
+		auto newTestCasePtr = new RayTracingTestCase(testCtx,
+														"report_intersection_result",
+														"Test the return value of reportIntersectionEXT",
+														CaseDef{TestType::REPORT_INTERSECTION_RESULT, GeometryType::AABB, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
+		miscGroupPtr->addChild(newTestCasePtr);
+	}
+
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
 	{
 		const std::string newTestCaseName = "raypayloadin_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
@@ -4554,7 +4760,6 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 														newTestCaseName.data(),
 														"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
 														CaseDef{TestType::RAY_PAYLOAD_IN, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
-
 		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
