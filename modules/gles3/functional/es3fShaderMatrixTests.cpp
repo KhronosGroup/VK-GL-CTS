@@ -1652,10 +1652,10 @@ void ShaderMatrixCase::init (void)
 	for (int attribNdx = 0; attribNdx < 4; attribNdx++)
 	{
 		m_userAttribTransforms[attribNdx] = Mat4(0.0f);
-		m_userAttribTransforms[attribNdx](                  0, 3) = 0.2f;								// !< prevent matrix*vec from going into zero (assuming vec.w != 0)
-		m_userAttribTransforms[attribNdx](                  1, 3) = 0.1f;								// !<
-		m_userAttribTransforms[attribNdx](                  2, 3) = 0.4f + 0.15f * float(attribNdx);	// !<
-		m_userAttribTransforms[attribNdx](                  3, 3) = 0.7f;								// !<
+		m_userAttribTransforms[attribNdx](                  0, 3) = 0.1f + 0.15f * float(attribNdx);	// !< prevent matrix*vec from going into zero (assuming vec.w != 0)
+		m_userAttribTransforms[attribNdx](                  1, 3) = 0.2f + 0.15f * float(attribNdx);	// !<
+		m_userAttribTransforms[attribNdx](                  2, 3) = 0.3f + 0.15f * float(attribNdx);	// !<
+		m_userAttribTransforms[attribNdx](                  3, 3) = 0.4f + 0.15f * float(attribNdx);	// !<
 		m_userAttribTransforms[attribNdx]((0 + attribNdx) % 4, 0) = 1.0f;
 		m_userAttribTransforms[attribNdx]((1 + attribNdx) % 4, 1) = 1.0f;
 		m_userAttribTransforms[attribNdx]((2 + attribNdx) % 4, 2) = 1.0f;
