@@ -618,7 +618,7 @@ namespace vkt
 				const VkImageMemoryBarrier			postImageBarrier = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 					**image, imageSubresourceRange);
-				const VkMemoryBarrier				postTraceMemoryBarrier = makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR, VK_ACCESS_TRANSFER_READ_BIT);
+				const VkMemoryBarrier				postTraceMemoryBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
 				const VkMemoryBarrier				postCopyMemoryBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, 0);
 				const VkClearValue					clearValue = (!m_useClosedFan)	? makeClearValueColorU32(5u, 5u, 5u, 255u)
 																					: makeClearValueColorU32(0u, 0u, 0u, 0u);

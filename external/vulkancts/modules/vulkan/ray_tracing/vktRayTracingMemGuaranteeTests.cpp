@@ -670,7 +670,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest (void)
 	const VkImageMemoryBarrier			postImageBarrier					= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
 																				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 																				**image, imageSubresourceRange);
-	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR, VK_ACCESS_TRANSFER_READ_BIT);
+	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
 	const VkMemoryBarrier				postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, 0);
 	const VkClearValue					clearValue							= makeClearValueColorU32(1000000u, 0u, 0u, 255u);
 
@@ -806,7 +806,7 @@ tcu::TestCaseGroup*	createMemGuaranteeTests (tcu::TestContext& testCtx)
 		{ "between",	TEST_TYPE_BETWEEN_STAGES	},
 	};
 
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "memguarantee", "Ray tracing memory guarntee tests"));
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "memguarantee", "Ray tracing memory guarantee tests"));
 
 	for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 	{

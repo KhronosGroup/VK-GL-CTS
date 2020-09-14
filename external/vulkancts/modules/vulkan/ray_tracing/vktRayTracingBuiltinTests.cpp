@@ -1704,7 +1704,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuiltinLaunchTestInstance::runTest (void
 	const VkImageMemoryBarrier			postImageBarrier					= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
 																				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 																				**image, imageSubresourceRange);
-	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR, VK_ACCESS_TRANSFER_READ_BIT);
+	const VkMemoryBarrier				postTraceMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
 	const VkMemoryBarrier				postCopyMemoryBarrier				= makeMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, 0);
 	const VkClearValue					clearValue							= makeClearValueColorU32(DEFAULT_UINT_CLEAR_VALUE, DEFAULT_UINT_CLEAR_VALUE, DEFAULT_UINT_CLEAR_VALUE, 255u);
 
