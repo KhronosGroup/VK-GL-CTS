@@ -49,6 +49,7 @@
 #include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include <limits>
 #include <map>
@@ -1398,6 +1399,31 @@ void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 	}
 }
 
+void addDynamicOffsetComputeGroup (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext &testCtx = group->getTestContext();
+
+	static const char dataDir[] = "spirv_assembly/instruction/compute/variable_pointer/dynamic_offset";
+
+	struct Case
+	{
+		string			name;
+		string			desc;
+	};
+
+	static const Case cases[] =
+	{
+		{ "select_descriptor_array",	"Test accessing a descriptor array using a variable pointer from OpSelect"			},
+	};
+
+	for (const auto& testCase : cases)
+	{
+		const string fileName = testCase.name + ".amber";
+
+		group->addChild(cts_amber::createAmberTestCase(testCtx, testCase.name.c_str(), testCase.desc.c_str(), dataDir, fileName, {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class", "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
+	}
+}
+
 void addVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 {
 	tcu::TestContext&				testCtx					= testGroup->getTestContext();
@@ -2725,6 +2751,9 @@ tcu::TestCaseGroup* createVariablePointersComputeGroup (tcu::TestContext& testCt
 				 "nullptr_compute",
 				 "Test the usage of nullptr using the variable pointers extension in a compute shader",
 				 addNullptrVariablePointersComputeGroup);
+	addTestGroup(group.get(), "dynamic_offset",
+				 "Testing variable pointers referring to descriptors using dynamic offset",
+				 addDynamicOffsetComputeGroup);
 
 	return group.release();
 }
