@@ -64,7 +64,6 @@ PIPELINE compute fill_pipe
   ATTACH fill
   SUBGROUP fill
     FULLY_POPULATED on
-    REQUIRED_SIZE MIN
   END
 
   BIND BUFFER a AS storage DESCRIPTOR_SET 0 BINDING 0
@@ -76,7 +75,6 @@ PIPELINE compute test_pipe
   ATTACH test
   SUBGROUP test
     FULLY_POPULATED on
-    REQUIRED_SIZE MIN
   END
 
   BIND BUFFER a AS storage DESCRIPTOR_SET 0 BINDING 0
