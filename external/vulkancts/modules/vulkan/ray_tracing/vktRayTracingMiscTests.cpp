@@ -77,6 +77,7 @@ enum class TestType
 	CALLABLE_SHADER_STRESS_TEST,
 	CULL_MASK,
 	MAX_RAY_HIT_ATTRIBUTE_SIZE,
+	MAX_RT_INVOCATIONS_SUPPORTED,
 	CULL_MASK_EXTRA_BITS,
 	NO_DUPLICATE_ANY_HIT,
 	RAY_PAYLOAD_IN
@@ -805,7 +806,8 @@ public:
 		return nullptr;
 	}
 
-	virtual bool init(RayTracingProperties* /* rtPropsPtr */)
+	virtual bool init(	vkt::Context&			/* context    */,
+						RayTracingProperties*	/* rtPropsPtr */)
 	{
 		return true;
 	}
@@ -1165,7 +1167,8 @@ public:
 		}
 	}
 
-	bool init(RayTracingProperties* rtPropertiesPtr) final
+	bool init(	vkt::Context&			/* context    */,
+				RayTracingProperties*	rtPropertiesPtr) final
 	{
 		/* NOTE: We clamp the number below to a sensible value, in case the implementation has no restrictions on the number of
 		 *		 ASes accessible to shaders.
@@ -1547,7 +1550,8 @@ public:
 		return {m_tlPtr.get() };
 	}
 
-	bool init(	RayTracingProperties*	rtPropertiesPtr) final
+	bool init(	vkt::Context&			/* context    */,
+				RayTracingProperties*	rtPropertiesPtr) final
 	{
 		m_maxPipelineRayRecursionDepth = rtPropertiesPtr->getMaxRecursionDepth();
 
@@ -2512,7 +2516,8 @@ public:
 		m_tlPtr.reset();
 	}
 
-	bool init(RayTracingProperties*	rtPropertiesPtr) final
+	bool init(	vkt::Context&			/* context    */,
+				RayTracingProperties*	rtPropertiesPtr) final
 	{
 		const auto maxRayHitAttributeSize = rtPropertiesPtr->getMaxRayHitAttributeSize();
 
@@ -2791,6 +2796,296 @@ private:
 
 	VkSpecializationInfo		m_specializationInfo;
 	VkSpecializationMapEntry	m_specializationInfoMapEntry;
+};
+
+class MAXRTInvocationsSupportedTest :	public TestBase,
+										public ASPropertyProvider,
+										public IGridASFeedback
+{
+ public:
+	MAXRTInvocationsSupportedTest(	const GeometryType&					geometryType,
+									const AccelerationStructureLayout&	asStructureLayout)
+	:	m_asStructureLayout				(asStructureLayout),
+		m_geometryType					(geometryType),
+		m_lastCustomInstanceIndexUsed	(0),
+		m_nMaxCells						(8 * 8 * 8)
+	{
+	}
+
+	~MAXRTInvocationsSupportedTest()
+	{
+		/* Stub */
+	}
+
+	deUint32 getInstanceCustomIndex(const deUint32& nBL, const deUint32& nInstance) const final
+	{
+		DE_UNREF(nBL);
+		DE_UNREF(nInstance);
+
+		return ++m_lastCustomInstanceIndexUsed;
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		DE_ASSERT(m_gridSizeXYZ[0] != 0);
+		DE_ASSERT(m_gridSizeXYZ[1] != 0);
+		DE_ASSERT(m_gridSizeXYZ[2] != 0);
+
+		return tcu::UVec3(m_gridSizeXYZ[0], m_gridSizeXYZ[1], m_gridSizeXYZ[2]);
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		DE_ASSERT(m_gridSizeXYZ[0] != 0);
+		DE_ASSERT(m_gridSizeXYZ[1] != 0);
+		DE_ASSERT(m_gridSizeXYZ[2] != 0);
+
+		return static_cast<deUint32>((2 /* nHits, nMisses */ + m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2] * 1 /* hit instance custom index */) * sizeof(deUint32) );
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const final
+	{
+		DE_ASSERT(m_tlPtr != nullptr);
+
+		return {m_tlPtr.get() };
+	}
+
+	bool init(	vkt::Context&			context,
+				RayTracingProperties*	rtPropertiesPtr) final
+	{
+		/* NOTE: In order to avoid running into a situation where the test attempts to create a buffer of size larger than permitted by Vulkan,
+		 *       we limit the maximum number of testable invocations to 2^29. */
+		const auto		maxComputeWorkGroupCount		= context.getDeviceProperties().limits.maxComputeWorkGroupCount;
+		const auto		maxComputeWorkGroupSize			= context.getDeviceProperties().limits.maxComputeWorkGroupSize;
+		const deUint64	maxGlobalRTWorkGroupSize[3]		= {	static_cast<deUint64>(maxComputeWorkGroupCount[0]) * static_cast<deUint64>(maxComputeWorkGroupSize[0]),
+															static_cast<deUint64>(maxComputeWorkGroupCount[1]) * static_cast<deUint64>(maxComputeWorkGroupSize[1]),
+															static_cast<deUint64>(maxComputeWorkGroupCount[2]) * static_cast<deUint64>(maxComputeWorkGroupSize[2]) };
+		const auto		maxRayDispatchInvocationCount	= de::min(	static_cast<deUint64>(rtPropertiesPtr->getMaxRayDispatchInvocationCount() ),
+																	static_cast<deUint64>(1ULL << 29) );
+
+		m_gridSizeXYZ[0] = de::max(	1u,
+									static_cast<deUint32>((maxRayDispatchInvocationCount)										% maxGlobalRTWorkGroupSize[0]) );
+		m_gridSizeXYZ[1] = de::max(	1u,
+									static_cast<deUint32>((maxRayDispatchInvocationCount / m_gridSizeXYZ[0])					% maxGlobalRTWorkGroupSize[1]) );
+		m_gridSizeXYZ[2] = de::max(	1u,
+									static_cast<deUint32>((maxRayDispatchInvocationCount / m_gridSizeXYZ[0] / m_gridSizeXYZ[1])	% maxGlobalRTWorkGroupSize[2]) );
+
+		/* TODO: The simple formulas above may need to be improved to handle your implementation correctly */
+		DE_ASSERT(m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2] == maxRayDispatchInvocationCount);
+
+		return true;
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		std::unique_ptr<GridASProvider> asProviderPtr(
+			new GridASProvider(	tcu::Vec3 (0,   0, 0), /* gridStartXYZ          */
+								tcu::Vec3 (1,   1, 1), /* gridCellSizeXYZ       */
+								tcu::UVec3(512, 1, 1), /* gridSizeXYZ           */
+								tcu::Vec3 (3,   0, 0), /* gridInterCellDeltaXYZ */
+								m_geometryType)
+		);
+
+		m_tlPtr  = asProviderPtr->createTLAS(	context,
+												m_asStructureLayout,
+												commandBuffer,
+												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+												this,	/* optASPropertyProviderPtr */
+												this);	/* optASFeedbackPtr			*/
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
+														vk::SPIRV_VERSION_1_4,
+														0u,		/* flags        */
+														true);	/* allowSpirv14 */
+
+		const char* hitPropsDefinition =
+			"struct HitProps\n"
+			"{\n"
+			"    uint instanceCustomIndex;\n"
+			"};\n";
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"hitAttributeEXT vec3 dummyAttribute;\n"
+				"\n"
+				+ de::toString(hitPropsDefinition) +
+				"\n"
+				"layout(location = 0) rayPayloadInEXT      uint   dummy;\n"
+				"layout(set      = 0, binding = 0, std430) buffer result\n"
+				"{\n"
+				"    uint     nHitsRegistered;\n"
+				"    uint     nMissesRegistered;\n"
+				"    HitProps hits[];\n"
+				"};\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    atomicAdd(nHitsRegistered, 1);\n"
+				"\n"
+				"    uint nInvocation = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"\n"
+				"    hits[nInvocation].instanceCustomIndex = gl_InstanceCustomIndexEXT;\n"
+				"}\n";
+
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"hitAttributeEXT vec3 hitAttribute;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    reportIntersectionEXT(0.95f, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				+ de::toString(hitPropsDefinition) +
+				"\n"
+				"layout(set = 0, binding = 0, std430) buffer result\n"
+				"{\n"
+				"    uint     nHitsRegistered;\n"
+				"    uint     nMissesRegistered;\n"
+				"    HitProps hits[];\n"
+				"};\n"
+				"\n"
+				"layout(location = 0) rayPayloadInEXT uint rayIndex;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    atomicAdd(nMissesRegistered, 1);\n"
+				"}\n";
+
+			programCollection.glslSources.add("miss") << glu::MissSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n"
+				"\n"
+				"layout(location = 0)              rayPayloadEXT uint               dummy;\n"
+				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"    uint  rayFlags     = 0;\n"
+				"    float tmin         = 0.001;\n"
+				"    float tmax         = 2.1;\n"
+				"\n"
+				"    uint  cullMask     = 0xFF;\n"
+				"    vec3  cellStartXYZ = vec3( (nInvocation % " + de::toString(m_nMaxCells) + ") * 3, 0.0, 0.0);\n"
+				"    vec3  cellEndXYZ   = cellStartXYZ + vec3(1.0);\n"
+				"    vec3  target       = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+				"    vec3  origin       = target - vec3(0, 2, 0);\n"
+				"    vec3  direct       = normalize(target - origin);\n"
+				"\n"
+				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+		}
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
+	bool verifyResultBuffer (const void* resultDataPtr) const final
+	{
+		const deUint32* resultU32Ptr	= reinterpret_cast<const deUint32*>(resultDataPtr);
+		bool			result			= false;
+
+		typedef struct
+		{
+			deUint32 instanceCustomIndex;
+		} HitProperties;
+
+		const auto	nHitsReported	= *resultU32Ptr;
+		const auto	nMissesReported	= *(resultU32Ptr + 1);
+
+		if (nHitsReported != m_gridSizeXYZ[0] * m_gridSizeXYZ[1] * m_gridSizeXYZ[2])
+		{
+			goto end;
+		}
+
+		if (nMissesReported != 0)
+		{
+			goto end;
+		}
+
+		for (deUint32 nRay = 0; nRay < nHitsReported; ++nRay)
+		{
+			const HitProperties* hitPropsPtr = reinterpret_cast<const HitProperties*>(resultU32Ptr + 2 /* preamble ints */) + nRay;
+
+			if (m_nRayToInstanceIndexExpected.at(nRay % m_nMaxCells) != hitPropsPtr->instanceCustomIndex)
+			{
+				goto end;
+			}
+		}
+
+		result = true;
+end:
+		return result;
+	}
+
+private:
+	void onCullMaskAssignedToCell(const tcu::UVec3& cellLocation, const deUint8& cullMaskAssigned)
+	{
+		/* Dont'care */
+		DE_UNREF(cellLocation);
+		DE_UNREF(cullMaskAssigned);
+	}
+
+	void onInstanceCustomIndexAssignedToCell(const tcu::UVec3& cellLocation, const deUint32& customIndexAssigned)
+	{
+		DE_ASSERT(cellLocation[1] == 0);
+		DE_ASSERT(cellLocation[2] == 0);
+
+		m_nRayToInstanceIndexExpected[cellLocation[0] ] = customIndexAssigned;
+	}
+
+	const AccelerationStructureLayout	m_asStructureLayout;
+	const GeometryType					m_geometryType;
+
+	tcu::UVec3										m_gridSizeXYZ;
+	mutable deUint32								m_lastCustomInstanceIndexUsed;
+	const deUint32									m_nMaxCells;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
+
+	std::map<deUint32, deUint32> m_nRayToInstanceIndexExpected;
 };
 
 class NoDuplicateAnyHitTest : public TestBase
@@ -3112,7 +3407,8 @@ class RayPayloadInTest : public TestBase
 		return {m_tlPtr.get() };
 	}
 
-	bool init(RayTracingProperties*	/* rtPropertiesPtr */) final
+	bool init(	vkt::Context&			/* context	       */,
+				RayTracingProperties*	/* rtPropertiesPtr */) final
 	{
 		m_specializationInfoMapEntry.constantID = 1;
 		m_specializationInfoMapEntry.offset		= 0;
@@ -3422,7 +3718,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 	auto											rtPropertiesPtr		= makeRayTracingProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice() );
 	std::unique_ptr<TopLevelAccelerationStructure>	tlPtr;
 
-	m_testPtr->init(rtPropertiesPtr.get() );
+	m_testPtr->init(m_context,
+					rtPropertiesPtr.get() );
 
 	const auto	callableShaderCollectionNames	= m_testPtr->getCallableShaderCollectionNames	();
 	auto&		collection						= m_context.getBinaryCollection					();
@@ -3973,6 +4270,17 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 			break;
 		}
 
+		case TestType::MAX_RT_INVOCATIONS_SUPPORTED:
+		{
+			m_testPtr.reset(
+				new MAXRTInvocationsSupportedTest(m_data.geometryType, m_data.asLayout)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
 		case TestType::NO_DUPLICATE_ANY_HIT:
 		{
 			m_testPtr.reset(
@@ -4066,6 +4374,18 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			{
 				m_testPtr.reset(
 					new MAXRayHitAttributeSizeTest(m_data.geometryType, m_data.asLayout)
+				);
+			}
+
+			break;
+		}
+
+		case TestType::MAX_RT_INVOCATIONS_SUPPORTED:
+		{
+			if (m_testPtr == nullptr)
+			{
+				m_testPtr.reset(
+					new MAXRTInvocationsSupportedTest(m_data.geometryType, m_data.asLayout)
 				);
 			}
 
@@ -4176,6 +4496,18 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 
 			miscGroupPtr->addChild(newTestCasePtr);
 		}
+	}
+
+	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
+	{
+		const std::string newTestCaseName = "maxrtinvocations_" + de::toString(getSuffixForGeometryType(currentGeometryType) );
+
+		auto newTestCasePtr = new RayTracingTestCase(	testCtx,
+														newTestCaseName.data(),
+														"Verifies top-level acceleration structures built of AABB and triangle bottom-level AS instances work as expected",
+														CaseDef{TestType::MAX_RT_INVOCATIONS_SUPPORTED, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
+
+		miscGroupPtr->addChild(newTestCasePtr);
 	}
 
 	for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT; currentGeometryType = static_cast<GeometryType>(static_cast<deUint32>(currentGeometryType) + 1) )
