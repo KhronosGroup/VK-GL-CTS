@@ -1,6 +1,8 @@
 include_directories(..)
 
 set(DEQP_VK_RAY_TRACING_SRCS
+	vktRayTracingBarrierTests.cpp
+	vktRayTracingBarrierTests.hpp
 	vktRayTracingBuildIndirectTests.cpp
 	vktRayTracingBuildIndirectTests.hpp
 	vktRayTracingBuiltinTests.cpp
