@@ -42,6 +42,7 @@
 #include <map>
 #include <algorithm>
 #include <memory>
+#include <cmath>
 
 namespace glcts
 {
@@ -287,8 +288,9 @@ void NearestEdgeTestCase::renderQuad ()
 
 	// Apply offset of almost half a texel to the texture coordinates.
 	DE_ASSERT(m_offsetSign == 1.0f || m_offsetSign == -1.0f);
-	const float offsetWidth		= 0.499f / static_cast<float>(m_width);
-	const float offsetHeight	= 0.499f / static_cast<float>(m_height);
+	const float offset			= 0.5f - pow(2.0f, -8.0f);
+	const float offsetWidth		= offset / static_cast<float>(m_width);
+	const float offsetHeight	= offset / static_cast<float>(m_height);
 
 	minU += m_offsetSign * offsetWidth;
 	maxU += m_offsetSign * offsetWidth;
