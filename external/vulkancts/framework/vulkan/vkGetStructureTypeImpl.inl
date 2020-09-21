@@ -1031,6 +1031,61 @@ template<> VkStructureType getStructureType<VkPipelineExecutableInternalRepresen
 	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
 }
 
+template<> VkStructureType getStructureType<VkBufferCopy2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyBufferInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageCopy2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBufferImageCopy2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyBufferToImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyImageToBufferInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageBlit2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkBlitImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkImageResolve2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkResolveImageInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -1949,6 +2004,16 @@ template<> VkStructureType getStructureType<VkMemoryGetAndroidHardwareBufferInfo
 template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePortabilitySubsetPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDeferredOperationInfoKHR> (void)

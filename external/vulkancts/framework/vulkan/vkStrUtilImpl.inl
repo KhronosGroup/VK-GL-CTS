@@ -440,6 +440,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV:		return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SHADING_RATE_IMAGE_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADING_RATE_IMAGE_PROPERTIES_NV";
@@ -562,6 +564,17 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR:											return "VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR:											return "VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR:									return "VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR:									return "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR:											return "VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR:										return "VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR:												return "VK_STRUCTURE_TYPE_BUFFER_COPY_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR:												return "VK_STRUCTURE_TYPE_IMAGE_COPY_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR:												return "VK_STRUCTURE_TYPE_IMAGE_BLIT_2_KHR";
+		case VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR:											return "VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2_KHR";
+		case VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR:												return "VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_4444_FORMATS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_MAX_ENUM:														return "VK_STRUCTURE_TYPE_MAX_ENUM";
@@ -7272,6 +7285,161 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableInternalRep
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkBufferCopy2KHR& value)
+{
+	s << "VkBufferCopy2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcOffset = " << value.srcOffset << '\n';
+	s << "\tdstOffset = " << value.dstOffset << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyBufferInfo2KHR& value)
+{
+	s << "VkCopyBufferInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcBuffer = " << value.srcBuffer << '\n';
+	s << "\tdstBuffer = " << value.dstBuffer << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageCopy2KHR& value)
+{
+	s << "VkImageCopy2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcSubresource = " << value.srcSubresource << '\n';
+	s << "\tsrcOffset = " << value.srcOffset << '\n';
+	s << "\tdstSubresource = " << value.dstSubresource << '\n';
+	s << "\tdstOffset = " << value.dstOffset << '\n';
+	s << "\textent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyImageInfo2KHR& value)
+{
+	s << "VkCopyImageInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcImage = " << value.srcImage << '\n';
+	s << "\tsrcImageLayout = " << value.srcImageLayout << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBufferImageCopy2KHR& value)
+{
+	s << "VkBufferImageCopy2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbufferOffset = " << value.bufferOffset << '\n';
+	s << "\tbufferRowLength = " << value.bufferRowLength << '\n';
+	s << "\tbufferImageHeight = " << value.bufferImageHeight << '\n';
+	s << "\timageSubresource = " << value.imageSubresource << '\n';
+	s << "\timageOffset = " << value.imageOffset << '\n';
+	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyBufferToImageInfo2KHR& value)
+{
+	s << "VkCopyBufferToImageInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcBuffer = " << value.srcBuffer << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyImageToBufferInfo2KHR& value)
+{
+	s << "VkCopyImageToBufferInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcImage = " << value.srcImage << '\n';
+	s << "\tsrcImageLayout = " << value.srcImageLayout << '\n';
+	s << "\tdstBuffer = " << value.dstBuffer << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageBlit2KHR& value)
+{
+	s << "VkImageBlit2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcSubresource = " << value.srcSubresource << '\n';
+	s << "\tsrcOffsets = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.srcOffsets), DE_ARRAY_END(value.srcOffsets)) << '\n';
+	s << "\tdstSubresource = " << value.dstSubresource << '\n';
+	s << "\tdstOffsets = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.dstOffsets), DE_ARRAY_END(value.dstOffsets)) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkBlitImageInfo2KHR& value)
+{
+	s << "VkBlitImageInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcImage = " << value.srcImage << '\n';
+	s << "\tsrcImageLayout = " << value.srcImageLayout << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << "\tfilter = " << value.filter << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageResolve2KHR& value)
+{
+	s << "VkImageResolve2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcSubresource = " << value.srcSubresource << '\n';
+	s << "\tsrcOffset = " << value.srcOffset << '\n';
+	s << "\tdstSubresource = " << value.dstSubresource << '\n';
+	s << "\tdstOffset = " << value.dstOffset << '\n';
+	s << "\textent = " << value.extent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkResolveImageInfo2KHR& value)
+{
+	s << "VkResolveImageInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcImage = " << value.srcImage << '\n';
+	s << "\tsrcImageLayout = " << value.srcImageLayout << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tregionCount = " << value.regionCount << '\n';
+	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";
@@ -9742,6 +9910,40 @@ std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePortabilitySubsetFeaturesKHR& value)
+{
+	s << "VkPhysicalDevicePortabilitySubsetFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tconstantAlphaColorBlendFactors = " << value.constantAlphaColorBlendFactors << '\n';
+	s << "\tevents = " << value.events << '\n';
+	s << "\timageViewFormatReinterpretation = " << value.imageViewFormatReinterpretation << '\n';
+	s << "\timageViewFormatSwizzle = " << value.imageViewFormatSwizzle << '\n';
+	s << "\timageView2DOn3DImage = " << value.imageView2DOn3DImage << '\n';
+	s << "\tmultisampleArrayImage = " << value.multisampleArrayImage << '\n';
+	s << "\tmutableComparisonSamplers = " << value.mutableComparisonSamplers << '\n';
+	s << "\tpointPolygons = " << value.pointPolygons << '\n';
+	s << "\tsamplerMipLodBias = " << value.samplerMipLodBias << '\n';
+	s << "\tseparateStencilMaskRef = " << value.separateStencilMaskRef << '\n';
+	s << "\tshaderSampleRateInterpolationFunctions = " << value.shaderSampleRateInterpolationFunctions << '\n';
+	s << "\ttessellationIsolines = " << value.tessellationIsolines << '\n';
+	s << "\ttessellationPointMode = " << value.tessellationPointMode << '\n';
+	s << "\ttriangleFans = " << value.triangleFans << '\n';
+	s << "\tvertexAttributeAccessBeyondStride = " << value.vertexAttributeAccessBeyondStride << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePortabilitySubsetPropertiesKHR& value)
+{
+	s << "VkPhysicalDevicePortabilitySubsetPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tminVertexInputBindingStrideAlignment = " << value.minVertexInputBindingStrideAlignment << '\n';
 	s << '}';
 	return s;
 }

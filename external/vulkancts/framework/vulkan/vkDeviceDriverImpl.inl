@@ -867,6 +867,36 @@ VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice
 	return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
 }
 
+void DeviceDriver::cmdCopyBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2KHR* pCopyBufferInfo) const
+{
+	m_vk.cmdCopyBuffer2KHR(commandBuffer, pCopyBufferInfo);
+}
+
+void DeviceDriver::cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopyImageInfo2KHR* pCopyImageInfo) const
+{
+	m_vk.cmdCopyImage2KHR(commandBuffer, pCopyImageInfo);
+}
+
+void DeviceDriver::cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2KHR* pCopyBufferToImageInfo) const
+{
+	m_vk.cmdCopyBufferToImage2KHR(commandBuffer, pCopyBufferToImageInfo);
+}
+
+void DeviceDriver::cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo) const
+{
+	m_vk.cmdCopyImageToBuffer2KHR(commandBuffer, pCopyImageToBufferInfo);
+}
+
+void DeviceDriver::cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo) const
+{
+	m_vk.cmdBlitImage2KHR(commandBuffer, pBlitImageInfo);
+}
+
+void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo) const
+{
+	m_vk.cmdResolveImage2KHR(commandBuffer, pResolveImageInfo);
+}
+
 VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
 {
 	return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);

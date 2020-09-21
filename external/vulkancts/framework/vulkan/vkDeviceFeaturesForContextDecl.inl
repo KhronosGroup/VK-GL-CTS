@@ -38,6 +38,7 @@ const vk::VkPhysicalDeviceMultiviewFeatures&							getMultiviewFeatures							(v
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					getPerformanceQueryFeatures						(void) const;
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		getPipelineCreationCacheControlFeaturesEXT		(void) const;
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		getPipelineExecutablePropertiesFeatures			(void) const;
+const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					getPortabilitySubsetFeatures					(void) const;
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						getPrivateDataFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						getProtectedMemoryFeatures						(void) const;
 const vk::VkPhysicalDeviceRayTracingFeaturesKHR&						getRayTracingFeatures							(void) const;

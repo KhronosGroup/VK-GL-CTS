@@ -38,6 +38,7 @@ const vk::VkPhysicalDeviceMultiviewFeatures&							Context::getMultiviewFeatures
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&					Context::getPerformanceQueryFeatures					(void) const { return m_device->getPerformanceQueryFeatures();					}
 const vk::VkPhysicalDevicePipelineCreationCacheControlFeaturesEXT&		Context::getPipelineCreationCacheControlFeaturesEXT		(void) const { return m_device->getPipelineCreationCacheControlFeaturesEXT();	}
 const vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR&		Context::getPipelineExecutablePropertiesFeatures		(void) const { return m_device->getPipelineExecutablePropertiesFeatures();		}
+const vk::VkPhysicalDevicePortabilitySubsetFeaturesKHR&					Context::getPortabilitySubsetFeatures					(void) const { return m_device->getPortabilitySubsetFeatures();					}
 const vk::VkPhysicalDevicePrivateDataFeaturesEXT&						Context::getPrivateDataFeaturesEXT						(void) const { return m_device->getPrivateDataFeaturesEXT();					}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&						Context::getProtectedMemoryFeatures						(void) const { return m_device->getProtectedMemoryFeatures();					}
 const vk::VkPhysicalDeviceRayTracingFeaturesKHR&						Context::getRayTracingFeatures							(void) const { return m_device->getRayTracingFeatures();						}

@@ -2828,6 +2828,128 @@ struct VkPipelineExecutableInternalRepresentationKHR
 	void*			pData;
 };
 
+struct VkBufferCopy2KHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	srcOffset;
+	VkDeviceSize	dstOffset;
+	VkDeviceSize	size;
+};
+
+struct VkCopyBufferInfo2KHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkBuffer				srcBuffer;
+	VkBuffer				dstBuffer;
+	deUint32				regionCount;
+	const VkBufferCopy2KHR*	pRegions;
+};
+
+struct VkImageCopy2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkImageSubresourceLayers	srcSubresource;
+	VkOffset3D					srcOffset;
+	VkImageSubresourceLayers	dstSubresource;
+	VkOffset3D					dstOffset;
+	VkExtent3D					extent;
+};
+
+struct VkCopyImageInfo2KHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImage					srcImage;
+	VkImageLayout			srcImageLayout;
+	VkImage					dstImage;
+	VkImageLayout			dstImageLayout;
+	deUint32				regionCount;
+	const VkImageCopy2KHR*	pRegions;
+};
+
+struct VkBufferImageCopy2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkDeviceSize				bufferOffset;
+	deUint32					bufferRowLength;
+	deUint32					bufferImageHeight;
+	VkImageSubresourceLayers	imageSubresource;
+	VkOffset3D					imageOffset;
+	VkExtent3D					imageExtent;
+};
+
+struct VkCopyBufferToImageInfo2KHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkBuffer						srcBuffer;
+	VkImage							dstImage;
+	VkImageLayout					dstImageLayout;
+	deUint32						regionCount;
+	const VkBufferImageCopy2KHR*	pRegions;
+};
+
+struct VkCopyImageToBufferInfo2KHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkImage							srcImage;
+	VkImageLayout					srcImageLayout;
+	VkBuffer						dstBuffer;
+	deUint32						regionCount;
+	const VkBufferImageCopy2KHR*	pRegions;
+};
+
+struct VkImageBlit2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkImageSubresourceLayers	srcSubresource;
+	VkOffset3D					srcOffsets[2];
+	VkImageSubresourceLayers	dstSubresource;
+	VkOffset3D					dstOffsets[2];
+};
+
+struct VkBlitImageInfo2KHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImage					srcImage;
+	VkImageLayout			srcImageLayout;
+	VkImage					dstImage;
+	VkImageLayout			dstImageLayout;
+	deUint32				regionCount;
+	const VkImageBlit2KHR*	pRegions;
+	VkFilter				filter;
+};
+
+struct VkImageResolve2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkImageSubresourceLayers	srcSubresource;
+	VkOffset3D					srcOffset;
+	VkImageSubresourceLayers	dstSubresource;
+	VkOffset3D					dstOffset;
+	VkExtent3D					extent;
+};
+
+struct VkResolveImageInfo2KHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkImage						srcImage;
+	VkImageLayout				srcImageLayout;
+	VkImage						dstImage;
+	VkImageLayout				dstImageLayout;
+	deUint32					regionCount;
+	const VkImageResolve2KHR*	pRegions;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -4658,6 +4780,34 @@ struct VkExternalFormatANDROID
 	VkStructureType	sType;
 	void*			pNext;
 	deUint64		externalFormat;
+};
+
+struct VkPhysicalDevicePortabilitySubsetFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		constantAlphaColorBlendFactors;
+	VkBool32		events;
+	VkBool32		imageViewFormatReinterpretation;
+	VkBool32		imageViewFormatSwizzle;
+	VkBool32		imageView2DOn3DImage;
+	VkBool32		multisampleArrayImage;
+	VkBool32		mutableComparisonSamplers;
+	VkBool32		pointPolygons;
+	VkBool32		samplerMipLodBias;
+	VkBool32		separateStencilMaskRef;
+	VkBool32		shaderSampleRateInterpolationFunctions;
+	VkBool32		tessellationIsolines;
+	VkBool32		tessellationPointMode;
+	VkBool32		triangleFans;
+	VkBool32		vertexAttributeAccessBeyondStride;
+};
+
+struct VkPhysicalDevicePortabilitySubsetPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		minVertexInputBindingStrideAlignment;
 };
 
 struct VkDeferredOperationInfoKHR

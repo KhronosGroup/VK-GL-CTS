@@ -683,6 +683,17 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableInfoKHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticValueKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableStatisticKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineExecutableInternalRepresentationKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferCopy2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyBufferInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageCopy2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyImageInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferImageCopy2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyBufferToImageInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCopyImageToBufferInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageBlit2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBlitImageInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageResolve2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkResolveImageInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
@@ -897,6 +908,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatPr
 std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePortabilitySubsetPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeferredOperationInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineLibraryCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceOrHostAddressKHR& value);

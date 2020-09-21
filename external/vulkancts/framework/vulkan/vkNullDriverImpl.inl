@@ -1665,6 +1665,42 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdCopyBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2KHR* pCopyBufferInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyBufferInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopyImageInfo2KHR* pCopyImageInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyImageInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyBufferToImage2KHR (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2KHR* pCopyBufferToImageInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyBufferToImageInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2KHR* pCopyImageToBufferInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyImageToBufferInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2KHR* pBlitImageInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pBlitImageInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2KHR* pResolveImageInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pResolveImageInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -3091,6 +3127,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,				getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,				getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,	getPipelineExecutableInternalRepresentationsKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyBuffer2KHR,									cmdCopyBuffer2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyImage2KHR,									cmdCopyImage2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyBufferToImage2KHR,							cmdCopyBufferToImage2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer2KHR,							cmdCopyImageToBuffer2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdBlitImage2KHR,									cmdBlitImage2KHR),
+	VK_NULL_FUNC_ENTRY(vkCmdResolveImage2KHR,								cmdResolveImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,						debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,						debugMarkerSetObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,							cmdDebugMarkerBeginEXT),
