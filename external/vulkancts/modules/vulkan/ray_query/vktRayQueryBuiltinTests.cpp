@@ -71,6 +71,7 @@ namespace vkt
 				TEST_TYPE_OBJECT_TO_WORLD_KHR,
 				TEST_TYPE_WORLD_TO_OBJECT_KHR,
 				TEST_TYPE_NULL_ACCELERATION_STRUCTURE,
+				TEST_TYPE_USING_WRAPPER_FUNCTION,
 				TEST_TYPE_GET_RAY_TMIN,
 				TEST_TYPE_GET_WORLD_RAY_ORIGIN,
 				TEST_TYPE_GET_WORLD_RAY_DIRECTION,
@@ -213,6 +214,7 @@ namespace vkt
 				CheckSupportFunc		pipelineCheckSupport;
 				InitProgramsFunc		pipelineInitPrograms;
 				ShaderBodyTextFunc		testConfigShaderBodyText;
+				bool					isSPIRV;						// determines if shader body is defined in SPIR-V
 				CheckSupportFunc		testConfigCheckSupport;
 			};
 
@@ -1038,18 +1040,23 @@ namespace vkt
 			void ComputeConfiguration::initPrograms(SourceCollections& programCollection,
 				const TestParams& testParams)
 			{
-				const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+				DE_ASSERT(testParams.stage == VK_SHADER_STAGE_COMPUTE_BIT);
 
-				const std::string				testShaderBody = testParams.testConfigShaderBodyText(testParams);
-				const std::string				testBody =
-					"  ivec3       pos      = ivec3(gl_WorkGroupID);\n"
-					"  ivec3       size     = ivec3(gl_NumWorkGroups);\n"
-					+ testShaderBody;
+				if (testParams.isSPIRV)
+				{
+					const vk::SpirVAsmBuildOptions spvBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
 
-				switch (testParams.stage)
+					programCollection.spirvAsmSources.add("comp") << testParams.testConfigShaderBodyText(testParams) << spvBuildOptions;
+				}
+				else
 				{
-				case VK_SHADER_STAGE_COMPUTE_BIT:
-				{
+					const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+					const std::string				testShaderBody = testParams.testConfigShaderBodyText(testParams);
+					const std::string				testBody =
+						"  ivec3       pos      = ivec3(gl_WorkGroupID);\n"
+						"  ivec3       size     = ivec3(gl_NumWorkGroups);\n"
+						+ testShaderBody;
+
 					std::stringstream css;
 					css <<
 						"#version 460 core\n"
@@ -1063,12 +1070,6 @@ namespace vkt
 						"}\n";
 
 					programCollection.glslSources.add("comp") << glu::ComputeSource(updateRayTracingGLSL(css.str())) << buildOptions;
-
-					break;
-				}
-
-				default:
-					TCU_THROW(InternalError, "Unknown stage");
 				}
 			}
 
@@ -4821,7 +4822,7 @@ namespace vkt
 			}
 			/// </summary>
 
-						class TestConfigurationRayQueryTerminate: public TestConfiguration
+			class TestConfigurationRayQueryTerminate: public TestConfiguration
 			{
 			public:
 				static const std::string getShaderBodyText(const TestParams& testParams);
@@ -5001,7 +5002,7 @@ namespace vkt
 				}
 			}
 
-						class TestConfigurationGetIntersectionType : public TestConfiguration
+			class TestConfigurationGetIntersectionType : public TestConfiguration
 			{
 			public:
 				static const std::string	getShaderBodyTextCandidate(const TestParams& testParams);
@@ -5187,6 +5188,261 @@ namespace vkt
 				}
 			}
 
+			class TestConfigurationUsingWrapperFunction : public TestConfiguration
+			{
+			public:
+				virtual const VkAccelerationStructureKHR*	initAccelerationStructures(Context&				context,
+																					   TestParams&			testParams,
+																					   VkCommandBuffer		cmdBuffer) override;
+
+				static const std::string getShaderBodyText(const TestParams& testParams);
+			};
+
+			const VkAccelerationStructureKHR* TestConfigurationUsingWrapperFunction::initAccelerationStructures(Context& context, TestParams& testParams, VkCommandBuffer cmdBuffer)
+			{
+				const DeviceInterface&	vkd = context.getDeviceInterface();
+				const VkDevice			device = context.getDevice();
+				Allocator&				allocator = context.getDefaultAllocator();
+				const deUint32			width = testParams.width;
+				const deUint32			height = testParams.height;
+				const deUint32			instancesGroupCount = testParams.instancesGroupCount;
+				const deUint32			squaresGroupCount = testParams.squaresGroupCount;
+				const bool				usesTriangles = (testParams.geomType == GEOM_TYPE_TRIANGLES);
+
+				DE_ASSERT(instancesGroupCount == 1);
+				DE_ASSERT(squaresGroupCount == width * height);
+
+				m_topAccelerationStructure = de::SharedPtr<TopLevelAccelerationStructure>(makeTopLevelAccelerationStructure().release());
+				m_topAccelerationStructure->setInstanceCount(instancesGroupCount);
+
+				m_expected = std::vector<deInt32>(width * height, 1);
+
+				de::MovePtr<BottomLevelAccelerationStructure> rayQueryBottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
+
+				for (deUint32 squareNdx = 0; squareNdx < squaresGroupCount; ++squareNdx)
+				{
+					std::vector<tcu::Vec3> geometryData;
+
+					const auto	squareX = (squareNdx % width);
+					const auto	squareY = (squareNdx / width);
+
+					const float x0 = float(squareX + 0) / float(width);
+					const float y0 = float(squareY + 0) / float(height);
+					const float x1 = float(squareX + 1) / float(width);
+					const float y1 = float(squareY + 1) / float(height);
+
+					if (usesTriangles)
+					{
+						geometryData.emplace_back(x0, y0, 0.0f);
+						geometryData.emplace_back(x0, y1, 0.0f);
+						geometryData.emplace_back(x1, y1, 0.0f);
+
+						geometryData.emplace_back(x1, y1, 0.0f);
+						geometryData.emplace_back(x1, y0, 0.0f);
+						geometryData.emplace_back(x0, y0, 0.0f);
+					}
+					else
+					{
+						geometryData.emplace_back(x0, y0, 0.0f);
+						geometryData.emplace_back(x1, y1, 0.0f);
+					}
+
+					rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, usesTriangles);
+				}
+
+				rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+				m_bottomAccelerationStructures.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
+				m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back(), identityMatrix3x4, 1);
+				m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+
+				return m_topAccelerationStructure.get()->getPtr();
+			}
+
+			const std::string TestConfigurationUsingWrapperFunction::getShaderBodyText(const TestParams& testParams)
+			{
+				DE_UNREF(testParams);
+				DE_ASSERT(testParams.isSPIRV);
+
+				// glslang is compiling rayQueryEXT function parameters to OpTypePointer Function to OpTypeRayQueryKHR
+				// To test bare rayQueryEXT object passed as function parameter we need to use SPIR-V assembly.
+				// In it, rayQueryWrapper has been modified to take a bare rayQueryEXT as the third argument, instead of a pointer.
+				// The SPIR-V assembly shader below is based on the following GLSL code:
+
+				// int rayQueryWrapper(rayQueryEXT rq1, int value, rayQueryEXT rq2)
+				// {
+				//    int result = value;
+				//    while (rayQueryProceedEXT(rq1))
+				//    {
+				//       result = 1;
+				//       rayQueryConfirmIntersectionEXT(rq2);
+				//    }
+				//    return result;
+				// }
+				// void main()
+				// {
+				//    ivec3       pos = ivec3(gl_WorkGroupID);
+				//    ivec3       size = ivec3(gl_NumWorkGroups);
+				//    uint        rayFlags = 0;
+				//    uint        cullMask = 0xFF;
+				//    float       tmin = 0.0001;
+				//    float       tmax = 9.0;
+				//    vec3        origin = vec3((float(pos.x) + 0.5f) / float(size.x), (float(pos.y) + 0.5f) / float(size.y), 0.2);
+				//    vec3        direct = vec3(0.0, 0.0, -1.0);
+				//    rayQueryEXT rayQuery;
+				//    rayQueryInitializeEXT(rayQuery, rayQueryTopLevelAccelerationStructure, rayFlags, cullMask, origin, tmin, direct, tmax);
+				//    imageStore(result, pos, ivec4(rayQueryWrapper(rayQuery, 0, rayQuery), 0, 0, 0));
+				// }
+
+				return
+					"OpCapability Shader\n"
+					"OpCapability RayQueryKHR\n"
+					"OpExtension \"SPV_KHR_ray_query\"\n"
+				"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+				"OpMemoryModel Logical GLSL450\n"
+					"OpEntryPoint GLCompute %4 \"main\" %35 %39 %83 %93\n"
+					"OpExecutionMode %4 LocalSize 1 1 1\n"
+					"OpDecorate %35 BuiltIn WorkgroupId\n"
+					"OpDecorate %39 BuiltIn NumWorkgroups\n"
+					"OpDecorate %83 DescriptorSet 0\n"
+					"OpDecorate %83 Binding 1\n"
+					"OpDecorate %93 DescriptorSet 0\n"
+					"OpDecorate %93 Binding 0\n"
+
+					// types and constants
+					"%2 = OpTypeVoid\n"
+					"%3 = OpTypeFunction %2\n"
+					"%bare_query_type = OpTypeRayQueryKHR\n"
+					"%pointer_to_query_type = OpTypePointer Function %bare_query_type\n"
+					"%8 = OpTypeInt 32 1\n"
+					"%9 = OpTypePointer Function %8\n"
+
+					// this function was modified to take also bare rayQueryEXT type
+					"%ray_query_wrapper_fun = OpTypeFunction %8 %pointer_to_query_type %9 %bare_query_type\n"
+
+					"%23 = OpTypeBool\n"
+					"%25 = OpConstant %8 1\n"
+					"%29 = OpTypeVector %8 3\n"
+					"%30 = OpTypePointer Function %29\n"
+					"%32 = OpTypeInt 32 0\n"
+					"%33 = OpTypeVector %32 3\n"
+					"%34 = OpTypePointer Input %33\n"
+					"%35 = OpVariable %34 Input\n"
+					"%39 = OpVariable %34 Input\n"
+					"%42 = OpTypePointer Function %32\n"
+					"%44 = OpConstant %32 0\n"
+					"%46 = OpConstant %32 255\n"
+					"%47 = OpTypeFloat 32\n"
+					"%48 = OpTypePointer Function %47\n"
+					"%50 = OpConstant %47 9.99999975e-05\n"
+					"%52 = OpConstant %47 9\n"
+					"%53 = OpTypeVector %47 3\n"
+					"%54 = OpTypePointer Function %53\n"
+					"%59 = OpConstant %47 0.5\n"
+					"%65 = OpConstant %32 1\n"
+					"%74 = OpConstant %47 0.200000003\n"
+					"%77 = OpConstant %47 0\n"
+					"%78 = OpConstant %47 -1\n"
+					"%79 = OpConstantComposite %53 %77 %77 %78\n"
+					"%81 = OpTypeAccelerationStructureKHR\n"
+					"%82 = OpTypePointer UniformConstant %81\n"
+					"%83 = OpVariable %82 UniformConstant\n"
+					"%91 = OpTypeImage %8 3D 0 0 0 2 R32i\n"
+					"%92 = OpTypePointer UniformConstant %91\n"
+					"%93 = OpVariable %92 UniformConstant\n"
+					"%96 = OpConstant %8 0\n"
+					"%99 = OpTypeVector %8 4\n"
+
+					// void main()
+					"%4 = OpFunction %2 None %3\n"
+					"%5 = OpLabel\n"
+					"%31 = OpVariable %30 Function\n"
+					"%38 = OpVariable %30 Function\n"
+					"%43 = OpVariable %42 Function\n"
+					"%45 = OpVariable %42 Function\n"
+					"%49 = OpVariable %48 Function\n"
+					"%51 = OpVariable %48 Function\n"
+					"%55 = OpVariable %54 Function\n"
+					"%76 = OpVariable %54 Function\n"
+					"%var_ray_query_ptr = OpVariable %pointer_to_query_type Function\n"
+					"%97 = OpVariable %9 Function\n"
+					"%36 = OpLoad %33 %35\n"
+					"%37 = OpBitcast %29 %36\n"
+					"OpStore %31 %37\n"
+					"%40 = OpLoad %33 %39\n"
+					"%41 = OpBitcast %29 %40\n"
+					"OpStore %38 %41\n"
+					"OpStore %43 %44\n"
+					"OpStore %45 %46\n"
+					"OpStore %49 %50\n"
+					"OpStore %51 %52\n"
+					"%56 = OpAccessChain %9 %31 %44\n"
+					"%57 = OpLoad %8 %56\n"
+					"%58 = OpConvertSToF %47 %57\n"
+					"%60 = OpFAdd %47 %58 %59\n"
+					"%61 = OpAccessChain %9 %38 %44\n"
+					"%62 = OpLoad %8 %61\n"
+					"%63 = OpConvertSToF %47 %62\n"
+					"%64 = OpFDiv %47 %60 %63\n"
+					"%66 = OpAccessChain %9 %31 %65\n"
+					"%67 = OpLoad %8 %66\n"
+					"%68 = OpConvertSToF %47 %67\n"
+					"%69 = OpFAdd %47 %68 %59\n"
+					"%70 = OpAccessChain %9 %38 %65\n"
+					"%71 = OpLoad %8 %70\n"
+					"%72 = OpConvertSToF %47 %71\n"
+					"%73 = OpFDiv %47 %69 %72\n"
+					"%75 = OpCompositeConstruct %53 %64 %73 %74\n"
+					"OpStore %55 %75\n"
+					"OpStore %76 %79\n"
+					"%84 = OpLoad %81 %83\n"
+					"%85 = OpLoad %32 %43\n"
+					"%86 = OpLoad %32 %45\n"
+					"%87 = OpLoad %53 %55\n"
+					"%88 = OpLoad %47 %49\n"
+					"%89 = OpLoad %53 %76\n"
+					"%90 = OpLoad %47 %51\n"
+					"OpRayQueryInitializeKHR %var_ray_query_ptr %84 %85 %86 %87 %88 %89 %90\n"
+					"%94 = OpLoad %91 %93\n"
+					"%95 = OpLoad %29 %31\n"
+					"OpStore %97 %96\n"
+					"%var_ray_query_bare = OpLoad %bare_query_type %var_ray_query_ptr\n"
+					"%98 = OpFunctionCall %8 %14 %var_ray_query_ptr %97 %var_ray_query_bare\n"
+					"%100 = OpCompositeConstruct %99 %98 %96 %96 %96\n"
+					"OpImageWrite %94 %95 %100 SignExtend\n"
+					"OpReturn\n"
+					"OpFunctionEnd\n"
+
+					// int rayQueryWrapper(rayQueryEXT rq1, int value, rayQueryEXT rq2)
+					// where in SPIRV rq1 is pointer and rq2 is bare type
+					"%14 = OpFunction %8 None %ray_query_wrapper_fun\n"
+					"%11 = OpFunctionParameter %pointer_to_query_type\n"
+					"%12 = OpFunctionParameter %9\n"
+					"%13 = OpFunctionParameter %bare_query_type\n"
+					"%15 = OpLabel\n"
+					"%16 = OpVariable %9 Function\n"
+					"%local_var_ray_query_ptr = OpVariable %pointer_to_query_type Function\n"
+					"%17 = OpLoad %8 %12\n"
+					"OpStore %16 %17\n"
+					"OpBranch %18\n"
+					"%18 = OpLabel\n"
+					"OpLoopMerge %20 %21 None\n"
+					"OpBranch %22\n"
+					"%22 = OpLabel\n"
+					"%24 = OpRayQueryProceedKHR %23 %11\n"
+					"OpBranchConditional %24 %19 %20\n"
+					"%19 = OpLabel\n"
+					"OpStore %16 %25\n"
+					"OpStore %local_var_ray_query_ptr %13\n"
+					"OpRayQueryConfirmIntersectionKHR %local_var_ray_query_ptr\n"
+					"OpBranch %21\n"
+					"%21 = OpLabel\n"
+					"OpBranch %18\n"
+					"%20 = OpLabel\n"
+					"%26 = OpLoad %8 %16\n"
+					"OpReturnValue %26\n"
+					"OpFunctionEnd\n";
+			}
+
 			class RayQueryBuiltinTestInstance : public TestInstance
 			{
 			public:
@@ -5216,6 +5472,7 @@ namespace vkt
 				case TEST_TYPE_OBJECT_TO_WORLD_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationObjectToWorld());											break;
 				case TEST_TYPE_WORLD_TO_OBJECT_KHR:														m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationWorldToObject());											break;
 				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:												m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationNullASStruct());												break;
+				case TEST_TYPE_USING_WRAPPER_FUNCTION:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationUsingWrapperFunction());										break;
 				case TEST_TYPE_GET_RAY_TMIN:															m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetRayTMin());												break;
 				case TEST_TYPE_GET_WORLD_RAY_ORIGIN:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetWorldRayOrigin());										break;
 				case TEST_TYPE_GET_WORLD_RAY_DIRECTION:													m_testConfig = de::MovePtr<TestConfiguration>(new TestConfigurationGetWorldRayDirection());										break;
@@ -5455,6 +5712,7 @@ namespace vkt
 				case TEST_TYPE_OBJECT_TO_WORLD_KHR:														return TestConfigurationObjectToWorld::getShaderBodyText;													break;
 				case TEST_TYPE_WORLD_TO_OBJECT_KHR:														return TestConfigurationWorldToObject::getShaderBodyText;													break;
 				case TEST_TYPE_NULL_ACCELERATION_STRUCTURE:												return TestConfigurationNullASStruct::getShaderBodyText;													break;
+				case TEST_TYPE_USING_WRAPPER_FUNCTION:													return TestConfigurationUsingWrapperFunction::getShaderBodyText;											break;
 				case TEST_TYPE_GET_RAY_TMIN:															return TestConfigurationGetRayTMin::getShaderBodyText;														break;
 				case TEST_TYPE_GET_WORLD_RAY_ORIGIN:													return TestConfigurationGetWorldRayOrigin::getShaderBodyText;												break;
 				case TEST_TYPE_GET_WORLD_RAY_DIRECTION:													return TestConfigurationGetWorldRayDirection::getShaderBodyText;											break;
@@ -5624,6 +5882,7 @@ namespace vkt
 							pipelineCheckSupport,			//  CheckSupportFunc		pipelineCheckSupport;
 							pipelineInitPrograms,			//  InitProgramsFunc		pipelineInitPrograms;
 							testConfigShaderBodyTextFunc,	//  ShaderTestTextFunc		testConfigShaderBodyText;
+							false,							//  bool					isSPIRV;
 							DE_NULL,						//  CheckSupportFunc		testConfigCheckSupport;
 						};
 
@@ -5665,7 +5924,8 @@ namespace vkt
 			}
 			testTypes[] =
 			{
-				{ TEST_TYPE_NULL_ACCELERATION_STRUCTURE,	"null_as"	},
+				{ TEST_TYPE_NULL_ACCELERATION_STRUCTURE,	"null_as"					},
+				{ TEST_TYPE_USING_WRAPPER_FUNCTION,			"using_wrapper_function"	}
 			};
 
 			for (size_t testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
@@ -5675,11 +5935,21 @@ namespace vkt
 				const ShaderBodyTextFunc		testConfigShaderBodyTextFunc = getShaderBodyTextFunc(testType);
 				const CheckSupportFunc			testConfigCheckSupport = getTestConfigCheckSupport(testType);
 				const deUint32					imageDepth = 1;
+				bool							useSPIRV = false;
 
 				for (size_t pipelineStageNdx = 0; pipelineStageNdx < DE_LENGTH_OF_ARRAY(pipelineStages); ++pipelineStageNdx)
 				{
+					const VkShaderStageFlagBits stage = pipelineStages[pipelineStageNdx].stage;
+
+					// tests that are implemented using spirv are limit to compute stage
+					if (testType == TEST_TYPE_USING_WRAPPER_FUNCTION)
+					{
+						if (stage != VK_SHADER_STAGE_COMPUTE_BIT)
+							continue;
+						useSPIRV = true;
+					}
+
 					de::MovePtr<tcu::TestCaseGroup>	sourceTypeGroup(new tcu::TestCaseGroup(group->getTestContext(), pipelineStages[pipelineStageNdx].name, ""));
-					const VkShaderStageFlagBits		stage = pipelineStages[pipelineStageNdx].stage;
 					const CheckSupportFunc			pipelineCheckSupport = getPipelineCheckSupport(stage);
 					const InitProgramsFunc			pipelineInitPrograms = getPipelineInitPrograms(stage);
 					const deUint32					instancesGroupCount = 1;
@@ -5706,6 +5976,7 @@ namespace vkt
 							pipelineCheckSupport,			//  CheckSupportFunc		pipelineCheckSupport;
 							pipelineInitPrograms,			//  InitProgramsFunc		pipelineInitPrograms;
 							testConfigShaderBodyTextFunc,	//  ShaderTestTextFunc		testConfigShaderBodyText;
+							useSPIRV,						//  bool					isSPIRV;
 							testConfigCheckSupport,			//  CheckSupportFunc		testConfigCheckSupport;
 						};
 
