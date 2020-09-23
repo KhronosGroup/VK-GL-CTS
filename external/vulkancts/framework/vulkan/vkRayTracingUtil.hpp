@@ -715,7 +715,8 @@ public:
 																							 const MemoryRequirement&								additionalMemoryRequirement	= MemoryRequirement::Any,
 																							 const VkDeviceAddress&									opaqueCaptureAddress		= 0u,
 																							 const deUint32											shaderBindingTableOffset	= 0u,
-																							 const deUint32											shaderRecordSize			= 0u);
+																							 const deUint32											shaderRecordSize			= 0u,
+																							 const void**											shaderGroupDataPtrPerGroup	= nullptr);
 	void														setCreateFlags				(const VkPipelineCreateFlags&							pipelineCreateFlags);
 	void														setMaxRecursionDepth		(const deUint32&										maxRecursionDepth);
 	void														setMaxPayloadSize			(const deUint32&										maxPayloadSize);

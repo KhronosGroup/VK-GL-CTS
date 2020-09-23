@@ -2377,7 +2377,8 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 																			const MemoryRequirement&	additionalMemoryRequirement,
 																			const VkDeviceAddress&		opaqueCaptureAddress,
 																			const deUint32				shaderBindingTableOffset,
-																			const deUint32				shaderRecordSize)
+																			const deUint32				shaderRecordSize,
+																			const void**				shaderGroupDataPtrPerGroup)
 {
 	DE_ASSERT(shaderGroupBaseAlignment != 0u);
 	DE_ASSERT((shaderBindingTableOffset % shaderGroupBaseAlignment) == 0);
@@ -2414,6 +2415,16 @@ de::MovePtr<BufferWithMemory> RayTracingPipeline::createShaderBindingTable (cons
 		deUint8* shaderSrcPos	= shaderHandles.data() + idx * shaderGroupHandleSize;
 		deUint8* shaderDstPos	= shaderBegin + idx * deAlign32(shaderGroupHandleSize + shaderRecordSize, shaderGroupHandleSize);
 		deMemcpy(shaderDstPos, shaderSrcPos, shaderGroupHandleSize);
+
+		if (shaderGroupDataPtrPerGroup		!= nullptr &&
+			shaderGroupDataPtrPerGroup[idx] != nullptr)
+		{
+			DE_ASSERT(sbtSize >= static_cast<deUint32>(shaderDstPos - shaderBegin) + shaderGroupHandleSize);
+
+			deMemcpy(	shaderDstPos + shaderGroupHandleSize,
+						shaderGroupDataPtrPerGroup[idx],
+						shaderRecordSize);
+		}
 	}
 
 	flushMappedMemoryRange(vk, device, sbtAlloc.getMemory(), sbtAlloc.getOffset(), VK_WHOLE_SIZE);

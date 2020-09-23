@@ -37,6 +37,7 @@
 #include "vkRayTracingUtil.hpp"
 
 #include "deRandom.hpp"
+#include <algorithm>
 
 namespace vkt
 {
@@ -46,6 +47,22 @@ namespace
 {
 using namespace vk;
 using namespace std;
+
+enum class BaseType
+{
+	F32,
+	F64,
+	I8,
+	I16,
+	I32,
+	I64,
+	U8,
+	U16,
+	U32,
+	U64,
+
+	UNKNOWN
+};
 
 enum class GeometryType
 {
@@ -57,6 +74,14 @@ enum class GeometryType
 	COUNT,
 
 	AABB_AND_TRIANGLES, //< Only compatible with ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES AS layout.
+};
+
+enum class MatrixMajorOrder
+{
+	COLUMN_MAJOR,
+	ROW_MAJOR,
+
+	UNKNOWN
 };
 
 enum class ShaderGroups
@@ -81,7 +106,117 @@ enum class TestType
 	CULL_MASK_EXTRA_BITS,
 	NO_DUPLICATE_ANY_HIT,
 	REPORT_INTERSECTION_RESULT,
-	RAY_PAYLOAD_IN
+	RAY_PAYLOAD_IN,
+	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1,
+	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2,
+	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3,
+	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4,
+	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5,
+	SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6,
+	SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1,
+	SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2,
+	SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3,
+	SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4,
+	SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5,
+	SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6,
+	SHADER_RECORD_BLOCK_SCALAR_1,
+	SHADER_RECORD_BLOCK_SCALAR_2,
+	SHADER_RECORD_BLOCK_SCALAR_3,
+	SHADER_RECORD_BLOCK_SCALAR_4,
+	SHADER_RECORD_BLOCK_SCALAR_5,
+	SHADER_RECORD_BLOCK_SCALAR_6,
+	SHADER_RECORD_BLOCK_STD430_1,
+	SHADER_RECORD_BLOCK_STD430_2,
+	SHADER_RECORD_BLOCK_STD430_3,
+	SHADER_RECORD_BLOCK_STD430_4,
+	SHADER_RECORD_BLOCK_STD430_5,
+	SHADER_RECORD_BLOCK_STD430_6,
+
+	COUNT
+};
+
+enum class VariableType
+{
+	FIRST,
+
+	FLOAT = FIRST,
+	VEC2,
+	VEC3,
+	VEC4,
+
+	MAT2,
+	MAT2X2,
+	MAT2X3,
+	MAT2X4,
+	MAT3,
+	MAT3X2,
+	MAT3X3,
+	MAT3X4,
+	MAT4,
+	MAT4X2,
+	MAT4X3,
+	MAT4X4,
+
+	INT,
+	IVEC2,
+	IVEC3,
+	IVEC4,
+
+	INT8,
+	I8VEC2,
+	I8VEC3,
+	I8VEC4,
+
+	INT16,
+	I16VEC2,
+	I16VEC3,
+	I16VEC4,
+
+	INT64,
+	I64VEC2,
+	I64VEC3,
+	I64VEC4,
+
+	UINT,
+	UVEC2,
+	UVEC3,
+	UVEC4,
+
+	UINT16,
+	U16VEC2,
+	U16VEC3,
+	U16VEC4,
+
+	UINT64,
+	U64VEC2,
+	U64VEC3,
+	U64VEC4,
+
+	UINT8,
+	U8VEC2,
+	U8VEC3,
+	U8VEC4,
+
+	DOUBLE,
+	DVEC2,
+	DVEC3,
+	DVEC4,
+
+	DMAT2,
+	DMAT2X2,
+	DMAT2X3,
+	DMAT2X4,
+	DMAT3,
+	DMAT3X2,
+	DMAT3X3,
+	DMAT3X4,
+	DMAT4,
+	DMAT4X2,
+	DMAT4X3,
+	DMAT4X4,
+
+	UNKNOWN,
+	COUNT = UNKNOWN,
 };
 
 enum class AccelerationStructureLayout
@@ -110,6 +245,32 @@ struct CaseDef
 	TestType					type;
 	GeometryType				geometryType;
 	AccelerationStructureLayout	asLayout;
+
+	CaseDef()
+		:	type			(TestType::COUNT),
+			geometryType	(GeometryType::COUNT),
+			asLayout		(AccelerationStructureLayout::COUNT)
+	{
+		/* Stub */
+	}
+
+	CaseDef(const TestType& inType)
+		:	type			(inType),
+			geometryType	(GeometryType::COUNT),
+			asLayout		(AccelerationStructureLayout::COUNT)
+	{
+		/* Stub */
+	}
+
+	CaseDef(const TestType&						inType,
+			const GeometryType&					inGeometryType,
+			const AccelerationStructureLayout&	inAsLayout)
+		:	type			(inType),
+			geometryType	(inGeometryType),
+			asLayout		(inAsLayout)
+	{
+		/* Stub */
+	}
 };
 
 /* Helper global functions */
@@ -800,6 +961,16 @@ public:
 		return makePipelineLayout(	deviceInterface,
 									deviceVk,
 									descriptorSetLayout);
+	}
+
+	virtual const void* getShaderRecordData(const ShaderGroups& /* shaderGroup */) const
+	{
+		return nullptr;
+	}
+
+	virtual deUint32 getShaderRecordSize(const ShaderGroups& /* shaderGroup */) const
+	{
+		return 0;
 	}
 
 	virtual VkSpecializationInfo* getSpecializationInfoPtr(const VkShaderStageFlagBits& /* shaderStage */)
@@ -3340,6 +3511,2357 @@ private:
 	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
 };
 
+const std::vector<VariableType> g_ShaderRecordBlockTestVars1 =
+{
+	VariableType::FLOAT,
+	VariableType::VEC2,
+	VariableType::VEC3,
+	VariableType::VEC4,
+
+	VariableType::MAT2,
+	VariableType::MAT2X2,
+	VariableType::MAT2X3,
+	VariableType::MAT2X4,
+	VariableType::MAT3,
+	VariableType::MAT3X2,
+	VariableType::MAT3X3,
+	VariableType::MAT3X4,
+	VariableType::MAT4,
+	VariableType::MAT4X2,
+	VariableType::MAT4X3,
+	VariableType::MAT4X4,
+
+	VariableType::INT,
+	VariableType::IVEC2,
+	VariableType::IVEC3,
+	VariableType::IVEC4,
+
+	VariableType::UINT,
+	VariableType::UVEC2,
+	VariableType::UVEC3,
+	VariableType::UVEC4,
+};
+
+const std::vector<VariableType> g_ShaderRecordBlockTestVars2 =
+{
+	VariableType::DOUBLE,
+	VariableType::DVEC2,
+	VariableType::DVEC3,
+	VariableType::DVEC4,
+
+	VariableType::DMAT2,
+	VariableType::DMAT2X2,
+	VariableType::DMAT2X3,
+	VariableType::DMAT2X4,
+	VariableType::DMAT3,
+};
+
+const std::vector<VariableType> g_ShaderRecordBlockTestVars3 =
+{
+	VariableType::DMAT3X2,
+	VariableType::DMAT3X3,
+	VariableType::DMAT3X4,
+	VariableType::DMAT4,
+	VariableType::DMAT4X2,
+	VariableType::DMAT4X3,
+	VariableType::DMAT4X4,
+};
+
+const std::vector<VariableType> g_ShaderRecordBlockTestVars4 =
+{
+	VariableType::VEC3,
+	VariableType::VEC4,
+
+	VariableType::INT16,
+	VariableType::I16VEC2,
+	VariableType::I16VEC3,
+	VariableType::I16VEC4,
+
+	VariableType::MAT3X3,
+	VariableType::MAT3X4,
+	VariableType::MAT4X3,
+
+	VariableType::UINT16,
+	VariableType::U16VEC2,
+	VariableType::U16VEC3,
+	VariableType::U16VEC4,
+};
+
+const std::vector<VariableType> g_ShaderRecordBlockTestVars5 =
+{
+	VariableType::VEC3,
+	VariableType::VEC4,
+
+	VariableType::INT64,
+	VariableType::I64VEC2,
+	VariableType::I64VEC3,
+	VariableType::I64VEC4,
+
+	VariableType::MAT3X3,
+	VariableType::MAT3X4,
+	VariableType::MAT4X3,
+
+	VariableType::UINT64,
+	VariableType::U64VEC2,
+	VariableType::U64VEC3,
+	VariableType::U64VEC4,
+};
+
+const std::vector<VariableType> g_ShaderRecordBlockTestVars6 =
+{
+	VariableType::VEC3,
+	VariableType::VEC4,
+
+	VariableType::INT8,
+	VariableType::I8VEC2,
+	VariableType::I8VEC3,
+	VariableType::I8VEC4,
+
+	VariableType::MAT3X3,
+	VariableType::MAT3X4,
+	VariableType::MAT4X3,
+
+	VariableType::UINT8,
+	VariableType::U8VEC2,
+	VariableType::U8VEC3,
+	VariableType::U8VEC4,
+};
+
+class ShaderRecordBlockTest : public TestBase
+{
+public:
+	ShaderRecordBlockTest(	const TestType& testType, const std::vector<VariableType>& varTypesToTest)
+		:	m_gridSizeXYZ		(tcu::UVec3(2, 2, 2) ),
+			m_testType			(testType),
+			m_varTypesToTest	(varTypesToTest),
+			m_resultBufferSize	(0),
+			m_shaderRecordSize	(0)
+	{
+		initTestItems();
+	}
+
+	~ShaderRecordBlockTest()
+	{
+		/* Stub */
+	}
+
+	tcu::UVec3 getDispatchSize() const final
+	{
+		return tcu::UVec3(3, 1, 1);
+	}
+
+	deUint32 getResultBufferSize() const final
+	{
+		return m_resultBufferSize;
+	}
+
+	const void* getShaderRecordData(const ShaderGroups& shaderGroup) const final
+	{
+		return		(shaderGroup == ShaderGroups::HIT_GROUP)		? m_shaderGroupToRecordDataMap.at(shaderGroup).data()
+				:	(shaderGroup == ShaderGroups::MISS_GROUP)		? m_shaderGroupToRecordDataMap.at(shaderGroup).data()
+																	: nullptr;
+	}
+
+	deUint32 getShaderRecordSize(const ShaderGroups& shaderGroup) const final
+	{
+		DE_ASSERT(m_shaderRecordSize != 0);
+
+		return ((shaderGroup == ShaderGroups::HIT_GROUP)	||
+				(shaderGroup == ShaderGroups::MISS_GROUP))	? m_shaderRecordSize
+															: 0;
+	}
+
+	std::vector<TopLevelAccelerationStructure*>	getTLASPtrVecToBind() const	final
+	{
+		return {m_tlPtr.get() };
+	}
+
+	static std::vector<VariableType> getVarsToTest(const TestType& testType)
+	{
+		return		((testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1) || (testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1) || (testType == TestType::SHADER_RECORD_BLOCK_SCALAR_1) || (testType == TestType::SHADER_RECORD_BLOCK_STD430_1))	? g_ShaderRecordBlockTestVars1
+				:	((testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2) || (testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2) || (testType == TestType::SHADER_RECORD_BLOCK_SCALAR_2) || (testType == TestType::SHADER_RECORD_BLOCK_STD430_2))	? g_ShaderRecordBlockTestVars2
+				:	((testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3) || (testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3) || (testType == TestType::SHADER_RECORD_BLOCK_SCALAR_3) || (testType == TestType::SHADER_RECORD_BLOCK_STD430_3))	? g_ShaderRecordBlockTestVars3
+				:	((testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4) || (testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4) || (testType == TestType::SHADER_RECORD_BLOCK_SCALAR_4) || (testType == TestType::SHADER_RECORD_BLOCK_STD430_4))	? g_ShaderRecordBlockTestVars4
+				:	((testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5) || (testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5) || (testType == TestType::SHADER_RECORD_BLOCK_SCALAR_5) || (testType == TestType::SHADER_RECORD_BLOCK_STD430_5))	? g_ShaderRecordBlockTestVars5
+																																																																					: g_ShaderRecordBlockTestVars6;
+	}
+
+	void resetTLAS() final
+	{
+		m_tlPtr.reset();
+	}
+
+	bool init(	vkt::Context&			/* context */,
+				RayTracingProperties*	/* rtPropsPtr */) final
+	{
+		// Cache required result buffer size.
+		{
+			deUint32					largestBaseTypeSizeUsed		= 0;
+			const auto&					lastItem					= m_testItems.items.back();
+			const deUint32				nResultBytesPerShaderStage	= lastItem.resultBufferProps.bufferOffset + lastItem.arraySize * lastItem.resultBufferProps.arrayStride;
+			const VkShaderStageFlagBits shaderStages[]				=
+			{
+				VK_SHADER_STAGE_MISS_BIT_KHR,
+				VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+				VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+				VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+			};
+
+			m_shaderRecordSize = lastItem.inputBufferProps.bufferOffset + lastItem.arraySize * lastItem.inputBufferProps.arrayStride;
+
+			for (const auto& currentTestItem : m_testItems.items)
+			{
+				const auto baseType			= getBaseType			(currentTestItem.type);
+				const auto componentSize	= getComponentSizeBytes	(baseType);
+
+				largestBaseTypeSizeUsed = de::max(componentSize, largestBaseTypeSizeUsed);
+			}
+
+			for (const auto& currentShaderStage : shaderStages)
+			{
+				m_shaderStageToResultBufferOffset[currentShaderStage] = m_resultBufferSize;
+
+				m_resultBufferSize  = de::roundUp(m_resultBufferSize, static_cast<deUint32>(sizeof(largestBaseTypeSizeUsed)) );
+				m_resultBufferSize += nResultBytesPerShaderStage;
+			}
+		}
+
+		return true;
+	}
+
+	void initAS(vkt::Context&			context,
+				RayTracingProperties*	/* rtPropertiesPtr */,
+				VkCommandBuffer			commandBuffer) final
+	{
+		m_asProviderPtr.reset(
+			new GridASProvider(	tcu::Vec3	(0,		0,		0),		/* gridStartXYZ          */
+								tcu::Vec3	(1,		1,		1),		/* gridCellSizeXYZ       */
+								m_gridSizeXYZ,
+								tcu::Vec3	(2.0f,	2.0f,	2.0f),  /* gridInterCellDeltaXYZ */
+								GeometryType::AABB_AND_TRIANGLES)
+		);
+
+		m_tlPtr  = m_asProviderPtr->createTLAS(	context,
+												AccelerationStructureLayout::ONE_TL_MANY_BLS_MANY_GEOMETRIES_WITH_VARYING_PRIM_TYPES,
+												commandBuffer,
+												VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR,
+												nullptr,	/* optASPropertyProviderPtr */
+												nullptr);	/* optASFedbackPtr          */
+	}
+
+	void initPrograms(SourceCollections& programCollection) const final
+	{
+		const vk::ShaderBuildOptions	buildOptions(	programCollection.usedVulkanVersion,
+														vk::SPIRV_VERSION_1_4,
+														0u,		/* flags        */
+														true);	/* allowSpirv14 */
+
+
+		const bool isSTD430Test					=	isExplicitSTD430OffsetTest	(m_testType) ||
+													isSTD430LayoutTest			(m_testType);
+		const bool requires16BitStorage			=	usesI16						(m_testType) ||
+													usesU16						(m_testType);
+		const bool requires8BitStorage			=	usesI8						(m_testType) ||
+													usesU8						(m_testType);
+		const bool requiresInt64				=	usesI64						(m_testType) ||
+													usesU64						(m_testType);
+		const bool usesExplicitOffsets			=	isExplicitScalarOffsetTest	(m_testType) ||
+													isExplicitSTD430OffsetTest	(m_testType);
+		const auto inputBlockVariablesGLSL		=	getGLSLForStructItem		(	m_testItems,
+																					usesExplicitOffsets,
+																					true	/* targetsInputBuffer			*/);
+		const auto outputStructVariablesGLSL	=	getGLSLForStructItem		(	m_testItems,
+																					false,	/* includeOffsetLayoutQualifier */
+																					false	/* targetsInputBuffer			*/);
+
+		const auto inputBufferGLSL				=	"layout (" + std::string((!isSTD430Test) ? "scalar, " : "std430, ") + "shaderRecordEXT) buffer ib\n"
+													"{\n"						+
+													inputBlockVariablesGLSL		+
+													"} inputBuffer;\n";
+		const auto outputBufferGLSL				=	"struct OutputData\n"
+													"{\n"						+
+													outputStructVariablesGLSL	+
+													"};\n"
+													"\n"
+													"layout (std430, set = 0, binding = 0) buffer ob\n"
+													"{\n"
+													"    OutputData results[4];\n"
+													"};\n";
+
+		std::string preamble;
+
+		{
+			std::stringstream css;
+
+			css <<
+				"#version 460 core\n"
+				"\n"
+				"#extension GL_EXT_ray_tracing : require\n";
+
+			if (!isSTD430Test)
+			{
+				css << "#extension GL_EXT_scalar_block_layout : require\n";
+			}
+
+			if (requires16BitStorage)
+			{
+				css << "#extension GL_EXT_shader_16bit_storage : require\n";
+			}
+
+			if (requires8BitStorage)
+			{
+				css << "#extension GL_EXT_shader_8bit_storage : require\n";
+			}
+
+			if (requiresInt64)
+			{
+				css << "#extension GL_ARB_gpu_shader_int64 : require\n";
+			}
+
+			preamble = css.str();
+		}
+
+		{
+			std::stringstream css;
+
+			css << preamble
+				<<
+				"\n"
+				"                     hitAttributeEXT         vec3 dummyAttribute;\n"
+				"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"
+				"\n"				+
+				inputBufferGLSL		+
+				outputBufferGLSL	+
+				"\n"
+				"void main()\n"
+				"{\n"								+
+				getGLSLForSetters(m_testItems, 3)	+
+				"}\n";
+
+			programCollection.glslSources.add("ahit") << glu::AnyHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css << preamble
+				<<
+				"\n"
+				"layout(location = 0) rayPayloadInEXT dummy { vec3 dummyVec;};\n"	+
+				inputBufferGLSL														+
+				outputBufferGLSL													+
+				"\n"
+				"void main()\n"
+				"{\n"																+
+				getGLSLForSetters(m_testItems, 1)									+
+				"}\n";
+
+			programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css << preamble
+				<<
+				"\n"
+				"hitAttributeEXT vec3 hitAttribute;\n"
+				"\n"				+
+				inputBufferGLSL		+
+				outputBufferGLSL	+
+				"\n"
+				"void main()\n"
+				"{\n"								+
+				getGLSLForSetters(m_testItems, 2)	+
+				"\n"
+				"    reportIntersectionEXT(0.95f, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css << preamble
+				<<
+				"\n"
+				"layout(location = 0) rayPayloadInEXT vec3 dummy;\n"
+				"\n"				+
+				inputBufferGLSL		+
+				outputBufferGLSL	+
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint nRay = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"\n"								+
+				getGLSLForSetters(m_testItems, 0)	+
+				"}\n";
+
+			programCollection.glslSources.add("miss") << glu::MissSource(css.str() ) << buildOptions;
+		}
+
+		{
+			std::stringstream css;
+
+			css << preamble
+				<<
+				"layout(location = 0)                      rayPayloadEXT vec3       dummy;\n"
+				"layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+				"\n"
+				"void main()\n"
+				"{\n"
+				"    uint  nInvocation  = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y + gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;\n"
+				"    uint  rayFlags     = 0;\n"
+				"    float tmin         = 0.001;\n"
+				"    float tmax         = 9.0;\n"
+				"\n"
+				"    uint  cullMask     = 0xFF;\n"
+				"    vec3  cellStartXYZ = vec3(nInvocation * 2.0, 0.0, 0.0);\n"
+				"    vec3  cellEndXYZ   = cellStartXYZ + vec3(1.0);\n"
+				"    vec3  target       = mix(cellStartXYZ, cellEndXYZ, vec3(0.5) );\n"
+				"    vec3  origin       = target - vec3(0, 2, 0);\n"
+				"    vec3  direct       = normalize(target - origin);\n"
+				"\n"
+				"    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, 0);\n"
+				"}\n";
+
+			programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str() ) << buildOptions;
+		}
+	}
+
+	static bool isExplicitScalarOffsetTest(const TestType& testType)
+	{
+		return	(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6);
+	}
+
+	static bool isExplicitSTD430OffsetTest(const TestType& testType)
+	{
+		return	(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6);
+	}
+
+	static bool isScalarLayoutTest(const TestType& testType)
+	{
+		return	(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_1) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_2) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_3) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_4) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_5) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_6);
+	}
+
+	static bool isSTD430LayoutTest(const TestType& testType)
+	{
+		return	(testType == TestType::SHADER_RECORD_BLOCK_STD430_1) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_2) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_3) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_4) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_5) ||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_6);
+	}
+
+	static bool isTest(const TestType& testType)
+	{
+		return	(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6)	||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_1)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_2)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_3)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_4)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_5)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_SCALAR_6)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_1)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_2)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_3)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_4)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_5)					||
+				(testType == TestType::SHADER_RECORD_BLOCK_STD430_6);
+	}
+
+	static bool usesF64(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_f64			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::FLOAT) != tested_var_types.end();
+		const bool has_f64vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::VEC2) != tested_var_types.end();
+		const bool has_f64vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::VEC3) != tested_var_types.end();
+		const bool has_f64vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::VEC4) != tested_var_types.end();
+
+		return (has_f64 || has_f64vec2 || has_f64vec3 || has_f64vec4);
+	}
+
+	static bool usesI8(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_i8			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::INT8) != tested_var_types.end();
+		const bool has_i8vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I8VEC2) != tested_var_types.end();
+		const bool has_i8vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I8VEC3) != tested_var_types.end();
+		const bool has_i8vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I8VEC4) != tested_var_types.end();
+
+		return (has_i8 || has_i8vec2 || has_i8vec3 || has_i8vec4);
+	}
+
+	static bool usesI16(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_i16			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::INT16) != tested_var_types.end();
+		const bool has_i16vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I16VEC2) != tested_var_types.end();
+		const bool has_i16vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I16VEC3) != tested_var_types.end();
+		const bool has_i16vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I16VEC4) != tested_var_types.end();
+
+		return (has_i16 || has_i16vec2 || has_i16vec3 || has_i16vec4);
+	}
+
+	static bool usesI64(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_i64			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::INT64) != tested_var_types.end();
+		const bool has_i64vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I64VEC2) != tested_var_types.end();
+		const bool has_i64vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I64VEC3) != tested_var_types.end();
+		const bool has_i64vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::I64VEC4) != tested_var_types.end();
+
+		return (has_i64 || has_i64vec2 || has_i64vec3 || has_i64vec4);
+	}
+
+	static bool usesU8(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_u8			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::UINT8) != tested_var_types.end();
+		const bool has_u8vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U8VEC2) != tested_var_types.end();
+		const bool has_u8vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U8VEC3) != tested_var_types.end();
+		const bool has_u8vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U8VEC4) != tested_var_types.end();
+
+		return (has_u8 || has_u8vec2 || has_u8vec3 || has_u8vec4);
+	}
+
+	static bool usesU16(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_u16			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::UINT16) != tested_var_types.end();
+		const bool has_u16vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U16VEC2) != tested_var_types.end();
+		const bool has_u16vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U16VEC3) != tested_var_types.end();
+		const bool has_u16vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U16VEC4) != tested_var_types.end();
+
+		return (has_u16 || has_u16vec2 || has_u16vec3 || has_u16vec4);
+	}
+
+	static bool usesU64(const TestType& testType)
+	{
+		const auto tested_var_types = getVarsToTest(testType);
+		const bool has_u64			= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::UINT64) != tested_var_types.end();
+		const bool has_u64vec2		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U64VEC2) != tested_var_types.end();
+		const bool has_u64vec3		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U64VEC3) != tested_var_types.end();
+		const bool has_u64vec4		= std::find	(	tested_var_types.begin	(),
+													tested_var_types.end	(),
+													VariableType::U64VEC4) != tested_var_types.end();
+
+		return (has_u64 || has_u64vec2 || has_u64vec3 || has_u64vec4);
+	}
+
+	bool verifyResultBuffer (const void* resultBufferDataPtr) const final
+	{
+		bool result	= false;
+
+		for (const auto& iterator : m_shaderStageToResultBufferOffset)
+		{
+			const auto currentShaderStage	= iterator.first;
+			const auto shaderGroup			= (	(currentShaderStage == VK_SHADER_STAGE_ANY_HIT_BIT_KHR)			||
+												(currentShaderStage == VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)		||
+												(currentShaderStage == VK_SHADER_STAGE_INTERSECTION_BIT_KHR) )	? ShaderGroups::HIT_GROUP
+																												: ShaderGroups::MISS_GROUP;
+			const auto resultStartOffset	= iterator.second;
+
+			if (currentShaderStage != VK_SHADER_STAGE_MISS_BIT_KHR) continue;
+
+			for (const auto& currentItem : m_testItems.items)
+			{
+				const auto		baseDataType	= getBaseType								(currentItem.type);
+				const auto		componentSize	= getComponentSizeBytes						(baseDataType);
+				const auto&		expectedDataVec = currentItem.shaderGroupToRecordDataMap.at	(shaderGroup);
+				auto			expectedDataPtr = reinterpret_cast<const deUint8*>			(expectedDataVec.data() );
+				const auto		isMatrixType	= isMatrix									(currentItem.type);
+				const auto		nComponents		= getNComponents							(currentItem.type);
+				const deUint8*	resultDataPtr	= reinterpret_cast<const deUint8*>			(resultBufferDataPtr) + resultStartOffset + currentItem.resultBufferProps.bufferOffset;
+
+				for (deUint32 nArrayItem = 0; nArrayItem < currentItem.arraySize; ++nArrayItem)
+				{
+					for (deUint32 nComponent = 0; nComponent < nComponents; ++nComponent)
+					{
+						const auto expectedComponentDataPtr	= expectedDataPtr	+ ((!isMatrixType)	? componentSize * nComponent
+																									: currentItem.inputBufferProps.matrixElementStartOffsets.at(nComponent) );
+						const auto resultComponentDataPtr	= resultDataPtr		+ ((!isMatrixType)	? componentSize * nComponent
+																									: currentItem.resultBufferProps.matrixElementStartOffsets.at(nComponent) );
+
+						switch (baseDataType)
+						{
+							case BaseType::F32:
+							{
+								if (fabs(*reinterpret_cast<const float*>(resultComponentDataPtr) - *reinterpret_cast<const float*>(expectedComponentDataPtr)) > 1e-3f)
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::F64:
+							{
+								if (fabs(*reinterpret_cast<const double*>(resultComponentDataPtr) - *reinterpret_cast<const double*>(expectedComponentDataPtr)) > 1e-3)
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::I8:
+							{
+								if (*reinterpret_cast<const deInt8*>(resultComponentDataPtr) != *reinterpret_cast<const deInt8*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::I16:
+							{
+								if (*reinterpret_cast<const deInt16*>(resultComponentDataPtr) != *reinterpret_cast<const deInt16*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::I32:
+							{
+								if (*reinterpret_cast<const deInt32*>(resultComponentDataPtr) != *reinterpret_cast<const deInt32*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::I64:
+							{
+								if (*reinterpret_cast<const deInt64*>(resultComponentDataPtr) != *reinterpret_cast<const deInt64*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::U8:
+							{
+								if (*reinterpret_cast<const deUint8*>(resultComponentDataPtr) != *reinterpret_cast<const deUint8*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::U16:
+							{
+								if (*reinterpret_cast<const deUint16*>(resultComponentDataPtr) != *reinterpret_cast<const deUint16*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::U32:
+							{
+								if (*reinterpret_cast<const deUint32*>(resultComponentDataPtr) != *reinterpret_cast<const deUint32*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							case BaseType::U64:
+							{
+								if (*reinterpret_cast<const deUint64*>(resultComponentDataPtr) != *reinterpret_cast<const deUint64*>(expectedComponentDataPtr))
+								{
+									goto end;
+								}
+
+								break;
+							}
+
+							default:
+							{
+								DE_ASSERT(false);
+							}
+						}
+					}
+
+					expectedDataPtr	+= currentItem.inputBufferProps.arrayStride;
+					resultDataPtr	+= currentItem.resultBufferProps.arrayStride;
+				}
+			}
+		}
+
+		result = true;
+end:
+		return result;
+	}
+
+private:
+	typedef struct Item
+	{
+		struct BufferProps
+		{
+			deUint32				arrayStride;
+			deUint32				bufferOffset;
+			std::vector<deUint32>	matrixElementStartOffsets; //< Holds offsets to consecutive matrix element values.
+
+			BufferProps()
+				:	arrayStride	(0),
+					bufferOffset(0xFFFFFFFF)
+			{
+				/* Stub */
+			}
+		};
+
+		BufferProps inputBufferProps;
+		BufferProps resultBufferProps;
+
+		deUint32				arraySize;
+		MatrixMajorOrder		matrixOrder;
+		std::string				name;
+		VariableType			type;
+
+		std::map<ShaderGroups, std::vector<deUint8> >	shaderGroupToRecordDataMap;
+
+
+		Item()
+			:arraySize		(0),
+			 matrixOrder	(MatrixMajorOrder::UNKNOWN),
+			 type			(VariableType::UNKNOWN)
+		{
+			/* Stub */
+		}
+	} Item;
+
+	struct StructItem
+	{
+		std::vector<Item> items;
+	};
+
+	// Private functions
+	BaseType	getBaseType(const VariableType& type) const
+	{
+		auto result = BaseType::UNKNOWN;
+
+		switch (type)
+		{
+			case VariableType::FLOAT:
+			case VariableType::MAT2:
+			case VariableType::MAT2X2:
+			case VariableType::MAT2X3:
+			case VariableType::MAT2X4:
+			case VariableType::MAT3:
+			case VariableType::MAT3X2:
+			case VariableType::MAT3X3:
+			case VariableType::MAT3X4:
+			case VariableType::MAT4:
+			case VariableType::MAT4X2:
+			case VariableType::MAT4X3:
+			case VariableType::MAT4X4:
+			case VariableType::VEC2:
+			case VariableType::VEC3:
+			case VariableType::VEC4:
+			{
+				result = BaseType::F32;
+
+				break;
+			}
+
+			case VariableType::DOUBLE:
+			case VariableType::DMAT2:
+			case VariableType::DMAT2X2:
+			case VariableType::DMAT2X3:
+			case VariableType::DMAT2X4:
+			case VariableType::DMAT3:
+			case VariableType::DMAT3X2:
+			case VariableType::DMAT3X3:
+			case VariableType::DMAT3X4:
+			case VariableType::DMAT4:
+			case VariableType::DMAT4X2:
+			case VariableType::DMAT4X3:
+			case VariableType::DMAT4X4:
+			case VariableType::DVEC2:
+			case VariableType::DVEC3:
+			case VariableType::DVEC4:
+			{
+				result = BaseType::F64;
+
+				break;
+			}
+
+			case VariableType::INT16:
+			case VariableType::I16VEC2:
+			case VariableType::I16VEC3:
+			case VariableType::I16VEC4:
+			{
+				result = BaseType::I16;
+
+				break;
+			}
+
+			case VariableType::INT:
+			case VariableType::IVEC2:
+			case VariableType::IVEC3:
+			case VariableType::IVEC4:
+			{
+				result = BaseType::I32;
+
+				break;
+			}
+
+			case VariableType::INT64:
+			case VariableType::I64VEC2:
+			case VariableType::I64VEC3:
+			case VariableType::I64VEC4:
+			{
+				result = BaseType::I64;
+
+				break;
+			}
+
+			case VariableType::INT8:
+			case VariableType::I8VEC2:
+			case VariableType::I8VEC3:
+			case VariableType::I8VEC4:
+			{
+				result = BaseType::I8;
+
+				break;
+			}
+
+			case VariableType::UINT16:
+			case VariableType::U16VEC2:
+			case VariableType::U16VEC3:
+			case VariableType::U16VEC4:
+			{
+				result = BaseType::U16;
+
+				break;
+			}
+
+			case VariableType::UINT:
+			case VariableType::UVEC2:
+			case VariableType::UVEC3:
+			case VariableType::UVEC4:
+			{
+				result = BaseType::U32;
+
+				break;
+			}
+
+			case VariableType::UINT64:
+			case VariableType::U64VEC2:
+			case VariableType::U64VEC3:
+			case VariableType::U64VEC4:
+			{
+				result = BaseType::U64;
+
+				break;
+			}
+
+			case VariableType::UINT8:
+			case VariableType::U8VEC2:
+			case VariableType::U8VEC3:
+			case VariableType::U8VEC4:
+			{
+				result = BaseType::U8;
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return result;
+	}
+
+	deUint32 getComponentSizeBytes(const BaseType& type) const
+	{
+		deUint32 result = 0;
+
+		switch (type)
+		{
+			case BaseType::I8:
+			case BaseType::U8:
+			{
+				result = 1;
+
+				break;
+			}
+
+			case BaseType::I16:
+			case BaseType::U16:
+			{
+				result = 2;
+
+				break;
+			}
+
+			case BaseType::F32:
+			case BaseType::I32:
+			case BaseType::U32:
+			{
+				result = 4;
+
+				break;
+			}
+
+			case BaseType::F64:
+			case BaseType::I64:
+			case BaseType::U64:
+			{
+				result = 8;
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return result;
+	}
+
+	std::string getGLSLForSetters(	const StructItem&	item,
+									const deUint32&		nResultArrayItem) const
+	{
+		std::string result;
+
+		for (const auto& currentItem : item.items)
+		{
+			if (currentItem.arraySize > 1)
+			{
+				result +=	"for (uint nArrayItem = 0; nArrayItem < " + de::toString(currentItem.arraySize) + "; ++nArrayItem)\n"
+							"{\n";
+			}
+
+			result += "results[" + de::toString(nResultArrayItem) + "]." + currentItem.name;
+
+			if (currentItem.arraySize > 1)
+			{
+				result += "[nArrayItem]";
+			}
+
+			result += " = inputBuffer." + currentItem.name;
+
+			if (currentItem.arraySize > 1)
+			{
+				result += "[nArrayItem]";
+			}
+
+			result += ";\n";
+
+			if (currentItem.arraySize > 1)
+			{
+				result += "}\n";
+			}
+		}
+
+		return result;
+	}
+
+	std::string getGLSLForStructItem(	const StructItem&	item,
+										const bool&			includeOffsetLayoutQualifier,
+										const bool&			targetsInputBuffer) const
+	{
+		std::string result;
+
+		for (const auto& currentItem : item.items)
+		{
+			const bool		needsMatrixOrderQualifier	= (currentItem.matrixOrder == MatrixMajorOrder::ROW_MAJOR);
+			const auto		variableTypeGLSL			= getVariableTypeGLSLType	(currentItem.type);
+			deUint32		nLayoutQualifiersUsed		= 0;
+			const deUint32	nLayoutQualifierUses		=	((includeOffsetLayoutQualifier) ? 1 : 0) +
+															((needsMatrixOrderQualifier)	? 1 : 0);
+			const bool		usesLayoutQualifiers		= (nLayoutQualifierUses > 0);
+
+			if (usesLayoutQualifiers)
+			{
+				result += "layout(";
+			}
+
+			if (includeOffsetLayoutQualifier)
+			{
+				result += "offset = " + de::toString((targetsInputBuffer)	? currentItem.inputBufferProps.bufferOffset
+																			: currentItem.resultBufferProps.bufferOffset);
+
+				if ( (++nLayoutQualifiersUsed) != nLayoutQualifierUses)
+				{
+					result += ", ";
+				}
+			}
+
+			if (needsMatrixOrderQualifier)
+			{
+				result += ((currentItem.matrixOrder == MatrixMajorOrder::COLUMN_MAJOR)	? "column_major"
+																						: "row_major");
+
+				if ( (++nLayoutQualifiersUsed) != nLayoutQualifierUses)
+				{
+					result += ", ";
+				}
+			}
+
+			if (usesLayoutQualifiers)
+			{
+				result += ") ";
+			}
+
+			result += variableTypeGLSL + std::string(" ") + currentItem.name;
+
+			if (currentItem.arraySize != 1)
+			{
+				result += "[" + de::toString(currentItem.arraySize) + "]";
+			}
+
+			result += ";\n";
+		}
+
+		return result;
+	}
+
+	tcu::UVec2  getMatrixSize(const VariableType& type) const
+	{
+		auto result = tcu::UVec2();
+
+		switch (type)
+		{
+			case VariableType::DMAT2:
+			case VariableType::DMAT2X2:
+			case VariableType::MAT2:
+			case VariableType::MAT2X2:
+			{
+				result = tcu::UVec2(2, 2);
+
+				break;
+			}
+
+			case VariableType::DMAT2X3:
+			case VariableType::MAT2X3:
+			{
+				result = tcu::UVec2(2, 3);
+
+				break;
+			}
+
+			case VariableType::DMAT2X4:
+			case VariableType::MAT2X4:
+			{
+				result = tcu::UVec2(2, 4);
+
+				break;
+			}
+
+			case VariableType::DMAT3:
+			case VariableType::DMAT3X3:
+			case VariableType::MAT3:
+			case VariableType::MAT3X3:
+			{
+				result = tcu::UVec2(3, 3);
+
+				break;
+			}
+
+			case VariableType::DMAT3X2:
+			case VariableType::MAT3X2:
+			{
+				result = tcu::UVec2(3, 2);
+
+				break;
+			}
+
+			case VariableType::DMAT3X4:
+			case VariableType::MAT3X4:
+			{
+				result = tcu::UVec2(3, 4);
+
+				break;
+			}
+
+			case VariableType::DMAT4:
+			case VariableType::DMAT4X4:
+			case VariableType::MAT4:
+			case VariableType::MAT4X4:
+			{
+				result = tcu::UVec2(4, 4);
+
+				break;
+			}
+
+			case VariableType::DMAT4X2:
+			case VariableType::MAT4X2:
+			{
+				result = tcu::UVec2(4, 2);
+
+				break;
+			}
+
+			case VariableType::DMAT4X3:
+			case VariableType::MAT4X3:
+			{
+				result = tcu::UVec2(4, 3);
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+
+				break;
+			}
+		}
+
+		return result;
+	}
+
+	deUint32	getNComponents(const VariableType& type) const
+	{
+		deUint32 result = 0;
+
+		switch (type)
+		{
+			case VariableType::DOUBLE:
+			case VariableType::FLOAT:
+			case VariableType::INT8:
+			case VariableType::INT16:
+			case VariableType::INT64:
+			case VariableType::INT:
+			case VariableType::UINT:
+			case VariableType::UINT8:
+			case VariableType::UINT16:
+			case VariableType::UINT64:
+			{
+				result = 1;
+
+				break;
+			}
+
+			case VariableType::DVEC2:
+			case VariableType::I8VEC2:
+			case VariableType::I16VEC2:
+			case VariableType::I64VEC2:
+			case VariableType::IVEC2:
+			case VariableType::U8VEC2:
+			case VariableType::U16VEC2:
+			case VariableType::U64VEC2:
+			case VariableType::UVEC2:
+			case VariableType::VEC2:
+			{
+				result = 2;
+
+				break;
+			}
+
+			case VariableType::DVEC3:
+			case VariableType::I8VEC3:
+			case VariableType::I16VEC3:
+			case VariableType::I64VEC3:
+			case VariableType::IVEC3:
+			case VariableType::U8VEC3:
+			case VariableType::U16VEC3:
+			case VariableType::U64VEC3:
+			case VariableType::UVEC3:
+			case VariableType::VEC3:
+			{
+				result = 3;
+
+				break;
+			}
+
+			case VariableType::DMAT2:
+			case VariableType::DMAT2X2:
+			case VariableType::DVEC4:
+			case VariableType::I8VEC4:
+			case VariableType::I16VEC4:
+			case VariableType::I64VEC4:
+			case VariableType::IVEC4:
+			case VariableType::MAT2:
+			case VariableType::MAT2X2:
+			case VariableType::U8VEC4:
+			case VariableType::U16VEC4:
+			case VariableType::U64VEC4:
+			case VariableType::UVEC4:
+			case VariableType::VEC4:
+			{
+				result = 4;
+
+				break;
+			}
+
+			case VariableType::DMAT2X3:
+			case VariableType::DMAT3X2:
+			case VariableType::MAT2X3:
+			case VariableType::MAT3X2:
+			{
+				result = 6;
+
+				break;
+			}
+
+			case VariableType::DMAT2X4:
+			case VariableType::DMAT4X2:
+			case VariableType::MAT2X4:
+			case VariableType::MAT4X2:
+			{
+				result = 8;
+
+				break;
+			}
+
+			case VariableType::DMAT3:
+			case VariableType::DMAT3X3:
+			case VariableType::MAT3:
+			case VariableType::MAT3X3:
+			{
+				result = 9;
+
+				break;
+			}
+
+			case VariableType::DMAT3X4:
+			case VariableType::DMAT4X3:
+			case VariableType::MAT3X4:
+			case VariableType::MAT4X3:
+			{
+				result = 12;
+
+				break;
+			}
+
+			case VariableType::DMAT4:
+			case VariableType::DMAT4X4:
+			case VariableType::MAT4:
+			case VariableType::MAT4X4:
+			{
+				result = 16;
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return result;
+	}
+
+	deUint32 getNMatrixColumns(const VariableType& type) const
+	{
+		deUint32 result = 0;
+
+		switch (type)
+		{
+			case VariableType::DMAT2:
+			case VariableType::DMAT2X2:
+			case VariableType::DMAT2X3:
+			case VariableType::DMAT2X4:
+			case VariableType::MAT2:
+			case VariableType::MAT2X2:
+			case VariableType::MAT2X3:
+			case VariableType::MAT2X4:
+			{
+				result = 2;
+
+				break;
+			}
+
+			case VariableType::DMAT3:
+			case VariableType::DMAT3X2:
+			case VariableType::DMAT3X3:
+			case VariableType::DMAT3X4:
+			case VariableType::MAT3:
+			case VariableType::MAT3X2:
+			case VariableType::MAT3X4:
+			case VariableType::MAT3X3:
+			{
+				result = 3;
+
+				break;
+			}
+
+			case VariableType::DMAT4X2:
+			case VariableType::MAT4X2:
+			case VariableType::DMAT4X3:
+			case VariableType::MAT4X3:
+			case VariableType::DMAT4X4:
+			case VariableType::DMAT4:
+			case VariableType::MAT4X4:
+			case VariableType::MAT4:
+			{
+				result = 4;
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return result;
+	}
+
+	deUint32 getNMatrixRows(const VariableType& type) const
+	{
+		deUint32 result = 0;
+
+		switch (type)
+		{
+			case VariableType::DMAT2:
+			case VariableType::DMAT2X2:
+			case VariableType::DMAT3X2:
+			case VariableType::DMAT4X2:
+			case VariableType::MAT2:
+			case VariableType::MAT2X2:
+			case VariableType::MAT3X2:
+			case VariableType::MAT4X2:
+			{
+				result = 2;
+
+				break;
+			}
+
+			case VariableType::DMAT2X3:
+			case VariableType::DMAT3:
+			case VariableType::DMAT3X3:
+			case VariableType::DMAT4X3:
+			case VariableType::MAT2X3:
+			case VariableType::MAT3:
+			case VariableType::MAT3X3:
+			case VariableType::MAT4X3:
+			{
+				result = 3;
+
+				break;
+			}
+
+			case VariableType::DMAT2X4:
+			case VariableType::DMAT3X4:
+			case VariableType::DMAT4:
+			case VariableType::DMAT4X4:
+			case VariableType::MAT2X4:
+			case VariableType::MAT3X4:
+			case VariableType::MAT4:
+			case VariableType::MAT4X4:
+			{
+				result = 4;
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return result;
+	}
+
+	const char* getVariableTypeGLSLType(const VariableType& type) const
+	{
+		const char* resultPtr = "!?";
+
+		switch (type)
+		{
+			case VariableType::DOUBLE:	resultPtr = "double";	break;
+			case VariableType::DMAT2:	resultPtr = "dmat2";	break;
+			case VariableType::DMAT2X2:	resultPtr = "dmat2x2";	break;
+			case VariableType::DMAT2X3:	resultPtr = "dmat2x3";	break;
+			case VariableType::DMAT2X4:	resultPtr = "dmat2x4";	break;
+			case VariableType::DMAT3:	resultPtr = "dmat3";	break;
+			case VariableType::DMAT3X2:	resultPtr = "dmat3x2";	break;
+			case VariableType::DMAT3X3:	resultPtr = "dmat3x3";	break;
+			case VariableType::DMAT3X4:	resultPtr = "dmat3x4";	break;
+			case VariableType::DMAT4:	resultPtr = "dmat4";	break;
+			case VariableType::DMAT4X2:	resultPtr = "dmat4x2";	break;
+			case VariableType::DMAT4X3:	resultPtr = "dmat4x3";	break;
+			case VariableType::DMAT4X4:	resultPtr = "dmat4x4";	break;
+			case VariableType::DVEC2:	resultPtr = "dvec2";	break;
+			case VariableType::DVEC3:	resultPtr = "dvec3";	break;
+			case VariableType::DVEC4:	resultPtr = "dvec4";	break;
+			case VariableType::FLOAT:	resultPtr = "float";	break;
+			case VariableType::INT16:	resultPtr = "int16_t";	break;
+			case VariableType::INT64:	resultPtr = "int64_t";	break;
+			case VariableType::INT8:	resultPtr = "int8_t";	break;
+			case VariableType::INT:		resultPtr = "int";		break;
+			case VariableType::I16VEC2:	resultPtr = "i16vec2";	break;
+			case VariableType::I16VEC3:	resultPtr = "i16vec3";	break;
+			case VariableType::I16VEC4:	resultPtr = "i16vec4";	break;
+			case VariableType::I64VEC2:	resultPtr = "i64vec2";	break;
+			case VariableType::I64VEC3:	resultPtr = "i64vec3";	break;
+			case VariableType::I64VEC4:	resultPtr = "i64vec4";	break;
+			case VariableType::I8VEC2:	resultPtr = "i8vec2";	break;
+			case VariableType::I8VEC3:	resultPtr = "i8vec3";	break;
+			case VariableType::I8VEC4:	resultPtr = "i8vec4";	break;
+			case VariableType::IVEC2:	resultPtr = "ivec2";	break;
+			case VariableType::IVEC3:	resultPtr = "ivec3";	break;
+			case VariableType::IVEC4:	resultPtr = "ivec4";	break;
+			case VariableType::MAT2:	resultPtr = "mat2";		break;
+			case VariableType::MAT2X2:	resultPtr = "mat2x2";	break;
+			case VariableType::MAT2X3:	resultPtr = "mat2x3";	break;
+			case VariableType::MAT2X4:	resultPtr = "mat2x4";	break;
+			case VariableType::MAT3:	resultPtr = "mat3";		break;
+			case VariableType::MAT3X2:	resultPtr = "mat3x2";	break;
+			case VariableType::MAT3X3:	resultPtr = "mat3x3";	break;
+			case VariableType::MAT3X4:	resultPtr = "mat3x4";	break;
+			case VariableType::MAT4:	resultPtr = "mat4";		break;
+			case VariableType::MAT4X2:	resultPtr = "mat4x2";	break;
+			case VariableType::MAT4X3:	resultPtr = "mat4x3";	break;
+			case VariableType::MAT4X4:	resultPtr = "mat4x4";	break;
+			case VariableType::UINT16:	resultPtr = "uint16_t";	break;
+			case VariableType::UINT64:	resultPtr = "uint64_t";	break;
+			case VariableType::UINT8:	resultPtr = "uint8_t";	break;
+			case VariableType::UINT:	resultPtr = "uint";		break;
+			case VariableType::U16VEC2:	resultPtr = "u16vec2";	break;
+			case VariableType::U16VEC3:	resultPtr = "u16vec3";	break;
+			case VariableType::U16VEC4:	resultPtr = "u16vec4";	break;
+			case VariableType::U64VEC2:	resultPtr = "u64vec2";	break;
+			case VariableType::U64VEC3:	resultPtr = "u64vec3";	break;
+			case VariableType::U64VEC4:	resultPtr = "u64vec4";	break;
+			case VariableType::U8VEC2:	resultPtr = "u8vec2";	break;
+			case VariableType::U8VEC3:	resultPtr = "u8vec3";	break;
+			case VariableType::U8VEC4:	resultPtr = "u8vec4";	break;
+			case VariableType::UVEC2:	resultPtr = "uvec2";	break;
+			case VariableType::UVEC3:	resultPtr = "uvec3";	break;
+			case VariableType::UVEC4:	resultPtr = "uvec4";	break;
+			case VariableType::VEC2:	resultPtr = "vec2";		break;
+			case VariableType::VEC3:	resultPtr = "vec3";		break;
+			case VariableType::VEC4:	resultPtr = "vec4";		break;
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return resultPtr;
+	}
+
+	void initTestItems()
+	{
+		de::Random		randomNumberGenerator(13567);
+		const deUint32	testArraySizes[] =
+		{
+			3,
+			7,
+			5
+		};
+
+		const ShaderGroups shaderGroups[] =
+		{
+			ShaderGroups::HIT_GROUP,
+			ShaderGroups::MISS_GROUP,
+		};
+
+		const auto nTestArraySizes	= sizeof(testArraySizes) / sizeof(testArraySizes[0]);
+
+		for (const auto& currentVariableType : m_varTypesToTest)
+		{
+			const auto	currentArraySize = testArraySizes[static_cast<deUint32>(m_testItems.items.size() ) % nTestArraySizes];
+			Item		newItem;
+
+			newItem.arraySize	= currentArraySize;
+			newItem.name		= "var" + de::toString(m_testItems.items.size() );
+			newItem.type		= currentVariableType;
+
+			// TODO: glslang issue.
+			// newItem.matrixOrder = static_cast<MatrixMajorOrder>(static_cast<deUint32>(m_testItems.items.size() ) % static_cast<deUint32>(MatrixMajorOrder::UNKNOWN) );
+
+			newItem.matrixOrder = MatrixMajorOrder::COLUMN_MAJOR;
+
+			m_testItems.items.push_back(newItem);
+		}
+
+		// Determine start offsets for matrix elements.
+		//
+		// Note: result buffer aways uses std430 layout.
+		setSTD430MatrixElementOffsets	(m_testItems, false /* updateInputBufferProps */);
+		setSTD430ArrayStrides			(m_testItems, false /* updateInputBufferProps */);
+		setSTD430BufferOffsets			(m_testItems, false /* updateInputBufferProps */);
+
+		switch (m_testType)
+		{
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6:
+			{
+				setExplicitScalarOffsetMatrixElementOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6:
+			{
+				setExplicitSTD430OffsetMatrixElementOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_1:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_2:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_3:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_4:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_5:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_6:
+			{
+				setScalarMatrixElementOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_STD430_1:
+			case TestType::SHADER_RECORD_BLOCK_STD430_2:
+			case TestType::SHADER_RECORD_BLOCK_STD430_3:
+			case TestType::SHADER_RECORD_BLOCK_STD430_4:
+			case TestType::SHADER_RECORD_BLOCK_STD430_5:
+			case TestType::SHADER_RECORD_BLOCK_STD430_6:
+			{
+				setSTD430MatrixElementOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		// Configure array strides for the variables.
+		switch (m_testType)
+		{
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6:
+			{
+				setExplicitScalarOffsetArrayStrides(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6:
+			{
+				setExplicitSTD430OffsetArrayStrides(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_1:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_2:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_3:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_4:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_5:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_6:
+			{
+				setScalarArrayStrides(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_STD430_1:
+			case TestType::SHADER_RECORD_BLOCK_STD430_2:
+			case TestType::SHADER_RECORD_BLOCK_STD430_3:
+			case TestType::SHADER_RECORD_BLOCK_STD430_4:
+			case TestType::SHADER_RECORD_BLOCK_STD430_5:
+			case TestType::SHADER_RECORD_BLOCK_STD430_6:
+			{
+				setSTD430ArrayStrides(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		// Configure buffer offsets for the variables.
+		switch (m_testType)
+		{
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6:
+			{
+				setExplicitScalarOffsetBufferOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5:
+			case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6:
+			{
+				setExplicitSTD430OffsetBufferOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_1:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_2:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_3:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_4:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_5:
+			case TestType::SHADER_RECORD_BLOCK_SCALAR_6:
+			{
+				setScalarBufferOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			case TestType::SHADER_RECORD_BLOCK_STD430_1:
+			case TestType::SHADER_RECORD_BLOCK_STD430_2:
+			case TestType::SHADER_RECORD_BLOCK_STD430_3:
+			case TestType::SHADER_RECORD_BLOCK_STD430_4:
+			case TestType::SHADER_RECORD_BLOCK_STD430_5:
+			case TestType::SHADER_RECORD_BLOCK_STD430_6:
+			{
+				setSTD430BufferOffsets(m_testItems, true /* updateInputBufferProps */);
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		// Bake data to be used in the tested buffer.
+		for (auto& currentTestItem : m_testItems.items)
+		{
+			const auto baseType				= getBaseType			(currentTestItem.type);
+			const auto componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const bool isMatrixType			= isMatrix				(currentTestItem.type);
+			const auto nComponents			= getNComponents		(currentTestItem.type);
+			const auto nBytesNeeded			= currentTestItem.arraySize * currentTestItem.inputBufferProps.arrayStride;
+
+			for (const auto& currentShaderGroup : shaderGroups)
+			{
+				auto& currentDataVec = currentTestItem.shaderGroupToRecordDataMap[currentShaderGroup];
+
+				currentDataVec.resize(nBytesNeeded);
+
+				for (deUint32 nArrayItem = 0; nArrayItem < currentTestItem.arraySize; ++nArrayItem)
+				{
+					deUint8* currentItemDataPtr = currentDataVec.data() + nArrayItem * currentTestItem.inputBufferProps.arrayStride;
+
+					for (deUint32 nComponent = 0; nComponent < nComponents; ++nComponent)
+					{
+						switch (baseType)
+						{
+							case BaseType::F32:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(float) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<float*>(currentItemDataPtr) = randomNumberGenerator.getFloat();
+
+								break;
+							}
+
+							case BaseType::F64:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(double) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<double*>(currentItemDataPtr) = randomNumberGenerator.getDouble();
+
+								break;
+							}
+
+							case BaseType::I8:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deInt8) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deInt8*>(currentItemDataPtr) = static_cast<deInt8>(randomNumberGenerator.getInt(-128, 127) );
+
+								break;
+							}
+
+							case BaseType::I16:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deInt16) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deInt16*>(currentItemDataPtr) = static_cast<deInt16>(randomNumberGenerator.getInt(-32768, 32767) );
+
+								break;
+							}
+
+							case BaseType::I32:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deInt32) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deInt32*>(currentItemDataPtr) = randomNumberGenerator.getInt(static_cast<int>(-2147483648LL), static_cast<int>(2147483647LL) );
+
+								break;
+							}
+
+							case BaseType::I64:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deInt64) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deInt64*>(currentItemDataPtr) = randomNumberGenerator.getInt64();
+
+								break;
+							}
+
+							case BaseType::U8:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deUint8) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deUint8*>(currentItemDataPtr) = randomNumberGenerator.getUint8();
+
+								break;
+							}
+
+							case BaseType::U16:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deUint16) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deUint16*>(currentItemDataPtr) = randomNumberGenerator.getUint16();
+
+								break;
+							}
+
+							case BaseType::U32:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deUint32) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deUint32*>(currentItemDataPtr) = randomNumberGenerator.getUint32();
+
+								break;
+							}
+
+							case BaseType::U64:
+							{
+								DE_ASSERT(currentItemDataPtr + sizeof(deUint64) <= currentDataVec.data() + currentDataVec.size() );
+
+								*reinterpret_cast<deUint64*>(currentItemDataPtr) = randomNumberGenerator.getUint64();
+
+								break;
+							}
+
+							default:
+							{
+								DE_ASSERT(false);
+							}
+						}
+
+						if (isMatrixType)
+						{
+							if (nComponent != (nComponents - 1) )
+							{
+								const auto delta = currentTestItem.inputBufferProps.matrixElementStartOffsets.at(nComponent + 1) - currentTestItem.inputBufferProps.matrixElementStartOffsets.at(nComponent + 0);
+
+								DE_ASSERT(delta >= componentSizeBytes);
+
+								currentItemDataPtr += delta;
+							}
+						}
+						else
+						{
+							currentItemDataPtr += componentSizeBytes;
+						}
+					}
+				}
+			}
+		}
+
+		// Merge individual member data into coalesced buffers.
+		for (const auto& currentShaderGroup : shaderGroups)
+		{
+			auto& resultVec = m_shaderGroupToRecordDataMap[currentShaderGroup];
+
+			{
+				const auto& lastItem = m_testItems.items.back();
+
+				resultVec.resize(lastItem.inputBufferProps.bufferOffset + lastItem.shaderGroupToRecordDataMap.at(currentShaderGroup).size() );
+			}
+
+			for (const auto& currentVariable : m_testItems.items)
+			{
+				const auto& currentVariableDataVec = currentVariable.shaderGroupToRecordDataMap.at(currentShaderGroup);
+
+				DE_ASSERT(resultVec.size() >= currentVariable.inputBufferProps.bufferOffset + currentVariableDataVec.size());
+
+				memcpy(	resultVec.data() + currentVariable.inputBufferProps.bufferOffset,
+						currentVariableDataVec.data(),
+						currentVariableDataVec.size() );
+			}
+		}
+	}
+
+	bool	isMatrix(const VariableType& type) const
+	{
+		bool result = false;
+
+		switch (type)
+		{
+			case VariableType::DMAT2:
+			case VariableType::DMAT2X2:
+			case VariableType::DMAT2X3:
+			case VariableType::DMAT2X4:
+			case VariableType::DMAT3:
+			case VariableType::DMAT3X2:
+			case VariableType::DMAT3X3:
+			case VariableType::DMAT3X4:
+			case VariableType::DMAT4:
+			case VariableType::DMAT4X2:
+			case VariableType::DMAT4X3:
+			case VariableType::DMAT4X4:
+			case VariableType::MAT2:
+			case VariableType::MAT2X2:
+			case VariableType::MAT2X3:
+			case VariableType::MAT2X4:
+			case VariableType::MAT3:
+			case VariableType::MAT3X2:
+			case VariableType::MAT3X3:
+			case VariableType::MAT3X4:
+			case VariableType::MAT4:
+			case VariableType::MAT4X2:
+			case VariableType::MAT4X3:
+			case VariableType::MAT4X4:
+			{
+				result = true;
+
+				break;
+			}
+
+			case VariableType::DOUBLE:
+			case VariableType::DVEC2:
+			case VariableType::DVEC3:
+			case VariableType::DVEC4:
+			case VariableType::FLOAT:
+			case VariableType::INT8:
+			case VariableType::INT64:
+			case VariableType::INT16:
+			case VariableType::INT:
+			case VariableType::I16VEC2:
+			case VariableType::I16VEC3:
+			case VariableType::I16VEC4:
+			case VariableType::I64VEC2:
+			case VariableType::I64VEC3:
+			case VariableType::I64VEC4:
+			case VariableType::I8VEC2:
+			case VariableType::I8VEC3:
+			case VariableType::I8VEC4:
+			case VariableType::IVEC2:
+			case VariableType::IVEC3:
+			case VariableType::IVEC4:
+			case VariableType::UINT8:
+			case VariableType::UINT64:
+			case VariableType::UINT16:
+			case VariableType::UINT:
+			case VariableType::U16VEC2:
+			case VariableType::U16VEC3:
+			case VariableType::U16VEC4:
+			case VariableType::U64VEC2:
+			case VariableType::U64VEC3:
+			case VariableType::U64VEC4:
+			case VariableType::U8VEC2:
+			case VariableType::U8VEC3:
+			case VariableType::U8VEC4:
+			case VariableType::UVEC2:
+			case VariableType::UVEC3:
+			case VariableType::UVEC4:
+			case VariableType::VEC2:
+			case VariableType::VEC3:
+			case VariableType::VEC4:
+			{
+				result = false;
+
+				break;
+			}
+
+			default:
+			{
+				DE_ASSERT(false);
+			}
+		}
+
+		return result;
+	}
+
+	void setExplicitScalarOffsetArrayStrides(	StructItem& inputStruct,
+												const bool& updateInputBufferProps)
+	{
+		return setScalarArrayStrides(inputStruct, updateInputBufferProps);
+	}
+
+	void setExplicitScalarOffsetBufferOffsets(	StructItem& inputStruct,
+												const bool& updateInputBufferProps)
+	{
+		deUint32 nBytesConsumed = 0;
+
+		for (auto& currentItem : inputStruct.items)
+		{
+			const auto	baseType			= getBaseType			(currentItem.type);
+			auto&		bufferProps			= (updateInputBufferProps) ? currentItem.inputBufferProps : currentItem.resultBufferProps;
+			const auto	componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const auto	isMatrixVariable	= isMatrix				(currentItem.type);
+			const auto	nComponents			= getNComponents		(currentItem.type);
+
+			bufferProps.bufferOffset = de::roundUp(nBytesConsumed, componentSizeBytes * 2);
+
+			if (isMatrixVariable)
+			{
+				nBytesConsumed = bufferProps.bufferOffset +  currentItem.arraySize * bufferProps.arrayStride;
+			}
+			else
+			{
+				nBytesConsumed = bufferProps.bufferOffset + currentItem.arraySize * componentSizeBytes * nComponents;
+			}
+		}
+	}
+
+	void setExplicitScalarOffsetElementOffsets(	StructItem& inputStruct,
+												const bool& updateInputBufferProps)
+	{
+		return setScalarMatrixElementOffsets(inputStruct, updateInputBufferProps);
+	}
+
+	void setExplicitScalarOffsetMatrixElementOffsets(	StructItem& inputStruct,
+														const bool& updateInputBufferProps)
+	{
+		return setScalarMatrixElementOffsets(inputStruct, updateInputBufferProps);
+	}
+
+	void setExplicitSTD430OffsetArrayStrides(	StructItem& inputStruct,
+												const bool& updateInputBufferProps)
+	{
+		return setSTD430ArrayStrides(inputStruct, updateInputBufferProps);
+	}
+
+	void setExplicitSTD430OffsetBufferOffsets(	StructItem& inputStruct,
+												const bool& updateInputBufferProps)
+	{
+		deUint32 nBytesConsumed = 0;
+
+		for (auto& currentItem : inputStruct.items)
+		{
+			const auto	baseType			= getBaseType			(currentItem.type);
+			auto&		bufferProps			= (updateInputBufferProps) ? currentItem.inputBufferProps : currentItem.resultBufferProps;
+			const auto	componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const auto	isMatrixVariable	= isMatrix				(currentItem.type);
+			const auto	nComponents			= getNComponents		(currentItem.type);
+			deUint32	requiredAlignment	= 0;
+
+			deUint32 nMatrixRows	= 0;
+
+			if (isMatrixVariable)
+			{
+				nMatrixRows	= getNMatrixRows(currentItem.type);
+
+				if (nMatrixRows == 3)
+				{
+					nMatrixRows = 4;
+				}
+
+				requiredAlignment = nMatrixRows * componentSizeBytes;
+			}
+			else
+			if (nComponents == 1)
+			{
+				DE_ASSERT(	(baseType == BaseType::F32) ||
+							(baseType == BaseType::F64) ||
+							(baseType == BaseType::I16) ||
+							(baseType == BaseType::I32) ||
+							(baseType == BaseType::I64) ||
+							(baseType == BaseType::I8)  ||
+							(baseType == BaseType::U16) ||
+							(baseType == BaseType::U32) ||
+							(baseType == BaseType::U64) ||
+							(baseType == BaseType::U8) );
+
+				requiredAlignment = componentSizeBytes;
+			}
+			else
+			if (nComponents == 2)
+			{
+				requiredAlignment = 2 * componentSizeBytes;
+			}
+			else
+			{
+				requiredAlignment = 4 * componentSizeBytes;
+			}
+
+			bufferProps.bufferOffset = de::roundUp(nBytesConsumed, requiredAlignment * 2);
+
+			if (isMatrixVariable)
+			{
+				nBytesConsumed = bufferProps.bufferOffset +  currentItem.arraySize * bufferProps.arrayStride;
+			}
+			else
+			{
+				nBytesConsumed = bufferProps.bufferOffset + currentItem.arraySize * componentSizeBytes * ((nComponents == 3) ? 4 : nComponents);
+			}
+		}
+	}
+
+	void setExplicitSTD430OffsetElementOffsets(	StructItem& inputStruct,
+												const bool& updateInputBufferProps)
+	{
+		return setSTD430MatrixElementOffsets(inputStruct, updateInputBufferProps);
+	}
+
+	void setExplicitSTD430OffsetMatrixElementOffsets(	StructItem& inputStruct,
+														const bool& updateInputBufferProps)
+	{
+		return setSTD430MatrixElementOffsets(inputStruct, updateInputBufferProps);
+	}
+
+	void setSTD430ArrayStrides(	StructItem& inputStruct,
+								const bool& updateInputBufferProps)
+	{
+		for (auto& currentItem : inputStruct.items)
+		{
+			const auto	baseType			= getBaseType			(currentItem.type);
+			auto&		bufferProps			= (updateInputBufferProps) ? currentItem.inputBufferProps : currentItem.resultBufferProps;
+			const auto	componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const auto	isMatrixVariable	= isMatrix				(currentItem.type);
+			const auto	nComponents			= getNComponents		(currentItem.type);
+			deUint32	requiredStride		= 0;
+
+			if (isMatrixVariable)
+			{
+				auto	nMatrixColumns	= getNMatrixColumns	(currentItem.type);
+				auto	nMatrixRows		= getNMatrixRows	(currentItem.type);
+
+				if (nMatrixRows == 3)
+				{
+					nMatrixRows = 4;
+				}
+
+				requiredStride = nMatrixRows * nMatrixColumns * componentSizeBytes;
+			}
+			else
+			{
+				requiredStride = componentSizeBytes * ((nComponents == 3)	? 4
+																			: nComponents);
+			}
+
+			bufferProps.arrayStride = requiredStride;
+		}
+	}
+
+	void setSTD430BufferOffsets(StructItem& inputStruct,
+								const bool& updateInputBufferProps)
+	{
+		deUint32 nBytesConsumed = 0;
+
+		for (auto& currentItem : inputStruct.items)
+		{
+			const auto	baseType			= getBaseType			(currentItem.type);
+			auto&		bufferProps			= (updateInputBufferProps) ? currentItem.inputBufferProps : currentItem.resultBufferProps;
+			const auto	componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const auto	isMatrixVariable	= isMatrix				(currentItem.type);
+			const auto	nComponents			= getNComponents		(currentItem.type);
+			deUint32	requiredAlignment	= 0;
+
+			deUint32 nMatrixRows	= 0;
+
+			if (isMatrixVariable)
+			{
+				nMatrixRows	= getNMatrixRows(currentItem.type);
+
+				if (nMatrixRows == 3)
+				{
+					nMatrixRows = 4;
+				}
+
+				requiredAlignment = nMatrixRows * componentSizeBytes;
+			}
+			else
+			if (nComponents == 1)
+			{
+				DE_ASSERT(	(baseType == BaseType::F32) ||
+							(baseType == BaseType::F64) ||
+							(baseType == BaseType::I16) ||
+							(baseType == BaseType::I32) ||
+							(baseType == BaseType::I64) ||
+							(baseType == BaseType::I8)  ||
+							(baseType == BaseType::U16) ||
+							(baseType == BaseType::U32) ||
+							(baseType == BaseType::U64) ||
+							(baseType == BaseType::U8) );
+
+				requiredAlignment = componentSizeBytes;
+			}
+			else
+			if (nComponents == 2)
+			{
+				requiredAlignment = 2 * componentSizeBytes;
+			}
+			else
+			{
+				requiredAlignment = 4 * componentSizeBytes;
+			}
+
+			bufferProps.bufferOffset = de::roundUp(nBytesConsumed, requiredAlignment);
+
+			if (isMatrixVariable)
+			{
+				nBytesConsumed = bufferProps.bufferOffset +  currentItem.arraySize * bufferProps.arrayStride;
+			}
+			else
+			{
+				nBytesConsumed = bufferProps.bufferOffset + currentItem.arraySize * componentSizeBytes * ((nComponents == 3) ? 4 : nComponents);
+			}
+		}
+	}
+
+	void setScalarArrayStrides(	StructItem& inputStruct,
+								const bool& updateInputBufferProps)
+	{
+		for (auto& currentItem : inputStruct.items)
+		{
+			const auto	baseType			= getBaseType			(currentItem.type);
+			auto&		bufferProps			= (updateInputBufferProps) ? currentItem.inputBufferProps : currentItem.resultBufferProps;
+			const auto	componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const auto	isMatrixVariable	= isMatrix				(currentItem.type);
+			const auto	nComponents			= getNComponents		(currentItem.type);
+
+			if (isMatrixVariable)
+			{
+				auto	nMatrixColumns	= getNMatrixColumns	(currentItem.type);
+				auto	nMatrixRows		= getNMatrixRows	(currentItem.type);
+
+				bufferProps.arrayStride = nMatrixRows * nMatrixColumns * componentSizeBytes;
+			}
+			else
+			{
+				bufferProps.arrayStride = componentSizeBytes * nComponents;
+			}
+		}
+	}
+
+	void setScalarBufferOffsets(StructItem& inputStruct,
+								const bool& updateInputBufferProps)
+	{
+		deUint32 nBytesConsumed = 0;
+
+		for (auto& currentItem : inputStruct.items)
+		{
+			const auto	baseType			= getBaseType			(currentItem.type);
+			auto&		bufferProps			= (updateInputBufferProps) ? currentItem.inputBufferProps : currentItem.resultBufferProps;
+			const auto	componentSizeBytes	= getComponentSizeBytes	(baseType);
+			const auto	isMatrixVariable	= isMatrix				(currentItem.type);
+			const auto	nComponents			= getNComponents		(currentItem.type);
+
+			bufferProps.bufferOffset = de::roundUp(nBytesConsumed, componentSizeBytes);
+
+			if (isMatrixVariable)
+			{
+				nBytesConsumed = bufferProps.bufferOffset +  currentItem.arraySize * bufferProps.arrayStride;
+			}
+			else
+			{
+				nBytesConsumed = bufferProps.bufferOffset + currentItem.arraySize * componentSizeBytes * nComponents;
+			}
+		}
+	}
+
+	void setScalarMatrixElementOffsets(	StructItem& inputStruct,
+										const bool& updateInputBufferProps)
+	{
+		for (auto& currentVariable : inputStruct.items)
+		{
+			if (isMatrix(currentVariable.type))
+			{
+				auto&		bufferProps					= (updateInputBufferProps) ? currentVariable.inputBufferProps : currentVariable.resultBufferProps;
+				const auto	componentSizeBytes			= getComponentSizeBytes(getBaseType(currentVariable.type) );
+				deUint32	currentMatrixElementOffset	= 0;
+				const auto	nMatrixColumns				= getNMatrixColumns	(currentVariable.type);
+				const auto	nMatrixRows					= getNMatrixRows	(currentVariable.type);
+
+				for (deUint32 nMatrixColumn = 0; nMatrixColumn < nMatrixColumns; ++nMatrixColumn)
+				{
+					currentMatrixElementOffset = de::roundUp(	nMatrixRows * componentSizeBytes * nMatrixColumn,
+																componentSizeBytes);
+
+					for (deUint32 nMatrixRow = 0; nMatrixRow < nMatrixRows; ++nMatrixRow)
+					{
+						bufferProps.matrixElementStartOffsets.push_back(currentMatrixElementOffset);
+
+						currentMatrixElementOffset += componentSizeBytes;
+					}
+				}
+			}
+		}
+	}
+
+	void setSTD430MatrixElementOffsets(	StructItem& inputStruct,
+										const bool& updateInputBufferProps)
+	{
+		for (auto& currentVariable : inputStruct.items)
+		{
+			if (isMatrix(currentVariable.type))
+			{
+				auto&		bufferProps					= (updateInputBufferProps) ? currentVariable.inputBufferProps : currentVariable.resultBufferProps;
+				const auto	componentSizeBytes			= getComponentSizeBytes(getBaseType(currentVariable.type) );
+				deUint32	currentMatrixElementOffset	= 0;
+				auto		nMatrixColumns				= getNMatrixColumns	(currentVariable.type);
+				auto		nMatrixRows					= getNMatrixRows	(currentVariable.type);
+
+				if (currentVariable.matrixOrder == MatrixMajorOrder::COLUMN_MAJOR)
+				{
+					for (deUint32 nMatrixColumn = 0; nMatrixColumn < nMatrixColumns; ++nMatrixColumn)
+					{
+						currentMatrixElementOffset = de::roundUp(	static_cast<deUint32>(nMatrixRows * componentSizeBytes * nMatrixColumn),
+																	static_cast<deUint32>(((nMatrixRows == 3) ? 4 : nMatrixRows) * componentSizeBytes));
+
+						for (deUint32 nMatrixRow = 0; nMatrixRow < nMatrixRows; ++nMatrixRow)
+						{
+							bufferProps.matrixElementStartOffsets.push_back(currentMatrixElementOffset);
+
+							currentMatrixElementOffset += componentSizeBytes;
+						}
+					}
+				}
+				else
+				{
+					// TODO
+					DE_ASSERT(false);
+				}
+			}
+		}
+	}
+
+	// Private variables
+	const tcu::UVec3				m_gridSizeXYZ;
+	const TestType					m_testType;
+	const std::vector<VariableType> m_varTypesToTest;
+
+	deUint32	m_resultBufferSize;
+	deUint32	m_shaderRecordSize;
+	StructItem	m_testItems;
+
+	std::map<ShaderGroups, std::vector<deUint8> >	m_shaderGroupToRecordDataMap;
+	std::map<VkShaderStageFlagBits, deUint32>		m_shaderStageToResultBufferOffset;
+	std::unique_ptr<GridASProvider>					m_asProviderPtr;
+	std::unique_ptr<TopLevelAccelerationStructure>	m_tlPtr;
+};
+
 // Test the return value of reportIntersectionEXT
 class ReportIntersectionResultTest : public TestBase
 {
@@ -4099,33 +6621,62 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																							m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
 																							m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
 																							static_cast<deUint32>								(ShaderGroups::FIRST_CALLABLE_GROUP),
-																							static_cast<deUint32>								(callableShaderCollectionNames.size() )); /* groupCount */
+static_cast<deUint32>								(callableShaderCollectionNames.size() ),	/* groupCount                  */
+																							0u,																								/* additionalBufferCreateFlags */
+																							0u,																								/* additionalBufferUsageFlags  */
+																							MemoryRequirement::Any,
+																							0u,																								/* opaqueCaptureAddress       */
+																							0u,																								/* shaderBindingTableOffset   */
+																							m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP) );
 	}
 
-	const auto raygenShaderBindingTablePtr	= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
-																								deviceVk,
-																								*pipelineVkPtr,
-																								allocator,
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
-																								m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																								static_cast<deUint32>								(ShaderGroups::RAYGEN_GROUP),
-																								1u); /* groupCount */
-	const auto	missShaderBindingTablePtr	= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
-																								deviceVk,
-																								*pipelineVkPtr,
-																								allocator,
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
-																								m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																								static_cast<deUint32>								(ShaderGroups::MISS_GROUP),
-																								1u); /* groupCount */
-	const auto	hitShaderBindingTablePtr	= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
-																								deviceVk,
-																								*pipelineVkPtr,
-																								allocator,
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
-																								m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
-																								static_cast<deUint32>								(ShaderGroups::HIT_GROUP),
-																								1u); /* groupCount */
+	const auto	raygenShaderBindingTablePtr	= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
+																									deviceVk,
+																									*pipelineVkPtr,
+																									allocator,
+																									m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																									m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																									static_cast<deUint32>								(ShaderGroups::RAYGEN_GROUP),
+																									1u,																								/* groupCount                  */
+																									0u,																								/* additionalBufferCreateFlags */
+																									0u,																								/* additionalBufferUsageFlags  */
+																									MemoryRequirement::Any,
+																									0u,																								/* opaqueCaptureAddress        */
+																									0u);																							/* shaderBindingTableOffset    */
+
+	const void*	missShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::MISS_GROUP);
+	const auto	missShaderBindingTablePtr					= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
+																												deviceVk,
+																												*pipelineVkPtr,
+																												allocator,
+																												m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																												m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																												static_cast<deUint32>								(ShaderGroups::MISS_GROUP),
+																												1u,																								/* groupCount                  */
+																												0u,																								/* additionalBufferCreateFlags */
+																												0u,																								/* additionalBufferUsageFlags  */
+																												MemoryRequirement::Any,
+																												0u,																								/* opaqueCaptureAddress       */
+																												0u,																								/* shaderBindingTableOffset   */
+																												m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
+																												&missShaderBindingGroupShaderRecordDataPtr);
+
+	const void*	hitShaderBindingGroupShaderRecordDataPtr	= m_testPtr->getShaderRecordData(					ShaderGroups::HIT_GROUP);
+	const auto	hitShaderBindingTablePtr					= rayTracingPipelinePtr->createShaderBindingTable(	deviceInterface,
+																												deviceVk,
+																												*pipelineVkPtr,
+																												allocator,
+																												m_rayTracingPropsPtr->getShaderGroupHandleSize		(),
+																												m_rayTracingPropsPtr->getShaderGroupBaseAlignment	(),
+																												static_cast<deUint32>								(ShaderGroups::HIT_GROUP),
+																												1u,																								/* groupCount                  */
+																												0u,																								/* additionalBufferCreateFlags */
+																												0u,																								/* additionalBufferUsageFlags  */
+																												MemoryRequirement::Any,
+																												0u,																								/* opaqueCaptureAddress       */
+																												0u,																								/* shaderBindingTableOffset   */
+																												m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
+																												&hitShaderBindingGroupShaderRecordDataPtr);
 
 	{
 		const auto resultBufferCreateInfo	= makeBufferCreateInfo(	resultBufferSize,
@@ -4238,13 +6789,13 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																														deviceVk,
 																														missShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::MISS_GROUP),
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize());
 			const auto	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
 																														deviceVk,
 																														hitShaderBindingTablePtr->get(),
 																														0 /* offset */),
-																								m_rayTracingPropsPtr->getShaderGroupHandleSize(),
+																								m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::HIT_GROUP),
 																								m_rayTracingPropsPtr->getShaderGroupHandleSize() );
 
 			const auto	callableShaderBindingTableRegion	=	(callableShaderCollectionNames.size() > 0)	? makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(	deviceInterface,
@@ -4252,7 +6803,8 @@ de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
 																																										callableShaderBindingTablePtr->get(),
 																																										0 /* offset */),
 																																				m_rayTracingPropsPtr->getShaderGroupHandleSize(), /* stride */
-																																				m_rayTracingPropsPtr->getShaderGroupHandleSize() * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
+																																				(m_rayTracingPropsPtr->getShaderGroupHandleSize() + m_testPtr->getShaderRecordSize(ShaderGroups::FIRST_CALLABLE_GROUP) ) * static_cast<deUint32>(callableShaderCollectionNames.size() ) )
+
 																											: makeStridedDeviceAddressRegionKHR(DE_NULL,
 																																				0, /* stride */
 																																				0  /* size   */);
@@ -4380,6 +6932,41 @@ void RayTracingTestCase::checkSupport(Context& context) const
 	{
 		TCU_THROW(NotSupportedError, "VkPhysicalDeviceAccelerationStructureFeaturesKHR::accelerationStructure is false");
 	}
+
+	if (ShaderRecordBlockTest::isTest(m_data.type) )
+	{
+		if (ShaderRecordBlockTest::isExplicitScalarOffsetTest	(m_data.type) ||
+			ShaderRecordBlockTest::isScalarLayoutTest			(m_data.type))
+		{
+			context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
+		}
+
+		if (ShaderRecordBlockTest::usesF64(m_data.type))
+		{
+			context.requireDeviceCoreFeature(vkt::DeviceCoreFeature::DEVICE_CORE_FEATURE_SHADER_FLOAT64);
+		}
+
+		if (ShaderRecordBlockTest::usesI8(m_data.type) ||
+			ShaderRecordBlockTest::usesU8(m_data.type) )
+		{
+			if (context.get8BitStorageFeatures().storageBuffer8BitAccess == VK_FALSE)
+			{
+				TCU_THROW(NotSupportedError, "storageBuffer8BitAccess feature is unavailable");
+			}
+		}
+
+		if (ShaderRecordBlockTest::usesI16(m_data.type) ||
+			ShaderRecordBlockTest::usesU16(m_data.type) )
+		{
+			context.requireDeviceCoreFeature(vkt::DeviceCoreFeature::DEVICE_CORE_FEATURE_SHADER_INT16);
+		}
+
+		if (ShaderRecordBlockTest::usesI64(m_data.type) ||
+			ShaderRecordBlockTest::usesU64(m_data.type) )
+		{
+			context.requireDeviceCoreFeature(vkt::DeviceCoreFeature::DEVICE_CORE_FEATURE_SHADER_INT64);
+		}
+	}
 }
 
 void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	const
@@ -4482,6 +7069,41 @@ void RayTracingTestCase::initPrograms(SourceCollections& programCollection)	cons
 		{
 			m_testPtr.reset(
 				new RayPayloadInTest(m_data.geometryType, m_data.asLayout)
+			);
+
+			m_testPtr->initPrograms(programCollection);
+
+			break;
+		}
+
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_1:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_2:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_3:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_4:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_5:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_6:
+		case TestType::SHADER_RECORD_BLOCK_STD430_1:
+		case TestType::SHADER_RECORD_BLOCK_STD430_2:
+		case TestType::SHADER_RECORD_BLOCK_STD430_3:
+		case TestType::SHADER_RECORD_BLOCK_STD430_4:
+		case TestType::SHADER_RECORD_BLOCK_STD430_5:
+		case TestType::SHADER_RECORD_BLOCK_STD430_6:
+		{
+			m_testPtr.reset(
+				new ShaderRecordBlockTest(	m_data.type,
+											ShaderRecordBlockTest::getVarsToTest(m_data.type) )
 			);
 
 			m_testPtr->initPrograms(programCollection);
@@ -4608,6 +7230,42 @@ TestInstance* RayTracingTestCase::createInstance (Context& context) const
 			{
 				m_testPtr.reset(
 					new RayPayloadInTest(m_data.geometryType, m_data.asLayout)
+				);
+			}
+
+			break;
+		}
+
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5:
+		case TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_1:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_2:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_3:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_4:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_5:
+		case TestType::SHADER_RECORD_BLOCK_SCALAR_6:
+		case TestType::SHADER_RECORD_BLOCK_STD430_1:
+		case TestType::SHADER_RECORD_BLOCK_STD430_2:
+		case TestType::SHADER_RECORD_BLOCK_STD430_3:
+		case TestType::SHADER_RECORD_BLOCK_STD430_4:
+		case TestType::SHADER_RECORD_BLOCK_STD430_5:
+		case TestType::SHADER_RECORD_BLOCK_STD430_6:
+		{
+			if (m_testPtr == nullptr)
+			{
+				m_testPtr.reset(
+					new ShaderRecordBlockTest(	m_data.type,
+												ShaderRecordBlockTest::getVarsToTest(m_data.type))
 				);
 			}
 
@@ -4761,6 +7419,135 @@ tcu::TestCaseGroup*	createMiscTests (tcu::TestContext& testCtx)
 														"Verifies that relevant shader stages can correctly read large ray payloads provided by raygen shader stage.",
 														CaseDef{TestType::RAY_PAYLOAD_IN, currentGeometryType, AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
 		miscGroupPtr->addChild(newTestCasePtr);
+	}
+
+		{
+		auto newTestCaseSTD430_1Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordSTD430_1",
+																"Tests usage of various variables inside a shader record block using std430 layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_1) );
+		auto newTestCaseSTD430_2Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordSTD430_2",
+																"Tests usage of various variables inside a shader record block using std430 layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_2) );
+		auto newTestCaseSTD430_3Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordSTD430_3",
+																"Tests usage of various variables inside a shader record block using std430 layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_3) );
+		auto newTestCaseSTD430_4Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordSTD430_4",
+																"Tests usage of various variables inside a shader record block using std430 layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_4) );
+		auto newTestCaseSTD430_5Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordSTD430_5",
+																"Tests usage of various variables inside a shader record block using std430 layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_5) );
+		auto newTestCaseSTD430_6Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordSTD430_6",
+																"Tests usage of various variables inside a shader record block using std430 layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_STD430_6) );
+
+		auto newTestCaseScalar_1Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordScalar_1",
+																"Tests usage of various variables inside a shader record block using scalar layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_1) );
+		auto newTestCaseScalar_2Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordScalar_2",
+																"Tests usage of various variables inside a shader record block using scalar layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_2) );
+		auto newTestCaseScalar_3Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordScalar_3",
+																"Tests usage of various variables inside a shader record block using scalar layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_3) );
+		auto newTestCaseScalar_4Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordScalar_4",
+																"Tests usage of various variables inside a shader record block using scalar layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_4) );
+		auto newTestCaseScalar_5Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordScalar_5",
+																"Tests usage of various variables inside a shader record block using scalar layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_5) );
+		auto newTestCaseScalar_6Ptr = new RayTracingTestCase(	testCtx,
+																"shaderRecordScalar_6",
+																"Tests usage of various variables inside a shader record block using scalar layout",
+																CaseDef(TestType::SHADER_RECORD_BLOCK_SCALAR_6) );
+
+		auto newTestCaseExplicitScalarOffset_1Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitScalarOffset_1",
+																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_1) );
+		auto newTestCaseExplicitScalarOffset_2Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitScalarOffset_2",
+																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_2) );
+		auto newTestCaseExplicitScalarOffset_3Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitScalarOffset_3",
+																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_3) );
+		auto newTestCaseExplicitScalarOffset_4Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitScalarOffset_4",
+																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_4) );
+		auto newTestCaseExplicitScalarOffset_5Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitScalarOffset_5",
+																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_5) );
+		auto newTestCaseExplicitScalarOffset_6Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitScalarOffset_6",
+																			"Tests usage of various variables inside a shader record block using scalar layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_SCALAR_OFFSET_6) );
+
+		auto newTestCaseExplicitSTD430Offset_1Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitSTD430Offset_1",
+																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_1) );
+		auto newTestCaseExplicitSTD430Offset_2Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitSTD430Offset_2",
+																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_2) );
+		auto newTestCaseExplicitSTD430Offset_3Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitSTD430Offset_3",
+																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_3) );
+		auto newTestCaseExplicitSTD430Offset_4Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitSTD430Offset_4",
+																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_4) );
+		auto newTestCaseExplicitSTD430Offset_5Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitSTD430Offset_5",
+																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_5) );
+		auto newTestCaseExplicitSTD430Offset_6Ptr = new RayTracingTestCase(	testCtx,
+																			"shaderRecordExplicitSTD430Offset_6",
+																			"Tests usage of various variables inside a shader record block using std430 layout and explicit offset qualifiers",
+																			CaseDef(TestType::SHADER_RECORD_BLOCK_EXPLICIT_STD430_OFFSET_6) );
+		miscGroupPtr->addChild(newTestCaseSTD430_1Ptr);
+		miscGroupPtr->addChild(newTestCaseSTD430_2Ptr);
+		miscGroupPtr->addChild(newTestCaseSTD430_3Ptr);
+		miscGroupPtr->addChild(newTestCaseSTD430_4Ptr);
+		miscGroupPtr->addChild(newTestCaseSTD430_5Ptr);
+		miscGroupPtr->addChild(newTestCaseSTD430_6Ptr);
+
+		miscGroupPtr->addChild(newTestCaseScalar_1Ptr);
+		miscGroupPtr->addChild(newTestCaseScalar_2Ptr);
+		miscGroupPtr->addChild(newTestCaseScalar_3Ptr);
+		miscGroupPtr->addChild(newTestCaseScalar_4Ptr);
+		miscGroupPtr->addChild(newTestCaseScalar_5Ptr);
+		miscGroupPtr->addChild(newTestCaseScalar_6Ptr);
+
+		miscGroupPtr->addChild(newTestCaseExplicitScalarOffset_1Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitScalarOffset_2Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitScalarOffset_3Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitScalarOffset_4Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitScalarOffset_5Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitScalarOffset_6Ptr);
+
+		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_1Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_2Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_3Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_4Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_5Ptr);
+		miscGroupPtr->addChild(newTestCaseExplicitSTD430Offset_6Ptr);
 	}
 
 	return miscGroupPtr.release();
