@@ -468,11 +468,14 @@ tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 	auto	referenceImage	= generateReferenceImage(ReferenceImageType::COLOR);
 	auto	referenceDepth	= generateReferenceImage(ReferenceImageType::DEPTH);
 
+	bool fail = false;
 	// Color aspect.
 	if (!tcu::fuzzyCompare(log, "Image compare", "Image compare", referenceImage->getAccess(), resultImage, 0.02f, tcu::COMPARE_LOG_RESULT))
-		return tcu::TestStatus::fail("Rendered image is incorrect");
+		fail = true;
 
 	// Depth aspect.
+	bool depthFail = false;
+
 	const auto refWidth			= referenceDepth->getWidth();
 	const auto refHeight		= referenceDepth->getHeight();
 	const auto refAccess		= referenceDepth->getAccess();
@@ -482,7 +485,6 @@ tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 	const tcu::Vec4 kGreen		(0.0f, 1.0f, 0.0f, 1.0f);
 	const tcu::Vec4 kRed		(1.0f, 0.0f, 0.0f, 1.0f);
 
-	bool fail = false;
 	tcu::clear(errorAccess, kGreen);
 
 	for (int y = 0; y < refHeight; ++y)
@@ -498,16 +500,21 @@ tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 		const auto resValue = resultDepth.getPixDepth(x, y);
 		if (!de::inRange(resValue, refValue - kDepthThreshold, refValue + kDepthThreshold))
 		{
-			fail = true;
+			depthFail = true;
 			errorAccess.setPixel(kRed, x, y);
 		}
 	}
 
-	if (fail)
+	if (depthFail)
 	{
-		log << tcu::TestLog::Image("ErrorMask", "Error mask", errorAccess);
-		return tcu::TestStatus::fail("Result depth buffer is incorrect");
+		log << tcu::TestLog::Message << "Depth Image comparison failed" << tcu::TestLog::EndMessage;
+		log	<< tcu::TestLog::Image("Result", "Result", resultDepth)
+			<< tcu::TestLog::Image("Reference",	"Reference", refAccess)
+			<< tcu::TestLog::Image("ErrorMask",	"Error mask", errorAccess);
 	}
+
+	if (fail || depthFail)
+		return tcu::TestStatus::fail("Result images are incorrect");
 
 	return tcu::TestStatus::pass("Pass");
 }
