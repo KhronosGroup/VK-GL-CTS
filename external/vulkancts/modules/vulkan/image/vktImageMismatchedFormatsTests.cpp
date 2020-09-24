@@ -228,6 +228,11 @@ void MismatchedFormatTest::checkSupport (Context& context) const
 	if (m_type == TestType::SPARSE_READ)
 	{
 		context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+		if (!getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice()).sparseResidencyBuffer)
+		{
+			TCU_THROW(NotSupportedError, "Sparse partially resident buffers not supported");
+		}
 	}
 
 	VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), m_format);
