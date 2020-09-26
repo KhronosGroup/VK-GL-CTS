@@ -1383,27 +1383,28 @@ TestStatus ClearColorImageTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);						// VkImageLayout			newLayout;
 	}
 
+	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		srcStageMask
+						 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
+						 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask
+						 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask
+						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+						 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
+
 	// Different clear color per range
 	for (std::size_t i = 0u; i < subresourceRanges.size(); ++i)
 	{
 		m_vkd.cmdClearColorImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[i].color, 1, &subresourceRanges[i]);
 
-		pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		srcStageMask
-							 VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		dstStageMask
-							 VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask
-							 VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask
-							 VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
-							 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);		// VkImageLayout			newLayout;
 		if (m_twoStep)
 		{
-			m_vkd.cmdClearColorImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[i].color, 1, &steptwoRanges[i]);
+			pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		srcStageMask
+								 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask
+								 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask
+								 VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask
+								 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
+								 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);			// VkImageLayout			newLayout;
 
-			pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		srcStageMask
-								 VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		dstStageMask
-								 VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			srcAccessMask
-								 VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			dstAccessMask
-								 VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			oldLayout;
-								 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);	// VkImageLayout			newLayout;
+			m_vkd.cmdClearColorImage(*m_commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_params.clearValue[i].color, 1, &steptwoRanges[i]);
 		}
 	}
 
