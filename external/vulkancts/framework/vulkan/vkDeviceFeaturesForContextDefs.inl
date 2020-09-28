@@ -53,6 +53,7 @@ const vk::VkPhysicalDeviceShaderClockFeaturesKHR&						Context::getShaderClockFe
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT&	Context::getShaderDemoteToHelperInvocationFeaturesEXT	(void) const { return m_device->getShaderDemoteToHelperInvocationFeaturesEXT();	}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&					Context::getShaderDrawParametersFeatures				(void) const { return m_device->getShaderDrawParametersFeatures();				}
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&					Context::getShaderFloat16Int8Features					(void) const { return m_device->getShaderFloat16Int8Features();					}
+const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&			Context::getShaderImageAtomicInt64FeaturesEXT			(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&				Context::getShaderImageFootprintFeatures				(void) const { return m_device->getShaderImageFootprintFeatures();				}
 const vk::VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&			Context::getShaderIntegerFunctions2FeaturesINTEL		(void) const { return m_device->getShaderIntegerFunctions2FeaturesINTEL();		}
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&					Context::getShaderSMBuiltinsFeatures					(void) const { return m_device->getShaderSMBuiltinsFeatures();					}

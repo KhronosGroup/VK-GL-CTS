@@ -4235,6 +4235,14 @@ struct VkPhysicalDeviceCoherentMemoryFeaturesAMD
 	VkBool32		deviceCoherentMemory;
 };
 
+struct VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderImageInt64Atomics;
+	VkBool32		sparseImageInt64Atomics;
+};
+
 struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 {
 	VkStructureType	sType;

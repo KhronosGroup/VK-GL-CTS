@@ -672,6 +672,10 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_image_atomic_int64")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_memory_budget")
 	{
 		return;
@@ -1678,6 +1682,10 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 		return;
 	}
 	if (extName == "VK_AMD_device_coherent_memory")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_image_atomic_int64")
 	{
 		return;
 	}
