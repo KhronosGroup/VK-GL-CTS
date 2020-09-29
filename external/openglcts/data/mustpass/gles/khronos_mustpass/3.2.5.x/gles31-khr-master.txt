@@ -2163,6 +2163,7 @@ KHR-GLES31.core.program_interface_query.uniform-types
 KHR-GLES31.core.program_interface_query.uniform-block-types
 KHR-GLES31.core.program_interface_query.uniform-block-array
 KHR-GLES31.core.program_interface_query.transform-feedback-types
+KHR-GLES31.core.program_interface_query.transform-feedback-types-full-array-capture
 KHR-GLES31.core.program_interface_query.atomic-counters
 KHR-GLES31.core.program_interface_query.atomic-counters-one-buffer
 KHR-GLES31.core.program_interface_query.ssb-types

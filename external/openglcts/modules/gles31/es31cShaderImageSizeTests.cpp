@@ -368,8 +368,8 @@ class ImageSizeMachine : public glcts::GLWrapper
 
 	void SetupTransformFeedback(GLuint program)
 	{
-		const char* const varying_name[] = { "count[0]", "count[1]", "count[2]", "count[3]" };
-		glTransformFeedbackVaryings(program, 4, varying_name, GL_INTERLEAVED_ATTRIBS);
+		const char* const varying_name = "count";
+		glTransformFeedbackVaryings(program, 1, &varying_name, GL_INTERLEAVED_ATTRIBS);
 	}
 
 	inline bool Equal(const ivec4& result, const ivec4& expected)
