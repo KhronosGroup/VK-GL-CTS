@@ -476,10 +476,8 @@ protected:
 		}
 		/* setup XFB */
 		{
-			const GLchar* const v[15] = { "attrib[0]",  "attrib[1]",  "attrib[2]",  "attrib[3]",  "attrib[4]",
-										  "attrib[5]",  "attrib[6]",  "attrib[7]",  "attrib[8]",  "attrib[9]",
-										  "attrib[10]", "attrib[11]", "attrib[12]", "attrib[13]", "attrib[14]" };
-			glTransformFeedbackVaryings(m_po, 15, v, GL_INTERLEAVED_ATTRIBS);
+			const GLchar* const v = "attrib";
+			glTransformFeedbackVaryings(m_po, 1, &v, GL_INTERLEAVED_ATTRIBS);
 		}
 		glLinkProgram(m_po);
 		if (!CheckProgram(m_po))
@@ -1540,10 +1538,8 @@ protected:
 		}
 		/* setup XFB */
 		{
-			const GLchar* const v[15] = { "attribi[0]",  "attribi[1]",  "attribi[2]",  "attribi[3]",  "attribi[4]",
-										  "attribi[5]",  "attribi[6]",  "attribi[7]",  "attribui[0]", "attribui[1]",
-										  "attribui[2]", "attribui[3]", "attribui[4]", "attribui[5]", "attribui[6]" };
-			glTransformFeedbackVaryings(m_po, 15, v, GL_INTERLEAVED_ATTRIBS);
+			const GLchar* const v[2] = { "attribi", "attribui" };
+			glTransformFeedbackVaryings(m_po, 2, v, GL_INTERLEAVED_ATTRIBS);
 		}
 		glLinkProgram(m_po);
 		if (!CheckProgram(m_po))
