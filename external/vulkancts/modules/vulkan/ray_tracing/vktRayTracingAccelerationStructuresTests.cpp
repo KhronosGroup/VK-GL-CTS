@@ -25,6 +25,7 @@
 
 #include "vkDefs.hpp"
 #include "deClock.h"
+#include "deRandom.h"
 
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -42,6 +43,8 @@
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuFloat.hpp"
+
+#include <set>
 
 namespace vkt
 {
@@ -826,6 +829,21 @@ VkClearValue SingleTriangleConfiguration::getClearValue()
 	return makeClearValueColorF32(32.0f, 0.0f, 0.0f, 0.0f);
 }
 
+void commonASTestsCheckSupport(Context& context)
+{
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR = context.getRayTracingPipelineFeatures();
+	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+}
+
 class RayTracingASBasicTestCase : public TestCase
 {
 public:
@@ -854,7 +872,7 @@ class RayTracingASBasicTestInstance : public TestInstance
 {
 public:
 																	RayTracingASBasicTestInstance		(Context& context, const TestParams& data);
-																	~RayTracingASBasicTestInstance		(void);
+																	~RayTracingASBasicTestInstance		(void) = default;
 	tcu::TestStatus													iterate								(void) override;
 
 protected:
@@ -877,18 +895,9 @@ RayTracingASBasicTestCase::~RayTracingASBasicTestCase	(void)
 
 void RayTracingASBasicTestCase::checkSupport(Context& context) const
 {
-	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
-	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
-	context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+	commonASTestsCheckSupport(context);
 
-	const VkPhysicalDeviceRayTracingPipelineFeaturesKHR&	rayTracingPipelineFeaturesKHR		= context.getRayTracingPipelineFeatures();
-	if (rayTracingPipelineFeaturesKHR.rayTracingPipeline == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
-
-	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
-	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
-		TCU_THROW(TestError, "VK_KHR_ray_tracing_pipeline requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
-
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
 	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
 
@@ -1453,10 +1462,6 @@ RayTracingASBasicTestInstance::RayTracingASBasicTestInstance (Context& context, 
 {
 }
 
-RayTracingASBasicTestInstance::~RayTracingASBasicTestInstance (void)
-{
-}
-
 de::MovePtr<BufferWithMemory> RayTracingASBasicTestInstance::runTest(const deUint32 workerThreadsCount)
 {
 	const InstanceInterface&			vki									= m_context.getInstanceInterface();
@@ -1859,6 +1864,490 @@ tcu::TestStatus RayTracingASBasicTestInstance::iterate (void)
 		return tcu::TestStatus::pass("Pass");
 	else
 		return tcu::TestStatus::fail("Fail");
+}
+
+// Tests dynamic indexing of acceleration structures
+class RayTracingASDynamicIndexingTestCase : public TestCase
+{
+public:
+						RayTracingASDynamicIndexingTestCase			(tcu::TestContext& context, const char* name);
+						~RayTracingASDynamicIndexingTestCase		(void) = default;
+
+	void				checkSupport								(Context& context) const override;
+	void				initPrograms								(SourceCollections& programCollection) const override;
+	TestInstance*		createInstance								(Context& context) const override;
+};
+
+class RayTracingASDynamicIndexingTestInstance : public TestInstance
+{
+public:
+						RayTracingASDynamicIndexingTestInstance		(Context& context);
+						~RayTracingASDynamicIndexingTestInstance	(void) = default;
+	tcu::TestStatus		iterate										(void) override;
+};
+
+RayTracingASDynamicIndexingTestCase::RayTracingASDynamicIndexingTestCase(tcu::TestContext& context, const char* name)
+	: TestCase(context, name, "")
+{
+}
+
+void RayTracingASDynamicIndexingTestCase::checkSupport(Context& context) const
+{
+	commonASTestsCheckSupport(context);
+	context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+}
+
+void RayTracingASDynamicIndexingTestCase::initPrograms(SourceCollections& programCollection) const
+{
+	const vk::SpirVAsmBuildOptions spvBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+	const vk::ShaderBuildOptions glslBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+	// raygen shader is defined in spir-v as it requires possing pointer to TLAS that was read from ssbo;
+	// original spir-v code was generated using following glsl code but resulting spir-v code was modiifed
+	//
+	// #version 460 core
+	// #extension GL_EXT_ray_tracing : require
+	// #extension GL_EXT_nonuniform_qualifier : enable
+	// #extension GL_ARB_gpu_shader_int64 : enable			// needed only to generate spir-v
+	// #define ARRAY_SIZE 500
+	// layout(location = 0) rayPayloadEXT uvec2 payload;	// offset and flag indicating if we are using descriptors or pointers
+
+	// layout(set = 0, binding = 0) uniform accelerationStructureEXT tlasArray[ARRAY_SIZE];
+	// layout(set = 0, binding = 1) readonly buffer topLevelASPointers {
+	//     uint64_t ptr[];
+	// } tlasPointers;
+	// layout(set = 0, binding = 2) readonly buffer topLevelASIndices {
+	//     uint idx[];
+	// } tlasIndices;
+	// layout(set = 0, binding = 3, std430) writeonly buffer Result {
+	//     uint value[];
+	// } result;
+
+	// void main()
+	// {
+	//   float tmin            = 0.0;\n"
+	//   float tmax            = 2.0;\n"
+	//   vec3  origin          = vec3(0.25f, 0.5f, 1.0);\n"
+	//   vec3  direction       = vec3(0.0,0.0,-1.0);\n"
+	//   uint  activeTlasIndex = gl_LaunchIDEXT.x;\n"
+	//   uint  activeTlasCount = gl_LaunchSizeEXT.x;\n"
+	//   uint  tlasIndex       = tlasIndices.idx[nonuniformEXT(activeTlasIndex)];\n"
+
+	//   atomicAdd(result.value[nonuniformEXT(activeTlasIndex)], 2);\n"
+	//   payload = uvec2(activeTlasIndex + activeTlasCount.x, 0);\n"
+	//   traceRayEXT(tlasArray[nonuniformEXT(tlasIndex)], gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);\n"
+
+	//   atomicAdd(result.value[nonuniformEXT(activeTlasIndex + activeTlasCount * 2)], 5);\n"
+	//   payload = uvec2(activeTlasIndex + activeTlasCount * 3, 1);\n"
+	//   traceRayEXT(tlasArray[nonuniformEXT(tlasIndex)], gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);				// used to generate initial spirv
+	//   //traceRayEXT(*tlasPointers.ptr[nonuniformEXT(tlasIndex)], gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, origin, tmin, direction, tmax, 0);	// not available in glsl but should be done in spirv
+	// };
+
+	const std::string rgenSource =
+		"OpCapability Int64\n"
+		"OpCapability RayTracingKHR\n"
+		"OpCapability ShaderNonUniform\n"
+		"OpExtension \"SPV_EXT_descriptor_indexing\"\n"
+		"OpExtension \"SPV_KHR_ray_tracing\"\n"
+		"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint RayGenerationKHR %4 \"main\" %27 %33 %var_tlas_indices %var_result %60 %var_as_arr_ptr %var_as_pointers_ssbo\n"
+		"OpDecorate %27 BuiltIn LaunchIdNV\n"
+		"OpDecorate %33 BuiltIn LaunchSizeNV\n"
+		"OpDecorate %37 ArrayStride 4\n"
+		"OpMemberDecorate %38 0 NonWritable\n"
+		"OpMemberDecorate %38 0 Offset 0\n"
+		"OpDecorate %38 Block\n"
+		"OpDecorate %var_tlas_indices DescriptorSet 0\n"
+		"OpDecorate %var_tlas_indices Binding 2\n"
+		"OpDecorate %44 NonUniform\n"
+		"OpDecorate %46 NonUniform\n"
+		"OpDecorate %47 NonUniform\n"
+		"OpDecorate %48 ArrayStride 4\n"
+		"OpMemberDecorate %49 0 NonReadable\n"
+		"OpMemberDecorate %49 0 Offset 0\n"
+		"OpDecorate %49 Block\n"
+		"OpDecorate %var_result DescriptorSet 0\n"
+		"OpDecorate %var_result Binding 3\n"
+		"OpDecorate %53 NonUniform\n"
+		"OpDecorate %60 Location 0\n"
+		"OpDecorate %var_as_arr_ptr DescriptorSet 0\n"
+		"OpDecorate %var_as_arr_ptr Binding 0\n"
+		"OpDecorate %71 NonUniform\n"
+		"OpDecorate %73 NonUniform\n"
+		"OpDecorate %74 NonUniform\n"
+		"OpDecorate %85 NonUniform\n"
+		"OpDecorate %as_index NonUniform\n"
+		"OpDecorate %as_device_addres NonUniform\n"
+		"OpDecorate %104 ArrayStride 8\n"
+		"OpMemberDecorate %105 0 NonWritable\n"
+		"OpMemberDecorate %105 0 Offset 0\n"
+		"OpDecorate %105 Block\n"
+		"OpDecorate %var_as_pointers_ssbo DescriptorSet 0\n"
+		"OpDecorate %var_as_pointers_ssbo Binding 1\n"
+		// types, constants and variables
+		"%2								= OpTypeVoid\n"
+		"%3								= OpTypeFunction %2\n"
+		"%6								= OpTypeFloat 32\n"
+		"%7								= OpTypePointer Function %6\n"
+		"%9								= OpConstant %6 0\n"
+		"%11							= OpConstant %6 2\n"
+		"%12							= OpTypeVector %6 3\n"
+		"%13							= OpTypePointer Function %12\n"
+		"%15							= OpConstant %6 0.25\n"
+		"%16							= OpConstant %6 0.5\n"
+		"%17							= OpConstant %6 1\n"
+		"%18							= OpConstantComposite %12 %15 %16 %17\n"
+		"%20							= OpConstant %6 -1\n"
+		"%21							= OpConstantComposite %12 %9 %9 %20\n"
+		"%type_uint32					= OpTypeInt 32 0\n"
+		"%23							= OpTypePointer Function %type_uint32\n"
+		"%25							= OpTypeVector %type_uint32 3\n"
+		"%26							= OpTypePointer Input %25\n"
+		"%27							= OpVariable %26 Input\n"
+		"%28							= OpConstant %type_uint32 0\n"
+		"%29							= OpTypePointer Input %type_uint32\n"
+		"%33							= OpVariable %26 Input\n"
+		"%37							= OpTypeRuntimeArray %type_uint32\n"
+		"%38							= OpTypeStruct %37\n"
+		"%39							= OpTypePointer StorageBuffer %38\n"
+		"%var_tlas_indices				= OpVariable %39 StorageBuffer\n"
+		"%type_int32					= OpTypeInt 32 1\n"
+		"%c_int32_0						= OpConstant %type_int32 0\n"
+		"%45							= OpTypePointer StorageBuffer %type_uint32\n"
+		"%48							= OpTypeRuntimeArray %type_uint32\n"
+		"%49							= OpTypeStruct %48\n"
+		"%50							= OpTypePointer StorageBuffer %49\n"
+		"%var_result					= OpVariable %50 StorageBuffer\n"
+		"%55							= OpConstant %type_uint32 2\n"
+		"%56							= OpConstant %type_uint32 1\n"
+		"%58							= OpTypeVector %type_uint32 2\n"
+		"%59							= OpTypePointer RayPayloadNV %58\n"
+		"%60							= OpVariable %59 RayPayloadNV\n"
+		"%type_as						= OpTypeAccelerationStructureKHR\n"
+		"%66							= OpConstant %type_uint32 500\n"
+		"%67							= OpTypeArray %type_as %66\n"
+		"%68							= OpTypePointer UniformConstant %67\n"
+		"%var_as_arr_ptr				= OpVariable %68 UniformConstant\n"
+		"%72							= OpTypePointer UniformConstant %type_as\n"
+		"%75							= OpConstant %type_uint32 16\n"
+		"%76							= OpConstant %type_uint32 255\n"
+		"%87							= OpConstant %type_uint32 5\n"
+		"%91							= OpConstant %type_uint32 3\n"
+
+		// <changed_section>
+		"%type_uint64					= OpTypeInt 64 0\n"
+		"%104							= OpTypeRuntimeArray %type_uint64\n"
+		"%105							= OpTypeStruct %104\n"
+		"%106							= OpTypePointer StorageBuffer %105\n"
+		"%var_as_pointers_ssbo			= OpVariable %106 StorageBuffer\n"
+		"%type_uint64_ssbo_ptr			= OpTypePointer StorageBuffer %type_uint64\n"
+		// </changed_section>
+
+		// void main()
+		"%4								= OpFunction %2 None %3\n"
+		"%5								= OpLabel\n"
+		"%8								= OpVariable %7 Function\n"
+		"%10							= OpVariable %7 Function\n"
+		"%14							= OpVariable %13 Function\n"
+		"%19							= OpVariable %13 Function\n"
+		"%24							= OpVariable %23 Function\n"
+		"%32							= OpVariable %23 Function\n"
+		"%36							= OpVariable %23 Function\n"
+		"OpStore %8 %9\n"
+		"OpStore %10 %11\n"
+		"OpStore %14 %18\n"
+		"OpStore %19 %21\n"
+		"%30							= OpAccessChain %29 %27 %28\n"
+		"%31							= OpLoad %type_uint32 %30\n"
+		"OpStore %24 %31\n"
+		"%34							= OpAccessChain %29 %33 %28\n"
+		"%35							= OpLoad %type_uint32 %34\n"
+		"OpStore %32 %35\n"
+		"%43							= OpLoad %type_uint32 %24\n"
+		"%44							= OpCopyObject %type_uint32 %43\n"
+		"%46							= OpAccessChain %45 %var_tlas_indices %c_int32_0 %44\n"
+		"%47							= OpLoad %type_uint32 %46\n"
+		"OpStore %36 %47\n"
+		// atomicAdd
+		"%52							= OpLoad %type_uint32 %24\n"
+		"%53							= OpCopyObject %type_uint32 %52\n"
+		"%54							= OpAccessChain %45 %var_result %c_int32_0 %53\n"
+		"%57							= OpAtomicIAdd %type_uint32 %54 %56 %28 %55\n"
+		// setup payload
+		"%61							= OpLoad %type_uint32 %24\n"
+		"%62							= OpLoad %type_uint32 %32\n"
+		"%63							= OpIAdd %type_uint32 %61 %62\n"
+		"%64							= OpCompositeConstruct %58 %63 %28\n"
+		"OpStore %60 %64\n"
+		// trace rays using tlas from array
+		"%70							= OpLoad %type_uint32 %36\n"
+		"%71							= OpCopyObject %type_uint32 %70\n"
+		"%73							= OpAccessChain %72 %var_as_arr_ptr %71\n"
+		"%74							= OpLoad %type_as %73\n"
+		"%77							= OpLoad %12 %14\n"
+		"%78							= OpLoad %6 %8\n"
+		"%79							= OpLoad %12 %19\n"
+		"%80							= OpLoad %6 %10\n"
+		"OpTraceRayKHR %74 %75 %76 %28 %28 %28 %77 %78 %79 %80 %60\n"
+		// atomicAdd
+		"%81							= OpLoad %type_uint32 %24\n"
+		"%82							= OpLoad %type_uint32 %32\n"
+		"%83							= OpIMul %type_uint32 %82 %55\n"
+		"%84							= OpIAdd %type_uint32 %81 %83\n"
+		"%85							= OpCopyObject %type_uint32 %84\n"
+		"%86							= OpAccessChain %45 %var_result %c_int32_0 %85\n"
+		"%88							= OpAtomicIAdd %type_uint32 %86 %56 %28 %87\n"
+		// setup payload
+		"%89							= OpLoad %type_uint32 %24\n"
+		"%90							= OpLoad %type_uint32 %32\n"
+		"%92							= OpIMul %type_uint32 %90 %91\n"
+		"%93							= OpIAdd %type_uint32 %89 %92\n"
+		"%94							= OpCompositeConstruct %58 %93 %56\n"
+		"OpStore %60 %94\n"
+		// trace rays using pointers to tlas
+		"%95							= OpLoad %type_uint32 %36\n"
+		"%as_index						= OpCopyObject %type_uint32 %95\n"
+
+		// <changed_section> OLD
+		"%as_device_addres_ptr			= OpAccessChain %type_uint64_ssbo_ptr %var_as_pointers_ssbo %c_int32_0 %as_index\n"
+		"%as_device_addres				= OpLoad %type_uint64 %as_device_addres_ptr Aligned 8\n"
+		"%as_to_use						= OpConvertUToAccelerationStructureKHR %type_as %as_device_addres\n"
+		// </changed_section>
+
+		"%99							= OpLoad %12 %14\n"
+		"%100							= OpLoad %6 %8\n"
+		"%101							= OpLoad %12 %19\n"
+		"%102							= OpLoad %6 %10\n"
+		"OpTraceRayKHR %as_to_use %75 %76 %28 %28 %28 %99 %100 %101 %102 %60\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+	programCollection.spirvAsmSources.add("rgen") << rgenSource << spvBuildOptions;
+
+	std::string chitSource =
+		"#version 460 core\n"
+		"#extension GL_EXT_ray_tracing : require\n"
+		"#extension GL_EXT_nonuniform_qualifier : enable\n"
+		"layout(location = 0) rayPayloadInEXT uvec2 payload;\n"
+		"\n"
+		"layout(set = 0, binding = 3) writeonly buffer Result {\n"
+		"    uint value[];\n"
+		"} result;\n"
+		"void main()\n"
+		"{\n"
+		     // payload.y is 0 or 1 so we will add 3 or 7 (just two prime numbers)
+		"    atomicAdd(result.value[nonuniformEXT(payload.x)], 3 + payload.y * 4);\n"
+		"}\n";
+	programCollection.glslSources.add("chit") << glu::ClosestHitSource(chitSource) << glslBuildOptions;
+}
+
+TestInstance* RayTracingASDynamicIndexingTestCase::createInstance(Context& context) const
+{
+	return new RayTracingASDynamicIndexingTestInstance(context);
+}
+
+RayTracingASDynamicIndexingTestInstance::RayTracingASDynamicIndexingTestInstance(Context& context)
+	: vkt::TestInstance(context)
+{
+}
+
+tcu::TestStatus RayTracingASDynamicIndexingTestInstance::iterate(void)
+{
+	const InstanceInterface&	vki							= m_context.getInstanceInterface();
+	const DeviceInterface&		vkd							= m_context.getDeviceInterface();
+	const VkDevice				device						= m_context.getDevice();
+	const VkPhysicalDevice		physicalDevice				= m_context.getPhysicalDevice();
+	const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue				queue						= m_context.getUniversalQueue();
+	Allocator&					allocator					= m_context.getDefaultAllocator();
+	const deUint32				shaderGroupHandleSize		= getShaderGroupSize(vki, physicalDevice);
+	const deUint32				shaderGroupBaseAlignment	= getShaderGroupBaseAlignment(vki, physicalDevice);
+	const deUint32				tlasCount					= 500;	// changing this will require also changing shaders
+	const deUint32				activeTlasCount				= 32;	// number of tlas out of <tlasCount> that will be active
+
+	const Move<VkDescriptorSetLayout> descriptorSetLayout = DescriptorSetLayoutBuilder()
+		.addArrayBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, tlasCount, ALL_RAY_TRACING_STAGES)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ALL_RAY_TRACING_STAGES)				// pointers to all acceleration structures
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ALL_RAY_TRACING_STAGES)				// ssbo with indices of all acceleration structures
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ALL_RAY_TRACING_STAGES)				// ssbo with result values
+		.build(vkd, device);
+
+	const Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, tlasCount)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+
+	de::MovePtr<RayTracingPipeline> rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,      createShaderModule(vkd, device, m_context.getBinaryCollection().get("rgen"), 0), 0);
+	rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, createShaderModule(vkd, device, m_context.getBinaryCollection().get("chit"), 0), 1);
+
+	const Move<VkPipelineLayout>			pipelineLayout						= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	Move<VkPipeline>						pipeline							= rayTracingPipeline->createPipeline(vkd, device, *pipelineLayout);
+	de::MovePtr<BufferWithMemory>			raygenShaderBindingTable			= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+	de::MovePtr<BufferWithMemory>			hitShaderBindingTable				= rayTracingPipeline->createShaderBindingTable(vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+
+	const VkStridedDeviceAddressRegionKHR	raygenShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, raygenShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	missShaderBindingTableRegion		= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+	const VkStridedDeviceAddressRegionKHR	hitShaderBindingTableRegion			= makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vkd, device, hitShaderBindingTable->get(), 0), shaderGroupHandleSize, shaderGroupHandleSize);
+	const VkStridedDeviceAddressRegionKHR	callableShaderBindingTableRegion	= makeStridedDeviceAddressRegionKHR(DE_NULL, 0, 0);
+
+	const VkDeviceSize						pointerBufferSize		= tlasCount * sizeof(VkDeviceAddress);
+	const VkBufferCreateInfo				pointerBufferCreateInfo	= makeBufferCreateInfo(pointerBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>			pointerBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, pointerBufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
+
+	const VkDeviceSize						indicesBufferSize		= activeTlasCount * sizeof(deUint32);
+	const VkBufferCreateInfo				indicesBufferCreateInfo	= makeBufferCreateInfo(indicesBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>			indicesBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, indicesBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	const VkDeviceSize						resultBufferSize		= activeTlasCount * sizeof(deUint32) * 4;
+	const VkBufferCreateInfo				resultBufferCreateInfo	= makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	de::MovePtr<BufferWithMemory>			resultBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	const Move<VkCommandPool>				cmdPool					= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandBuffer>				cmdBuffer				= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	de::SharedPtr<BottomLevelAccelerationStructure>				blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+	std::vector<de::MovePtr<TopLevelAccelerationStructure>>		tlasVect(tlasCount);
+	std::vector<VkDeviceAddress>								tlasPtrVect(tlasCount);
+	std::vector<VkAccelerationStructureKHR>						tlasVkVect;
+
+	// randomly scatter active AS across the range
+	deRandom rnd;
+	deRandom_init(&rnd, 123);
+	std::set<deUint32> asIndicesSet;
+	while (asIndicesSet.size() < activeTlasCount)
+		asIndicesSet.insert(deRandom_getUint32(&rnd) % tlasCount);
+
+	// fill indices buffer
+	deUint32 helperIndex = 0;
+	auto& indicesBufferAlloc	= indicesBuffer->getAllocation();
+	deUint32* indicesBufferPtr	= reinterpret_cast<deUint32*>(indicesBufferAlloc.getHostPtr());
+	std::for_each(asIndicesSet.begin(), asIndicesSet.end(),
+		[&helperIndex, indicesBufferPtr](const deUint32& index)
+		{
+			indicesBufferPtr[helperIndex++] = index;
+		});
+	vk::flushAlloc(vkd, device, indicesBufferAlloc);
+
+	// clear result buffer
+	auto& resultBufferAlloc		= resultBuffer->getAllocation();
+	void* resultBufferPtr		= resultBufferAlloc.getHostPtr();
+	deMemset(resultBufferPtr, 0, static_cast<size_t>(resultBufferSize));
+	vk::flushAlloc(vkd, device, resultBufferAlloc);
+
+	beginCommandBuffer(vkd, *cmdBuffer, 0u);
+	{
+		// build bottom level acceleration structure
+		blas->setGeometryData(
+			{
+				{ 0.0, 0.0, 0.0 },
+				{ 1.0, 0.0, 0.0 },
+				{ 0.0, 1.0, 0.0 },
+			},
+			true,
+			VK_GEOMETRY_OPAQUE_BIT_KHR
+		);
+
+		blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+
+		// build top level acceleration structures
+		for (deUint32 tlasIndex = 0; tlasIndex < tlasCount; ++tlasIndex)
+		{
+			auto& tlas = tlasVect[tlasIndex];
+			tlas = makeTopLevelAccelerationStructure();
+			tlas->setInstanceCount(1);
+			tlas->addInstance(blas);
+			if (!asIndicesSet.count(tlasIndex))
+			{
+				// tlas that are not in asIndicesSet should be empty but it is hard to do
+				// that with current cts utils so we are marking them as inactive instead
+				tlas->setInactiveInstances(true);
+			}
+			tlas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+
+			// get acceleration structure device address
+			const VkAccelerationStructureDeviceAddressInfoKHR addressInfo =
+			{
+				VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType				sType
+				DE_NULL,															// const void*					pNext
+				*tlas->getPtr()														// VkAccelerationStructureKHR	accelerationStructure
+			};
+			VkDeviceAddress vkda = vkd.getAccelerationStructureDeviceAddressKHR(device, &addressInfo);
+			tlasPtrVect[tlasIndex] = vkda;
+		}
+
+		// fill pointer buffer
+		vkd.cmdUpdateBuffer(*cmdBuffer, **pointerBuffer, 0, pointerBufferSize, tlasPtrVect.data());
+
+		// wait for data transfers
+		const VkMemoryBarrier bufferUploadBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &bufferUploadBarrier, 1u);
+
+		// wait for as build
+		const VkMemoryBarrier asBuildBarrier = makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, &asBuildBarrier, 1u);
+
+		tlasVkVect.reserve(tlasCount);
+		for (auto& tlas : tlasVect)
+			tlasVkVect.push_back(*tlas->getPtr());
+
+		VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet =
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	// VkStructureType						sType;
+			DE_NULL,															// const void*							pNext;
+			tlasCount,															// deUint32								accelerationStructureCount;
+			tlasVkVect.data(),													// const VkAccelerationStructureKHR*	pAccelerationStructures;
+		};
+
+		const vk::VkDescriptorBufferInfo pointerBufferInfo	= makeDescriptorBufferInfo(**pointerBuffer, 0u, VK_WHOLE_SIZE);
+		const vk::VkDescriptorBufferInfo indicesBufferInfo	= makeDescriptorBufferInfo(**indicesBuffer, 0u, VK_WHOLE_SIZE);
+		const vk::VkDescriptorBufferInfo resultInfo			= makeDescriptorBufferInfo(**resultBuffer,  0u, VK_WHOLE_SIZE);
+
+		DescriptorSetUpdateBuilder()
+			.writeArray (*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, tlasCount, &accelerationStructureWriteDescriptorSet)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &pointerBufferInfo)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(2u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &indicesBufferInfo)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(3u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo)
+			.update(vkd, device);
+
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
+
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, *pipeline);
+
+		cmdTraceRays(vkd,
+			*cmdBuffer,
+			&raygenShaderBindingTableRegion,
+			&missShaderBindingTableRegion,
+			&hitShaderBindingTableRegion,
+			&callableShaderBindingTableRegion,
+			activeTlasCount, 1, 1);
+
+		const VkMemoryBarrier postTraceMemoryBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+	}
+	endCommandBuffer(vkd, *cmdBuffer);
+
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+	invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(), resultBuffer->getAllocation().getOffset(), resultBufferSize);
+
+	// verify result buffer
+	deUint32		failures	= 0;
+	const deUint32*	resultPtr	= reinterpret_cast<deUint32*>(resultBuffer->getAllocation().getHostPtr());
+	for (deUint32 index = 0; index < activeTlasCount; ++index)
+	{
+		failures += (resultPtr[0 * activeTlasCount + index] != 2) +
+					(resultPtr[1 * activeTlasCount + index] != 3) +
+					(resultPtr[2 * activeTlasCount + index] != 5) +
+					(resultPtr[3 * activeTlasCount + index] != 7);
+	}
+
+	if (failures)
+		return tcu::TestStatus::fail(de::toString(failures) + " failures, " + de::toString(4 * activeTlasCount - failures) + " are ok");
+	return tcu::TestStatus::pass("Pass");
 }
 
 }	// anonymous
@@ -2391,6 +2880,12 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addDynamicIndexingTests (tcu::TestCaseGroup* group)
+{
+	auto& ctx = group->getTestContext();
+	group->addChild(new RayTracingASDynamicIndexingTestCase(ctx, "dynamic_indexing"));
+}
+
 void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 {
 	const struct
@@ -2544,6 +3039,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
+	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 	addTestGroup(group.get(), "instance_index", "Test using different values for the instance index and checking them in shaders", addInstanceIndexTests);
 

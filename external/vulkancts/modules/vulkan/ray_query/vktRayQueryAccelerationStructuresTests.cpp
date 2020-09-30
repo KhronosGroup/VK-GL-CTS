@@ -24,6 +24,7 @@
 #include "vktRayQueryAccelerationStructuresTests.hpp"
 
 #include <array>
+#include <set>
 
 #include "vkDefs.hpp"
 #include "deClock.h"
@@ -1457,6 +1458,21 @@ de::MovePtr<TopLevelAccelerationStructure> CheckerboardSceneBuilder::initTopAcce
 	return result;
 }
 
+void commonASTestsCheckSupport(Context& context)
+{
+	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+	context.requireDeviceFunctionality("VK_KHR_ray_query");
+
+	const VkPhysicalDeviceRayQueryFeaturesKHR&	rayQueryFeaturesKHR = context.getRayQueryFeatures();
+	if (rayQueryFeaturesKHR.rayQuery == DE_FALSE)
+		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayQueryFeaturesKHR.rayQuery");
+
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
+	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
+		TCU_THROW(TestError, "VK_KHR_ray_query requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
+}
+
 class RayQueryASBasicTestCase : public TestCase
 {
 public:
@@ -1510,19 +1526,9 @@ RayQueryASBasicTestCase::~RayQueryASBasicTestCase (void)
 
 void RayQueryASBasicTestCase::checkSupport (Context& context) const
 {
-	context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
-	context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
-	context.requireDeviceFunctionality("VK_KHR_ray_query");
+	commonASTestsCheckSupport(context);
 
-	const VkPhysicalDeviceRayQueryFeaturesKHR&	rayQueryFeaturesKHR								= context.getRayQueryFeatures();
-	if (rayQueryFeaturesKHR.rayQuery == DE_FALSE)
-		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayQueryFeaturesKHR.rayQuery");
-
-	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR	= context.getAccelerationStructureFeatures();
-	if (accelerationStructureFeaturesKHR.accelerationStructure == DE_FALSE)
-		TCU_THROW(TestError, "VK_KHR_ray_query requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructure");
-
-	const VkPhysicalDeviceFeatures2&			features2										= context.getDeviceFeatures2();
+	const VkPhysicalDeviceFeatures2& features2 = context.getDeviceFeatures2();
 
 	if ((m_data.shaderSourceType == SST_TESSELATION_CONTROL_SHADER ||
 		 m_data.shaderSourceType == SST_TESSELATION_EVALUATION_SHADER) &&
@@ -1548,6 +1554,7 @@ void RayQueryASBasicTestCase::checkSupport (Context& context) const
 			TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline");
 	}
 
+	const VkPhysicalDeviceAccelerationStructureFeaturesKHR&	accelerationStructureFeaturesKHR = context.getAccelerationStructureFeatures();
 	if (m_data.buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR && accelerationStructureFeaturesKHR.accelerationStructureHostCommands == DE_FALSE)
 		TCU_THROW(NotSupportedError, "Requires VkPhysicalDeviceAccelerationStructureFeaturesKHR.accelerationStructureHostCommands");
 
@@ -2739,6 +2746,519 @@ tcu::TestStatus RayQueryASBasicTestInstance::iterate(void)
 		return tcu::TestStatus::fail("Fail");
 }
 
+// Tests dynamic indexing of acceleration structures
+class RayQueryASDynamicIndexingTestCase : public TestCase
+{
+public:
+						RayQueryASDynamicIndexingTestCase		(tcu::TestContext& context, const char* name);
+						~RayQueryASDynamicIndexingTestCase		(void) = default;
+
+	void				checkSupport							(Context& context) const override;
+	void				initPrograms							(SourceCollections& programCollection) const override;
+	TestInstance*		createInstance							(Context& context) const override;
+};
+
+class RayQueryASDynamicIndexingTestInstance : public TestInstance
+{
+public:
+						RayQueryASDynamicIndexingTestInstance	(Context& context);
+						~RayQueryASDynamicIndexingTestInstance	(void) = default;
+	tcu::TestStatus		iterate									(void) override;
+};
+
+RayQueryASDynamicIndexingTestCase::RayQueryASDynamicIndexingTestCase(tcu::TestContext& context, const char* name)
+	: TestCase(context, name, "")
+{
+}
+
+void RayQueryASDynamicIndexingTestCase::checkSupport(Context& context) const
+{
+	commonASTestsCheckSupport(context);
+	context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+}
+
+void RayQueryASDynamicIndexingTestCase::initPrograms(SourceCollections& programCollection) const
+{
+	const vk::SpirVAsmBuildOptions spvBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, true);
+
+	// compute shader is defined in spir-v as it requires possing pointer to TLAS that was read from ssbo;
+	// original spir-v code was generated using following glsl code but resulting spir-v code was modiifed
+
+	// #version 460 core
+	// #extension GL_EXT_ray_query : require
+	// #extension GL_EXT_nonuniform_qualifier : enable
+	// #extension GL_ARB_gpu_shader_int64 : enable			// needed only to generate spir-v
+
+	// #define ARRAY_SIZE 500
+	// layout(set = 0, binding = 0) uniform accelerationStructureEXT tlasArray[ARRAY_SIZE];
+	// layout(set = 0, binding = 1) readonly buffer topLevelASPointers {
+	//     uint64_t ptr[];
+	// } tlasPointers;
+	// layout(set = 0, binding = 2) readonly buffer topLevelASIndices {
+	//     uint idx[];
+	// } tlasIndices;
+	// layout(set = 0, binding = 3, std430) writeonly buffer Result {
+	//     uint value[];
+	// } result;
+
+	// void main()
+	// {
+	//   float tmin      = 0.0;
+	//   float tmax      = 2.0;
+	//   vec3  origin    = vec3(0.25f, 0.5f, 1.0);
+	//   vec3  direction = vec3(0.0,0.0,-1.0);
+	//   uint  tlasIndex = tlasIndices.idx[nonuniformEXT(gl_GlobalInvocationID.x)];
+
+	//   rayQueryEXT rq;
+	//   rayQueryInitializeEXT(rq, tlasArray[nonuniformEXT(tlasIndex)], gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, origin, tmin, direction, tmax);
+	//   atomicAdd(result.value[nonuniformEXT(gl_GlobalInvocationID.x)], 2);
+
+	//   if (rayQueryProceedEXT(rq))
+	//   {
+	//     if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT)
+	//       atomicAdd(result.value[nonuniformEXT(gl_GlobalInvocationID.x + gl_NumWorkGroups.x)], 3);
+	//   }
+
+	//   //rayQueryInitializeEXT(rq, tlasArray[nonuniformEXT(tlasIndex)], gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, origin, tmin, direction, tmax);
+	//   rayQueryInitializeEXT(rq, *tlasPointers.ptr[nonuniformEXT(tlasIndex)], gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, origin, tmin, direction, tmax);
+	//   atomicAdd(result.value[nonuniformEXT(gl_GlobalInvocationID.x + gl_NumWorkGroups.x * 2)], 5);
+
+	//   if (rayQueryProceedEXT(rq))
+	//   {
+	//     if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT)
+	//       atomicAdd(result.value[nonuniformEXT(gl_GlobalInvocationID.x + gl_NumWorkGroups.x * 3)], 7);
+	//   }
+	// }
+
+	const std::string compSource =
+		"OpCapability Int64\n"
+		"OpCapability Shader\n"
+		"OpCapability RayQueryKHR\n"
+		"OpCapability ShaderNonUniform\n"
+		"OpExtension \"SPV_EXT_descriptor_indexing\"\n"
+		"OpExtension \"SPV_KHR_ray_query\"\n"
+		"%1 = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %4 \"main\" %var_index_ssbo %33 %var_as_arr_uni_ptr %64 %83 %var_as_pointers_ssbo\n"
+		"OpExecutionMode %4 LocalSize 1 1 1\n"
+		"OpDecorate %25 ArrayStride 4\n"
+		"OpMemberDecorate %26 0 NonWritable\n"
+		"OpMemberDecorate %26 0 Offset 0\n"
+		"OpDecorate %26 Block\n"
+		"OpDecorate %var_index_ssbo DescriptorSet 0\n"
+		"OpDecorate %var_index_ssbo Binding 2\n"
+		"OpDecorate %33 BuiltIn GlobalInvocationId\n"
+		"OpDecorate %38 NonUniform\n"
+		"OpDecorate %40 NonUniform\n"
+		"OpDecorate %41 NonUniform\n"
+		"OpDecorate %var_as_arr_uni_ptr DescriptorSet 0\n"
+		"OpDecorate %var_as_arr_uni_ptr Binding 0\n"
+		"OpDecorate %51 NonUniform\n"
+		"OpDecorate %53 NonUniform\n"
+		"OpDecorate %54 NonUniform\n"
+		"OpDecorate %61 ArrayStride 4\n"
+		"OpMemberDecorate %62 0 NonReadable\n"
+		"OpMemberDecorate %62 0 Offset 0\n"
+		"OpDecorate %62 Block\n"
+		"OpDecorate %64 DescriptorSet 0\n"
+		"OpDecorate %64 Binding 3\n"
+		"OpDecorate %67 NonUniform\n"
+		"OpDecorate %83 BuiltIn NumWorkgroups\n"
+		"OpDecorate %87 NonUniform\n"
+		"OpDecorate %as_index NonUniform\n"
+		"OpDecorate %as_device_addres NonUniform\n"
+		"OpDecorate %105 NonUniform\n"
+		"OpDecorate %122 NonUniform\n"
+		"OpDecorate %127 ArrayStride 8\n"
+		"OpMemberDecorate %128 0 NonWritable\n"
+		"OpMemberDecorate %128 0 Offset 0\n"
+		"OpDecorate %128 Block\n"
+		"OpDecorate %var_as_pointers_ssbo DescriptorSet 0\n"
+		"OpDecorate %var_as_pointers_ssbo Binding 1\n"
+		"%2							= OpTypeVoid\n"
+		"%3							= OpTypeFunction %2\n"
+		"%6							= OpTypeFloat 32\n"
+		"%7							= OpTypePointer Function %6\n"
+		"%9							= OpConstant %6 0\n"
+		"%11						= OpConstant %6 2\n"
+		"%12						= OpTypeVector %6 3\n"
+		"%13						= OpTypePointer Function %12\n"
+		"%15						= OpConstant %6 0.25\n"
+		"%16						= OpConstant %6 0.5\n"
+		"%17						= OpConstant %6 1\n"
+		"%18						= OpConstantComposite %12 %15 %16 %17\n"
+		"%20						= OpConstant %6 -1\n"
+		"%21						= OpConstantComposite %12 %9 %9 %20\n"
+		"%type_uint32				= OpTypeInt 32 0\n"
+		"%23						= OpTypePointer Function %type_uint32\n"
+		"%25						= OpTypeRuntimeArray %type_uint32\n"
+		"%26						= OpTypeStruct %25\n"
+		"%27						= OpTypePointer StorageBuffer %26\n"
+		"%var_index_ssbo			= OpVariable %27 StorageBuffer\n"
+		"%29						= OpTypeInt 32 1\n"
+		"%c_int32_0					= OpConstant %29 0\n"
+		"%31						= OpTypeVector %type_uint32 3\n"
+		"%32						= OpTypePointer Input %31\n"
+		"%33						= OpVariable %32 Input\n"
+		"%34						= OpConstant %type_uint32 0\n"
+		"%35						= OpTypePointer Input %type_uint32\n"
+		"%type_uint32_ssbo_ptr		= OpTypePointer StorageBuffer %type_uint32\n"
+		"%42						= OpTypeRayQueryKHR\n"
+		"%43						= OpTypePointer Function %42\n"
+		"%type_as					= OpTypeAccelerationStructureKHR\n"
+		"%46						= OpConstant %type_uint32 500\n"
+		"%type_as_arr				= OpTypeArray %type_as %46\n"
+		"%type_as_arr_uni_ptr		= OpTypePointer UniformConstant %type_as_arr\n"
+		"%var_as_arr_uni_ptr		= OpVariable %type_as_arr_uni_ptr UniformConstant\n"
+		"%type_as_uni_ptr			= OpTypePointer UniformConstant %type_as\n"
+		"%55						= OpConstant %type_uint32 16\n"
+		"%56						= OpConstant %type_uint32 255\n"
+		"%61						= OpTypeRuntimeArray %type_uint32\n"
+		"%62						= OpTypeStruct %61\n"
+		"%63						= OpTypePointer StorageBuffer %62\n"
+		"%64						= OpVariable %63 StorageBuffer\n"
+		"%69						= OpConstant %type_uint32 2\n"
+		"%70						= OpConstant %type_uint32 1\n"
+		"%72						= OpTypeBool\n"
+		"%76						= OpConstantFalse %72\n"
+		"%83						= OpVariable %32 Input\n"
+		"%89						= OpConstant %type_uint32 3\n"
+		"%107						= OpConstant %type_uint32 5\n"
+		"%124						= OpConstant %type_uint32 7\n"
+
+		// <changed_section>
+		"%type_uint64				= OpTypeInt 64 0\n"
+		"%127						= OpTypeRuntimeArray %type_uint64\n"
+		"%128						= OpTypeStruct %127\n"
+		"%129						= OpTypePointer StorageBuffer %128\n"
+		"%var_as_pointers_ssbo		= OpVariable %129 StorageBuffer\n"
+		"%type_uint64_ssbo_ptr		= OpTypePointer StorageBuffer %type_uint64\n"
+		// </changed_section>
+
+		// void main()
+		"%4							= OpFunction %2 None %3\n"
+		"%5							= OpLabel\n"
+		"%8							= OpVariable %7 Function\n"
+		"%10						= OpVariable %7 Function\n"
+		"%14						= OpVariable %13 Function\n"
+		"%19						= OpVariable %13 Function\n"
+		"%24						= OpVariable %23 Function\n"
+		"%var_ray_query				= OpVariable %43 Function\n"
+		"OpStore %8 %9\n"
+		"OpStore %10 %11\n"
+		"OpStore %14 %18\n"
+		"OpStore %19 %21\n"
+		"%36						= OpAccessChain %35 %33 %34\n"
+		"%37						= OpLoad %type_uint32 %36\n"
+		"%38						= OpCopyObject %type_uint32 %37\n"
+		"%40						= OpAccessChain %type_uint32_ssbo_ptr %var_index_ssbo %c_int32_0 %38\n"
+		"%41						= OpLoad %type_uint32 %40\n"
+		"OpStore %24 %41\n"
+
+		// rayQueryInitializeEXT using AS that was read from array
+		"%50						= OpLoad %type_uint32 %24\n"
+		"%51						= OpCopyObject %type_uint32 %50\n"
+		"%53						= OpAccessChain %type_as_uni_ptr %var_as_arr_uni_ptr %51\n"
+		"%54						= OpLoad %type_as %53\n"
+		"%57						= OpLoad %12 %14\n"
+		"%58						= OpLoad %6 %8\n"
+		"%59						= OpLoad %12 %19\n"
+		"%60						= OpLoad %6 %10\n"
+		"OpRayQueryInitializeKHR %var_ray_query %54 %55 %56 %57 %58 %59 %60\n"
+
+		"%65						= OpAccessChain %35 %33 %34\n"
+		"%66						= OpLoad %type_uint32 %65\n"
+		"%67						= OpCopyObject %type_uint32 %66\n"
+		"%68						= OpAccessChain %type_uint32_ssbo_ptr %64 %c_int32_0 %67\n"
+		"%71						= OpAtomicIAdd %type_uint32 %68 %70 %34 %69\n"
+
+		"%73						= OpRayQueryProceedKHR %72 %var_ray_query\n"
+		"OpSelectionMerge %75 None\n"
+		"OpBranchConditional %73 %74 %75\n"
+		"%74						= OpLabel\n"
+
+		"%77						= OpRayQueryGetIntersectionTypeKHR %type_uint32 %var_ray_query %c_int32_0\n"
+		"%78						= OpIEqual %72 %77 %34\n"
+		"OpSelectionMerge %80 None\n"
+		"OpBranchConditional %78 %79 %80\n"
+		"%79						= OpLabel\n"
+		"%81						= OpAccessChain %35 %33 %34\n"
+		"%82						= OpLoad %type_uint32 %81\n"
+		"%84						= OpAccessChain %35 %83 %34\n"
+		"%85						= OpLoad %type_uint32 %84\n"
+		"%86						= OpIAdd %type_uint32 %82 %85\n"
+		"%87						= OpCopyObject %type_uint32 %86\n"
+		"%88						= OpAccessChain %type_uint32_ssbo_ptr %64 %c_int32_0 %87\n"
+		"%90						= OpAtomicIAdd %type_uint32 %88 %70 %34 %89\n"
+		"OpBranch %80\n"
+		"%80						= OpLabel\n"
+		"OpBranch %75\n"
+		"%75						= OpLabel\n"
+
+		// rayQueryInitializeEXT using pointer to AS
+		"%91						= OpLoad %type_uint32 %24\n"
+		"%as_index					= OpCopyObject %type_uint32 %91\n"
+
+		// <changed_section>
+		"%as_device_addres_ptr		= OpAccessChain %type_uint64_ssbo_ptr %var_as_pointers_ssbo %c_int32_0 %as_index\n"
+		"%as_device_addres			= OpLoad %type_uint64 %as_device_addres_ptr Aligned 8\n"
+		"%as_to_use					= OpConvertUToAccelerationStructureKHR %type_as %as_device_addres\n"
+		// </changed_section>
+
+		"%95						= OpLoad %12 %14\n"
+		"%96						= OpLoad %6 %8\n"
+		"%97						= OpLoad %12 %19\n"
+		"%98						= OpLoad %6 %10\n"
+		"OpRayQueryInitializeKHR %var_ray_query %as_to_use %55 %56 %95 %96 %97 %98\n"
+
+		"%99						= OpAccessChain %35 %33 %34\n"
+		"%100						= OpLoad %type_uint32 %99\n"
+		"%101						= OpAccessChain %35 %83 %34\n"
+		"%102						= OpLoad %type_uint32 %101\n"
+		"%103						= OpIMul %type_uint32 %102 %69\n"
+		"%104						= OpIAdd %type_uint32 %100 %103\n"
+		"%105						= OpCopyObject %type_uint32 %104\n"
+		"%106						= OpAccessChain %type_uint32_ssbo_ptr %64 %c_int32_0 %105\n"
+		"%108						= OpAtomicIAdd %type_uint32 %106 %70 %34 %107\n"
+
+		"%109						= OpRayQueryProceedKHR %72 %var_ray_query\n"
+		"OpSelectionMerge %111 None\n"
+		"OpBranchConditional %109 %110 %111\n"
+		"%110						= OpLabel\n"
+
+		"%112						= OpRayQueryGetIntersectionTypeKHR %type_uint32 %var_ray_query %c_int32_0\n"
+		"%113						= OpIEqual %72 %112 %34\n"
+		"OpSelectionMerge %115 None\n"
+		"OpBranchConditional %113 %114 %115\n"
+		"%114						= OpLabel\n"
+		"%116						= OpAccessChain %35 %33 %34\n"
+		"%117						= OpLoad %type_uint32 %116\n"
+		"%118						= OpAccessChain %35 %83 %34\n"
+		"%119						= OpLoad %type_uint32 %118\n"
+		"%120						= OpIMul %type_uint32 %119 %89\n"
+		"%121						= OpIAdd %type_uint32 %117 %120\n"
+		"%122						= OpCopyObject %type_uint32 %121\n"
+		"%123						= OpAccessChain %type_uint32_ssbo_ptr %64 %c_int32_0 %122\n"
+		"%125						= OpAtomicIAdd %type_uint32 %123 %70 %34 %124\n"
+		"OpBranch %115\n"
+		"%115						= OpLabel\n"
+		"OpBranch %111\n"
+		"%111						= OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n";
+
+	programCollection.spirvAsmSources.add("comp") << compSource << spvBuildOptions;
+}
+
+TestInstance* RayQueryASDynamicIndexingTestCase::createInstance(Context& context) const
+{
+	return new RayQueryASDynamicIndexingTestInstance(context);
+}
+
+
+RayQueryASDynamicIndexingTestInstance::RayQueryASDynamicIndexingTestInstance(Context& context)
+	: vkt::TestInstance(context)
+{
+}
+
+tcu::TestStatus RayQueryASDynamicIndexingTestInstance::iterate(void)
+{
+	const DeviceInterface&		vkd							= m_context.getDeviceInterface();
+	const VkDevice				device						= m_context.getDevice();
+	const deUint32				queueFamilyIndex			= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue				queue						= m_context.getUniversalQueue();
+	Allocator&					allocator					= m_context.getDefaultAllocator();
+	const deUint32				tlasCount					= 500;	// changing this will require also changing shaders
+	const deUint32				activeTlasCount				= 32;	// number of tlas out of <tlasCount> that will be active
+
+	const Move<VkDescriptorSetLayout> descriptorSetLayout = DescriptorSetLayoutBuilder()
+		.addArrayBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, tlasCount, VK_SHADER_STAGE_COMPUTE_BIT)
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)			// pointers to all acceleration structures
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)			// ssbo with indices of all acceleration structures
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)			// ssbo with result values
+		.build(vkd, device);
+
+	const Move<VkDescriptorPool> descriptorPool = DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, tlasCount)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const Move<VkDescriptorSet> descriptorSet = makeDescriptorSet(vkd, device, *descriptorPool, *descriptorSetLayout);
+
+	const Move<VkPipelineLayout>		pipelineLayout		= makePipelineLayout(vkd, device, descriptorSetLayout.get());
+	Move<VkShaderModule>				shaderModule		= createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+	const VkComputePipelineCreateInfo	pipelineCreateInfo
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,			// VkStructureType						sType
+		DE_NULL,												// const void*							pNext
+		0u,														// VkPipelineCreateFlags				flags
+		{														// VkPipelineShaderStageCreateInfo		stage
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			DE_NULL,
+			(VkPipelineShaderStageCreateFlags)0,
+			VK_SHADER_STAGE_COMPUTE_BIT,
+			*shaderModule,
+			"main",
+			DE_NULL
+		},
+		*pipelineLayout,										// VkPipelineLayout						layout
+		DE_NULL,												// VkPipeline							basePipelineHandle
+		0,														// deInt32								basePipelineIndex
+	};
+
+	Move<VkPipeline>				pipeline				= createComputePipeline(vkd, device, DE_NULL, &pipelineCreateInfo);
+
+	const VkDeviceSize				pointerBufferSize		= tlasCount * sizeof(VkDeviceAddress);
+	const VkBufferCreateInfo		pointerBufferCreateInfo = makeBufferCreateInfo(pointerBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>	pointerBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, pointerBufferCreateInfo, MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
+
+	const VkDeviceSize				indicesBufferSize		= activeTlasCount * sizeof(deUint32);
+	const VkBufferCreateInfo		indicesBufferCreateInfo = makeBufferCreateInfo(indicesBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	de::MovePtr<BufferWithMemory>	indicesBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, indicesBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	const VkDeviceSize				resultBufferSize		= activeTlasCount * sizeof(deUint32) * 4;
+	const VkBufferCreateInfo		resultBufferCreateInfo	= makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	de::MovePtr<BufferWithMemory>	resultBuffer			= de::MovePtr<BufferWithMemory>(new BufferWithMemory(vkd, device, allocator, resultBufferCreateInfo, MemoryRequirement::HostVisible));
+
+	const Move<VkCommandPool>		cmdPool					= createCommandPool(vkd, device, 0, queueFamilyIndex);
+	const Move<VkCommandBuffer>		cmdBuffer				= allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	de::SharedPtr<BottomLevelAccelerationStructure>				blas = de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
+	std::vector<de::MovePtr<TopLevelAccelerationStructure>>		tlasVect(tlasCount);
+	std::vector<VkDeviceAddress>								tlasPtrVect(tlasCount);
+	std::vector<VkAccelerationStructureKHR>						tlasVkVect;
+
+	// randomly scatter AS indices across the range (number of them should be equal to the max subgroup size)
+	deRandom rnd;
+	deRandom_init(&rnd, 123);
+	std::set<deUint32> asIndicesSet;
+	while (asIndicesSet.size() < activeTlasCount)
+		asIndicesSet.insert(deRandom_getUint32(&rnd) % tlasCount);
+
+	// fill indices buffer
+	deUint32 helperIndex = 0;
+	auto& indicesBufferAlloc = indicesBuffer->getAllocation();
+	deUint32* indicesBufferPtr = reinterpret_cast<deUint32*>(indicesBufferAlloc.getHostPtr());
+	std::for_each(asIndicesSet.begin(), asIndicesSet.end(),
+		[&helperIndex, indicesBufferPtr](const deUint32& index)
+		{
+			indicesBufferPtr[helperIndex++] = index;
+		});
+	vk::flushAlloc(vkd, device, indicesBufferAlloc);
+
+	// clear result buffer
+	auto& resultBufferAlloc = resultBuffer->getAllocation();
+	void* resultBufferPtr = resultBufferAlloc.getHostPtr();
+	deMemset(resultBufferPtr, 0, static_cast<size_t>(resultBufferSize));
+	vk::flushAlloc(vkd, device, resultBufferAlloc);
+
+	beginCommandBuffer(vkd, *cmdBuffer, 0u);
+	{
+		// build bottom level acceleration structure
+		blas->setGeometryData(
+			{
+				{ 0.0, 0.0, 0.0 },
+				{ 1.0, 0.0, 0.0 },
+				{ 0.0, 1.0, 0.0 },
+			},
+			true,
+			0u
+			);
+
+		blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+
+		// build top level acceleration structures
+		for (deUint32 tlasIndex = 0; tlasIndex < tlasCount; ++tlasIndex)
+		{
+			auto& tlas = tlasVect[tlasIndex];
+			tlas = makeTopLevelAccelerationStructure();
+			tlas->setInstanceCount(1);
+			tlas->addInstance(blas);
+			if (!asIndicesSet.count(tlasIndex))
+			{
+				// tlas that are not in asIndicesSet should be empty but it is hard to do
+				// that with current cts utils so we are marking them as inactive instead
+				tlas->setInactiveInstances(true);
+			}
+			tlas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+
+			// get acceleration structure device address
+			const VkAccelerationStructureDeviceAddressInfoKHR addressInfo =
+			{
+				VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,	// VkStructureType				sType
+				DE_NULL,															// const void*					pNext
+				*tlas->getPtr()														// VkAccelerationStructureKHR	accelerationStructure
+			};
+			VkDeviceAddress vkda = vkd.getAccelerationStructureDeviceAddressKHR(device, &addressInfo);
+			tlasPtrVect[tlasIndex] = vkda;
+		}
+
+		// fill pointer buffer
+		vkd.cmdUpdateBuffer(*cmdBuffer, **pointerBuffer, 0, pointerBufferSize, tlasPtrVect.data());
+
+		// wait for data transfers
+		const VkMemoryBarrier uploadBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &uploadBarrier, 1u);
+
+		// wait for as build
+		const VkMemoryBarrier asBuildBarrier = makeMemoryBarrier(VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &asBuildBarrier, 1u);
+
+		tlasVkVect.reserve(tlasCount);
+		for (auto& tlas : tlasVect)
+			tlasVkVect.push_back(*tlas->getPtr());
+
+		VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet =
+		{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,	// VkStructureType						sType;
+			DE_NULL,															// const void*							pNext;
+			tlasCount,															// deUint32								accelerationStructureCount;
+			tlasVkVect.data(),													// const VkAccelerationStructureKHR*	pAccelerationStructures;
+		};
+
+		const vk::VkDescriptorBufferInfo pointerBufferInfo	= makeDescriptorBufferInfo(**pointerBuffer, 0u, VK_WHOLE_SIZE);
+		const vk::VkDescriptorBufferInfo indicesBufferInfo	= makeDescriptorBufferInfo(**indicesBuffer, 0u, VK_WHOLE_SIZE);
+		const vk::VkDescriptorBufferInfo resultInfo			= makeDescriptorBufferInfo(**resultBuffer,  0u, VK_WHOLE_SIZE);
+
+		DescriptorSetUpdateBuilder()
+			.writeArray (*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, tlasCount, &accelerationStructureWriteDescriptorSet)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &pointerBufferInfo)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(2u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &indicesBufferInfo)
+			.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(3u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo)
+			.update(vkd, device);
+
+		vkd.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
+
+		vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+
+		vkd.cmdDispatch(*cmdBuffer, activeTlasCount, 1, 1);
+
+		const VkMemoryBarrier postTraceMemoryBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+		cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, &postTraceMemoryBarrier);
+	}
+	endCommandBuffer(vkd, *cmdBuffer);
+
+	submitCommandsAndWait(vkd, device, queue, cmdBuffer.get());
+
+	invalidateMappedMemoryRange(vkd, device, resultBuffer->getAllocation().getMemory(), resultBuffer->getAllocation().getOffset(), resultBufferSize);
+
+	// verify result buffer
+	deUint32		failures = 0;
+	const deUint32*	resultPtr = reinterpret_cast<deUint32*>(resultBuffer->getAllocation().getHostPtr());
+	for (deUint32 index = 0; index < activeTlasCount; ++index)
+	{
+		failures += (resultPtr[0 * activeTlasCount + index] != 2) +
+					(resultPtr[1 * activeTlasCount + index] != 3) +
+					(resultPtr[2 * activeTlasCount + index] != 5) +
+					(resultPtr[3 * activeTlasCount + index] != 7);
+	}
+
+	if (failures)
+		return tcu::TestStatus::fail(de::toString(failures) + " failures, " + de::toString(4 * activeTlasCount - failures) + " are ok");
+	return tcu::TestStatus::pass("Pass");
+}
+
 }	// anonymous
 
 /********************/
@@ -3370,6 +3890,12 @@ void addInstanceTriangleCullingTests (tcu::TestCaseGroup* group)
 	}
 }
 
+void addDynamicIndexingTests(tcu::TestCaseGroup* group)
+{
+	auto& ctx = group->getTestContext();
+	group->addChild(new RayQueryASDynamicIndexingTestCase(ctx, "dynamic_indexing"));
+}
+
 void addEmptyAccelerationStructureTests (tcu::TestCaseGroup* group)
 {
 	const struct
@@ -3486,6 +4012,7 @@ tcu::TestCaseGroup*	createAccelerationStructuresTests(tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "host_threading", "Test host threading operations", addHostThreadingOperationTests);
 	addTestGroup(group.get(), "function_argument", "Test using AS as function argument using both pointers and bare values", addFuncArgTests);
 	addTestGroup(group.get(), "instance_triangle_culling", "Test building AS with counterclockwise triangles and/or disabling face culling", addInstanceTriangleCullingTests);
+	addTestGroup(group.get(), "dynamic_indexing", "Exercise dynamic indexing of acceleration structures", addDynamicIndexingTests);
 	addTestGroup(group.get(), "empty", "Test building empty acceleration structures using different methods", addEmptyAccelerationStructureTests);
 
 	return group.release();
