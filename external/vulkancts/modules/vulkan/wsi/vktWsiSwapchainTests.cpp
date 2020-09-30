@@ -445,7 +445,9 @@ struct TestParameters
 	{}
 };
 
-vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								wsiType,
+vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (const InstanceInterface&			vki,
+																  VkPhysicalDevice					physicalDevice,
+																  Type								wsiType,
 																  TestDimension						dimension,
 																  const VkSurfaceCapabilitiesKHR&	capabilities,
 																  const vector<VkSurfaceFormatKHR>&	formats,
@@ -561,6 +563,17 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 		{
 			for (deUint32 flags = 1u; flags <= capabilities.supportedUsageFlags; ++flags)
 			{
+				VkImageFormatProperties imageProps;
+
+				if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice,
+															   baseParameters.imageFormat,
+															   VK_IMAGE_TYPE_2D,
+															   VK_IMAGE_TILING_OPTIMAL,
+															   flags,
+															   (VkImageCreateFlags)0u,
+															   &imageProps) != VK_SUCCESS)
+					continue;
+
 				if ((flags & ~capabilities.supportedUsageFlags) == 0)
 				{
 					cases.push_back(baseParameters);
@@ -663,7 +676,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 																							   physicalDevice,
 																							   surface);
 
-	return generateSwapchainParameterCases(wsiType, dimension, capabilities, formats, presentModes);
+	return generateSwapchainParameterCases(vki, physicalDevice, wsiType, dimension, capabilities, formats, presentModes);
 }
 
 tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
